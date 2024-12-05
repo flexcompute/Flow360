@@ -194,22 +194,20 @@ class Rotational(Flow360BaseModel):
 
 class Wall(BoundaryBase):
     """
-    :class:`Wall` class defines the :code:`Wall` boundary condition based on the inputs.
-    By default, :code:`NoSlipWall` is defined for the surface of **Fluid** zone, and
-    :code:`SolidAdiabaticWall` is defined for the surface of **Solid** zone.
+    :class:`Wall` class defines the wall boundary condition based on the inputs.
 
     Example
     -------
 
 
-    - Define the :code:`WallFunction` boundary condition:
+    - Define :code:`Wall` with wall function:
 
     >>> fl.Wall(
     ...     entities=geometry["wall_function"],
     ...     use_wall_function=True,
     ... )
 
-    - Define the :code:`IsothermalWall` boundary condition on the surfaces of **Fluid** zone
+    - Define isothermal wall boundary condition on fluid side's interface
       with the name pattern of :code:`"fluid/isothermal-*"`:
 
     >>> fl.Wall(
@@ -217,16 +215,16 @@ class Wall(BoundaryBase):
     ...     heat_spec=fl.Temperature(350 * fl.u.K),
     ... )
 
-    - Define the :code:`SolidIsofluxWall` boundary condition on the surfaces of **Solid** zone
+    - Define isoflux wall boundary condition on solid side's interface
       with the name pattern of :code:`"solid/isoflux-*"`:
 
     >>> fl.Wall(
     ...     entities=volume_mesh["solid/isoflux-*"],
-    ...     heat_spec=fl.Temperature(350 * fl.u.K),
+    ...     heat_spec=fl.HeatFlux(1.0 * fl.u.W/fl.u.m**2),
     ... )
 
 
-    - Define the :code:`SolidIsothermalWall` boundary condition on the surfaces of **Solid** zone
+    - Define isothermal wall boundary condition on solid side's interface
       with the name pattern of :code:`"solid/isothermal-*"`:
 
     >>> fl.Wall(
@@ -257,12 +255,12 @@ class Wall(BoundaryBase):
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
     """
-    :class:`Freestream` defines the :code:`Freestream` condition.
+    :class:`Freestream` defines the freestream boundary condition.
 
     Example
     -------
 
-    - Define :class:`Freestream` boundary condition with velocity:
+    - Define freestream boundary condition with velocity expression:
 
     >>> fl.Freestream(
     ...     surfaces=[volume_mesh["blk-1/zblocks"],
@@ -270,7 +268,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
     ... )
 
-    - Define :class:`Freestream` boundary condition with modified turbulence quantities:
+    - Define freestream boundary condition with turbulence quantities:
 
     >>> fl.Freestream(
     ...     entities=[volume_mesh['freestream']],
@@ -299,25 +297,25 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
 
 class Outflow(BoundaryBase):
     """
-    :class:`Outflow` defines the Outflow boundary conditions based on the input :py:attr:`spec`.
+    :class:`Outflow` defines the outflow boundary condition based on the input :py:attr:`spec`.
 
     Example
     -------
-    - Define :code:`SubsonicOutflowPressure` boundary condition:
+    - Define outflow boundary condition with pressure:
 
     >>> fl.Outflow(
     ...     surfaces=volume_mesh["fluid/outlet"],
     ...     spec=fl.Pressure(value = 0.99e6 * fl.u.Pa)
     ... )
 
-    - Define :code:`SubsonicOutflowMach` boundary condition:
+    - Define outflow boundary condition with Mach number:
 
     >>> fl.Outflow(
     ...     surfaces=volume_mesh["fluid/outlet"],
     ...     spec=fl.Mach(value = 0.2)
     ... )
 
-    - Define :code:`MassOutflow` boundary condition:
+    - Define outflow boundary condition with mass flow rate:
 
     >>> fl.Outflow(
     ...     surfaces=volume_mesh["fluid/outlet"],
@@ -337,12 +335,12 @@ class Outflow(BoundaryBase):
 
 class Inflow(BoundaryBaseWithTurbulenceQuantities):
     """
-    :class:`Inflow` defines the :code:`Inflow` boundary condition based on the input :py:attr:`spec`.
+    :class:`Inflow` defines the inflow boundary condition based on the input :py:attr:`spec`.
 
     Example
     -------
 
-    - Define :code:`SubsonicInflow` boundary condition:
+    - Define inflow boundary condition with pressure:
 
     >>> fl.Inflow(
     ...     entities=[geometry["inflow"]],
@@ -350,7 +348,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     ...     spec=fl.TotalPressure(1.028e6 * fl.u.Pa),
     ... )
 
-    - Define :code:`MassInflow` boundary condition:
+    - Define inflow boundary condition with mass flow rate:
 
     >>> fl.Inflow(
     ...     entities=[volume_mesh["fluid/inflow"]],
@@ -358,13 +356,13 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s),
     ... )
 
-    - Define :code:`Inflow` boundary condition with modified turbulence quantities:
+    - Define inflow boundary condition with turbulence quantities:
 
     >>> fl.Inflow(
     ...     entities=[volume_mesh["fluid/inflow"]],
     ...     turbulence_quantities= fl.TurbulenceQuantities(
-    ...         turbulent_kinetic_energy=2e-8 * fl.ThermalState().speed_of_sound**2,
-    ...         specific_dissipation_rate=3.0 * fl.ThermalState().speed_of_sound / fl.u.m,
+    ...         turbulent_kinetic_energy=2.312e-3 * fl.u.m **2 / fl.u.s**2,
+    ...         specific_dissipation_rate= 1020 / fl.u.s,
     ...     )
     ... )
 
@@ -394,7 +392,7 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    Define :class:`SlipWall` boundary condition at entities with name pattern of
+    Define :code:`SlipWall` boundary condition for entities with naming pattern
     :code:`"*/slipWall"` in the volume mesh.
 
     >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
@@ -413,7 +411,7 @@ class SlipWall(BoundaryBase):
 
 class SymmetryPlane(BoundaryBase):
     """
-    :class:`SymmetryPlane` defines the :code:`SymmetryPlane` boundary condition.
+    :class:`SymmetryPlane` defines the symmetric boundary condition.
     It is similar to :class:`SlipWall`, but the normal gradient of scalar quantities
     are forced to be zero on the symmetry plane. **Only planar surfaces are supported.**
 

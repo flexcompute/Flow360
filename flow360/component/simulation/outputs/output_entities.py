@@ -50,7 +50,7 @@ class Slice(_SliceEntityBase):
     Example
     -------
 
-    Define a :class:`Slice` along (0,1,0) direction with the origin of (0,2,0).
+    Define a :class:`Slice` along (0,1,0) direction with the origin of (0,2,0) fl.u.m.
 
     >>> fl.Slice(
     ...     name="Slice",
@@ -76,7 +76,7 @@ class Isosurface(_OutputItemBase):
     Example
     -------
 
-    Define a :class:`Isosurface` with the :py:attr:`iso_value` of :code:`T` to be 1.5.
+    Define a :class:`Isosurface` of temperature equal to 1.5 non-dimensional temperature.
 
     >>> fl.Isosurface(
     ...     name="Isosurface_T_1.5",
@@ -121,12 +121,12 @@ class Point(_PointEntityBase):
 
 class PointArray(_PointEntityBase):
     """
-    :class:`PointArray` class for defining multiple monitor points along a line for
+    :class:`PointArray` class for defining multiple equally spaced monitor points along a line for
     :class:`~flow360.ProbeOutput`/:class:`~flow360.SurfaceProbeOutput`.
 
     Example
     -------
-    Define :class:`PointArray` with 6 points along a line starting from (0,0,0) to (1,2,3).
+    Define :class:`PointArray` with 6 equally spaced points along a line starting from (0,0,0) to (1,2,3).
     Both the starting and end points are included in the class:`PointArray`.
 
     >>> fl.PointArray(

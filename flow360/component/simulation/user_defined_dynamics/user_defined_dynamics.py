@@ -16,6 +16,8 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     Example
     -------
+    The following example comes from the :ref:`User Defined Dynamic Tutorial Case <UDDGridRotation>`.
+    Please refer to :ref:`this tutorial<userDefinedDynamics>` for more details about the User Defined Dynamics.
 
     >>> fl.UserDefinedDynamic(
     ...    name="dynamicTheta",

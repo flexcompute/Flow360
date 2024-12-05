@@ -131,15 +131,20 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     :class:`NavierStokesInitialCondition` class for specifying the
     :py:attr:`Fluid.initial_condition`.
 
+    Note
+    ----
+    The result of the expressions will be treated as non-dimensional values.
+    Please refer to the :ref:`Units Introduction<API_units_introduction>` for more details.
+
     Example
     -------
 
     >>> fl.NavierStokesInitialCondition(
-    ...     rho = f"(x <= 0) ? (1.0) : (0.125)",
+    ...     rho = "(x <= 0) ? (1.0) : (0.125)",
     ...     u = "0",
     ...     v = "0",
     ...     w = "0",
-    ...     p = f"(x <= 0) ? (1 / 1.4) : (0.1 / 1.4)"
+    ...     p = "(x <= 0) ? (1 / 1.4) : (0.1 / 1.4)"
     ... )
 
     ====
@@ -165,6 +170,11 @@ class HeatEquationInitialCondition(ExpressionInitialConditionBase):
     """
     :class:`HeatEquationInitialCondition` class for specifying the
     :py:attr:`Solid.initial_condition`.
+
+    Note
+    ----
+    The result of the expressions will be treated as non-dimensional values.
+    Please refer to the :ref:`Units Introduction<API_units_introduction>` for more details.
 
     Example
     -------
@@ -208,6 +218,7 @@ class Fluid(PDEModelBase):
     ...         absolute_tolerance=1e-10,
     ...         linear_solver=fl.LinearSolver(max_iterations=25)
     ...     ),
+    ...     transition_model_solver=fl.NoneSolver(),
     ... )
 
     ====
@@ -246,7 +257,7 @@ class Fluid(PDEModelBase):
 
 class Solid(PDEModelBase):
     """
-    :class:`Solid` class for setting up the HeatTransfer volume model that
+    :class:`Solid` class for setting up the conjugate heat transfer volume model that
     contains all the common fields every heat transfer zone should have.
 
     Example
@@ -357,9 +368,8 @@ class ActuatorDisk(Flow360BaseModel):
 
     Note
     ----
-    1. :py:attr:`ActuatorDisk.entities` needs to be defined using :class:`Cylinder`.
-    2. :py:attr:`Cylinder.center`, :py:attr:`Cylinder.axis` and :py:attr:`Cylinder.height` are taken as the
-       :code:`center`, :code:`axis_thrust`, :code:`thickness` of the Actuator Disk, respectively.
+    :py:attr:`Cylinder.center`, :py:attr:`Cylinder.axis` and :py:attr:`Cylinder.height` are taken as the
+    center, axis_thrust, thickness of the Actuator Disk, respectively.
 
     Example
     -------
@@ -402,16 +412,13 @@ class BETDiskTwist(Flow360BaseModel):
     Example
     -------
 
-    >>> fl.BETDiskTwist(radius=[1, 2] * fl.u.inch, twist=[30, 26] * fl.u.deg)
+    >>> fl.BETDiskTwist(radius=2 * fl.u.inch, twist=26 * fl.u.deg)
 
     ====
     """
 
-    radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
-    twist: AngleType = pd.Field(
-        description="The twist angle as a function of radial location. "
-        + "Entries in the list must already be sorted by radius.",
-    )
+    radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
+    twist: AngleType = pd.Field(description="The twist angle of the radial location.")
 
 
 # pylint: disable=no-member
@@ -422,16 +429,13 @@ class BETDiskChord(Flow360BaseModel):
     Example
     -------
 
-    >>> fl.BETDiskChord(radius=[1, 2] * fl.u.inch, chord=[0, 18] * fl.u.inch)
+    >>> fl.BETDiskChord(radius=2 * fl.u.inch, chord=18 * fl.u.inch)
 
     ====
     """
 
-    radius: LengthType.NonNegative = pd.Field(description="A list of radial locations.")
-    chord: LengthType.NonNegative = pd.Field(
-        description="The blade chord as a function of the radial location. "
-        + "Entries in the list must already be sorted by radius.",
-    )
+    radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
+    chord: LengthType.NonNegative = pd.Field(description="The blade chord of the radial location. ")
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
@@ -484,10 +488,9 @@ class BETDisk(Flow360BaseModel):
 
     Note
     ----
-    1. :py:attr:`BETDisk.entities` needs to be defined using :class:`Cylinder`.
-    2. :py:attr:`Cylinder.center`, :py:attr:`Cylinder.axis`, :py:attr:`Cylinder.outer_radius`,
-       and :py:attr:`Cylinder.height` are taken as the :code:`center_of_rotation`,
-       :code:`axis_of_rotation`, :code:`radius`, and :code:`thickness` of the BETDisk, respectively.
+    :py:attr:`Cylinder.center`, :py:attr:`Cylinder.axis`, :py:attr:`Cylinder.outer_radius`,
+    and :py:attr:`Cylinder.height` are taken as the center_of_rotation,
+    axis_of_rotation, radius, and thickness of the BETDisk, respectively.
 
     Example
     -------

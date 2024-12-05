@@ -57,9 +57,9 @@ class UserDefinedField(Flow360BaseModel):
     >>> fl.UserDefinedField(
     ...     name="PressureForce",
     ...     expression="double p = primitiveVars[4] - pressureFreestream; "
-    ...     + "PressureForce[0] = p * rotationModel_nodeNormals[0]; "
-    ...     + "PressureForce[1] = p * rotationModel_nodeNormals[1]; "
-    ...     + "PressureForce[2] = p * rotationModel_nodeNormals[2];",
+    ...     + "PressureForce[0] = p * nodeNormals[0]; "
+    ...     + "PressureForce[1] = p * nodeNormals[1]; "
+    ...     + "PressureForce[2] = p * nodeNormals[2];",
     ... )
 
     ====
@@ -158,22 +158,12 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     """
     :class:`TimeAverageSurfaceOutput` class for time average surface output settings.
 
-    Warnings
-    --------
-
-    The solver only accepts exactly the same set of :py:attr:`output_fields`
-    (is shared) between :class:`SurfaceOutput` and :class:`TimeAverageSurfaceOutput`.
-
-    Note
-    ----
-    Old `computeTimeAverages` can be infered when user is explicitly using for
-    example :class:`TimeAverageSurfaceOutput`.
-
     Example
     -------
 
     Calculate the average value starting from the :math:`4^{th}` physical step.
-    The results are output every 10 physical step starting from the :math:`14^{th}` physical step.
+    The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+    (14, 24, 34 etc.).
 
     >>> fl.TimeAverageSurfaceOutput(
     ...     output_format=["primitiveVars"],
@@ -226,23 +216,12 @@ class TimeAverageVolumeOutput(VolumeOutput):
     """
     :class:`TimeAverageVolumeOutput` class for time average volume output settings.
 
-    Warnings
-    --------
-
-    The solver only accepts exactly the same set of :py:attr:`output_fields` (is shared)
-    between :class:`VolumeOutput` and :class:`TimeAverageVolumeOutput`.
-    Also let's not worry about allowing entities here as it is not supported by solver anyway.
-
-    Note
-    ----
-    Old `computeTimeAverages` can be infered when user is explicitly using for example
-    :class:`TimeAverageVolumeOutput`.
-
     Example
     -------
 
     Calculate the average value starting from the :math:`4^{th}` physical step.
-    The results are output every 10 physical step starting from the :math:`14^{th}` physical step.
+    The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+    (14, 24, 34 etc.).
 
     >>> fl.TimeAverageVolumeOutput(
     ...     output_format="paraview",
@@ -307,7 +286,8 @@ class TimeAverageSliceOutput(SliceOutput):
     -------
 
     Calculate the average value starting from the :math:`4^{th}` physical step.
-    The results are output every 10 physical step starting from the :math:`14^{th}` physical step.
+    The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+    (14, 24, 34 etc.).
 
     >>> fl.TimeAverageSliceOutput(
     ...     entities=[
@@ -341,8 +321,10 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
 
     Define the :class:`IsosurfaceOutput` of :code:`qcriterion` on two isosurfaces:
 
-    - :code:`Isosurface_T_0.1` has the :py:attr:`~Isosurface.iso_value` of :code:`T` to be 0.1;
-    - :code:`Isosurface_p_0.5` has the :py:attr:`~Isosurface.iso_value` of :code:`p` to be 0.5.
+    - :code:`Isosurface_T_0.1` is the :class:`Isosurface` with its temperature equals
+      to 1.5 non-dimensional temperature;
+    - :code:`Isosurface_p_0.5` is the :class:`Isosurface` with its pressure equals
+      to 0.5 non-dimensional pressure.
 
     >>> fl.IsosurfaceOutput(
     ...     isosurfaces=[
@@ -487,7 +469,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
-    closest to the point. The probed results on the projected point is output.
+    closest to the point. The probed results on the projected point will be dumped.
 
     Example
     -------

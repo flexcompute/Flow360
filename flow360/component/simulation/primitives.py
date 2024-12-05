@@ -251,6 +251,15 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     ...     size=(0.2, 0.3, 2) * fl.u.m,
     ... )
 
+    Define a box using principal axes:
+
+    >>> fl.Box.from_principal_axes(
+    ...     name="box",
+    ...     axes=[(0, 1, 0), (0, 0, 1)],
+    ...     center=(0, 0, 0) * fl.u.m,
+    ...     size=(0.2, 0.3, 2) * fl.u.m,
+    ... )
+
     ====
     """
 
@@ -279,15 +288,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     ):
         """
         Construct box from principal axes
-
-        Example
-        -------
-        >>> fl.Box.from_principal_axes(
-        ...     name="box",
-        ...     axes=[(0, 1, 0), (0, 0, 1)],
-        ...     center=(0, 0, 0) * fl.u.m,
-        ...     size=(0.2, 0.3, 2) * fl.u.m,
-        ... )
         """
         # validate
         x_axis, y_axis = np.array(axes[0]), np.array(axes[1])
