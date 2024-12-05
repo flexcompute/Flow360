@@ -12,12 +12,12 @@ from .rotating_spheres import RotatingSpheres
 from .tutorial_2D_30p30n import Tutorial2D30p30n
 from .tutorial_2D_crm import Tutorial2DCRM
 from .tutorial_2D_gaw2 import Tutorial2DGAW2
-from .tutorial_auto_meshing_internal_flow import TutorailAutoMeshingInternalFlow
+from .tutorial_auto_meshing_internal_flow import TutorialAutoMeshingInternalFlow
 from .tutorial_bet_disk import TutorialBETDisk
 from .tutorial_cht_solver import TutorialCHTSolver
-from .tutorial_dynamic_derivatives import TutorailDynamicDerivatives
+from .tutorial_dynamic_derivatives import TutorialDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
-from .tutorial_RANS_xv15 import TutorailRANSXv15
+from .tutorial_RANS_xv15 import TutorialRANSXv15
 from .tutorial_UDD_alpha_controller import TutorialUDDAlphaController
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 
@@ -39,9 +39,9 @@ __all__ = [
     "TutorialBETDisk",
     "TutorialCHTSolver",
     "TutorialPeriodicBC",
-    "TutorailAutoMeshingInternalFlow",
-    "TutorailDynamicDerivatives",
-    "TutorailRANSXv15",
+    "TutorialAutoMeshingInternalFlow",
+    "TutorialDynamicDerivatives",
+    "TutorialRANSXv15",
     "TutorialUDDAlphaController",
     "TutorialUDDForcesMoments",
 ]
