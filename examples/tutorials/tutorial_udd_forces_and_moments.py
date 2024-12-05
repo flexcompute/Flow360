@@ -1,8 +1,9 @@
 import flow360 as fl
 
 project = fl.Project.from_file(
-    "UDD_FM_airplane.csm", name="UDD Custom set of user defined forces and moments"
+    "UDD_FM_airplane.csm", name="Tutorial UDD forces and moments from Python"
 )
+#project = fl.Project.from_cloud(project_id="prj-2224af9b-ef92-4d7d-bac3-e4c010acbe33")
 geometry = project.geometry
 
 geometry.show_available_groupings()
@@ -41,11 +42,16 @@ with fl.SI_unit_system:
             volume_zones=[farfield]
         ),
         reference_geometry=fl.ReferenceGeometry(area=60, moment_center=[5.7542, 0, 0], moment_length=[1, 1, 1]),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=3.42e6,
-            mach=0.147,
-            project_length_unit=1 * fl.u.m,
+        # operating_condition=fl.operating_condition_from_mach_reynolds(
+        #     reynolds=3.42e6,
+        #     mach=0.147,
+        #     project_length_unit=1 * fl.u.m,
+        #     alpha=10 * fl.u.deg,
+        # ),
+        operating_condition=fl.AerospaceCondition(
+            velocity_magnitude=50,
             alpha=10 * fl.u.deg,
+            atmosphere=fl.ThermalState(temperature=288.15)
         ),
         models=[
             fl.Fluid(
@@ -82,9 +88,9 @@ with fl.SI_unit_system:
                     "forceX",
                     "forceY",
                     "forceZ",
-                    "rotMomentX",
-                    "rotMomentY",
-                    "rotMomentZ"                    
+                    "momentX",
+                    "momentY",
+                    "momentZ"                    
                 ],
                 constants={
                     "density_kgpm3": 1.225,
@@ -105,11 +111,11 @@ with fl.SI_unit_system:
                     "0.0"
                 ],
                 update_law=[
-                    "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
-                    "(rotMomentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
-                    "(rotMomentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
-                    "(rotMomentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
-                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
+                    "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit;",
+                    "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
+                    "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
+                    "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
+                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ;"                    
                 ],
                 input_boundary_patches=[geometry["aileronRight"]]
             ),
@@ -119,9 +125,9 @@ with fl.SI_unit_system:
                     "forceX",
                     "forceY",
                     "forceZ",
-                    "rotMomentX",
-                    "rotMomentY",
-                    "rotMomentZ"                    
+                    "momentX",
+                    "momentY",
+                    "momentZ"                    
                 ],
                 constants={
                     "density_kgpm3": 1.225,
@@ -143,9 +149,9 @@ with fl.SI_unit_system:
                 ],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
-                    "(rotMomentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
-                    "(rotMomentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
-                    "(rotMomentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
+                    "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
+                    "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
+                    "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
                     "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
                 ],
                 input_boundary_patches=[geometry["aileronLeft"]]
@@ -156,9 +162,9 @@ with fl.SI_unit_system:
                     "forceX",
                     "forceY",
                     "forceZ",
-                    "rotMomentX",
-                    "rotMomentY",
-                    "rotMomentZ"                    
+                    "momentX",
+                    "momentY",
+                    "momentZ"                    
                 ],
                 constants={
                     "density_kgpm3": 1.225,
@@ -180,9 +186,9 @@ with fl.SI_unit_system:
                 ],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
-                    "(rotMomentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
-                    "(rotMomentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
-                    "(rotMomentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
+                    "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
+                    "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
+                    "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
                     "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
                 ],
                 input_boundary_patches=[geometry["rudderRight"]]
@@ -193,9 +199,9 @@ with fl.SI_unit_system:
                     "forceX",
                     "forceY",
                     "forceZ",
-                    "rotMomentX",
-                    "rotMomentY",
-                    "rotMomentZ"                    
+                    "momentX",
+                    "momentY",
+                    "momentZ"                    
                 ],
                 constants={
                     "density_kgpm3": 1.225,
@@ -217,9 +223,9 @@ with fl.SI_unit_system:
                 ],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
-                    "(rotMomentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
-                    "(rotMomentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
-                    "(rotMomentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
+                    "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
+                    "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
+                    "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
                     "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
                 ],
                 input_boundary_patches=[geometry["rudderLeft"]]
@@ -227,4 +233,4 @@ with fl.SI_unit_system:
         ]
     )
 
-project.run_case(params, name="UDD custom set with an airplane")
+project.run_case(params, name="Case of tutorial UDD forces and moments from Python")
