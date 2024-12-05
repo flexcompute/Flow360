@@ -44,9 +44,7 @@ The function takes in the following inputs:
 
 and returns an `AerospaceCondition` class instatiated based on given parameters.
 
-project_length_unit is the length unit of the geometry or mesh used in the project.
-
-For more information about the function, refer to its docstring.
+`project_length_unit` is the length unit of the geometry or mesh used in the project.
 
 ## How to use Operating Condition from Mach number and muRef
 
@@ -63,6 +61,4 @@ The function takes in the following inputs:
 
 and returns an `AerospaceCondition` class instatiated based on given parameters.
 
-project_length_unit is the length unit of the geometry or mesh used in the project.
-
-For more information about the function, refer to its docstring.
+`project_length_unit` is the length unit of the geometry or mesh used in the project.
