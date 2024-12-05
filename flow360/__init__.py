@@ -2,6 +2,10 @@
 This module is flow360 for simulation based models
 """
 
+from examples.migration_guide.extra_operating_condition import (
+    operating_condition_from_mach_muref,
+    operating_condition_from_mach_reynolds,
+)
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
@@ -87,7 +91,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     GenericReferenceCondition,
     ThermalState,
 )
-from examples.migration_guide.extra_operating_condition import (operating_condition_from_mach_muref, operating_condition_from_mach_reynolds)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,

@@ -1,15 +1,20 @@
-import pydantic as pd
 from typing import Optional
 
+import pydantic as pd
+
 import flow360.component.simulation.units as u
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+    Air,
+    ThermalState,
+)
 from flow360.component.simulation.unit_system import (
     AngleType,
     LengthType,
     TemperatureType,
 )
-from flow360.component.simulation.operating_condition.operating_condition import AerospaceCondition, ThermalState, Air
-
 from flow360.log import log
+
 
 # pylint: disable=too-many-arguments
 @pd.validate_call
