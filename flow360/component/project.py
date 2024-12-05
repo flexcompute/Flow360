@@ -224,7 +224,6 @@ class ProjectTree(pd.BaseModel):
             if case_mesh_id != parent_id:
                 case_mesh_label = case_mesh_id
 
-
         new_node = ProjectTreeNode(
             asset_id=asset.info.id,
             asset_name=asset.info.name,
@@ -232,7 +231,7 @@ class ProjectTree(pd.BaseModel):
             asset_type=asset._cloud_resource_type_name,
             parent_id=parent_id,
             case_mesh_id=case_mesh_id,
-            case_mesh_label = case_mesh_label,
+            case_mesh_label=case_mesh_label,
         )
         if not new_node.parent_id:
             self.root = new_node
