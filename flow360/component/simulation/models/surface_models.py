@@ -199,8 +199,7 @@ class Wall(BoundaryBase):
     Example
     -------
 
-
-    - Define :code:`Wall` with wall function:
+    - :code:`Wall` with wall function:
 
     >>> fl.Wall(
     ...     entities=geometry["wall_function"],
@@ -208,7 +207,7 @@ class Wall(BoundaryBase):
     ... )
 
     - Define isothermal wall boundary condition on fluid side's interface
-      with the name pattern of :code:`"fluid/isothermal-*"`:
+      with the naming pattern :code:`"fluid/isothermal-*"`:
 
     >>> fl.Wall(
     ...     entities=volume_mesh["fluid/isothermal-*"],
@@ -216,7 +215,7 @@ class Wall(BoundaryBase):
     ... )
 
     - Define isoflux wall boundary condition on solid side's interface
-      with the name pattern of :code:`"solid/isoflux-*"`:
+      with the naming pattern :code:`"solid/isoflux-*"`:
 
     >>> fl.Wall(
     ...     entities=volume_mesh["solid/isoflux-*"],
@@ -225,7 +224,7 @@ class Wall(BoundaryBase):
 
 
     - Define isothermal wall boundary condition on solid side's interface
-      with the name pattern of :code:`"solid/isothermal-*"`:
+      with the naming pattern :code:`"solid/isothermal-*"`:
 
     >>> fl.Wall(
     ...     entities=volume_mesh["solid/isothermal-*"],
@@ -392,7 +391,7 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    Define :code:`SlipWall` boundary condition for entities with naming pattern
+    Define :code:`SlipWall` boundary condition for entities with the naming pattern
     :code:`"*/slipWall"` in the volume mesh.
 
     >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]

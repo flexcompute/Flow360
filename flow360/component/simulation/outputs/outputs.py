@@ -56,10 +56,10 @@ class UserDefinedField(Flow360BaseModel):
 
     >>> fl.UserDefinedField(
     ...     name="PressureForce",
-    ...     expression="double p = primitiveVars[4] - pressureFreestream; "
-    ...     + "PressureForce[0] = p * nodeNormals[0]; "
-    ...     + "PressureForce[1] = p * nodeNormals[1]; "
-    ...     + "PressureForce[2] = p * nodeNormals[2];",
+    ...     expression="double prel = primitiveVars[4] - pressureFreestream; "
+    ...     + "PressureForce[0] = prel * nodeNormals[0]; "
+    ...     + "PressureForce[1] = prel * nodeNormals[1]; "
+    ...     + "PressureForce[2] = prel * nodeNormals[2];",
     ... )
 
     ====

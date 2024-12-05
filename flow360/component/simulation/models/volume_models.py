@@ -369,7 +369,7 @@ class ActuatorDisk(Flow360BaseModel):
     Note
     ----
     :py:attr:`Cylinder.center`, :py:attr:`Cylinder.axis` and :py:attr:`Cylinder.height` are taken as the
-    center, axis_thrust, thickness of the Actuator Disk, respectively.
+    center, thrust axis, and thickness of the Actuator Disk, respectively.
 
     Example
     -------
@@ -418,7 +418,7 @@ class BETDiskTwist(Flow360BaseModel):
     """
 
     radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
-    twist: AngleType = pd.Field(description="The twist angle of the radial location.")
+    twist: AngleType = pd.Field(description="The twist angle at this radial location.")
 
 
 # pylint: disable=no-member
@@ -435,7 +435,9 @@ class BETDiskChord(Flow360BaseModel):
     """
 
     radius: LengthType.NonNegative = pd.Field(description="The radius of the radial location.")
-    chord: LengthType.NonNegative = pd.Field(description="The blade chord of the radial location. ")
+    chord: LengthType.NonNegative = pd.Field(
+        description="The blade chord at this radial location. "
+    )
 
 
 class BETDiskSectionalPolar(Flow360BaseModel):
@@ -489,8 +491,8 @@ class BETDisk(Flow360BaseModel):
     Note
     ----
     :py:attr:`Cylinder.center`, :py:attr:`Cylinder.axis`, :py:attr:`Cylinder.outer_radius`,
-    and :py:attr:`Cylinder.height` are taken as the center_of_rotation,
-    axis_of_rotation, radius, and thickness of the BETDisk, respectively.
+    and :py:attr:`Cylinder.height` are taken as the rotation center,
+    rotation axis, radius, and thickness of the BETDisk, respectively.
 
     Example
     -------

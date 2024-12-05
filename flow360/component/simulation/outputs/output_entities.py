@@ -126,7 +126,8 @@ class PointArray(_PointEntityBase):
 
     Example
     -------
-    Define :class:`PointArray` with 6 equally spaced points along a line starting from (0,0,0) to (1,2,3).
+    Define :class:`PointArray` with 6 equally spaced points along a line starting from
+    (0,0,0)*fl.u.m to (1,2,3)*fl.u.m.
     Both the starting and end points are included in the class:`PointArray`.
 
     >>> fl.PointArray(
