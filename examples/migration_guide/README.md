@@ -42,7 +42,7 @@ The function takes in the following inputs:
 - beta
 - reference_mach
 
-and returns an `AerospaceCondition` class instatiated based on given parameters.
+and returns an `AerospaceCondition` class instantiated based on given parameters.
 
 `project_length_unit` is the length unit of the geometry or mesh used in the project.
 
