@@ -3,7 +3,9 @@ from flow360.examples import TutorialUDDAlphaController
 
 TutorialUDDAlphaController.get_files()
 
-project = fl.Project.from_file(TutorialUDDAlphaController.mesh_filename, name="Tutorial UDD alpha controller from Python")
+project = fl.Project.from_file(
+    TutorialUDDAlphaController.mesh_filename, name="Tutorial UDD alpha controller from Python"
+)
 
 volume_mesh = project.volume_mesh
 

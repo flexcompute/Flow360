@@ -29,204 +29,149 @@ with fl.SI_unit_system:
             refinements=[
                 fl.SurfaceEdgeRefinement(
                     method=fl.AngleBasedRefinement(value=1 * fl.u.deg),
-                    edges=[geometry["leadingEdge"]]
+                    edges=[geometry["leadingEdge"]],
                 ),
                 fl.SurfaceEdgeRefinement(
-                    method=fl.HeightBasedRefinement(value=5e-3),
-                    edges=[geometry["trailingEdge"]]
+                    method=fl.HeightBasedRefinement(value=5e-3), edges=[geometry["trailingEdge"]]
                 ),
-                fl.SurfaceRefinement(
-                    max_edge_length=0.5,
-                    faces=[geometry["wing*"]]
+                fl.SurfaceRefinement(max_edge_length=0.5, faces=[geometry["wing*"]]),
+                fl.UniformRefinement(
+                    name="box_refinement1", entities=[box1, box2, box3], spacing=0.2
                 ),
-                fl.UniformRefinement(name="box_refinement1", entities=[box1, box2, box3], spacing=0.2)
             ],
-            volume_zones=[farfield]
+            volume_zones=[farfield],
         ),
-        reference_geometry=fl.ReferenceGeometry(area=60, moment_center=[5.7542, 0, 0], moment_length=[1, 1, 1]),
+        reference_geometry=fl.ReferenceGeometry(
+            area=60, moment_center=[5.7542, 0, 0], moment_length=[1, 1, 1]
+        ),
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=50,
             alpha=10 * fl.u.deg,
-            atmosphere=fl.ThermalState(temperature=288.15)
+            atmosphere=fl.ThermalState(temperature=288.15),
         ),
         models=[
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
-                    absolute_tolerance=1e-9,
-                    linear_solver=fl.LinearSolver(max_iterations=35)
+                    absolute_tolerance=1e-9, linear_solver=fl.LinearSolver(max_iterations=35)
                 ),
                 turbulence_model_solver=fl.SpalartAllmaras(
                     linear_solver=fl.LinearSolver(max_iterations=25)
-                )
+                ),
             ),
             fl.Wall(
                 name="NoSlipWall",
-                surfaces=[
-                    geometry["*Left"],
-                    geometry["*Right"],
-                    geometry["fuselage"]
-                ]
+                surfaces=[geometry["*Left"], geometry["*Right"], geometry["fuselage"]],
             ),
-            fl.Freestream(
-                name="Freestream",
-                surfaces=[farfield.farfield]
-            )
+            fl.Freestream(name="Freestream", surfaces=[farfield.farfield]),
         ],
         time_stepping=fl.Steady(max_steps=5000),
         outputs=[
-            fl.VolumeOutput(output_fields=["primitiveVars", "vorticity", "qcriterion", "Cp", "Mach"]),
-            fl.SurfaceOutput(surfaces=[geometry["*"]], output_fields=["primitiveVars", "Cf", "wallDistance", "Cp", "CfVec", "yPlus"])
+            fl.VolumeOutput(
+                output_fields=["primitiveVars", "vorticity", "qcriterion", "Cp", "Mach"]
+            ),
+            fl.SurfaceOutput(
+                surfaces=[geometry["*"]],
+                output_fields=["primitiveVars", "Cf", "wallDistance", "Cp", "CfVec", "yPlus"],
+            ),
         ],
         user_defined_dynamics=[
             fl.UserDefinedDynamic(
                 name="rightAileronHingeTorque",
-                input_vars=[
-                    "forceX",
-                    "forceY",
-                    "forceZ",
-                    "momentX",
-                    "momentY",
-                    "momentZ"                    
-                ],
+                input_vars=["forceX", "forceY", "forceZ", "momentX", "momentY", "momentZ"],
                 constants={
                     "density_kgpm3": 1.225,
-                    "c_inf_mps":340.29400580821283, 
+                    "c_inf_mps": 340.29400580821283,
                     "l_grid_unit": 1,
                     "newCenterX": 5.7542,
                     "newCenterY": 7,
                     "newCenterZ": 0,
                     "newAxisX": 0,
                     "newAxisY": 1,
-                    "newAxisZ": 0                    
+                    "newAxisZ": 0,
                 },
-                state_vars_initial_value=[
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0"
-                ],
+                state_vars_initial_value=["0.0", "0.0", "0.0", "0.0", "0.0"],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit;",
                     "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
                     "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
                     "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
-                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ;"                    
+                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ;",
                 ],
-                input_boundary_patches=[geometry["aileronRight"]]
+                input_boundary_patches=[geometry["aileronRight"]],
             ),
             fl.UserDefinedDynamic(
                 name="leftAileronHingeTorque",
-                input_vars=[
-                    "forceX",
-                    "forceY",
-                    "forceZ",
-                    "momentX",
-                    "momentY",
-                    "momentZ"                    
-                ],
+                input_vars=["forceX", "forceY", "forceZ", "momentX", "momentY", "momentZ"],
                 constants={
                     "density_kgpm3": 1.225,
-                    "c_inf_mps":340.29400580821283, 
+                    "c_inf_mps": 340.29400580821283,
                     "l_grid_unit": 1,
                     "newCenterX": 5.7542,
                     "newCenterY": -7,
                     "newCenterZ": 0,
                     "newAxisX": 0,
                     "newAxisY": -1,
-                    "newAxisZ": 0                    
+                    "newAxisZ": 0,
                 },
-                state_vars_initial_value=[
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0"
-                ],
+                state_vars_initial_value=["0.0", "0.0", "0.0", "0.0", "0.0"],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
                     "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
                     "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
                     "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
-                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
+                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ ",
                 ],
-                input_boundary_patches=[geometry["aileronLeft"]]
+                input_boundary_patches=[geometry["aileronLeft"]],
             ),
             fl.UserDefinedDynamic(
                 name="rightRudderHingeTorque",
-                input_vars=[
-                    "forceX",
-                    "forceY",
-                    "forceZ",
-                    "momentX",
-                    "momentY",
-                    "momentZ"                    
-                ],
+                input_vars=["forceX", "forceY", "forceZ", "momentX", "momentY", "momentZ"],
                 constants={
                     "density_kgpm3": 1.225,
-                    "c_inf_mps":340.29400580821283, 
+                    "c_inf_mps": 340.29400580821283,
                     "l_grid_unit": 1,
                     "newCenterX": 12.01,
                     "newCenterY": 0.861,
                     "newCenterZ": 0.861,
                     "newAxisX": 0,
                     "newAxisY": 0.7071,
-                    "newAxisZ": 0.7071                    
+                    "newAxisZ": 0.7071,
                 },
-                state_vars_initial_value=[
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0"
-                ],
+                state_vars_initial_value=["0.0", "0.0", "0.0", "0.0", "0.0"],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
                     "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
                     "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
                     "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
-                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
+                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ ",
                 ],
-                input_boundary_patches=[geometry["rudderRight"]]
+                input_boundary_patches=[geometry["rudderRight"]],
             ),
             fl.UserDefinedDynamic(
                 name="leftRudderHingeTorque",
-                input_vars=[
-                    "forceX",
-                    "forceY",
-                    "forceZ",
-                    "momentX",
-                    "momentY",
-                    "momentZ"                    
-                ],
+                input_vars=["forceX", "forceY", "forceZ", "momentX", "momentY", "momentZ"],
                 constants={
                     "density_kgpm3": 1.225,
-                    "c_inf_mps":340.29400580821283, 
+                    "c_inf_mps": 340.29400580821283,
                     "l_grid_unit": 1,
                     "newCenterX": 12.01,
                     "newCenterY": -0.861,
                     "newCenterZ": 0.861,
                     "newAxisX": 0,
                     "newAxisY": -0.7071,
-                    "newAxisZ": 0.7071                    
+                    "newAxisZ": 0.7071,
                 },
-                state_vars_initial_value=[
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0",
-                    "0.0"
-                ],
+                state_vars_initial_value=["0.0", "0.0", "0.0", "0.0", "0.0"],
                 update_law=[
                     "density_kgpm3 * c_inf_mps * c_inf_mps * l_grid_unit * l_grid_unit * l_grid_unit",
                     "(momentX - ((newCenterY - momentCenterY) * forceZ - (newCenterZ - momentCenterZ) * forceY)) * state [0];",
                     "(momentY + ((newCenterX - momentCenterX) * forceZ - (newCenterZ - momentCenterZ) * forceX)) * state [0];",
                     "(momentZ - ((newCenterX - momentCenterX) * forceY - (newCenterY - momentCenterY) * forceX)) * state [0];",
-                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ "                    
+                    "state[1] * newAxisX + state[2] * newAxisY + state[3] * newAxisZ ",
                 ],
-                input_boundary_patches=[geometry["rudderLeft"]]
-            )
-        ]
+                input_boundary_patches=[geometry["rudderLeft"]],
+            ),
+        ],
     )
 
 project.run_case(params, name="Case of tutorial UDD forces and moments from Python")
