@@ -206,6 +206,23 @@ class ProjectTree(pd.BaseModel):
     root: ProjectTreeNode = pd.Field(None)
     nodes: dict[str, ProjectTreeNode] = pd.Field({})
 
+    def _update_case_mesh_label(self):
+        """Check and remove unnecessary case mesh label"""
+        for node in self.nodes.values():
+            if not node.case_mesh_id:
+                continue
+            parent_node = self.get_parent_node(node=node)
+            if not parent_node:
+                continue
+            if node.case_mesh_id == parent_node.case_mesh_id:
+                node.case_mesh_label = None
+
+    def get_parent_node(self, node: ProjectTreeNode):
+        """Get the parent node of the input node"""
+        if not node.parent_id:
+            return None
+        return self.nodes.get(node.parent_id, None)
+
     def add_node(self, asset: AssetOrResource):
         """Add new node to the tree"""
         if self.has_node(asset_id=asset.id):
@@ -242,13 +259,7 @@ class ProjectTree(pd.BaseModel):
             if node.asset_id == new_node.parent_id:
                 node.add_child(child=new_node)
         self.nodes.update({new_node.asset_id: new_node})
-        for node in self.nodes.values():
-            if not node.parent_id:
-                continue
-            if not self.has_node(node.parent_id):
-                continue
-            if node.case_mesh_id == self.nodes[parent_id].case_mesh_id:
-                node.case_mesh_label = None
+        self._update_case_mesh_label()
 
     def has_node(self, asset_id: str) -> bool:
         """Use asset_id to check if the asset already exists in the project tree"""
@@ -264,7 +275,7 @@ class ProjectTree(pd.BaseModel):
                 if asset_id.startswith(query_id):
                     return asset_id
             raise Flow360ValueError(
-                "This asset does not exist in this project. Please check the query_id."
+                "This asset does not exist in this project. Please check the input asset ID."
             )
         raise Flow360ValueError("The input asset ID is too short to retrive the correct asset.")
 
