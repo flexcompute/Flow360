@@ -25,4 +25,4 @@ In order to save the BET Disk and Cylinder files as jsons, be sure to set `save=
 
 The files will appear in your current working directory.
 
-They can later be used to, for example, upload them to webUI when creating BET Disk 3D model.
+They can later be used to create BET Disk 3D model on WebUI.
