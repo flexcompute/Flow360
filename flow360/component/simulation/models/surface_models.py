@@ -222,15 +222,6 @@ class Wall(BoundaryBase):
     ...     heat_spec=fl.HeatFlux(1.0 * fl.u.W/fl.u.m**2),
     ... )
 
-
-    - Define isothermal wall boundary condition on entities
-      with the naming pattern :code:`"solid/isothermal-*"`:
-
-    >>> fl.Wall(
-    ...     entities=volume_mesh["solid/isothermal-*"],
-    ...     heat_spec=fl.Temperature(350 * fl.u.K),
-    ... )
-
     ====
     """
 
