@@ -151,8 +151,12 @@ class ProjectTreeNode(pd.BaseModel):
         Name of the asset.
     asset_type : str
         Type of the asset.
-    parent_id : str
+    parent_id : Union[str, None]
         ID of the parent asset.
+    case_mesh_id : Union[str, None]
+        ID of the case's mesh.
+    case_mesh_label : Union[str, None]
+        Label the mesh of a forked case using a different mesh.
     children : List
         List of the child assets of the current asset.
     """
@@ -162,6 +166,7 @@ class ProjectTreeNode(pd.BaseModel):
     asset_type: str = pd.Field()
     parent_id: Union[str, None] = pd.Field(None)
     case_mesh_id: Union[str, None] = pd.Field(None)
+    case_mesh_label: Union[str, None] = pd.Field(None)
     children: List = pd.Field([])
 
     def __str__(self):
@@ -213,8 +218,12 @@ class ProjectTree(pd.BaseModel):
             if isinstance(asset, Case):
                 parent_id = asset.info.case_mesh_id
         case_mesh_id = None
+        case_mesh_label = None
         if isinstance(asset, Case):
             case_mesh_id = asset.info.case_mesh_id
+            if case_mesh_id != parent_id:
+                case_mesh_label = case_mesh_id
+
 
         new_node = ProjectTreeNode(
             asset_id=asset.info.id,
@@ -223,6 +232,7 @@ class ProjectTree(pd.BaseModel):
             asset_type=asset._cloud_resource_type_name,
             parent_id=parent_id,
             case_mesh_id=case_mesh_id,
+            case_mesh_label = case_mesh_label,
         )
         if not new_node.parent_id:
             self.root = new_node
@@ -234,8 +244,12 @@ class ProjectTree(pd.BaseModel):
                 node.add_child(child=new_node)
         self.nodes.update({new_node.asset_id: new_node})
         for node in self.nodes.values():
-            if node.case_mesh_id and self.has_node(node.case_mesh_id):
-                node.case_mesh_id = None
+            if not node.parent_id:
+                continue
+            if not self.has_node(node.parent_id):
+                continue
+            if node.case_mesh_id == self.nodes[parent_id].case_mesh_id:
+                node.case_mesh_label = None
 
     def has_node(self, asset_id: str) -> bool:
         """Use asset_id to check if the asset already exists in the project tree"""
@@ -765,10 +779,10 @@ class Project(pd.BaseModel):
             get_val=lambda x: chunkstring(long_str=str(x), str_length=str_length),
             get_label=lambda x: (
                 chunkstring(
-                    long_str="Using VolumeMesh:" + get_short_asset_id(x.case_mesh_id),
+                    long_str="Using VolumeMesh:" + get_short_asset_id(x.case_mesh_label),
                     str_length=str_length,
                 )
-                if x.case_mesh_id
+                if x.case_mesh_label
                 else None
             ),
             color="",
