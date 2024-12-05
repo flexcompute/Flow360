@@ -1,6 +1,6 @@
 # Migration Guide
 
-This folder contains useful tools for helping you adjust your V1 cases to be V2 compatible.
+This folder contains useful tools to help migrating your old cases to use the latest Flow360 V2 API. 
 
 ## List of tools:
 
