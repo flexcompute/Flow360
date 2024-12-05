@@ -206,7 +206,7 @@ class Wall(BoundaryBase):
     ...     use_wall_function=True,
     ... )
 
-    - Define isothermal wall boundary condition on fluid side's interface
+    - Define isothermal wall boundary condition on entities
       with the naming pattern :code:`"fluid/isothermal-*"`:
 
     >>> fl.Wall(
@@ -214,7 +214,7 @@ class Wall(BoundaryBase):
     ...     heat_spec=fl.Temperature(350 * fl.u.K),
     ... )
 
-    - Define isoflux wall boundary condition on solid side's interface
+    - Define isoflux wall boundary condition on entities
       with the naming pattern :code:`"solid/isoflux-*"`:
 
     >>> fl.Wall(
@@ -223,7 +223,7 @@ class Wall(BoundaryBase):
     ... )
 
 
-    - Define isothermal wall boundary condition on solid side's interface
+    - Define isothermal wall boundary condition on entities
       with the naming pattern :code:`"solid/isothermal-*"`:
 
     >>> fl.Wall(

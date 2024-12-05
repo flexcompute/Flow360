@@ -127,8 +127,8 @@ class PointArray(_PointEntityBase):
     Example
     -------
     Define :class:`PointArray` with 6 equally spaced points along a line starting from
-    (0,0,0)*fl.u.m to (1,2,3)*fl.u.m.
-    Both the starting and end points are included in the class:`PointArray`.
+    (0,0,0) * fl.u.m to (1,2,3) * fl.u.m.
+    Both the starting and end points are included in the :class:`PointArray`.
 
     >>> fl.PointArray(
     ...     name="Line_1",
@@ -137,7 +137,7 @@ class PointArray(_PointEntityBase):
     ...     number_of_points=6,
     ... )
 
-
+    ====
     """
 
     private_attribute_entity_type_name: Literal["PointArray"] = pd.Field("PointArray", frozen=True)
