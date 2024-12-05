@@ -14,9 +14,7 @@ with fl.SI_unit_system:
             moment_length=[1, 1, 1] * fl.u.m,
             area=1 * fl.u.m**2,
         ),
-        operating_condition=fl.AerospaceCondition.from_mach(
-            mach=0.1
-        ),
+        operating_condition=fl.AerospaceCondition.from_mach(mach=0.1),
         time_stepping=fl.Steady(
             max_steps=10000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)
         ),
