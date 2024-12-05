@@ -5,7 +5,7 @@ tutorial_automated meshing for internal flow example
 from .base_test_case import BaseTestCase
 
 
-class TutorailAutoMeshingInternalFlow(BaseTestCase):
+class TutorialAutoMeshingInternalFlow(BaseTestCase):
     name = "tutorialAutoMeshingInternalFlow"
 
     class url:
