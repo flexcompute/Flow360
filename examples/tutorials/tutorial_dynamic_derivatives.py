@@ -62,10 +62,8 @@ with fl.SI_unit_system:
             moment_length=[1, 1, 1],
             area=2,
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=3.4229727884228057e6,
-            mach=0.1469317682550648,
-            project_length_unit=1 * fl.u.m,
+        operating_condition=fl.AerospaceCondition(
+            velocity_magnitude=50,
         ),
         time_stepping=fl.Steady(
             max_steps=10000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)

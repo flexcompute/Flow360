@@ -86,17 +86,6 @@ with fl.SI_unit_system:
         operating_condition=fl.AerospaceCondition.from_mach(
             mach=0.182,
             alpha=5 * fl.u.deg,
-            beta=0 * fl.u.deg,
-            thermal_state=fl.ThermalState(
-                temperature=288.15,
-                material=fl.Air(
-                    dynamic_viscosity=fl.Sutherland(
-                        reference_temperature=288.15,
-                        reference_viscosity=4.29166e-08 * fl.u.flow360_viscosity_unit,
-                        effective_temperature=110.4,
-                    )
-                ),
-            ),
             reference_mach=0.54,
         ),
         time_stepping=fl.Steady(

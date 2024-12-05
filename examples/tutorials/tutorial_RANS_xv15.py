@@ -18,12 +18,10 @@ with fl.SI_unit_system:
             moment_length=(3.81, 3.81, 3.81),
             area=45.604,
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=3.4236941476289317e5,
-            mach=1.46972e-02,
-            project_length_unit=1 * fl.u.m,
+        operating_condition=fl.AerospaceCondition(
+            velocity_magnitude=5,
             alpha=-90 * fl.u.deg,
-            reference_mach=0.70,
+            reference_velocity_magnitude=238.14,
         ),
         time_stepping=fl.Unsteady(
             max_pseudo_steps=35,
