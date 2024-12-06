@@ -967,7 +967,7 @@ class Chart3D(Chart):
         img_files = Shutter(**context_data).get_images(self.fig_name, shutter_requests)
         # taking "first" image from returned images as UVF-shutter
         # supports many screenshots generation on one call
-        img_list = [img_files[case.id][0] for case in cases]
+        img_list = [img_files[case.id][0] for case in cases if img_files[case.id] is not None]
         return img_list
 
     # pylint: disable=too-many-arguments

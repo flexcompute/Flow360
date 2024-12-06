@@ -4,6 +4,7 @@ This module is reponsible for communicating with UVF-shutter service
 
 import asyncio
 import os
+import shutil
 import time
 import json
 import zipfile
@@ -12,6 +13,8 @@ from typing import Any, List, Literal, Optional, Tuple, Union
 from urllib.parse import urljoin
 from collections import defaultdict
 import reprlib
+import subprocess
+
 
 
 
@@ -393,7 +396,7 @@ class ShutterBatchService:
             if appended is False:
                 stored_scenes.append(scene.copy())
         return stored_scenes
-    
+
 
     def _merge_visibility_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
         """
@@ -521,7 +524,7 @@ class ShutterBatchService:
 
         for stored_scene in stored_scenes:
             stored_scene.script = self._remove_redundant_visibility_actions(stored_scene.script)
-            
+
         for stored_scene in stored_scenes:
             stored_scene.script = self._remove_redundant_set_field_actions(stored_scene.script)
 
@@ -548,8 +551,6 @@ class ShutterBatchService:
         return img_files
 
 
-
-
 class Shutter(Flow360BaseModel):
     """
     Model representing UVF shutter request data and configuration settings.
@@ -572,56 +573,79 @@ class Shutter(Flow360BaseModel):
     access_token: Optional[str] = None
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-        @backoff.on_exception(lambda: backoff.constant(3), Flow360WebNotAvailableError, max_time=3600)
-        @http_interceptor
-        async def _get_image_sequence(
-            session: aiohttp.client.ClientSession, url: str, shutter_request: list[dict]
-        ) -> str:
-            log.debug(
-                f"sending request to uvf-shutter: {url=}, {type(shutter_request)=}, {len(json.dumps(shutter_request))=}"
+
+        async def _build_image_from_local(uvf_request: list[dict], output_folder: str) -> list[str]:
+            input_folder = os.path.join(output_folder, 'input')
+            os.makedirs(input_folder, exist_ok=True)
+
+            log.info(f"dumping the uvf request {uvf_request} to local folder {input_folder}/sequence.json")
+            with open(os.path.join(input_folder, 'sequence.json'), 'w') as json_file:
+                json.dump(uvf_request, json_file, indent=4)
+
+            sequence_file_path = os.path.join(input_folder, 'sequence.json')
+            with open(sequence_file_path, 'r') as file:
+                # Read the content of the file
+                file_content = file.read()
+
+                # Print the content of the file
+                log.debug(f"generate the sequence.json file: {file_content}")
+
+            generated_folder = os.path.join(output_folder, 'shutter_generated')
+            # keep the folder structure as same as s3 storage
+            # mainfest_folder has all of bin files and manifest.json
+            manifest_folder = os.path.join(output_folder,'visualize/manifest')
+            docker_command = [
+                'docker', 'run', '--init',
+                '--gpus', 'all',
+                '-v', manifest_folder + ':/usr/src/app/apps/sandbox/dist/input/:ro',
+                '-v', generated_folder + ':/output/:rw',
+                '-v', sequence_file_path + ':/sequence.json',
+                'shutter', 'sequence', 'run', '/sequence.json'
+            ]
+            log.debug(f"execute the docker command: {' '.join(docker_command)}" )
+            result = subprocess.run(docker_command, shell=False, check=True)
+            log.info(f"completed the docker run with return :{result.returncode}")
+
+
+            # List all entries in the directory
+            entries = os.listdir(generated_folder)
+
+            # Filter out directory names, keeping only files
+            file_names = [entry for entry in entries if os.path.isfile(os.path.join(generated_folder, entry))]
+
+            for file_name in file_names:
+                # Define the full file path
+                source_file = os.path.join(generated_folder, file_name)
+                destination_file = os.path.join(output_folder, file_name)
+
+                # Move the file
+                shutil.move(source_file, destination_file)
+                log.debug(f"Moved {source_file} to {destination_file}")
+
+            return file_names
+
+        tasks = []
+        for case_id, img_folder, uvf_request in screenshots:
+            os.makedirs(img_folder, exist_ok=True)
+            tasks.append(
+                _build_image_from_local(
+                    uvf_request=uvf_request,
+                    output_folder=img_folder
+                )
             )
-            return session.post(url, json=shutter_request)
 
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=3600),
-            headers={"Authorization": f"Bearer {self.access_token}"},
-        ) as session:
-            tasks = []
-            for _, _, shutter_request in screenshots:
-                tasks.append(
-                    _get_image_sequence(
-                        session=session,
-                        url=urljoin(self.url, "/sequence/run"),
-                        shutter_request=shutter_request,
-                    )
-                )
-                log.debug(
-                    f"request to shutter: {json.dumps(shutter_request)}"
-                )
 
-            responses = await asyncio.gather(*tasks, return_exceptions=True)
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
 
-            for response, (_, img_folder, _) in zip(responses, screenshots):
-                if not isinstance(response, Exception):
-                    os.makedirs(img_folder, exist_ok=True)
-                    zip_file_path = os.path.join(img_folder, "images.zip")
-                    with open(zip_file_path, "wb") as f:
-                        f.write(response)
-                    log.info(f"Zip file saved to {zip_file_path}")
+        for response in responses:
+            if isinstance(response, Exception):
+                raise response
 
-            for response in responses:
-                if isinstance(response, Exception):
-                    raise response
+        img_files = {}
+        for file_names, (case_id, img_folder, _) in zip(responses, screenshots):
+            img_files[case_id] = [os.path.join(img_folder, file_name) for file_name in file_names]
 
-            img_files = {}
-            for case_id, img_folder, _ in screenshots:
-                zip_file_path = os.path.join(img_folder, "images.zip")
-                with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
-                    zip_ref.extractall(path=img_folder)
-                    extracted = zip_ref.namelist()
-                    img_files[case_id] = [os.path.join(img_folder, file) for file in extracted]
-                    log.info(f"Extracted files: {extracted}")
-
+        log.debug(f"complete the shutter file generation: {json.dumps(img_files)}")
         return img_files
 
     def get_images(self, fig_name, data: List[ScenesData]) -> dict[str, List]:
