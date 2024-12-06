@@ -551,6 +551,7 @@ class ShutterBatchService:
         return img_files
 
 
+
 class Shutter(Flow360BaseModel):
     """
     Model representing UVF shutter request data and configuration settings.
@@ -574,19 +575,29 @@ class Shutter(Flow360BaseModel):
 
     async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
 
-        async def _build_image_from_local(uvf_request: list[dict], output_folder: str) -> list[str]:
+        def move_files(files:list[str], generated_folder:str, output_folder:str):
+            for file_name in files:
+                # Define the full file path
+                source_file = os.path.join(generated_folder, file_name)
+                destination_file = os.path.join(output_folder, file_name)
+
+                # Move the file
+                shutil.move(source_file, destination_file)
+                log.debug(f"moved {source_file} to {destination_file}")
+
+
+        async def _build_image_from_local(shutter_request: list[dict], output_folder: str) -> list[str]:
             input_folder = os.path.join(output_folder, 'input')
             os.makedirs(input_folder, exist_ok=True)
 
-            log.info(f"dumping the uvf request {uvf_request} to local folder {input_folder}/sequence.json")
+            log.info(f"dumping the shutter request {shutter_request} to local folder {input_folder}/sequence.json")
             with open(os.path.join(input_folder, 'sequence.json'), 'w') as json_file:
-                json.dump(uvf_request, json_file, indent=4)
+                json.dump(shutter_request, json_file, indent=4)
 
             sequence_file_path = os.path.join(input_folder, 'sequence.json')
             with open(sequence_file_path, 'r') as file:
                 # Read the content of the file
                 file_content = file.read()
-
                 # Print the content of the file
                 log.debug(f"generate the sequence.json file: {file_content}")
 
@@ -611,25 +622,17 @@ class Shutter(Flow360BaseModel):
             entries = os.listdir(generated_folder)
 
             # Filter out directory names, keeping only files
-            file_names = [entry for entry in entries if os.path.isfile(os.path.join(generated_folder, entry))]
-
-            for file_name in file_names:
-                # Define the full file path
-                source_file = os.path.join(generated_folder, file_name)
-                destination_file = os.path.join(output_folder, file_name)
-
-                # Move the file
-                shutil.move(source_file, destination_file)
-                log.debug(f"Moved {source_file} to {destination_file}")
-
+            file_names: list[str] = [entry for entry in entries if os.path.isfile(os.path.join(generated_folder, entry))]
+            move_files(file_names, generated_folder, output_folder)
             return file_names
 
+
         tasks = []
-        for case_id, img_folder, uvf_request in screenshots:
+        for case_id, img_folder, shutter_request in screenshots:
             os.makedirs(img_folder, exist_ok=True)
             tasks.append(
                 _build_image_from_local(
-                    uvf_request=uvf_request,
+                    shutter_request=shutter_request,
                     output_folder=img_folder
                 )
             )
