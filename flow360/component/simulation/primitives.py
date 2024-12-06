@@ -75,6 +75,8 @@ class ReferenceGeometry(Flow360BaseModel):
     ...     moment_length=1 * u.m,
     ...     area=1.5 * u.m**2
     ... )  # Equivalent to above
+
+    ====
     """
 
     # pylint: disable=no-member
@@ -238,6 +240,27 @@ class BoxCache(Flow360BaseModel):
 class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     """
     :class:`Box` class represents a box in three-dimensional space.
+
+    Example
+    -------
+    >>> fl.Box(
+    ...     name="box",
+    ...     axis_of_rotation = (1, 0, 0),
+    ...     angle_of_rotation = 45 * fl.u.deg,
+    ...     center = (1, 1, 1) * fl.u.m,
+    ...     size=(0.2, 0.3, 2) * fl.u.m,
+    ... )
+
+    Define a box using principal axes:
+
+    >>> fl.Box.from_principal_axes(
+    ...     name="box",
+    ...     axes=[(0, 1, 0), (0, 0, 1)],
+    ...     center=(0, 0, 0) * fl.u.m,
+    ...     size=(0.2, 0.3, 2) * fl.u.m,
+    ... )
+
+    ====
     """
 
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
@@ -326,6 +349,18 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
 class Cylinder(_VolumeEntityBase):
     """
     :class:`Cylinder` class represents a cylinder in three-dimensional space.
+
+    Example
+    -------
+    >>> fl.Cylinder(
+    ...     name="bet_disk_volume",
+    ...     center=(0, 0, 0) * fl.u.inch,
+    ...     axis=(0, 0, 1),
+    ...     outer_radius=150 * fl.u.inch,
+    ...     height=15 * fl.u.inch,
+    ... )
+
+    ====
     """
 
     private_attribute_entity_type_name: Literal["Cylinder"] = pd.Field("Cylinder", frozen=True)
