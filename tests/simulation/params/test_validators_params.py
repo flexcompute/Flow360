@@ -679,6 +679,7 @@ def test_meshing_validator_dual_context():
     assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
     assert errors[0]["loc"] == ("meshing",)
 
+
 def test_rotating_reference_frame_model_flag():
 
     c_1 = Cylinder(
