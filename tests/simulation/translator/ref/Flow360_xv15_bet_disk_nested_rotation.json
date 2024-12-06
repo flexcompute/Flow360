@@ -491,7 +491,7 @@
     "volumeZones": {
         "inner": {
             "modelType": "FluidDynamics",
-            "isNonInertialReferenceFrameModel": false,
+            "isRotatingReferenceFrame": false,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,
@@ -509,7 +509,7 @@
         },
         "middle": {
             "modelType": "FluidDynamics",
-            "isNonInertialReferenceFrameModel": false,
+            "isRotatingReferenceFrame": false,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,

@@ -78,7 +78,7 @@ def create_NestedCylindersSRF_param(srf_cylinder):
                 Rotation(
                     entities=[srf_cylinder],
                     spec=AngularVelocity(812.31 * u.rpm),
-                    noninertial_reference_frame_model=True,
+                    rotating_reference_frame_model=True,
                 ),
             ],
             time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=2000),

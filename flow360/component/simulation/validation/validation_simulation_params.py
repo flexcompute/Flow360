@@ -364,12 +364,12 @@ def _check_and_add_noninertial_reference_frame_flag(params):
         if isinstance(model, Rotation) is False:
             continue
 
-        if model.noninertial_reference_frame_model is None:
-            model.noninertial_reference_frame_model = noninertial_reference_frame_default_value
+        if model.rotating_reference_frame_model is None:
+            model.rotating_reference_frame_model = noninertial_reference_frame_default_value
 
-        if model.noninertial_reference_frame_model is False and is_steady is True:
+        if model.rotating_reference_frame_model is False and is_steady is True:
             raise ValueError(
-                f"For model #{model_index}, the noninertial_reference_frame_model may not be set to False "
+                f"For model #{model_index}, the rotating_reference_frame_model may not be set to False "
                 "for steady state simulations."
             )
 

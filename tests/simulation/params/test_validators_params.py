@@ -679,7 +679,7 @@ def test_meshing_validator_dual_context():
     assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
     assert errors[0]["loc"] == ("meshing",)
 
-def test_noninertial_reference_frame_model_flag():
+def test_rotating_reference_frame_model_flag():
 
     c_1 = Cylinder(
         name="inner_rotating_cylinder",
@@ -709,7 +709,7 @@ def test_noninertial_reference_frame_model_flag():
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
     timestepping_steady = Steady(max_steps=1000)
 
-    msg = "For model #1, the noninertial_reference_frame_model may not be set to False for "
+    msg = "For model #1, the rotating_reference_frame_model may not be set to False for "
     "steady state simulations."
 
     with pytest.raises(ValueError, match=re.escape(msg)):
@@ -721,7 +721,7 @@ def test_noninertial_reference_frame_model_flag():
                         Rotation(
                             entities=[c_1],
                             spec=AngleExpression("1+2"),
-                            noninertial_reference_frame_model=False,
+                            rotating_reference_frame_model=False,
                         ),
                         Wall(entities=[my_wall]),
                     ],
@@ -741,12 +741,12 @@ def test_noninertial_reference_frame_model_flag():
                         entities=[c_1],
                         spec=AngleExpression("1+2"),
                         parent_volume=c_2,
-                        noninertial_reference_frame_model=True,
+                        rotating_reference_frame_model=True,
                     ),
                     Rotation(
                         entities=[c_2],
                         spec=AngleExpression("1+5"),
-                        noninertial_reference_frame_model=False,
+                        rotating_reference_frame_model=False,
                     ),
                     Rotation(entities=[c_3], spec=AngleExpression("3+5")),
                     Wall(entities=[my_wall]),
@@ -758,4 +758,4 @@ def test_noninertial_reference_frame_model_flag():
                 ),
             )
 
-    assert test_param.models[3].noninertial_reference_frame_model == False
+    assert test_param.models[3].rotating_reference_frame_model == False

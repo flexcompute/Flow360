@@ -107,7 +107,7 @@ def add_plateASI_rotation_zone(param):
         Rotation(
             entities=[rotation_cylinder()],
             spec=FromUserDefinedDynamics(),
-            noninertial_reference_frame_model=False,
+            rotating_reference_frame_model=False,
         )
     )
 

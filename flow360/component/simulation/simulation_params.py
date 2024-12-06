@@ -320,8 +320,8 @@ class SimulationParams(_ParamModelBase):
         return _check_output_fields(params)
 
     @pd.model_validator(mode="after")
-    def check_and_add_noninertial_reference_frame_model_flag_in_volumezones(params):
-        """Ensure that all volume zones have the noninertial_reference_frame_model flag with correct values"""
+    def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
+        """Ensure that all volume zones have the rotating_reference_frame_model flag with correct values"""
         return _check_and_add_noninertial_reference_frame_flag(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
