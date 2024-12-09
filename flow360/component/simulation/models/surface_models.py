@@ -114,20 +114,20 @@ class TotalPressure(SingleAttributeModel):
 
 class Pressure(SingleAttributeModel):
     """
-    :class:`Pressure` class to specify the pressure for `Outflow`
+    :class:`Pressure` class to specify the static pressure for `Outflow`
     boundary condition via :py:attr:`Outflow.spec`.
 
     Example
     -------
 
-    >>> fl.TotalPressure(value = 1.01e6 * fl.u.Pa)
+    >>> fl.Pressure(value = 1.01e6 * fl.u.Pa)
 
     ====
     """
 
     type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
     # pylint: disable=no-member
-    value: PressureType.Positive = pd.Field(description="The pressure value.")
+    value: PressureType.Positive = pd.Field(description="The static pressure value.")
 
 
 class MassFlowRate(SingleAttributeModel):
@@ -199,10 +199,11 @@ class Wall(BoundaryBase):
     Example
     -------
 
-    - :code:`Wall` with wall function:
+    - :code:`Wall` with wall function and prescribed velocity:
 
     >>> fl.Wall(
     ...     entities=geometry["wall_function"],
+    ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"],
     ...     use_wall_function=True,
     ... )
 
