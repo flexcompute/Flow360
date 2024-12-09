@@ -113,20 +113,20 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     - Define :class:`SurfaceOutput` on all surfaces of the geometry
       using naming pattern :code:`"*"`.
 
-    >>> fl.SurfaceOutput(
-    ...     entities=[geometry['*']],,
-    ...     output_format="paraview",
-    ...     output_fields=["vorticity", "T"],
-    ... )
+      >>> fl.SurfaceOutput(
+      ...     entities=[geometry['*']],,
+      ...     output_format="paraview",
+      ...     output_fields=["vorticity", "T"],
+      ... )
 
     - Define :class:`SurfaceOutput` on the selected surfaces of the volume_mesh
       using name pattern :code:`"fluid/inflow*"`.
 
-    >>> fl.SurfaceOutput(
-    ...     entities=[volume_mesh["fluid/inflow*"]],,
-    ...     output_format="paraview",
-    ...     output_fields=["vorticity", "T"],
-    ... )
+      >>> fl.SurfaceOutput(
+      ...     entities=[volume_mesh["fluid/inflow*"]],,
+      ...     output_format="paraview",
+      ...     output_fields=["vorticity", "T"],
+      ... )
 
     ====
     """
@@ -416,20 +416,20 @@ class ProbeOutput(Flow360BaseModel):
 
     - Define :class:`ProbeOutput` on multiple monitor points.
 
-    >>> fl.ProbeOutput(
-    ...     name="probe_group_points",
-    ...     entities=[
-    ...         fl.Point(
-    ...             name="Point_1",
-    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-    ...         ),
-    ...         fl.Point(
-    ...             name="Point_2",
-    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-    ...         ),
-    ...     ],
-    ...     output_fields=["primitiveVars"],
-    ... )
+      >>> fl.ProbeOutput(
+      ...     name="probe_group_points",
+      ...     entities=[
+      ...         fl.Point(
+      ...             name="Point_1",
+      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+      ...         ),
+      ...         fl.Point(
+      ...             name="Point_2",
+      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+      ...         ),
+      ...     ],
+      ...     output_fields=["primitiveVars"],
+      ... )
 
 
     - Define :class:`ProbeOutput` on monitor points along the line.
@@ -438,24 +438,24 @@ class ProbeOutput(Flow360BaseModel):
       - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
         namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
 
-    >>> fl.ProbeOutput(
-    ...     name="probe_group_lines",
-    ...     entities=[
-    ...         fl.PointArray(
-    ...             name="Line_1",
-    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-    ...             end=(1.5, 0.0, 0.0) * fl.u.m,
-    ...             number_of_points=6,
-    ...         ),
-    ...         fl.PointArray(
-    ...             name="Line_2",
-    ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
-    ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
-    ...             number_of_points=3,
-    ...         ),
-    ...     ],
-    ...     output_fields=["primitiveVars"],
-    ... )
+      >>> fl.ProbeOutput(
+      ...     name="probe_group_lines",
+      ...     entities=[
+      ...         fl.PointArray(
+      ...             name="Line_1",
+      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+      ...             number_of_points=6,
+      ...         ),
+      ...         fl.PointArray(
+      ...             name="Line_2",
+      ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+      ...             number_of_points=3,
+      ...         ),
+      ...     ],
+      ...     output_fields=["primitiveVars"],
+      ... )
 
     ====
     """
@@ -498,23 +498,23 @@ class SurfaceProbeOutput(Flow360BaseModel):
     - Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
       with multiple monitor points.
 
-    >>> fl.SurfaceProbeOutput(
-    ...     name="surface_probe_group_points",
-    ...     entities=[
-    ...         fl.Point(
-    ...             name="Point_1",
-    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-    ...         ),
-    ...         fl.Point(
-    ...             name="Point_2",
-    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-    ...         ),
-    ...     ],
-    ...     target_surfaces=[
-    ...         geometry["wall"],
-    ...     ],
-    ...     output_fields=["heatFlux", "T"],
-    ... )
+      >>> fl.SurfaceProbeOutput(
+      ...     name="surface_probe_group_points",
+      ...     entities=[
+      ...         fl.Point(
+      ...             name="Point_1",
+      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+      ...         ),
+      ...         fl.Point(
+      ...             name="Point_2",
+      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+      ...         ),
+      ...     ],
+      ...     target_surfaces=[
+      ...         geometry["wall"],
+      ...     ],
+      ...     output_fields=["heatFlux", "T"],
+      ... )
 
 
     - Define :class:`SurafceProbeOutput` on the :code:`volume_mesh["fluid/wall"]` surface
@@ -522,21 +522,21 @@ class SurfaceProbeOutput(Flow360BaseModel):
       :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
       including both starting and end points.
 
-    >>> fl.SurfaceProbeOutput(
-    ...     name="surface_probe_group_lines",
-    ...     entities=[
-    ...         fl.PointArray(
-    ...             name="Line_surface",
-    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
-    ...             number_of_points=11,
-    ...         ),
-    ...     ],
-    ...     target_surfaces=[
-    ...         volume_mesh["fluid/wall"],
-    ...     ],
-    ...     output_fields=["heatFlux", "T"],
-    ... )
+      >>> fl.SurfaceProbeOutput(
+      ...     name="surface_probe_group_lines",
+      ...     entities=[
+      ...         fl.PointArray(
+      ...             name="Line_surface",
+      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+      ...             number_of_points=11,
+      ...         ),
+      ...     ],
+      ...     target_surfaces=[
+      ...         volume_mesh["fluid/wall"],
+      ...     ],
+      ...     output_fields=["heatFlux", "T"],
+      ... )
 
     ====
     """
@@ -598,7 +598,67 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
 
 
 class TimeAverageProbeOutput(ProbeOutput):
-    """Time average probe monitor output settings."""
+    """
+    :class:`TimeAverageProbeOutput` class for time average probe monitor output settings.
+
+    Example
+    -------
+
+    - Calculate the average value on multiple monitor points starting from the :math:`4^{th}` physical step.
+      The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+      (14, 24, 34 etc.).
+
+      >>> fl.TimeAverageProbeOutput(
+      ...     name="time_average_probe_group_points",
+      ...     entities=[
+      ...         fl.Point(
+      ...             name="Point_1",
+      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+      ...         ),
+      ...         fl.Point(
+      ...             name="Point_2",
+      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+      ...         ),
+      ...     ],
+      ...     output_fields=["primitiveVars", "Mach"],
+      ...     start_step=4,
+      ...     frequency=10,
+      ...     frequency_offset=14,
+      ... )
+
+    - Calculate the average value on multiple monitor points starting from the :math:`4^{th}` physical step.
+      The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+      (14, 24, 34 etc.).
+
+      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
+      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
+        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+
+      >>> fl.TimeAverageProbeOutput(
+      ...     name="time_average_probe_group_points",
+      ...     entities=[
+      ...         fl.PointArray(
+      ...             name="Line_1",
+      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+      ...             number_of_points=6,
+      ...         ),
+      ...         fl.PointArray(
+      ...             name="Line_2",
+      ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+      ...             number_of_points=3,
+      ...         ),
+      ...     ],
+      ...     output_fields=["primitiveVars", "Mach"],
+      ...     start_step=4,
+      ...     frequency=10,
+      ...     frequency_offset=14,
+      ... )
+
+    ====
+    
+    """
 
     # pylint: disable=abstract-method
     frequency: int = pd.Field(default=1, ge=1)
@@ -610,7 +670,73 @@ class TimeAverageProbeOutput(ProbeOutput):
 
 
 class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
-    """Time average probe monitor output settings."""
+    """
+    :class:`TimeAverageSurfaceProbeOutput` class for time average surface probe monitor output settings.
+    The specified monitor point will be projected to the :py:attr:`~TimeAverageSurfaceProbeOutput.target_surfaces`
+    closest to the point. The probed results on the projected point will be dumped.
+    
+    Example
+    -------
+
+    - Calculate the average value on the :code:`geometry["surface1"]` and :code:`geometry["surface2"]` surfaces 
+      with multiple monitor points. The average is computed starting from the :math:`4^{th}` physical step.
+      The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+      (14, 24, 34 etc.).
+
+      >>> TimeAverageSurfaceProbeOutput(
+      ...     name="time_average_surface_probe_group_points",
+      ...     entities=[
+      ...         Point(name="Point_1", location=[1, 1.02, 0.03] * u.cm),
+      ...         Point(name="Point_2", location=[2, 1.01, 0.03] * u.m),
+      ...         Point(name="Point_3", location=[3, 1.02, 0.03] * u.m),
+      ...     ],
+      ...     target_surfaces=[
+      ...         Surface(name="Surface_1", geometry["surface1"]),
+      ...         Surface(name="Surface_2", geometry["surface2"]),
+      ...     ],
+      ...     output_fields=["Mach", "primitiveVars", "yPlus"],
+      ...     start_step=4,
+      ...     frequency=10,
+      ...     frequency_offset=14,
+      ... )
+
+    - Calculate the average value on the :code:`geometry["surface1"]` and :code:`geometry["surface2"]` surfaces 
+      with multiple monitor lines. The average is computed starting from the :math:`4^{th}` physical step.
+      The results are output every 10 physical step starting from the :math:`14^{th}` physical step
+      (14, 24, 34 etc.).
+
+      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
+      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
+        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
+
+      >>> TimeAverageSurfaceProbeOutput(
+      ...     name="time_average_surface_probe_group_points",
+      ...     entities=[
+      ...         fl.PointArray(
+      ...             name="Line_1",
+      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+      ...             number_of_points=6,
+      ...         ),
+      ...         fl.PointArray(
+      ...             name="Line_2",
+      ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+      ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+      ...             number_of_points=3,
+      ...         ),
+      ...     ],
+      ...     target_surfaces=[
+      ...         Surface(name="Surface_1", geometry["surface1"]),
+      ...         Surface(name="Surface_2", geometry["surface2"]),
+      ...     ],
+      ...     output_fields=["Mach", "primitiveVars", "yPlus"],
+      ...     start_step=4,
+      ...     frequency=10,
+      ...     frequency_offset=14,
+      ... )
+
+    ====
+    """
 
     # pylint: disable=abstract-method
     frequency: int = pd.Field(default=1, ge=1)
