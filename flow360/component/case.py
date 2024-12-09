@@ -15,11 +15,20 @@ import pydantic.v1 as pd_v1
 from .. import error_messages
 from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
-from ..cloud.s3_utils import CloudFileNotFoundError
-from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
+from ..exceptions import (
+    Flow360RuntimeError,
+    Flow360ValidationError,
+    Flow360ValueError,
+    Flow360WebNotFoundError,
+)
 from ..log import log
 from .folder import Folder
-from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
+from .interfaces import (
+    CaseInterface,
+    CaseInterfaceV2,
+    FolderInterface,
+    VolumeMeshInterface,
+)
 from .resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
@@ -393,6 +402,7 @@ class Case(CaseBase, Flow360Resource):
 
     _manifest_path = "visualize/manifest/manifest.json"
     _cloud_resource_type_name = "Case"
+    _web_api_v2_class = Flow360Resource
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
@@ -406,6 +416,12 @@ class Case(CaseBase, Flow360Resource):
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
         self._manifest = None
+        self._web_api_v2 = self._web_api_v2_class(
+            interface=CaseInterfaceV2,
+            # pylint: disable=fixme
+            meta_class=CaseMeta,  # TODO: make sure to use V2 meta
+            id=id,
+        )
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):
@@ -418,28 +434,23 @@ class Case(CaseBase, Flow360Resource):
         """
         returns simulation params
         """
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-            try:
-                self._download_file("simulation.json", to_file=temp_file.name, log_error=False)
-            except CloudFileNotFoundError as err:
-                raise Flow360ValueError(
-                    "Simulation params not found for this case. It is likely it was created with old interface"
-                ) from err
 
-            # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
-            with open(temp_file.name, "r", encoding="utf-8") as fh:
-                params_as_dict: dict = json.load(fh)
+        params_as_dict = json.loads(
+            self._web_api_v2.get(method="simulation/file", params={"type": "simulation"})[
+                "simulationJson"
+            ]
+        )
 
-            param, errors, _ = services.validate_model(
-                params_as_dict=params_as_dict, root_item_type=None, validation_level=None
+        param, errors, _ = services.validate_model(
+            params_as_dict=params_as_dict, root_item_type=None, validation_level=None
+        )
+
+        if errors is not None:
+            raise Flow360ValidationError(
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
             )
 
-            if errors is not None:
-                raise Flow360ValidationError(
-                    f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
-                )
-
-            return param
+        return param
 
     @property
     def params(self) -> Union[Flow360Params, SimulationParams]:
@@ -450,7 +461,7 @@ class Case(CaseBase, Flow360Resource):
             try:
                 self._params = self.get_simulation_params()
                 return self._params
-            except Flow360ValueError:
+            except Flow360WebNotFoundError:
                 pass
 
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])

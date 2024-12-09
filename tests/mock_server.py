@@ -343,12 +343,14 @@ class MockResponseProjectCaseFork(MockResponse):
         return res
 
 
-class MockResponseProjectCaseForkRuntimeParams(MockResponse):
-    """response if Case(id="ase-84d4604e-f3cd-4c6b-8517-92a80a3346d3").params"""
+class MockResponseProjectCaseSimConfig(MockResponse):
+    """response for Case.from_cloud(id="case-69b8c249-fce5-412a-9927-6a79049deebb")'s simulation json"""
 
     @staticmethod
     def json():
-        with open(os.path.join(here, "data/mock_webapi/project_case_fork_params_resp.json")) as fh:
+        with open(
+            os.path.join(here, "data/mock_webapi/project_case_simulation_json_resp.json")
+        ) as fh:
             res = json.load(fh)
         return res
 
@@ -405,15 +407,16 @@ class MockResponseDraftSubmit(MockResponse):
 
     def json(self):
         print(self._params)
+        res = None
         if self._params["name"] == "VolumeMesh":
             with open(
-                os.path.join(here, "data/mock_webapi/project_volume_mesh_meta_resp.json")
+                os.path.join(here, "data/mock_webapi/project_draft_volume_mesh_submit_resp.json")
             ) as fh:
                 res = json.load(fh)
 
         if self._params["name"] == "Case":
             with open(
-                os.path.join(here, "data/mock_webapi/project_case_fork_meta_resp.json")
+                os.path.join(here, "data/mock_webapi/project_draft_case_fork_submit_resp.json")
             ) as fh:
                 res = json.load(fh)
         return res
@@ -431,14 +434,18 @@ class MockResponseDraftVolumeMeshRun(MockResponse):
         return res
 
 
-class MockResponseProjectMetaAfterVolumeMeshSubmit(MockResponse):
-    @staticmethod
-    def json():
+class MockResponseProjectPatchDraftSubmit(MockResponse):
+
+    def __init__(self, *args, params=None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._params = params
+
+    def json(self):
+        print(self._params)
         with open(os.path.join(here, "data/mock_webapi/project_meta_resp.json")) as fh:
             res = json.load(fh)
-        # res["data"]["lastOpenItemId"] =
-        # res["data"]["lastOpenItemType"] =
-
+        res["data"]["lastOpenItemId"] = self._params["lastOpenItemId"]
+        res["data"]["lastOpenItemType"] = self._params["lastOpenItemType"]
         return res
 
 
@@ -466,13 +473,9 @@ GET_RESPONSE_MAP = {
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
     "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,
+    "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation/file": MockResponseProjectCaseSimConfig,
     "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3": MockResponseProjectCaseFork,
-    "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/runtimeParams": MockResponseProjectCaseForkRuntimeParams,
-    "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/file?filename=simulation.json": MockResponseCaseRuntimeParams,
-}
-
-PATCH_RESPONSE_MAP = {
-    "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e": MockResponseProjectMetaAfterVolumeMeshSubmit,
+    "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
 }
 
 PUT_RESPONSE_MAP = {
@@ -537,8 +540,8 @@ def mock_webapi(type, url, params):
             return POST_RESPONSE_MAP[method]()
 
     elif type == "patch":
-        if method in PATCH_RESPONSE_MAP.keys():
-            return PATCH_RESPONSE_MAP[method]()
+        if method.startswith("/v2/projects"):
+            return MockResponseProjectPatchDraftSubmit(params=params)
 
     return MockResponseInfoNotFound()
 

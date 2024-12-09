@@ -42,6 +42,10 @@ CaseInterface = BaseInterface(
     resource_type="Case", s3_transfer_method=S3TransferType.CASE, endpoint="cases"
 )
 
+CaseInterfaceV2 = BaseInterface(
+    resource_type="Case", s3_transfer_method=S3TransferType.CASE, endpoint="v2/cases"
+)
+
 GeometryInterface = BaseInterface(
     resource_type="Geometry",
     s3_transfer_method=S3TransferType.GEOMETRY,
