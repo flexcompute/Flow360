@@ -637,8 +637,12 @@ class ProjectAssetCache(Generic[AssetT]):
         Dictionary storing assets with their IDs as keys.
     """
 
-    current_asset_id: str = None
-    asset_cache: dict[str, AssetT] = {}
+    # current_asset_id: str = None
+    # asset_cache: dict[str, AssetT] = {}
+
+    def __init__(self):
+        self.current_asset_id: str = None
+        self.asset_cache: dict[str, AssetT] = {}
 
     def get_asset(self, asset_id: str = None) -> AssetT:
         """
@@ -701,6 +705,30 @@ class ProjectAssetCache(Generic[AssetT]):
             )
         self.asset_cache[asset.id] = asset
         self.current_asset_id = asset.id
+
+    def remove_asset(self, asset_id: str):
+        """
+        Remove an asset from the cache.
+
+        Parameters
+        ----------
+        asset_id : str
+            ID of the asset to be removed.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the cache is empty or if the asset is not found.
+        """
+        if not self.asset_cache:
+            raise Flow360ValueError("Cache is empty, no assets are available")
+
+        asset = self.asset_cache.get(asset_id)
+
+        if not asset:
+            raise Flow360ValueError(f"{asset_id} is not available in the project.")
+
+        self.asset_cache.pop(asset_id)
 
     def set_id(self, asset_id: str):
         """

@@ -192,7 +192,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         raise NotImplementedError("Not implemented yet.")
 
 
-def get_entity_info_type_from_str(entity_type: str) -> EntityInfoModel:
+def get_entity_info_type_from_str(entity_type: str) -> type[EntityInfoModel]:
     """Get EntityInfo type from the asset type from the project tree"""
     entity_info_type = None
     if entity_type == "Geometry":

@@ -79,5 +79,5 @@ surface_mesh_2 = project.surface_mesh
 assert surface_mesh_1.id != surface_mesh_2.id
 
 # Check available surface mesh IDs in the project
-ids = project.get_cached_surface_meshes()
+ids = project.get_cached_surface_meshe_ids()
 print(ids)

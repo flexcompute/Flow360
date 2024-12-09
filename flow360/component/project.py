@@ -3,13 +3,17 @@
 # pylint: disable=no-member, too-many-lines
 # To be honest I do not know why pylint is insistent on treating
 # ProjectMeta instances as FieldInfo, I'd rather not have this line
+from __future__ import annotations
+
 import datetime
 import json
+import textwrap
 from enum import Enum
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 from PrettyPrint import PrettyPrintTree
+from pydantic import PositiveInt
 
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
@@ -159,6 +163,9 @@ class ProjectTreeNode(pd.BaseModel):
         Label the mesh of a forked case using a different mesh.
     children : List
         List of the child assets of the current asset.
+    min_length_short_id : int
+        The minimum length of the short asset id, excluding
+        hyphen and asset prefix.
     """
 
     asset_id: str = pd.Field()
@@ -168,27 +175,38 @@ class ProjectTreeNode(pd.BaseModel):
     case_mesh_id: Union[str, None] = pd.Field(None)
     case_mesh_label: Union[str, None] = pd.Field(None)
     children: List = pd.Field([])
+    min_length_short_id: PositiveInt = pd.Field(7)
 
     def __str__(self):
         """__str__ function to define the output info when printing a project tree in the terminal"""
-
-        full_id = self.asset_id
-        full_id_split = full_id.split("-")
-        short_id = full_id_split[0] + "-" + full_id_split[1][:7]
-
         return f"""{self.asset_type}
             name: {self.asset_name}
-            id: {short_id}"""
+            id: {self.short_id}"""
 
-    def add_child(self, child):
+    def add_child(self, child: ProjectTreeNode):
         """Add a child asset of the current asset"""
         self.children.append(child)
-        return child
+
+    def remove_child(self, child_to_remove: ProjectTreeNode):
+        """Remove a child asset of the current asset"""
+        self.children = [child for child in self.children if child is not child_to_remove]
 
     @property
     def short_id(self) -> str:
         """Compute short asset id"""
-        return get_short_asset_id(self.asset_id)
+        return get_short_asset_id(
+            full_asset_id=self.asset_id, num_character=self.min_length_short_id
+        )
+
+    @property
+    def label(self) -> str:
+        """Compute the label for printing trees"""
+        if self.case_mesh_label:
+            return "Using VolumeMesh:" + get_short_asset_id(
+                full_asset_id=self.case_mesh_label,
+                num_character=self.project_tree.min_length_short_id,
+            )
+        return None
 
 
 class ProjectTree(pd.BaseModel):
@@ -201,10 +219,14 @@ class ProjectTree(pd.BaseModel):
         Root item of the project.
     nodes : dict[str, ProjectTreeNode]
         Dict of all nodes in the project tree.
+    min_length_short_id : PositiveInt
+        The minimum length of the short asset id, excluding
+        hyphen and asset prefix.
     """
 
     root: ProjectTreeNode = pd.Field(None)
     nodes: dict[str, ProjectTreeNode] = pd.Field({})
+    min_length_short_id: Optional[PositiveInt] = pd.Field(7)
 
     def _update_case_mesh_label(self):
         """Check and remove unnecessary case mesh label"""
@@ -222,6 +244,12 @@ class ProjectTree(pd.BaseModel):
         if not node.parent_id:
             return None
         return self.nodes.get(node.parent_id, None)
+
+    def has_node(self, asset_id: str) -> bool:
+        """Use asset_id to check if the asset already exists in the project tree"""
+        if asset_id in self.nodes.keys():
+            return True
+        return False
 
     def add_node(self, asset: AssetOrResource):
         """Add new node to the tree"""
@@ -249,6 +277,7 @@ class ProjectTree(pd.BaseModel):
             parent_id=parent_id,
             case_mesh_id=case_mesh_id,
             case_mesh_label=case_mesh_label,
+            min_length_short_id=self.min_length_short_id,
         )
         if not new_node.parent_id:
             self.root = new_node
@@ -261,23 +290,35 @@ class ProjectTree(pd.BaseModel):
         self.nodes.update({new_node.asset_id: new_node})
         self._update_case_mesh_label()
 
-    def has_node(self, asset_id: str) -> bool:
-        """Use asset_id to check if the asset already exists in the project tree"""
-        if asset_id in self.nodes.keys():
-            return True
-        return False
+    def remove_node(self, node_id: str):
+        """Remove node from the tree"""
+        node = self.nodes.get(node_id)
+        if not node:
+            return
+        if node.parent_id and self.has_node(node.parent_id):
+            parent_node = self.nodes.get(node.parent_id)
+            parent_node.remove_child(node)
+        self.nodes.pop(node.asset_id)
 
     def get_full_asset_id(self, query_id: str) -> str:
         """Use asset_id to check if the asset already exists in the project tree"""
         query_id_split = query_id.split("-")
-        if len(query_id_split) >= 2 and len(query_id_split[1]) >= 7:
-            for asset_id in self.nodes.keys():
-                if asset_id.startswith(query_id):
-                    return asset_id
+
+        if len(query_id_split) < 2:
             raise Flow360ValueError(
-                "This asset does not exist in this project. Please check the input asset ID."
+                f"The input asset ID ({query_id}) is too short to retrive the correct asset."
             )
-        raise Flow360ValueError("The input asset ID is too short to retrive the correct asset.")
+        query_id_processed = "".join(query_id_split[1:])
+        if len(query_id_processed) < self.min_length_short_id:
+            raise Flow360ValueError(
+                f"The input asset ID ({query_id}) is too short to retrive the correct asset."
+            )
+        for asset_id in self.nodes.keys():
+            if asset_id.startswith(query_id):
+                return asset_id
+        raise Flow360ValueError(
+            f"This asset does not exist in this project. Please check the input asset ID ({query_id})."
+        )
 
 
 class Project(pd.BaseModel):
@@ -366,7 +407,8 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesh assets are only present in projects initialized from geometry."
             )
-        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
+        if asset_id:
+            asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
         return self._surface_mesh_cache.get_asset(asset_id)
 
     @property
@@ -415,7 +457,8 @@ class Project(pd.BaseModel):
                 )
 
             return self._root_asset
-        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
+        if asset_id:
+            asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
         return self._volume_mesh_cache.get_asset(asset_id)
 
     @property
@@ -456,7 +499,8 @@ class Project(pd.BaseModel):
             The case asset.
         """
         self._check_initialized()
-        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
+        if asset_id:
+            asset_id = self.project_tree.get_full_asset_id(query_id=asset_id)
         return self._case_cache.get_asset(asset_id)
 
     @property
@@ -476,7 +520,7 @@ class Project(pd.BaseModel):
         """
         return self.get_case()
 
-    def get_cached_surface_meshes(self) -> Iterable[str]:
+    def get_cached_surface_meshe_ids(self) -> Iterable[str]:
         """
         Returns the available IDs of surface meshes in the project
 
@@ -492,7 +536,7 @@ class Project(pd.BaseModel):
 
         return self._surface_mesh_cache.get_ids()
 
-    def get_cached_volume_meshes(self):
+    def get_cached_volume_meshe_ids(self):
         """
         Returns the available IDs of volume meshes in the project
 
@@ -509,7 +553,7 @@ class Project(pd.BaseModel):
 
         return self._volume_mesh_cache.get_ids()
 
-    def get_cached_cases(self):
+    def get_cached_case_ids(self):
         """
         Returns the available IDs of cases in the project
 
@@ -699,8 +743,9 @@ class Project(pd.BaseModel):
         self._check_initialized()
         asset_records = []
         if destination_obj:
+            method = "path"
             resp = self._project_webapi.get(
-                method="path",
+                method=method,
                 params={
                     "itemId": destination_obj.id,
                     # pylint: disable=protected-access
@@ -715,11 +760,43 @@ class Project(pd.BaseModel):
                     continue
                 asset_records.append(val)
         else:
-            resp = self._project_webapi.get(method="tree")
+            method = "tree"
+            resp = self._project_webapi.get(method=method)
             asset_records = resp["records"]
-        self._update_asset_cache_and_project_tree(asset_records=asset_records)
+        self._update_asset_cache_and_project_tree(asset_records=asset_records, method=method)
 
-    def _update_asset_cache_and_project_tree(self, asset_records: List):
+    def _update_single_asset_cache(
+        self,
+        asset_id: str,
+        asset_type: Literal["SurfaceMesh", "VolumeMesh", "Case"],
+        mode: Literal["Add", "Remove"],
+    ):
+        if mode == "Add":
+            if asset_type == "SurfaceMesh":
+                new_asset = SurfaceMesh.from_cloud(surface_mesh_id=asset_id)
+                self._surface_mesh_cache.add_asset(asset=new_asset)
+            if asset_type == "VolumeMesh":
+                new_asset = VolumeMeshV2.from_cloud(
+                    id=asset_id, root_item_entity_info_type=GeometryEntityInfo
+                )
+                self._volume_mesh_cache.add_asset(asset=new_asset)
+            if asset_type == "Case":
+                new_asset = Case.from_cloud(case_id=asset_id)
+                self._case_cache.add_asset(asset=new_asset)
+            self.project_tree.add_node(asset=new_asset)
+
+        if mode == "Remove":
+            if asset_type == "SurfaceMesh":
+                self._surface_mesh_cache.remove_asset(asset_id=asset_id)
+            if asset_type == "VolumeMesh":
+                self._volume_mesh_cache.remove_asset(asset_id=asset_id)
+            if asset_type == "Case":
+                self._case_cache.remove_asset(asset_id=asset_id)
+            self.project_tree.remove_node(node_id=asset_id)
+
+    def _update_asset_cache_and_project_tree(
+        self, asset_records: List, method: Literal["tree", "path"] = "tree"
+    ):
         """
         Update asset cache and project tree based on the input list of asset records.
 
@@ -727,6 +804,8 @@ class Project(pd.BaseModel):
         ----------
         asset_records : List
             List of asset record.
+        method : Literal["tree", "path"]
+            The project webapi get method, only clean up project tree when method is "tree".
         """
 
         def parse_datetime(dt_str, fmt="%Y-%m-%dT%H:%M:%S.%fZ"):
@@ -741,20 +820,21 @@ class Project(pd.BaseModel):
         )
 
         for record in asset_records:
-            if self.project_tree.has_node(asset_id=record["id"]):
-                continue
-            if record["type"] == "SurfaceMesh":
-                new_asset = SurfaceMesh.from_cloud(surface_mesh_id=record["id"])
-                self._surface_mesh_cache.add_asset(asset=new_asset)
-            if record["type"] == "VolumeMesh":
-                new_asset = VolumeMeshV2.from_cloud(
-                    id=record["id"], root_item_entity_info_type=GeometryEntityInfo
+            if not self.project_tree.has_node(asset_id=record["id"]):
+                self._update_single_asset_cache(
+                    asset_id=record["id"], asset_type=record["type"], mode="Add"
                 )
-                self._volume_mesh_cache.add_asset(asset=new_asset)
-            if record["type"] == "Case":
-                new_asset = Case.from_cloud(case_id=record["id"])
-                self._case_cache.add_asset(asset=new_asset)
-            self.project_tree.add_node(asset=new_asset)
+
+        if method == "tree":
+            remove_nodes = []
+            for node_id, node in self.project_tree.nodes.items():
+                if not any(record["id"] == node_id for record in asset_records):
+                    remove_nodes.append(node)
+
+            for node in remove_nodes:
+                self._update_single_asset_cache(
+                    asset_id=node.asset_id, asset_type=node.asset_type, mode="Remove"
+                )
 
     def print_project_tree(self, str_length: int = 20, is_horizontal: bool = False):
         """Print the project tree to the terminal.
@@ -771,28 +851,20 @@ class Project(pd.BaseModel):
 
         self._get_asset_from_cloud()
 
-        def chunkstring(long_str: str, str_length: str = None, last_line_threshold: float = 0.2):
-            if not str_length:
-                return long_str
-            lines = (i.strip() for i in long_str.splitlines())
-            output_str = ""
-            for line in lines:
-                str_chunk = (line[0 + i : str_length + i] for i in range(0, len(line), str_length))
-                for chunk in str_chunk:
-                    if len(chunk) <= int(last_line_threshold * str_length):
-                        output_str = output_str.rstrip("\n")
-                    output_str += f"{chunk}\n"
-            return output_str.rstrip("\n")
+        def wrapstring(long_str: str, str_length: str = None):
+            if str_length:
+                return textwrap.fill(text=long_str, width=str_length, break_long_words=True)
+            return long_str
 
         PrettyPrintTree(
             get_children=lambda x: x.children,
-            get_val=lambda x: chunkstring(long_str=str(x), str_length=str_length),
+            get_val=lambda x: wrapstring(long_str=str(x), str_length=str_length),
             get_label=lambda x: (
-                chunkstring(
-                    long_str="Using VolumeMesh:" + get_short_asset_id(x.case_mesh_label),
+                wrapstring(
+                    long_str=x.label,
                     str_length=str_length,
                 )
-                if x.case_mesh_label
+                if x.label
                 else None
             ),
             color="",

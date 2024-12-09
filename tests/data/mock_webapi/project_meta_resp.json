@@ -1,0 +1,87 @@
+{
+    "data": {
+        "userId": "AIDAXWCOWJGJJBXX543AQ",
+        "id": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "name": "NEW Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
+        "tags": [],
+        "parentFolderId": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
+        "deleted": false,
+        "description": "",
+        "icon": "{\"fontColor\":\"#0062FF\",\"bgColor\":\"#E6EFFF\",\"icon\":\"fc:flight-takeoff_outline\"}",
+        "statistics": {
+            "Geometry": {
+                "count": 1,
+                "successCount": 1,
+                "runningCount": 0,
+                "divergedCount": 0,
+                "errorCount": 0
+            },
+            "SurfaceMesh": {
+                "count": 1,
+                "successCount": 1,
+                "runningCount": 0,
+                "divergedCount": 0,
+                "errorCount": 0
+            },
+            "VolumeMesh": {
+                "count": 1,
+                "successCount": 1,
+                "runningCount": 0,
+                "divergedCount": 0,
+                "errorCount": 0
+            },
+            "Case": {
+                "count": 2,
+                "successCount": 2,
+                "runningCount": 0,
+                "divergedCount": 0,
+                "errorCount": 0
+            }
+        },
+        "parentFolders": [
+            {
+                "type": "Folder",
+                "userId": "AIDAXWCOWJGJJBXX543AQ",
+                "name": "ROOT.FLOW360",
+                "tags": [],
+                "id": "ROOT.FLOW360",
+                "parentFolderId": null,
+                "parentFolders": null,
+                "createdAt": "2023-09-01T09:14:15.293797Z",
+                "updatedAt": "2023-09-01T09:14:15.293797Z"
+            },
+            {
+                "type": "Folder",
+                "userId": "AIDAXWCOWJGJJBXX543AQ",
+                "name": "tutorials",
+                "tags": [],
+                "id": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
+                "parentFolderId": "ROOT.FLOW360",
+                "parentFolders": null,
+                "createdAt": "2024-10-15T08:42:46.036068Z",
+                "updatedAt": "2024-10-15T08:42:46.036068Z"
+            }
+        ],
+        "viewed": true,
+        "lastOpenDraftId": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
+        "lastOpenItemId": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
+        "lastOpenItemType": "Case",
+        "latestItemId": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
+        "latestItemType": "Case",
+        "rootItemId": "geo-2877e124-96ff-473d-864b-11eec8648d42",
+        "rootItemType": "Geometry",
+        "createdAt": "2024-12-05T12:26:30.250998Z",
+        "updatedAt": "2024-12-08T17:10:49.5Z",
+        "createdBy": "AIDAXWCOWJGJJBXX543AQ",
+        "updatedBy": "AIDAXWCOWJGJJBXX543AQ",
+        "canOpen": true,
+        "rootItemStatus": "processed",
+        "rootItemUploadedAt": "2024-12-05T12:26:48.165Z",
+        "rootItemVisualizationStatus": null,
+        "rootItemUploadStatus": "success",
+        "copyStatus": "notCopy",
+        "copyFromResourceCount": 0,
+        "copiedResourceCount": 0,
+        "rootItemDisplayStatus": "completed"
+    }
+}
