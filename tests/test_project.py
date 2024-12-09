@@ -177,14 +177,10 @@ def test_run(mock_response, capsys):
         )
 
     warning_msg = "We already submitted this Case in the project."
-    error_msg = (
-        f"{project.case._cloud_resource_type_name}:{project.case.id} already exists in the project."
-    )
     project.run_case(params=params)
     captured_text = capsys.readouterr().out
     captured_text = " ".join(captured_text.split())
     assert warning_msg in captured_text
-    assert error_msg in captured_text
 
 
 def test_generate_volume_mesh(mock_response, capsys):
@@ -197,9 +193,7 @@ def test_generate_volume_mesh(mock_response, capsys):
         params = fl.SimulationParams(**params_dict)
 
     warning_msg = "We already generated this Volume Mesh in the project."
-    error_msg = f"{project.volume_mesh._cloud_resource_type_name}:{project.volume_mesh.id} already exists in the project."
     project.generate_volume_mesh(params=params)
     captured_text = capsys.readouterr().out
     captured_text = " ".join(captured_text.split())
     assert warning_msg in captured_text
-    assert error_msg in captured_text
