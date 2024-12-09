@@ -188,16 +188,16 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     Example
     -------
 
-    Define :class:`GenericReferenceCondition` with :py:meth:`from_mach`:
+    - Define :class:`GenericReferenceCondition` with :py:meth:`from_mach`:
 
-    >>> fl.GenericReferenceCondition.from_mach(
-    ...     mach=0.2,
-    ...     thermal_state=ThermalState(),
-    ... )
+      >>> fl.GenericReferenceCondition.from_mach(
+      ...     mach=0.2,
+      ...     thermal_state=ThermalState(),
+      ... )
 
-    Define :class:`GenericReferenceCondition` with :py:attr:`velocity_magnitude`:
+    - Define :class:`GenericReferenceCondition` with :py:attr:`velocity_magnitude`:
 
-    >>> fl.GenericReferenceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
+      >>> fl.GenericReferenceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
 
     ====
     """
@@ -252,18 +252,18 @@ class AerospaceCondition(MultiConstructorBaseModel):
     Example
     -------
 
-    -  Define :class:`AerospaceCondition` with :py:meth:`from_mach`:
+    - Define :class:`AerospaceCondition` with :py:meth:`from_mach`:
 
-    >>> fl.AerospaceCondition.from_mach(
-    ...     mach=0,
-    ...     alpha=-90 * fl.u.deg,
-    ...     thermal_state=fl.ThermalState(),
-    ...     reference_mach=0.69,
-    ... )
+      >>> fl.AerospaceCondition.from_mach(
+      ...     mach=0,
+      ...     alpha=-90 * fl.u.deg,
+      ...     thermal_state=fl.ThermalState(),
+      ...     reference_mach=0.69,
+      ... )
 
-    -  Define :class:`AerospaceCondition` with :py:attr:`velocity_magnitude`:
+    - Define :class:`AerospaceCondition` with :py:attr:`velocity_magnitude`:
 
-    >>> fl.AerospaceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
+      >>> fl.AerospaceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
 
     ====
     """

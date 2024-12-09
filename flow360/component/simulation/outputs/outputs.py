@@ -657,7 +657,7 @@ class TimeAverageProbeOutput(ProbeOutput):
       ... )
 
     ====
-    
+
     """
 
     # pylint: disable=abstract-method
@@ -674,11 +674,11 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     :class:`TimeAverageSurfaceProbeOutput` class for time average surface probe monitor output settings.
     The specified monitor point will be projected to the :py:attr:`~TimeAverageSurfaceProbeOutput.target_surfaces`
     closest to the point. The probed results on the projected point will be dumped.
-    
+
     Example
     -------
 
-    - Calculate the average value on the :code:`geometry["surface1"]` and :code:`geometry["surface2"]` surfaces 
+    - Calculate the average value on the :code:`geometry["surface1"]` and :code:`geometry["surface2"]` surfaces
       with multiple monitor points. The average is computed starting from the :math:`4^{th}` physical step.
       The results are output every 10 physical step starting from the :math:`14^{th}` physical step
       (14, 24, 34 etc.).
@@ -700,7 +700,7 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
       ...     frequency_offset=14,
       ... )
 
-    - Calculate the average value on the :code:`geometry["surface1"]` and :code:`geometry["surface2"]` surfaces 
+    - Calculate the average value on the :code:`geometry["surface1"]` and :code:`geometry["surface2"]` surfaces
       with multiple monitor lines. The average is computed starting from the :math:`4^{th}` physical step.
       The results are output every 10 physical step starting from the :math:`14^{th}` physical step
       (14, 24, 34 etc.).
