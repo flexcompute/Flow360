@@ -5,7 +5,7 @@ description = ""
 authors = ["Flexcompute <support@flexcompute.com>"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<3.13"
 pydantic = "2.7.*"
 pytest = "^7.1.2"
 click = "^8.1.3"

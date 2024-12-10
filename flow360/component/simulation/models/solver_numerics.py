@@ -35,7 +35,7 @@ class LinearSolver(Flow360BaseModel):
 
     Example
     -------
-    >>> ls = LinearSolver(
+    >>> fl.LinearSolver(
     ...     max_iterations=50,
     ...     absoluteTolerance=1e-10
     ... )
@@ -86,7 +86,8 @@ class NavierStokesSolver(GenericSolverSettings):
 
     Example
     -------
-    >>> ns = navier_stokes_solver=NavierStokesSolver(absolute_tolerance=1e-10,
+    >>> fl.NavierStokesSolver(
+    ...     absolute_tolerance=1e-10,
     ...     numerical_dissipation_factor=0.01,
     ...     linear_solver=LinearSolver(max_iterations=50),
     ...     low_mach_preconditioner=True,
@@ -149,7 +150,7 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
 
     Example
     -------
-    >>> ts = SpalartAllmaras(
+    >>> fl.SpalartAllmaras(
     ...     modeling_constants = SpalartAllmarasModelConstants(C_w2=2.718)
     ... )
     """
@@ -174,7 +175,7 @@ class KOmegaSSTModelConstants(Flow360BaseModel):
 
     Example
     -------
-    >>> ts = SpalartAllmaras(
+    >>> fl.SpalartAllmaras(
     ...     modeling_constants = KOmegaSSTModelConstants(C_sigma_omega1=2.718)
     ... )
     """
@@ -207,7 +208,7 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
 
     Example
     -------
-    >>> ts = TurbulenceModelSolver(absolute_tolerance=1e-10)
+    >>> fl.TurbulenceModelSolver(absolute_tolerance=1e-10)
     """
 
     CFL_multiplier: PositiveFloat = pd.Field(
@@ -277,7 +278,7 @@ class KOmegaSST(TurbulenceModelSolver):
 
     Example
     -------
-    >>> ts = KOmegaSST(
+    >>> fl.KOmegaSST(
     ...     absolute_tolerance=1e-10,
     ...     linear_solver=LinearSolver(max_iterations=25),
     ...     update_jacobian_frequency=2,
@@ -300,7 +301,7 @@ class SpalartAllmaras(TurbulenceModelSolver):
 
     Example
     -------
-    >>> ts = SpalartAllmaras(
+    >>> fl.SpalartAllmaras(
     ...     absolute_tolerance=1e-10,
     ...     linear_solver=LinearSolver(max_iterations=25),
     ...     update_jacobian_frequency=2,
@@ -341,7 +342,7 @@ class HeatEquationSolver(GenericSolverSettings):
 
     Example
     -------
-    >>> he = HeatEquationSolver(
+    >>> fl.HeatEquationSolver(
     ...     equation_evaluation_frequency=10,
     ...     linear_solver_config=LinearSolver(
     ...         max_iterations=50,
@@ -374,10 +375,19 @@ class TransitionModelSolver(GenericSolverSettings):
     For more information on setting up the numerical parameters for the transition model solver,
     refer to :ref:`the transition model solver knowledge base <knowledge_base_transitionModelSolver>`.
 
+    Warning
+    -------
+    :py:attr:`N_crit` and :py:attr:`turbulence_intensity_percent` cannot be specified at the same time.
 
     Example
     -------
-    >>> ts = TransitionModelSolver(absolute_tolerance=1e-10)
+    >>> fl.TransitionModelSolver(
+    ...     linear_solver=fl.LinearSolver(max_iterations=50),
+    ...     absolute_tolerance=1e-8,
+    ...     update_jacobian_frequency=1,
+    ...     equation_evaluation_frequency=1,
+    ...     turbulence_intensity_percent=0.04,
+    ... )
     """
 
     model_config = pd.ConfigDict(
