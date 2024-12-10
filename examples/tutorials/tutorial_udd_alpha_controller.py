@@ -12,22 +12,22 @@ volume_mesh = project.volume_mesh
 with fl.SI_unit_system:
     params = fl.SimulationParams(
         reference_geometry=fl.ReferenceGeometry(
-            area=1.15315084119231,
+            area=1.15315,
             moment_center=[0, 0, 0],
-            moment_length=[1.4760179762198, 0.801672958512342, 1.4760179762198],
+            moment_length=[1.47601, 0.80167, 1.47601],
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=14.6e6,
+            reynolds=11.72,
             mach=0.84,
-            project_length_unit=1 * fl.u.m,
+            project_length_unit=0.80167 * fl.u.m,
             temperature=297.78,
             alpha=3.06 * fl.u.deg,
             beta=0 * fl.u.deg,
         ),
         models=[
-            fl.Wall(surfaces=[volume_mesh["1"]]),
-            fl.SlipWall(surfaces=[volume_mesh["2"]]),
-            fl.Freestream(surfaces=[volume_mesh["3"]]),
+            fl.Wall(name="NoSlipWall", surfaces=[volume_mesh["1"]]),
+            fl.SlipWall(name="SlipWall",surfaces=[volume_mesh["2"]]),
+            fl.Freestream(name="Freestream",surfaces=[volume_mesh["3"]]),
         ],
         time_stepping=fl.Steady(
             max_steps=2000,
