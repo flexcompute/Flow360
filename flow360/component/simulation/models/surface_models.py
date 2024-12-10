@@ -207,6 +207,16 @@ class Wall(BoundaryBase):
       ...     use_wall_function=True,
       ... )
 
+      >>> fl.Wall(
+      ...     entities=volume_mesh["8"],
+      ...     velocity = (
+      ...         f"{OMEGA[1]} * (z - {CENTER[2]}) - {OMEGA[2]} * (y - {CENTER[1]})",
+      ...         f"{OMEGA[2]} * (x - {CENTER[0]}) - {OMEGA[0]} * (z - {CENTER[2]})",
+      ...         f"{OMEGA[0]} * (y - {CENTER[1]}) - {OMEGA[1]} * (x - {CENTER[0]})",
+      ...     ),
+      ...     use_wall_function=True,
+      ... )
+
     - Define isothermal wall boundary condition on entities
       with the naming pattern :code:`"fluid/isothermal-*"`:
 
