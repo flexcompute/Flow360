@@ -2,15 +2,12 @@
 Module for ReportContext to hold shared configurations between Report and ReportItem
 """
 
+from typing import List, Optional, Type, Union
+
 import pydantic as pd
-from typing import List, Union, Optional, Type
 
 # pylint: disable=import-error
-from pylatex import (
-    Document,
-    Section,
-    Subsection,
-)
+from pylatex import Document, Section, Subsection
 
 from flow360 import Case
 

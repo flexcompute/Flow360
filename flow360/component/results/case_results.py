@@ -537,8 +537,10 @@ class ResultCSVModel(ResultBaseModel):
         filters data to contain only last pseudo step data for every physical step
         """
         if self._is_physical_time_series_data() is False:
-            log.warning('Filtering out physical steps only but there is only one step in this simulation.')
-        
+            log.warning(
+                "Filtering out physical steps only but there is only one step in this simulation."
+            )
+
         df = self.as_dataframe()
         _, last_iter_mask = self._pseudo_step_masks(df)
         self.update(df[last_iter_mask])
@@ -714,9 +716,13 @@ class PerEntityResultCSVModel(ResultCSVModel):
         self._filtered_sum()
         self._averages = None
 
-    def _remove_zero_rows(self, df: pandas.DataFrame)->pandas.DataFrame:
-        headers = [f"{x}_{y}" for x, y in product(self.entities, self._filter_when_zero) if f"{x}_{y}" in df.keys()]
-        if len(headers)>0:
+    def _remove_zero_rows(self, df: pandas.DataFrame) -> pandas.DataFrame:
+        headers = [
+            f"{x}_{y}"
+            for x, y in product(self.entities, self._filter_when_zero)
+            if f"{x}_{y}" in df.keys()
+        ]
+        if len(headers) > 0:
             df = df[df[headers].apply(lambda row: not all(row == 0), axis=1)]
         return df
 

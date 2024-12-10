@@ -9,8 +9,8 @@ from __future__ import annotations
 import os.path
 import threading
 from enum import Enum
-from typing import Any, Iterator, List, Optional, Union
 from functools import cached_property
+from typing import Any, Iterator, List, Optional, Union
 
 import numpy as np
 import pydantic as pd_v2
@@ -828,14 +828,14 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
 
 
 class MeshStats(pd.BaseModel):
-    n_nodes: int = pd.Field(..., alias='nNodes')
-    n_triangles: int = pd.Field(..., alias='nTriangles')
-    n_quadrilaterals: int = pd.Field(..., alias='nQuadrilaterals')
-    n_tetrahedron: int = pd.Field(..., alias='nTetrahedron')
-    n_prism: int = pd.Field(..., alias='nPrism')
-    n_pyramid: int = pd.Field(..., alias='nPyramid')
-    n_hexahedron: int = pd.Field(..., alias='nHexahedron')
-    n_tet_wedge: int = pd.Field(..., alias='nTetWedge')
+    n_nodes: int = pd.Field(..., alias="nNodes")
+    n_triangles: int = pd.Field(..., alias="nTriangles")
+    n_quadrilaterals: int = pd.Field(..., alias="nQuadrilaterals")
+    n_tetrahedron: int = pd.Field(..., alias="nTetrahedron")
+    n_prism: int = pd.Field(..., alias="nPrism")
+    n_pyramid: int = pd.Field(..., alias="nPyramid")
+    n_hexahedron: int = pd.Field(..., alias="nHexahedron")
+    n_tet_wedge: int = pd.Field(..., alias="nTetWedge")
 
 
 class VolumeMeshDraftV2(ResourceDraft):
@@ -1003,7 +1003,7 @@ class VolumeMeshV2(AssetBase):
     _draft_class = VolumeMeshDraftV2
     _web_api_class = Flow360Resource
     _entity_info_class = VolumeMeshEntityInfo
-    _mesh_stats_file = 'meshStats.json'
+    _mesh_stats_file = "meshStats.json"
     _cloud_resource_type_name = "VolumeMesh"
 
     @classmethod
@@ -1027,7 +1027,9 @@ class VolumeMeshV2(AssetBase):
         return asset_obj
 
     @classmethod
-    def from_local_storage(cls, mesh_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2=None) -> VolumeMeshV2:
+    def from_local_storage(
+        cls, mesh_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2 = None
+    ) -> VolumeMeshV2:
         """
         Parameters
         ----------
@@ -1042,7 +1044,9 @@ class VolumeMeshV2(AssetBase):
         VolumeMeshV2
             Volume mesh object
         """
-        return super()._from_local_storage(asset_id=mesh_id, local_storage_path=local_storage_path, meta_data=meta_data)
+        return super()._from_local_storage(
+            asset_id=mesh_id, local_storage_path=local_storage_path, meta_data=meta_data
+        )
 
     @classmethod
     # pylint: disable=too-many-arguments,arguments-renamed
@@ -1113,7 +1117,6 @@ class VolumeMeshV2(AssetBase):
                 "Currently entity info is populated only when loading "
                 "an asset from the cloud using the from_cloud method "
             )
-
 
     @cached_property
     def stats(self) -> MeshStats:

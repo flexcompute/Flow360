@@ -293,7 +293,9 @@ class Geometry(AssetBase):
         )
 
     @classmethod
-    def from_local_storage(cls, geometry_id: str = None, local_storage_path="", meta_data: GeometryMeta=None) -> Geometry:
+    def from_local_storage(
+        cls, geometry_id: str = None, local_storage_path="", meta_data: GeometryMeta = None
+    ) -> Geometry:
         """
         Parameters
         ----------

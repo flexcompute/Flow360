@@ -1,56 +1,24 @@
 """
 Module containg detailed report items
 """
+
 from __future__ import annotations
 
 import os
-from typing import List, Literal, Optional, Tuple, Union, Annotated
+from typing import Annotated, List, Literal, Optional, Tuple, Union
 
-import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import numpy as np
-import unyt
-from flow360 import Case
-from flow360.component.results import case_results
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
-from flow360.plugins.report.report_context import ReportContext
-from flow360.plugins.report.utils import (
-    Delta,
-    DataItem,
-    Tabulary,
-    _requirements_mapping,
-    data_from_path,
-    get_requirements_from_data_path,
-    get_root_path,
-    OperationTypes,
-    split_path
-)
-from flow360.log import log
-from flow360.plugins.report.uvf_shutter import (
-    ActionPayload,
-    Resource,
-    Scene,
-    ScenesData,
-    SetFieldPayload,
-    SetObjectVisibilityPayload,
-    TakeScreenshotPayload,
-    ShutterObjectTypes,
-    Shutter,
-    FocusPayload,
-    SetCameraPayload,
-    Camera,
-    SetLICPayload,
-    ResetFieldPayload,
-)
 import pydantic as pd
+import unyt
 from pydantic import (
     BaseModel,
     Field,
     NonNegativeInt,
+    StringConstraints,
     field_validator,
     model_validator,
-    StringConstraints,
 )
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
@@ -59,6 +27,41 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 
 # pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
+
+from flow360 import Case
+from flow360.component.results import case_results
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
+from flow360.log import log
+from flow360.plugins.report.report_context import ReportContext
+from flow360.plugins.report.utils import (
+    DataItem,
+    Delta,
+    OperationTypes,
+    Tabulary,
+    _requirements_mapping,
+    data_from_path,
+    generate_colorbar_from_image,
+    get_requirements_from_data_path,
+    get_root_path,
+    split_path,
+)
+from flow360.plugins.report.uvf_shutter import (
+    ActionPayload,
+    Camera,
+    FocusPayload,
+    ResetFieldPayload,
+    Resource,
+    Scene,
+    ScenesData,
+    SetCameraPayload,
+    SetFieldPayload,
+    SetLICPayload,
+    SetObjectVisibilityPayload,
+    Shutter,
+    ShutterObjectTypes,
+    TakeScreenshotPayload,
+)
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -128,7 +131,9 @@ class Summary(ReportItem):
         context.doc.append(section)
         if self.text is not None:
             context.doc.append(f"{self.text}\n")
-        Table(data=["name", "id"], section_title=None, headers=["Case Name", "Id"]).get_doc_item(context)
+        Table(data=["name", "id"], section_title=None, headers=["Case Name", "Id"]).get_doc_item(
+            context
+        )
 
 
 class Inputs(ReportItem):
@@ -322,7 +327,7 @@ class Chart(ReportItem):
 
         return cases
 
-    def _fig_exist(self, id, data_storage='.'):
+    def _fig_exist(self, id, data_storage="."):
         img_folder = os.path.join(data_storage, id)
         img_name = self.fig_name + ".png"
         img_full_path = os.path.join(img_folder, img_name)
@@ -331,13 +336,46 @@ class Chart(ReportItem):
             return True
         return False
 
-    def _add_figure(self, doc: Document, file_name, caption):
-        fig = Figure(position="!ht")
-        fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
-        fig.add_caption(caption)
-        doc.append(fig)
+    def _add_figure(self, doc: Document, file_name, caption, legend_filename=None):
+        if legend_filename is None:
+            fig = Figure(position="!ht")
+            fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
+            fig.add_caption(caption)
+            doc.append(fig)
+        else:
+            doc.append(NoEscape(r"\begin{figure}[!ht]"))
 
-    def _add_row_figure(self, doc: Document, img_list: list[str], fig_caption: str, sub_fig_captions: List[str]=None):
+            sub_fig = SubFigure(position="t", width=NoEscape(r"\textwidth"))
+            sub_fig.add_image(
+                file_name,
+                width=NoEscape(rf"{self.fig_size}\textwidth"),
+                placement=NoEscape(r"\centering"),
+            )
+            doc.append(sub_fig)
+            doc.append(NoEscape(r"\\"))
+            fig = self._add_legend(legend_filename=legend_filename)
+            doc.append(fig)
+
+            doc.append(NoEscape(r"\caption{" + escape_latex(caption) + "}"))
+            doc.append(NoEscape(r"\end{figure}"))
+
+    def _add_legend(self, legend_filename: str, minipage_width=1, legend_width=0.45):
+        sub_fig = SubFigure(position="t", width=NoEscape(rf"{minipage_width}\textwidth"))
+        sub_fig.add_image(
+            filename=legend_filename,
+            width=NoEscape(rf"{legend_width}\textwidth"),
+            placement=NoEscape(r"\centering"),
+        )
+        return sub_fig
+
+    def _add_row_figure(
+        self,
+        doc: Document,
+        img_list: list[str],
+        fig_caption: str,
+        sub_fig_captions: List[str] = None,
+        legend_filename=None,
+    ):
         """
         Build a figure from SubFigures which displays images in rows
 
@@ -348,23 +386,40 @@ class Chart(ReportItem):
         minipage_size = 0.86 / self.items_in_row if self.items_in_row != 1 else 0.8
         doc.append(NoEscape(r"\begin{figure}[h!]"))
 
+        if sub_fig_captions is None:
+            sub_fig_captions = range(1, len(img_list) + 1)
+
+        figures = []
+        for img, caption in zip(img_list, sub_fig_captions):
+            sub_fig = SubFigure(position="t", width=NoEscape(rf"{minipage_size}\textwidth"))
+            sub_fig.add_image(
+                filename=img, width=NoEscape(r"\textwidth"), placement=NoEscape(r"\centering")
+            )
+
+            # Stop caption for single subfigures - happens when include_case_by_case
+            if self.items_in_row != 1 and caption is not None:
+                sub_fig.add_caption(caption)
+            figures.append(sub_fig)
+
+        if legend_filename is not None:
+            img_list.append(legend_filename)
+            legend_width = 0.9 if self.items_in_row != 1 else 0.45
+            sub_fig = self._add_legend(
+                legend_filename=legend_filename,
+                minipage_width=minipage_size,
+                legend_width=legend_width,
+            )
+            figures.append(sub_fig)
+
         # Build list of indices to combine into rows
         indices = list(range(len(img_list)))
         idx_list = [
             indices[i : i + self.items_in_row] for i in range(0, len(indices), self.items_in_row)
         ]
-        if sub_fig_captions is None:
-            sub_fig_captions = range(1, len(img_list) + 1)
+
         for row_idx in idx_list:
             for idx in row_idx:
-                sub_fig = SubFigure(position="t", width=NoEscape(rf"{minipage_size}\textwidth"))
-                sub_fig.add_image(filename=img_list[idx], width=NoEscape(r"\textwidth"))
-
-                # Stop caption for single subfigures - happens when include_case_by_case
-                if self.items_in_row != 1:
-                    sub_fig.add_caption(sub_fig_captions[idx])
-
-                doc.append(sub_fig)
+                doc.append(figures[idx])
                 doc.append(NoEscape(r"\hfill"))
             doc.append(NoEscape(r"\\"))
         doc.append(NoEscape(r"\caption{" + escape_latex(fig_caption) + "}"))
@@ -578,7 +633,6 @@ class Chart2D(Chart):
 
         return x_data, y_data, x_label, y_label
 
-
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         x_data, y_data, x_label, y_label = self._load_data(cases)
         background = self._get_background_chart(x_data)
@@ -606,7 +660,6 @@ class Chart2D(Chart):
             is_log=self.is_log_plot(),
             backgroung_png=background_png,
         )
-    
 
     def _get_background_chart(self, x_data):
         if self.background == "geometry":
@@ -630,17 +683,18 @@ class Chart2D(Chart):
                     f"background={self.background} can be only used with x == x_slicing_force_distribution/X OR x == y_slicing_force_distribution/Y"
                 )
             background = Chart3D(
-                show="boundaries", camera=camera, fig_name="background_" + self.fig_name, exclude=self.exclude
+                show="boundaries",
+                camera=camera,
+                fig_name="background_" + self.fig_name,
+                exclude=self.exclude,
             )
             return background
         return None
-    
 
-    def get_background_chart3D(self, cases)->Tuple[Chart3D, Case]:
+    def get_background_chart3D(self, cases) -> Tuple[Chart3D, Case]:
         x_data, y_data, x_label, y_label = self._load_data(cases)
         reference_case = cases[0]
         return self._get_background_chart(x_data), reference_case
-
 
     def _get_figures(self, cases, context: ReportContext):
         file_names = []
@@ -714,10 +768,10 @@ class Chart3D(Chart):
     show : ShutterObjectTypes
         Type of object to display in the 3D chart.
     exclude : List[str], optional
-        Exclude boundaries from screenshot, 
+        Exclude boundaries from screenshot,
     """
 
-    field: Optional[Union[SurfaceFieldNames,str]] = None
+    field: Optional[Union[SurfaceFieldNames, str]] = None
     camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
     is_log_scale: bool = False
@@ -765,12 +819,14 @@ class Chart3D(Chart):
             ),
             ActionPayload(
                 action="set-object-visibility",
-                payload=SetObjectVisibilityPayload(object_ids=["qcriterion", "boundaries"], visibility=True),
+                payload=SetObjectVisibilityPayload(
+                    object_ids=["qcriterion", "boundaries"], visibility=True
+                ),
             ),
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
-            )
+            ),
         ]
         script += self._get_shutter_exclude_visibility()
         script += [
@@ -826,10 +882,9 @@ class Chart3D(Chart):
             script += [
                 ActionPayload(
                     action="set-object-visibility",
-                    payload=SetObjectVisibilityPayload(
-                        object_ids=["boundaries"], visibility=True
-                    ),
-                )]
+                    payload=SetObjectVisibilityPayload(object_ids=["boundaries"], visibility=True),
+                )
+            ]
         script += [
             ActionPayload(
                 action="set-object-visibility",
@@ -864,7 +919,6 @@ class Chart3D(Chart):
                 ]
 
         return script
-
 
     def _get_shutter_slice_script(
         self,
@@ -912,7 +966,6 @@ class Chart3D(Chart):
 
         return script
 
-
     def _get_shutter_request(self, case: Case):
 
         if self.show == "qcriterion":
@@ -947,7 +1000,6 @@ class Chart3D(Chart):
         resource = Resource(path_prefix=path_prefix, id=case.id)
         scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
-        
 
     def get_requirements(self):
         """get requirements"""
@@ -970,6 +1022,18 @@ class Chart3D(Chart):
         img_list = [img_files[case.id][0] for case in cases]
         return img_list
 
+    def _get_legend(self, context: ReportContext):
+        if self.field is not None:
+            legend_filename = os.path.join(context.data_storage, f"{self.fig_name}_legend.png")
+            generate_colorbar_from_image(
+                limits=self.limits,
+                output_filename=legend_filename,
+                field_name=self.field,
+                is_log_scale=self.is_log_scale,
+            )
+            return legend_filename
+        return None
+
     # pylint: disable=too-many-arguments
     def get_doc_item(
         self,
@@ -984,13 +1048,21 @@ class Chart3D(Chart):
         cases = self._filter_input_cases(context.cases, context.case_by_case)
 
         img_list = self._get_images(cases, context)
+        legend_filename = self._get_legend(context)
 
         if self.items_in_row is not None:
-            self._add_row_figure(context.doc, img_list, self.caption, sub_fig_captions=[case.name for case in cases])
-
+            self._add_row_figure(
+                context.doc,
+                img_list,
+                self.caption,
+                sub_fig_captions=[case.name for case in cases],
+                legend_filename=legend_filename,
+            )
         else:
             for filename in img_list:
-                self._add_figure(context.doc, filename, self.caption)
+                self._add_figure(
+                    context.doc, filename, self.caption, legend_filename=legend_filename
+                )
 
         # Stops figures floating away from their sections
         context.doc.append(NoEscape(r"\FloatBarrier"))

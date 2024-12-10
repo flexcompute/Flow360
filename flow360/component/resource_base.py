@@ -2,17 +2,17 @@
 Flow360 base Model
 """
 
+import json
 import os
 import re
 import shutil
 import time
-import json
 import traceback
 from abc import ABCMeta
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from tempfile import TemporaryDirectory, NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List, Optional, Union
 
 import pydantic as pd_v2
@@ -22,7 +22,7 @@ from flow360 import error_messages
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.webbrowser import open_browser
 from flow360.component.interfaces import BaseInterface
-from flow360.component.utils import is_valid_uuid, validate_type, LocalResourceCache
+from flow360.component.utils import LocalResourceCache, is_valid_uuid, validate_type
 from flow360.exceptions import Flow360RuntimeError
 from flow360.log import LogLevel, log
 
@@ -373,8 +373,7 @@ class Flow360Resource(RestApi):
             **kwargs,
         )
 
-
-    def _parse_json_from_cloud(self, filename)->dict:
+    def _parse_json_from_cloud(self, filename) -> dict:
         """
         returns simulation params
         """
@@ -383,7 +382,6 @@ class Flow360Resource(RestApi):
             with open(temp_file.name, "r", encoding="utf-8") as fh:
                 data_as_dict = json.load(fh)
         return data_as_dict
-
 
     def _upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
         """

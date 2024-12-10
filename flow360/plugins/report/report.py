@@ -4,35 +4,33 @@ Report generation interface
 
 import os
 import posixpath
-from typing import List, Union, Set, Optional
+from typing import List, Optional, Set, Union
+
+from pydantic import Field, model_validator, validate_call
+
+# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
+# pylint: disable=import-error
+from pylatex import Section, Subsection
 
 from flow360 import Case
-from flow360.component.resource_base import Flow360Resource, AssetMetaBaseModel
 from flow360.cloud.flow360_requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
+from flow360.component.resource_base import AssetMetaBaseModel, Flow360Resource
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.plugins.report.report_context import ReportContext
+from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_items import (
     Chart,
     Chart2D,
     Chart3D,
+    FileNameStr,
     Inputs,
     Summary,
     Table,
-    FileNameStr,
-)
-from flow360.plugins.report.uvf_shutter import ShutterBatchService
-from pydantic import Field, validate_call, model_validator
-
-# this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
-# pylint: disable=import-error
-from pylatex import (
-    Section,
-    Subsection,
 )
 from flow360.plugins.report.utils import RequirementItem
-from flow360.plugins.report.report_doc import ReportDoc
+from flow360.plugins.report.uvf_shutter import ShutterBatchService
 
 
 class Report(Flow360Resource):
@@ -158,7 +156,6 @@ class ReportTemplate(Flow360BaseModel):
                 used_fig_names.add(fig_name)
         return model
 
-
     def _generate_shutter_screenshots(self, context: ReportContext):
         service = ShutterBatchService()
 
@@ -175,11 +172,10 @@ class ReportTemplate(Flow360BaseModel):
                         req = chart3d._get_shutter_request(reference_case)
                         if req is not None:
                             service.add_request(req)
-        
+
         service.process_requests(context)
 
-
-    def get_requirements(self)->List[RequirementItem]:
+    def get_requirements(self) -> List[RequirementItem]:
         """
         Collects and returns unique requirements from all items.
 
@@ -262,7 +258,6 @@ class ReportTemplate(Flow360BaseModel):
         """
         os.makedirs(data_storage, exist_ok=True)
         report_doc = ReportDoc(title=self.title, landscape=landscape)
-
 
         context = ReportContext(
             cases=cases,

@@ -215,7 +215,7 @@ def validate_model(
     validation_level: Literal[
         "SurfaceMesh", "VolumeMesh", "Case", "All"
     ] = ALL,  # Fix implicit string concatenation
-    treat_as_file: bool=False
+    treat_as_file: bool = False,
 ) -> Tuple[Optional[dict], Optional[list], Optional[list]]:
     """
     Validate a params dict against the pydantic model.

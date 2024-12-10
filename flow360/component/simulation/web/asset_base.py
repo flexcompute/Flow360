@@ -15,12 +15,16 @@ from flow360.cloud.s3_utils import get_local_filename_and_create_folders
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
-    AssetMetaBaseModelV2
 )
 from flow360.component.simulation.entity_info import EntityInfoModel
-from flow360.component.utils import remove_properties_by_name, validate_type, _local_download_overwrite
+from flow360.component.utils import (
+    _local_download_overwrite,
+    remove_properties_by_name,
+    validate_type,
+)
 from flow360.log import log
 
 
@@ -49,15 +53,13 @@ class AssetBase(metaclass=ABCMeta):
             id=id,
         )
 
-
     @property
     def project_id(self):
         return self.info.project_id
-    
+
     @property
     def solver_version(self):
         return self.info.solver_version
-    
 
     @classmethod
     # pylint: disable=protected-access
@@ -75,14 +77,13 @@ class AssetBase(metaclass=ABCMeta):
             generates short description of resource (name, id, status)
         """
         return self._webapi.short_description()
-    
+
     @property
     def name(self):
         """
         returns name of resource
         """
         return self.info.name
-
 
     @classmethod
     def _from_supplied_entity_info(
@@ -203,7 +204,9 @@ class AssetBase(metaclass=ABCMeta):
         )
 
     @classmethod
-    def _from_local_storage(cls, asset_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2=None):
+    def _from_local_storage(
+        cls, asset_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2 = None
+    ):
         """
         Create asset from local storage
         :param asset_id: ID of the asset

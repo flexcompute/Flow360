@@ -14,22 +14,22 @@ from ....exceptions import Flow360NotImplementedError, Flow360RuntimeError
 def _no_update(params_as_dict):
     return params_as_dict
 
+
 def _24_11_0_to_24_11_1_update(params_as_dict):
-    print('Updating!!!!!!!!!')
     # Check and remove the 'meshing' node if conditions are met
-    if 'meshing' in params_as_dict:
-        meshing_defaults = params_as_dict['meshing'].get('defaults', {})
-        bl_thickness = meshing_defaults.get('boundary_layer_first_layer_thickness')
-        max_edge_length = meshing_defaults.get('surface_max_edge_length')
+    if "meshing" in params_as_dict:
+        meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+        bl_thickness = meshing_defaults.get("boundary_layer_first_layer_thickness")
+        max_edge_length = meshing_defaults.get("surface_max_edge_length")
         if bl_thickness is None and max_edge_length is None:
-            del params_as_dict['meshing']
+            del params_as_dict["meshing"]
 
     # Iterate over models and update 'heat_spec' where necessary
-    for model in params_as_dict.get('models', []):
-        if model.get('type') == 'Wall' and model.get('heat_spec') is None:
-            model['heat_spec'] = {
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Wall" and model.get("heat_spec") is None:
+            model["heat_spec"] = {
                 "type_name": "HeatFlux",
-                "value": {"value": 0, "units": "W / m**2"}
+                "value": {"value": 0, "units": "W / m**2"},
             }
 
     return params_as_dict

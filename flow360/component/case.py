@@ -418,7 +418,7 @@ class Case(CaseBase, Flow360Resource):
         """
         returns simulation params
         """
-        
+
         try:
             params_as_dict = self._parse_json_from_cloud("simulation.json")
         except CloudFileNotFoundError as err:
@@ -508,7 +508,7 @@ class Case(CaseBase, Flow360Resource):
         return super().info
 
     @property
-    def volume_mesh(self)-> 'VolumeMeshV2':
+    def volume_mesh(self) -> "VolumeMeshV2":
         """
         returns volume mesh
         """
@@ -517,8 +517,8 @@ class Case(CaseBase, Flow360Resource):
             return from_cache
         else:
             from .volume_mesh import VolumeMeshV2
-            return VolumeMeshV2(self.volume_mesh_id)
 
+            return VolumeMeshV2(self.volume_mesh_id)
 
     @property
     def volume_mesh_id(self):
@@ -1014,13 +1014,15 @@ class CaseResultsModel(pd.BaseModel):
             file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
 
-    def set_local_storage(self, local_storage: str, keep_remote_structure: bool=False):
+    def set_local_storage(self, local_storage: str, keep_remote_structure: bool = False):
         for field_name in self.model_fields:
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 if keep_remote_structure is True:
                     # pylint: disable=protected-access,no-member
-                    value.local_storage = os.path.dirname(os.path.join(local_storage, value._remote_path()))
+                    value.local_storage = os.path.dirname(
+                        os.path.join(local_storage, value._remote_path())
+                    )
                 else:
                     value.local_storage = local_storage
 

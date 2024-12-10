@@ -1,33 +1,44 @@
 """
 report utils, utils.py
 """
-from  __future__ import annotations
-from abc import ABCMeta, abstractmethod
+
+from __future__ import annotations
+
+import ast
 import os
+import posixpath
 import re
 import shutil
-import posixpath
+import uuid
+from abc import ABCMeta, abstractmethod
 from numbers import Number
-from typing import Any, List, Optional, Literal, Union, Annotated
+from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
 
+import matplotlib.pyplot as plt
+import numexpr as ne
+import numpy as np
 import pydantic as pd
+from matplotlib.ticker import LogFormatterSciNotation
+from PIL import Image
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
 from flow360 import Case
-from flow360.component.simulation.framework.base_model import Flow360BaseModel, Conflicts
 from flow360.component.results import case_results
+from flow360.component.simulation.framework.base_model import (
+    Conflicts,
+    Flow360BaseModel,
+)
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.log import log
 
-import ast
-import numexpr as ne
-import uuid
+here = os.path.dirname(os.path.abspath(__file__))
+
 
 class RequirementItem(pd.BaseModel):
-    resource_type: Literal['case', 'volume_mesh', 'surface_mesh', 'geometry'] = 'case'
+    resource_type: Literal["case", "volume_mesh", "surface_mesh", "geometry"] = "case"
     filename: str
 
     model_config = {"frozen": True}
@@ -36,17 +47,29 @@ class RequirementItem(pd.BaseModel):
 # pylint: disable=protected-access
 _requirements_mapping = {
     "params": RequirementItem(filename="simulation.json"),
-    "total_forces": RequirementItem(filename=case_results.TotalForcesResultCSVModel()._remote_path()),
-    "surface_forces": RequirementItem(filename=case_results.SurfaceForcesResultCSVModel()._remote_path()),
-    "nonlinear_residuals": RequirementItem(filename=case_results.NonlinearResidualsResultCSVModel()._remote_path()),
-    "x_slicing_force_distribution": RequirementItem(filename=case_results.XSlicingForceDistributionResultCSVModel()._remote_path()),
-    "y_slicing_force_distribution": RequirementItem(filename=case_results.YSlicingForceDistributionResultCSVModel()._remote_path()),
-    "volume_mesh": RequirementItem(resource_type='volume_mesh', filename="simulation.json"),
-    "volume_mesh/stats": RequirementItem(resource_type='volume_mesh', filename=VolumeMeshV2._mesh_stats_file),
+    "total_forces": RequirementItem(
+        filename=case_results.TotalForcesResultCSVModel()._remote_path()
+    ),
+    "surface_forces": RequirementItem(
+        filename=case_results.SurfaceForcesResultCSVModel()._remote_path()
+    ),
+    "nonlinear_residuals": RequirementItem(
+        filename=case_results.NonlinearResidualsResultCSVModel()._remote_path()
+    ),
+    "x_slicing_force_distribution": RequirementItem(
+        filename=case_results.XSlicingForceDistributionResultCSVModel()._remote_path()
+    ),
+    "y_slicing_force_distribution": RequirementItem(
+        filename=case_results.YSlicingForceDistributionResultCSVModel()._remote_path()
+    ),
+    "volume_mesh": RequirementItem(resource_type="volume_mesh", filename="simulation.json"),
+    "volume_mesh/stats": RequirementItem(
+        resource_type="volume_mesh", filename=VolumeMeshV2._mesh_stats_file
+    ),
 }
 
 
-def get_requirements_from_data_path(data_path)->List[RequirementItem]:
+def get_requirements_from_data_path(data_path) -> List[RequirementItem]:
     """
     Retrieves requirements based on data path entries by mapping root paths
     to their corresponding requirements.
@@ -88,7 +111,7 @@ def detect_latex_compiler():
     Raises:
         RuntimeError: If no LaTeX compiler is found.
     """
-    preferred_compilers = [('xelatex', []), ('latexmk', ['--pdf']), ('pdflatex', [])]
+    preferred_compilers = [("xelatex", []), ("latexmk", ["--pdf"]), ("pdflatex", [])]
     for compiler, compiler_args in preferred_compilers:
         if shutil.which(compiler):
             return compiler, compiler_args
@@ -170,15 +193,16 @@ def get_root_path(data_path):
         if isinstance(data_path, (Delta, DataItem)):
             data_path = data_path.data
         if isinstance(data_path, DataItem):
-            data_path = data_path.data     
+            data_path = data_path.data
         return data_path
     return None
 
 
 def split_path(path):
     # Split the path using both '/' and '.' as separators
-    path_components = [comp for comp in re.split(r'[/.]', path) if comp]
+    path_components = [comp for comp in re.split(r"[/.]", path) if comp]
     return path_components
+
 
 # pylint: disable=too-many-return-statements
 def data_from_path(
@@ -221,10 +245,9 @@ def data_from_path(
         if case_by_case:
             return path.model_copy(update={"ref_index": None}).calculate(case, cases)
         return path.calculate(case, cases)
-    
+
     if isinstance(path, DataItem):
         return path.calculate(case, cases)
-
 
     # Split path into components
     path_components = split_path(path)
@@ -274,7 +297,7 @@ def data_from_path(
 
         if isinstance(case, case_results.PerEntityResultCSVModel):
             return case
-        
+
         # Check if component is a key of a value
         try:
             return case.values[component]
@@ -306,8 +329,7 @@ class Average(GenericOperation):
     start_time: Optional[pd.NonNegativeFloat] = None
     end_time: Optional[pd.NonNegativeFloat] = None
     fraction: Optional[pd.PositiveFloat] = pd.Field(None, le=1)
-    type_name: Literal['Average'] = pd.Field('Average', frozen=True)
-
+    type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
     model_config = pd.ConfigDict(
         conflicting_fields=[
@@ -328,7 +350,9 @@ class Average(GenericOperation):
             averages = data.get_averages(avarage_fraction=self.fraction)
             return data, cases, averages
 
-        raise NotImplementedError(f'{self.__class__.__name__} not implemented for data type: {type(data)=}')
+        raise NotImplementedError(
+            f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
+        )
 
 
 class Variable(Flow360BaseModel):
@@ -338,23 +362,22 @@ class Variable(Flow360BaseModel):
 
 class Expression(GenericOperation):
     expr: str
-    type_name: Literal['Expression'] = pd.Field('Expression', frozen=True)
+    type_name: Literal["Expression"] = pd.Field("Expression", frozen=True)
 
     @classmethod
     def get_variables(cls, expr):
         """
         Parse the expression and return a set of variable names.
         """
-        tree = ast.parse(expr, mode='eval')
+        tree = ast.parse(expr, mode="eval")
         return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
-
 
     @classmethod
     def evaluate_expression(cls, df, expr, variables: List[Variable], new_variable_name, case):
         """
         Evaluate the expression on the dataframe and add the result as a new column.
         """
-        expr_variables = cls.get_variables(expr)        
+        expr_variables = cls.get_variables(expr)
         missing_vars = expr_variables - set(df.columns)
         found_variables = set()
         for missing_var in missing_vars:
@@ -368,33 +391,36 @@ class Expression(GenericOperation):
                 log.warning(e)
         missing_vars -= found_variables
         if missing_vars:
-            raise ValueError(f"The following variables are missing in the dataframe: {', '.join(missing_vars)}")
-        
+            raise ValueError(
+                f"The following variables are missing in the dataframe: {', '.join(missing_vars)}"
+            )
+
         local_dict = {var: df[var].values for var in expr_variables}
-        
+
         try:
             result = ne.evaluate(expr, local_dict)
         except Exception as e:
             raise ValueError(f"Error evaluating expression: {e}")
-        
+
         df[new_variable_name] = result
         return df
-
 
     def calculate(self, data, case, cases, variables, new_variable_name):
         log.debug(f"evaluating expression {self.expr}, {case.id=}")
 
         if isinstance(data, case_results.SurfaceForcesResultCSVModel):
-            df = self.evaluate_expression(data.as_dataframe(), self.expr, variables, new_variable_name, case)
+            df = self.evaluate_expression(
+                data.as_dataframe(), self.expr, variables, new_variable_name, case
+            )
             data.update(df)
             return data, cases, data.values
 
-        raise NotImplementedError(f'{self.__class__.__name__} not implemented for data type: {type(data)=}')
-
+        raise NotImplementedError(
+            f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
+        )
 
 
 OperationTypes = Annotated[Union[Average, Expression], pd.Field(discriminator="type_name")]
-
 
 
 class Delta(pd.BaseModel):
@@ -472,7 +498,7 @@ class DataItem(pd.BaseModel):
     variables: Optional[List[Variable]] = None
     type_name: Literal["DataItem"] = pd.Field("DataItem", frozen=True)
 
-    @pd.model_validator(mode='before')
+    @pd.model_validator(mode="before")
     def validate_operations(cls, values):
         operations = values.get("operations")
         if operations is None:
@@ -480,7 +506,6 @@ class DataItem(pd.BaseModel):
         elif not isinstance(operations, list):
             values["operations"] = [operations]
         return values
-
 
     def _preprocess_data(self, case):
         source = data_from_path(case, self.data)
@@ -495,12 +520,15 @@ class DataItem(pd.BaseModel):
                 variable_name = full_path[-1]
                 self.operations.insert(0, Expression(expr=variable_name))
             else:
-                raise ValueError(f'{self.__class__.__name__}, unknown input: data={self.data}, allowed single <source> or <source>/<variable>')
-            
+                raise ValueError(
+                    f"{self.__class__.__name__}, unknown input: data={self.data}, allowed single <source> or <source>/<variable>"
+                )
+
             return source, new_variable_name
 
-        raise NotImplementedError(f'{self.__class__.__name__} not implemented for data type: data={self.data}, {type(source)=}')
-
+        raise NotImplementedError(
+            f"{self.__class__.__name__} not implemented for data type: data={self.data}, {type(source)=}"
+        )
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
         """
@@ -533,18 +561,17 @@ class DataItem(pd.BaseModel):
             source, new_variable_name = self._preprocess_data(case)
             if len(self.operations) > 0:
                 for opr in self.operations:
-                    source, cases, result = opr.calculate(source, case, cases, self.variables, new_variable_name)
+                    source, cases, result = opr.calculate(
+                        source, case, cases, self.variables, new_variable_name
+                    )
                 return result[new_variable_name]
 
             return source
-
 
     def __str__(self):
         if self.title is not None:
             return self.title
         return split_path(self.data)[-1]
-
-
 
 
 # pylint: disable=too-few-public-methods
@@ -564,16 +591,102 @@ class Tabulary(Tabular):
         super().__init__(*args, start_arguments=width_argument, **kwargs)
 
 
+def generate_colorbar_from_image(
+    image_filename=os.path.join(here, "img/colorbar.png"),
+    limits: Tuple[float, float] = (0, 1),
+    field_name: str = "Field",
+    output_filename="colorbar_with_ticks.png",
+    height_px=25,
+    is_log_scale=False,
+):
+    """
+    Generate a color bar image from an existing PNG file with ticks and labels.
 
-here = os.path.dirname(os.path.abspath(__file__))
-font_path = posixpath.join(here, 'fonts/')
-font_definition = r'''
+    This function reads a colormap from a provided PNG file (a horizontal strip of
+    colors), and overlays ticks and labels according to the specified value limits
+    and scale type (linear or logarithmic).
+
+    For a linear scale, matplotlib automatically chooses the number and format of
+    ticks. For a log scale, a twin axis is used for proper tick placement without
+    distorting the color distribution.
+
+    Parameters
+    ----------
+    image_filename : str
+        Path to the colormap PNG file (horizontal strip).
+    limits : tuple of float
+        A tuple (min_value, max_value) specifying the data range.
+        If `is_log_scale` is True, `max_value` must be greater than 0.
+    field_name : str
+        The field name for the label.
+    output_filename : str
+        The output filename for the resulting image with ticks.
+    height_px : int
+        The height in pixels for the color bar image.
+    is_log_scale : bool
+        If True, use a log scale axis for ticks and minor ticks.
+
+    Returns
+    -------
+    None
+        The resulting image is saved to `output_filename`.
+
+    Notes
+    -----
+    - On a log scale, the main colorbar axis remains linear to avoid deforming
+      the color distribution. A twin axis is used solely for log-scale labeling.
+    """
+
+    img = Image.open(image_filename)
+    original_width, _ = img.size
+    new_size = (original_width, height_px)
+    img_resized = img.resize(new_size, Image.LANCZOS)
+    img_array = np.array(img_resized)
+
+    dpi = 200
+    width_inch = new_size[0] / dpi * 4
+    height_inch = height_px / dpi
+
+    fig, ax = plt.subplots(figsize=(width_inch, height_inch), dpi=dpi)
+
+    min_value = limits[0]
+    max_value = limits[1]
+
+    ax.imshow(img_array, aspect="auto", extent=[min_value, max_value, 0, 1])
+
+    ax.get_yaxis().set_visible(False)
+
+    if is_log_scale:
+        if min_value <= 0:
+            raise ValueError("min_value must be >0 for log scale.")
+
+        ax2 = ax.twiny()
+        ax2.set_xscale("log")
+        ax2.set_xlim(min_value, max_value)
+
+        ax2.xaxis.set_major_formatter(LogFormatterSciNotation())
+        ax2.tick_params(
+            axis="x", which="both", top=True, bottom=False, labeltop=True, labelbottom=False
+        )
+        ax.set_xticks([])
+
+    ax.set_xlabel(field_name, fontsize=10)
+    plt.savefig(output_filename, bbox_inches="tight", pad_inches=0.05)
+    plt.close(fig)
+
+
+font_path = posixpath.join(here, "fonts/")
+font_definition = (
+    r"""
 \setmainfont{TWKEverett}[
-    Path = ''' + font_path + r''',
+    Path = """
+    + font_path
+    + r""",
     Extension = .otf,
     UprightFont = *-Regular,
     ItalicFont = *-RegularItalic,
     BoldFont = *-Bold,
     BoldItalicFont = *-BoldItalic,
 ]
-'''
+"""
+)
