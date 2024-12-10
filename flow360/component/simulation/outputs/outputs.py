@@ -134,7 +134,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # pylint: disable=fixme
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
-    name: Optional[str] = pd.Field(None, description="Name of the `SurfaceOutput`.")
+    name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
     entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
         description="List of output :class:`~flow360.Surface`/"
@@ -180,6 +180,10 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average surface output", description="Name of the `TimeAverageSurfaceOutput`."
+    )
+
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging."
     )
@@ -203,7 +207,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `VolumeOutput`.")
+    name: Optional[str] = pd.Field("Volume output", description="Name of the `VolumeOutput`.")
     output_fields: UniqueItemList[Union[VolumeFieldNames, str]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
@@ -234,6 +238,9 @@ class TimeAverageVolumeOutput(VolumeOutput):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average volume output", description="Name of the `TimeAverageVolumeOutput`."
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging."
     )
@@ -264,7 +271,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `SliceOutput`.")
+    name: Optional[str] = pd.Field("Slice output", description="Name of the `SliceOutput`.")
     entities: EntityList[Slice] = pd.Field(
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
@@ -305,6 +312,9 @@ class TimeAverageSliceOutput(SliceOutput):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average slice output", description="Name of the `TimeAverageSliceOutput`."
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging."
     )
@@ -345,7 +355,9 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `IsosurfaceOutput`.")
+    name: Optional[str] = pd.Field(
+        "Isosurface output", description="Name of the `IsosurfaceOutput`."
+    )
     entities: UniqueItemList[Isosurface] = pd.Field(
         alias="isosurfaces",
         description="List of :class:`~flow360.Isosurface` entities.",
@@ -382,8 +394,9 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field()
-
+    name: str = pd.Field(
+        "Surface integral output", description="Name of the `SurfaceIntegralOutput`."
+    )
     entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
         description="List of :class:`~flow360.component.simulation.primitives.Surface`/"
@@ -630,7 +643,9 @@ class AeroAcousticOutput(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `AeroAcousticOutput`.")
+    name: Optional[str] = pd.Field(
+        "Aeroacoustic output", description="Name of the `AeroAcousticOutput`."
+    )
     patch_type: Literal["solid"] = pd.Field("solid", frozen=True)
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field(
