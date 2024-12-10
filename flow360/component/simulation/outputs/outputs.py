@@ -394,9 +394,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(
-        "Surface integral output", description="Name of the `SurfaceIntegralOutput`."
-    )
+    name: str = pd.Field(description="Name of integral.")
     entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
         description="List of :class:`~flow360.component.simulation.primitives.Surface`/"
