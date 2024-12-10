@@ -33,6 +33,17 @@ class Sutherland(Flow360BaseModel):
     Represents Sutherland's law for calculating dynamic viscosity.
     This class implements Sutherland's formula to compute the dynamic viscosity of a gas
     as a function of temperature.
+
+    Example
+    -------
+
+    >>> fl.Sutherland(
+    ...     reference_viscosity=1.70138e-5 * fl.u.Pa * fl.u.s,
+    ...     reference_temperature=300.0 * fl.u.K,
+    ...     effective_temperature=110.4 * fl.u.K,
+    ... )
+
+    ====
     """
 
     # pylint: disable=no-member
@@ -76,6 +87,15 @@ class Air(MaterialBase):
     Represents the material properties for air.
     This sets specific material properties for air,
     including dynamic viscosity, specific heat ratio, gas constant, and Prandtl number.
+
+    Example
+    -------
+
+    >>> fl.Air(
+    ...     dynamic_viscosity=1.063e-05 * fl.u.Pa * fl.u.s
+    ... )
+
+    ====
     """
 
     type: Literal["air"] = pd.Field("air", frozen=True)
@@ -195,6 +215,18 @@ class Air(MaterialBase):
 class SolidMaterial(MaterialBase):
     """
     Represents the solid material properties for heat transfer volume.
+
+    Example
+    -------
+
+    >>> fl.SolidMaterial(
+    ...     name="aluminum",
+    ...     thermal_conductivity=235 * fl.u.kg / fl.u.s**3 * fl.u.m / fl.u.K,
+    ...     density=2710 * fl.u.kg / fl.u.m**3,
+    ...     specific_heat_capacity=903 * fl.u.m**2 / fl.u.s**2 / fl.u.K,
+    ... )
+
+    ====
     """
 
     type: Literal["solid"] = pd.Field("solid", frozen=True)
