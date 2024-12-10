@@ -17,7 +17,7 @@ with fl.SI_unit_system:
             moment_length=[1.47601, 0.80167, 1.47601],
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=11.72,
+            reynolds=11.72e6,
             mach=0.84,
             project_length_unit=0.80167 * fl.u.m,
             temperature=297.78,
