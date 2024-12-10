@@ -26,8 +26,8 @@ with fl.SI_unit_system:
         ),
         models=[
             fl.Wall(name="NoSlipWall", surfaces=[volume_mesh["1"]]),
-            fl.SlipWall(name="SlipWall",surfaces=[volume_mesh["2"]]),
-            fl.Freestream(name="Freestream",surfaces=[volume_mesh["3"]]),
+            fl.SlipWall(name="SlipWall", surfaces=[volume_mesh["2"]]),
+            fl.Freestream(name="Freestream", surfaces=[volume_mesh["3"]]),
         ],
         time_stepping=fl.Steady(
             max_steps=2000,
