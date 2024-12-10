@@ -6,7 +6,6 @@ import pytest
 import flow360.component.simulation.units as u
 from examples.migration_guide.extra_operating_condition import (
     operating_condition_from_mach_muref,
-    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -36,6 +35,7 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
+    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.primitives import (
     Box,
