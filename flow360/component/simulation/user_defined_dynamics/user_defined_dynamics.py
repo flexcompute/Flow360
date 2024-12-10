@@ -53,9 +53,9 @@ class UserDefinedDynamic(Flow360BaseModel):
     input_vars: List[str] = pd.Field(
         description="List of the inputs to define the user defined dynamics. For example :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "
-        + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to :ref:`momentCenter "
-        + "<geometryConfiguration>`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. For a full list of supported "
-        + "variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
+        + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to "
+        + ":py:attr:`~ReferenceGeometry.moment_center`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. "
+        + "For a full list of supported variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
     )
     constants: Optional[Dict[str, float]] = pd.Field(
         None, description="A list of constants that can be used in the expressions."
