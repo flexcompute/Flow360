@@ -91,6 +91,19 @@ class _AnimationSettings(Flow360BaseModel):
         + " 0 is at beginning of simulation.",
     )
 
+    frequency_in_pseudo_stepping: int = pd.Field(
+        default=-1,
+        ge=-1,
+        description="Frequency (in number of pseudo time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset_in_pseudo_stepping: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of pseudo time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
+
 
 class _AnimationAndFileFormatSettings(_AnimationSettings):
     """

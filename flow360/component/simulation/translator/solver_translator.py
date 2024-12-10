@@ -96,6 +96,16 @@ def init_non_average_output(
         class_type,
         "frequency_offset",
     )
+    base["animationFrequencyInPseudoStepping"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency_in_pseudo_stepping",
+    )
+    base["animationFrequencyOffsetInPseudoStepping"] = get_global_setting_from_first_instance(
+        obj_list,
+        class_type,
+        "frequency_offset_in_pseudo_stepping",
+    )
     return base
 
 
