@@ -295,6 +295,7 @@ def test_mach_reynolds_op_cond():
             mach=0.2,
             reynolds=0,
             temperature=288.15 * u.K,
+            project_length_unit=u.m,
         )
 
 
