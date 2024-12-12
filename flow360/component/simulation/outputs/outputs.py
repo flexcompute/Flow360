@@ -654,9 +654,16 @@ class AeroAcousticOutput(Flow360BaseModel):
     name: Optional[str] = pd.Field(
         "Aeroacoustic output", description="Name of the `AeroAcousticOutput`."
     )
-    patch_type: Literal["solid", "permeable"] = pd.Field(default="solid")
+    patch_type: Literal["solid", "permeable"] = pd.Field(
+        default="solid",
+        description="Type of aeroacoustic simulation to "
+        + "perform. `solid` uses solid walls to compute the "
+        + "aeroacoustic solution. `permeable` uses surfaces "
+        + "embedded in the volumetric domain as aeroacoustic solver "
+        + "input.",
+    )
     permeable_surfaces: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
-        None, description="List of permeable surfaces."
+        None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field(
