@@ -638,6 +638,16 @@ class AeroAcousticOutput(Flow360BaseModel):
     ...     ],
     ... )
 
+    Using permeable surfaces:
+    >>> fl.AeroAcousticOutput(
+    ...     observers=[
+    ...         [1.0, 0.0, 1.75] * fl.u.m,
+    ...         [0.2, 0.3, 1.725] * fl.u.m,
+    ...     ],
+    ...     patch_type="permeable",
+    ...     permeable_surfaces=[volume_mesh["inner/interface*"]]
+    ... )
+
     ====
     """
 
@@ -645,7 +655,9 @@ class AeroAcousticOutput(Flow360BaseModel):
         "Aeroacoustic output", description="Name of the `AeroAcousticOutput`."
     )
     patch_type: Literal["solid", "permeable"] = pd.Field(default="solid")
-    permeable_surfaces: Optional[List[str]] = pd.Field([], alias="permeableSurfaces")
+    permeable_surfaces: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
+        None, description="List of permeable surfaces."
+    )
     # pylint: disable=no-member
     observers: List[LengthType.Point] = pd.Field(
         description="List of observer locations at which time history of acoustic pressure signal "
@@ -658,6 +670,16 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+
+    @pd.model_validator(mode="after")
+    def check_consistent_patch_type_and_permeable_surfaces(self):
+        """Check if permeable_surfaces is None when patch_type is solid."""
+        if self.patch_type == "solid" and self.permeable_surfaces is not None:
+            raise ValueError("`permeable_surfaces` cannot be specified when `patch_type` is solid.")
+        if self.patch_type == "permeable" and self.permeable_surfaces is None:
+            raise ValueError("`permeable_surfaces` cannot be empty when `patch_type` is permeable.")
+
+        return self
 
 
 OutputTypes = Annotated[

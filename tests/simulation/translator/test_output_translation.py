@@ -783,13 +783,37 @@ def aeroacoustic_output_config():
             "observers": [[0.002, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
-            "permeableSurfaces": [],
         },
     )
 
 
-def test_acoustic_output(aeroacoustic_output_config):
-    ##:: monitorOutput with global probe settings
+@pytest.fixture()
+def aeroacoustic_output_permeable_config():
+    return (
+        [
+            AeroAcousticOutput(
+                observers=[[1.2, 0.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                patch_type="permeable",
+                permeable_surfaces=[
+                    Surface(
+                        name="interface-A-B", private_attribute_full_name="zoneA/interface-A-B"
+                    ),
+                    Surface(
+                        name="interface-A-C", private_attribute_full_name="zoneA/interface-A-C"
+                    ),
+                ],
+            ),
+        ],
+        {
+            "observers": [[0.012, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
+            "patchType": "permeable",
+            "permeableSurfaces": ["zoneA/interface-A-B", "zoneA/interface-A-C"],
+            "writePerSurfaceOutput": False,
+        },
+    )
+
+
+def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeable_config):
     with SI_unit_system:
         param = SimulationParams(outputs=aeroacoustic_output_config[0])
     translated = {"boundaries": {}}
@@ -797,6 +821,16 @@ def test_acoustic_output(aeroacoustic_output_config):
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
+        translated["aeroacousticOutput"].items()
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=aeroacoustic_output_permeable_config[0])
+    translated = {"boundaries": {}}
+    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+
+    assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
         translated["aeroacousticOutput"].items()
     )
 
