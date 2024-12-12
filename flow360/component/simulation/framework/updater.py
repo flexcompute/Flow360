@@ -47,7 +47,7 @@ def _find_update_path(version_from, version_to, update_map=UPDATE_MAP):
 
         if not found_next_version:
             raise Flow360NotImplementedError(
-                f"No updater flow between {version_from} and {version_to} exists as of now"
+                f"No updater flow from {version_from} to {version_to} exists as of now"
             )
 
         if len(path) > len(update_map):
