@@ -3,23 +3,24 @@ This module is reponsible for communicating with UVF-shutter service
 """
 
 import asyncio
-import os
-import time
 import json
+import os
+import reprlib
+import shutil
+import subprocess
+import time
 import zipfile
+from collections import defaultdict
 from functools import wraps
 from typing import Any, List, Literal, Optional, Tuple, Union
 from urllib.parse import urljoin
-from collections import defaultdict
-import reprlib
-
-
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
 # pylint: disable=import-error
 import aiohttp
 import backoff
 import pydantic as pd
+
 from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
@@ -35,7 +36,6 @@ class ShutterRequestBaseModel(Flow360BaseModel):
 
     # def model_dump_json(self, **kwargs):
     #     return super().model_dump_json(by_alias=True, **kwargs)
-
 
 
 ShutterObjectTypes = Literal["slices", "qcriterion", "boundaries", "edges"]
@@ -73,8 +73,8 @@ class Resolution(Flow360BaseModel):
         Height of the resolution in pixels.
     """
 
-    width: pd.PositiveInt = 3840
-    height: pd.PositiveInt = 2160
+    width: pd.PositiveInt = 1920
+    height: pd.PositiveInt = 1080
 
 
 class Settings(Flow360BaseModel):
@@ -92,6 +92,7 @@ class Settings(Flow360BaseModel):
     model_config = Flow360BaseModel.model_config.copy()
     model_config.update({"frozen": True})
 
+
 class SetObjectVisibilityPayload(Flow360BaseModel):
     """
     Payload for setting the visibility of objects.
@@ -106,6 +107,13 @@ class SetObjectVisibilityPayload(Flow360BaseModel):
 
     object_ids: List[Union[ShutterObjectTypes, str]]
     visibility: bool
+
+
+class SetColormapPayload(Flow360BaseModel):
+    type: Literal["Rainbow"] = "Rainbow"
+    steps: Optional[
+        List[float]
+    ]  # eg: [0, 0.25, 0.5, 0.75, 1.0], // Always sorted before use, 0 and 1 implicitly added if not specified
 
 
 class SetFieldPayload(Flow360BaseModel):
@@ -126,6 +134,29 @@ class SetFieldPayload(Flow360BaseModel):
     field_name: str
     min_max: Tuple[float, float]
     is_log_scale: bool
+    # colormap: Optional[SetColormapPayload] = None
+
+
+class TakeLegendScreenshotPayload(Flow360BaseModel):
+    """
+    Payload for setting field parameters on an object.
+
+    Parameters
+    ----------
+    object_id : ShutterObjectTypes
+        Identifier of the object for field setting.
+    field_name : str
+        Name of the field to modify.
+    min_max : Tuple[float, float]
+        Minimum and maximum values for the field.
+    """
+
+    object_id: ShutterObjectTypes
+    file_name: str = pd.Field(alias="filename")
+    type: str = "png"
+    width: Optional[pd.PositiveInt] = 400
+    height: Optional[pd.PositiveInt] = 60
+    title: Optional[str] = None  # use to overwrite title, default is field name
 
 
 class SetLICPayload(Flow360BaseModel):
@@ -231,6 +262,7 @@ ActionTypes = Literal[
     "reset-field",
     "set-camera",
     "take-screenshot",
+    "take-legend-screenshot",
 ]
 
 
@@ -252,6 +284,7 @@ class ActionPayload(Flow360BaseModel):
             SetObjectVisibilityPayload,
             SetFieldPayload,
             TakeScreenshotPayload,
+            TakeLegendScreenshotPayload,
             ResetFieldPayload,
             SetCameraPayload,
             FocusPayload,
@@ -352,7 +385,6 @@ def http_interceptor(func):
     return wrapper
 
 
-
 def combine(model_a, model_b, key_to_combine, eq: callable):
     if eq(model_a, model_b):
         attr_a = getattr(model_a, key_to_combine)
@@ -366,7 +398,6 @@ def combine(model_a, model_b, key_to_combine, eq: callable):
             raise TypeError(f"The attribute '{key_to_combine}' is not a list in both models.")
 
     return model_a, False
-
 
 
 class ShutterBatchService:
@@ -384,16 +415,15 @@ class ShutterBatchService:
         stored_scenes: List[Scene] = self.requests.get(resource, [])
         for scene in new_scenes:
             appended = False
-            eq = lambda a,b: a.name == b.name and a.settings == b.settings
+            eq = lambda a, b: a.name == b.name and a.settings == b.settings
             for i, stored_scene in enumerate(stored_scenes):
-                combined_scene, appended = combine(stored_scene, scene, 'script', eq)
+                combined_scene, appended = combine(stored_scene, scene, "script", eq)
                 if appended:
                     stored_scenes[i] = combined_scene
                     break
             if appended is False:
                 stored_scenes.append(scene.copy())
         return stored_scenes
-    
 
     def _merge_visibility_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
         """
@@ -405,14 +435,16 @@ class ShutterBatchService:
         last_visibility_action_index = -1
 
         for action_index, action in enumerate(actions):
-            if action.action == 'set-object-visibility':
+            if action.action == "set-object-visibility":
                 payload = action.payload
                 if not isinstance(payload, SetObjectVisibilityPayload):
                     raise TypeError("Payload must be of type SetObjectVisibilityPayload")
 
                 if last_visibility_action and action_index == last_visibility_action_index + 1:
                     if payload.visibility == last_visibility_action.payload.visibility:
-                        combined_object_ids = set(last_visibility_action.payload.object_ids) | set(payload.object_ids)
+                        combined_object_ids = set(last_visibility_action.payload.object_ids) | set(
+                            payload.object_ids
+                        )
                         last_visibility_action.payload.object_ids = list(combined_object_ids)
                         continue
 
@@ -431,8 +463,9 @@ class ShutterBatchService:
 
         return merged_actions
 
-
-    def _remove_redundant_visibility_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
+    def _remove_redundant_visibility_actions(
+        self, actions: List[ActionPayload]
+    ) -> List[ActionPayload]:
         """
         Optimizes 'set-object-visibility' actions by removing redundant actions and sequences.
 
@@ -451,7 +484,7 @@ class ShutterBatchService:
         current_sequence = []
 
         for action in actions:
-            if action.action == 'set-object-visibility':
+            if action.action == "set-object-visibility":
                 payload = action.payload
                 if not isinstance(payload, SetObjectVisibilityPayload):
                     raise TypeError("Payload must be of type SetObjectVisibilityPayload")
@@ -459,7 +492,8 @@ class ShutterBatchService:
             else:
                 if current_sequence:
                     sequence_key = tuple(
-                        (tuple(sorted(a.payload.object_ids)), a.payload.visibility) for a in current_sequence
+                        (tuple(sorted(a.payload.object_ids)), a.payload.visibility)
+                        for a in current_sequence
                     )
                     if sequence_key != visibility_sequence:
                         visibility_sequence = sequence_key
@@ -469,15 +503,17 @@ class ShutterBatchService:
 
         if current_sequence:
             sequence_key = tuple(
-                (tuple(sorted(a.payload.object_ids)), a.payload.visibility) for a in current_sequence
+                (tuple(sorted(a.payload.object_ids)), a.payload.visibility)
+                for a in current_sequence
             )
             if sequence_key != visibility_sequence:
                 optimized_actions.extend(current_sequence)
 
         return optimized_actions
 
-
-    def _remove_redundant_set_field_actions(self, actions: List[ActionPayload]) -> List[ActionPayload]:
+    def _remove_redundant_set_field_actions(
+        self, actions: List[ActionPayload]
+    ) -> List[ActionPayload]:
         """
         Removes redundant 'set-field' actions when the payload has not changed between calls.
 
@@ -492,10 +528,10 @@ class ShutterBatchService:
         optimized_actions = []
         last_set_field_payload = None
 
-        field_affecting_actions = {'reset-field', 'set-field'}
+        field_affecting_actions = {"reset-field", "set-field"}
 
         for action in actions:
-            if action.action == 'set-field':
+            if action.action == "set-field":
                 payload = action.payload
                 if not isinstance(payload, SetFieldPayload):
                     raise TypeError("Payload must be of type SetFieldPayload")
@@ -510,9 +546,6 @@ class ShutterBatchService:
 
         return optimized_actions
 
-
-
-
     def add_request(self, request: ScenesData):
         stored_scenes = self._merge_similar_scenes(request.resource, request.scenes)
 
@@ -521,17 +554,17 @@ class ShutterBatchService:
 
         for stored_scene in stored_scenes:
             stored_scene.script = self._remove_redundant_visibility_actions(stored_scene.script)
-            
+
         for stored_scene in stored_scenes:
             stored_scene.script = self._remove_redundant_set_field_actions(stored_scene.script)
 
-
         self.requests[request.resource] = stored_scenes
 
-
     def get_batch_requests(self):
-        return [ScenesData(resource=resource, scenes=scenes) for resource, scenes in self.requests.items()]
-
+        return [
+            ScenesData(resource=resource, scenes=scenes)
+            for resource, scenes in self.requests.items()
+        ]
 
     def process_requests(self, context):
         """
@@ -546,8 +579,6 @@ class ShutterBatchService:
         context_data = {k: v for k, v in context_data.items() if v is not None}
         img_files = Shutter(**context_data).get_images("None", self.get_batch_requests())
         return img_files
-
-
 
 
 class Shutter(Flow360BaseModel):
@@ -565,14 +596,97 @@ class Shutter(Flow360BaseModel):
     """
 
     data_storage: str = "."
-    url: str = pd.Field(
-        default_factory=lambda: f"https://shutter-api.{Env.current.domain}"
-    )
+    url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
     use_cache: bool = True
     access_token: Optional[str] = None
 
-    async def _get_3d_images(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-        @backoff.on_exception(lambda: backoff.constant(3), Flow360WebNotAvailableError, max_time=3600)
+    async def _get_3d_images_cli(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
+
+        def move_files(files: list[str], generated_folder: str, output_folder: str):
+            for file_name in files:
+                # Define the full file path
+                source_file = os.path.join(generated_folder, file_name)
+                destination_file = os.path.join(output_folder, file_name)
+
+                # Move the file
+                shutil.move(source_file, destination_file)
+                log.debug(f"moved {source_file} to {destination_file}")
+
+        async def _build_image_from_local(
+            shutter_request: list[dict], output_folder: str
+        ) -> list[str]:
+            input_folder = os.path.join(output_folder, "input")
+            os.makedirs(input_folder, exist_ok=True)
+
+            log.info(
+                f"dumping the shutter request {shutter_request} to local folder {input_folder}/sequence.json"
+            )
+            with open(os.path.join(input_folder, "sequence.json"), "w") as json_file:
+                json.dump(shutter_request, json_file, indent=4)
+
+            sequence_file_path = os.path.join(input_folder, "sequence.json")
+            with open(sequence_file_path, "r") as file:
+                # Read the content of the file
+                file_content = file.read()
+                # Print the content of the file
+                log.debug(f"generate the sequence.json file: {file_content}")
+
+            generated_folder = os.path.join(output_folder, "shutter_generated")
+            # keep the folder structure as same as s3 storage
+            # mainfest_folder has all of bin files and manifest.json
+            manifest_folder = os.path.join(output_folder, "visualize/manifest")
+            docker_command = [
+                "docker",
+                "run",
+                "--init",
+                "--gpus",
+                "all",
+                "-v",
+                manifest_folder + ":/usr/src/app/apps/sandbox/dist/input/:ro",
+                "-v",
+                generated_folder + ":/output/:rw",
+                "-v",
+                sequence_file_path + ":/sequence.json",
+                "shutter",
+                "sequence",
+                "run",
+                "/sequence.json",
+            ]
+            log.debug(f"execute the docker command: {' '.join(docker_command)}")
+            result = subprocess.run(docker_command, shell=False, check=True)
+            log.info(f"completed the docker run with return :{result.returncode}")
+
+            entries = os.listdir(generated_folder)
+            file_names: list[str] = [
+                entry for entry in entries if os.path.isfile(os.path.join(generated_folder, entry))
+            ]
+            move_files(file_names, generated_folder, output_folder)
+            return file_names
+
+        tasks = []
+        for case_id, img_folder, shutter_request in screenshots:
+            os.makedirs(img_folder, exist_ok=True)
+            tasks.append(
+                _build_image_from_local(shutter_request=shutter_request, output_folder=img_folder)
+            )
+
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for response in responses:
+            if isinstance(response, Exception):
+                raise response
+
+        img_files = {}
+        for file_names, (case_id, img_folder, _) in zip(responses, screenshots):
+            img_files[case_id] = [os.path.join(img_folder, file_name) for file_name in file_names]
+
+        log.debug(f"complete the shutter file generation: {json.dumps(img_files)}")
+        return img_files
+
+    async def _get_3d_images_api(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
+        @backoff.on_exception(
+            lambda: backoff.constant(3), Flow360WebNotAvailableError, max_time=3600
+        )
         @http_interceptor
         async def _get_image_sequence(
             session: aiohttp.client.ClientSession, url: str, shutter_request: list[dict]
@@ -595,9 +709,7 @@ class Shutter(Flow360BaseModel):
                         shutter_request=shutter_request,
                     )
                 )
-                log.debug(
-                    f"request to shutter: {json.dumps(shutter_request)}"
-                )
+                log.debug(f"request to shutter: {json.dumps(shutter_request)}")
 
             responses = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -624,7 +736,7 @@ class Shutter(Flow360BaseModel):
 
         return img_files
 
-    def get_images(self, fig_name, data: List[ScenesData]) -> dict[str, List]:
+    def get_images(self, fig_name, data: List[ScenesData], use_cli: bool = True) -> dict[str, List]:
         """
         Generates or retrieves cached image files for scenes.
 
@@ -649,7 +761,11 @@ class Shutter(Flow360BaseModel):
             img_full_path = os.path.join(img_folder, img_name)
             if not os.path.exists(img_full_path) or self.use_cache is False:
                 screenshots.append(
-                    (case_id, img_folder, data_item.model_dump(by_alias=True, exclude_unset=True, exclude_none=True))
+                    (
+                        case_id,
+                        img_folder,
+                        data_item.model_dump(by_alias=True, exclude_unset=True, exclude_none=True),
+                    )
                 )
             else:
                 log.debug(f"File: {img_name=} exists in cache, reusing.")
@@ -658,6 +774,10 @@ class Shutter(Flow360BaseModel):
                 else:
                     cached_files[case_id].append(img_full_path)
 
-        img_files_generated = asyncio.run(self._get_3d_images(screenshots))
+        if use_cli is True:
+            process_function = self._get_3d_images_cli
+        else:
+            process_function = self._get_3d_images_api
+        img_files_generated = asyncio.run(process_function(screenshots))
 
         return {**img_files_generated, **cached_files}

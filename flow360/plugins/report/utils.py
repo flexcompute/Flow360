@@ -592,7 +592,7 @@ class Tabulary(Tabular):
 
 
 def generate_colorbar_from_image(
-    image_filename=os.path.join(here, "img/colorbar.png"),
+    image_filename=os.path.join(here, "img", "colorbar_25bands.jpeg"),
     limits: Tuple[float, float] = (0, 1),
     field_name: str = "Field",
     output_filename="colorbar_with_ticks.png",
