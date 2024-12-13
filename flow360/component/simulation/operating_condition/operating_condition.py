@@ -202,19 +202,20 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     ====
     """
 
+    private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
         "GenericReferenceCondition", frozen=True
     )
     velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
         description="Reference and freestream thermal state. Defaults to US standard atmosphere at sea level.",
     )
-    private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
 
     # pylint: disable=no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
@@ -232,6 +233,13 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
+
+    @pd.field_validator("thermal_state", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        """Update the input cache with center."""
+        info.data["private_attribute_input_cache"].thermal_state = value
+        return value
 
 
 class AerospaceConditionCache(Flow360BaseModel):
@@ -268,6 +276,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     ====
     """
 
+    private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
     alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
@@ -275,6 +284,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
+        frozen=True,
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -284,8 +294,8 @@ class AerospaceCondition(MultiConstructorBaseModel):
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
         description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
+        frozen=True,
     )
-    private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
@@ -380,6 +390,27 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
+
+    @pd.field_validator("alpha", mode="after")
+    @classmethod
+    def _update_input_cache_alpha(cls, value, info: pd.ValidationInfo):
+        """Update the input cache with alpha."""
+        info.data["private_attribute_input_cache"].alpha = value
+        return value
+
+    @pd.field_validator("beta", mode="after")
+    @classmethod
+    def _update_input_cache_beta(cls, value, info: pd.ValidationInfo):
+        """Update the input cache with beta."""
+        info.data["private_attribute_input_cache"].beta = value
+        return value
+
+    @pd.field_validator("thermal_state", mode="after")
+    @classmethod
+    def _update_input_cache_thermal_state(cls, value, info: pd.ValidationInfo):
+        """Update the input cache with thermal_state."""
+        info.data["private_attribute_input_cache"].thermal_state = value
+        return value
 
 
 # pylint: disable=fixme

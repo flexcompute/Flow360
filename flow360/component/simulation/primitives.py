@@ -263,6 +263,8 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     ====
     """
 
+    # private_attribute_input_cache has to be defined first for field validators to work.
+    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
@@ -270,9 +272,16 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     size: LengthType.PositiveVector = pd.Field(
         description="The dimensions of the box (length, width, height)."
     )
-    axis_of_rotation: Axis = pd.Field(default=(0, 0, 1), description="The rotation axis.")
-    angle_of_rotation: AngleType = pd.Field(default=0 * u.degree, description="The rotation angle.")
-    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    axis_of_rotation: Axis = pd.Field(
+        default=(0, 0, 1),
+        description="The rotation axis. Cannot change once specified.",
+        frozen=True,
+    )
+    angle_of_rotation: AngleType = pd.Field(
+        default=0 * u.degree,
+        description="The rotation angle. Cannot change once specified.",
+        frozen=True,
+    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     # pylint: disable=no-self-argument
@@ -343,6 +352,20 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     def axes(self):
         """Return the axes that the box is aligned with."""
         return self.private_attribute_input_cache.axes
+
+    @pd.field_validator("center", mode="after")
+    @classmethod
+    def _update_input_cache_center(cls, value, info: pd.ValidationInfo):
+        """Update the input cache with center."""
+        info.data["private_attribute_input_cache"].center = value
+        return value
+
+    @pd.field_validator("size", mode="after")
+    @classmethod
+    def _update_input_cache_size(cls, value, info: pd.ValidationInfo):
+        """Update the input cache with center."""
+        info.data["private_attribute_input_cache"].size = value
+        return value
 
 
 @final
