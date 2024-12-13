@@ -31,6 +31,7 @@ from .interfaces import (
 )
 from .resource_base import (
     AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     Flow360ResourceListBase,
     Flow360Status,
@@ -159,6 +160,32 @@ class CaseMeta(AssetMetaBaseModel):
 
     # Resource status change, revisit when updating the case class
     @pd_v1.validator("status")
+    @classmethod
+    def set_status_type(cls, value: Flow360Status):
+        """set_status_type when case uploaded"""
+        if value is Flow360Status.UPLOADED:
+            return Flow360Status.CASE_UPLOADED
+        return value
+
+    def to_case(self) -> Case:
+        """
+        returns Case object from case meta info
+        """
+        return Case(self.id)
+
+
+class CaseMetaV2(AssetMetaBaseModelV2):
+    """
+    CaseMetaV2 component
+    """
+
+    id: str = pd.Field(alias="projectId")
+    case_mesh_id: str = pd.Field(alias="caseMeshId")
+    parent_id: Union[str, None] = pd.Field(alias="parentId")
+    status: Flow360Status = pd.Field()
+
+    # Resource status change, revisit when updating the case class
+    @pd.field_validator("status", mode="after")
     @classmethod
     def set_status_type(cls, value: Flow360Status):
         """set_status_type when case uploaded"""
@@ -419,7 +446,7 @@ class Case(CaseBase, Flow360Resource):
         self._web_api_v2 = self._web_api_v2_class(
             interface=CaseInterfaceV2,
             # pylint: disable=fixme
-            meta_class=CaseMeta,  # TODO: make sure to use V2 meta
+            meta_class=CaseMetaV2,
             id=id,
         )
 
