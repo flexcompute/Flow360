@@ -42,6 +42,7 @@
     },
     "volumeZones": {
         "blk-1": {
+            "isRotatingReferenceFrame": true,
             "referenceFrame": {
                 "axisOfRotation": [
                     0.0,

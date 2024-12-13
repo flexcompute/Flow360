@@ -94,6 +94,7 @@
                     0.0
                 ]
             },
+            "isRotatingReferenceFrame": false,
             "modelType": "FluidDynamics"
         }
     },

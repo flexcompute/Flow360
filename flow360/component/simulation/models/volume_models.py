@@ -672,6 +672,12 @@ class Rotation(Flow360BaseModel):
         description="The parent rotating entity in a nested rotation case."
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
     )
+    rotating_reference_frame_model: Optional[bool] = pd.Field(
+        None,
+        description="Flag to specify whether the noninertial referene frame model is "
+        + "to be used for the rotation model. Steady state simulation requires this flag "
+        + "to be True for all rotation models.",
+    )
 
     @pd.field_validator("entities", mode="after")
     @classmethod
