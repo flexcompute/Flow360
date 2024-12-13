@@ -11,20 +11,16 @@ from flow360.component.simulation.models.surface_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.examples import OM6wing
 
-# fl.Env.dev.active()
+fl.Env.dev.active()
 
 OM6wing.get_files()
 # Creating and uploading a volume mesh from file
 project = Project.from_file(
-    OM6wing.mesh_filename,
-    name="wing-volume-mesh-python-upload",
-    tags=["python"],
-    solver_version="animatePseudo-24.11.0",
+    OM6wing.mesh_filename, name="wing-volume-mesh-python-upload", tags=["python"]
 )
 
 volume_mesh = project.volume_mesh
@@ -37,19 +33,10 @@ with SI_unit_system:
             Freestream(entities=[volume_mesh["3"]]),
             SymmetryPlane(entities=[volume_mesh["2"]]),
         ],
-        outputs=[
-            SurfaceOutput(
-                name="surf1",
-                surfaces=volume_mesh["1"],
-                output_fields=["Cp"],
-                frequency_in_pseudo_stepping=100,
-                frequency_offset_in_pseudo_stepping=10,
-            ),
-        ],
     )
 
 project.run_case(params=params)
 
-# residuals = project.case.results.nonlinear_residuals
-# residuals.as_dataframe().plot(x="pseudo_step", logy=True)
-# show()
+residuals = project.case.results.nonlinear_residuals
+residuals.as_dataframe().plot(x="pseudo_step", logy=True)
+show()
