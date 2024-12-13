@@ -208,12 +208,32 @@ def get_default_params(
     )
 
 
+def _intersect_validation_levels(requested_levels, avaliable_levels):
+    if requested_levels is not None:
+        if requested_levels == ALL:
+            validation_levels_to_use = [
+                item for item in ["SurfaceMesh", "VolumeMesh", "Case"] if item in avaliable_levels
+            ]
+        elif isinstance(requested_levels, str):
+            if requested_levels in avaliable_levels:
+                validation_levels_to_use = [requested_levels]
+            else:
+                validation_levels_to_use = None
+        else:
+            assert isinstance(requested_levels, list)
+            validation_levels_to_use = [
+                item for item in requested_levels if item in avaliable_levels
+            ]
+        return validation_levels_to_use
+    return None
+
+
 def validate_model(
     *,
     params_as_dict,
     root_item_type: Literal["Geometry", "VolumeMesh"],
     validation_level: Union[
-        Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list
+        Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
 ) -> Tuple[Optional[dict], Optional[list], Optional[list]]:
     """
@@ -248,10 +268,14 @@ def validate_model(
 
     params_as_dict = clean_params_dict(params_as_dict, root_item_type)
 
+    # The final validaiton levels will be the intersection of the requested levels and the levels available
+    # We always assume we want to run case so that we can expose as many errors as possible
+    avaliable_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
+    validation_levels_to_use = _intersect_validation_levels(validation_level, avaliable_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
         with unit_system:
-            with ValidationLevelContext(validation_level):
+            with ValidationLevelContext(validation_levels_to_use):
                 validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
