@@ -38,7 +38,7 @@ class ShutterRequestBaseModel(Flow360BaseModel):
     #     return super().model_dump_json(by_alias=True, **kwargs)
 
 
-ShutterObjectTypes = Literal["slices", "qcriterion", "boundaries", "edges"]
+ShutterObjectTypes = Literal["slices", "qcriterion", "isosurfaces", "boundaries", "edges"]
 
 
 class Resource(Flow360BaseModel):

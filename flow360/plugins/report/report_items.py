@@ -819,13 +819,13 @@ class Chart3D(Chart):
             ),
             ActionPayload(
                 action="set-object-visibility",
-                payload=SetObjectVisibilityPayload(
-                    object_ids=["qcriterion", "boundaries"], visibility=True
-                ),
+                payload=SetObjectVisibilityPayload(object_ids=["slices", "isosurfaces"], visibility=False),
             ),
             ActionPayload(
                 action="set-object-visibility",
-                payload=SetObjectVisibilityPayload(object_ids=["slices"], visibility=False),
+                payload=SetObjectVisibilityPayload(
+                    object_ids=["qcriterion", "boundaries"], visibility=True
+                ),
             ),
         ]
         script += self._get_shutter_exclude_visibility()
@@ -889,7 +889,7 @@ class Chart3D(Chart):
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(
-                    object_ids=["slices", "qcriterion"], visibility=False
+                    object_ids=["slices", "isosurfaces"], visibility=False
                 ),
             )
         ]
@@ -934,7 +934,7 @@ class Chart3D(Chart):
             ActionPayload(
                 action="set-object-visibility",
                 payload=SetObjectVisibilityPayload(
-                    object_ids=["boundaries", "qcriterion", "slices"], visibility=False
+                    object_ids=["boundaries", "isosurfaces", "slices"], visibility=False
                 ),
             ),
         ]
