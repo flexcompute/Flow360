@@ -353,18 +353,10 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         """Return the axes that the box is aligned with."""
         return self.private_attribute_input_cache.axes
 
-    @pd.field_validator("center", mode="after")
+    @pd.field_validator("center", "size", mode="after")
     @classmethod
-    def _update_input_cache_center(cls, value, info: pd.ValidationInfo):
-        """Update the input cache with center."""
-        info.data["private_attribute_input_cache"].center = value
-        return value
-
-    @pd.field_validator("size", mode="after")
-    @classmethod
-    def _update_input_cache_size(cls, value, info: pd.ValidationInfo):
-        """Update the input cache with center."""
-        info.data["private_attribute_input_cache"].size = value
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
 
 

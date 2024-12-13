@@ -197,8 +197,8 @@ def test_entity_modification(get_aerospace_condition_using_from):
         size=(0.2, 0.3, 2) * u.m,
     )
 
-    my_box.center = (1, 2, 32) * u.m
-    assert all(my_box.private_attribute_input_cache.center == (1, 2, 32) * u.m)
+    my_box.size = (1, 2, 32) * u.m
+    assert all(my_box.private_attribute_input_cache.size == (1, 2, 32) * u.m)
 
     my_op = get_aerospace_condition_using_from
     my_op.alpha = -12 * u.rad

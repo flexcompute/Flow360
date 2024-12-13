@@ -237,8 +237,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     @pd.field_validator("thermal_state", mode="after")
     @classmethod
     def _update_input_cache(cls, value, info: pd.ValidationInfo):
-        """Update the input cache with center."""
-        info.data["private_attribute_input_cache"].thermal_state = value
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
 
 
@@ -391,25 +390,10 @@ class AerospaceCondition(MultiConstructorBaseModel):
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
-    @pd.field_validator("alpha", mode="after")
+    @pd.field_validator("alpha", "beta", "thermal_state", mode="after")
     @classmethod
-    def _update_input_cache_alpha(cls, value, info: pd.ValidationInfo):
-        """Update the input cache with alpha."""
-        info.data["private_attribute_input_cache"].alpha = value
-        return value
-
-    @pd.field_validator("beta", mode="after")
-    @classmethod
-    def _update_input_cache_beta(cls, value, info: pd.ValidationInfo):
-        """Update the input cache with beta."""
-        info.data["private_attribute_input_cache"].beta = value
-        return value
-
-    @pd.field_validator("thermal_state", mode="after")
-    @classmethod
-    def _update_input_cache_thermal_state(cls, value, info: pd.ValidationInfo):
-        """Update the input cache with thermal_state."""
-        info.data["private_attribute_input_cache"].thermal_state = value
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
 
 
