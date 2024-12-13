@@ -190,6 +190,8 @@
         {
             "frequency": -1,
             "frequency_offset": 0,
+            "frequency_in_pseudo_stepping": -1,
+            "frequency_offset_in_pseudo_stepping": 0,
             "output_format": "paraview",
             "name": "Surface output",
             "write_single_file": false,

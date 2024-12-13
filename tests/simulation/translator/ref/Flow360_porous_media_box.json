@@ -87,6 +87,8 @@
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
+        "animationFrequencyInPseudoStepping": -1,
+        "animationFrequencyOffsetInPseudoStepping": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
@@ -170,6 +172,8 @@
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
+        "animationFrequencyInPseudoStepping": -1,
+        "animationFrequencyOffsetInPseudoStepping": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,

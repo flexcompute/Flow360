@@ -34,12 +34,16 @@ def volume_output_config():
         VolumeOutput(
             frequency=1,
             frequency_offset=2,
+            frequency_in_pseudo_stepping=4,
+            frequency_offset_in_pseudo_stepping=3,
             output_format="both",
             output_fields=["primitiveVars", "betMetrics", "qcriterion"],
         ),
         {
             "animationFrequency": 1,
             "animationFrequencyOffset": 2,
+            "animationFrequencyInPseudoStepping": 4,
+            "animationFrequencyOffsetInPseudoStepping": 3,
             "animationFrequencyTimeAverage": -1,
             "animationFrequencyTimeAverageOffset": 0,
             "computeTimeAverages": False,
@@ -81,6 +85,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         param = SimulationParams(outputs=[volume_output_config[0]])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+
     assert sorted(volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
 
     ##:: timeAverageVolumeOutput only
@@ -99,6 +104,8 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         "volumeOutput": {
             "animationFrequency": 1,
             "animationFrequencyOffset": 2,
+            "animationFrequencyInPseudoStepping": 4,
+            "animationFrequencyOffsetInPseudoStepping": 3,
             "animationFrequencyTimeAverage": 11,
             "animationFrequencyTimeAverageOffset": 12,
             "computeTimeAverages": True,
@@ -132,6 +139,8 @@ def surface_output_config():
         {
             "animationFrequency": 123,
             "animationFrequencyOffset": 321,
+            "animationFrequencyInPseudoStepping": -1,
+            "animationFrequencyOffsetInPseudoStepping": 0,
             "animationFrequencyTimeAverage": -1,
             "animationFrequencyTimeAverageOffset": 0,
             "computeTimeAverages": False,
@@ -182,6 +191,8 @@ def test_surface_output(
     ref = {
         "animationFrequency": 123,
         "animationFrequencyOffset": 321,
+        "animationFrequencyInPseudoStepping": -1,
+        "animationFrequencyOffsetInPseudoStepping": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": True,
@@ -220,6 +231,8 @@ def sliceoutput_config():
                 output_fields=["Cp"],
                 frequency=33,
                 frequency_offset=22,
+                frequency_in_pseudo_stepping=100,
+                frequency_offset_in_pseudo_stepping=11,
                 output_format="tecplot",
             ),
             SliceOutput(  # Local
@@ -237,6 +250,8 @@ def sliceoutput_config():
                 ],
                 frequency=33,
                 frequency_offset=22,
+                frequency_in_pseudo_stepping=100,
+                frequency_offset_in_pseudo_stepping=11,
                 output_format="tecplot",
                 output_fields=["T", "primitiveVars"],
             ),
@@ -244,6 +259,8 @@ def sliceoutput_config():
         {
             "animationFrequency": 33,
             "animationFrequencyOffset": 22,
+            "animationFrequencyInPseudoStepping": 100,
+            "animationFrequencyOffsetInPseudoStepping": 11,
             "animationFrequencyTimeAverage": -1,
             "animationFrequencyTimeAverageOffset": 0,
             "startAverageIntegrationStep": -1,
@@ -333,6 +350,8 @@ def isosurface_output_config():
         {
             "animationFrequency": 332,
             "animationFrequencyOffset": 222,
+            "animationFrequencyInPseudoStepping": -1,
+            "animationFrequencyOffsetInPseudoStepping": 0,
             "isoSurfaces": {
                 "isosurface 01": {
                     "outputFields": ["T", "primitiveVars"],
@@ -835,6 +854,8 @@ def test_surface_slice_output():
             "outputFormat": "paraview",
             "animationFrequency": 2,
             "animationFrequencyOffset": 0,
+            "animationFrequencyInPseudoStepping": -1,
+            "animationFrequencyOffsetInPseudoStepping": 0,
             "slices": [
                 {
                     "name": "S1",
