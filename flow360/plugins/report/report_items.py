@@ -28,12 +28,17 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 # pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
 
-from flow360 import Case
+from flow360 import Case, SimulationParams
 from flow360.component.results import case_results
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
     SurfaceFieldNames,
     IsoSurfaceFieldNames,
+)
+from flow360.component.simulation.unit_system import (
+    DimensionedTypes,
+    unyt_quantity,
+    is_flow360_unit,
 )
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
@@ -776,13 +781,26 @@ class Chart3D(Chart):
 
     field: Optional[Union[SurfaceFieldNames, str]] = None
     camera: Optional[Camera] = Camera()
-    limits: Optional[Tuple[float, float]] = None
+    limits: Optional[Union[Tuple[float, float], Tuple[DimensionedTypes, DimensionedTypes]]] = None
     is_log_scale: bool = False
     show: Union[ShutterObjectTypes, Literal["isosurface"]]
     iso_field: Optional[Union[IsoSurfaceFieldNames, str]] = None
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
     type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
+
+    def _get_limits(self, case: Case):
+        if self.limits is not None and not isinstance(self.limits[0], float):
+            params: SimulationParams = case.params
+            if is_flow360_unit(self.limits[0]):
+                return (self.limits[0].value, self.limits[1].value)
+
+            if isinstance(self.limits[0], unyt_quantity):
+                min = params.convert_unit(self.limits[0], target_system="flow360")
+                max = params.convert_unit(self.limits[1], target_system="flow360")
+                return (float(min.value), float(max.value))
+
+        return self.limits
 
     def _get_shutter_exclude_visibility(self):
         if self.exclude is not None:
@@ -1027,22 +1045,22 @@ class Chart3D(Chart):
 
         if self.show == "qcriterion":
             script = self._get_shutter_qcriterion_script(
-                field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+                field=self.field, limits=self._get_limits(case), is_log_scale=self.is_log_scale
             )
         elif self.show == "isosurface":
             script = self._get_shutter_isosurface_script(
                 iso_field=self.iso_field,
                 field=self.field,
-                limits=self.limits,
+                limits=self._get_limits(case),
                 is_log_scale=self.is_log_scale,
             )
         elif self.show == "boundaries":
             script = self._get_shutter_boundary_script(
-                field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+                field=self.field, limits=self._get_limits(case), is_log_scale=self.is_log_scale
             )
         elif self.show == "slices":
             script = self._get_shutter_slice_script(
-                field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+                field=self.field, limits=self._get_limits(case), is_log_scale=self.is_log_scale
             )
         else:
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
@@ -1090,10 +1108,15 @@ class Chart3D(Chart):
     def _get_legend(self, context: ReportContext):
         if self.field is not None:
             legend_filename = os.path.join(context.data_storage, f"{self.fig_name}_legend.png")
+            field = self.field
+            limits = self.limits
+            if isinstance(self.limits[0], unyt_quantity):
+                field += f" [{self.limits[0].units}]"
+                limits = (float(self.limits[0].value), float(self.limits[1].value))
             generate_colorbar_from_image(
-                limits=self.limits,
+                limits=limits,
                 output_filename=legend_filename,
-                field_name=self.field,
+                field_name=field,
                 is_log_scale=self.is_log_scale,
             )
             return legend_filename

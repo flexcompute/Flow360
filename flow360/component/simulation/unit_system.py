@@ -10,13 +10,14 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Annotated, Any, Collection, List, Literal, Union
+from typing import Annotated, Any, Collection, List, Literal, Union, get_args, get_origin
 
 import annotated_types
 import numpy as np
 import pydantic as pd
 import unyt as u
 import unyt.dimensions as udim
+from unyt import unyt_quantity
 from pydantic import PlainSerializer
 from pydantic_core import InitErrorDetails, core_schema
 
@@ -857,6 +858,33 @@ class _FrequencyType(_DimensionedType):
 
 
 FrequencyType = Annotated[_FrequencyType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+DimensionedTypes = Union[
+    LengthType,
+    AngleType,
+    MassType,
+    TimeType,
+    TemperatureType,
+    VelocityType,
+    AreaType,
+    ForceType,
+    PressureType,
+    DensityType,
+    ViscosityType,
+    PowerType,
+    MomentType,
+    AngularVelocityType,
+    HeatFluxType,
+    HeatSourceType,
+    SpecificHeatCapacityType,
+    ThermalConductivityType,
+    InverseAreaType,
+    InverseLengthType,
+    MassFlowRateType,
+    SpecificEnergyType,
+    FrequencyType,
+]
 
 
 def _iterable(obj):

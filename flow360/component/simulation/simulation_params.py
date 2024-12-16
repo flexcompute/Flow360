@@ -53,6 +53,10 @@ from flow360.component.simulation.unit_system import (
     UnitSystem,
     UnitSystemType,
     unit_system_manager,
+    DimensionedTypes,
+    is_flow360_unit,
+    LengthType,
+    unyt_quantity,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
@@ -76,6 +80,8 @@ from flow360.error_messages import (
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
+
+from flow360.component.simulation.conversion import unit_converter
 
 from .validation.validation_context import (
     CASE,
@@ -244,6 +250,32 @@ class SimulationParams(_ParamModelBase):
             with self.unit_system:
                 return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
         return super().preprocess(self, mesh_unit=mesh_unit, exclude=exclude)
+
+    @pd.validate_call
+    def convert_unit(
+        self, value: DimensionedTypes, target_system: str, length_unit: Optional[LengthType] = None
+    ):
+        if length_unit is None:
+            length_unit = self.private_attribute_asset_cache.project_length_unit
+
+        flow360_conv_system = unit_converter(
+            value.units.dimensions,
+            length_unit,
+            params=self,
+            required_by=[
+                f"{self.__class__.__name__}.convert_unit(value=, target_system=, length_unit=)"
+            ],
+        )
+
+        if target_system == "flow360":
+            target_system = "flow360_v2"
+
+        if is_flow360_unit(value) and not isinstance(value, unyt_quantity):
+            converted = value.in_base(target_system, flow360_conv_system)
+        else:
+            value.units.registry = flow360_conv_system.registry
+            converted = value.in_base(unit_system=target_system)
+        return converted
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
