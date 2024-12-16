@@ -202,7 +202,6 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     ====
     """
 
-    private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
         "GenericReferenceCondition", frozen=True
     )
@@ -216,6 +215,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
         ThermalState(),
         description="Reference and freestream thermal state. Defaults to US standard atmosphere at sea level.",
     )
+    private_attribute_input_cache: GenericReferenceConditionCache = GenericReferenceConditionCache()
 
     # pylint: disable=no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
@@ -275,7 +275,6 @@ class AerospaceCondition(MultiConstructorBaseModel):
     ====
     """
 
-    private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
     alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
@@ -295,6 +294,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
         frozen=True,
     )
+    private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor

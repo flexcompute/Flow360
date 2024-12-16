@@ -263,10 +263,7 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     ====
     """
 
-    # private_attribute_input_cache has to be defined first for field validators to work.
-    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
-    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The coordinates of the center of the box.")
     size: LengthType.PositiveVector = pd.Field(
@@ -283,6 +280,8 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         frozen=True,
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
 
     # pylint: disable=no-self-argument
     @MultiConstructorBaseModel.model_constructor
