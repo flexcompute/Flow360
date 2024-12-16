@@ -855,6 +855,9 @@ class Chart3D(Chart):
         if script is None:
             script = []
 
+        if iso_field != 'qcriterion':
+            iso_field = f'isosurface-{iso_field.lower()}'
+
         script += [
             ActionPayload(
                 action="reset-field",
