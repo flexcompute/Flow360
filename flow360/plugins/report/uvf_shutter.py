@@ -12,7 +12,7 @@ import time
 import zipfile
 from collections import defaultdict
 from functools import wraps
-from typing import Any, List, Literal, Optional, Tuple, Union
+from typing import Any, List, Literal, Optional, Tuple, Union, Callable
 from urllib.parse import urljoin
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
@@ -439,8 +439,13 @@ class ShutterBatchService:
                 if not isinstance(payload, SetObjectVisibilityPayload):
                     raise TypeError("Payload must be of type SetObjectVisibilityPayload")
 
-                if last_visibility_action and payload.visibility == last_visibility_action.payload.visibility:
-                    combined_object_ids = set(last_visibility_action.payload.object_ids) | set(payload.object_ids)
+                if (
+                    last_visibility_action
+                    and payload.visibility == last_visibility_action.payload.visibility
+                ):
+                    combined_object_ids = set(last_visibility_action.payload.object_ids) | set(
+                        payload.object_ids
+                    )
                     last_visibility_action.payload.object_ids = list(combined_object_ids)
                 else:
                     if last_visibility_action:
@@ -569,6 +574,7 @@ class ShutterBatchService:
             "data_storage": context.data_storage,
             "url": context.shutter_url,
             "access_token": context.shutter_access_token,
+            "screeshot_process_function": context.shutter_screeshot_process_function,
         }
         context_data = {k: v for k, v in context_data.items() if v is not None}
         img_files = Shutter(**context_data).get_images("None", self.get_batch_requests())
@@ -593,89 +599,7 @@ class Shutter(Flow360BaseModel):
     url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
     use_cache: bool = True
     access_token: Optional[str] = None
-
-    async def _get_3d_images_cli(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-
-        def move_files(files: list[str], generated_folder: str, output_folder: str):
-            for file_name in files:
-                # Define the full file path
-                source_file = os.path.join(generated_folder, file_name)
-                destination_file = os.path.join(output_folder, file_name)
-
-                # Move the file
-                shutil.move(source_file, destination_file)
-                log.debug(f"moved {source_file} to {destination_file}")
-
-        async def _build_image_from_local(
-            shutter_request: list[dict], output_folder: str
-        ) -> list[str]:
-            input_folder = os.path.join(output_folder, "input")
-            os.makedirs(input_folder, exist_ok=True)
-
-            log.info(
-                f"dumping the shutter request {shutter_request} to local folder {input_folder}/sequence.json"
-            )
-            with open(os.path.join(input_folder, "sequence.json"), "w") as json_file:
-                json.dump(shutter_request, json_file, indent=4)
-
-            sequence_file_path = os.path.join(input_folder, "sequence.json")
-            with open(sequence_file_path, "r") as file:
-                # Read the content of the file
-                file_content = file.read()
-                # Print the content of the file
-                log.debug(f"generate the sequence.json file: {file_content}")
-
-            generated_folder = os.path.join(output_folder, "shutter_generated")
-            # keep the folder structure as same as s3 storage
-            # mainfest_folder has all of bin files and manifest.json
-            manifest_folder = os.path.join(output_folder, "visualize/manifest")
-            docker_command = [
-                "docker",
-                "run",
-                "--init",
-                "--gpus",
-                "all",
-                "-v",
-                manifest_folder + ":/usr/src/app/apps/sandbox/dist/input/:ro",
-                "-v",
-                generated_folder + ":/output/:rw",
-                "-v",
-                sequence_file_path + ":/sequence.json",
-                "shutter",
-                "sequence",
-                "run",
-                "/sequence.json",
-            ]
-            log.debug(f"execute the docker command: {' '.join(docker_command)}")
-            result = subprocess.run(docker_command, shell=False, check=True)
-            log.info(f"completed the docker run with return :{result.returncode}")
-
-            entries = os.listdir(generated_folder)
-            file_names: list[str] = [
-                entry for entry in entries if os.path.isfile(os.path.join(generated_folder, entry))
-            ]
-            move_files(file_names, generated_folder, output_folder)
-            return file_names
-
-        tasks = []
-        for case_id, img_folder, shutter_request in screenshots:
-            os.makedirs(img_folder, exist_ok=True)
-            tasks.append(
-                _build_image_from_local(shutter_request=shutter_request, output_folder=img_folder)
-            )
-
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for response in responses:
-            if isinstance(response, Exception):
-                raise response
-
-        img_files = {}
-        for file_names, (case_id, img_folder, _) in zip(responses, screenshots):
-            img_files[case_id] = [os.path.join(img_folder, file_name) for file_name in file_names]
-
-        log.debug(f"complete the shutter file generation: {json.dumps(img_files)}")
-        return img_files
+    screeshot_process_function: Optional[Callable] = None
 
     async def _get_3d_images_api(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         @backoff.on_exception(
@@ -730,7 +654,7 @@ class Shutter(Flow360BaseModel):
 
         return img_files
 
-    def get_images(self, fig_name, data: List[ScenesData], use_cli: bool = True) -> dict[str, List]:
+    def get_images(self, fig_name, data: List[ScenesData]) -> dict[str, List]:
         """
         Generates or retrieves cached image files for scenes.
 
@@ -768,8 +692,8 @@ class Shutter(Flow360BaseModel):
                 else:
                     cached_files[case_id].append(img_full_path)
 
-        if use_cli is True:
-            process_function = self._get_3d_images_cli
+        if self.screeshot_process_function is not None:
+            process_function = self.screeshot_process_function
         else:
             process_function = self._get_3d_images_api
         img_files_generated = asyncio.run(process_function(screenshots))

@@ -4,7 +4,7 @@ Report generation interface
 
 import os
 import posixpath
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Set, Union, Callable
 
 from pydantic import Field, model_validator, validate_call
 
@@ -235,6 +235,7 @@ class ReportTemplate(Flow360BaseModel):
         use_cache: bool = True,
         shutter_url: str = None,
         shutter_access_token: str = None,
+        shutter_screeshot_process_function: Callable = None,
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -265,6 +266,13 @@ class ReportTemplate(Flow360BaseModel):
             data_storage=data_storage,
             shutter_url=shutter_url,
             shutter_access_token=shutter_access_token,
+            shutter_screeshot_process_function=shutter_screeshot_process_function,
+        )
+        case_context = context.model_copy(
+            update={
+                "section_func": Subsection,
+                "case_by_case": True,
+            }
         )
 
         self._generate_shutter_screenshots(context)
@@ -278,15 +286,7 @@ class ReportTemplate(Flow360BaseModel):
             with report_doc.doc.create(Section("Appendix", numbering=False)):
                 for case in cases:
                     with report_doc.doc.create(Section(f"Case: {case.id}")):
-                        case_context = ReportContext(
-                            cases=[case],
-                            doc=report_doc.doc,
-                            section_func=Subsection,
-                            case_by_case=True,
-                            data_storage=data_storage,
-                            shutter_url=shutter_url,
-                            shutter_access_token=shutter_access_token,
-                        )
+                        case_context = case_context.model_copy(update={"cases": [case]})
                         for item in self.items:  # pylint: disable=not-an-iterable
                             # Don't attempt to create ReportItems that have a
                             # select_case_ids which don't include the current case.id

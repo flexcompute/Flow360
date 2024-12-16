@@ -390,7 +390,12 @@ def test_merge_visibility_actions_merge_many(action_payloads):
     print(processed_actions)
     assert len(processed_actions) == len(actions) - 4
     assert set(processed_actions[4].payload.object_ids) == {"object1", "object2"}
-    assert set(processed_actions[5].payload.object_ids) == {"object3", "object4", "object5", "object6"}
+    assert set(processed_actions[5].payload.object_ids) == {
+        "object3",
+        "object4",
+        "object5",
+        "object6",
+    }
 
 
 def test_merge_and_remove_redundant_visibility_actions(action_payloads):
