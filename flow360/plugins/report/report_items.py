@@ -31,7 +31,7 @@ from pylatex.utils import bold, escape_latex
 from flow360 import Case
 from flow360.component.results import case_results
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.outputs.outputs import SurfaceFieldNames
+from flow360.component.simulation.outputs.output_fields import SurfaceFieldNames, IsoSurfaceFieldNames
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
@@ -775,7 +775,8 @@ class Chart3D(Chart):
     camera: Optional[Camera] = Camera()
     limits: Optional[Tuple[float, float]] = None
     is_log_scale: bool = False
-    show: ShutterObjectTypes
+    show: Union[ShutterObjectTypes, Literal["isosurface"]]
+    iso_field: Optional[Union[IsoSurfaceFieldNames, str]] = None
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
     type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
@@ -841,6 +842,54 @@ class Chart3D(Chart):
             ),
         ]
         return script
+
+
+    def _get_shutter_isosurface_script(
+        self,
+        iso_field: str,
+        script: List = None,
+        field: str = None,
+        limits: Tuple[float, float] = None,
+        is_log_scale: bool = None,
+    ):
+        if script is None:
+            script = []
+
+        script += [
+            ActionPayload(
+                action="reset-field",
+                payload=ResetFieldPayload(
+                    object_id="boundaries",
+                ),
+            ),
+            ActionPayload(
+                action="set-object-visibility",
+                payload=SetObjectVisibilityPayload(object_ids=["slices", "isosurfaces"], visibility=False),
+            ),
+            ActionPayload(
+                action="set-object-visibility",
+                payload=SetObjectVisibilityPayload(
+                    object_ids=[iso_field, "boundaries"], visibility=True
+                ),
+            ),
+        ]
+        script += self._get_shutter_include_visibility()
+        script += self._get_shutter_exclude_visibility()
+
+        if field is not None:
+            script += [
+                ActionPayload(
+                    action="set-field",
+                    payload=SetFieldPayload(
+                        object_id=iso_field,
+                        field_name=field,
+                        min_max=limits,
+                        is_log_scale=is_log_scale,
+                    ),
+                ),
+            ]
+        return script
+
 
     def _get_shutter_screenshot_script(self, script, screenshot_name):
         script += [
@@ -938,8 +987,8 @@ class Chart3D(Chart):
                 ),
             ),
         ]
-        script += self._get_shutter_exclude_visibility()
         script += self._get_shutter_include_visibility()
+        script += self._get_shutter_exclude_visibility()
 
         if field is None:
             pass
@@ -972,6 +1021,10 @@ class Chart3D(Chart):
             script = self._get_shutter_qcriterion_script(
                 field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
             )
+        elif self.show == "isosurface":
+            script = self._get_shutter_isosurface_script(
+                iso_field=self.iso_field, field=self.field, limits=self.limits, is_log_scale=self.is_log_scale
+            )            
         elif self.show == "boundaries":
             script = self._get_shutter_boundary_script(
                 field=self.field, limits=self.limits, is_log_scale=self.is_log_scale

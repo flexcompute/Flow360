@@ -371,6 +371,28 @@ def test_merge_visibility_actions_merge(action_payloads):
     assert set(processed_actions[4].payload.object_ids) == {"object1", "object2"}
 
 
+def test_merge_visibility_actions_merge_many(action_payloads):
+    actions = [
+        action_payloads["set_visibility_1"],
+        action_payloads["set_field"],
+        action_payloads["set_visibility_2"],
+        action_payloads["screenshot"],
+        action_payloads["set_visibility_1"],
+        action_payloads["set_visibility_2"],
+        action_payloads["set_visibility_3"],
+        action_payloads["set_visibility_4"],
+        action_payloads["set_visibility_5"],
+        action_payloads["set_visibility_6"],
+        action_payloads["screenshot"],
+    ]
+    service = ShutterBatchService()
+    processed_actions = service._merge_visibility_actions(actions)
+    print(processed_actions)
+    assert len(processed_actions) == len(actions) - 4
+    assert set(processed_actions[4].payload.object_ids) == {"object1", "object2"}
+    assert set(processed_actions[5].payload.object_ids) == {"object3", "object4", "object5", "object6"}
+
+
 def test_merge_and_remove_redundant_visibility_actions(action_payloads):
     actions = [
         action_payloads["set_visibility_1"],

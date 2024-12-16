@@ -432,26 +432,20 @@ class ShutterBatchService:
         """
         merged_actions = []
         last_visibility_action = None
-        last_visibility_action_index = -1
 
-        for action_index, action in enumerate(actions):
+        for action in actions:
             if action.action == "set-object-visibility":
                 payload = action.payload
                 if not isinstance(payload, SetObjectVisibilityPayload):
                     raise TypeError("Payload must be of type SetObjectVisibilityPayload")
 
-                if last_visibility_action and action_index == last_visibility_action_index + 1:
-                    if payload.visibility == last_visibility_action.payload.visibility:
-                        combined_object_ids = set(last_visibility_action.payload.object_ids) | set(
-                            payload.object_ids
-                        )
-                        last_visibility_action.payload.object_ids = list(combined_object_ids)
-                        continue
-
-                if last_visibility_action:
-                    merged_actions.append(last_visibility_action)
-                last_visibility_action = action.copy()
-                last_visibility_action_index = action_index
+                if last_visibility_action and payload.visibility == last_visibility_action.payload.visibility:
+                    combined_object_ids = set(last_visibility_action.payload.object_ids) | set(payload.object_ids)
+                    last_visibility_action.payload.object_ids = list(combined_object_ids)
+                else:
+                    if last_visibility_action:
+                        merged_actions.append(last_visibility_action)
+                    last_visibility_action = action.copy()
             else:
                 if last_visibility_action:
                     merged_actions.append(last_visibility_action)
