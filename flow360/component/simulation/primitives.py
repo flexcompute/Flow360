@@ -264,16 +264,24 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     """
 
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
-    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The coordinates of the center of the box.")
     size: LengthType.PositiveVector = pd.Field(
         description="The dimensions of the box (length, width, height)."
     )
-    axis_of_rotation: Axis = pd.Field(default=(0, 0, 1), description="The rotation axis.")
-    angle_of_rotation: AngleType = pd.Field(default=0 * u.degree, description="The rotation angle.")
-    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    axis_of_rotation: Axis = pd.Field(
+        default=(0, 0, 1),
+        description="The rotation axis. Cannot change once specified.",
+        frozen=True,
+    )
+    angle_of_rotation: AngleType = pd.Field(
+        default=0 * u.degree,
+        description="The rotation angle. Cannot change once specified.",
+        frozen=True,
+    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
 
     # pylint: disable=no-self-argument
     @MultiConstructorBaseModel.model_constructor
@@ -343,6 +351,12 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     def axes(self):
         """Return the axes that the box is aligned with."""
         return self.private_attribute_input_cache.axes
+
+    @pd.field_validator("center", "size", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
+        return value
 
 
 @final
