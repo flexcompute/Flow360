@@ -208,7 +208,8 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -232,6 +233,12 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
+
+    @pd.field_validator("thermal_state", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
+        return value
 
 
 class AerospaceConditionCache(Flow360BaseModel):
@@ -275,6 +282,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
+        frozen=True,
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -284,6 +292,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
         description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
+        frozen=True,
     )
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
@@ -380,6 +389,12 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
+
+    @pd.field_validator("alpha", "beta", "thermal_state", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
+        return value
 
 
 # pylint: disable=fixme
