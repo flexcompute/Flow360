@@ -773,18 +773,18 @@ class Chart2D(Chart):
         case_by_case, data_storage
         if self.separate_plots:
             for case in cases:
-                file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".png")
+                file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".pdf")
                 data = self.get_data([case], context)
                 fig = data.get_plot()
-                fig.savefig(file_name)
+                fig.savefig(file_name, format="pdf", bbox_inches="tight")
                 file_names.append(file_name)
                 plt.close()
 
         else:
-            file_name = os.path.join(data_storage, self.fig_name + cbc_str + "all_cases" + ".png")
+            file_name = os.path.join(data_storage, self.fig_name + cbc_str + "all_cases" + ".pdf")
             data = self.get_data(cases, context)
             fig = data.get_plot()
-            fig.savefig(file_name)
+            fig.savefig(file_name, format="pdf", bbox_inches="tight")
             file_names.append(file_name)
             plt.close()
 
