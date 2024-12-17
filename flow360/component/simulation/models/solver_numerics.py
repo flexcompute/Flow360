@@ -23,6 +23,7 @@ from flow360.component.simulation.framework.base_model import (
 )
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box
+from flow360.component.types import Coordinate
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -141,6 +142,26 @@ class NavierStokesSolver(GenericSolverSettings):
         0,
         description="When physical step is less than this value, the jacobian matrix is "
         + "updated every pseudo step.",
+    )
+
+    private_attribute_debug_type: Optional[
+        Literal[
+            "minDensity",
+            "minPressure",
+            "maxVelocity",
+            "maxResCont",
+            "maxResMomX",
+            "maxResMomY",
+            "maxResMomZ",
+            "maxResEnergy",
+        ]
+    ] = pd.Field(None, alias="debugType")
+    private_attribute_debug_point: Optional[Coordinate] = pd.Field(None, alias="debugPoint")
+
+    model_config = pd.ConfigDict(
+        conflicting_fields=[
+            Conflicts(field1="private_attribute_debug_type", field2="private_attribute_debug_point")
+        ]
     )
 
 

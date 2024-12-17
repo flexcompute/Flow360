@@ -899,6 +899,9 @@ def get_solver_json(
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+            if model.navier_stokes_solver.private_attribute_debug_point is not None:
+                dp = translated["navierStokesSolver"]["debugPoint"]
+                translated["navierStokesSolver"]["debugPoint"] = list(dp)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
