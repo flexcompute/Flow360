@@ -155,8 +155,8 @@ class NavierStokesSolver(GenericSolverSettings):
             "maxResMomZ",
             "maxResEnergy",
         ]
-    ] = pd.Field(None, alias="debugType")
-    private_attribute_debug_point: Optional[Coordinate] = pd.Field(None, alias="debugPoint")
+    ] = pd.Field(None)
+    private_attribute_debug_point: Optional[Coordinate] = pd.Field(None)
 
     model_config = pd.ConfigDict(
         conflicting_fields=[
