@@ -443,6 +443,8 @@ class PlotModel(BaseModel):
     is_log: bool = False
     style: str = "-"
     backgroung_png: Optional[str] = None
+    xlim: Optional[Tuple[float, float]] = None
+    ylim: Optional[Tuple[float, float]] = None
 
     @field_validator("x_data", "y_data", mode="before")
     def ensure_y_data_is_list_of_lists(cls, v):
@@ -521,6 +523,11 @@ class PlotModel(BaseModel):
             else:
                 ax.plot(x_series, y_series, self.style, label=label)
 
+        if self.xlim is not None:
+            ax.set_xlim(self.xlim)
+        if self.ylim is not None:
+            ax.set_ylim(self.ylim)
+
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.y_label)
         if self.legend:
@@ -548,6 +555,14 @@ class Chart2D(Chart):
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
+    focus_x : Optional[Tuple[float, float]]
+        A tuple defining a fractional focus range along the x-axis for y-limit
+        adjustments. For example, `focus_x = (0.5, 1.0)` will consider the
+        subset of data corresponding to the top 50% to 100% range of x-values.
+        The y-limits of the chart will be determined based on this data subset:
+        the minimum and maximum y-values in this range will be found, then a
+        25% margin is added above and below. This adjusted y-limit helps to
+        highlight the specified portion of the chart.         
     """
 
     x: Union[str, Delta, DataItem]
@@ -557,6 +572,7 @@ class Chart2D(Chart):
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
     exclude: Optional[List[str]] = None
+    focus_x: Optional[Tuple[float, float]] = None
 
     def get_requirements(self):
         """
@@ -641,6 +657,48 @@ class Chart2D(Chart):
 
         return x_data, y_data, x_label, y_label
 
+    def _calculate_focus_y_limits(
+        self,
+        x_series_list: List[List[float]],
+        y_series_list: List[List[float]]
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Calculate the y-limits based on the focus_x range.
+        The focus_x defines a fractional range along the dataset length.
+        We slice the y data accordingly and find min/max in this range,
+        then add a 25% margin above and below.
+        """
+        if self.focus_x is None:
+            return None
+
+        start_frac, end_frac = self.focus_x
+        all_focused_y = []
+
+        for xs, ys in zip(x_series_list, y_series_list):
+            xs_np = np.array(xs)
+            ys_np = np.array(ys)
+
+            start_idx = int(len(xs_np) * start_frac)
+            end_idx = int(len(xs_np) * end_frac)
+
+            if end_idx > start_idx:
+                focused_y = ys_np[start_idx:end_idx]
+            else:
+                focused_y = ys_np
+
+            if len(focused_y) > 0:
+                all_focused_y.extend(focused_y.tolist())
+
+        if not all_focused_y:
+            return None, None
+
+        global_y_min = float(min(all_focused_y))
+        global_y_max = float(max(all_focused_y))
+        y_range = global_y_max - global_y_min
+        y_min = global_y_min - 0.25 * y_range
+        y_max = global_y_max + 0.25 * y_range
+        return (y_min, y_max)
+
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         x_data, y_data, x_label, y_label = self._load_data(cases)
         background = self._get_background_chart(x_data)
@@ -648,25 +706,29 @@ class Chart2D(Chart):
         if background is not None:
             background_png = background._get_images([cases[0]], context)[0]
 
+
         if self._is_multiline_data(x_data, y_data):
-            # every case is one point, eg CL/CD plot
-            return PlotModel(
-                x_data=[float(data) for data in x_data],
-                y_data=[float(data) for data in y_data],
-                x_label=x_label,
-                y_label=y_label,
-                style="o-",
-                backgroung_png=background_png,
-            )
+            x_data = [float(data) for data in x_data]
+            y_data = [float(data) for data in y_data]
+            legend = None
+            style="o-"
+        else:
+            legend = [case.name for case in cases]
+            style="-"
+
+        ylim = self._calculate_focus_y_limits(x_data, y_data)
 
         return PlotModel(
             x_data=x_data,
             y_data=y_data,
             x_label=x_label,
             y_label=y_label,
-            legend=[case.name for case in cases],
+            legend=legend,
+            style=style,
             is_log=self.is_log_plot(),
             backgroung_png=background_png,
+            xlim=None,
+            ylim=ylim
         )
 
     def _get_background_chart(self, x_data):
