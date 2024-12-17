@@ -79,15 +79,16 @@ class ReportDoc:
 
         doc.preamble.append(NoEscape(r"\definecolor{customgray}{HTML}{E0E2E7}"))
         doc.preamble.append(NoEscape(r"\definecolor{labelgray}{HTML}{F4F5F7}"))
-        doc.preamble.append(
-            NoEscape(r"\DeclareCaptionLabelFormat{graybox}{\colorbox{labelgray}{#1 #2} }")
-        )
+
+        doc.preamble.append(NoEscape(r"\DeclareCaptionLabelFormat{graybox}{\colorbox{labelgray}{}}"))
         doc.preamble.append(
             NoEscape(
-                r"\captionsetup{position=bottom, font=large, labelformat=graybox, "
+                r"\captionsetup[figure]{position=bottom, font=large, labelformat=graybox, "
                 r"labelsep=none, justification=raggedright, singlelinecheck=false}"
             )
         )
+        doc.preamble.append(NoEscape(r"\captionsetup[subfigure]{labelformat=empty}"))
+
         if self.use_xelatex:
             doc.preamble.append(NoEscape(font_definition))
 
