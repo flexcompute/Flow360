@@ -253,7 +253,7 @@ class Table(ReportItem):
                     data_from_path(case, path, context.cases, case_by_case=context.case_by_case)
                     for path in self.data
                 ]
-                row_list = [f"{x:.5g}" if isinstance(x, (int, float)) else x for x in row_list]
+                row_list = [f"{x:.4g}" if isinstance(x, (int, float)) else x for x in row_list]
 
                 row_list.insert(0, str(idx + 1))  # Case numbers
                 table.add_row(row_list)
