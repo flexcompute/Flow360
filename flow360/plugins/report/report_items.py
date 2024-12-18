@@ -162,13 +162,11 @@ class Inputs(ReportItem):
         """
         Table(
             data=[
-                "params/version",
                 "params/operating_condition/velocity_magnitude",
                 "params/time_stepping/type_name",
             ],
             section_title="Inputs",
             headers=[
-                "Version",
                 "Velocity",
                 "Time stepping",
             ],
@@ -580,10 +578,10 @@ class PlotModel(BaseModel):
         calculates good extend for background image
         """
         extent = [
-            np.amin(self.x_data_as_np[0]),
-            np.amax(self.x_data_as_np[0]),
-            np.amin(self.y_data_as_np),
-            np.amax(self.y_data_as_np),
+            np.min(self.x_data_as_np[0]),
+            np.max(self.x_data_as_np[0]),
+            np.min(np.concatenate(self.y_data_as_np)),
+            np.max(np.concatenate(self.y_data_as_np)),
         ]
         y_extent = extent[3] - extent[2]
         extent[2] -= y_extent * 0.1
