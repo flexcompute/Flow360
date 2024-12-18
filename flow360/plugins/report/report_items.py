@@ -175,6 +175,52 @@ class Inputs(ReportItem):
         ).get_doc_item(context)
 
 
+
+def human_readable_formatter(value):
+    """Custom formatter that uses k/M suffixes with a human-readable style.
+    For large numbers, it attempts to show a concise representation without 
+    scientific notation:
+    - For millions, it will show something like 225M (no decimals if >100),
+      22.5M (one decimal if between 10 and 100), or 2.3M (two decimals if <10).
+    - For thousands, it follows a similar pattern for k.
+    - For numbers < 1000, it shows up to two decimal places if needed.
+    """
+    if not isinstance(value, (int, float)):
+        return str(value)
+
+    abs_value = abs(value)
+
+    def strip_trailing_zeros(s):
+        if '.' in s:
+            s = s.rstrip('0').rstrip('.')
+        return s
+
+    if abs_value >= 1e6:
+        scale = 1e6
+        symbol = 'M'
+    elif abs_value >= 1e3:
+        scale = 1e3
+        symbol = 'k'
+    else:
+        return str(value)
+
+    scaled = value / scale
+    if abs(scaled) < 10:
+        # e.g., 2.3M
+        formatted = f"{scaled:.1f}"
+    elif abs(scaled) < 100:
+        # e.g., 23M
+        formatted = f"{scaled:.0f}"
+    else:
+        # e.g., 225M
+        formatted = f"{scaled:.0f}"
+    formatted = strip_trailing_zeros(formatted)
+    return formatted + symbol
+
+_SPECIAL_FORMATING_MAP = {
+    "volume_mesh/stats/n_nodes": human_readable_formatter
+}
+
 class Table(ReportItem):
     """
     Represents a table within a report, with configurable data and headers.
@@ -189,12 +235,37 @@ class Table(ReportItem):
         List of column headers for the table, default is None.
     type_name : Literal["Table"], default="Table"
         Specifies the type of report item as "Table"; this field is immutable.
+    formatter : Optional
+        formatter can be:
+        single str (e.g. ".4g")
+        list of str of the same length as `data`
     """
 
     data: list[Union[str, Delta, DataItem]]
     section_title: Union[str, None]
     headers: Union[list[str], None] = None
     type_name: Literal["Table"] = Field("Table", frozen=True)
+    formatter: Optional[Union[str, List[Union[str, None]]]] = None
+
+
+    @model_validator(mode="before")
+    def _process_formatter(cls, values):
+        if not isinstance(values, dict):
+            return values
+        data = values.get("data")
+        if data is None:
+            return values
+
+        formatter = values.get("formatter")
+
+        if isinstance(formatter, str) or formatter is None:
+            formatter = [formatter for _ in data]
+
+        if len(formatter) != len(data):
+            raise ValueError("List of formatters must match the length of data, or ")
+        values["formatter"] = formatter
+
+        return values
 
     @model_validator(mode="after")
     def _check_custom_heading_count(self) -> None:
@@ -205,6 +276,23 @@ class Table(ReportItem):
                     f"{len(self.headers)} instead of {len(self.data)}"
                 )
         return self
+    
+    def _get_formatters(self):
+        formatters = self.formatter
+        for i, (fmt, data) in enumerate(zip(formatters, self.data)):
+            if fmt is None:
+                if isinstance(data, str) and data in _SPECIAL_FORMATING_MAP:
+                    formatters[i] = _SPECIAL_FORMATING_MAP[data]
+                else:
+                    formatters[i] = ".5g"
+
+        def make_callable(fmt):
+            if callable(fmt):
+                return fmt
+            return lambda x, ff=fmt: f"{x:{ff}}"
+
+        formatters = [make_callable(f) for f in formatters]
+        return formatters
 
     def get_requirements(self):
         """
@@ -224,13 +312,11 @@ class Table(ReportItem):
             section = context.section_func(self.section_title)
             context.doc.append(section)
 
-        # Getting tables to wrap is a pain - Tabulary seems the best approach
         with context.doc.create(
             Tabulary("|C" * (len(self.data) + 1) + "|", width=len(self.data) + 1)
         ) as table:
             table.add_hline()
 
-            # Manage column headings
             field_titles = ["Case No."]
             if self.headers is None:
                 for path in self.data:
@@ -247,16 +333,20 @@ class Table(ReportItem):
             table.add_row(field_titles)
             table.add_hline()
 
-            # Build data rows
+            formatters = self._get_formatters()
             for idx, case in enumerate(context.cases):
-                row_list = [
+                raw_values = [
                     data_from_path(case, path, context.cases, case_by_case=context.case_by_case)
                     for path in self.data
                 ]
-                row_list = [f"{x:.4g}" if isinstance(x, (int, float)) else x for x in row_list]
 
-                row_list.insert(0, str(idx + 1))  # Case numbers
-                table.add_row(row_list)
+                formatted_values = [
+                    fmt(x) if isinstance(x, (int, float)) else str(x)
+                    for x, fmt in zip(raw_values, formatters)
+                ]
+
+                formatted_values.insert(0, str(idx + 1))
+                table.add_row(formatted_values)
                 table.add_hline()
 
 
