@@ -75,7 +75,8 @@ def dump_dict(input_params):
     """Dumping param/model to dictionary."""
 
     result = input_params.model_dump(by_alias=True, exclude_none=True)
-    result.pop("privateAttributeDict", None)
+    if result.pop("privateAttributeDict", None) is not None:
+        result.update(input_params.private_attribute_dict)
     return result
 
 
@@ -902,10 +903,6 @@ def get_solver_json(
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
-            if model.navier_stokes_solver.private_attribute_dict is not None:
-                translated["navierStokesSolver"].update(
-                    model.navier_stokes_solver.private_attribute_dict
-                )
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
@@ -914,13 +911,6 @@ def get_solver_json(
             )
 
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
-            if (
-                not isinstance(model.turbulence_model_solver, NoneSolver)
-                and model.turbulence_model_solver.private_attribute_dict is not None
-            ):
-                translated["turbulenceModelSolver"].update(
-                    model.turbulence_model_solver.private_attribute_dict
-                )
             replace_dict_key(
                 translated["turbulenceModelSolver"],
                 "equationEvaluationFrequency",
@@ -964,10 +954,6 @@ def get_solver_json(
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
                 translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
-                if model.transition_model_solver.private_attribute_dict is not None:
-                    translated["transitionModelSolver"].update(
-                        model.transition_model_solver.private_attribute_dict
-                    )
                 transition_dict = translated["transitionModelSolver"]
                 replace_dict_key(transition_dict, "typeName", "modelType")
                 replace_dict_key(
