@@ -73,7 +73,10 @@ from flow360.exceptions import Flow360TranslationError
 
 def dump_dict(input_params):
     """Dumping param/model to dictionary."""
-    return input_params.model_dump(by_alias=True, exclude_none=True)
+
+    result = input_params.model_dump(by_alias=True, exclude_none=True)
+    result.pop("privateAttributeDict", None)
+    return result
 
 
 def init_non_average_output(
@@ -899,16 +902,10 @@ def get_solver_json(
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
-            if model.navier_stokes_solver.private_attribute_debug_type is not None:
-                replace_dict_key(
-                    translated["navierStokesSolver"], "privateAttributeDebugType", "debugType"
+            if model.navier_stokes_solver.private_attribute_dict is not None:
+                translated["navierStokesSolver"].update(
+                    model.navier_stokes_solver.private_attribute_dict
                 )
-            if model.navier_stokes_solver.private_attribute_debug_point is not None:
-                replace_dict_key(
-                    translated["navierStokesSolver"], "privateAttributeDebugPoint", "debugPoint"
-                )
-                dp = translated["navierStokesSolver"]["debugPoint"]
-                translated["navierStokesSolver"]["debugPoint"] = list(dp)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
@@ -917,6 +914,13 @@ def get_solver_json(
             )
 
             translated["turbulenceModelSolver"] = dump_dict(model.turbulence_model_solver)
+            if (
+                not isinstance(model.turbulence_model_solver, NoneSolver)
+                and model.turbulence_model_solver.private_attribute_dict is not None
+            ):
+                translated["turbulenceModelSolver"].update(
+                    model.turbulence_model_solver.private_attribute_dict
+                )
             replace_dict_key(
                 translated["turbulenceModelSolver"],
                 "equationEvaluationFrequency",
@@ -960,6 +964,10 @@ def get_solver_json(
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
                 translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)
+                if model.transition_model_solver.private_attribute_dict is not None:
+                    translated["transitionModelSolver"].update(
+                        model.transition_model_solver.private_attribute_dict
+                    )
                 transition_dict = translated["transitionModelSolver"]
                 replace_dict_key(transition_dict, "typeName", "modelType")
                 replace_dict_key(
