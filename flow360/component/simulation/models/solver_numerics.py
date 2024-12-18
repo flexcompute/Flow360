@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
@@ -23,7 +23,6 @@ from flow360.component.simulation.framework.base_model import (
 )
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Box
-from flow360.component.types import Coordinate
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -78,6 +77,7 @@ class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
         1, description="Frequency at which to solve the equation."
     )
     linear_solver: LinearSolver = pd.Field(LinearSolver())
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
 
 class NavierStokesSolver(GenericSolverSettings):
@@ -142,26 +142,6 @@ class NavierStokesSolver(GenericSolverSettings):
         0,
         description="When physical step is less than this value, the jacobian matrix is "
         + "updated every pseudo step.",
-    )
-
-    private_attribute_debug_type: Optional[
-        Literal[
-            "minDensity",
-            "minPressure",
-            "maxVelocity",
-            "maxResCont",
-            "maxResMomX",
-            "maxResMomY",
-            "maxResMomZ",
-            "maxResEnergy",
-        ]
-    ] = pd.Field(None)
-    private_attribute_debug_point: Optional[Coordinate] = pd.Field(None)
-
-    model_config = pd.ConfigDict(
-        conflicting_fields=[
-            Conflicts(field1="private_attribute_debug_type", field2="private_attribute_debug_point")
-        ]
     )
 
 

@@ -73,7 +73,11 @@ from flow360.exceptions import Flow360TranslationError
 
 def dump_dict(input_params):
     """Dumping param/model to dictionary."""
-    return input_params.model_dump(by_alias=True, exclude_none=True)
+
+    result = input_params.model_dump(by_alias=True, exclude_none=True)
+    if result.pop("privateAttributeDict", None) is not None:
+        result.update(input_params.private_attribute_dict)
+    return result
 
 
 def init_non_average_output(
@@ -894,16 +898,6 @@ def get_solver_json(
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
-            if model.navier_stokes_solver.private_attribute_debug_type is not None:
-                replace_dict_key(
-                    translated["navierStokesSolver"], "privateAttributeDebugType", "debugType"
-                )
-            if model.navier_stokes_solver.private_attribute_debug_point is not None:
-                replace_dict_key(
-                    translated["navierStokesSolver"], "privateAttributeDebugPoint", "debugPoint"
-                )
-                dp = translated["navierStokesSolver"]["debugPoint"]
-                translated["navierStokesSolver"]["debugPoint"] = list(dp)
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
