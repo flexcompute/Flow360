@@ -196,15 +196,14 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
 
 def test_om6wing_debug(get_om6Wing_tutorial_param):
     params = get_om6Wing_tutorial_param
-    params.models[0].navier_stokes_solver.private_attribute_debug_type = "minDensity"
+    params.models[0].navier_stokes_solver.private_attribute_dict = {"debugType": "minDensity"}
     translate_and_compare(
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6Wing_debug_type.json",
     )
 
-    params.models[0].navier_stokes_solver.private_attribute_debug_type = None
-    params.models[0].navier_stokes_solver.private_attribute_debug_point = (1.0, 2.0, 3.0)
+    params.models[0].navier_stokes_solver.private_attribute_dict = {"debugPoint": [1.0, 2.0, 3.0]}
     translate_and_compare(
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
