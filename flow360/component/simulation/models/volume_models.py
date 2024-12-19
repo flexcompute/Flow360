@@ -25,6 +25,9 @@ from flow360.component.simulation.models.solver_numerics import (
     TransitionModelSolverType,
     TurbulenceModelSolverType,
 )
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    MultiConstructorBaseModel,
+)
 from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_3d_coefficients_in_polars,
     _check_bet_disk_alphas_in_order,
@@ -47,6 +50,10 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
 )
+
+from flow360.component.simulation.models.bet.BETTranslatorInterface import generateXrotorBETJSON
+from flow360.component.simulation.models.bet.example_translation import translate_example_xrotor
+from flow360.component.simulation.models.bet.updater import update_bet_params
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
@@ -476,8 +483,27 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     )
 
 
+# class XRotorFile(Flow360BaseModel):
+#     filename: str
+#     content: # optionally do content in post validator
+    
+#     @property
+#     def content(self): # content as property? how about serialisation?
+#        pass
+
+
+# class DFDCFile(Flow360BaseModel):
+#     filename: str
+#     content: # optionally do content in post validator
+    
+#     @property
+#     def content(self): # content as property? how about serialisation?
+#        pass
+
+
+
 # pylint: disable=no-member
-class BETDisk(Flow360BaseModel):
+class BETDisk(MultiConstructorBaseModel):
     """:class:`BETDisk` class for defining the Blade Element Theory (BET) model inputs.
     For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <knowledge_base_BETDisks>`.
     To generate the sectional polars the BET translators can be used which are
@@ -616,6 +642,35 @@ class BETDisk(Flow360BaseModel):
     def check_bet_disk_3d_coefficients_in_polars(self):
         """validate dimension of 3d coefficients in polars"""
         return _check_bet_disk_3d_coefficients_in_polars(self)
+    
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_xrotor(
+        cls,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        volumes: EntityList[Cylinder],
+        angle_unit: AngleType,
+        length_unit: LengthType.NonNegative,
+    ):
+        
+        # ... call translator function
+        # params = BET_translate(XRotorFile.content)
+        params = translate_example_xrotor()
+        # print(params)
+        params = update_bet_params(dict=params)
+
+        return cls(**params)
+
+    # @MultiConstructorBaseModel.model_constructor
+    # @pd.validate_call
+    # def from_dfdc(cls, file: DFDCFile, ...) -> BETDisk:
+        
+    #     # ... call translator function
+        
+    #     return cls(**params)
 
 
 class Rotation(Flow360BaseModel):
