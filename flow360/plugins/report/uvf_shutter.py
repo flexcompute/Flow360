@@ -6,8 +6,6 @@ import asyncio
 import json
 import os
 import reprlib
-import shutil
-import subprocess
 import time
 import zipfile
 from collections import defaultdict
@@ -25,6 +23,7 @@ from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
 from flow360.log import log
+from flow360.exceptions import Flow360RuntimeError
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -654,7 +653,7 @@ class Shutter(Flow360BaseModel):
 
         return img_files
 
-    def get_images(self, fig_name, data: List[ScenesData]) -> dict[str, List]:
+    def get_images(self, fig_name, data: List[ScenesData], regenerate_if_not_found: bool=True) -> dict[str, List]:
         """
         Generates or retrieves cached image files for scenes.
 
@@ -678,15 +677,18 @@ class Shutter(Flow360BaseModel):
             img_name = fig_name + ".png"
             img_full_path = os.path.join(img_folder, img_name)
             if not os.path.exists(img_full_path) or self.use_cache is False:
-                screenshots.append(
-                    (
-                        case_id,
-                        img_folder,
-                        data_item.model_dump(by_alias=True, exclude_unset=True, exclude_none=True),
+                if regenerate_if_not_found is True:
+                    screenshots.append(
+                        (
+                            case_id,
+                            img_folder,
+                            data_item.model_dump(by_alias=True, exclude_unset=True, exclude_none=True),
+                        )
                     )
-                )
+                else:
+                    raise Flow360RuntimeError(f"File: {img_name=} not found, shutter generation failed.")
             else:
-                log.debug(f"File: {img_name=} exists in cache, reusing.")
+                log.debug(f"File: {img_name=} exists in cache, using.")
                 if case_id not in cached_files:
                     cached_files[case_id] = [img_full_path]
                 else:
