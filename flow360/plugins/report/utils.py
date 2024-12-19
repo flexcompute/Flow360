@@ -10,6 +10,7 @@ import posixpath
 import re
 import shutil
 import uuid
+from PIL import Image
 from abc import ABCMeta, abstractmethod
 from numbers import Number
 from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
@@ -690,3 +691,39 @@ font_definition = (
 ]
 """
 )
+
+
+def downsample_image_to_relative_width(input_path, output_path, relative_width=1.0, dpi=150):
+    """
+    Downsample the image so that when displayed at 'relative_width' fraction of A4 horizontal width,
+    it corresponds approximately to the given DPI.
+
+    Parameters
+    ----------
+    input_path : str
+        Path to the original high-resolution image.
+    output_path : str
+        Path to save the downsampled image.
+    relative_width : float
+        Fraction of the A4 horizontal width (297 mm) the image should occupy.
+        e.g., 1.0 means full width, 0.5 means half the width, etc.
+    dpi : int
+        Desired DPI (pixels per inch).
+    """
+    A4_WIDTH_MM = 297.0  # A4 width in mm in landscape orientation
+    MM_PER_INCH = 25.4
+
+    final_width_inches = (A4_WIDTH_MM * relative_width) / MM_PER_INCH
+    desired_pixel_width = final_width_inches * dpi
+
+    img = Image.open(input_path)
+    original_width, original_height = img.size
+
+    scale = desired_pixel_width / original_width
+
+    if scale < 1:
+        new_width = int(round(original_width * scale))
+        new_height = int(round(original_height * scale))
+        img = img.resize((new_width, new_height), Image.LANCZOS)
+
+    img.save(output_path)

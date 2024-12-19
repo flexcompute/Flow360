@@ -53,6 +53,7 @@ from flow360.plugins.report.utils import (
     get_requirements_from_data_path,
     get_root_path,
     split_path,
+    downsample_image_to_relative_width
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
@@ -79,6 +80,19 @@ FileNameStr = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9._-]+$")]
 FIG_ASPECT_RATIO = 16 / 9
 
 
+class Settings(Flow360BaseModel):
+    """
+    Settings for controlling output properties.
+
+    Attributes
+    ----------
+    dpi : PositiveInt, optional
+        The resolution in dots per inch (DPI) for generated images in report (A4 assumed). 
+        If not specified, defaults to 300.
+    """
+
+    dpi: Optional[pd.PositiveInt] = 300
+
 class ReportItem(Flow360BaseModel):
     """
     Base class for for all report items
@@ -91,6 +105,7 @@ class ReportItem(Flow360BaseModel):
     def get_doc_item(
         self,
         context: ReportContext,
+        settings: Settings = None
     ) -> None:
         """
         returns doc item for report item
@@ -131,6 +146,7 @@ class Summary(ReportItem):
     def get_doc_item(
         self,
         context: ReportContext,
+        settings: Settings = None
     ) -> None:
         """
         returns doc item for report item
@@ -156,6 +172,7 @@ class Inputs(ReportItem):
     def get_doc_item(
         self,
         context: ReportContext,
+        settings: Settings = None
     ) -> None:
         """
         returns doc item for inputs
@@ -302,6 +319,7 @@ class Table(ReportItem):
     def get_doc_item(
         self,
         context: ReportContext,
+        settings: Settings = None
     ) -> None:
         """
         Returns doc item for table
@@ -432,7 +450,17 @@ class Chart(ReportItem):
             return True
         return False
 
-    def _add_figure(self, doc: Document, file_name, caption, legend_filename=None):
+    def _downsample_png(self, img: str, relative_width=1, dpi=None):
+        if dpi is not None and img.lower().endswith('.png'):
+            downsampled_img = os.path.splitext(img)[0] + f"_dpi{dpi}.png"
+            downsample_image_to_relative_width(img, downsampled_img, relative_width=relative_width, dpi=dpi)
+            img = downsampled_img
+        return img
+
+    def _add_figure(self, doc: Document, file_name, caption, legend_filename=None, dpi=None):
+
+        file_name = self._downsample_png(file_name, dpi=dpi)
+
         if legend_filename is None:
             fig = Figure(position="!ht")
             fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
@@ -471,6 +499,7 @@ class Chart(ReportItem):
         fig_caption: str,
         sub_fig_captions: List[str] = None,
         legend_filename=None,
+        dpi=None
     ):
         """
         Build a figure from SubFigures which displays images in rows
@@ -488,6 +517,8 @@ class Chart(ReportItem):
         figures = []
         for img, caption in zip(img_list, sub_fig_captions):
             sub_fig = SubFigure(position="t", width=NoEscape(rf"{minipage_size}\textwidth"))
+
+            img = self._downsample_png(img, relative_width=minipage_size, dpi=dpi)
             sub_fig.add_image(
                 filename=img, width=NoEscape(r"\textwidth"), placement=NoEscape(r"\centering")
             )
@@ -882,6 +913,7 @@ class Chart2D(Chart):
     def get_doc_item(
         self,
         context: ReportContext,
+        settings: Settings = None
     ) -> None:
         """
         returns doc item for chart
@@ -1276,6 +1308,7 @@ class Chart3D(Chart):
     def get_doc_item(
         self,
         context: ReportContext,
+        settings: Settings = None
     ):
         """
         returns doc item for 3D chart
@@ -1288,6 +1321,10 @@ class Chart3D(Chart):
         img_list = self._get_images(cases, context)
         legend_filename = self._get_legend(context)
 
+        dpi = None
+        if settings is not None:
+            dpi = settings.dpi
+
         if self.items_in_row is not None:
             self._add_row_figure(
                 context.doc,
@@ -1295,11 +1332,12 @@ class Chart3D(Chart):
                 self.caption,
                 sub_fig_captions=[case.name for case in cases],
                 legend_filename=legend_filename,
+                dpi=dpi
             )
         else:
             for filename in img_list:
                 self._add_figure(
-                    context.doc, filename, self.caption, legend_filename=legend_filename
+                    context.doc, filename, self.caption, legend_filename=legend_filename, dpi=dpi
                 )
 
         # Stops figures floating away from their sections

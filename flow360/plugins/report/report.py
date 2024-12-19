@@ -6,7 +6,7 @@ import os
 import posixpath
 from typing import List, Optional, Set, Union, Callable
 
-from pydantic import Field, model_validator, validate_call
+import pydantic as pd
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -28,6 +28,7 @@ from flow360.plugins.report.report_items import (
     Inputs,
     Summary,
     Table,
+    Settings
 )
 from flow360.plugins.report.utils import RequirementItem
 from flow360.plugins.report.uvf_shutter import ShutterBatchService
@@ -133,10 +134,11 @@ class ReportTemplate(Flow360BaseModel):
     """
 
     title: Optional[str] = None
-    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = Field(discriminator="type_name")
+    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = pd.Field(discriminator="type_name")
     include_case_by_case: bool = False
+    settings: Optional[Settings] = Settings()
 
-    @model_validator(mode="after")
+    @pd.model_validator(mode="after")
     def check_fig_names(cls, model):
         """Validate and assign unique fig_names to report items."""
         used_fig_names: Set[str] = set()
@@ -225,7 +227,7 @@ class ReportTemplate(Flow360BaseModel):
             solver_version=solver_version,
         )
 
-    @validate_call(config={"arbitrary_types_allowed": True})
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
     def create_pdf(
         self,
         filename: FileNameStr,
@@ -279,7 +281,7 @@ class ReportTemplate(Flow360BaseModel):
 
         # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
-            item.get_doc_item(context)
+            item.get_doc_item(context, self.settings)
 
         # Iterate each case one at a time
         if self.include_case_by_case is True:
@@ -296,7 +298,7 @@ class ReportTemplate(Flow360BaseModel):
                                 if case.id not in selected_case_ids:
                                     continue
 
-                            item.get_doc_item(case_context)
+                            item.get_doc_item(case_context, self.settings)
 
         # Generate the PDF
         # doc.generate_pdf(os.path.join(data_storage, filename), clean_tex=False)
