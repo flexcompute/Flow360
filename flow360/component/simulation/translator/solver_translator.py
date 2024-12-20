@@ -729,6 +729,8 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
                 output[key_name]["type"] = "SolidIsofluxWall"
             else:
                 output[key_name]["type"] = "SolidAdiabaticWall"
+            if "roughnessHeight" in translated_setting:
+                output[key_name].pop("roughnessHeight")
     return output
 
 

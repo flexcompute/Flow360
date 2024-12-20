@@ -73,7 +73,8 @@
         },
         "fluid/wall": {
             "type": "NoSlipWall",
-            "heatFlux": -0.001
+            "heatFlux": -0.001,
+            "roughnessHeight": 0.0
         }
     },
     "volumeOutput": {
