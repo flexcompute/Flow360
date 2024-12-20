@@ -16,7 +16,7 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     Example
     -------
-    The following example comes from the :ref:`User Defined Dynamic Tutorial Case <UDDGridRotation>`.
+    The following example comes from the :ref:`User Defined Dynamics Tutorial Case <UDDGridRotation>`.
     Please refer to :ref:`this tutorial<userDefinedDynamics>` for more details about the User Defined Dynamics.
 
     >>> fl.UserDefinedDynamic(
@@ -53,9 +53,9 @@ class UserDefinedDynamic(Flow360BaseModel):
     input_vars: List[str] = pd.Field(
         description="List of the inputs to define the user defined dynamics. For example :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "
-        + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to :ref:`momentCenter "
-        + "<geometryConfiguration>`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. For a full list of supported "
-        + "variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
+        + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to "
+        + ":py:attr:`~ReferenceGeometry.moment_center`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. "
+        + "For a full list of supported variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
     )
     constants: Optional[Dict[str, float]] = pd.Field(
         None, description="A list of constants that can be used in the expressions."
@@ -68,7 +68,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "velocity/acceleration in radians for sliding interfaces). For a full list of supported variable, see "
         + ":ref:`here <SupportedVariablesInUserExpression_>`. Please exercise caution when choosing output "
         + "variables, as any modifications to their values will be directly mirrored in the solver. Expressions "
-        + "follows similar guidelines as :ref:`user Defined Expressions<userDefinedExpressionsKnowledgeBase>`.",
+        + "follows similar guidelines as :ref:`User Defined Expressions<userDefinedExpressionsKnowledgeBase>`.",
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "
