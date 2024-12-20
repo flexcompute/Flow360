@@ -694,9 +694,7 @@ class BETDisk(MultiConstructorBaseModel):
             mesh_unit,
         )
 
-        return cls(
-            **params,
-        )
+        return cls(**params)
 
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
