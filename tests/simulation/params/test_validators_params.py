@@ -678,3 +678,85 @@ def test_meshing_validator_dual_context():
     assert errors[0]["type"] == "missing"
     assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
     assert errors[0]["loc"] == ("meshing",)
+
+
+def test_rotating_reference_frame_model_flag():
+
+    c_1 = Cylinder(
+        name="inner_rotating_cylinder",
+        outer_radius=1 * u.cm,
+        height=1 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+    )
+
+    c_2 = Cylinder(
+        name="outer_rotating_cylinder",
+        outer_radius=12 * u.cm,
+        height=12 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+    )
+
+    c_3 = Cylinder(
+        name="another_cylinder",
+        outer_radius=12 * u.m,
+        height=13 * u.m,
+        center=(0, 0, 0) * u.m,
+        axis=(0, 1, 2),
+    )
+
+    my_wall = Surface(name="my_wall", private_attribute_is_interface=False)
+    timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
+    timestepping_steady = Steady(max_steps=1000)
+
+    msg = "For model #1, the rotating_reference_frame_model may not be set to False for "
+    "steady state simulations."
+
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        with ValidationLevelContext(CASE):
+            with SI_unit_system:
+                SimulationParams(
+                    models=[
+                        Fluid(),
+                        Rotation(
+                            entities=[c_1],
+                            spec=AngleExpression("1+2"),
+                            rotating_reference_frame_model=False,
+                        ),
+                        Wall(entities=[my_wall]),
+                    ],
+                    time_stepping=timestepping_steady,
+                    private_attribute_asset_cache=AssetCache(
+                        project_length_unit="cm",
+                        project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
+                    ),
+                )
+
+    with ValidationLevelContext(CASE):
+        with SI_unit_system:
+            test_param = SimulationParams(
+                models=[
+                    Fluid(),
+                    Rotation(
+                        entities=[c_1],
+                        spec=AngleExpression("1+2"),
+                        parent_volume=c_2,
+                        rotating_reference_frame_model=True,
+                    ),
+                    Rotation(
+                        entities=[c_2],
+                        spec=AngleExpression("1+5"),
+                        rotating_reference_frame_model=False,
+                    ),
+                    Rotation(entities=[c_3], spec=AngleExpression("3+5")),
+                    Wall(entities=[my_wall]),
+                ],
+                time_stepping=timestepping_unsteady,
+                private_attribute_asset_cache=AssetCache(
+                    project_length_unit="cm",
+                    project_entity_info=VolumeMeshEntityInfo(boundaries=[my_wall]),
+                ),
+            )
+
+    assert test_param.models[3].rotating_reference_frame_model == False

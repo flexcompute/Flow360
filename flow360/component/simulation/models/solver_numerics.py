@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
@@ -77,6 +77,7 @@ class GenericSolverSettings(Flow360BaseModel, metaclass=ABCMeta):
         1, description="Frequency at which to solve the equation."
     )
     linear_solver: LinearSolver = pd.Field(LinearSolver())
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
 
 class NavierStokesSolver(GenericSolverSettings):
@@ -163,7 +164,7 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     C_sigma: NonNegativeFloat = pd.Field(2.0 / 3.0)
     C_v1: NonNegativeFloat = pd.Field(7.1)
     C_vonKarman: NonNegativeFloat = pd.Field(0.41)
-    C_w2: NonNegativeFloat = pd.Field(0.3)
+    C_w2: float = pd.Field(0.3)
     C_t3: NonNegativeFloat = pd.Field(1.2)
     C_t4: NonNegativeFloat = pd.Field(0.5)
     C_min_rd: NonNegativeFloat = pd.Field(10.0)
