@@ -1,5 +1,6 @@
 """Volume models for the simulation framework."""
 
+import json
 from typing import Dict, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -8,9 +9,21 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    MultiConstructorBaseModel,
+)
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
+from flow360.component.simulation.models.bet.BETTranslatorInterface import (
+    generateC81BETJSON,
+    generateXfoilBETJSON,
+    generateXrotorBETJSON,
+)
+from flow360.component.simulation.models.bet.example_translation import (
+    translate_example_xrotor,
+)
+from flow360.component.simulation.models.bet.updater import update_bet_params
 from flow360.component.simulation.models.material import (
     Air,
     FluidMaterialTypes,
@@ -24,9 +37,6 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
     TransitionModelSolverType,
     TurbulenceModelSolverType,
-)
-from flow360.component.simulation.framework.multi_constructor_model_base import (
-    MultiConstructorBaseModel,
 )
 from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_3d_coefficients_in_polars,
@@ -50,10 +60,6 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
 )
-
-from flow360.component.simulation.models.bet.BETTranslatorInterface import generateXrotorBETJSON
-from flow360.component.simulation.models.bet.example_translation import translate_example_xrotor
-from flow360.component.simulation.models.bet.updater import update_bet_params
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
@@ -486,7 +492,7 @@ class BETDiskSectionalPolar(Flow360BaseModel):
 # class XRotorFile(Flow360BaseModel):
 #     filename: str
 #     content: # optionally do content in post validator
-    
+
 #     @property
 #     def content(self): # content as property? how about serialisation?
 #        pass
@@ -495,11 +501,25 @@ class BETDiskSectionalPolar(Flow360BaseModel):
 # class DFDCFile(Flow360BaseModel):
 #     filename: str
 #     content: # optionally do content in post validator
-    
+
 #     @property
 #     def content(self): # content as property? how about serialisation?
 #        pass
 
+
+class BETDiskCache(Flow360BaseModel):
+    """[INTERNAL] Cache for BETDisk inputs"""
+
+    file: Optional[str] = None
+    rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
+    omega: Optional[AngularVelocityType.NonNegative] = None
+    chord_ref: Optional[LengthType.Positive] = None
+    n_loading_nodes: Optional[pd.StrictInt] = None
+    cylinder: Optional[Cylinder] = None
+    angle_unit: Optional[AngleType] = None
+    length_unit: Optional[LengthType.NonNegative] = None
+    mesh_unit: Optional[LengthType.NonNegative] = None
+    number_of_blades: Optional[pd.StrictInt] = None
 
 
 # pylint: disable=no-member
@@ -604,6 +624,8 @@ class BETDisk(MultiConstructorBaseModel):
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
     )
 
+    private_attribute_input_cache: BETDiskCache = BETDiskCache()
+
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
     def check_bet_disk_initial_blade_direction_and_blade_line_chord(self):
@@ -642,35 +664,99 @@ class BETDisk(MultiConstructorBaseModel):
     def check_bet_disk_3d_coefficients_in_polars(self):
         """validate dimension of 3d coefficients in polars"""
         return _check_bet_disk_3d_coefficients_in_polars(self)
-    
+
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_xrotor(
         cls,
+        file: str,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
         omega: AngularVelocityType.NonNegative,
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
-        volumes: EntityList[Cylinder],
-        angle_unit: AngleType,
-        length_unit: LengthType.NonNegative,
+        cylinder: Cylinder,
+        mesh_unit: LengthType.NonNegative = pd.Field(
+            description="The length/grid unit of the project"
+        ),
+        angle_unit: AngleType = u.deg,
+        length_unit: LengthType.NonNegative = u.m,
     ):
-        
-        # ... call translator function
-        # params = BET_translate(XRotorFile.content)
-        params = translate_example_xrotor()
-        # print(params)
-        params = update_bet_params(dict=params)
+
+        params = generateXrotorBETJSON(
+            file,
+            rotation_direction_rule,
+            omega,
+            chord_ref,
+            n_loading_nodes,
+            cylinder,
+            angle_unit,
+            length_unit,
+            mesh_unit,
+        )
+
+        return cls(
+            **params,
+        )
+
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_dfdc(
+        cls,
+        file: str,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        cylinder: Cylinder,
+        mesh_unit: LengthType.NonNegative = pd.Field(
+            description="The length/grid unit of the project"
+        ),
+        angle_unit: AngleType = u.deg,
+        length_unit: LengthType.NonNegative = u.m,
+    ):
+
+        params = generateXrotorBETJSON(
+            file,
+            rotation_direction_rule,
+            omega,
+            chord_ref,
+            n_loading_nodes,
+            cylinder,
+            angle_unit,
+            length_unit,
+            mesh_unit,
+        )
 
         return cls(**params)
 
-    # @MultiConstructorBaseModel.model_constructor
-    # @pd.validate_call
-    # def from_dfdc(cls, file: DFDCFile, ...) -> BETDisk:
-        
-    #     # ... call translator function
-        
-    #     return cls(**params)
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_c81(
+        cls,
+        file: str,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        cylinder: Cylinder,
+        number_of_blades: pd.StrictInt,
+        angle_unit: AngleType = u.deg,
+        length_unit: LengthType.NonNegative = u.m,
+    ):
+
+        params = generateC81BETJSON(
+            file,
+            rotation_direction_rule,
+            omega,
+            chord_ref,
+            n_loading_nodes,
+            cylinder,
+            angle_unit,
+            length_unit,
+            number_of_blades,
+        )
+
+        return cls(**params)
 
 
 class Rotation(Flow360BaseModel):
