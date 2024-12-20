@@ -73,7 +73,11 @@ from flow360.exceptions import Flow360TranslationError
 
 def dump_dict(input_params):
     """Dumping param/model to dictionary."""
-    return input_params.model_dump(by_alias=True, exclude_none=True)
+
+    result = input_params.model_dump(by_alias=True, exclude_none=True)
+    if result.pop("privateAttributeDict", None) is not None:
+        result.update(input_params.private_attribute_dict)
+    return result
 
 
 def init_non_average_output(
