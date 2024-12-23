@@ -21,6 +21,8 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    Inflow,
+    MassFlowRate,
     Periodic,
     SlipWall,
     Translational,
