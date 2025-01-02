@@ -344,3 +344,33 @@ def _check_parent_volume_is_rotating(models):
                 "used in any other `Rotation` model's `volumes`."
             )
     return models
+
+
+def _check_and_add_noninertial_reference_frame_flag(params):
+
+    current_lvls = get_validation_levels() if get_validation_levels() else []
+    if all(level not in current_lvls for level in (ALL, CASE)):
+        return params
+
+    noninertial_reference_frame_default_value = True
+    is_steady = True
+    if isinstance(params.time_stepping, Unsteady):
+        noninertial_reference_frame_default_value = False
+        is_steady = False
+
+    models = params.models
+
+    for model_index, model in enumerate(models):
+        if isinstance(model, Rotation) is False:
+            continue
+
+        if model.rotating_reference_frame_model is None:
+            model.rotating_reference_frame_model = noninertial_reference_frame_default_value
+
+        if model.rotating_reference_frame_model is False and is_steady is True:
+            raise ValueError(
+                f"For model #{model_index}, the rotating_reference_frame_model may not be set to False "
+                "for steady state simulations."
+            )
+
+    return params

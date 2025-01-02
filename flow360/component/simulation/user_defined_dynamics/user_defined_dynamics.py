@@ -11,15 +11,51 @@ from flow360.component.simulation.primitives import Cylinder, GenericVolume, Sur
 
 
 class UserDefinedDynamic(Flow360BaseModel):
-    """:class:`UserDefinedDynamic` class for defining the user defined dynamics inputs."""
+    """
+    :class:`UserDefinedDynamic` class for defining the user defined dynamics inputs.
+
+    Example
+    -------
+    The following example comes from the :ref:`User Defined Dynamics Tutorial Case <UDDGridRotation>`.
+    Please refer to :ref:`this tutorial<userDefinedDynamics>` for more details about the User Defined Dynamics.
+
+    >>> fl.UserDefinedDynamic(
+    ...    name="dynamicTheta",
+    ...    input_vars=["momentY"],
+    ...    constants={
+    ...        "I": 0.443768309310345,
+    ...        "zeta": zeta,
+    ...        "K": K,
+    ...        "omegaN": omegaN,
+    ...        "theta0": theta0,
+    ...    },
+    ...    output_vars={
+    ...        "omegaDot": "state[0];",
+    ...        "omega": "state[1];",
+    ...        "theta": "state[2];",
+    ...    },
+    ...    state_vars_initial_value=[str(initOmegaDot), "0.0", str(initTheta)],
+    ...    update_law=[
+    ...        "if (pseudoStep == 0) (momentY - K * ( state[2] - theta0 ) "
+    ...         + "- 2 * zeta * omegaN * I *state[1] ) / I; else state[0];",
+    ...        "if (pseudoStep == 0) state[1] + state[0] * timeStepSize; else state[1];",
+    ...        "if (pseudoStep == 0) state[2] + state[1] * timeStepSize; else state[2];",
+    ...    ],
+    ...    input_boundary_patches=volume_mesh["plateBlock/noSlipWall"],
+    ...    output_target=volume_mesh["plateBlock"],
+    ... )
+
+    ====
+
+    """
 
     name: str = pd.Field(description="Name of the dynamics defined by the user.")
     input_vars: List[str] = pd.Field(
         description="List of the inputs to define the user defined dynamics. For example :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "
-        + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to :ref:`momentCenter "
-        + "<geometryConfiguration>`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. For a full list of supported "
-        + "variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
+        + ":code:`momentX`, :code:`momentY`, :code:`momentZ` (X/Y/Z moments with respect to "
+        + ":py:attr:`~ReferenceGeometry.moment_center`), :code:`forceX`, :code:`forceY`, :code:`forceZ`. "
+        + "For a full list of supported variable, see :ref:`here <SupportedVariablesInUserExpression_>`."
     )
     constants: Optional[Dict[str, float]] = pd.Field(
         None, description="A list of constants that can be used in the expressions."
@@ -32,7 +68,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "velocity/acceleration in radians for sliding interfaces). For a full list of supported variable, see "
         + ":ref:`here <SupportedVariablesInUserExpression_>`. Please exercise caution when choosing output "
         + "variables, as any modifications to their values will be directly mirrored in the solver. Expressions "
-        + "follows similar guidelines as :ref:`user Defined Expressions<userDefinedExpressionsKnowledgeBase>`.",
+        + "follows similar guidelines as :ref:`User Defined Expressions<userDefinedExpressionsKnowledgeBase>`.",
     )
     state_vars_initial_value: List[StringExpression] = pd.Field(
         description="The initial value of state variables are specified here. The entries could be either values "

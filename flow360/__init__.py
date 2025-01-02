@@ -102,8 +102,10 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
@@ -230,4 +232,6 @@ __all__ = [
     "VolumeMesh",
     "UserDefinedFarfield",
     "Geometry",
+    "TimeAverageProbeOutput",
+    "TimeAverageSurfaceProbeOutput",
 ]

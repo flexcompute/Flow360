@@ -61,6 +61,7 @@ from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
+    _check_and_add_noninertial_reference_frame_flag,
     _check_cht_solver_settings,
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_ddes_volume_output,
@@ -188,7 +189,7 @@ class SimulationParams(_ParamModelBase):
         None,
         discriminator="type_name",
         description="Global operating condition."
-        " See :ref:`Operating condition <operating_condition>` for more details.",
+        " See :ref:`Operating Condition <operating_condition>` for more details.",
     )
     #
 
@@ -201,16 +202,16 @@ class SimulationParams(_ParamModelBase):
     models: Optional[List[ModelTypes]] = CaseField(
         None,
         description="Solver settings and numerical models and boundary condition settings."
-        " See :ref:`Volume models <volume_models>` and :ref:`Surface models <surface_models>` for more details.",
+        " See :ref:`Volume Models <volume_models>` and :ref:`Surface Models <surface_models>` for more details.",
     )
     time_stepping: Union[Steady, Unsteady] = CaseField(
         Steady(),
         discriminator="type_name",
-        description="Time stepping settings. See :ref:`Time stepping <timeStepping>` for more details.",
+        description="Time stepping settings. See :ref:`Time Stepping <timeStepping>` for more details.",
     )
     user_defined_dynamics: Optional[List[UserDefinedDynamic]] = CaseField(
         None,
-        description="User defined dynamics. See :ref:`User defined dynamics <user_defined_dynamics>` for more details.",
+        description="User defined dynamics. See :ref:`User Defined Dynamics <user_defined_dynamics>` for more details.",
     )
 
     user_defined_fields: List[UserDefinedField] = CaseField(
@@ -317,6 +318,11 @@ class SimulationParams(_ParamModelBase):
     def check_output_fields(params):
         """Check output fields and iso fields are valid"""
         return _check_output_fields(params)
+
+    @pd.model_validator(mode="after")
+    def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
+        """Ensure that all volume zones have the rotating_reference_frame_model flag with correct values"""
+        return _check_and_add_noninertial_reference_frame_flag(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""

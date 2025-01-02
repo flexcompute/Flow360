@@ -668,3 +668,24 @@ def test_generate_process_json():
     assert res1 is not None
     assert res2 is not None
     assert res3 is not None
+
+
+def test_validation_level_intersection():
+    def get_validation_levels_to_use(root_item_type, requested_levels):
+        avaliable_levels = services._determine_validation_level(
+            up_to="Case", root_item_type=root_item_type
+        )
+        return services._intersect_validation_levels(requested_levels, avaliable_levels)
+
+    assert get_validation_levels_to_use("Geometry", "All") == ["SurfaceMesh", "VolumeMesh", "Case"]
+
+    assert get_validation_levels_to_use("SurfaceMesh", "All") == ["VolumeMesh", "Case"]
+
+    assert get_validation_levels_to_use("VolumeMesh", "All") == [
+        "Case",
+    ]
+
+    assert get_validation_levels_to_use("SurfaceMesh", ["Case", "VolumeMesh", "SurfaceMesh"]) == [
+        "Case",
+        "VolumeMesh",
+    ]

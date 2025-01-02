@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from examples.migration_guide.extra_operating_condition import (
+    operating_condition_from_mach_muref,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -274,7 +277,7 @@ def test_subsequent_param_with_different_unit_system(get_the_param):
     assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm
 
 
-def test_mach_reynodls_op_cond():
+def test_mach_reynolds_op_cond():
 
     condition = operating_condition_from_mach_reynolds(
         mach=0.2,
@@ -291,5 +294,27 @@ def test_mach_reynodls_op_cond():
         condition = operating_condition_from_mach_reynolds(
             mach=0.2,
             reynolds=0,
+            temperature=288.15 * u.K,
+            project_length_unit=u.m,
+        )
+
+
+def test_mach_muref_op_cond():
+
+    condition = operating_condition_from_mach_muref(
+        mach=0.2,
+        mu_ref=4e-8,
+        temperature=288.15 * u.K,
+        alpha=2.0 * u.deg,
+        beta=0.0 * u.deg,
+        project_length_unit=u.m,
+    )
+    assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
+
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        condition = operating_condition_from_mach_muref(
+            mach=0.2,
+            mu_ref=0,
             temperature=288.15 * u.K,
         )

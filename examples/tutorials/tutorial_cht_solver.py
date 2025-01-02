@@ -1,8 +1,6 @@
 import flow360 as fl
 from flow360.examples import TutorialCHTSolver
 
-fl.Env.preprod.active()
-
 TutorialCHTSolver.get_files()
 project = fl.Project.from_file(
     TutorialCHTSolver.mesh_filename, name="Tutorial CHT Solver from Python"
@@ -10,24 +8,13 @@ project = fl.Project.from_file(
 volume_mesh = project.volume_mesh
 
 with fl.SI_unit_system:
-    thermal_state = fl.ThermalState(
-        temperature=288.15 * fl.u.K,
-        material=fl.Air(
-            dynamic_viscosity=fl.Sutherland(
-                reference_temperature=288.15 * fl.u.K,
-                reference_viscosity=4.2925193198151646e-8 * fl.u.flow360_viscosity_unit,
-                effective_temperature=110.4 * fl.u.K,
-            )
-        ),
-    )
-    operating_condition = fl.AerospaceCondition().from_mach(mach=0.1, thermal_state=thermal_state)
     params = fl.SimulationParams(
         reference_geometry=fl.ReferenceGeometry(
             moment_center=[0, 0, 0] * fl.u.m,
             moment_length=[1, 1, 1] * fl.u.m,
             area=1 * fl.u.m**2,
         ),
-        operating_condition=operating_condition,
+        operating_condition=fl.AerospaceCondition.from_mach(mach=0.1),
         time_stepping=fl.Steady(
             max_steps=10000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)
         ),

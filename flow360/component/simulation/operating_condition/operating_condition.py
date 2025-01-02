@@ -51,6 +51,17 @@ class ThermalStateCache(Flow360BaseModel):
 class ThermalState(MultiConstructorBaseModel):
     """
     Represents the thermal state of a fluid with specific properties.
+
+    Example
+    -------
+
+    >>> fl.ThermalState(
+    ...     temperature=300 * fl.u.K,
+    ...     density=1.225 * fl.u.kg / fl.u.m**3,
+    ...     material=fl.Air()
+    ... )
+
+    ====
     """
 
     # pylint: disable=fixme
@@ -173,6 +184,22 @@ class GenericReferenceConditionCache(Flow360BaseModel):
 class GenericReferenceCondition(MultiConstructorBaseModel):
     """
     Operating condition defines the physical (non-geometrical) reference values for the problem.
+
+    Example
+    -------
+
+    - Define :class:`GenericReferenceCondition` with :py:meth:`from_mach`:
+
+      >>> fl.GenericReferenceCondition.from_mach(
+      ...     mach=0.2,
+      ...     thermal_state=ThermalState(),
+      ... )
+
+    - Define :class:`GenericReferenceCondition` with :py:attr:`velocity_magnitude`:
+
+      >>> fl.GenericReferenceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
+
+    ====
     """
 
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
@@ -181,7 +208,8 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
-        + " when :py:attr:`reference_velocity_magnitude` is not specified.",
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -206,6 +234,12 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
+    @pd.field_validator("thermal_state", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
+        return value
+
 
 class AerospaceConditionCache(Flow360BaseModel):
     """[INTERNAL] Cache for AerospaceCondition inputs"""
@@ -221,6 +255,24 @@ class AerospaceCondition(MultiConstructorBaseModel):
     """
     Operating condition for aerospace applications. Defines both reference parameters used to compute nondimensional
     coefficients in postprocessing and the default :class:`Freestream` boundary condition for the simulation.
+
+    Example
+    -------
+
+    - Define :class:`AerospaceCondition` with :py:meth:`from_mach`:
+
+      >>> fl.AerospaceCondition.from_mach(
+      ...     mach=0,
+      ...     alpha=-90 * fl.u.deg,
+      ...     thermal_state=fl.ThermalState(),
+      ...     reference_mach=0.69,
+      ... )
+
+    - Define :class:`AerospaceCondition` with :py:attr:`velocity_magnitude`:
+
+      >>> fl.AerospaceCondition(velocity_magnitude=40 * fl.u.m / fl.u.s)
+
+    ====
     """
 
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
@@ -230,6 +282,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
+        frozen=True,
     )
     thermal_state: ThermalState = pd.Field(
         ThermalState(),
@@ -239,6 +292,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
         description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
+        frozen=True,
     )
     private_attribute_input_cache: AerospaceConditionCache = AerospaceConditionCache()
 
@@ -336,6 +390,12 @@ class AerospaceCondition(MultiConstructorBaseModel):
         """Computes Mach number."""
         return self.velocity_magnitude / self.thermal_state.speed_of_sound
 
+    @pd.field_validator("alpha", "beta", "thermal_state", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
+        return value
+
 
 # pylint: disable=fixme
 # TODO: AutomotiveCondition
@@ -391,8 +451,8 @@ def operating_condition_from_mach_reynolds(
     ValueError
         If required parameters are missing or calculations cannot be performed.
 
-    Examples
-    --------
+    Example
+    -------
     Example usage:
 
     >>> condition = operating_condition_from_mach_reynolds(
