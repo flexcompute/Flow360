@@ -231,7 +231,7 @@ def _intersect_validation_levels(requested_levels, avaliable_levels):
 def validate_model(
     *,
     params_as_dict,
-    root_item_type: Literal["Geometry", "VolumeMesh"],
+    root_item_type: Union[Literal["Geometry", "VolumeMesh"], None],
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
@@ -243,8 +243,8 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
-    root_item_type : Literal["Geometry", "VolumeMesh"]
-        The root item type for validation.
+    root_item_type : Union[Literal["Geometry", "VolumeMesh"], None],
+        The root item type for validation. If None then no context-aware validation is performed.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
         The validation level, default is ALL. Also a list can be provided, eg: ["SurfaceMesh", "VolumeMesh"]
 
@@ -492,8 +492,10 @@ def _get_mesh_unit(params_as_dict: dict) -> str:
 
 def _determine_validation_level(
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
-    root_item_type: Literal["Geometry", "VolumeMesh"],
+    root_item_type: Union[Literal["Geometry", "VolumeMesh"], None],
 ) -> list:
+    if root_item_type is None:
+        return None
     all_lvls = ["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
     return all_lvls[all_lvls.index(root_item_type) + 1 : all_lvls.index(up_to) + 1]
 
