@@ -26,30 +26,30 @@ from .utils import *
 
 
 ########################################################################################################################
-def readInXfoilPolar(polarFile):
+def read_in_xfoil_polar(polar_file):
     """
     Parameters
     ----------
-    polarFile: path to the xfoil polar file.
+    polar_file: path to the xfoil polar file.
 
     Returns
     -------
-    alphaList, machList, clList, cdList
+    alpha_list, mach_list, cl_list, cd_list
     """
-    clAlphas = []
-    clValues = {}  # dictionary of list with the machs as keys
-    cdValues = {}  # dictionary of list with the machs as keys
+    cl_alphas = []
+    cl_values = {}  # dictionary of list with the machs as keys
+    cd_values = {}  # dictionary of list with the machs as keys
 
-    xfoilFid = open(polarFile, "r")
-    xfoilFid.readline()  # skip the header
+    xfoil_fid = open(polar_file, "r")
+    xfoil_fid.readline()  # skip the header
     for i in range(8):  # skip the first 9 lines
-        line = xfoilFid.readline()
+        line = xfoil_fid.readline()
 
-    machNum = line.strip().split(" ")[4]
-    clValues[machNum] = []
-    cdValues[machNum] = []
+    mach_num = line.strip().split(" ")[4]
+    cl_values[mach_num] = []
+    cd_values[mach_num] = []
     for i in range(4):  # skip the next 4 lines
-        line = xfoilFid.readline()
+        line = xfoil_fid.readline()
     while True:
         linecontents = line.strip().split(" ")
 
@@ -59,137 +59,137 @@ def readInXfoilPolar(polarFile):
         for i in range(c):
             linecontents.remove("")
 
-        clAlphas.append(float(linecontents[0]))
-        clValues[machNum].append(float(linecontents[1]))
-        cdValues[machNum].append(float(linecontents[2]))
-        line = xfoilFid.readline()
+        cl_alphas.append(float(linecontents[0]))
+        cl_values[mach_num].append(float(linecontents[1]))
+        cd_values[mach_num].append(float(linecontents[2]))
+        line = xfoil_fid.readline()
         if len(line) == 0:  # If we did all the alphas and we are done
             break
     # extrapolate alphas to +-180 deg and Use the flat plate Cl and CD outside of where we have values from Xfoil
-    clAlphas, clMachNums, clValues, cdValues = blendPolarstoFlatplate(
-        clAlphas, [machNum], clValues, cdValues
+    cl_alphas, cl_mach_nums, cl_values, cd_values = blend_polars_to_flat_plate(
+        cl_alphas, [mach_num], cl_values, cd_values
     )
 
     # Now we interpolate the polar data to a constant set of alphas to make sure we have all the smae alphas across all mach and section
     # 10 deg steps from -180 ->-30 and from 30 to 180. 1 deg steps from -29 to 29
-    degIncrementAng = list(np.arange(-30, 30, 1).astype(float))
+    deg_increment_ang = list(np.arange(-30, 30, 1).astype(float))
 
     alphas = (
         list(np.arange(-180, -30, 10).astype(float))
-        + degIncrementAng
+        + deg_increment_ang
         + list(np.arange(30, 190, 10).astype(float))
     )  # json doesn't like the numpy default int64 type so I make it a float
 
-    clInterp = interp1d(
-        clAlphas, clValues[clMachNums[0]], kind="linear"
+    cl_interp = interp1d(
+        cl_alphas, cl_values[cl_mach_nums[0]], kind="linear"
     )  # method should be linear to make sure we still have 0 at the +- 180 values
-    cdInterp = interp1d(
-        clAlphas, cdValues[clMachNums[0]], kind="linear"
+    cd_interp = interp1d(
+        cl_alphas, cd_values[cl_mach_nums[0]], kind="linear"
     )  # method should be linear to make sure we still have 0 at the +- 180 values
     cls = [0 for i in range(len(alphas))]
     cds = [0 for i in range(len(alphas))]
     for i, alpha in enumerate(alphas):  # interpolate the cl and cd over the new set of alphas
-        cls[i] = float(clInterp(alpha))
-        cds[i] = float(cdInterp(alpha))
+        cls[i] = float(cl_interp(alpha))
+        cds[i] = float(cd_interp(alpha))
 
-    xfoilFid.close()
+    xfoil_fid.close()
 
-    return alphas, clMachNums[0], cls, cds
+    return alphas, cl_mach_nums[0], cls, cds
 
 
 ########################################################################################################################
-def blendPolarstoFlatplate(clAlphas, clMachNums, clValues, cdValues):
+def blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values):
     """
     This function blends a given arbitrary set of CL and CD polars that are missing values to cover the whole -180 to 180
     range of angles. The resulting polars will have the missing values be replaced by the flat plate CL and CD.
     Parameters
     ----------
-    clAlphas: list of alpha angles
-    clMachNums: list of mach numbers
-    clValues: dict with dimensions nMach*nAlphas
-    cdValues: dict with dimensions nMach*nAlphas
+    cl_alphas: list of alpha angles
+    cl_mach_nums: list of mach numbers
+    cl_values: dict with dimensions nMach*nAlphas
+    cd_values: dict with dimensions nMach*nAlphas
 
     Returns
     -------
-    clAlphas, clMachNums, clValues, cdValues with polars completed to +- 180
+    cl_alphas, cl_mach_nums, cl_values, cd_values with polars completed to +- 180
     """
 
-    polarAlphaStepBlend = 10  # add a polar point every N alpha
+    polar_alpha_step_blend = 10  # add a polar point every N alpha
 
-    alphaMin = clAlphas[0]
-    alphaMax = clAlphas[-1]
-    if alphaMin < -180:
-        raise ValueError(f"ERROR: alphaMin is smaller then -180: {alphaMin}")
-    if alphaMax > 180:
-        raise ValueError(f"ERROR: alphaMax is greater then 180: {alphaMin}")
+    alpha_min = cl_alphas[0]
+    alpha_max = cl_alphas[-1]
+    if alpha_min < -180:
+        raise ValueError(f"ERROR: alpha_min is smaller than -180: {alpha_min}")
+    if alpha_max > 180:
+        raise ValueError(f"ERROR: alpha_max is greater than 180: {alpha_max}")
 
-    blendWindow = 0.5  # 0.5 radians
+    blend_window = 0.5  # 0.5 radians
 
     # create a point every 10 deg, how many points do we need.
-    numMissingAlphasMin = round((alphaMin + 180) / polarAlphaStepBlend)
-    numMissingAlphasMax = round((180 - alphaMax) / polarAlphaStepBlend)
+    num_missing_alphas_min = round((alpha_min + 180) / polar_alpha_step_blend)
+    num_missing_alphas_max = round((180 - alpha_max) / polar_alpha_step_blend)
 
-    for i in range(numMissingAlphasMin - 1):  # add alphas at beginning of clAlphas list
-        clAlphas.insert(0, clAlphas[0] - polarAlphaStepBlend)
-        a = clAlphas[0] * pi / 180  # smallest alpha in radians
-        for i, mach in enumerate(clMachNums):
-            blendVal = blendFuncValue(
-                blendWindow, a, alphaMin * pi / 180, "belowCLmin"
+    for i in range(num_missing_alphas_min - 1):  # add alphas at beginning of clAlphas list
+        cl_alphas.insert(0, cl_alphas[0] - polar_alpha_step_blend)
+        a = cl_alphas[0] * pi / 180  # smallest alpha in radians
+        for i, mach in enumerate(cl_mach_nums):
+            blend_val = blend_func_value(
+                blend_window, a, alpha_min * pi / 180, "below_cl_min"
             )  # we are on the alphaCLmin side going up in CL
             # this follows the flat plate lift and drag equations times the blend val coefficient
 
-            cLift = clValues[mach][0] * blendVal + (1 - blendVal) * cos(a) * 2 * pi * sin(a) / sqrt(
+            cl = cl_values[mach][0] * blend_val + (1 - blend_val) * cos(a) * 2 * pi * sin(a) / sqrt(
                 1 + (2 * pi * sin(a)) ** 2
             )
             cd = (
-                cdValues[mach][0] * blendVal
-                + (1 - blendVal)
+                cd_values[mach][0] * blend_val
+                + (1 - blend_val)
                 * sin(a)
                 * (2 * pi * sin(a)) ** 3
                 / sqrt(1 + (2 * pi * sin(a)) ** 6)
                 + 0.05
             )
             mach = str(mach)
-            clValues[mach].insert(0, cLift)  # add a new cl value at the beginning
-            cdValues[mach].insert(0, cd)  # add a new cl value at the beginning
+            cl_values[mach].insert(0, cl)  # add a new cl value at the beginning
+            cd_values[mach].insert(0, cd)  # add a new cd value at the beginning
 
-    for i in range(numMissingAlphasMax - 1):  # add alphas at end of clAlphas list
-        clAlphas.append(clAlphas[-1] + polarAlphaStepBlend)
-        a = clAlphas[-1] * pi / 180  # smallest alpha in radians
-        for i, mach in enumerate(clMachNums):
-            blendVal = blendFuncValue(
-                blendWindow, a, alphaMax * pi / 180, "aboveCLmax"
+    for i in range(num_missing_alphas_max - 1):  # add alphas at end of clAlphas list
+        cl_alphas.append(cl_alphas[-1] + polar_alpha_step_blend)
+        a = cl_alphas[-1] * pi / 180  # smallest alpha in radians
+        for i, mach in enumerate(cl_mach_nums):
+            blend_val = blend_func_value(
+                blend_window, a, alpha_max * pi / 180, "above_cl_max"
             )  # we are on the alphaCLmin side going up in CL
             # this follows the flat plate lift and drag equations times the blend val coefficient
 
-            cLift = clValues[mach][-1] * blendVal + (1 - blendVal) * cos(a) * 2 * pi * sin(
+            cl = cl_values[mach][-1] * blend_val + (1 - blend_val) * cos(a) * 2 * pi * sin(
                 a
             ) / sqrt(1 + (2 * pi * sin(a)) ** 2)
             cd = (
-                cdValues[mach][-1] * blendVal
-                + (1 - blendVal)
+                cd_values[mach][-1] * blend_val
+                + (1 - blend_val)
                 * sin(a)
                 * (2 * pi * sin(a)) ** 3
                 / sqrt(1 + (2 * pi * sin(a)) ** 6)
                 + 0.05
             )
             mach = str(mach)
-            clValues[mach].append(cLift)  # add a new cl value at the beginning
-            cdValues[mach].append(cd)  # add a new cl value at the beginning
+            cl_values[mach].append(cl)  # add a new cl value at the beginning
+            cd_values[mach].append(cd)  # add a new cl value at the beginning
 
-    clAlphas.insert(0, -180)  # make sure that the last value in the list is 180
-    clAlphas.append(180)  # make sure that the last value in the list is 180
-    for i, mach in enumerate(clMachNums):
-        clValues[mach].insert(0, 0)  # make sure Cl=0 at alpha -180
-        cdValues[mach].insert(0, 0.05)  # Cd=0.05 is flat plate Cd at 180
-        clValues[mach].append(0)  # make sure Cl=0 at alpha -180
-        cdValues[mach].append(0.05)  # Cd=0.05 is flat plate Cd at 180
+    cl_alphas.insert(0, -180)  # make sure that the last value in the list is 180
+    cl_alphas.append(180)  # make sure that the last value in the list is 180
+    for i, mach in enumerate(cl_mach_nums):
+        cl_values[mach].insert(0, 0)  # make sure Cl=0 at alpha -180
+        cd_values[mach].insert(0, 0.05)  # Cd=0.05 is flat plate Cd at 180
+        cl_values[mach].append(0)  # make sure Cl=0 at alpha -180
+        cd_values[mach].append(0.05)  # Cd=0.05 is flat plate Cd at 180
 
-    return clAlphas, clMachNums, clValues, cdValues
+    return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
 ###############################################################################################################
-def readInC81Polarc81Format(polarFile):
+def read_in_c81_polar_c81_format(polar_file):
     """
     Read in the c81 format polar file
     This function checks that the list of Alphas is consistent across CL and CD and that the number of Machs is also consistent across Cl and CD.
@@ -199,23 +199,23 @@ def readInC81Polarc81Format(polarFile):
 
     Returns
     -------
-    4 lists of floats: clAlphas, clMachNums, clValues, cdValues
+    4 lists of floats: cl_alphas, cl_mach_nums, cl_values, cd_values
     """
-    clAlphas = []
-    cdAlphas = []
-    clValues = {}  # dictionary of list with the machs as keys
-    cdValues = {}  # dictionary of list with the machs as keys
+    cl_alphas = []
+    cd_alphas = []
+    cl_values = {}  # dictionary of list with the machs as keys
+    cd_values = {}  # dictionary of list with the machs as keys
 
-    c81fid = open(polarFile, "r")
-    c81fid.readline()  # skip the header
-    line = c81fid.readline()
-    clMachNums = line.strip().split(" ")
-    clMachNums = [
-        float(i) for i in clMachNums if i
-    ]  # remove empty items and trailing \n in clMachNums
-    for mach in clMachNums:
-        clValues[mach] = []
-    line = c81fid.readline()
+    c81_fid = open(polar_file, "r")
+    c81_fid.readline()  # skip the header
+    line = c81_fid.readline()
+    cl_mach_nums = line.strip().split(" ")
+    cl_mach_nums = [
+        float(i) for i in cl_mach_nums if i
+    ]  # remove empty items and trailing \n in cl_mach_nums
+    for mach in cl_mach_nums:
+        cl_values[mach] = []
+    line = c81_fid.readline()
     while True:
         # c81 format is as per this document https://cibinjoseph.github.io/C81-Interface/page/index.html
         # first 7 chars in string is A0A then 7 chars per cl value
@@ -223,28 +223,28 @@ def readInC81Polarc81Format(polarFile):
             line[:7] == "       "
         ):  # If we did all the alphas and now that line starts with a bunch of spaces.
             break
-        clAlphas.append(float(line[:7]))
+        cl_alphas.append(float(line[:7]))
 
-        for i, mach in enumerate(clMachNums):
-            indexBeg = i * 7 + 7
-            indexEnd = (i + 1) * 7 + 7
-            clValues[mach].append(float(line[indexBeg:indexEnd]))
-        line = c81fid.readline()
+        for i, mach in enumerate(cl_mach_nums):
+            index_beg = i * 7 + 7
+            index_end = (i + 1) * 7 + 7
+            cl_values[mach].append(float(line[index_beg:index_end]))
+        line = c81_fid.readline()
 
     # Now do the CDs
-    cdMachNums = line.strip().split(" ")
+    cd_mach_nums = line.strip().split(" ")
     # we already read the mach numbers line in the while loop above. so just split it.
-    cdMachNums = [
-        float(i) for i in cdMachNums if i
+    cd_mach_nums = [
+        float(i) for i in cd_mach_nums if i
     ]  # remove empty items and trailing \n in clMachNums
-    if clMachNums != cdMachNums:  # if we have different lists of  machs
+    if cl_mach_nums != cd_mach_nums:  # if we have different lists of  machs
         raise ValueError(
-            f"ERROR: in file {polarFile}, The machs in the Cl polar do not match the machs in the CD polar, we have {clMachNums} Cl mach values and {cdMachNums} CD mach values:"
+            f"ERROR: in file {polar_file}, The machs in the Cl polar do not match the machs in the CD polar, we have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values:"
         )
 
-    for mach in cdMachNums:
-        cdValues[mach] = []
-    line = c81fid.readline()
+    for mach in cd_mach_nums:
+        cd_values[mach] = []
+    line = c81_fid.readline()
     while True:
         # c81 format is as per this document https://cibinjoseph.github.io/C81-Interface/page/index.html
         # first 7 chars in string is A0A then 7 chars per cl value
@@ -252,26 +252,26 @@ def readInC81Polarc81Format(polarFile):
             line[:7] == "       "
         ):  # If we did all the alphas and now that line starts with a bunch of spaces.
             break
-        cdAlphas.append(float(line[:7]))
+        cd_alphas.append(float(line[:7]))
 
-        for i, mach in enumerate(cdMachNums):
-            indexBeg = i * 7 + 7
-            indexEnd = (i + 1) * 7 + 7
-            cdValues[mach].append(float(line[indexBeg:indexEnd]))
-        line = c81fid.readline()
+        for i, mach in enumerate(cd_mach_nums):
+            index_beg = i * 7 + 7
+            index_end = (i + 1) * 7 + 7
+            cd_values[mach].append(float(line[index_beg:index_end]))
+        line = c81_fid.readline()
 
-    if clAlphas != cdAlphas:  # if we have different  lists of alphas
+    if cl_alphas != cd_alphas:  # if we have different  lists of alphas
         raise ValueError(
-            f"ERROR: in file {polarFile}, The alphas in the Cl polar do not match the alphas in the CD polar. We have {clAlphas} Cls and {cdAlphas} Cds"
+            f"ERROR: in file {polar_file}, The alphas in the Cl polar do not match the alphas in the CD polar. We have {cl_alphas} Cls and {cd_alphas} Cds"
         )
 
     # We also have the moment informatiomn in a c81 file but we ignore that for our purposes.
 
-    return clAlphas, clMachNums, clValues, cdValues
+    return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
 ###############################################################################################################
-def readInC81Polarcsv(polarFile):
+def read_in_c81_polar_csv(polar_file):
     """
     # read in the c81 format polar file as a csv file
     # the script checks that the list of Alphas is consistent across CL and CD and that the number of Machs is also consistent across Cl and CD.
@@ -281,175 +281,175 @@ def readInC81Polarcsv(polarFile):
 
     Returns
     -------
-     4 lists of floats: clAlphas, clMachNums, clValues, cdValues
+     4 lists of floats: cl_alphas, cl_mach_nums, cl_values, cd_values
     """
 
-    clAlphas = []
-    cdAlphas = []
-    clValues = {}  # dictionary of list with the machs as keys
-    cdValues = {}  # dictionary of list with the machs as keys
+    cl_alphas = []
+    cd_alphas = []
+    cl_values = {}  # dictionary of list with the machs as keys
+    cd_values = {}  # dictionary of list with the machs as keys
 
-    c81fid = open(polarFile, "r")
-    c81fid.readline()  # skip the header
-    line = c81fid.readline()
-    clMachNums = line.split(",")
-    clMachNums = [
-        float(i.strip()) for i in clMachNums if i
-    ]  # remove empty items and trailing \n in clMachNums
+    c81_fid = open(polar_file, "r")
+    c81_fid.readline()  # skip the header
+    line = c81_fid.readline()
+    cl_mach_nums = line.split(",")
+    cl_mach_nums = [
+        float(i.strip()) for i in cl_mach_nums if i
+    ]  # remove empty items and trailing \n in cl_mach_nums
     # numClMachs=len(clMachNums) #number of machs we have
-    for mach in clMachNums:
-        clValues[mach] = []
-    line = c81fid.readline()
+    for mach in cl_mach_nums:
+        cl_values[mach] = []
+    line = c81_fid.readline()
     while True:
         values = line.split(",")
         if values[0] == "":  # If we did all the alphas
             break
-        clAlphas.append(float(values[0]))
-        for i, mach in enumerate(clMachNums):
-            clValues[mach].append(float(values[i + 1].strip()))
-        line = c81fid.readline()
+        cl_alphas.append(float(values[0]))
+        for i, mach in enumerate(cl_mach_nums):
+            cl_values[mach].append(float(values[i + 1].strip()))
+        line = c81_fid.readline()
 
     # Now do the CDs
-    cdMachNums = line.split(
+    cd_mach_nums = line.split(
         ","
     )  # we already read the mach numbers line in the while loop above. so just split it.
-    cdMachNums = [
-        float(i.strip()) for i in cdMachNums if i
-    ]  # remove empty items and trailing \n in clMachNums
-    if clMachNums != cdMachNums:  # if we have different lists of  machs
+    cd_mach_nums = [
+        float(i.strip()) for i in cd_mach_nums if i
+    ]  # remove empty items and trailing \n in cl_mach_nums
+    if cl_mach_nums != cd_mach_nums:  # if we have different lists of machs
         raise ValueError(
-            f"ERROR: in file {polarFile}, The machs in the Cl polar do not match the machs in the CD polar, we have {clMachNums} Cl mach values and {cdMachNums} CD mach values:"
+            f"ERROR: in file {polar_file}, The machs in the Cl polar do not match the machs in the CD polar, we have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values:"
         )
 
-    for mach in cdMachNums:
-        cdValues[mach] = []
-    line = c81fid.readline()
+    for mach in cd_mach_nums:
+        cd_values[mach] = []
+    line = c81_fid.readline()
     while True:
         values = line.split(",")
         if values[0] == "":  # If we did all the alphas
             break
-        cdAlphas.append(float(values[0]))
-        for i, mach in enumerate(cdMachNums):
-            cdValues[mach].append(float(values[i + 1].strip()))
-        line = c81fid.readline()
+        cd_alphas.append(float(values[0]))
+        for i, mach in enumerate(cd_mach_nums):
+            cd_values[mach].append(float(values[i + 1].strip()))
+        line = c81_fid.readline()
 
-    if clAlphas != cdAlphas:  # if we have different  lists of alphas
+    if cl_alphas != cd_alphas:  # if we have different  lists of alphas
         raise ValueError(
-            f"ERROR: in file {polarFile}, The alphas in the Cl polar do not match the alphas in the CD polar. We have {len(clAlphas)} Cls and {len(cdAlphas)} Cds"
+            f"ERROR: in file {polar_file}, The alphas in the Cl polar do not match the alphas in the CD polar. We have {len(cl_alphas)} Cls and {len(cd_alphas)} Cds"
         )
 
     # We also have the moment information in a c81 file but we ignore that for our purposes.
     if (
-        clAlphas[0] != -180 and clAlphas[-1] != 180
+        cl_alphas[0] != -180 and cl_alphas[-1] != 180
     ):  # if we don't have polars for the full circle of alpha angles.
-        blendPolarstoFlatplate(clAlphas, clMachNums, clValues, cdValues)
-    c81fid.close()
-    return clAlphas, clMachNums, clValues, cdValues
+        blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values)
+    c81_fid.close()
+    return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
 ###############################################################################################################
-def readInXfoilData(betDisk, xfoilPolarfiles):
+def read_in_xfoil_data(bet_disk, xfoil_polar_files):
     """
     This function reads in the Xfoil polars and assigns the resulting values correctly into the BET disk dictionary
     Parameters
     ----------
-    betDisk - Dictionary of values needed for the BET disk implementation
-    xfoilPolarfiles - list of xfoil polar files
+    bet_disk - Dictionary of values needed for the BET disk implementation
+    xfoil_polar_files - list of xfoil polar files
 
     Returns
     -------
-    betDisk - same dictionary as was passed to function but with all the polar information added.
+    bet_disk - same dictionary as was passed to function but with all the polar information added.
     """
-    if len(xfoilPolarfiles) != len(betDisk["sectionalRadiuses"]):
+    if len(xfoil_polar_files) != len(bet_disk["sectional_radiuses"]):
         raise ValueError(
-            f'Error: There is an error in the number of polar files ({len(xfoilPolarfiles)}) vs the number of sectional Radiuses ({len(betDisk["sectionalRadiuses"])})'
+            f'Error: There is an error in the number of polar files ({len(xfoil_polar_files)}) vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
-    betDisk["sectionalPolars"] = []
-    betDisk["MachNumbers"] = []
+    bet_disk["sectional_polars"] = []
+    bet_disk["mach_numbers"] = []
 
-    machNumbers = []
+    mach_numbers = []
 
-    for secIdx, section in enumerate(betDisk["sectionalRadiuses"]):
+    for sec_idx, section in enumerate(bet_disk["sectional_radiuses"]):
         secpol = (
             {}
         )  # temporary dict to store all the section polars before assigning it to the right location.
-        secpol["liftCoeffs"] = []
-        secpol["dragCoeffs"] = []
+        secpol["lift_coeffs"] = []
+        secpol["drag_coeffs"] = []
 
-        polarFiles = xfoilPolarfiles[secIdx]
-        machNumbersforsection = []
-        for polarFile in polarFiles:
-            print(f"doing sectionalRadius {section} with polar file {polarFile}")
-            if not path.isfile(polarFile):
-                raise ValueError(f"Error: xfoil format polar file {polarFile} does not exist.")
-            alphaList, machNum, clValues, cdValues = readInXfoilPolar(
-                polarFile
+        polar_files = xfoil_polar_files[sec_idx]
+        mach_numbers_for_section = []
+        for polar_file in polar_files:
+            print(f"doing sectional_radius {section} with polar file {polar_file}")
+            if not path.isfile(polar_file):
+                raise ValueError(f"Error: xfoil format polar file {polar_file} does not exist.")
+            alpha_list, mach_num, cl_values, cd_values = read_in_xfoil_polar(
+                polar_file
             )  # read in xfoil data and use flat plate values outside of given polar range
-            machNumbersforsection.append(float(machNum))
-            secpol["liftCoeffs"].append([clValues])
-            secpol["dragCoeffs"].append([cdValues])
-        machNumbers.append(machNumbersforsection)
-        betDisk["sectionalPolars"].append(secpol)
+            mach_numbers_for_section.append(float(mach_num))
+            secpol["lift_coeffs"].append([cl_values])
+            secpol["drag_coeffs"].append([cd_values])
+        mach_numbers.append(mach_numbers_for_section)
+        bet_disk["sectional_polars"].append(secpol)
     for i in range(
-        len(machNumbers) - 1
+        len(mach_numbers) - 1
     ):  # check to make sure all N cross sections have the same list of mach numbers
-        if machNumbers[i] != machNumbers[i + 1]:
+        if mach_numbers[i] != mach_numbers[i + 1]:
             raise ValueError(
                 f'ERROR: the mach numbers from the Xfoil polars need to be the same set for each cross section. Here sections {i} \
-                    and {i+1} have the following sets of mach numbers:{secpol["machNumbers"][i]} and {secpol["machNumbers"][i+1]}'
+                    and {i+1} have the following sets of mach numbers:{secpol["mach_numbers"][i]} and {secpol["mach_numbers"][i+1]}'
             )
-    betDisk["alphas"] = alphaList
-    betDisk["MachNumbers"] = machNumbers[
+    bet_disk["alphas"] = alpha_list
+    bet_disk["mach_numbers"] = mach_numbers[
         0
     ]  # they should all be the same set so just pick the first one.
     #    betDisk['sectionalPolars'].append(secpol)
 
-    return betDisk
+    return bet_disk
 
 
 ###############################################################################################################
-def readInC81Polars(betDisk, c81Polarfiles):
+def read_in_c81_polars(bet_disk, c81_polar_files):
     """
     This function reads in the C81 polars and assigns the resulting values correctly into the BET disk dictionary
     Parameters
     ----------
-    betDisk - Dictionary of values needed for the BET disk implementation
-    c81Polarfiles - list of C81 polar files
+    bet_disk - Dictionary of values needed for the BET disk implementation
+    c81_polar_files - list of C81 polar files
 
     Returns
     -------
-    betDisk - same dictionary as was passed to function but with all the polar information added.
+    bet_disk - same dictionary as was passed to function but with all the polar information added.
     """
-    if len(c81Polarfiles) != len(betDisk["sectional_radiuses"]):
+    if len(c81_polar_files) != len(bet_disk["sectional_radiuses"]):
         raise ValueError(
-            f'Error: There is an error in the number of polar files ({len(c81Polarfiles)}) vs the number of sectional Radiuses ({len(betDisk["sectionalRadiuses"])})'
+            f'Error: There is an error in the number of polar files ({len(c81_polar_files)}) vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
-    betDisk["sectional_polars"] = []
-    for secIdx, section in enumerate(betDisk["sectional_radiuses"]):
-        polarFile = c81Polarfiles[secIdx][0]  # Take the first element of that list.
-        print(f"doing sectional_radius {section} with polar file {polarFile}")
-        if not path.isfile(polarFile):
-            raise ValueError(f"Error: c81 format polar file {polarFile} does not exist.")
+    bet_disk["sectional_polars"] = []
+    for sec_idx, section in enumerate(bet_disk["sectional_radiuses"]):
+        polar_file = c81_polar_files[sec_idx][0]  # Take the first element of that list.
+        print(f"doing sectional_radius {section} with polar file {polar_file}")
+        if not path.isfile(polar_file):
+            raise ValueError(f"Error: c81 format polar file {polar_file} does not exist.")
 
-        if "csv" in polarFile:  # if we are dealing with a csv file
-            alphaList, machList, clList, cdList = readInC81Polarcsv(polarFile)
+        if "csv" in polar_file:  # if we are dealing with a csv file
+            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file)
 
         else:
             # we are dealing with a genuine c81 file, then I need to handle it by splitting the list into certain sizes
-            alphaList, machList, clList, cdList = readInC81Polarc81Format(polarFile)
-        if "mach_numbers" in betDisk.keys() and betDisk["mach_numbers"] != machList:
+            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(polar_file)
+        if "mach_numbers" in bet_disk.keys() and bet_disk["mach_numbers"] != mach_list:
             raise ValueError(
                 "ERROR: The mach Numbers do not match across the various sectional radi polar c81 files. All the sectional radi need to have the same mach Numbers across all c81 polar files"
             )
-        if "alphas" in betDisk.keys() and betDisk["alphas"] != alphaList:
+        if "alphas" in bet_disk.keys() and bet_disk["alphas"] != alpha_list:
             raise ValueError(
                 "ERROR: The alphas do not match across the various sectional radi polar c81 files. All the sectional radi need to have the same alphas across all c81 polar files"
             )
 
-        betDisk["mach_numbers"] = machList
-        betDisk["alphas"] = alphaList
+        bet_disk["mach_numbers"] = mach_list
+        bet_disk["alphas"] = alpha_list
 
         # since the order of brackets is Mach#, Rey#, Values then we need to return:
         # [[[array for MAch #1]],[[array for MAch #2]],[[array for MAch #3]],[[array for MAch #4]],......]
@@ -457,50 +457,66 @@ def readInC81Polars(betDisk, c81Polarfiles):
         secpol = {}
         secpol["lift_coeffs"] = []
         secpol["drag_coeffs"] = []
-        for mach in betDisk["mach_numbers"]:
-            secpol["lift_coeffs"].append([clList[mach]])
-            secpol["drag_coeffs"].append([cdList[mach]])
-        betDisk["sectional_polars"].append(secpol)
+        for mach in bet_disk["mach_numbers"]:
+            secpol["lift_coeffs"].append([cl_list[mach]])
+            secpol["drag_coeffs"].append([cd_list[mach]])
+        bet_disk["sectional_polars"].append(secpol)
 
-    return betDisk
+    return bet_disk
 
 
 ########################################################################################################################
-def generateXfoilBETJSON(geometryFileName, betDisk):
+def generate_xfoil_bet_json(
+    geometry_file_name,
+    rotation_direction_rule,
+    initial_blade_direction,
+    blade_line_chord,
+    omega,
+    chord_ref,
+    n_loading_nodes,
+    cylinder,
+    number_of_blades,
+    angle_unit,
+    length_unit,
+):
     """
     This function takes in a geometry input files along with the remaining required information and creates a flow360 BET input dictionary
     This geometry input file contains the list of C81 files required to get the polars along with the geometry twist and chord definition
     Attributes
     ----------
-    geometryFileName: string, filepath to the geometry files we want to translate into a BET disk
-    betDisk: dictionary of the required betdisk data that we can't get form the geometry file.
+    geometry_file_name: string, filepath to the geometry files we want to translate into a BET disk
+    bet_disk: dictionary of the required betdisk data that we can't get form the geometry file.
     return: dictionary that we should append to the Flow360.json file we want to run with.
     """
 
-    if betDisk["rotationDirectionRule"] not in ["rightHand", "leftHand"]:
-        raise ValueError(
-            f'Exiting. Invalid rotationDirectionRule: {betDisk["rotationDirectionRule"]}'
-        )
-    if len(betDisk["axisOfRotation"]) != 3:
-        raise ValueError(f"axisOfRotation must be a list of size 3. Exiting.")
-    if len(betDisk["centerOfRotation"]) != 3:
-        raise ValueError("centerOfRotation must be a list of size 3. Exiting")
+    bet_disk={}
 
-    twistVec, chordVec, sectionalRadiuses, xfoilPolarfileList = parseGeometryfile(geometryFileName)
-    betDisk["radius"] = sectionalRadiuses[-1]
-    betDisk["sectionalRadiuses"] = sectionalRadiuses
-    betDisk["twists"] = twistVec
-    betDisk["chords"] = chordVec
-    betDisk = readInXfoilData(
-        betDisk, xfoilPolarfileList
+    twist_vec, chord_vec, sectional_radiuses, xfoil_polar_file_list = parse_geometry_file(geometry_file_name, length_unit=length_unit, angle_unit=angle_unit)
+    bet_disk["entities"] = cylinder
+    bet_disk["omega"] = omega
+    bet_disk["chord_ref"] = chord_ref
+    bet_disk["n_loading_nodes"] = n_loading_nodes
+    bet_disk["rotation_direction_rule"] = rotation_direction_rule
+    bet_disk["initial_blade_direction"] = initial_blade_direction
+    bet_disk["blade_line_chord"] = blade_line_chord
+    bet_disk["number_of_blades"] = number_of_blades
+    bet_disk["radius"] = sectional_radiuses[-1]
+    bet_disk["sectional_radiuses"] = sectional_radiuses
+    bet_disk["twists"] = twist_vec
+    bet_disk["chords"] = chord_vec
+    bet_disk = read_in_xfoil_data(
+        bet_disk, xfoil_polar_file_list
     )  # add the mach values along with the polars from the xfoil files.
-    betDisk["ReynoldsNumbers"] = generateReys()
+    bet_disk["reynolds_numbers"] = generate_reynolds()
+    bet_disk["alphas"] *= angle_unit
+    bet_disk["sectional_radiuses"] *= length_unit
+    bet_disk.pop("radius", None)
 
-    return betDisk
+    return bet_disk
 
 
 ########################################################################################################################
-def parseGeometryfile(geometryFileName, length_unit, angle_unit):
+def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
     """
     This function reads in the geometry file. This file is a csv containing the filenames of the polar definition files along with the twist and chord definitions.
     it assumes the following format:
@@ -521,24 +537,24 @@ def parseGeometryfile(geometryFileName, length_unit, angle_unit):
 
     Parameters
     ----------
-    geometryFileName - path to the geometryFile. This file is a csv containing the filenames of the polar definition files along with the twist and chord definitions.
+    geometry_file_name - path to the geometryFile. This file is a csv containing the filenames of the polar definition files along with the twist and chord definitions.
 
     Returns
     -------
-    4 lists: twistVec, chordVec, sectionalRadiuses, c81Polarfiles
+    4 lists: twist_vec, chord_vec, sectional_radiuses, c81_polar_files
     """
     #    read in the geometry file name and return its values
-    fid = open(geometryFileName)
+    fid = open(geometry_file_name)
     line = fid.readline()
     if "#" not in line:
         raise ValueError(
-            f"ERROR: first character of first line of geometry file {geometryFileName} should be the # character to denote a header line"
+            f"ERROR: first character of first line of geometry file {geometry_file_name} should be the # character to denote a header line"
         )
 
-    geometryFilePath = os.path.dirname(os.path.realpath(geometryFileName))
-    sectionalRadiuses = []
-    polarFiles = []
-    radiusStation = []
+    geometry_file_path = os.path.dirname(os.path.realpath(geometry_file_name))
+    sectional_radiuses = []
+    polar_files = []
+    radius_station = []
     chord = []
     twist = []
     line = fid.readline().strip("\n")
@@ -548,16 +564,16 @@ def parseGeometryfile(geometryFileName, length_unit, angle_unit):
         ):  # If we have reached the end of sectional radiuses then move on to the twists and chords
             break
         try:
-            splitLine = line.split(",")
-            sectionalRadiuses.append(float(splitLine[0]))
-            polarFiles.append(
-                [os.path.join(geometryFilePath, file.strip()) for file in splitLine[1:]]
+            split_line = line.split(",")
+            sectional_radiuses.append(float(split_line[0]))
+            polar_files.append(
+                [os.path.join(geometry_file_path, file.strip()) for file in split_line[1:]]
             )
             # polarFiles = [x.strip(' ') for x in polarFiles] # remove spaces in file names
             line = fid.readline().strip("\n")  # read next line.
         except Exception as e:
             raise ValueError(
-                f"ERROR: exception thrown when parsing line {line} from geometry file {geometryFileName}"
+                f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_name}"
             )
 
     while True:
@@ -567,30 +583,32 @@ def parseGeometryfile(geometryFileName, length_unit, angle_unit):
             )  # read in the first line of twist and chord definition
             if not line:  # if we have reached the end of the file.
                 break
-            radiusStation.append(float(line.split(",")[0]))
+            radius_station.append(float(line.split(",")[0]))
             chord.append(float(line.split(",")[1]))
             twist.append(float(line.split(",")[2]))
         except:
             raise ValueError(
-                f"ERROR: exception thrown when parsing line {line} from geometry file {geometryFileName}"
+                f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_name}"
             )
 
     # intialize chord and twist with 0,0 value at centerline
-    chordVec = [{"radius": 0.0 * length_unit, "chord": 0.0 * length_unit}]
-    twistVec = [{"radius": 0.0 * length_unit, "twist": 0.0 * angle_unit}]
-    for i in range(len(radiusStation)):
-        twistVec.append({"radius": radiusStation[i] * length_unit, "twist": twist[i] * angle_unit})
-        chordVec.append({"radius": radiusStation[i] * length_unit, "chord": chord[i] * length_unit})
+    chord_vec = [{"radius": 0.0 * length_unit, "chord": 0.0 * length_unit}]
+    twist_vec = [{"radius": 0.0 * length_unit, "twist": 0.0 * angle_unit}]
+    for i in range(len(radius_station)):
+        twist_vec.append({"radius": radius_station[i] * length_unit, "twist": twist[i] * angle_unit})
+        chord_vec.append({"radius": radius_station[i] * length_unit, "chord": chord[i] * length_unit})
 
     fid.close()
 
-    return twistVec, chordVec, sectionalRadiuses, polarFiles
+    return twist_vec, chord_vec, sectional_radiuses, polar_files
 
 
 ################################################################################################################
-def generateC81BETJSON(
-    geometryFileName,
+def generate_c81_bet_json(
+    geometry_file_name,
     rotation_direction_rule,
+    initial_blade_direction,
+    blade_line_chord,
     omega,
     chord_ref,
     n_loading_nodes,
@@ -604,8 +622,8 @@ def generateC81BETJSON(
     This geometry input file contains the list of C81 files required to get the polars along with the geometry twist and chord definition
     Attributes
     ----------
-    geometryFileName: string, filepath to the geometry files we want to translate into a BET disk
-    betDisk: dictionary of the required betdisk data that we can't get form the geometry file.
+    geometry_file_name: string, filepath to the geometry files we want to translate into a BET disk
+    bet_disk: dictionary of the required betdisk data that we can't get form the geometry file.
     return: dictionary that we should append to the Flow360.json file we want to run with.
     """
 
@@ -618,52 +636,54 @@ def generateC81BETJSON(
     # if len(betDisk["centerOfRotation"]) != 3:
     #     raise ValueError("centerOfRotation must be a list of size 3. Exiting")
 
-    twistVec, chordVec, sectionalRadiuses, c81PolarfileList = parseGeometryfile(
-        geometryFileName=geometryFileName, length_unit=length_unit, angle_unit=angle_unit
+    twist_vec, chord_vec, sectional_radiuses, c81_polar_file_list = parse_geometry_file(
+        geometry_file_name=geometry_file_name, length_unit=length_unit, angle_unit=angle_unit
     )
 
-    betDisk = {}
-    betDisk["entities"] = cylinder
-    betDisk["omega"] = omega
-    betDisk["chord_ref"] = chord_ref
-    betDisk["n_loading_nodes"] = n_loading_nodes
-    betDisk["rotation_direction_rule"] = rotation_direction_rule
-    betDisk["number_of_blades"] = number_of_blades
-    betDisk["radius"] = sectionalRadiuses[-1]
-    betDisk["sectional_radiuses"] = sectionalRadiuses
-    betDisk["twists"] = twistVec
-    betDisk["chords"] = chordVec
-    betDisk = readInC81Polars(
-        betDisk, c81PolarfileList
+    bet_disk = {}
+    bet_disk["entities"] = cylinder
+    bet_disk["omega"] = omega
+    bet_disk["chord_ref"] = chord_ref
+    bet_disk["n_loading_nodes"] = n_loading_nodes
+    bet_disk["rotation_direction_rule"] = rotation_direction_rule
+    bet_disk["initial_blade_direction"] = initial_blade_direction
+    bet_disk["blade_line_chord"] = blade_line_chord
+    bet_disk["number_of_blades"] = number_of_blades
+    bet_disk["radius"] = sectional_radiuses[-1]
+    bet_disk["sectional_radiuses"] = sectional_radiuses
+    bet_disk["twists"] = twist_vec
+    bet_disk["chords"] = chord_vec
+    bet_disk = read_in_c81_polars(
+        bet_disk, c81_polar_file_list
     )  # add the mach values along with the polars from the c81 files.
-    betDisk["reynolds_numbers"] = generateReys()
-    betDisk["alphas"] *= angle_unit
-    betDisk["sectional_radiuses"] *= length_unit
-    betDisk.pop("radius", None)
+    bet_disk["reynolds_numbers"] = generate_reynolds()
+    bet_disk["alphas"] *= angle_unit
+    bet_disk["sectional_radiuses"] *= length_unit
+    bet_disk.pop("radius", None)
 
-    return betDisk
+    return bet_disk
 
 
 ########################################################################################################################
-def check_comment(comment_line, linenum, numelts):
+def check_comment(comment_line, line_num, numelts):
     """
-    This function is used when reading an XROTOR input file to make sure that what should be comments really are
+    This function is used when reading an XROTOR input file to make sure that what should be comments, really are.
 
     Attributes
     ----------
     comment_line: string
     numelts: int
     """
-    if not comment_line:  # if the comment_line is empty.
+    if not comment_line:  # if the comment_line is empty
         return
 
     # otherwise make sure that we are on a comment line
     if not comment_line[0] == "!" and not (len(comment_line) == numelts):
-        raise ValueError(f"wrong format for line #%i: {comment_line}" % (linenum))
+        raise ValueError(f"wrong format for line #%i: {comment_line}" % (line_num))
 
 
 ########################################################################################################################
-def check_num_values(values_list, linenum, numelts):
+def check_num_values(values_list, line_num, numelts):
     """
     This function is used to make sure we have the expected number of inputs in a given line
 
@@ -673,16 +693,16 @@ def check_num_values(values_list, linenum, numelts):
     numelts:  int
     return: None, it raises an exception if the error condition is met.
     """
-    # make sure that we have the expected number of values.
+    # make sure that we have the expected number of values
     if not (len(values_list) == numelts):
         raise ValueError(
             f"wrong number of items for line #%i: {values_list}. We were expecting %i numbers and got %i"
-            % (linenum, len(values_list), numelts)
+            % (line_num, len(values_list), numelts)
         )
 
 
 ########################################################################################################################
-def readDFDCFile(dfdcFileName):
+def read_dfdc_file(dfdc_file_name):
     """
     This functions read in the dfdc filename provided.
     it does rudimentary checks to make sure the file is truly in the dfdc format.
@@ -690,8 +710,8 @@ def readDFDCFile(dfdcFileName):
 
     Attributes
     ----------
-    dfdcFileName: string
-    return: a dictionary with all the required values. That dictionary will be used to create BETdisks section of the
+    dfdc_file_name: string
+    return: a dictionary with all the required values. That dictionary will be used to create BETDisks section of the
             Flow360 input JSON file.
 
 
@@ -729,8 +749,8 @@ def readDFDCFile(dfdcFileName):
         reyref: reference Reynold's number
         reyexp: Reynold's number exponent Cd~Re^rexp
 
-    nGeomStations: number of geometric stations where the blade geometry is defined at
-    nBlades: number of blades on the propeller
+    n_geom_stations: number of geometric stations where the blade geometry is defined at
+    n_blades: number of blades on the propeller
     Each geometry station will have the following parameters:
       r: station r in meters
       c: local chord in meters
@@ -739,168 +759,168 @@ def readDFDCFile(dfdcFileName):
 
 
     """
-    with open(dfdcFileName, "r") as fid:
+    with open(dfdc_file_name, "r") as fid:
 
         # read in lines 5->8 which contains the run case information
-        dfdcInputDict = {}
-        linenum = 0  # counter needed to report which line the error is on.
+        dfdc_input_dict = {}
+        line_num = 0  # counter needed to report which line the error is on.
         for i in range(4):
             fid.readline()  # we have 4 blank lines
-            linenum += 1
+            line_num += 1
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 4)
+        line_num += 1
+        check_comment(comment_line, line_num, 4)
         values = fid.readline().split()
-        linenum += 1
+        line_num += 1
         # we don't want ot apply the check to this line b/c we could have a varying number of RPMs
 
-        dfdcInputDict["vel"] = float(values[1])
-        dfdcInputDict["RPM"] = float(values[2])
+        dfdc_input_dict["vel"] = float(values[1])
+        dfdc_input_dict["RPM"] = float(values[2])
 
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 5)
+        line_num += 1
+        check_comment(comment_line, line_num, 5)
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 4)
-        dfdcInputDict["rho"] = float(values[0])
+        line_num += 1
+        check_num_values(values, line_num, 4)
+        dfdc_input_dict["rho"] = float(values[0])
 
         for i in range(7):
             fid.readline()  # skip next 8 lines.
-            linenum += 1
+            line_num += 1
 
         comment_line = fid.readline().upper().split()  # convert all to upper case
-        linenum += 1
-        check_comment(comment_line, linenum, 2)  # 2 because line should have 2 components
+        line_num += 1
+        check_comment(comment_line, line_num, 2)  # 2 because line should have 2 components
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 1)  # we should have 1 value.
-        dfdcInputDict["nAeroSections"] = int(values[0])
+        line_num += 1
+        check_num_values(values, line_num, 1)  # we should have 1 value.
+        dfdc_input_dict["nAeroSections"] = int(values[0])
         # define the lists with the right number of elements
-        dfdcInputDict["rRstations"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["a0deg"] = [0] * dfdcInputDict["nAeroSections"]  # WARNING, ao is in deg
-        dfdcInputDict["dclda"] = [0] * dfdcInputDict[
+        dfdc_input_dict["rRstations"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["a0deg"] = [0] * dfdc_input_dict["nAeroSections"]  # WARNING, ao is in deg
+        dfdc_input_dict["dclda"] = [0] * dfdc_input_dict[
             "nAeroSections"
         ]  # but dclda is in cl per radians
-        dfdcInputDict["clmax"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["clmin"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["dcldastall"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["dclstall"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["mcrit"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["cdmin"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["clcdmin"] = [0] * dfdcInputDict["nAeroSections"]
-        dfdcInputDict["dcddcl2"] = [0] * dfdcInputDict["nAeroSections"]
+        dfdc_input_dict["clmax"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["clmin"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["dcldastall"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["dclstall"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["mcrit"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["cdmin"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["clcdmin"] = [0] * dfdc_input_dict["nAeroSections"]
+        dfdc_input_dict["dcddcl2"] = [0] * dfdc_input_dict["nAeroSections"]
 
         comment_line = fid.readline().upper().split()  # convert all to upper case
-        linenum += 1
-        check_comment(comment_line, linenum, 2)  # 2 because line should have 2 components
-        for i in range(dfdcInputDict["nAeroSections"]):  # iterate over all the sections
+        line_num += 1
+        check_comment(comment_line, line_num, 2)  # 2 because line should have 2 components
+        for i in range(dfdc_input_dict["nAeroSections"]):  # iterate over all the sections
 
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 1)  # we should have 1 value.
-            dfdcInputDict["rRstations"][i] = float(values[0])  # aka xisection
-
-            comment_line = fid.readline().upper().split()  # convert all to upper case
-            linenum += 1
-            check_comment(comment_line, linenum, 5)  # 5 because line should have 5 components
-            values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 4)  # we should have 4 value.
-            dfdcInputDict["a0deg"][i] = float(values[0])  # WARNING, ao is in deg
-            dfdcInputDict["dclda"][i] = float(values[1])  # but dclda is in cl per radians
-            dfdcInputDict["clmax"][i] = float(values[2])
-            dfdcInputDict["clmin"][i] = float(values[3])
+            line_num += 1
+            check_num_values(values, line_num, 1)  # we should have 1 value.
+            dfdc_input_dict["rRstations"][i] = float(values[0])  # aka xisection
 
             comment_line = fid.readline().upper().split()  # convert all to upper case
-            linenum += 1
-            check_comment(comment_line, linenum, 5)  # 5 because line should have 5 components
+            line_num += 1
+            check_comment(comment_line, line_num, 5)  # 5 because line should have 5 components
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 4)  # we should have 4 value.
-            dfdcInputDict["dcldastall"][i] = float(values[0])
-            dfdcInputDict["dclstall"][i] = float(values[1])
-            dfdcInputDict["mcrit"][i] = float(values[3])
+            line_num += 1
+            check_num_values(values, line_num, 4)  # we should have 4 value.
+            dfdc_input_dict["a0deg"][i] = float(values[0])  # WARNING, ao is in deg
+            dfdc_input_dict["dclda"][i] = float(values[1])  # but dclda is in cl per radians
+            dfdc_input_dict["clmax"][i] = float(values[2])
+            dfdc_input_dict["clmin"][i] = float(values[3])
 
             comment_line = fid.readline().upper().split()  # convert all to upper case
-            linenum += 1
-            check_comment(comment_line, linenum, 4)  # 4 because line should have 4 components
+            line_num += 1
+            check_comment(comment_line, line_num, 5)  # 5 because line should have 5 components
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 3)  # we should have 3 value.
-            dfdcInputDict["cdmin"][i] = float(values[0])
-            dfdcInputDict["clcdmin"][i] = float(values[1])
-            dfdcInputDict["dcddcl2"][i] = float(values[2])
+            line_num += 1
+            check_num_values(values, line_num, 4)  # we should have 4 value.
+            dfdc_input_dict["dcldastall"][i] = float(values[0])
+            dfdc_input_dict["dclstall"][i] = float(values[1])
+            dfdc_input_dict["mcrit"][i] = float(values[3])
+
+            comment_line = fid.readline().upper().split()  # convert all to upper case
+            line_num += 1
+            check_comment(comment_line, line_num, 4)  # 4 because line should have 4 components
+            values = fid.readline().split()
+            line_num += 1
+            check_num_values(values, line_num, 3)  # we should have 3 value.
+            dfdc_input_dict["cdmin"][i] = float(values[0])
+            dfdc_input_dict["clcdmin"][i] = float(values[1])
+            dfdc_input_dict["dcddcl2"][i] = float(values[2])
 
             for i in range(2):
                 fid.readline()  # skip next 3 lines.
-                linenum += 1
+                line_num += 1
 
         for i in range(3):
             fid.readline()  # skip next 3 lines.
-            linenum += 1
+            line_num += 1
         # Now we are done with the various aero sections and we start looking at blade geometry definitions
         comment_line = fid.readline().upper().split()  # convert all to upper case
-        linenum += 1
-        check_comment(comment_line, linenum, 3)  # 3 because line should have 3 components
+        line_num += 1
+        check_comment(comment_line, line_num, 3)  # 3 because line should have 3 components
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 3)  # we should have 3 values.
-        dfdcInputDict["nBlades"] = int(values[1])
+        line_num += 1
+        check_num_values(values, line_num, 3)  # we should have 3 values.
+        dfdc_input_dict["nBlades"] = int(values[1])
         comment_line = fid.readline().upper().split()  # convert all to upper case
-        linenum += 1
-        check_comment(comment_line, linenum, 2)
+        line_num += 1
+        check_comment(comment_line, line_num, 2)
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 1)
-        dfdcInputDict["nGeomStations"] = int(values[0])
+        line_num += 1
+        check_num_values(values, line_num, 1)
+        dfdc_input_dict["nGeomStations"] = int(values[0])
         # 2nd value on that  line is the number of blades
-        dfdcInputDict["rRGeom"] = [0] * dfdcInputDict["nGeomStations"]
-        dfdcInputDict["cRGeom"] = [0] * dfdcInputDict["nGeomStations"]
-        dfdcInputDict["beta0Deg"] = [0] * dfdcInputDict["nGeomStations"]
+        dfdc_input_dict["rRGeom"] = [0] * dfdc_input_dict["nGeomStations"]
+        dfdc_input_dict["cRGeom"] = [0] * dfdc_input_dict["nGeomStations"]
+        dfdc_input_dict["beta0Deg"] = [0] * dfdc_input_dict["nGeomStations"]
         comment_line = fid.readline().upper().split()  # convert all to upper case
-        linenum += 1
-        check_comment(comment_line, linenum, 4)  # 4 because line should have 4 components
-        for i in range(dfdcInputDict["nGeomStations"]):  # iterate over all the geometry stations
+        line_num += 1
+        check_comment(comment_line, line_num, 4)  # 4 because line should have 4 components
+        for i in range(dfdc_input_dict["nGeomStations"]):  # iterate over all the geometry stations
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 3)  # we should have 3 values.
-            dfdcInputDict["rRGeom"][i] = float(
+            line_num += 1
+            check_num_values(values, line_num, 3)  # we should have 3 values.
+            dfdc_input_dict["rRGeom"][i] = float(
                 values[0]
             )  # key string is not quite true b/c it is the dimensional radius  but I need a place to store the r locations that matches the Xrotor format
-            dfdcInputDict["cRGeom"][i] = float(
+            dfdc_input_dict["cRGeom"][i] = float(
                 values[1]
             )  # key string is not quite true b/c it is the dimensional chord but I need a place to store the chord dimensions that matches the Xrotor format
-            dfdcInputDict["beta0Deg"][i] = float(values[2])  # twist values
-        if dfdcInputDict["rRGeom"][0] != 0:  # As per discussion in
+            dfdc_input_dict["beta0Deg"][i] = float(values[2])  # twist values
+        if dfdc_input_dict["rRGeom"][0] != 0:  # As per discussion in
             # https://enreal.slack.com/archives/C01PFAJ76FL/p1643652853237749?thread_ts=1643413462.002919&cid=C01PFAJ76FL
             # i need to ensure that the blade coordinates go all the way to r/R=0 and have a 0 chord  90deg twist at r/R=0
-            dfdcInputDict["rRGeom"].insert(0, 0.0)
-            dfdcInputDict["cRGeom"].insert(0, 0.0)
-            dfdcInputDict["beta0Deg"].insert(0, 90.0)
-            dfdcInputDict["nGeomStations"] += 1  # we have added one station.
+            dfdc_input_dict["rRGeom"].insert(0, 0.0)
+            dfdc_input_dict["cRGeom"].insert(0, 0.0)
+            dfdc_input_dict["beta0Deg"].insert(0, 90.0)
+            dfdc_input_dict["nGeomStations"] += 1  # we have added one station.
 
     # for i in range(dfdcInputDict['nGeomStations']):  # iterate over all the geometry stations to nondimensionalize by radius.
     #     dfdcInputDict['rRGeom'][i] = dfdcInputDict['rRGeom'][i] * dfdcInputDict['rad']  # aka r/R location
     #     dfdcInputDict['cRGeom'][i] = dfdcInputDict['cRGeom'][i] * dfdcInputDict['rad']  # aka r/R location
 
-    dfdcInputDict["rad"] = dfdcInputDict["rRGeom"][
+    dfdc_input_dict["rad"] = dfdc_input_dict["rRGeom"][
         -1
     ]  # radius in m is the last value in the r list
     # calculate Extra values and add them  to the dict
-    dfdcInputDict["omegaDim"] = dfdcInputDict["RPM"] * pi / 30
-    dfdcInputDict["inputType"] = (
+    dfdc_input_dict["omegaDim"] = dfdc_input_dict["RPM"] * pi / 30
+    dfdc_input_dict["inputType"] = (
         "dfdc"  # we need to store which file format we are using to handle the r vs r/R situation correctly.
     )
     # Now we are done, we have all the data we need.
-    return dfdcInputDict
+    return dfdc_input_dict
 
 
 ########################################################################################################################
 
 
 ########################################################################################################################
-def readXROTORFile(xrotorFileName):
+def read_xrotor_file(xrotor_file_name):
     """
     This functions read in the Xrotor filename provided.
     it does rudimentary checks to make sure the file is truly in the Xrotor format.
@@ -908,7 +928,7 @@ def readXROTORFile(xrotorFileName):
 
     Attributes
     ----------
-    input: xrotorFileName: string
+    input: xrotor_file_name: string
     returns: a dictionary with all the required values. That dictionary will be used to create BETdisks section of the
             Flow360 input JSON file.
 
@@ -961,149 +981,149 @@ def readXROTORFile(xrotorFileName):
     """
 
     try:
-        fid = open(xrotorFileName, "r")
-        linenum = 0  # counter needed to know which line we are on for error reporting
+        fid = open(xrotor_file_name, "r")
+        line_num = 0  # counter needed to know which line we are on for error reporting
         # Top line in the file should start with the XROTOR keywords.
-        topLine = fid.readline()
-        linenum += 1
-        if topLine.find("DFDC") == 0:  # If we are actually doing a DFDC file instead of Xrotor
-            fid.close()  # close the file b/c we will reopen it in readDFDCFile
-            return readDFDCFile(xrotorFileName)
+        top_line = fid.readline()
+        line_num += 1
+        if top_line.find("DFDC") == 0:  # If we are actually doing a DFDC file instead of Xrotor
+            fid.close()  # close the file b/c we will reopen it in read_dfdc_file
+            return read_dfdc_file(xrotor_file_name)
 
-        elif topLine.find("XROTOR") == -1:
+        elif top_line.find("XROTOR") == -1:
             raise ValueError("This input Xrotor file does not seem to be a valid Xrotor input file")
 
         # read in lines 2->8 which contains the run case information
-        xrotorInputDict = {}
+        xrotor_input_dict = {}
 
         fid.readline()
-        linenum += 1
+        line_num += 1
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 5)
+        line_num += 1
+        check_comment(comment_line, line_num, 5)
 
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 4)
+        line_num += 1
+        check_num_values(values, line_num, 4)
 
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 5)
+        line_num += 1
+        check_comment(comment_line, line_num, 5)
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 4)
-        xrotorInputDict["rad"] = float(values[0])
-        xrotorInputDict["vel"] = float(values[1])
-        xrotorInputDict["adv"] = float(values[2])
+        line_num += 1
+        check_num_values(values, line_num, 4)
+        xrotor_input_dict["rad"] = float(values[0])
+        xrotor_input_dict["vel"] = float(values[1])
+        xrotor_input_dict["adv"] = float(values[2])
 
         fid.readline()
-        linenum += 1
+        line_num += 1
         fid.readline()
-        linenum += 1
+        line_num += 1
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 2)
+        line_num += 1
+        check_comment(comment_line, line_num, 2)
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 1)
+        line_num += 1
+        check_num_values(values, line_num, 1)
 
-        nAeroSections = int(values[0])
+        n_aero_sections = int(values[0])
         # Initialize the dictionary with all the information to re-create the polars at each defining aero section.
-        xrotorInputDict["nAeroSections"] = nAeroSections
-        xrotorInputDict["rRstations"] = [0] * nAeroSections
-        xrotorInputDict["a0deg"] = [0] * nAeroSections
-        xrotorInputDict["dclda"] = [0] * nAeroSections
-        xrotorInputDict["clmax"] = [0] * nAeroSections
-        xrotorInputDict["clmin"] = [0] * nAeroSections
-        xrotorInputDict["dcldastall"] = [0] * nAeroSections
-        xrotorInputDict["dclstall"] = [0] * nAeroSections
-        xrotorInputDict["mcrit"] = [0] * nAeroSections
-        xrotorInputDict["cdmin"] = [0] * nAeroSections
-        xrotorInputDict["clcdmin"] = [0] * nAeroSections
-        xrotorInputDict["dcddcl2"] = [0] * nAeroSections
+        xrotor_input_dict["nAeroSections"] = n_aero_sections
+        xrotor_input_dict["rRstations"] = [0] * n_aero_sections
+        xrotor_input_dict["a0deg"] = [0] * n_aero_sections
+        xrotor_input_dict["dclda"] = [0] * n_aero_sections
+        xrotor_input_dict["clmax"] = [0] * n_aero_sections
+        xrotor_input_dict["clmin"] = [0] * n_aero_sections
+        xrotor_input_dict["dcldastall"] = [0] * n_aero_sections
+        xrotor_input_dict["dclstall"] = [0] * n_aero_sections
+        xrotor_input_dict["mcrit"] = [0] * n_aero_sections
+        xrotor_input_dict["cdmin"] = [0] * n_aero_sections
+        xrotor_input_dict["clcdmin"] = [0] * n_aero_sections
+        xrotor_input_dict["dcddcl2"] = [0] * n_aero_sections
 
         for i in range(
-            nAeroSections
+            n_aero_sections
         ):  # loop ever each aero section and populate the required variables.
             comment_line = fid.readline().upper().split()
-            linenum += 1
-            check_comment(comment_line, linenum, 2)
+            line_num += 1
+            check_comment(comment_line, line_num, 2)
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 1)
-            xrotorInputDict["rRstations"][i] = float(values[0])
+            line_num += 1
+            check_num_values(values, line_num, 1)
+            xrotor_input_dict["rRstations"][i] = float(values[0])
 
             comment_line = fid.readline().upper().split()
-            linenum += 1
-            check_comment(comment_line, linenum, 5)
+            line_num += 1
+            check_comment(comment_line, line_num, 5)
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 4)
-            xrotorInputDict["a0deg"][i] = float(values[0])
-            xrotorInputDict["dclda"][i] = float(values[1])
-            xrotorInputDict["clmax"][i] = float(values[2])
-            xrotorInputDict["clmin"][i] = float(values[3])
+            line_num += 1
+            check_num_values(values, line_num, 4)
+            xrotor_input_dict["a0deg"][i] = float(values[0])
+            xrotor_input_dict["dclda"][i] = float(values[1])
+            xrotor_input_dict["clmax"][i] = float(values[2])
+            xrotor_input_dict["clmin"][i] = float(values[3])
 
             comment_line = fid.readline().upper().split()
-            linenum += 1
-            check_comment(comment_line, linenum, 5)
+            line_num += 1
+            check_comment(comment_line, line_num, 5)
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 4)
-            xrotorInputDict["dcldastall"][i] = float(values[0])
-            xrotorInputDict["dclstall"][i] = float(values[1])
-            xrotorInputDict["mcrit"][i] = float(values[3])
+            line_num += 1
+            check_num_values(values, line_num, 4)
+            xrotor_input_dict["dcldastall"][i] = float(values[0])
+            xrotor_input_dict["dclstall"][i] = float(values[1])
+            xrotor_input_dict["mcrit"][i] = float(values[3])
 
             comment_line = fid.readline().upper().split()
-            linenum += 1
-            check_comment(comment_line, linenum, 4)
+            line_num += 1
+            check_comment(comment_line, line_num, 4)
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 3)
-            xrotorInputDict["cdmin"][i] = float(values[0])
-            xrotorInputDict["clcdmin"][i] = float(values[1])
-            xrotorInputDict["dcddcl2"][i] = float(values[2])
+            line_num += 1
+            check_num_values(values, line_num, 3)
+            xrotor_input_dict["cdmin"][i] = float(values[0])
+            xrotor_input_dict["clcdmin"][i] = float(values[1])
+            xrotor_input_dict["dcddcl2"][i] = float(values[2])
 
             comment_line = fid.readline().upper().split()
-            linenum += 1
-            check_comment(comment_line, linenum, 3)
+            line_num += 1
+            check_comment(comment_line, line_num, 3)
             values = fid.readline().split()
-            linenum += 1
+            line_num += 1
         # skip the duct information
         fid.readline()
-        linenum += 1
+        line_num += 1
         fid.readline()
-        linenum += 1
+        line_num += 1
 
         # Now we are done with the various aero sections and we start
         # looking at blade geometry definitions
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 3)
+        line_num += 1
+        check_comment(comment_line, line_num, 3)
         values = fid.readline().split()
-        linenum += 1
-        check_num_values(values, linenum, 2)
+        line_num += 1
+        check_num_values(values, line_num, 2)
 
-        nGeomStations = int(values[0])
-        xrotorInputDict["nGeomStations"] = nGeomStations
-        xrotorInputDict["nBlades"] = int(values[1])
-        xrotorInputDict["rRGeom"] = [0] * nGeomStations
-        xrotorInputDict["cRGeom"] = [0] * nGeomStations
-        xrotorInputDict["beta0Deg"] = [0] * nGeomStations
+        n_geom_stations = int(values[0])
+        xrotor_input_dict["nGeomStations"] = n_geom_stations
+        xrotor_input_dict["nBlades"] = int(values[1])
+        xrotor_input_dict["rRGeom"] = [0] * n_geom_stations
+        xrotor_input_dict["cRGeom"] = [0] * n_geom_stations
+        xrotor_input_dict["beta0Deg"] = [0] * n_geom_stations
 
         comment_line = fid.readline().upper().split()
-        linenum += 1
-        check_comment(comment_line, linenum, 5)
+        line_num += 1
+        check_comment(comment_line, line_num, 5)
 
         # iterate over all the geometry stations
-        for i in range(nGeomStations):
+        for i in range(n_geom_stations):
 
             values = fid.readline().split()
-            linenum += 1
-            check_num_values(values, linenum, 4)
-            xrotorInputDict["rRGeom"][i] = float(values[0])
-            xrotorInputDict["cRGeom"][i] = float(values[1])
-            xrotorInputDict["beta0Deg"][i] = float(values[2])
+            line_num += 1
+            check_num_values(values, line_num, 4)
+            xrotor_input_dict["rRGeom"][i] = float(values[0])
+            xrotor_input_dict["cRGeom"][i] = float(values[1])
+            xrotor_input_dict["beta0Deg"][i] = float(values[2])
 
     finally:  # We are done reading
         fid.close()
@@ -1111,86 +1131,86 @@ def readXROTORFile(xrotorFileName):
     # Set the twist at the root to be 90 so that it is continuous on
     # either side of the origin. I.e Across blades' root. Also set
     # the chord to be 0 at the root
-    if xrotorInputDict["rRGeom"][0] != 0:
-        xrotorInputDict["rRGeom"].insert(0, 0.0)
-        xrotorInputDict["cRGeom"].insert(0, 0.0)
-        xrotorInputDict["beta0Deg"].insert(0, 90.0)
-        xrotorInputDict["nGeomStations"] += 1
+    if xrotor_input_dict["rRGeom"][0] != 0:
+        xrotor_input_dict["rRGeom"].insert(0, 0.0)
+        xrotor_input_dict["cRGeom"].insert(0, 0.0)
+        xrotor_input_dict["beta0Deg"].insert(0, 90.0)
+        xrotor_input_dict["nGeomStations"] += 1
 
     # AdvanceRatio = Vinf/Vtip => Vinf/OmegaR
-    xrotorInputDict["omegaDim"] = xrotorInputDict["vel"] / (
-        xrotorInputDict["adv"] * xrotorInputDict["rad"]
+    xrotor_input_dict["omegaDim"] = xrotor_input_dict["vel"] / (
+        xrotor_input_dict["adv"] * xrotor_input_dict["rad"]
     )
-    xrotorInputDict["RPM"] = xrotorInputDict["omegaDim"] * 30 / pi
-    xrotorInputDict["inputType"] = (
+    xrotor_input_dict["RPM"] = xrotor_input_dict["omegaDim"] * 30 / pi
+    xrotor_input_dict["inputType"] = (
         "xrotor"  # we need to store which file format we are using to handle the r vs r/R situation correctly.
     )
-    return xrotorInputDict
+    return xrotor_input_dict
 
 
-def floatRange(start, stop, step=1):
+def float_range(start, stop, step=1):
     return [float(a) for a in range(start, stop, step)]
 
 
 ########################################################################################################################
-def generateTwists(xrotorDict, mesh_unit, length_unit, angle_unit):
+def generate_twists(xrotor_dict, mesh_unit, length_unit, angle_unit):
     """
     Transform the Xrotor format blade twists distribution into the Flow360 standard.
 
     Attributes
     ----------
-    xrotorDict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
-    meshUnit: float,  Grid unit length in the mesh.
+    xrotor_dict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
+    mesh_unit: float,  Grid unit length in the mesh.
     return:  list of dictionaries containing the radius ( in grid units) and twist in degrees.
     """
     # generate the twists vector required from the BET input
-    twistVec = []
-    if xrotorDict["inputType"] == "xrotor":
-        multiplier = xrotorDict[
+    twist_vec = []
+    if xrotor_dict["inputType"] == "xrotor":
+        multiplier = xrotor_dict[
             "rad"
         ]  # X rotor uses r/R we need to convert that to r in mesh units
-    elif xrotorDict["inputType"] == "dfdc":
+    elif xrotor_dict["inputType"] == "dfdc":
         multiplier = 1.0  # dfdc is already in meters so only need to convert it ot mesh units.
 
-    for i in range(xrotorDict["nGeomStations"]):
+    for i in range(xrotor_dict["nGeomStations"]):
         # dimensional radius we are at in grid unit
-        r = xrotorDict["rRGeom"][i] * multiplier * u.m / mesh_unit
-        twist = xrotorDict["beta0Deg"][i]
-        twistVec.append({"radius": r * length_unit, "twist": twist * angle_unit})
+        r = xrotor_dict["rRGeom"][i] * multiplier * u.m / mesh_unit
+        twist = xrotor_dict["beta0Deg"][i]
+        twist_vec.append({"radius": r * length_unit, "twist": twist * angle_unit})
 
-    return twistVec
+    return twist_vec
 
 
 ########################################################################################################################
-def generateChords(xrotorDict, mesh_unit, length_unit):
+def generate_chords(xrotor_dict, mesh_unit, length_unit):
     """
     Transform the Xrotor format blade chords distribution into the Flow360 standard.
 
     Attributes
     ----------
-    xrotorDict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
-    meshUnit: float,  Grid unit length per meter in the mesh. if your grid is in mm then meshUnit = 0.001 meter per mm;
-    If your grid is in inches then meshUnit = 0.0254 meter per in etc...
+    xrotor_dict: dictionary of Xrotor data as read in by def read_xrotor_file(xrotor_file_name):
+    mesh_unit: float,  Grid unit length per meter in the mesh. if your grid is in mm then mesh_unit = 0.001 meter per mm;
+    If your grid is in inches then mesh_nit = 0.0254 meter per in etc...
     return:  list of dictionaries containing the radius ( in grid units) and chords in grid units.
     """
     # generate the dimensional chord vector required from the BET input
-    chordVec = []
-    if xrotorDict["inputType"] == "xrotor":
-        multiplier = xrotorDict[
+    chord_vec = []
+    if xrotor_dict["inputType"] == "xrotor":
+        multiplier = xrotor_dict[
             "rad"
         ]  # X rotor uses r/R we need to convert that to r in mesh units
-    elif xrotorDict["inputType"] == "dfdc":
+    elif xrotor_dict["inputType"] == "dfdc":
         multiplier = 1.0  # dfdc is already in meters so only need to convert it ot mesh units.
-    for i in range(xrotorDict["nGeomStations"]):
-        r = xrotorDict["rRGeom"][i] * multiplier * u.m / mesh_unit
-        chord = xrotorDict["cRGeom"][i] * multiplier * u.m / mesh_unit
-        chordVec.append({"radius": r * length_unit, "chord": chord * length_unit})
+    for i in range(xrotor_dict["nGeomStations"]):
+        r = xrotor_dict["rRGeom"][i] * multiplier * u.m / mesh_unit
+        chord = xrotor_dict["cRGeom"][i] * multiplier * u.m / mesh_unit
+        chord_vec.append({"radius": r * length_unit, "chord": chord * length_unit})
 
-    return chordVec
+    return chord_vec
 
 
 ########################################################################################################################
-def generateMachs():
+def generate_machs():
     """
     The Flow360 BET input file expects a set of Mach numbers to interpolate
     between using the Mach number the blade sees.
@@ -1203,12 +1223,12 @@ def generateMachs():
     return: list of floats
     """
 
-    machVec = [0, sqrt(1 / 3), sqrt(2 / 3), sqrt(0.9)]
-    return machVec
+    mach_vec = [0, sqrt(1 / 3), sqrt(2 / 3), sqrt(0.9)]
+    return mach_vec
 
 
 ########################################################################################################################
-def generateReys():
+def generate_reynolds():
     """
     Flow360 has the functionality to interpolate across Reynolds numbers but we are not using that functionality
     just make it a constant 1
@@ -1218,7 +1238,7 @@ def generateReys():
 
 
 ########################################################################################################################
-def generateAlphas():
+def generate_alphas():
     """
     Generate the list of Alphas that the BET 2d section polar is for in 1 degree steps from -180 to 180
     return: list of floats
@@ -1233,8 +1253,8 @@ def generateAlphas():
     # return list(arange(-180, -30, 10).astype(float)) + negAng + posAng + posAng2 + list(arange(30, 190, 10).astype(float))  # json doesn't like the numpy default int64 type so I make it a float
 
     # option 2: return every degree with a refinement of every 1/2 degree between -10 and 10
-    negAng = floatRange(-180, -9)
-    posAng = [
+    neg_ang = float_range(-180, -9)
+    pos_ang = [
         -9,
         -8.5,
         -8,
@@ -1281,135 +1301,135 @@ def generateAlphas():
         8.5,
         9,
     ]
-    posAng2 = floatRange(10, 181)
-    return negAng + posAng + posAng2
+    pos_ang_2 = float_range(10, 181)
+    return neg_ang + pos_ang + pos_ang_2
     # return floatRange(-180, 181)
 
 
 ########################################################################################################################
-def findClMinMaxAlphas(CLIFT, CLMIN, CLMAX):
+def find_cl_min_max_alphas(c_lift, cl_min, cl_max):
     """
-    Find the index in the CLIFT list where we are just below the CLMin
-    value and the one where we are just above the CLmax value. Use the fact that CL should be continually increasing
+    Find the index in the c_lift list where we are just below the cl_min
+    value and the one where we are just above the cl_max value. Use the fact that CL should be continually increasing
     from -pi -> Pi radians.
-    The goal of this function is to separate the linear CL regime (i.e. from CLmin to CLmax) and extract its indices
-    We Traverse the list from the beginning until we hit CLMIN
+    The goal of this function is to separate the linear CL regime (i.e. from cl_min to cl_max) and extract its indices
+    We Traverse the list from the beginning until we hit cl_min
 
 
     Attributes
     ----------
 
-    CLIFT: list of floats
-    CLMIN: float
-    CLMAX: float
+    c_lift: list of floats
+    cl_min: float
+    cl_max: float
     return: 2 ints as indices
     """
 
-    clMinIdx = 0  # initialize as the first index
-    clMaxIdx = len(CLIFT)  # initialize as the last index
-    for i in range(len(CLIFT)):
-        if CLIFT[i] < CLMIN:
-            clMinIdx = i
-        if CLIFT[i] > CLMAX:
-            clMaxIdx = i
+    cl_min_idx = 0  # initialize as the first index
+    cl_max_idx = len(c_lift)  # initialize as the last index
+    for i in range(len(c_lift)):
+        if c_lift[i] < cl_min:
+            cl_min_idx = i
+        if c_lift[i] > cl_max:
+            cl_max_idx = i
             break
     return (
-        clMinIdx - 1,
-        clMaxIdx + 1,
+        cl_min_idx - 1,
+        cl_max_idx + 1,
     )  # return the two indices right before and after the two found values.
 
 
 ########################################################################################################################
-def blendFuncValue(blendWindow, alpha, alphaMinMax, alphaRange):
+def blend_func_value(blend_window, alpha, alpha_min_max, alpha_range):
     """
     This functions is used to blend the flat plate CL and CD polar to the given Cl and CD polars.
     The returned blend value is 1 when we use the given CL and CD values and 0 when we use the Flat plate values.
-    Within the blendWindow range of alphas it returns a COS^2 based smooth blend.
+    Within the blend_window range of alphas it returns a COS^2 based smooth blend.
 
     Attributes
     ----------
 
-        blendWindow: float size of the window we want to blend from the given 2D polar
+        blend_window: float size of the window we want to blend from the given 2D polar
         alpha: float alpha we are at in radians
-        alphaMinMax: float,   alpha min  or alpha max for that 2D polar in radians. Outside of those values we use
+        alpha_min_max: float,   alpha min  or alpha max for that 2D polar in radians. Outside of those values we use
     the Flat plate coefficients
-        alphaRange: string, used to figure out whether we are doing before CLmin or beyond CLmax
+        alpha_range: string, used to figure out whether we are doing before CLmin or beyond CLmax
         return: float (blend value for that alpha
     """
 
-    if "aboveCLmax" in alphaRange:
-        # we are on the CLMAX side:
-        if alpha < alphaMinMax:
+    if "above_cl_max" in alpha_range:
+        # we are on the cl_max side:
+        if alpha < alpha_min_max:
             return 1
-        if alpha > alphaMinMax + blendWindow:
+        if alpha > alpha_min_max + blend_window:
             return 0
-        return cos((alpha - alphaMinMax) / blendWindow * pi / 2) ** 2
-    if "belowCLmin" in alphaRange:
-        # we are on the CLMIN side:
-        if alpha > alphaMinMax:
+        return cos((alpha - alpha_min_max) / blend_window * pi / 2) ** 2
+    if "below_cl_min" in alpha_range:
+        # we are on the cl_min side:
+        if alpha > alpha_min_max:
             return 1
-        if alpha < alphaMinMax - blendWindow:
+        if alpha < alpha_min_max - blend_window:
             return 0
-        return cos((alpha - alphaMinMax) / blendWindow * pi / 2) ** 2
+        return cos((alpha - alpha_min_max) / blend_window * pi / 2) ** 2
     else:
-        raise ValueError(f"alphaRange must be either aboveCLmax or belowCLmin, it is: {alphaRange}")
+        raise ValueError(f"alpha_range must be either above_cl_max or below_cl_min, it is: {alpha_range}")
 
 
 ########################################################################################################################
-def xrotorBlend2flatPlate(CLIFT, CDRAG, alphas, alphaMinIdx, alphaMaxIdx):
+def xrotor_blend_to_flat_plate(c_lift, c_drag, alphas, alpha_min_idx, alpha_max_idx):
     """
-     Blend the Clift and Cdrag values outside of the normal working range of alphas to the flat plate CL and CD values.
+     Blend the c_lift and c_drag values outside of the normal working range of alphas to the flat plate CL and CD values.
 
     Attributes
     ----------
-    CLIFT: float
-    CDRAG: float
+    c_lift: float
+    c_drag: float
     alphas: list of floats
-    alphaMinIdx: int, index within the above list of alphas
-    alphaMaxIdx: int, index within the above list of alphas
+    alpha_min_idx: int, index within the above list of alphas
+    alpha_max_idx: int, index within the above list of alphas
 
     return: 2 Floats representing the blended CL and CD at that alpha
     """
 
-    blendWindow = 0.5  # 0.5 radians
-    alphaMin = alphas[alphaMinIdx] * pi / 180
-    alphaMax = alphas[alphaMaxIdx] * pi / 180
+    blend_window = 0.5  # 0.5 radians
+    alpha_min = alphas[alpha_min_idx] * pi / 180
+    alpha_max = alphas[alpha_max_idx] * pi / 180
 
-    for i in range(alphaMinIdx):  # from -pi to alphaMin in the CLIFT array
+    for i in range(alpha_min_idx):  # from -pi to alpha_min in the c_lift array
         a = alphas[i] * pi / 180  # alpha in radians
 
-        blendVal = blendFuncValue(
-            blendWindow, a, alphaMin, "belowCLmin"
-        )  # we are on the alphaCLmin side going up in CL
+        blend_val = blend_func_value(
+            blend_window, a, alpha_min, "below_cl_min"
+        )  # we are on the alpha_cl_min side going up in CL
         # this follows the flat plate lift and drag equations times the blend val coefficient
-        CLIFT[i] = CLIFT[i] * blendVal + (1 - blendVal) * cos(a) * 2 * pi * sin(a) / sqrt(
+        c_lift[i] = c_lift[i] * blend_val + (1 - blend_val) * cos(a) * 2 * pi * sin(a) / sqrt(
             1 + (2 * pi * sin(a)) ** 2
         )
-        CDRAG[i] = (
-            CDRAG[i] * blendVal
-            + (1 - blendVal) * sin(a) * (2 * pi * sin(a)) ** 3 / sqrt(1 + (2 * pi * sin(a)) ** 6)
+        c_drag[i] = (
+            c_drag[i] * blend_val
+            + (1 - blend_val) * sin(a) * (2 * pi * sin(a)) ** 3 / sqrt(1 + (2 * pi * sin(a)) ** 6)
             + 0.05
         )
 
-    for j in range(alphaMaxIdx, len(alphas)):  # from alphaMax to Pi in the CLIFT array
+    for j in range(alpha_max_idx, len(alphas)):  # from alphaMax to Pi in the c_lift array
         a = alphas[j] * pi / 180  # alpha in radians
-        blendVal = blendFuncValue(
-            blendWindow, a, alphaMax, "aboveCLmax"
-        )  # we are on the alphaCLmax side of things going up in CL
+        blend_val = blend_func_value(
+            blend_window, a, alpha_max, "above_cl_max"
+        )  # we are on the alpha_cl_max side of things going up in CL
         # this follows the flat plate lift and drag equations times the blend val coefficient
-        CLIFT[j] = CLIFT[j] * blendVal + (1 - blendVal) * cos(a) * 2 * pi * sin(a) / sqrt(
+        c_lift[j] = c_lift[j] * blend_val + (1 - blend_val) * cos(a) * 2 * pi * sin(a) / sqrt(
             1 + (2 * pi * sin(a)) ** 2
         )
-        CDRAG[j] = (
-            CDRAG[j] * blendVal
-            + (1 - blendVal) * sin(a) * (2 * pi * sin(a)) ** 3 / sqrt(1 + (2 * pi * sin(a)) ** 6)
+        c_drag[j] = (
+            c_drag[j] * blend_val
+            + (1 - blend_val) * sin(a) * (2 * pi * sin(a)) ** 3 / sqrt(1 + (2 * pi * sin(a)) ** 6)
             + 0.05
         )
-    return CLIFT, CDRAG
+    return c_lift, c_drag
 
 
 ########################################################################################################################
-def calcClCd(xrotorDict, alphas, machNum, nrRstation):
+def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     """
 
     This function is transcribed from the Xrotor source code. https://web.mit.edu/drela/Public/web/xrotor/
@@ -1425,10 +1445,10 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
 
     Attributes
     ----------
-    xrotorDict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
+    xrotor_dict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
     alphas: list of ints, alphas we have for the polar.
-    machNum: float, mach number we do this polar at.
-    nrRstation: int, which r/R station we have to define this polar for.
+    mach_num: float, mach number we do this polar at.
+    nrR_station: int, which r/R station we have to define this polar for.
     return: 2 list of floats representing the CL and CD for  that polar
     """
 
@@ -1439,18 +1459,18 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
     CDMSTALL = 0.1000
 
     # Prandtl-Glauert compressibility factor
-    MSQ = machNum**2
+    MSQ = mach_num**2
 
     if MSQ > 1.0:
         print("CLFUNC: Local Mach^2 number limited to 0.99, was ", MSQ)
         MSQ = 0.99
 
     PG = 1.0 / sqrt(1.0 - MSQ)
-    MACH = machNum
+    MACH = mach_num
 
     # Generate CL from dCL/dAlpha and Prandtl-Glauert scaling
-    A_zero = xrotorDict["a0deg"][nrRstation] * pi / 180
-    DCLDA = xrotorDict["dclda"][nrRstation]
+    A_zero = xrotor_dict["a0deg"][nrR_station] * pi / 180
+    DCLDA = xrotor_dict["dclda"][nrR_station]
 
     CLA = [0] * len(alphas)
     for i, a in enumerate(alphas):
@@ -1458,10 +1478,10 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
     CLA = array(CLA)
 
     # Reduce CLmax to match the CL of onset of serious compressible drag
-    CLMAX = xrotorDict["clmax"][nrRstation]
-    CLMIN = xrotorDict["clmin"][nrRstation]
-    CLDMIN = xrotorDict["clcdmin"][nrRstation]
-    MCRIT = xrotorDict["mcrit"][nrRstation]
+    CLMAX = xrotor_dict["clmax"][nrR_station]
+    CLMIN = xrotor_dict["clmin"][nrR_station]
+    CLDMIN = xrotor_dict["clcdmin"][nrR_station]
+    MCRIT = xrotor_dict["mcrit"][nrR_station]
 
     DMSTALL = (CDMSTALL / CDMFACTOR) ** (1.0 / MEXP)
     CLMAXM = max(0.0, (MCRIT + DMSTALL - MACH) / CLMFACTOR) + CLDMIN
@@ -1470,7 +1490,7 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
     CLMIN = max(CLMIN, CLMINM)
 
     # CL limiter function (turns on after +-stall)
-    DCL_STALL = xrotorDict["dclstall"][nrRstation]
+    DCL_STALL = xrotor_dict["dclstall"][nrR_station]
     ECMAX = expList(clip((CLA - CLMAX) / DCL_STALL, -inf, 200))
     ECMIN = expList(clip((CLA * (-1) + CLMIN) / DCL_STALL, -inf, 200))
     CLLIM = logList((ECMAX + 1.0) / (ECMIN + 1.0)) * DCL_STALL
@@ -1478,14 +1498,14 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
     # Subtract off a (nearly unity) fraction of the limited CL function
     # This sets the dCL/dAlpha in the stalled regions to 1-FSTALL of that
     # in the linear lift range
-    DCLDA_STALL = xrotorDict["dcldastall"][nrRstation]
+    DCLDA_STALL = xrotor_dict["dcldastall"][nrR_station]
     FSTALL = DCLDA_STALL / DCLDA
     CLIFT = CLA - CLLIM * (1.0 - FSTALL)
 
     # In the basic linear lift range drag is a quadratic function of lift
     # CD = CD0 (constant) + quadratic with CL)
-    CDMIN = xrotorDict["cdmin"][nrRstation]
-    DCDCL2 = xrotorDict["dcddcl2"][nrRstation]
+    CDMIN = xrotor_dict["cdmin"][nrR_station]
+    DCDCL2 = xrotor_dict["dcddcl2"][nrR_station]
 
     # Don't do any reynolds number corrections b/c we know it is minimal
     RCORR = 1
@@ -1502,11 +1522,11 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
     DMDD = (CDMDD / CDMFACTOR) ** (1.0 / MEXP)
     CRITMACH = absList(CLIFT - CLDMIN) * CLMFACTOR * (-1) + MCRIT - DMDD
     CDC = array([0 for i in range(len(CRITMACH))])
-    for critMachIdx in range(len(CRITMACH)):
-        if MACH < CRITMACH[critMachIdx]:
+    for crit_mach_idx in range(len(CRITMACH)):
+        if MACH < CRITMACH[crit_mach_idx]:
             continue
         else:
-            CDC[critMachIdx] = CDMFACTOR * (MACH - CRITMACH[critMachIdx]) ** MEXP
+            CDC[crit_mach_idx] = CDMFACTOR * (MACH - CRITMACH[crit_mach_idx]) ** MEXP
 
     # you could use something like this to add increase drag by Prandtl-Glauert
     # (or any function you choose)
@@ -1518,16 +1538,16 @@ def calcClCd(xrotorDict, alphas, machNum, nrRstation):
     # the Cl and CD outside of the expected operating range
 
     # Find the Alpha for ClMax and CLMin
-    alphaMinIdx, alphaMaxIdx = findClMinMaxAlphas(CLIFT, CLMIN, CLMAX)
+    alpha_min_idx, alpha_max_idx = find_cl_min_max_alphas(CLIFT, CLMIN, CLMAX)
     # Blend the CLIFt and CDRAG values from above with the flat plate formulation to
     # be used outside of the alphaCLmin to alphaCLMax window
-    CLIFT, CDRAG = xrotorBlend2flatPlate(CLIFT, CDRAG, alphas, alphaMinIdx, alphaMaxIdx)
+    CLIFT, CDRAG = xrotor_blend_to_flat_plate(CLIFT, CDRAG, alphas, alpha_min_idx, alpha_max_idx)
 
     return list(CLIFT), list(CDRAG)
 
 
 ########################################################################################################################
-def getPolar(xrotorDict, alphas, machs, rRstation):
+def get_polar(xrotor_dict, alphas, machs, rR_station):
     """
     Return the 2D Cl and CD polar expected by the Flow360 BET model.
     b/c we have 4 Mach Values * 1 Reynolds value we need 4 different arrays per sectional polar as in:
@@ -1537,27 +1557,29 @@ def getPolar(xrotorDict, alphas, machs, rRstation):
 
     Attributes
     ----------
-    xrotorDict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
+    xrotor_dict: dictionary of Xrotor data as read in by def readXROTORFile(xrotorFileName):
     alphas: list of floats
     machs: list of float
-    rRstation: station index.
+    rR_station: station index.
     return: list of dictionaries
     """
 
     secpol = {}
     secpol["lift_coeffs"] = []
     secpol["drag_coeffs"] = []
-    for machNum in machs:
-        cl, cd = calcClCd(xrotorDict, alphas, machNum, rRstation)
+    for mach_num in machs:
+        cl, cd = calc_cl_cd(xrotor_dict, alphas, mach_num, rR_station)
         secpol["lift_coeffs"].append([cl])
         secpol["drag_coeffs"].append([cd])
     return secpol
 
 
 ########################################################################################################################
-def generateXrotorBETJSON(
-    xrotorFileName,
+def generate_xrotor_bet_json(
+    xrotor_file_name,
     rotation_direction_rule,
+    initial_blade_direction,
+    blade_line_chord,
     omega,
     chord_ref,
     n_loading_nodes,
@@ -1575,10 +1597,10 @@ def generateXrotorBETJSON(
 
     Attributes
     ----------
-    xrotorFileName: string, filepath to the Xrotor/DFDC file we want to translate into a BET disk
-    betDisk: This is a dict that already contains some betDisk definition information. We will add to that same dict
+    xrotor_file_name: string, filepath to the Xrotor/DFDC file we want to translate into a BETDisk
+    bet_disk: This is a dict that already contains some bet_disk definition information. We will add to that same dict
     before returning it.
-    meshUnit is in gridUnits per meters, if your grid is in mm then meshUnit = 0.001 grid Unit per meter.
+    mesh_unit is in grid units per meter, if your grid is in mm then mesh_unit = 0.001 grid unit per meter.
      If your grid is in inches then meshUnit = 0.0254 grid Unit per meter etc...
         It should contain the following key value pairs:
         ['axisOfRotation']: [a,b,c],
@@ -1603,41 +1625,43 @@ def generateXrotorBETJSON(
     # if len(betDisk["centerOfRotation"]) != 3:
     #     raise ValueError("centerOfRotation must be a list of size 3. Exiting")
 
-    xrotorDict = readXROTORFile(xrotorFileName)
+    xrotor_dict = read_xrotor_file(xrotor_file_name)
 
-    betDisk = {}
-    betDisk["entities"] = cylinder
-    betDisk["omega"] = omega
-    betDisk["chord_ref"] = chord_ref
-    betDisk["n_loading_nodes"] = n_loading_nodes
-    betDisk["rotation_direction_rule"] = rotation_direction_rule
-    betDisk["number_of_blades"] = xrotorDict["nBlades"]
-    betDisk["radius"] = xrotorDict["rad"] * u.m / mesh_unit
-    betDisk["twists"] = generateTwists(
-        xrotorDict, mesh_unit=mesh_unit, length_unit=length_unit, angle_unit=angle_unit
+    bet_disk = {}
+    bet_disk["entities"] = cylinder
+    bet_disk["omega"] = omega
+    bet_disk["chord_ref"] = chord_ref
+    bet_disk["n_loading_nodes"] = n_loading_nodes
+    bet_disk["rotation_direction_rule"] = rotation_direction_rule
+    bet_disk["initial_blade_direction"] = initial_blade_direction
+    bet_disk["blade_line_chord"] = blade_line_chord
+    bet_disk["number_of_blades"] = xrotor_dict["nBlades"]
+    bet_disk["radius"] = xrotor_dict["rad"] * u.m / mesh_unit
+    bet_disk["twists"] = generate_twists(
+        xrotor_dict, mesh_unit=mesh_unit, length_unit=length_unit, angle_unit=angle_unit
     )
-    betDisk["chords"] = generateChords(xrotorDict, mesh_unit=mesh_unit, length_unit=length_unit)
-    betDisk["mach_numbers"] = generateMachs()
-    betDisk["alphas"] = generateAlphas()
-    betDisk["reynolds_numbers"] = generateReys()
-    betDisk["sectional_radiuses"] = [
-        betDisk["radius"] * r for r in xrotorDict["rRstations"]
+    bet_disk["chords"] = generate_chords(xrotor_dict, mesh_unit=mesh_unit, length_unit=length_unit)
+    bet_disk["mach_numbers"] = generate_machs()
+    bet_disk["alphas"] = generate_alphas()
+    bet_disk["reynolds_numbers"] = generate_reynolds()
+    bet_disk["sectional_radiuses"] = [
+        bet_disk["radius"] * r for r in xrotor_dict["rRstations"]
     ] * length_unit
-    betDisk["sectional_polars"] = []
+    bet_disk["sectional_polars"] = []
 
-    for secId in range(0, xrotorDict["nAeroSections"]):
-        polar = getPolar(xrotorDict, betDisk["alphas"], betDisk["mach_numbers"], secId)
-        betDisk["sectional_polars"].append(polar)
+    for secId in range(0, xrotor_dict["nAeroSections"]):
+        polar = get_polar(xrotor_dict, bet_disk["alphas"], bet_disk["mach_numbers"], secId)
+        bet_disk["sectional_polars"].append(polar)
 
-    betDisk["alphas"] *= angle_unit
-    betDisk.pop(
+    bet_disk["alphas"] *= angle_unit
+    bet_disk.pop(
         "radius", None
     )  # radius is only needed to get sectional_radiuses but not by the solver.
 
     # with open("bet_translator_dict.json", "w") as file1:
     #     json.dump(betDisk, file1, indent=4)
 
-    return betDisk
+    return bet_disk
 
 
 ########################################################################################################################
@@ -1649,7 +1673,7 @@ def test_translator():
     meshUnit is in gridUnits per meters, if your grid is in mm then meshUnit = 0.001 grid Unit per meter.
      If your grid is in inches then meshUnit = 0.0254 grid Unit per meter etc...
     """
-    betDiskDict = {
+    bet_disk_dict = {
         "diskThickness": 0.05,
         "meshUnit": 1,
         "chordRef": 1,
@@ -1662,15 +1686,15 @@ def test_translator():
     }
 
     # initialBladeDirection =  [1, 0, 0]  # Used for time accurate Blade Line simulations
-    xrotorFileName = "examples/xrotorTranslator/ecruzer.prop"
+    xrotor_file_name = "examples/xrotorTranslator/ecruzer.prop"
 
-    xrotorInputDict = generateXrotorBETJSON(xrotorFileName, betDiskDict)
-    betDiskJson = {
-        "BETDisks": [xrotorInputDict]
+    xrotor_input_dict = generate_xrotor_bet_json(xrotor_file_name, bet_disk_dict)
+    bet_disk_json = {
+        "BETDisks": [xrotor_input_dict]
     }  # make all that data a subset of BETDisks dictionary, notice the [] b/c
     # the BETDisks dictionary accepts a list of bet disks
     # dump the sample dictionary to a json file
-    json.dump(betDiskJson, open("sampleBETJSON.json", "w"), indent=4)
+    json.dump(bet_disk_json, open("sampleBETJSON.json", "w"), indent=4)
 
 
 ########################################################################################################################

@@ -16,14 +16,10 @@ from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
 from flow360.component.simulation.models.bet.BETTranslatorInterface import (
-    generateC81BETJSON,
-    generateXfoilBETJSON,
-    generateXrotorBETJSON,
+    generate_c81_bet_json,
+    generate_xfoil_bet_json,
+    generate_xrotor_bet_json,
 )
-from flow360.component.simulation.models.bet.example_translation import (
-    translate_example_xrotor,
-)
-from flow360.component.simulation.models.bet.updater import update_bet_params
 from flow360.component.simulation.models.material import (
     Air,
     FluidMaterialTypes,
@@ -520,6 +516,8 @@ class BETDiskCache(Flow360BaseModel):
     length_unit: Optional[LengthType.NonNegative] = None
     mesh_unit: Optional[LengthType.NonNegative] = None
     number_of_blades: Optional[pd.StrictInt] = None
+    initial_blade_direction: Optional[Axis] = None
+    blade_line_chord: Optional[LengthType.NonNegative] = None
 
 
 # pylint: disable=no-member
@@ -678,20 +676,24 @@ class BETDisk(MultiConstructorBaseModel):
         mesh_unit: LengthType.NonNegative = pd.Field(
             description="The length/grid unit of the project"
         ),
+        initial_blade_direction: Optional[Axis] = None,
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
         length_unit: LengthType.NonNegative = u.m,
     ):
 
-        params = generateXrotorBETJSON(
-            file,
-            rotation_direction_rule,
-            omega,
-            chord_ref,
-            n_loading_nodes,
-            cylinder,
-            angle_unit,
-            length_unit,
-            mesh_unit,
+        params = generate_xrotor_bet_json(
+            xrotor_file_name=file,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            cylinder=cylinder,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+            mesh_unit=mesh_unit,
         )
 
         return cls(**params)
@@ -709,20 +711,24 @@ class BETDisk(MultiConstructorBaseModel):
         mesh_unit: LengthType.NonNegative = pd.Field(
             description="The length/grid unit of the project"
         ),
+        initial_blade_direction: Optional[Axis] = None,
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
         length_unit: LengthType.NonNegative = u.m,
     ):
 
-        params = generateXrotorBETJSON(
-            file,
-            rotation_direction_rule,
-            omega,
-            chord_ref,
-            n_loading_nodes,
-            cylinder,
-            angle_unit,
-            length_unit,
-            mesh_unit,
+        params = generate_xrotor_bet_json(
+            xrotor_file_name=file,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            cylinder=cylinder,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+            mesh_unit=mesh_unit,
         )
 
         return cls(**params)
@@ -738,20 +744,57 @@ class BETDisk(MultiConstructorBaseModel):
         n_loading_nodes: pd.StrictInt,
         cylinder: Cylinder,
         number_of_blades: pd.StrictInt,
+        initial_blade_direction: Optional[Axis] = None,
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
         length_unit: LengthType.NonNegative = u.m,
     ):
 
-        params = generateC81BETJSON(
-            file,
-            rotation_direction_rule,
-            omega,
-            chord_ref,
-            n_loading_nodes,
-            cylinder,
-            angle_unit,
-            length_unit,
-            number_of_blades,
+        params = generate_c81_bet_json(
+            geometry_file_name=file,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            cylinder=cylinder,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+            number_of_blades=number_of_blades,
+        )
+
+        return cls(**params)
+    
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_xfoil(
+        cls,
+        file: str,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        cylinder: Cylinder,
+        number_of_blades: pd.StrictInt,
+        initial_blade_direction: Optional[Axis],
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        angle_unit: AngleType = u.deg,
+        length_unit: LengthType.NonNegative = u.m,
+    ):
+
+        params = generate_xfoil_bet_json(
+            geometry_file_name=file,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            cylinder=cylinder,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+            number_of_blades=number_of_blades,
         )
 
         return cls(**params)
