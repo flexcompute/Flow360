@@ -765,7 +765,7 @@ class BETDisk(MultiConstructorBaseModel):
         )
 
         return cls(**params)
-    
+
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
     def from_xfoil(

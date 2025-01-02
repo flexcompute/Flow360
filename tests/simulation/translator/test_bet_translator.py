@@ -67,7 +67,7 @@ def generate_BET_param(type):
         param = fl.BETDisk.from_xfoil(
             file="data/xfoil/xv15_geometry_xfoil_translatorDisk0.csv",
             rotation_direction_rule="leftHand",
-            initial_blade_direction = [1, 0, 0],
+            initial_blade_direction=[1, 0, 0],
             blade_line_chord=1 * fl.u.m,
             omega=0.0046 * fl.u.deg / fl.u.s,
             chord_ref=14 * fl.u.m,
@@ -81,7 +81,6 @@ def generate_BET_param(type):
 
 
 class AdvancedTestSuite(unittest.TestCase):
-
 
     def test_xrotor_params(self):
 
@@ -169,7 +168,6 @@ class AdvancedTestSuite(unittest.TestCase):
             refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
         )
 
-
     def test_dfdc_params(self):
 
         with open(os.path.join(here, "ref/dfdcTest.json")) as fh:
@@ -256,7 +254,6 @@ class AdvancedTestSuite(unittest.TestCase):
             refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
         )
 
-
     def test_c81_params(self):
 
         with open(os.path.join(here, "ref/c81Test.json")) as fh:
@@ -342,7 +339,6 @@ class AdvancedTestSuite(unittest.TestCase):
         assertions.assertEqual(
             refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
         )
-
 
     def test_xfoil_params(self):
 

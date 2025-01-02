@@ -489,9 +489,11 @@ def generate_xfoil_bet_json(
     return: dictionary that we should append to the Flow360.json file we want to run with.
     """
 
-    bet_disk={}
+    bet_disk = {}
 
-    twist_vec, chord_vec, sectional_radiuses, xfoil_polar_file_list = parse_geometry_file(geometry_file_name, length_unit=length_unit, angle_unit=angle_unit)
+    twist_vec, chord_vec, sectional_radiuses, xfoil_polar_file_list = parse_geometry_file(
+        geometry_file_name, length_unit=length_unit, angle_unit=angle_unit
+    )
     bet_disk["entities"] = cylinder
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -595,8 +597,12 @@ def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
     chord_vec = [{"radius": 0.0 * length_unit, "chord": 0.0 * length_unit}]
     twist_vec = [{"radius": 0.0 * length_unit, "twist": 0.0 * angle_unit}]
     for i in range(len(radius_station)):
-        twist_vec.append({"radius": radius_station[i] * length_unit, "twist": twist[i] * angle_unit})
-        chord_vec.append({"radius": radius_station[i] * length_unit, "chord": chord[i] * length_unit})
+        twist_vec.append(
+            {"radius": radius_station[i] * length_unit, "twist": twist[i] * angle_unit}
+        )
+        chord_vec.append(
+            {"radius": radius_station[i] * length_unit, "chord": chord[i] * length_unit}
+        )
 
     fid.close()
 
@@ -1372,7 +1378,9 @@ def blend_func_value(blend_window, alpha, alpha_min_max, alpha_range):
             return 0
         return cos((alpha - alpha_min_max) / blend_window * pi / 2) ** 2
     else:
-        raise ValueError(f"alpha_range must be either above_cl_max or below_cl_min, it is: {alpha_range}")
+        raise ValueError(
+            f"alpha_range must be either above_cl_max or below_cl_min, it is: {alpha_range}"
+        )
 
 
 ########################################################################################################################
