@@ -18,6 +18,8 @@ from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    Inflow,
+    MassFlowRate,
     Periodic,
     SlipWall,
     Translational,
@@ -678,3 +680,19 @@ def test_meshing_validator_dual_context():
     assert errors[0]["type"] == "missing"
     assert errors[0]["ctx"] == {"relevant_for": ["SurfaceMesh", "VolumeMesh"]}
     assert errors[0]["loc"] == ("meshing",)
+
+
+def test_velocity_direction_in_subsonic_inflow():
+    msg = "The velocity_direction can only be specified for Subsonic Inflow."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(msg)):
+        entity_surface = Surface(name="Inflow Surface")
+        SimulationParams(
+            models=[
+                Inflow(
+                    velocity_direction=(0, 0, 1),
+                    total_temperature=300 * u.K,
+                    spec=MassFlowRate(value=123 * u.lb / u.s),
+                    surfaces=entity_surface,
+                )
+            ],
+        )
