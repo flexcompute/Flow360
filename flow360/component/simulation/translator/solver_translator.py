@@ -775,16 +775,18 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["roughnessHeight"] = model_dict["roughnessHeight"]
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
-        if model.velocity_direction is not None:
-            boundary["velocityDirection"] = model_dict["velocityDirection"]
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             boundary["totalPressureRatio"] = (
                 model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
             )
+            if model.spec.velocity_direction is not None:
+                boundary["velocityDirection"] = list(model_dict["spec"]["velocityDirection"])
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassInflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
+            if model.spec.ramp_steps is not None:
+                boundary["rampSteps"] = model_dict["spec"]["rampSteps"]
         boundary = _append_turbulence_quantities_to_dict(model, model_dict, boundary)
     elif isinstance(model, Outflow):
         if isinstance(model.spec, Pressure):
@@ -804,6 +806,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassOutflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
+            if model.spec.ramp_steps is not None:
+                boundary["rampSteps"] = model_dict["spec"]["rampSteps"]
     elif isinstance(model, Periodic):
         boundary["type"] = (
             "TranslationallyPeriodic"
