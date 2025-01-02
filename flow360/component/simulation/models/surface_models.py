@@ -116,7 +116,7 @@ class TotalPressure(Flow360BaseModel):
     value: PressureType.Positive = pd.Field(description="The total pressure value.")
     velocity_direction: Optional[Axis] = pd.Field(
         None,
-        description=" Direction of the incoming flow. Must be a unit vector pointing "
+        description="Direction of the incoming flow. Must be a unit vector pointing "
         + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
 
@@ -184,7 +184,7 @@ class MassFlowRate(Flow360BaseModel):
     value: MassFlowRateType.NonNegative = pd.Field(description="The mass flow rate.")
     ramp_steps: Optional[pd.PositiveInt] = pd.Field(
         None,
-        description="Number of steps before reaching :py:attr:`MassFlowRate.value`.",
+        description="Number of pseudo steps before reaching :py:attr:`MassFlowRate.value` within 1 physical step.",
     )
 
 
