@@ -440,15 +440,6 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         description="Specify the total pressure or the mass flow rate at the `Inflow` boundary.",
     )
 
-    @pd.model_validator(mode="after")
-    def _check_velocity_direction_in_subsonic_inflow(self):
-        """
-        Check to ensure velocity_direction can only be specified for Subsonic Inflow Boundary.
-        """
-        if self.velocity_direction and not isinstance(self.spec, TotalPressure):
-            raise ValueError("The velocity_direction can only be specified for Subsonic Inflow.")
-        return self
-
 
 class SlipWall(BoundaryBase):
     """:class:`SlipWall` class defines the :code:`SlipWall` boundary condition.
