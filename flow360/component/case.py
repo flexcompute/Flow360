@@ -181,7 +181,7 @@ class CaseMetaV2(AssetMetaBaseModelV2):
 
     id: str = pd.Field(alias="projectId")
     case_mesh_id: str = pd.Field(alias="caseMeshId")
-    parent_id: Union[str, None] = pd.Field(alias="parentId")
+    parent_id: Optional[str] = pd.Field(None, alias="parentId")
     status: Flow360Status = pd.Field()
 
     # Resource status change, revisit when updating the case class
@@ -470,7 +470,7 @@ class Case(CaseBase, Flow360Resource):
 
         # Using hardcoded "Geometry" to avoid removing parts of simulation json.
         param, errors, _ = services.validate_model(
-            params_as_dict=params_as_dict, root_item_type="Geometry", validation_level=None
+            params_as_dict=params_as_dict, root_item_type=None, validation_level=None
         )
 
         if errors is not None:

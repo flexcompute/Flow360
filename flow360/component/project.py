@@ -155,11 +155,11 @@ class ProjectTreeNode(pd.BaseModel):
         Name of the asset.
     asset_type : str
         Type of the asset.
-    parent_id : Union[str, None]
+    parent_id : Optional[str]
         ID of the parent asset.
-    case_mesh_id : Union[str, None]
+    case_mesh_id : Optional[str]
         ID of the case's mesh.
-    case_mesh_label : Union[str, None]
+    case_mesh_label : Optional[str]
         Label the mesh of a forked case using a different mesh.
     children : List
         List of the child assets of the current asset.
@@ -171,9 +171,9 @@ class ProjectTreeNode(pd.BaseModel):
     asset_id: str = pd.Field()
     asset_name: str = pd.Field()
     asset_type: str = pd.Field()
-    parent_id: Union[str, None] = pd.Field(None)
-    case_mesh_id: Union[str, None] = pd.Field(None)
-    case_mesh_label: Union[str, None] = pd.Field(None)
+    parent_id: Optional[str] = pd.Field(None)
+    case_mesh_id: Optional[str] = pd.Field(None)
+    case_mesh_label: Optional[str] = pd.Field(None)
     children: List = pd.Field([])
     min_length_short_id: PositiveInt = pd.Field(7)
 
@@ -191,6 +191,7 @@ class ProjectTreeNode(pd.BaseModel):
         """Remove a child asset of the current asset"""
         self.children = [child for child in self.children if child is not child_to_remove]
 
+    @pd.computed_field
     @property
     def short_id(self) -> str:
         """Compute short asset id"""
@@ -199,12 +200,15 @@ class ProjectTreeNode(pd.BaseModel):
         )
 
     @property
-    def label(self) -> str:
-        """Compute the label for printing trees"""
+    def branch_label(self) -> str:
+        """
+        Add branch label in the printed project tree to 
+        display the different volume mesh used in a forked case.
+        """
         if self.case_mesh_label:
             return "Using VolumeMesh:" + get_short_asset_id(
                 full_asset_id=self.case_mesh_label,
-                num_character=self.project_tree.min_length_short_id,
+                num_character=self.min_length_short_id,
             )
         return None
 
@@ -226,7 +230,7 @@ class ProjectTree(pd.BaseModel):
 
     root: ProjectTreeNode = pd.Field(None)
     nodes: dict[str, ProjectTreeNode] = pd.Field({})
-    min_length_short_id: Optional[PositiveInt] = pd.Field(7)
+    min_length_short_id: PositiveInt = pd.Field(7)
 
     def _update_case_mesh_label(self):
         """Check and remove unnecessary case mesh label"""
@@ -245,7 +249,7 @@ class ProjectTree(pd.BaseModel):
             return None
         return self.nodes.get(node.parent_id, None)
 
-    def has_node(self, asset_id: str) -> bool:
+    def _has_node(self, asset_id: str) -> bool:
         """Use asset_id to check if the asset already exists in the project tree"""
         if asset_id in self.nodes.keys():
             return True
@@ -253,7 +257,7 @@ class ProjectTree(pd.BaseModel):
 
     def add_node(self, asset: AssetOrResource):
         """Add new node to the tree"""
-        if self.has_node(asset_id=asset.id):
+        if self._has_node(asset_id=asset.id):
             return
 
         parent_id = asset.info.parent_id
@@ -287,6 +291,9 @@ class ProjectTree(pd.BaseModel):
                 new_node.add_child(child=node)
             if node.asset_id == new_node.parent_id:
                 node.add_child(child=new_node)
+            while node.short_id == new_node.short_id:
+                node.min_length_short_id += 1
+                new_node.min_length_short_id += 1
         self.nodes.update({new_node.asset_id: new_node})
         self._update_case_mesh_label()
 
@@ -295,7 +302,7 @@ class ProjectTree(pd.BaseModel):
         node = self.nodes.get(node_id)
         if not node:
             return
-        if node.parent_id and self.has_node(node.parent_id):
+        if node.parent_id and self._has_node(node.parent_id):
             parent_node = self.nodes.get(node.parent_id)
             parent_node.remove_child(node)
         self.nodes.pop(node.asset_id)
@@ -334,7 +341,7 @@ class Project(pd.BaseModel):
     """
 
     metadata: ProjectMeta = pd.Field()
-    project_tree: ProjectTree = pd.Field(ProjectTree())
+    project_tree: ProjectTree = pd.Field()
     solver_version: str = pd.Field(frozen=True)
 
     _root_asset: Union[Geometry, VolumeMeshV2] = pd.PrivateAttr(None)
@@ -652,7 +659,7 @@ class Project(pd.BaseModel):
         info = project_api.get()
         if not info:
             raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
-        project = Project(metadata=ProjectMeta(**info), solver_version=root_asset.solver_version)
+        project = Project(metadata=ProjectMeta(**info), project_tree=ProjectTree(), solver_version=root_asset.solver_version)
         project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
             project._root_asset = root_asset
@@ -702,7 +709,7 @@ class Project(pd.BaseModel):
             root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
-        project = Project(metadata=meta, solver_version=root_asset.solver_version)
+        project = Project(metadata=meta, project_tree=ProjectTree(), solver_version=root_asset.solver_version)
         project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
             project._root_asset = root_asset
@@ -712,7 +719,7 @@ class Project(pd.BaseModel):
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
         project.project_tree.add_node(root_asset)
-        project._get_asset_from_cloud()
+        project._get_tree_from_cloud()
         return project
 
     def _check_initialized(self):
@@ -729,9 +736,9 @@ class Project(pd.BaseModel):
                 "Project not initialized - use Project.from_file or Project.from_cloud"
             )
 
-    def _get_asset_from_cloud(self, destination_obj: AssetOrResource = None):
+    def _get_tree_from_cloud(self, destination_obj: AssetOrResource = None):
         """
-        Get asset info from cloud to update asset cache and build project tree.
+        Get project tree from cloud to update asset cache and build local project tree.
 
         Parameters
         ----------
@@ -820,7 +827,7 @@ class Project(pd.BaseModel):
         )
 
         for record in asset_records:
-            if not self.project_tree.has_node(asset_id=record["id"]):
+            if not self.project_tree._has_node(asset_id=record["id"]):
                 self._update_single_asset_cache(
                     asset_id=record["id"], asset_type=record["type"], mode="Add"
                 )
@@ -849,7 +856,7 @@ class Project(pd.BaseModel):
 
         """
 
-        self._get_asset_from_cloud()
+        self._get_tree_from_cloud()
 
         def wrapstring(long_str: str, str_length: str = None):
             if str_length:
@@ -861,10 +868,10 @@ class Project(pd.BaseModel):
             get_val=lambda x: wrapstring(long_str=str(x), str_length=str_length),
             get_label=lambda x: (
                 wrapstring(
-                    long_str=x.label,
+                    long_str=x.branch_label,
                     str_length=str_length,
                 )
-                if x.label
+                if x.branch_label
                 else None
             ),
             color="",
@@ -991,7 +998,7 @@ class Project(pd.BaseModel):
         if not run_async:
             destination_obj.wait()
 
-        self._get_asset_from_cloud(destination_obj=destination_obj)
+        self._get_tree_from_cloud(destination_obj=destination_obj)
 
         return destination_obj
 
