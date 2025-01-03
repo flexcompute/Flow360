@@ -1,6 +1,5 @@
 """Volume models for the simulation framework."""
 
-import json
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -489,7 +488,7 @@ class BETDiskSectionalPolar(Flow360BaseModel):
 class XRotorFile(Flow360BaseModel):
     file_name: str
     type_name: Literal["XRotorFile"] = pd.Field("XRotorFile", frozen=True)
-    content: str = pd.Field()  # optionally do content in post validator
+    content: str = pd.Field()
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -502,7 +501,7 @@ class XRotorFile(Flow360BaseModel):
 class DFDCFile(Flow360BaseModel):
     file_name: str
     type_name: Literal["DFDCFile"] = pd.Field("DFDCFile", frozen=True)
-    content: str = pd.Field()  # optionally do content in post validator
+    content: str = pd.Field()
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -515,7 +514,7 @@ class DFDCFile(Flow360BaseModel):
 class C81File(Flow360BaseModel):
     file_name: str
     type_name: Literal["C81File"] = pd.Field("C81File", frozen=True)
-    content: str = pd.Field()  # optionally do content in post validator
+    content: str = pd.Field()
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -528,7 +527,7 @@ class C81File(Flow360BaseModel):
 class XFoilFile(Flow360BaseModel):
     file_name: str
     type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
-    content: str = pd.Field()  # optionally do content in post validator
+    content: str = pd.Field()
 
     @pd.model_validator(mode="before")
     @classmethod
