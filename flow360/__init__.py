@@ -106,8 +106,10 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
@@ -238,4 +240,6 @@ __all__ = [
     "DFDCFile",
     "C81File",
     "XFoilFile",
+    "TimeAverageProbeOutput",
+    "TimeAverageSurfaceProbeOutput",
 ]

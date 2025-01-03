@@ -114,20 +114,20 @@ class TotalPressure(SingleAttributeModel):
 
 class Pressure(SingleAttributeModel):
     """
-    :class:`Pressure` class to specify the pressure for `Outflow`
+    :class:`Pressure` class to specify the static pressure for `Outflow`
     boundary condition via :py:attr:`Outflow.spec`.
 
     Example
     -------
 
-    >>> fl.TotalPressure(value = 1.01e6 * fl.u.Pa)
+    >>> fl.Pressure(value = 1.01e6 * fl.u.Pa)
 
     ====
     """
 
     type_name: Literal["Pressure"] = pd.Field("Pressure", frozen=True)
     # pylint: disable=no-member
-    value: PressureType.Positive = pd.Field(description="The pressure value.")
+    value: PressureType.Positive = pd.Field(description="The static pressure value.")
 
 
 class MassFlowRate(SingleAttributeModel):
@@ -199,28 +199,39 @@ class Wall(BoundaryBase):
     Example
     -------
 
-    - :code:`Wall` with wall function:
+    - :code:`Wall` with wall function and prescribed velocity:
 
-    >>> fl.Wall(
-    ...     entities=geometry["wall_function"],
-    ...     use_wall_function=True,
-    ... )
+      >>> fl.Wall(
+      ...     entities=geometry["wall_function"],
+      ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"],
+      ...     use_wall_function=True,
+      ... )
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["8"],
+      ...     velocity = (
+      ...         f"{OMEGA[1]} * (z - {CENTER[2]}) - {OMEGA[2]} * (y - {CENTER[1]})",
+      ...         f"{OMEGA[2]} * (x - {CENTER[0]}) - {OMEGA[0]} * (z - {CENTER[2]})",
+      ...         f"{OMEGA[0]} * (y - {CENTER[1]}) - {OMEGA[1]} * (x - {CENTER[0]})",
+      ...     ),
+      ...     use_wall_function=True,
+      ... )
 
     - Define isothermal wall boundary condition on entities
       with the naming pattern :code:`"fluid/isothermal-*"`:
 
-    >>> fl.Wall(
-    ...     entities=volume_mesh["fluid/isothermal-*"],
-    ...     heat_spec=fl.Temperature(350 * fl.u.K),
-    ... )
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/isothermal-*"],
+      ...     heat_spec=fl.Temperature(350 * fl.u.K),
+      ... )
 
     - Define isoflux wall boundary condition on entities
       with the naming pattern :code:`"solid/isoflux-*"`:
 
-    >>> fl.Wall(
-    ...     entities=volume_mesh["solid/isoflux-*"],
-    ...     heat_spec=fl.HeatFlux(1.0 * fl.u.W/fl.u.m**2),
-    ... )
+      >>> fl.Wall(
+      ...     entities=volume_mesh["solid/isoflux-*"],
+      ...     heat_spec=fl.HeatFlux(1.0 * fl.u.W/fl.u.m**2),
+      ... )
 
     ====
     """
@@ -252,20 +263,20 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
 
     - Define freestream boundary condition with velocity expression:
 
-    >>> fl.Freestream(
-    ...     surfaces=[volume_mesh["blk-1/zblocks"],
-    ...               volume_mesh["blk-1/xblocks"]],
-    ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
-    ... )
+      >>> fl.Freestream(
+      ...     surfaces=[volume_mesh["blk-1/zblocks"],
+      ...               volume_mesh["blk-1/xblocks"]],
+      ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
+      ... )
 
     - Define freestream boundary condition with turbulence quantities:
 
-    >>> fl.Freestream(
-    ...     entities=[volume_mesh['freestream']],
-    ...     turbulence_quantities= fl.TurbulenceQuantities(
-    ...         modified_viscosity_ratio=10,
-    ...     )
-    ... )
+      >>> fl.Freestream(
+      ...     entities=[volume_mesh['freestream']],
+      ...     turbulence_quantities= fl.TurbulenceQuantities(
+      ...         modified_viscosity_ratio=10,
+      ...     )
+      ... )
 
     ====
     """
@@ -293,24 +304,24 @@ class Outflow(BoundaryBase):
     -------
     - Define outflow boundary condition with pressure:
 
-    >>> fl.Outflow(
-    ...     surfaces=volume_mesh["fluid/outlet"],
-    ...     spec=fl.Pressure(value = 0.99e6 * fl.u.Pa)
-    ... )
+      >>> fl.Outflow(
+      ...     surfaces=volume_mesh["fluid/outlet"],
+      ...     spec=fl.Pressure(value = 0.99e6 * fl.u.Pa)
+      ... )
 
     - Define outflow boundary condition with Mach number:
 
-    >>> fl.Outflow(
-    ...     surfaces=volume_mesh["fluid/outlet"],
-    ...     spec=fl.Mach(value = 0.2)
-    ... )
+      >>> fl.Outflow(
+      ...     surfaces=volume_mesh["fluid/outlet"],
+      ...     spec=fl.Mach(value = 0.2)
+      ... )
 
     - Define outflow boundary condition with mass flow rate:
 
-    >>> fl.Outflow(
-    ...     surfaces=volume_mesh["fluid/outlet"],
-    ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s)
-    ... )
+      >>> fl.Outflow(
+      ...     surfaces=volume_mesh["fluid/outlet"],
+      ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s)
+      ... )
 
     ====
     """
@@ -332,29 +343,29 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
 
     - Define inflow boundary condition with pressure:
 
-    >>> fl.Inflow(
-    ...     entities=[geometry["inflow"]],
-    ...     total_temperature=300 * fl.u.K,
-    ...     spec=fl.TotalPressure(1.028e6 * fl.u.Pa),
-    ... )
+      >>> fl.Inflow(
+      ...     entities=[geometry["inflow"]],
+      ...     total_temperature=300 * fl.u.K,
+      ...     spec=fl.TotalPressure(1.028e6 * fl.u.Pa),
+      ... )
 
     - Define inflow boundary condition with mass flow rate:
 
-    >>> fl.Inflow(
-    ...     entities=[volume_mesh["fluid/inflow"]],
-    ...     total_temperature=300 * fl.u.K,
-    ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s),
-    ... )
+      >>> fl.Inflow(
+      ...     entities=[volume_mesh["fluid/inflow"]],
+      ...     total_temperature=300 * fl.u.K,
+      ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s),
+      ... )
 
     - Define inflow boundary condition with turbulence quantities:
 
-    >>> fl.Inflow(
-    ...     entities=[volume_mesh["fluid/inflow"]],
-    ...     turbulence_quantities= fl.TurbulenceQuantities(
-    ...         turbulent_kinetic_energy=2.312e-3 * fl.u.m **2 / fl.u.s**2,
-    ...         specific_dissipation_rate= 1020 / fl.u.s,
-    ...     )
-    ... )
+      >>> fl.Inflow(
+      ...     entities=[volume_mesh["fluid/inflow"]],
+      ...     turbulence_quantities= fl.TurbulenceQuantities(
+      ...         turbulent_kinetic_energy=2.312e-3 * fl.u.m **2 / fl.u.s**2,
+      ...         specific_dissipation_rate= 1020 / fl.u.s,
+      ...     )
+      ... )
 
     ====
     """
@@ -433,21 +444,21 @@ class Periodic(Flow360BaseModel):
 
     - Define a translationally periodic boundary condition using :class:`Translational`:
 
-    >>> fl.Periodic(
-    ...     surface_pairs=[
-    ...         (volume_mesh["VOLUME/BOTTOM"], volume_mesh["VOLUME/TOP"]),
-    ...         (volume_mesh["VOLUME/RIGHT"], volume_mesh["VOLUME/LEFT"]),
-    ...     ],
-    ...     spec=fl.Translational(),
-    ... )
+      >>> fl.Periodic(
+      ...     surface_pairs=[
+      ...         (volume_mesh["VOLUME/BOTTOM"], volume_mesh["VOLUME/TOP"]),
+      ...         (volume_mesh["VOLUME/RIGHT"], volume_mesh["VOLUME/LEFT"]),
+      ...     ],
+      ...     spec=fl.Translational(),
+      ... )
 
     - Define a rotationally periodic boundary condition using :class:`Rotational`:
 
-    >>> fl.Periodic(
-    ...     surface_pairs=[(volume_mesh["VOLUME/PERIODIC-1"],
-    ...         volume_mesh["VOLUME/PERIODIC-2"])],
-    ...     spec=fl.Rotational()
-    ... )
+      >>> fl.Periodic(
+      ...     surface_pairs=[(volume_mesh["VOLUME/PERIODIC-1"],
+      ...         volume_mesh["VOLUME/PERIODIC-2"])],
+      ...     spec=fl.Rotational()
+      ... )
 
     ====
     """
