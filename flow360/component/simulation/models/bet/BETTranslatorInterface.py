@@ -11,8 +11,6 @@ EXAMPLE codes
 """
 
 import json
-
-# import sys
 import os
 from math import *
 from os import path
@@ -25,7 +23,6 @@ import flow360.component.simulation.units as u
 from .utils import *
 
 
-########################################################################################################################
 def read_in_xfoil_polar(polar_file):
     """
     Parameters
@@ -97,7 +94,6 @@ def read_in_xfoil_polar(polar_file):
     return alphas, cl_mach_nums[0], cls, cds
 
 
-########################################################################################################################
 def blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values):
     """
     This function blends a given arbitrary set of CL and CD polars that are missing values to cover the whole -180 to 180
@@ -188,7 +184,6 @@ def blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-###############################################################################################################
 def read_in_c81_polar_c81_format(polar_file):
     """
     Read in the c81 format polar file
@@ -270,7 +265,6 @@ def read_in_c81_polar_c81_format(polar_file):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-###############################################################################################################
 def read_in_c81_polar_csv(polar_file):
     """
     # read in the c81 format polar file as a csv file
@@ -347,7 +341,6 @@ def read_in_c81_polar_csv(polar_file):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-###############################################################################################################
 def read_in_xfoil_data(bet_disk, xfoil_polar_files):
     """
     This function reads in the Xfoil polars and assigns the resulting values correctly into the BET disk dictionary
@@ -408,7 +401,6 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
     return bet_disk
 
 
-###############################################################################################################
 def read_in_c81_polars(bet_disk, c81_polar_files):
     """
     This function reads in the C81 polars and assigns the resulting values correctly into the BET disk dictionary
@@ -465,7 +457,6 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
     return bet_disk
 
 
-########################################################################################################################
 def generate_xfoil_bet_json(
     geometry_file_name,
     rotation_direction_rule,
@@ -474,7 +465,7 @@ def generate_xfoil_bet_json(
     omega,
     chord_ref,
     n_loading_nodes,
-    cylinder,
+    entities,
     number_of_blades,
     angle_unit,
     length_unit,
@@ -494,7 +485,7 @@ def generate_xfoil_bet_json(
     twist_vec, chord_vec, sectional_radiuses, xfoil_polar_file_list = parse_geometry_file(
         geometry_file_name, length_unit=length_unit, angle_unit=angle_unit
     )
-    bet_disk["entities"] = cylinder
+    bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
     bet_disk["n_loading_nodes"] = n_loading_nodes
@@ -517,7 +508,6 @@ def generate_xfoil_bet_json(
     return bet_disk
 
 
-########################################################################################################################
 def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
     """
     This function reads in the geometry file. This file is a csv containing the filenames of the polar definition files along with the twist and chord definitions.
@@ -609,7 +599,6 @@ def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
     return twist_vec, chord_vec, sectional_radiuses, polar_files
 
 
-################################################################################################################
 def generate_c81_bet_json(
     geometry_file_name,
     rotation_direction_rule,
@@ -618,7 +607,7 @@ def generate_c81_bet_json(
     omega,
     chord_ref,
     n_loading_nodes,
-    cylinder,
+    entities,
     angle_unit,
     length_unit,
     number_of_blades,
@@ -647,7 +636,7 @@ def generate_c81_bet_json(
     )
 
     bet_disk = {}
-    bet_disk["entities"] = cylinder
+    bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
     bet_disk["n_loading_nodes"] = n_loading_nodes
@@ -670,7 +659,6 @@ def generate_c81_bet_json(
     return bet_disk
 
 
-########################################################################################################################
 def check_comment(comment_line, line_num, numelts):
     """
     This function is used when reading an XROTOR input file to make sure that what should be comments, really are.
@@ -688,7 +676,6 @@ def check_comment(comment_line, line_num, numelts):
         raise ValueError(f"wrong format for line #%i: {comment_line}" % (line_num))
 
 
-########################################################################################################################
 def check_num_values(values_list, line_num, numelts):
     """
     This function is used to make sure we have the expected number of inputs in a given line
@@ -707,7 +694,6 @@ def check_num_values(values_list, line_num, numelts):
         )
 
 
-########################################################################################################################
 def read_dfdc_file(dfdc_file_name):
     """
     This functions read in the dfdc filename provided.
@@ -922,10 +908,6 @@ def read_dfdc_file(dfdc_file_name):
     return dfdc_input_dict
 
 
-########################################################################################################################
-
-
-########################################################################################################################
 def read_xrotor_file(xrotor_file_name):
     """
     This functions read in the Xrotor filename provided.
@@ -1158,7 +1140,6 @@ def float_range(start, stop, step=1):
     return [float(a) for a in range(start, stop, step)]
 
 
-########################################################################################################################
 def generate_twists(xrotor_dict, mesh_unit, length_unit, angle_unit):
     """
     Transform the Xrotor format blade twists distribution into the Flow360 standard.
@@ -1187,7 +1168,6 @@ def generate_twists(xrotor_dict, mesh_unit, length_unit, angle_unit):
     return twist_vec
 
 
-########################################################################################################################
 def generate_chords(xrotor_dict, mesh_unit, length_unit):
     """
     Transform the Xrotor format blade chords distribution into the Flow360 standard.
@@ -1215,7 +1195,6 @@ def generate_chords(xrotor_dict, mesh_unit, length_unit):
     return chord_vec
 
 
-########################################################################################################################
 def generate_machs():
     """
     The Flow360 BET input file expects a set of Mach numbers to interpolate
@@ -1233,7 +1212,6 @@ def generate_machs():
     return mach_vec
 
 
-########################################################################################################################
 def generate_reynolds():
     """
     Flow360 has the functionality to interpolate across Reynolds numbers but we are not using that functionality
@@ -1243,7 +1221,6 @@ def generate_reynolds():
     return [1]
 
 
-########################################################################################################################
 def generate_alphas():
     """
     Generate the list of Alphas that the BET 2d section polar is for in 1 degree steps from -180 to 180
@@ -1312,7 +1289,6 @@ def generate_alphas():
     # return floatRange(-180, 181)
 
 
-########################################################################################################################
 def find_cl_min_max_alphas(c_lift, cl_min, cl_max):
     """
     Find the index in the c_lift list where we are just below the cl_min
@@ -1345,7 +1321,6 @@ def find_cl_min_max_alphas(c_lift, cl_min, cl_max):
     )  # return the two indices right before and after the two found values.
 
 
-########################################################################################################################
 def blend_func_value(blend_window, alpha, alpha_min_max, alpha_range):
     """
     This functions is used to blend the flat plate CL and CD polar to the given Cl and CD polars.
@@ -1383,7 +1358,6 @@ def blend_func_value(blend_window, alpha, alpha_min_max, alpha_range):
         )
 
 
-########################################################################################################################
 def xrotor_blend_to_flat_plate(c_lift, c_drag, alphas, alpha_min_idx, alpha_max_idx):
     """
      Blend the c_lift and c_drag values outside of the normal working range of alphas to the flat plate CL and CD values.
@@ -1436,7 +1410,6 @@ def xrotor_blend_to_flat_plate(c_lift, c_drag, alphas, alpha_min_idx, alpha_max_
     return c_lift, c_drag
 
 
-########################################################################################################################
 def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     """
 
@@ -1554,7 +1527,6 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     return list(CLIFT), list(CDRAG)
 
 
-########################################################################################################################
 def get_polar(xrotor_dict, alphas, machs, rR_station):
     """
     Return the 2D Cl and CD polar expected by the Flow360 BET model.
@@ -1582,7 +1554,6 @@ def get_polar(xrotor_dict, alphas, machs, rR_station):
     return secpol
 
 
-########################################################################################################################
 def generate_xrotor_bet_json(
     xrotor_file_name,
     rotation_direction_rule,
@@ -1591,7 +1562,7 @@ def generate_xrotor_bet_json(
     omega,
     chord_ref,
     n_loading_nodes,
-    cylinder,
+    entities,
     angle_unit,
     length_unit,
     mesh_unit,
@@ -1636,7 +1607,8 @@ def generate_xrotor_bet_json(
     xrotor_dict = read_xrotor_file(xrotor_file_name)
 
     bet_disk = {}
-    bet_disk["entities"] = cylinder
+
+    bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
     bet_disk["n_loading_nodes"] = n_loading_nodes
@@ -1670,6 +1642,34 @@ def generate_xrotor_bet_json(
     #     json.dump(betDisk, file1, indent=4)
 
     return bet_disk
+
+
+def generate_dfdc_bet_json(
+    dfdc_file_name,
+    rotation_direction_rule,
+    initial_blade_direction,
+    blade_line_chord,
+    omega,
+    chord_ref,
+    n_loading_nodes,
+    entities,
+    angle_unit,
+    length_unit,
+    mesh_unit,
+):
+    return generate_xrotor_bet_json(
+        xrotor_file_name=dfdc_file_name,
+        rotation_direction_rule=rotation_direction_rule,
+        initial_blade_direction=initial_blade_direction,
+        blade_line_chord=blade_line_chord,
+        omega=omega,
+        chord_ref=chord_ref,
+        n_loading_nodes=n_loading_nodes,
+        entities=entities,
+        angle_unit=angle_unit,
+        length_unit=length_unit,
+        mesh_unit=mesh_unit,
+    )
 
 
 ########################################################################################################################

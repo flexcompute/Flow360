@@ -1,7 +1,7 @@
 """Volume models for the simulation framework."""
 
 import json
-from typing import Dict, List, Literal, Optional, Union
+from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -17,6 +17,7 @@ from flow360.component.simulation.framework.single_attribute_base import (
 )
 from flow360.component.simulation.models.bet.BETTranslatorInterface import (
     generate_c81_bet_json,
+    generate_dfdc_bet_json,
     generate_xfoil_bet_json,
     generate_xrotor_bet_json,
 )
@@ -485,33 +486,72 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     )
 
 
-# class XRotorFile(Flow360BaseModel):
-#     filename: str
-#     content: # optionally do content in post validator
+class XRotorFile(Flow360BaseModel):
+    file_name: str
+    type_name: Literal["XRotorFile"] = pd.Field("XRotorFile", frozen=True)
+    content: str = pd.Field()  # optionally do content in post validator
 
-#     @property
-#     def content(self): # content as property? how about serialisation?
-#        pass
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        with open(input_data["file_name"]) as file:
+            content_to_store = file.read()
+        return {"file_name": input_data["file_name"], "content": content_to_store}
 
 
-# class DFDCFile(Flow360BaseModel):
-#     filename: str
-#     content: # optionally do content in post validator
+class DFDCFile(Flow360BaseModel):
+    file_name: str
+    type_name: Literal["DFDCFile"] = pd.Field("DFDCFile", frozen=True)
+    content: str = pd.Field()  # optionally do content in post validator
 
-#     @property
-#     def content(self): # content as property? how about serialisation?
-#        pass
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        with open(input_data["file_name"]) as file:
+            content_to_store = file.read()
+        return {"file_name": input_data["file_name"], "content": content_to_store}
+
+
+class C81File(Flow360BaseModel):
+    file_name: str
+    type_name: Literal["C81File"] = pd.Field("C81File", frozen=True)
+    content: str = pd.Field()  # optionally do content in post validator
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        with open(input_data["file_name"]) as file:
+            content_to_store = file.read()
+        return {"file_name": input_data["file_name"], "content": content_to_store}
+
+
+class XFoilFile(Flow360BaseModel):
+    file_name: str
+    type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
+    content: str = pd.Field()  # optionally do content in post validator
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        with open(input_data["file_name"]) as file:
+            content_to_store = file.read()
+        return {"file_name": input_data["file_name"], "content": content_to_store}
+
+
+BETFileTypes = Annotated[
+    Union[XRotorFile, DFDCFile, XFoilFile, C81File], pd.Field(discriminator="type_name")
+]
 
 
 class BETDiskCache(Flow360BaseModel):
     """[INTERNAL] Cache for BETDisk inputs"""
 
-    file: Optional[str] = None
+    file: Optional[BETFileTypes] = None
     rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
     omega: Optional[AngularVelocityType.NonNegative] = None
     chord_ref: Optional[LengthType.Positive] = None
     n_loading_nodes: Optional[pd.StrictInt] = None
-    cylinder: Optional[Cylinder] = None
+    entities: Optional[EntityList[Cylinder]] = None
     angle_unit: Optional[AngleType] = None
     length_unit: Optional[LengthType.NonNegative] = None
     mesh_unit: Optional[LengthType.NonNegative] = None
@@ -667,12 +707,12 @@ class BETDisk(MultiConstructorBaseModel):
     @pd.validate_call
     def from_xrotor(
         cls,
-        file: str,
+        file: XRotorFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
         omega: AngularVelocityType.NonNegative,
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
-        cylinder: Cylinder,
+        entities: EntityList[Cylinder],
         mesh_unit: LengthType.NonNegative = pd.Field(
             description="The length/grid unit of the project"
         ),
@@ -683,14 +723,14 @@ class BETDisk(MultiConstructorBaseModel):
     ):
 
         params = generate_xrotor_bet_json(
-            xrotor_file_name=file,
+            xrotor_file_name=file.file_name,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
             omega=omega,
             chord_ref=chord_ref,
             n_loading_nodes=n_loading_nodes,
-            cylinder=cylinder,
+            entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
             mesh_unit=mesh_unit,
@@ -702,12 +742,12 @@ class BETDisk(MultiConstructorBaseModel):
     @pd.validate_call
     def from_dfdc(
         cls,
-        file: str,
+        file: DFDCFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
         omega: AngularVelocityType.NonNegative,
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
-        cylinder: Cylinder,
+        entities: EntityList[Cylinder],
         mesh_unit: LengthType.NonNegative = pd.Field(
             description="The length/grid unit of the project"
         ),
@@ -717,15 +757,15 @@ class BETDisk(MultiConstructorBaseModel):
         length_unit: LengthType.NonNegative = u.m,
     ):
 
-        params = generate_xrotor_bet_json(
-            xrotor_file_name=file,
+        params = generate_dfdc_bet_json(
+            dfdc_file_name=file.file_name,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
             omega=omega,
             chord_ref=chord_ref,
             n_loading_nodes=n_loading_nodes,
-            cylinder=cylinder,
+            entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
             mesh_unit=mesh_unit,
@@ -737,12 +777,12 @@ class BETDisk(MultiConstructorBaseModel):
     @pd.validate_call
     def from_c81(
         cls,
-        file: str,
+        file: C81File,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
         omega: AngularVelocityType.NonNegative,
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
-        cylinder: Cylinder,
+        entities: EntityList[Cylinder],
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
@@ -751,14 +791,14 @@ class BETDisk(MultiConstructorBaseModel):
     ):
 
         params = generate_c81_bet_json(
-            geometry_file_name=file,
+            geometry_file_name=file.file_name,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
             omega=omega,
             chord_ref=chord_ref,
             n_loading_nodes=n_loading_nodes,
-            cylinder=cylinder,
+            entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
             number_of_blades=number_of_blades,
@@ -770,12 +810,12 @@ class BETDisk(MultiConstructorBaseModel):
     @pd.validate_call
     def from_xfoil(
         cls,
-        file: str,
+        file: XFoilFile,
         rotation_direction_rule: Literal["leftHand", "rightHand"],
         omega: AngularVelocityType.NonNegative,
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
-        cylinder: Cylinder,
+        entities: EntityList[Cylinder],
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
@@ -784,14 +824,14 @@ class BETDisk(MultiConstructorBaseModel):
     ):
 
         params = generate_xfoil_bet_json(
-            geometry_file_name=file,
+            geometry_file_name=file.file_name,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
             omega=omega,
             chord_ref=chord_ref,
             n_loading_nodes=n_loading_nodes,
-            cylinder=cylinder,
+            entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
             number_of_blades=number_of_blades,

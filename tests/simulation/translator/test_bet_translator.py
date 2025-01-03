@@ -9,10 +9,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import flow360 as fl
 import flow360.component.simulation.models.bet.original.BETTranslatorInterface_original as interface
+from tests.utils import compare_values
 
 assertions = unittest.TestCase("__init__")
-
-here = os.path.abspath(os.path.dirname(__file__))
 
 
 def generate_BET_param(type):
@@ -29,50 +28,78 @@ def generate_BET_param(type):
 
     if type == "xrotor":
         param = fl.BETDisk.from_xrotor(
-            file="data/xv15_like_twist0.xrotor",
+            file=fl.XRotorFile(
+                file_name=(
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        "data",
+                        "xv15_like_twist0.xrotor",
+                    )
+                )
+            ),
             rotation_direction_rule="leftHand",
             omega=0.0046 * fl.u.deg / fl.u.s,
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
-            cylinder=bet_cylinder_SI,
+            entities=bet_cylinder_SI,
             mesh_unit=fl.u.m,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
         )
     elif type == "dfdc":
         param = fl.BETDisk.from_dfdc(
-            file="data/dfdc_xv15_twist0.case",
+            file=fl.DFDCFile(
+                file_name=(
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)), "data", "dfdc_xv15_twist0.case"
+                    )
+                )
+            ),
             rotation_direction_rule="leftHand",
             omega=0.0046 * fl.u.deg / fl.u.s,
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
-            cylinder=bet_cylinder_SI,
+            entities=bet_cylinder_SI,
             mesh_unit=fl.u.m,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
         )
     elif type == "c81":
         param = fl.BETDisk.from_c81(
-            file="data/c81/Xv15_geometry.csv",
+            file=fl.C81File(
+                file_name=(
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)), "data/c81", "Xv15_geometry.csv"
+                    )
+                )
+            ),
             rotation_direction_rule="leftHand",
             omega=0.0046 * fl.u.deg / fl.u.s,
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
-            cylinder=bet_cylinder_imperial,
+            entities=bet_cylinder_imperial,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
             number_of_blades=3,
         )
     elif type == "xfoil":
         param = fl.BETDisk.from_xfoil(
-            file="data/xfoil/xv15_geometry_xfoil_translatorDisk0.csv",
+            file=fl.XFoilFile(
+                file_name=(
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        "data/xfoil",
+                        "xv15_geometry_xfoil_translatorDisk0.csv",
+                    )
+                )
+            ),
             rotation_direction_rule="leftHand",
             initial_blade_direction=[1, 0, 0],
             blade_line_chord=1 * fl.u.m,
             omega=0.0046 * fl.u.deg / fl.u.s,
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
-            cylinder=bet_cylinder_imperial,
+            entities=bet_cylinder_imperial,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
             number_of_blades=3,
@@ -84,7 +111,9 @@ class AdvancedTestSuite(unittest.TestCase):
 
     def test_xrotor_params(self):
 
-        with open(os.path.join(here, "ref/xrotorTest.json")) as fh:
+        with open(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "xrotorTest.json")
+        ) as fh:
             refbetFlow360 = json.load(fh)
 
         # Create BETDisk from xrotor file
@@ -170,7 +199,9 @@ class AdvancedTestSuite(unittest.TestCase):
 
     def test_dfdc_params(self):
 
-        with open(os.path.join(here, "ref/dfdcTest.json")) as fh:
+        with open(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "dfdcTest.json")
+        ) as fh:
             refbetFlow360 = json.load(fh)
 
         # Create BETDisk from xrotor file
@@ -256,7 +287,9 @@ class AdvancedTestSuite(unittest.TestCase):
 
     def test_c81_params(self):
 
-        with open(os.path.join(here, "ref/c81Test.json")) as fh:
+        with open(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "c81Test.json")
+        ) as fh:
             refbetFlow360 = json.load(fh)
 
         # Create BETDisk from xrotor file
@@ -342,7 +375,9 @@ class AdvancedTestSuite(unittest.TestCase):
 
     def test_xfoil_params(self):
 
-        with open(os.path.join(here, "ref/xfoilTest.json")) as fh:
+        with open(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "xfoilTest.json")
+        ) as fh:
             refbetFlow360 = json.load(fh)
 
         # Create BETDisk from xrotor file
@@ -427,5 +462,37 @@ class AdvancedTestSuite(unittest.TestCase):
         )
 
 
-if __name__ == "__main__":
-    unittest.main()
+def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=False):
+    translated = generate_BET_param(type)
+    translated = translated.model_dump_json(
+        exclude={
+            "type_name",
+            "private_attribute_constructor",
+            "private_attribute_input_cache",
+        }
+    )
+    translated = json.loads(translated)
+    del translated["entities"]["stored_entities"][0]["private_attribute_id"]
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
+        ref_dict = json.load(fh)
+    if debug:
+        print(">>> translated = ", translated)
+        print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
+        print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
+    assert compare_values(ref_dict, translated, atol=atol, rtol=rtol)
+
+
+def test_translated_c81_params():
+    translate_and_compare(type="c81", ref_json_file="ref_c81.json")
+
+
+def test_translated_dfdc_params():
+    translate_and_compare(type="dfdc", ref_json_file="ref_dfdc.json")
+
+
+def test_translated_xfoil_params():
+    translate_and_compare(type="xfoil", ref_json_file="ref_xfoil.json")
+
+
+def test_translated_xrotor_params():
+    translate_and_compare(type="xrotor", ref_json_file="ref_xrotor.json")
