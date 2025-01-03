@@ -184,15 +184,6 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     parent_id: Optional[str] = pd.Field(None, alias="parentId")
     status: Flow360Status = pd.Field()
 
-    # Resource status change, revisit when updating the case class
-    @pd.field_validator("status", mode="after")
-    @classmethod
-    def set_status_type(cls, value: Flow360Status):
-        """set_status_type when case uploaded"""
-        if value is Flow360Status.UPLOADED:
-            return Flow360Status.CASE_UPLOADED
-        return value
-
     def to_case(self) -> Case:
         """
         returns Case object from case meta info

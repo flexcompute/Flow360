@@ -202,7 +202,7 @@ class ProjectTreeNode(pd.BaseModel):
     @property
     def branch_label(self) -> str:
         """
-        Add branch label in the printed project tree to 
+        Add branch label in the printed project tree to
         display the different volume mesh used in a forked case.
         """
         if self.case_mesh_label:
@@ -659,7 +659,11 @@ class Project(pd.BaseModel):
         info = project_api.get()
         if not info:
             raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
-        project = Project(metadata=ProjectMeta(**info), project_tree=ProjectTree(), solver_version=root_asset.solver_version)
+        project = Project(
+            metadata=ProjectMeta(**info),
+            project_tree=ProjectTree(),
+            solver_version=root_asset.solver_version,
+        )
         project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
             project._root_asset = root_asset
@@ -709,7 +713,9 @@ class Project(pd.BaseModel):
             root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
-        project = Project(metadata=meta, project_tree=ProjectTree(), solver_version=root_asset.solver_version)
+        project = Project(
+            metadata=meta, project_tree=ProjectTree(), solver_version=root_asset.solver_version
+        )
         project._project_webapi = project_api
         if root_type == RootType.GEOMETRY:
             project._root_asset = root_asset
@@ -801,6 +807,7 @@ class Project(pd.BaseModel):
                 self._case_cache.remove_asset(asset_id=asset_id)
             self.project_tree.remove_node(node_id=asset_id)
 
+    # pylint: disable=protected-access
     def _update_asset_cache_and_project_tree(
         self, asset_records: List, method: Literal["tree", "path"] = "tree"
     ):
