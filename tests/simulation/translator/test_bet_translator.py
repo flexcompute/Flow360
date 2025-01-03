@@ -3,8 +3,6 @@ import os
 import sys
 import unittest
 
-from flow360.component.simulation.models.bet.original.tests import utils
-
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import flow360 as fl
