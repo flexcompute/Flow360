@@ -719,6 +719,7 @@ class Observer(Flow360BaseModel):
     ====
     """
 
+    # pylint: disable=no-member
     position: LengthType.Point
     group_name: str
 
@@ -778,23 +779,29 @@ class AeroAcousticOutput(Flow360BaseModel):
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
 
+    # pylint: disable=no-self-argument
     @pd.model_validator(mode="before")
-    def ensure_consistent_observer_type(cls, input):
-        for number, object in enumerate(input["observers"]):
-            if not isinstance(object, Observer):
-                new_object = Observer(position=object, group_name="0")
-                input["observers"][number] = new_object
+    def ensure_consistent_observer_type_and_sort_by_group(cls, input_value):
+        """Ensure that items in observers have consistent type and sort them by group_name."""
+        for number, value in enumerate(input_value["observers"]):
+            if not isinstance(value, Observer):
+                new_value = Observer(position=value, group_name="0")
+                input_value["observers"][number] = new_value
             index = number
             while (
                 index > 0
-                and input["observers"][index - 1].group_name > input["observers"][index].group_name
+                and input_value["observers"][index - 1].group_name
+                > input_value["observers"][index].group_name
             ):
-                input["observers"][index].group_name, input["observers"][index - 1].group_name = (
-                    input["observers"][index - 1].group_name,
-                    input["observers"][index].group_name,
+                (
+                    input_value["observers"][index].group_name,
+                    input_value["observers"][index - 1].group_name,
+                ) = (
+                    input_value["observers"][index - 1].group_name,
+                    input_value["observers"][index].group_name,
                 )
                 index -= 1
-        return input
+        return input_value
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):
@@ -826,16 +833,3 @@ OutputTypes = Annotated[
     ],
     pd.Field(discriminator="output_type"),
 ]
-
-
-class XFoilFile(Flow360BaseModel):
-    file_name: str
-    type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
-    content: str = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _extract_content(cls, input_data):
-        with open(input_data["file_name"]) as file:
-            content_to_store = file.read()
-        return {"file_name": input_data["file_name"], "content": content_to_store}
