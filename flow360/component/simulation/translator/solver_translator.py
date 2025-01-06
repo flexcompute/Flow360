@@ -33,7 +33,7 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_entities import PointArray
+from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -270,32 +270,46 @@ def inject_isosurface_info(entity: Isosurface):
 
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "probe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "surfaceProbe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_list_info(entity: EntityList):
