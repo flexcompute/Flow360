@@ -706,6 +706,11 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
         "TimeAverageSurfaceProbeOutput", frozen=True
     )
 
+class Observer(Flow360BaseModel):
+
+    position: LengthType.Point
+    group_name: pd.NonNegativeInt
+
 
 class AeroAcousticOutput(Flow360BaseModel):
     """
@@ -750,7 +755,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
-    observers: List[LengthType.Point] = pd.Field(
+    observers: List[Union[LengthType.Point, Observer]] = pd.Field(
         description="List of observer locations at which time history of acoustic pressure signal "
         + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
         + "but cannot be on or inside the solid surfaces of the simulation domain."
