@@ -109,6 +109,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
+    Observer
 )
 from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -194,6 +195,7 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "Observer"
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",

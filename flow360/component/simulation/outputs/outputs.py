@@ -707,9 +707,19 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     )
 
 class Observer(Flow360BaseModel):
+    """
+    :class:`Observer` class for setting up the :py:attr:`AeroAcousticOutput.observers`.
+
+    Example
+    -------
+
+    >>> fl.Observer(position=[1, 2, 3] * fl.u.m, group_name="1")
+
+    ====
+    """
 
     position: LengthType.Point
-    group_name: pd.NonNegativeInt
+    group_name: str
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -722,16 +732,16 @@ class AeroAcousticOutput(Flow360BaseModel):
 
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [0.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.0, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ... )
 
     Using permeable surfaces:
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [1.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.2, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ...     patch_type="permeable",
     ...     permeable_surfaces=[volume_mesh["inner/interface*"]]
@@ -755,7 +765,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
-    observers: List[Union[LengthType.Point, Observer]] = pd.Field(
+    observers: List[Union[Observer, LengthType.Point]] = pd.Field(
         description="List of observer locations at which time history of acoustic pressure signal "
         + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
         + "but cannot be on or inside the solid surfaces of the simulation domain."
@@ -766,6 +776,18 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+
+    @pd.model_validator(mode="before")
+    def ensure_consistent_observer_type(cls, input):
+        for number, object in enumerate(input["observers"]):
+            if not isinstance(object, Observer):
+                new_object = Observer(position=object, group_name="0")
+                input["observers"][number] = new_object
+            index = number
+            while index > 0 and input["observers"][index-1].group_name > input["observers"][index].group_name:
+                input["observers"][index].group_name, input["observers"][index-1].group_name = input["observers"][index-1].group_name, input["observers"][index].group_name
+                index -= 1
+        return input
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):
@@ -797,3 +819,17 @@ OutputTypes = Annotated[
     ],
     pd.Field(discriminator="output_type"),
 ]
+
+
+
+class XFoilFile(Flow360BaseModel):
+    file_name: str
+    type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
+    content: str = pd.Field()
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        with open(input_data["file_name"]) as file:
+            content_to_store = file.read()
+        return {"file_name": input_data["file_name"], "content": content_to_store}
