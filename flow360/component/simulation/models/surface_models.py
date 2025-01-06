@@ -254,7 +254,8 @@ class Wall(BoundaryBase):
         description="Specify the heat flux or temperature at the `Wall` boundary.",
     )
     roughness_height: LengthType.NonNegative = pd.Field(
-        0 * u.m, description="Equivalant sand grain roughness height"
+        0 * u.m,
+        description="Equivalant sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
 
 
