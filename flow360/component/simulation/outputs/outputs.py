@@ -479,12 +479,6 @@ class ProbeOutput(Flow360BaseModel):
         """Load probe point locations from a file. (Not implemented yet)"""
         raise NotImplementedError("Not implemented yet.")
 
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "ProbeOutput")
-
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
@@ -560,12 +554,6 @@ class SurfaceProbeOutput(Flow360BaseModel):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
-
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "SurfaceProbeOutput")
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
