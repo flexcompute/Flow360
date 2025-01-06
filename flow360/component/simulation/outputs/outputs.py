@@ -27,9 +27,6 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.validation.validation_output import (
-    _check_unique_probe_type,
-)
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -414,48 +411,38 @@ class ProbeOutput(Flow360BaseModel):
     Example
     -------
 
-    - Define :class:`ProbeOutput` on multiple monitor points.
+    Define :class:`ProbeOutput` on multiple specific monitor points and monitor points along the line.
 
-      >>> fl.ProbeOutput(
-      ...     name="probe_group_points",
-      ...     entities=[
-      ...         fl.Point(
-      ...             name="Point_1",
-      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...         fl.Point(
-      ...             name="Point_2",
-      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...     ],
-      ...     output_fields=["primitiveVars"],
-      ... )
+    - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
+    - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
+      namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
 
-
-    - Define :class:`ProbeOutput` on monitor points along the line.
-
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
-
-      >>> fl.ProbeOutput(
-      ...     name="probe_group_lines",
-      ...     entities=[
-      ...         fl.PointArray(
-      ...             name="Line_1",
-      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(1.5, 0.0, 0.0) * fl.u.m,
-      ...             number_of_points=6,
-      ...         ),
-      ...         fl.PointArray(
-      ...             name="Line_2",
-      ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
-      ...             number_of_points=3,
-      ...         ),
-      ...     ],
-      ...     output_fields=["primitiveVars"],
-      ... )
+    >>> fl.ProbeOutput(
+    ...     name="probe_group_points_and_lines",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_1",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=6,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_2",
+    ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=3,
+    ...         ),
+    ...     ],
+    ...     output_fields=["primitiveVars"],
+    ... )
 
     ====
     """
@@ -489,48 +476,34 @@ class SurfaceProbeOutput(Flow360BaseModel):
     Example
     -------
 
-    - Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
-      with multiple monitor points.
+    Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
+    with multiple specific monitor points and monitor points along the line.
+    :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
+    including both starting and end points.
 
-      >>> fl.SurfaceProbeOutput(
-      ...     name="surface_probe_group_points",
-      ...     entities=[
-      ...         fl.Point(
-      ...             name="Point_1",
-      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...         fl.Point(
-      ...             name="Point_2",
-      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...     ],
-      ...     target_surfaces=[
-      ...         geometry["wall"],
-      ...     ],
-      ...     output_fields=["heatFlux", "T"],
-      ... )
-
-
-    - Define :class:`SurafceProbeOutput` on the :code:`volume_mesh["fluid/wall"]` surface
-      with monitor points along the line.
-      :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
-      including both starting and end points.
-
-      >>> fl.SurfaceProbeOutput(
-      ...     name="surface_probe_group_lines",
-      ...     entities=[
-      ...         fl.PointArray(
-      ...             name="Line_surface",
-      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(1.0, 0.0, -10.0) * fl.u.m,
-      ...             number_of_points=11,
-      ...         ),
-      ...     ],
-      ...     target_surfaces=[
-      ...         volume_mesh["fluid/wall"],
-      ...     ],
-      ...     output_fields=["heatFlux", "T"],
-      ... )
+    >>> fl.SurfaceProbeOutput(
+    ...     name="surface_probe_group_points",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_surface",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...     ],
+    ...     target_surfaces=[
+    ...         geometry["wall"],
+    ...     ],
+    ...     output_fields=["heatFlux", "T"],
+    ... )
 
     ====
     """
@@ -577,12 +550,6 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
-
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "SurfaceSliceOutput")
 
 
 class TimeAverageProbeOutput(ProbeOutput):
