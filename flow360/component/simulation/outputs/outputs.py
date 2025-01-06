@@ -413,6 +413,7 @@ class ProbeOutput(Flow360BaseModel):
 
     Define :class:`ProbeOutput` on multiple specific monitor points and monitor points along the line.
 
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
     - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
     - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
       namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
@@ -478,8 +479,10 @@ class SurfaceProbeOutput(Flow360BaseModel):
 
     Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
     with multiple specific monitor points and monitor points along the line.
-    :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
-    including both starting and end points.
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
+    - :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
+      including both starting and end points.
 
     >>> fl.SurfaceProbeOutput(
     ...     name="surface_probe_group_points",
