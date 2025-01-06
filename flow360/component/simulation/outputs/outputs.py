@@ -706,6 +706,7 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
         "TimeAverageSurfaceProbeOutput", frozen=True
     )
 
+
 class Observer(Flow360BaseModel):
     """
     :class:`Observer` class for setting up the :py:attr:`AeroAcousticOutput.observers`.
@@ -784,8 +785,14 @@ class AeroAcousticOutput(Flow360BaseModel):
                 new_object = Observer(position=object, group_name="0")
                 input["observers"][number] = new_object
             index = number
-            while index > 0 and input["observers"][index-1].group_name > input["observers"][index].group_name:
-                input["observers"][index].group_name, input["observers"][index-1].group_name = input["observers"][index-1].group_name, input["observers"][index].group_name
+            while (
+                index > 0
+                and input["observers"][index - 1].group_name > input["observers"][index].group_name
+            ):
+                input["observers"][index].group_name, input["observers"][index - 1].group_name = (
+                    input["observers"][index - 1].group_name,
+                    input["observers"][index].group_name,
+                )
                 index -= 1
         return input
 
@@ -819,7 +826,6 @@ OutputTypes = Annotated[
     ],
     pd.Field(discriminator="output_type"),
 ]
-
 
 
 class XFoilFile(Flow360BaseModel):
