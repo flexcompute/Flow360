@@ -143,7 +143,7 @@ class _EntityListMeta(_CombinedMeta):
             "stored_entities": List[union_type]
         }  # Make sure it is somewhat consistent with the EntityList class
         new_cls = type(
-            f"{cls.__name__}[{','.join([t.__name__ for t in entity_types])}]",
+            f"{cls.__name__}[{','.join(getattr(t, '__name__', str(t)) for t in entity_types)}]",
             (cls,),
             {"__annotations__": annotations},
         )
