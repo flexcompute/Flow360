@@ -951,7 +951,14 @@ def test_box_multi_constructor():
     assert np.isclose(box5.angle_of_rotation.value, 0)
 
 
-##:: ---------------- Entity specific validaitons ----------------
+def test_union_in_entity_list(my_box_zone2, my_cylinder1, my_surface1):
+    class TempUnionEntity(Flow360BaseModel):
+        entities: EntityList[Surface, Union[Box, Cylinder]] = pd.Field()
+
+    TempUnionEntity(entities=[my_box_zone2, my_cylinder1, my_surface1])
+
+
+##:: ---------------- Entity specific validations ----------------
 
 
 def test_box_validation():

@@ -25,18 +25,7 @@ def test_validate_service():
             "gap_treatment_strength": 0.2,
             "defaults": {"surface_edge_growth_rate": 1.5},
             "refinements": [],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
@@ -116,18 +105,7 @@ def test_validate_error():
             "gap_treatment_strength": 0.2,
             "defaults": {"surface_edge_growth_rate": 1.5},
             "refinements": [],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
@@ -181,18 +159,7 @@ def test_validate_multiple_errors():
                 "surface_max_edge_length": "1*s",
             },
             "refinements": [],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
@@ -255,18 +222,7 @@ def test_validate_errors():
                     "refinement_type": "BoundaryLayer",
                 },
             ],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
             "defaults": {"surface_edge_growth_rate": 1.2},
         },
         "unit_system": {"name": "SI"},
@@ -439,19 +395,7 @@ def test_front_end_JSON_with_multi_constructor():
                     "spacing": {"units": "cm", "value": 7.5},
                 }
             ],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "private_attribute_id": "hardcoded_id-4",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
@@ -542,18 +486,7 @@ def test_generate_process_json():
                 # "boundary_layer_first_layer_thickness": "1*m",
                 # "surface_max_edge_length": "1*m",
             },
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",

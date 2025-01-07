@@ -16,18 +16,12 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     Edge,
     GenericVolume,
-    GhostCircularPlane,
-    GhostSphere,
+    GhostSurfaceTypes,
     Surface,
 )
 
 DraftEntityTypes = Annotated[
     Union[Box, Cylinder, Point, PointArray, Slice],
-    pd.Field(discriminator="private_attribute_entity_type_name"),
-]
-
-GhostSurfaceTypes = Annotated[
-    Union[GhostSphere, GhostCircularPlane],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
@@ -107,12 +101,12 @@ class GeometryEntityInfo(EntityInfoModel):
         """
         Group items with given attribute_name.
         """
-        entity_list = self._get_list_of_entities(attribute_name, entity_type_name)
+        entity_list = self._get_list_of_entities_by_attribute_name(attribute_name, entity_type_name)
         for item in entity_list:
             registry.register(item)
         return registry
 
-    def _get_list_of_entities(
+    def _get_list_of_entities_by_attribute_name(
         self,
         attribute_name: Union[str, None] = None,
         entity_type_name: Union[Literal["face", "edge"], None] = None,
@@ -148,12 +142,22 @@ class GeometryEntityInfo(EntityInfoModel):
             f" in geometry metadata. Available: {entity_attribute_names}"
         )
 
+    def add_ghost_entities_to_registry(self, registry: EntityRegistry) -> EntityRegistry:
+        """Add ghost entities to registry."""
+        # pylint: disable=not-an-iterable
+        for item in self.ghost_entities:
+            registry.register(item)
+        return registry
+
     def get_boundaries(self, attribute_name: str = None) -> list:
         """
         Get the full list of boundaries.
         If attribute_name is supplied then ignore stored face_group_tag and use supplied one.
         """
-        return self._get_list_of_entities(attribute_name, "face")
+        return (
+            self._get_list_of_entities_by_attribute_name(attribute_name, "face")
+            + self.ghost_entities
+        )
 
 
 class VolumeMeshEntityInfo(EntityInfoModel):

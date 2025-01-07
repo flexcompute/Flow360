@@ -4,7 +4,8 @@ from flow360.examples import Airplane
 
 # Step 1: Create a new project from a predefined geometry file in the Airplane example
 # This initializes a project with the specified geometry and assigns it a name.
-project = fl.Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+# project = fl.Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+project = fl.Project.from_cloud("prj-049cbb3b-aae4-4f76-811d-f27a50906ac9")
 geo = project.geometry  # Access the geometry of the project
 
 # Step 2: Display available groupings in the geometry (helpful for identifying group names)
@@ -44,9 +45,7 @@ with fl.SI_unit_system:
                 name="Wall",
             ),
             fl.Freestream(
-                surfaces=[
-                    far_field_zone.farfield
-                ],  # Apply freestream boundary to the far-field zone
+                surfaces=[geo["farfield"]],  # Apply freestream boundary to the far-field zone
                 name="Freestream",
             ),
         ],

@@ -28,7 +28,7 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
     """Ideally volume_mesh_meta should be a pydantic model.
 
     TODO:  Note that the same surface_name may appear in different blocks. E.g.
-    `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support spliting boundary into
+    `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support splitting boundary into
     blocks but we will need to support this someday.
     """
     for zone_name, zone_meta in volume_mesh_meta["zones"].items():
@@ -400,7 +400,7 @@ class Cylinder(_VolumeEntityBase):
 @final
 class Surface(_SurfaceEntityBase):
     """
-    :class:`Surface` represents a boudary surface in three-dimensional space.
+    :class:`Surface` represents a boundary surface in three-dimensional space.
     """
 
     private_attribute_entity_type_name: Literal["Surface"] = pd.Field("Surface", frozen=True)
@@ -412,7 +412,7 @@ class Surface(_SurfaceEntityBase):
     )
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
-        description="The tag/attribute string used to gourp geometry faces to form this `Surface`.",
+        description="The tag/attribute string used to group geometry faces to form this `Surface`.",
     )
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
@@ -422,9 +422,9 @@ class Surface(_SurfaceEntityBase):
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
 
-class GhostSurface(_SurfaceEntityBase):
+class GhostSurface(_SurfaceEntityBase, metaclass=ABCMeta):
     """
-    Represents a boudary surface that may or may not be generated therefore may or may not exist.
+    Represents a boundary surface that may or may not be generated therefore may or may not exist.
     It depends on the submitted geometry/Surface mesh. E.g. the symmetry plane in `AutomatedFarfield`.
 
     For now we do not use metadata or any other information to validate (on the client side) whether the surface
@@ -436,6 +436,8 @@ class GhostSurface(_SurfaceEntityBase):
     - For boundary condition and post-processing:
         - Allow usage of `GhostSurface` but no validation. Solver validation will error out when finding mismatch
         between the boundary condition and the mesh meta.
+
+    Since we already have sub-categories of `GhostSurface`, The `GhostSurface` itself will be a virtual class.
 
     """
 
@@ -461,6 +463,12 @@ class GhostCircularPlane(GhostSurface):
     center: List = pd.Field(alias="center")
     max_radius: PositiveFloat = pd.Field(alias="maxRadius")
     normal_axis: List = pd.Field(alias="normalAxis")
+
+
+GhostSurfaceTypes = Annotated[
+    Union[GhostSphere, GhostCircularPlane],
+    pd.Field(discriminator="private_attribute_entity_type_name"),
+]
 
 
 class SurfacePair(Flow360BaseModel):

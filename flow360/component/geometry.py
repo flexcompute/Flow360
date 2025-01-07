@@ -283,12 +283,13 @@ class Geometry(AssetBase):
 
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""
-        self._show_avaliable_entity_groups(
+        self._show_available_ghost_entities()
+        self._show_available_entity_groups(
             "faces",
             ignored_attribute_tags=["__all__", "faceId"],
             show_ids_in_each_group=verbose_mode,
         )
-        self._show_avaliable_entity_groups(
+        self._show_available_entity_groups(
             "edges",
             ignored_attribute_tags=["__all__", "edgeId"],
             show_ids_in_each_group=verbose_mode,
@@ -315,7 +316,12 @@ class Geometry(AssetBase):
             asset_id=geometry_id, local_storage_path=local_storage_path
         )
 
-    def _show_avaliable_entity_groups(
+    def _show_available_ghost_entities(self) -> None:
+        log.info(" >> Available ghost surface entities:")
+        for entity in self._entity_info.ghost_entities:
+            log.info(f"    >> {entity.name}")
+
+    def _show_available_entity_groups(
         self,
         entity_type_name: Literal["faces", "edges"],
         ignored_attribute_tags: list = None,
@@ -352,6 +358,10 @@ class Geometry(AssetBase):
     ) -> None:
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
+            # Also retrieve the ghost entities
+            self.internal_registry = self._entity_info.add_ghost_entities_to_registry(
+                registry=self.internal_registry
+            )
 
         found_existing_grouping = (
             self.face_group_tag is not None

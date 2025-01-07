@@ -5,16 +5,12 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.models.surface_models import (
-    Freestream,
-    SlipWall,
-    Wall,
-)
+from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import AngularVelocity, Rotation
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.primitives import Cylinder, GhostSurface, Surface
+from flow360.component.simulation.primitives import Cylinder, GhostSphere, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -88,7 +84,9 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
                         Surface(name="blade5"),
                     ]
                 ),
-                Freestream(entities=[auto_farfield.farfield]),
+                Freestream(
+                    entities=[GhostSphere(name="farfield", center=(0, 0, 0), max_radius=10)]
+                ),
             ],
         )
     params._update_param_with_actual_volume_mesh_meta(get_volume_mesh_metadata)
@@ -114,12 +112,6 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
     assert (
         my_reg.find_single_entity_by_name("farfield").private_attribute_full_name
         == "stationaryBlock/farfield"
-    )
-    assert (
-        my_reg.find_single_entity_by_name(
-            "__farfield_zone_name_not_properly_set_yet"
-        ).private_attribute_full_name
-        == "stationaryBlock"
     )
 
     translated = get_solver_json(params, mesh_unit="m")

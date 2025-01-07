@@ -219,18 +219,7 @@ def test_simulation_to_volume_meshing_json():
                     "spacing": {"units": "mm", "value": 300.0},
                 },
             ],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
@@ -489,18 +478,7 @@ def test_simulation_to_case_json():
                 "surface_max_edge_length": {"value": 0.15, "units": "m"},
             },
             "refinements": [],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
@@ -670,18 +648,7 @@ def test_simulation_to_all_translation_2():
                 "surface_max_edge_length": {"value": 0.15, "units": "m"},
             },
             "refinements": [],
-            "volume_zones": [
-                {
-                    "method": "auto",
-                    "type": "AutomatedFarfield",
-                    "private_attribute_entity": {
-                        "private_attribute_registry_bucket_name": "VolumetricEntityType",
-                        "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
-                        "private_attribute_zone_boundary_names": {"items": []},
-                    },
-                }
-            ],
+            "volume_zones": [{"method": "auto", "type": "AutomatedFarfield"}],
         },
         "operating_condition": {
             "type_name": "AerospaceCondition",

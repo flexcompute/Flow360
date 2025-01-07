@@ -160,7 +160,7 @@ def get_default_params(
                 operating_condition=operating_condition,
                 models=[
                     Wall(name="Wall", surfaces=[Surface(name="*")]),
-                    Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
+                    Freestream(name="Freestream", surfaces=[Surface(name="farfield")]),
                 ],
                 outputs=[surface_output],
             )

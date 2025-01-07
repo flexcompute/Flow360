@@ -23,7 +23,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
-    GhostSurface,
+    GhostSphere,
     Surface,
     SurfacePair,
 )
@@ -289,7 +289,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSphere, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="A list of :class:`Surface` entities with "
         + "the `Freestream` boundary condition imposed.",
@@ -403,7 +403,7 @@ class SlipWall(BoundaryBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="A list of :class:`Surface` entities with "
         + "the `SlipWall` boundary condition imposed.",
@@ -428,7 +428,7 @@ class SymmetryPlane(BoundaryBase):
         None, description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityList[Surface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="A list of :class:`Surface` entities with "
         + "the `SymmetryPlane` boundary condition imposed.",

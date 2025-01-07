@@ -434,7 +434,6 @@ def test_incomplete_BC():
                         Wall(entities=wall_1),
                         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                         SlipWall(entities=[i_exist]),
-                        Freestream(entities=auto_farfield.farfield),
                     ],
                     private_attribute_asset_cache=asset_cache,
                 )
@@ -458,7 +457,6 @@ def test_incomplete_BC():
                         Wall(entities=[wall_1]),
                         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                         SlipWall(entities=[i_exist]),
-                        Freestream(entities=auto_farfield.farfield),
                         SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
                     ],
                     private_attribute_asset_cache=asset_cache,

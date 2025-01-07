@@ -12,17 +12,12 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
     AssetCache,
-    _set_boundary_full_name_with_zone_name,
     _update_entity_full_name,
     _update_zone_boundaries_with_metadata,
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
 from flow360.component.simulation.meshing_param.params import MeshingParams
-from flow360.component.simulation.meshing_param.volume_params import (
-    AutomatedFarfield,
-    RotationCylinder,
-)
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
@@ -361,43 +356,13 @@ class SimulationParams(_ParamModelBase):
         register_entity_list(self, registry)
         return registry
 
-    def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
-        """
-        Once the SimulationParams is set, extract and upate information
-        into all used entities by parsing the params.
-        """
-
-        ##::1. Update full names in the Surface entities with zone names
-        # pylint: disable=no-member
-        if self.meshing is not None and self.meshing.volume_zones is not None:
-            for volume in self.meshing.volume_zones:
-                if isinstance(volume, AutomatedFarfield):
-                    _set_boundary_full_name_with_zone_name(
-                        registry,
-                        "farfield",
-                        volume.private_attribute_entity.name,
-                    )
-                    _set_boundary_full_name_with_zone_name(
-                        registry,
-                        "symmetric*",
-                        volume.private_attribute_entity.name,
-                    )
-                if isinstance(volume, RotationCylinder):
-                    # pylint: disable=fixme
-                    # TODO: Implement this
-                    pass
-
-        return registry
-
     @property
     def used_entity_registry(self) -> EntityRegistry:
         """
         Get a entity registry that collects all the entities used in the simulation.
-        And also try to update the entities now that we have a global view of the simulation.
         """
         registry = EntityRegistry()
         registry = self._move_registry_to_asset_cache(registry)
-        registry = self._update_entity_private_attrs(registry)
         return registry
 
     def _update_param_with_actual_volume_mesh_meta(self, volume_mesh_meta_data: dict):
