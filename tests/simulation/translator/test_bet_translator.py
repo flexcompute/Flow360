@@ -23,14 +23,12 @@ def generate_BET_param(type):
             name="BET_cylinder", center=[0, 0, 0], axis=[0, 0, 1], outer_radius=150, height=15
         )
 
-    if type == "xrotor":
-        param = fl.BETDisk.from_xrotor(
-            file=fl.XROTORFile(
+    if type == "c81":
+        param = fl.BETDisk.from_c81(
+            file=fl.C81File(
                 file_name=(
                     os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)),
-                        "data",
-                        "xv15_like_twist0.xrotor",
+                        os.path.dirname(os.path.abspath(__file__)), "data/c81", "Xv15_geometry.csv"
                     )
                 )
             ),
@@ -38,11 +36,12 @@ def generate_BET_param(type):
             omega=0.0046 * fl.u.deg / fl.u.s,
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
-            entities=bet_cylinder_SI,
-            mesh_unit=fl.u.m,
+            entities=bet_cylinder_imperial,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
+            number_of_blades=3,
         )
+
     elif type == "dfdc":
         param = fl.BETDisk.from_dfdc(
             file=fl.DFDCFile(
@@ -61,24 +60,7 @@ def generate_BET_param(type):
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
         )
-    elif type == "c81":
-        param = fl.BETDisk.from_c81(
-            file=fl.C81File(
-                file_name=(
-                    os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)), "data/c81", "Xv15_geometry.csv"
-                    )
-                )
-            ),
-            rotation_direction_rule="leftHand",
-            omega=0.0046 * fl.u.deg / fl.u.s,
-            chord_ref=14 * fl.u.m,
-            n_loading_nodes=20,
-            entities=bet_cylinder_imperial,
-            angle_unit=fl.u.deg,
-            length_unit=fl.u.m,
-            number_of_blades=3,
-        )
+
     elif type == "xfoil":
         param = fl.BETDisk.from_xfoil(
             file=fl.XFOILFile(
@@ -101,362 +83,29 @@ def generate_BET_param(type):
             length_unit=fl.u.m,
             number_of_blades=3,
         )
+
+    elif type == "xrotor":
+        param = fl.BETDisk.from_xrotor(
+            file=fl.XROTORFile(
+                file_name=(
+                    os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        "data",
+                        "xv15_like_twist0.xrotor",
+                    )
+                )
+            ),
+            rotation_direction_rule="leftHand",
+            omega=0.0046 * fl.u.deg / fl.u.s,
+            chord_ref=14 * fl.u.m,
+            n_loading_nodes=20,
+            entities=bet_cylinder_SI,
+            mesh_unit=fl.u.m,
+            angle_unit=fl.u.deg,
+            length_unit=fl.u.m,
+        )
+
     return param
-
-
-class AdvancedTestSuite(unittest.TestCase):
-
-    def test_xrotor_params(self):
-
-        with open(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "xrotorTest.json")
-        ) as fh:
-            refbetFlow360 = json.load(fh)
-
-        # Create BETDisk from xrotor file
-        bet = generate_BET_param("xrotor")
-
-        # Compare omega
-        assertions.assertEqual(refbetFlow360["omega"], bet.omega)
-
-        # Compare chord ref
-        assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
-
-        # Compare n loading nodes
-        assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
-
-        # Compare number of blades
-        assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
-
-        # Compare rotation direction rule
-        assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
-
-        # Compare twists
-        for number, twist in enumerate(bet.twists):
-            assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
-            assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
-
-        # Compare chords
-        for number, chord in enumerate(bet.chords):
-            assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
-            assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
-
-        # Compare alphas
-        for number, alpha in enumerate(bet.alphas):
-            assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
-
-        # Compare mach numbers
-        for number, mach in enumerate(bet.mach_numbers):
-            assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
-
-        # Compare reynold numbers
-        for number, reynolds in enumerate(bet.reynolds_numbers):
-            assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
-
-        # Compare sectional polars
-        for number, polar in enumerate(bet.sectional_polars):
-
-            # Lift coeffs
-            for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
-                for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
-                    for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][
-                                number2
-                            ][number3],
-                            lift_coeff_matrix_3,
-                        )
-
-            # Drag coeffs
-            for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
-                for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
-                    for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][
-                                number2
-                            ][number3],
-                            drag_coeff_matrix_3,
-                        )
-
-        # Compare sectional radiuses
-        for number, radius in enumerate(bet.sectional_radiuses):
-            assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
-
-        # Compare cylinder inputs
-        assertions.assertEqual(
-            refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
-        )
-        assertions.assertEqual(
-            refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
-        )
-        assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
-        assertions.assertEqual(
-            refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
-        )
-
-    def test_dfdc_params(self):
-
-        with open(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "dfdcTest.json")
-        ) as fh:
-            refbetFlow360 = json.load(fh)
-
-        # Create BETDisk from xrotor file
-        bet = generate_BET_param("dfdc")
-
-        # Compare omega
-        assertions.assertEqual(refbetFlow360["omega"], bet.omega)
-
-        # Compare chord ref
-        assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
-
-        # Compare n loading nodes
-        assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
-
-        # Compare number of blades
-        assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
-
-        # Compare rotation direction rule
-        assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
-
-        # Compare twists
-        for number, twist in enumerate(bet.twists):
-            assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
-            assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
-
-        # Compare chords
-        for number, chord in enumerate(bet.chords):
-            assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
-            assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
-
-        # Compare alphas
-        for number, alpha in enumerate(bet.alphas):
-            assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
-
-        # Compare mach numbers
-        for number, mach in enumerate(bet.mach_numbers):
-            assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
-
-        # Compare reynold numbers
-        for number, reynolds in enumerate(bet.reynolds_numbers):
-            assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
-
-        # Compare sectional polars
-        for number, polar in enumerate(bet.sectional_polars):
-
-            # Lift coeffs
-            for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
-                for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
-                    for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][
-                                number2
-                            ][number3],
-                            lift_coeff_matrix_3,
-                        )
-
-            # Drag coeffs
-            for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
-                for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
-                    for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][
-                                number2
-                            ][number3],
-                            drag_coeff_matrix_3,
-                        )
-
-        # Compare sectional radiuses
-        for number, radius in enumerate(bet.sectional_radiuses):
-            assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
-
-        # Compare cylinder inputs
-        assertions.assertEqual(
-            refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
-        )
-        assertions.assertEqual(
-            refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
-        )
-        assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
-        assertions.assertEqual(
-            refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
-        )
-
-    def test_c81_params(self):
-
-        with open(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "c81Test.json")
-        ) as fh:
-            refbetFlow360 = json.load(fh)
-
-        # Create BETDisk from xrotor file
-        bet = generate_BET_param("c81")
-
-        # Compare omega
-        assertions.assertEqual(refbetFlow360["omega"], bet.omega)
-
-        # Compare chord ref
-        assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
-
-        # Compare n loading nodes
-        assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
-
-        # Compare number of blades
-        assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
-
-        # Compare rotation direction rule
-        assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
-
-        # Compare twists
-        for number, twist in enumerate(bet.twists):
-            assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
-            assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
-
-        # Compare chords
-        for number, chord in enumerate(bet.chords):
-            assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
-            assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
-
-        # Compare alphas
-        for number, alpha in enumerate(bet.alphas):
-            assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
-
-        # Compare mach numbers
-        for number, mach in enumerate(bet.mach_numbers):
-            assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
-
-        # Compare reynold numbers
-        for number, reynolds in enumerate(bet.reynolds_numbers):
-            assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
-
-        # Compare sectional polars
-        for number, polar in enumerate(bet.sectional_polars):
-
-            # Lift coeffs
-            for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
-                for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
-                    for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][
-                                number2
-                            ][number3],
-                            lift_coeff_matrix_3,
-                        )
-
-            # Drag coeffs
-            for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
-                for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
-                    for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][
-                                number2
-                            ][number3],
-                            drag_coeff_matrix_3,
-                        )
-
-        # Compare sectional radiuses
-        for number, radius in enumerate(bet.sectional_radiuses):
-            assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
-
-        # Compare cylinder inputs
-        assertions.assertEqual(
-            refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
-        )
-        assertions.assertEqual(
-            refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
-        )
-        assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
-        assertions.assertEqual(
-            refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
-        )
-
-    def test_xfoil_params(self):
-
-        with open(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "xfoilTest.json")
-        ) as fh:
-            refbetFlow360 = json.load(fh)
-
-        # Create BETDisk from xrotor file
-        bet = generate_BET_param("xfoil")
-
-        # Compare omega
-        assertions.assertEqual(refbetFlow360["omega"], bet.omega)
-
-        # Compare chord ref
-        assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
-
-        # Compare n loading nodes
-        assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
-
-        # Compare number of blades
-        assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
-
-        # Compare rotation direction rule
-        assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
-
-        # Compare twists
-        for number, twist in enumerate(bet.twists):
-            assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
-            assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
-
-        # Compare chords
-        for number, chord in enumerate(bet.chords):
-            assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
-            assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
-
-        # Compare alphas
-        for number, alpha in enumerate(bet.alphas):
-            assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
-
-        # Compare mach numbers
-        for number, mach in enumerate(bet.mach_numbers):
-            assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
-
-        # Compare reynold numbers
-        for number, reynolds in enumerate(bet.reynolds_numbers):
-            assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
-
-        # Compare sectional polars
-        for number, polar in enumerate(bet.sectional_polars):
-
-            # Lift coeffs
-            for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
-                for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
-                    for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][
-                                number2
-                            ][number3],
-                            lift_coeff_matrix_3,
-                        )
-
-            # Drag coeffs
-            for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
-                for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
-                    for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
-                        assertions.assertAlmostEqual(
-                            refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][
-                                number2
-                            ][number3],
-                            drag_coeff_matrix_3,
-                        )
-
-        # Compare sectional radiuses
-        for number, radius in enumerate(bet.sectional_radiuses):
-            assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
-
-        # Compare cylinder inputs
-        assertions.assertEqual(
-            refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
-        )
-        assertions.assertEqual(
-            refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
-        )
-        assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
-        assertions.assertEqual(
-            refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius
-        )
 
 
 def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=False):
@@ -493,3 +142,351 @@ def test_translated_xfoil_params():
 
 def test_translated_xrotor_params():
     translate_and_compare(type="xrotor", ref_json_file="ref_xrotor.json")
+
+
+def test_xrotor_params():
+
+    with open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "xrotorTest.json")
+    ) as fh:
+        refbetFlow360 = json.load(fh)
+
+    # Create BETDisk from xrotor file
+    bet = generate_BET_param("xrotor")
+
+    # Compare omega
+    assertions.assertEqual(refbetFlow360["omega"], bet.omega)
+
+    # Compare chord ref
+    assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
+
+    # Compare n loading nodes
+    assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
+
+    # Compare number of blades
+    assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
+
+    # Compare rotation direction rule
+    assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
+
+    # Compare twists
+    for number, twist in enumerate(bet.twists):
+        assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
+        assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
+
+    # Compare chords
+    for number, chord in enumerate(bet.chords):
+        assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
+        assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
+
+    # Compare alphas
+    for number, alpha in enumerate(bet.alphas):
+        assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
+
+    # Compare mach numbers
+    for number, mach in enumerate(bet.mach_numbers):
+        assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
+
+    # Compare reynold numbers
+    for number, reynolds in enumerate(bet.reynolds_numbers):
+        assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
+
+    # Compare sectional polars
+    for number, polar in enumerate(bet.sectional_polars):
+
+        # Lift coeffs
+        for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
+            for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
+                for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][number2][
+                            number3
+                        ],
+                        lift_coeff_matrix_3,
+                    )
+
+        # Drag coeffs
+        for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
+            for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
+                for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][number2][
+                            number3
+                        ],
+                        drag_coeff_matrix_3,
+                    )
+
+    # Compare sectional radiuses
+    for number, radius in enumerate(bet.sectional_radiuses):
+        assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
+
+    # Compare cylinder inputs
+    assertions.assertEqual(
+        refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
+    )
+    assertions.assertEqual(
+        refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
+    )
+    assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
+    assertions.assertEqual(refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius)
+
+
+def test_dfdc_params():
+
+    with open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "dfdcTest.json")
+    ) as fh:
+        refbetFlow360 = json.load(fh)
+
+    # Create BETDisk from xrotor file
+    bet = generate_BET_param("dfdc")
+
+    # Compare omega
+    assertions.assertEqual(refbetFlow360["omega"], bet.omega)
+
+    # Compare chord ref
+    assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
+
+    # Compare n loading nodes
+    assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
+
+    # Compare number of blades
+    assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
+
+    # Compare rotation direction rule
+    assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
+
+    # Compare twists
+    for number, twist in enumerate(bet.twists):
+        assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
+        assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
+
+    # Compare chords
+    for number, chord in enumerate(bet.chords):
+        assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
+        assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
+
+    # Compare alphas
+    for number, alpha in enumerate(bet.alphas):
+        assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
+
+    # Compare mach numbers
+    for number, mach in enumerate(bet.mach_numbers):
+        assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
+
+    # Compare reynold numbers
+    for number, reynolds in enumerate(bet.reynolds_numbers):
+        assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
+
+    # Compare sectional polars
+    for number, polar in enumerate(bet.sectional_polars):
+
+        # Lift coeffs
+        for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
+            for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
+                for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][number2][
+                            number3
+                        ],
+                        lift_coeff_matrix_3,
+                    )
+
+        # Drag coeffs
+        for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
+            for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
+                for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][number2][
+                            number3
+                        ],
+                        drag_coeff_matrix_3,
+                    )
+
+    # Compare sectional radiuses
+    for number, radius in enumerate(bet.sectional_radiuses):
+        assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
+
+    # Compare cylinder inputs
+    assertions.assertEqual(
+        refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
+    )
+    assertions.assertEqual(
+        refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
+    )
+    assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
+    assertions.assertEqual(refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius)
+
+
+def test_c81_params():
+
+    with open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "c81Test.json")
+    ) as fh:
+        refbetFlow360 = json.load(fh)
+
+    # Create BETDisk from xrotor file
+    bet = generate_BET_param("c81")
+
+    # Compare omega
+    assertions.assertEqual(refbetFlow360["omega"], bet.omega)
+
+    # Compare chord ref
+    assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
+
+    # Compare n loading nodes
+    assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
+
+    # Compare number of blades
+    assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
+
+    # Compare rotation direction rule
+    assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
+
+    # Compare twists
+    for number, twist in enumerate(bet.twists):
+        assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
+        assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
+
+    # Compare chords
+    for number, chord in enumerate(bet.chords):
+        assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
+        assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
+
+    # Compare alphas
+    for number, alpha in enumerate(bet.alphas):
+        assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
+
+    # Compare mach numbers
+    for number, mach in enumerate(bet.mach_numbers):
+        assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
+
+    # Compare reynold numbers
+    for number, reynolds in enumerate(bet.reynolds_numbers):
+        assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
+
+    # Compare sectional polars
+    for number, polar in enumerate(bet.sectional_polars):
+
+        # Lift coeffs
+        for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
+            for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
+                for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][number2][
+                            number3
+                        ],
+                        lift_coeff_matrix_3,
+                    )
+
+        # Drag coeffs
+        for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
+            for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
+                for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][number2][
+                            number3
+                        ],
+                        drag_coeff_matrix_3,
+                    )
+
+    # Compare sectional radiuses
+    for number, radius in enumerate(bet.sectional_radiuses):
+        assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
+
+    # Compare cylinder inputs
+    assertions.assertEqual(
+        refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
+    )
+    assertions.assertEqual(
+        refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
+    )
+    assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
+    assertions.assertEqual(refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius)
+
+
+def test_xfoil_params():
+
+    with open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", "xfoilTest.json")
+    ) as fh:
+        refbetFlow360 = json.load(fh)
+
+    # Create BETDisk from xrotor file
+    bet = generate_BET_param("xfoil")
+
+    # Compare omega
+    assertions.assertEqual(refbetFlow360["omega"], bet.omega)
+
+    # Compare chord ref
+    assertions.assertEqual(refbetFlow360["chordRef"], bet.chord_ref)
+
+    # Compare n loading nodes
+    assertions.assertEqual(refbetFlow360["nLoadingNodes"], bet.n_loading_nodes)
+
+    # Compare number of blades
+    assertions.assertEqual(refbetFlow360["numberOfBlades"], bet.number_of_blades)
+
+    # Compare rotation direction rule
+    assertions.assertEqual(refbetFlow360["rotationDirectionRule"], bet.rotation_direction_rule)
+
+    # Compare twists
+    for number, twist in enumerate(bet.twists):
+        assertions.assertEqual(refbetFlow360["twists"][number]["radius"], twist.radius)
+        assertions.assertEqual(refbetFlow360["twists"][number]["twist"], twist.twist)
+
+    # Compare chords
+    for number, chord in enumerate(bet.chords):
+        assertions.assertEqual(refbetFlow360["chords"][number]["radius"], chord.radius)
+        assertions.assertEqual(refbetFlow360["chords"][number]["chord"], chord.chord)
+
+    # Compare alphas
+    for number, alpha in enumerate(bet.alphas):
+        assertions.assertEqual(refbetFlow360["alphas"][number], alpha)
+
+    # Compare mach numbers
+    for number, mach in enumerate(bet.mach_numbers):
+        assertions.assertEqual(refbetFlow360["MachNumbers"][number], mach)
+
+    # Compare reynold numbers
+    for number, reynolds in enumerate(bet.reynolds_numbers):
+        assertions.assertEqual(refbetFlow360["ReynoldsNumbers"][number], reynolds)
+
+    # Compare sectional polars
+    for number, polar in enumerate(bet.sectional_polars):
+
+        # Lift coeffs
+        for number1, lift_coeff_matrix_1 in enumerate(polar.lift_coeffs):
+            for number2, lift_coeff_matrix_2 in enumerate(lift_coeff_matrix_1):
+                for number3, lift_coeff_matrix_3 in enumerate(lift_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["liftCoeffs"][number1][number2][
+                            number3
+                        ],
+                        lift_coeff_matrix_3,
+                    )
+
+        # Drag coeffs
+        for number1, drag_coeff_matrix_1 in enumerate(polar.drag_coeffs):
+            for number2, drag_coeff_matrix_2 in enumerate(drag_coeff_matrix_1):
+                for number3, drag_coeff_matrix_3 in enumerate(drag_coeff_matrix_2):
+                    assertions.assertAlmostEqual(
+                        refbetFlow360["sectionalPolars"][number]["dragCoeffs"][number1][number2][
+                            number3
+                        ],
+                        drag_coeff_matrix_3,
+                    )
+
+    # Compare sectional radiuses
+    for number, radius in enumerate(bet.sectional_radiuses):
+        assertions.assertEqual(refbetFlow360["sectionalRadiuses"][number], radius)
+
+    # Compare cylinder inputs
+    assertions.assertEqual(
+        refbetFlow360["axisOfRotation"], list(bet.entities.stored_entities[0].axis)
+    )
+    assertions.assertEqual(
+        refbetFlow360["centerOfRotation"], list(bet.entities.stored_entities[0].center)
+    )
+    assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
+    assertions.assertEqual(refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius)
