@@ -782,25 +782,11 @@ class AeroAcousticOutput(Flow360BaseModel):
     # pylint: disable=no-self-argument
     @pd.model_validator(mode="before")
     def ensure_consistent_observer_type_and_sort_by_group(cls, input_value):
-        """Ensure that items in observers have consistent type and sort them by group_name."""
+        """Ensure that items in observers have consistent type."""
         for number, value in enumerate(input_value["observers"]):
             if not isinstance(value, Observer):
                 new_value = Observer(position=value, group_name="0")
                 input_value["observers"][number] = new_value
-            index = number
-            while (
-                index > 0
-                and input_value["observers"][index - 1].group_name
-                > input_value["observers"][index].group_name
-            ):
-                (
-                    input_value["observers"][index].group_name,
-                    input_value["observers"][index - 1].group_name,
-                ) = (
-                    input_value["observers"][index - 1].group_name,
-                    input_value["observers"][index].group_name,
-                )
-                index -= 1
         return input_value
 
     @pd.model_validator(mode="after")
