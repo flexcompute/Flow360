@@ -170,7 +170,7 @@ class SetLICPayload(Flow360BaseModel):
         Boolean indicating the visibility state.
     """
 
-    object_id: Union[ShutterObjectTypes, str]
+    object_id: str
     visibility: bool
 
 
