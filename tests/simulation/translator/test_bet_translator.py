@@ -6,7 +6,6 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import flow360 as fl
-import flow360.component.simulation.models.bet.original.BETTranslatorInterface_original as interface
 from tests.utils import compare_values
 
 assertions = unittest.TestCase("__init__")
@@ -26,7 +25,7 @@ def generate_BET_param(type):
 
     if type == "xrotor":
         param = fl.BETDisk.from_xrotor(
-            file=fl.XRotorFile(
+            file=fl.XROTORFile(
                 file_name=(
                     os.path.join(
                         os.path.dirname(os.path.abspath(__file__)),
@@ -82,7 +81,7 @@ def generate_BET_param(type):
         )
     elif type == "xfoil":
         param = fl.BETDisk.from_xfoil(
-            file=fl.XFoilFile(
+            file=fl.XFOILFile(
                 file_name=(
                     os.path.join(
                         os.path.dirname(os.path.abspath(__file__)),

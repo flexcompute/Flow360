@@ -83,8 +83,8 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
-    XFoilFile,
-    XRotorFile,
+    XFOILFile,
+    XROTORFile,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -236,10 +236,10 @@ __all__ = [
     "VolumeMesh",
     "UserDefinedFarfield",
     "Geometry",
-    "XRotorFile",
+    "XROTORFile",
     "DFDCFile",
     "C81File",
-    "XFoilFile",
+    "XFOILFile",
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
 ]

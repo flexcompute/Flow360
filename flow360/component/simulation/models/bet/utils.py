@@ -1,71 +1,89 @@
+"""
+Utility functions for bet_translator_interface
+"""
+
 import operator
-from math import *
+from math import exp, log
 
-
-class array(list):
+# pylint: disable=missing-class-docstring
+class Array(list):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    # pylint: disable=missing-function-docstring
     def operator(self, op, value):
         result = self.copy()
         for i, x in enumerate(result):
             result[i] = op(x, value)
-        return array(result)
+        return Array(result)
 
-    def arrayOperator(self, op, other):
+    # pylint: disable=missing-function-docstring
+    def array_operator(self, op, other):
         result = self.copy()
         for i, (x, value) in enumerate(zip(result, other)):
             result[i] = op(x, value)
-        return array(result)
+        return Array(result)
 
-    def arrayOp(func):
+    # pylint: disable=missing-function-docstring, no-self-argument
+    def array_op(func):
         def wrapper(self, value):
-            if isinstance(value, array):
-                return func(self, value, self.arrayOperator)
+            if isinstance(value, Array):
+                # pylint: disable=not-callable
+                return func(self, value, self.array_operator)
+            # pylint: disable=not-callable
             return func(self, value, self.operator)
 
         return wrapper
 
-    @arrayOp
+    @array_op
+    # pylint: disable=unexpected-special-method-signature
     def __add__(self, value, optype):
         return optype(operator.add, value)
 
-    @arrayOp
+    @array_op
+    # pylint: disable=unexpected-special-method-signature
     def __sub__(self, value, optype):
         return optype(operator.sub, value)
 
-    @arrayOp
+    @array_op
+    # pylint: disable=unexpected-special-method-signature
     def __mul__(self, value, optype):
         return optype(operator.mul, value)
 
-    @arrayOp
+    @array_op
+    # pylint: disable=unexpected-special-method-signature
     def __truediv__(self, value, optype):
         return optype(operator.truediv, value)
 
-    @arrayOp
+    @array_op
     def __pow__(self, value, optype):
         return optype(operator.pow, value)
 
 
-def opList(a, op, *args):
+# pylint: disable=missing-function-docstring
+def op_list(a, op, *args):
     for i, x in enumerate(a):
         a[i] = op(x, *args)
     return a
 
 
+# pylint: disable=missing-function-docstring
 def clip(a, a_min, a_max):
-    a = opList(a, min, a_max)
-    a = opList(a, max, a_min)
+    a = op_list(a, min, a_max)
+    a = op_list(a, max, a_min)
     return a
 
 
-def expList(a):
-    return opList(a, exp)
+# pylint: disable=missing-function-docstring
+def exp_list(a):
+    return op_list(a, exp)
 
 
-def logList(a):
-    return opList(a, log)
+# pylint: disable=missing-function-docstring
+def log_list(a):
+    return op_list(a, log)
 
 
-def absList(a):
-    return opList(a, abs)
+# pylint: disable=missing-function-docstring
+def abs_list(a):
+    return op_list(a, abs)
