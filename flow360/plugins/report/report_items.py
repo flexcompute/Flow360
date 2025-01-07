@@ -1218,7 +1218,7 @@ class Chart3D(Chart):
                 script += [
                     ActionPayload(
                         action="set-lic",
-                        payload=SetLICPayload(object_id="slices", visibility=True),
+                        payload=SetLICPayload(object_id=self.include, visibility=True),
                     )
                 ]
 
