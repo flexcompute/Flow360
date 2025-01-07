@@ -1214,12 +1214,12 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if self.mode == 'lic':
+            if self.mode == 'lic' and self.include is not None:
                 script += [
                     ActionPayload(
                         action="set-lic",
-                        payload=SetLICPayload(object_id=self.include, visibility=True),
-                    )
+                        payload=SetLICPayload(object_id=slice, visibility=True),
+                    ) for slice in self.include
                 ]
 
         return script
