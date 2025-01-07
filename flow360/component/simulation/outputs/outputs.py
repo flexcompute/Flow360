@@ -810,13 +810,13 @@ class AeroAcousticOutput(Flow360BaseModel):
         All observer location should have the same length unit.
         This is because UI has single toggle for all coordinates.
         """
-        unit_set = set()
+        unit_set = {}
         for observer in input_value:
-            unit_set.add(observer.position.units)
-            if len(unit_set) > 1:
+            unit_set[observer.position.units] = None
+            if len(unit_set.keys()) > 1:
                 raise ValueError(
                     "All observer locations should have the same unit."
-                    f" But now it has both `{unit_set.pop()}` and `{unit_set.pop()}`."
+                    f" But now it has both `{list(unit_set.keys())[0]}` and `{list(unit_set.keys())[1]}`."
                 )
         return input_value
 
