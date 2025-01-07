@@ -15,7 +15,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
-from flow360.component.simulation.models.bet.BETTranslatorInterface import (
+from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_c81_bet_json,
     generate_dfdc_bet_json,
     generate_xfoil_bet_json,
@@ -751,7 +751,7 @@ class BETDisk(MultiConstructorBaseModel):
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
         length_unit: LengthType.NonNegative
             Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
-        
+
         Returns
         -------
         BETDisk
@@ -834,7 +834,7 @@ class BETDisk(MultiConstructorBaseModel):
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
         length_unit: LengthType.NonNegative
             Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
-        
+
         Returns
         -------
         BETDisk
@@ -917,7 +917,7 @@ class BETDisk(MultiConstructorBaseModel):
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
         length_unit: LengthType.NonNegative
             Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
-        
+
         Returns
         -------
         BETDisk
@@ -1002,7 +1002,7 @@ class BETDisk(MultiConstructorBaseModel):
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
         length_unit: LengthType.NonNegative
             Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
-        
+
         Returns
         -------
         BETDisk

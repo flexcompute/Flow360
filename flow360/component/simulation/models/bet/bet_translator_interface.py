@@ -3,21 +3,21 @@
 import os
 
 # pylint: disable=redefined-builtin, wildcard-import
-from math import (pi, cos, sin, sqrt, inf)
+from math import cos, inf, pi, sin, sqrt
 from os import path
 
 import numpy as np
 from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
-
-from .utils import(
+from flow360.component.simulation.models.bet.utils import (
     Array,
+    abs_list,
     clip,
     exp_list,
     log_list,
-    abs_list
 )
+
 
 # pylint: disable=too-many-locals
 def read_in_xfoil_polar(polar_file):
@@ -84,6 +84,7 @@ def read_in_xfoil_polar(polar_file):
     xfoil_fid.close()
 
     return alphas, cl_mach_nums[0], cls, cds
+
 
 # pylint: disable=too-many-locals
 def blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values):
@@ -363,6 +364,7 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
 
     return bet_disk
 
+
 # pylint: disable=too-many-lines
 def read_in_c81_polars(bet_disk, c81_polar_files):
     """
@@ -418,6 +420,7 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
         bet_disk["sectional_polars"].append(secpol)
 
     return bet_disk
+
 
 # pylint: disable=too-many-arguments
 def generate_xfoil_bet_json(
@@ -641,6 +644,7 @@ def check_num_values(values_list, line_num, numelts):
             % (line_num, len(values_list), numelts)
         )
 
+
 # pylint: disable=too-many-statements
 def read_dfdc_file(dfdc_file_name):
     """
@@ -827,6 +831,7 @@ def read_dfdc_file(dfdc_file_name):
     dfdc_input_dict["omegaDim"] = dfdc_input_dict["RPM"] * pi / 30
     dfdc_input_dict["inputType"] = "dfdc"
     return dfdc_input_dict
+
 
 # pylint: disable=too-many-statements
 def read_xrotor_file(xrotor_file_name):
@@ -1293,6 +1298,7 @@ def xrotor_blend_to_flat_plate(c_lift, c_drag, alphas, alpha_min_idx, alpha_max_
         )
     return c_lift, c_drag
 
+
 # pylint: disable=invalid-name
 def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     """
@@ -1386,9 +1392,12 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
 
     alpha_min_idx, alpha_max_idx = find_cl_min_max_alphas(c_lift, cl_min, cl_max)
 
-    c_lift, c_drag = xrotor_blend_to_flat_plate(c_lift, c_drag, alphas, alpha_min_idx, alpha_max_idx)
+    c_lift, c_drag = xrotor_blend_to_flat_plate(
+        c_lift, c_drag, alphas, alpha_min_idx, alpha_max_idx
+    )
 
     return list(c_lift), list(c_drag)
+
 
 # pylint: disable=invalid-name
 def get_polar(xrotor_dict, alphas, machs, rR_station):

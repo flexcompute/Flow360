@@ -5,6 +5,7 @@ Utility functions for bet_translator_interface
 import operator
 from math import exp, log
 
+
 # pylint: disable=missing-class-docstring
 class Array(list):
     def __init__(self, *args, **kwargs):
