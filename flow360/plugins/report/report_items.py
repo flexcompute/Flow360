@@ -967,6 +967,7 @@ class Chart3D(Chart):
     is_log_scale: bool = False
     show: Union[ShutterObjectTypes, Literal["isosurface"]]
     iso_field: Optional[Union[IsoSurfaceFieldNames, str]] = None
+    mode: Optional[Literal['contour', 'lic']] = 'contour'
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
     type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
@@ -1167,7 +1168,7 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if field == "CfVec":
+            if self.mode == 'lic':
                 script += [
                     ActionPayload(
                         action="set-lic",
@@ -1213,7 +1214,7 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if field == "CfVec":
+            if self.mode == 'lic':
                 script += [
                     ActionPayload(
                         action="set-lic",
