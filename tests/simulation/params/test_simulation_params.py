@@ -1,6 +1,6 @@
+import re
 import unittest
 
-import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
@@ -37,6 +37,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
+from flow360.component.simulation.outputs.outputs import AeroAcousticOutput
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
@@ -163,7 +164,7 @@ def test_simulation_params_serialization(get_the_param):
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
     converted = get_the_param.preprocess(mesh_unit=10 * u.m)
-    # converted.to_json("converted.json")
+
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
     # LengthType
@@ -258,7 +259,7 @@ def test_standard_atmosphere():
         assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
 
 
-def test_subsequent_param_with_different_unit_system(get_the_param):
+def test_subsequent_param_with_different_unit_system():
     with SI_unit_system:
         param_SI = SimulationParams(
             meshing=MeshingParams(
@@ -318,3 +319,27 @@ def test_mach_muref_op_cond():
             mu_ref=0,
             temperature=288.15 * u.K,
         )
+
+
+def test_unit_system_conversion(get_the_param):
+    param = get_the_param.convert_to_unit_system(unit_system="Imperial")
+    converted_json_dict = param.model_dump(mode="json")
+    imperial_units = {"ft", "lb", "s", "R", "rad"}
+
+    def is_all_imperial(unit_str):
+        tokens = re.findall(r"[A-Za-z]+", unit_str)
+        return all(token in imperial_units for token in tokens)
+
+    def validate_proper_unit(obj):
+        if isinstance(obj, dict):
+            if "value" in obj and "units" in obj:
+                assert is_all_imperial(obj["units"])
+
+            for _, val in obj.items():
+                validate_proper_unit(val)
+
+        elif isinstance(obj, list):
+            for item in obj:
+                validate_proper_unit(item)
+
+    validate_proper_unit(converted_json_dict)

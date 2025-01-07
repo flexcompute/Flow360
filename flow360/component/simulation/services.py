@@ -208,21 +208,21 @@ def get_default_params(
     )
 
 
-def _intersect_validation_levels(requested_levels, avaliable_levels):
-    if requested_levels is not None:
+def _intersect_validation_levels(requested_levels, available_levels):
+    if requested_levels is not None and available_levels is not None:
         if requested_levels == ALL:
             validation_levels_to_use = [
-                item for item in ["SurfaceMesh", "VolumeMesh", "Case"] if item in avaliable_levels
+                item for item in ["SurfaceMesh", "VolumeMesh", "Case"] if item in available_levels
             ]
         elif isinstance(requested_levels, str):
-            if requested_levels in avaliable_levels:
+            if requested_levels in available_levels:
                 validation_levels_to_use = [requested_levels]
             else:
                 validation_levels_to_use = None
         else:
             assert isinstance(requested_levels, list)
             validation_levels_to_use = [
-                item for item in requested_levels if item in avaliable_levels
+                item for item in requested_levels if item in available_levels
             ]
         return validation_levels_to_use
     return None
@@ -235,7 +235,7 @@ def validate_model(
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
-) -> Tuple[Optional[dict], Optional[list], Optional[list]]:
+) -> Tuple[Optional[SimulationParams], Optional[list], Optional[list]]:
     """
     Validate a params dict against the pydantic model.
 
@@ -250,7 +250,7 @@ def validate_model(
 
     Returns
     -------
-    validated_param : dict or None
+    validated_param : SimulationParams or None
         The validated parameters if successful, otherwise None.
     validation_errors : list or None
         A list of validation errors if any occurred.
@@ -268,10 +268,10 @@ def validate_model(
 
     params_as_dict = clean_params_dict(params_as_dict, root_item_type)
 
-    # The final validaiton levels will be the intersection of the requested levels and the levels available
+    # The final validation levels will be the intersection of the requested levels and the levels available
     # We always assume we want to run case so that we can expose as many errors as possible
-    avaliable_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
-    validation_levels_to_use = _intersect_validation_levels(validation_level, avaliable_levels)
+    available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
+    validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
         with unit_system:
@@ -579,3 +579,13 @@ def generate_process_json(
     case_res = _process_case(params, mesh_unit, up_to)
 
     return surface_mesh_res, volume_mesh_res, case_res
+
+
+def change_unit_system(
+    *, simulation_params: SimulationParams, target_unit_system: Literal["SI", "Imperial", "CGS"]
+):
+    """
+    Changes the unit system of the simulation parameters and convert the values accordingly.
+    """
+    converted_params = simulation_params.convert_to_unit_system(unit_system=target_unit_system)
+    return converted_params.model_dump_json(exclude_none=True)
