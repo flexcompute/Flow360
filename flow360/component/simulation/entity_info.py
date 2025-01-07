@@ -6,7 +6,11 @@ from typing import Annotated, List, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    Slice,
+)
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
@@ -18,7 +22,7 @@ from flow360.component.simulation.primitives import (
 )
 
 DraftEntityTypes = Annotated[
-    Union[Box, Cylinder, Point, Slice],
+    Union[Box, Cylinder, Point, PointArray, Slice],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
