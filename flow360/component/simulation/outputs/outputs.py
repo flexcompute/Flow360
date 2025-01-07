@@ -720,8 +720,9 @@ class Observer(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    position: LengthType.Point
-    group_name: str
+    position: LengthType.Point = pd.Field()
+    group_name: str = pd.Field()
+    private_attribute_expand: Optional[bool] = pd.Field(None)
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -767,7 +768,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
-    observers: List[Union[Observer, LengthType.Point]] = pd.Field(
+    observers: List[Observer] = pd.Field(
         description="List of observer locations at which time history of acoustic pressure signal "
         + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
         + "but cannot be on or inside the solid surfaces of the simulation domain."
@@ -779,15 +780,55 @@ class AeroAcousticOutput(Flow360BaseModel):
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
 
-    # pylint: disable=no-self-argument
-    @pd.model_validator(mode="before")
-    def ensure_consistent_observer_type_and_sort_by_group(cls, input_value):
-        """Ensure that items in observers have consistent type."""
-        for number, value in enumerate(input_value["observers"]):
-            if not isinstance(value, Observer):
-                new_value = Observer(position=value, group_name="0")
-                input_value["observers"][number] = new_value
+    @pd.field_validator("observers", mode="before")
+    @classmethod
+    def observer_legacy_converter(cls, input_value):
+        """Convert legacy format of the "observer" field to the new `Observer` format."""
+        converted_observers = []
+        # pylint: disable=fixme
+        # TODO: This should really be done in the updater module.
+        if not isinstance(input_value, list):
+            raise ValueError(
+                f"The `observer` field must be a list. It is {type(input_value)} instead."
+            )
+
+        try:
+            for item in input_value:
+                legacy_field = LengthType.validate(item)
+                # Using "0" for group should be fine since it is not possible to use mixture of
+                # legacy and new format in the same list.
+                converted_observers.append(Observer(position=legacy_field, group_name="0"))
+            return converted_observers
+        except pd.ValidationError:
+            # Indicate this is likely already the latest one
+            return input_value
+
+    @pd.field_validator("observers", mode="after")
+    @classmethod
+    def validate_observer_has_same_unit(cls, input_value):
+        """
+        All observer location should have the same length unit.
+        This is because UI has single toggle for all coordinates.
+        """
+        unit_set = set()
+        for observer in input_value:
+            unit_set.add(observer.position.units)
+            if len(unit_set) > 1:
+                raise ValueError(
+                    "All observer locations should have the same unit."
+                    f" But now it has both `{unit_set.pop()}` and `{unit_set.pop()}`."
+                )
         return input_value
+
+    # # pylint: disable=no-self-argument
+    # @pd.model_validator(mode="before")
+    # def ensure_consistent_observer_type_and_sort_by_group(cls, input_value):
+    #     """Ensure that items in observers have consistent type."""
+    #     for number, value in enumerate(input_value["observers"]):
+    #         if not isinstance(value, Observer):
+    #             new_value = Observer(position=value, group_name="0")
+    #             input_value["observers"][number] = new_value
+    #     return input_value
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):
