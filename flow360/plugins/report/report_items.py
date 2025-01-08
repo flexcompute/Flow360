@@ -1269,13 +1269,12 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if self.mode == "lic":
-                script += [
-                    ActionPayload(
-                        action="set-lic",
-                        payload=SetLICPayload(object_id="boundaries", visibility=True),
-                    )
-                ]
+            script += [
+                ActionPayload(
+                    action="set-lic",
+                    payload=SetLICPayload(object_id="boundaries", visibility=self.mode=="lic"),
+                )
+            ]
 
         return script
 
@@ -1315,11 +1314,11 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if self.mode == "lic" and self.include is not None:
+            if self.include is not None:
                 script += [
                     ActionPayload(
                         action="set-lic",
-                        payload=SetLICPayload(object_id=slice, visibility=True),
+                        payload=SetLICPayload(object_id=slice, visibility=self.mode=="lic"),
                     )
                     for slice in self.include  # pylint: disable=not-an-iterable
                 ]
