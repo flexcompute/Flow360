@@ -142,13 +142,18 @@ class Draft(Flow360Resource):
         response = self.get(method="simulation/file", params={"type": "simulation"})
         return json.loads(response["simulationJson"])
 
-    def run_up_to_target_asset(self, target_asset: type) -> str:
+    def run_up_to_target_asset(self, target_asset: type, use_beta_mesher: bool) -> str:
         """run the draft up to the target asset"""
 
         try:
             # pylint: disable=protected-access
+            if use_beta_mesher is True:
+                log.info("Selecting beta/inhouse mesher for possible meshing tasks.")
             run_response = self.post(
-                json={"upTo": target_asset._cloud_resource_type_name, "useInHouse": False},
+                json={
+                    "upTo": target_asset._cloud_resource_type_name,
+                    "useInHouse": use_beta_mesher,
+                },
                 method="run",
             )
         except Flow360WebError as err:
