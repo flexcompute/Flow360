@@ -559,12 +559,14 @@ class Project(pd.BaseModel):
     # pylint: disable=too-many-arguments, too-many-locals
     def _run(
         self,
+        *,
         params: SimulationParams,
         target: AssetOrResource,
-        draft_name: str = None,
-        fork_from: Case = None,
-        run_async: bool = True,
-        solver_version: str = None,
+        draft_name: str,
+        fork_from: Case,
+        run_async: bool,
+        solver_version: str,
+        use_beta_mesher: bool,
     ):
         """
         Runs a simulation for the project.
@@ -629,7 +631,7 @@ class Project(pd.BaseModel):
 
         draft.update_simulation_params(params)
 
-        destination_id = draft.run_up_to_target_asset(target)
+        destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
 
         self._project_webapi.patch(
             # pylint: disable=protected-access
@@ -660,6 +662,7 @@ class Project(pd.BaseModel):
         name: str = "SurfaceMesh",
         run_async: bool = True,
         solver_version: str = None,
+        use_beta_mesher: bool = False,
     ):
         """
         Runs the surface mesher for the project.
@@ -693,6 +696,7 @@ class Project(pd.BaseModel):
                 run_async=run_async,
                 fork_from=None,
                 solver_version=solver_version,
+                use_beta_mesher=use_beta_mesher,
             )
         )
 
@@ -703,6 +707,7 @@ class Project(pd.BaseModel):
         name: str = "VolumeMesh",
         run_async: bool = True,
         solver_version: str = None,
+        use_beta_mesher: bool = False,
     ):
         """
         Runs the volume mesher for the project.
@@ -736,6 +741,7 @@ class Project(pd.BaseModel):
                 run_async=run_async,
                 fork_from=None,
                 solver_version=solver_version,
+                use_beta_mesher=use_beta_mesher,
             )
         )
 
@@ -747,6 +753,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         fork_from: Case = None,
         solver_version: str = None,
+        use_beta_mesher: bool = False,
     ):
         """
         Runs a case for the project.
@@ -773,5 +780,6 @@ class Project(pd.BaseModel):
                 run_async=run_async,
                 fork_from=fork_from,
                 solver_version=solver_version,
+                use_beta_mesher=use_beta_mesher,
             )
         )
