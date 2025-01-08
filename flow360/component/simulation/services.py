@@ -2,7 +2,7 @@
 
 # pylint: disable=duplicate-code
 import json
-from typing import Any, Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
@@ -208,15 +208,35 @@ def get_default_params(
     )
 
 
+def _intersect_validation_levels(requested_levels, available_levels):
+    if requested_levels is not None and available_levels is not None:
+        if requested_levels == ALL:
+            validation_levels_to_use = [
+                item for item in ["SurfaceMesh", "VolumeMesh", "Case"] if item in available_levels
+            ]
+        elif isinstance(requested_levels, str):
+            if requested_levels in available_levels:
+                validation_levels_to_use = [requested_levels]
+            else:
+                validation_levels_to_use = None
+        else:
+            assert isinstance(requested_levels, list)
+            validation_levels_to_use = [
+                item for item in requested_levels if item in available_levels
+            ]
+        return validation_levels_to_use
+    return None
+
+
 def validate_model(
     *,
     params_as_dict,
-    root_item_type: Literal["Geometry", "VolumeMesh"],
-    validation_level: Literal[
-        "SurfaceMesh", "VolumeMesh", "Case", "All"
+    root_item_type: Union[Literal["Geometry", "VolumeMesh"], None],
+    validation_level: Union[
+        Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
     treat_as_file: bool = False,
-) -> Tuple[Optional[dict], Optional[list], Optional[list]]:
+) -> Tuple[Optional[SimulationParams], Optional[list], Optional[list]]:
     """
     Validate a params dict against the pydantic model.
 
@@ -224,14 +244,14 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
-    root_item_type : Literal["Geometry", "VolumeMesh"]
-        The root item type for validation.
-    validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], optional
+    root_item_type : Union[Literal["Geometry", "VolumeMesh"], None],
+        The root item type for validation. If None then no context-aware validation is performed.
+    validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
         The validation level, default is ALL. Also a list can be provided, eg: ["SurfaceMesh", "VolumeMesh"]
 
     Returns
     -------
-    validated_param : dict or None
+    validated_param : SimulationParams or None
         The validated parameters if successful, otherwise None.
     validation_errors : list or None
         A list of validation errors if any occurred.
@@ -249,14 +269,21 @@ def validate_model(
 
     params_as_dict = clean_params_dict(params_as_dict, root_item_type)
 
+    # The final validation levels will be the intersection of the requested levels and the levels available
+    # We always assume we want to run case so that we can expose as many errors as possible
+    available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
+    validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
-        with ValidationLevelContext(validation_level):
-            if treat_as_file is True:
+        if treat_as_file is True:
+            with ValidationLevelContext(validation_levels_to_use):
                 validated_param = SimulationParams(file_content=params_as_dict)
-            else:
-                with unit_system:
+        else:
+            with unit_system:
+                with ValidationLevelContext(validation_levels_to_use):
                     validated_param = SimulationParams(**params_as_dict)
+        with unit_system:
+                validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
@@ -384,9 +411,11 @@ def _populate_error_context(error: dict):
     """
     ctx = error.get("ctx")
     if isinstance(ctx, dict):
-        for field_name, field in ctx.items():
+        for field_name, context in ctx.items():
             try:
-                error["ctx"][field_name] = str(field)
+                error["ctx"][field_name] = (
+                    [str(item) for item in context] if isinstance(context, list) else str(context)
+                )
             except Exception:  # pylint: disable=broad-exception-caught
                 error["ctx"][field_name] = "<couldn't stringify>"
     else:
@@ -468,13 +497,14 @@ def _get_mesh_unit(params_as_dict: dict) -> str:
     return mesh_unit
 
 
-def _determine_validation_level(up_to: str) -> list:
-    validation_level = [SURFACE_MESH]
-    if up_to == "VolumeMesh":
-        validation_level.append(VOLUME_MESH)
-    elif up_to == "Case":
-        validation_level = ALL
-    return validation_level
+def _determine_validation_level(
+    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
+    root_item_type: Union[Literal["Geometry", "VolumeMesh"], None],
+) -> list:
+    if root_item_type is None:
+        return None
+    all_lvls = ["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
+    return all_lvls[all_lvls.index(root_item_type) + 1 : all_lvls.index(up_to) + 1]
 
 
 def _process_surface_mesh(
@@ -536,7 +566,7 @@ def generate_process_json(
 
     params_as_dict = json.loads(simulation_json)
     mesh_unit = _get_mesh_unit(params_as_dict)
-    validation_level = _determine_validation_level(up_to)
+    validation_level = _determine_validation_level(up_to, root_item_type)
 
     # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
     params, errors, _ = validate_model(
@@ -556,3 +586,13 @@ def generate_process_json(
     case_res = _process_case(params, mesh_unit, up_to)
 
     return surface_mesh_res, volume_mesh_res, case_res
+
+
+def change_unit_system(
+    *, simulation_params: SimulationParams, target_unit_system: Literal["SI", "Imperial", "CGS"]
+):
+    """
+    Changes the unit system of the simulation parameters and convert the values accordingly.
+    """
+    converted_params = simulation_params.convert_to_unit_system(unit_system=target_unit_system)
+    return converted_params.model_dump_json(exclude_none=True)

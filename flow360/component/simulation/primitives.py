@@ -75,6 +75,8 @@ class ReferenceGeometry(Flow360BaseModel):
     ...     moment_length=1 * u.m,
     ...     area=1.5 * u.m**2
     ... )  # Equivalent to above
+
+    ====
     """
 
     # pylint: disable=no-member
@@ -238,19 +240,48 @@ class BoxCache(Flow360BaseModel):
 class Box(MultiConstructorBaseModel, _VolumeEntityBase):
     """
     :class:`Box` class represents a box in three-dimensional space.
+
+    Example
+    -------
+    >>> fl.Box(
+    ...     name="box",
+    ...     axis_of_rotation = (1, 0, 0),
+    ...     angle_of_rotation = 45 * fl.u.deg,
+    ...     center = (1, 1, 1) * fl.u.m,
+    ...     size=(0.2, 0.3, 2) * fl.u.m,
+    ... )
+
+    Define a box using principal axes:
+
+    >>> fl.Box.from_principal_axes(
+    ...     name="box",
+    ...     axes=[(0, 1, 0), (0, 0, 1)],
+    ...     center=(0, 0, 0) * fl.u.m,
+    ...     size=(0.2, 0.3, 2) * fl.u.m,
+    ... )
+
+    ====
     """
 
     type_name: Literal["Box"] = pd.Field("Box", frozen=True)
-    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The coordinates of the center of the box.")
     size: LengthType.PositiveVector = pd.Field(
         description="The dimensions of the box (length, width, height)."
     )
-    axis_of_rotation: Axis = pd.Field(default=(0, 0, 1), description="The rotation axis.")
-    angle_of_rotation: AngleType = pd.Field(default=0 * u.degree, description="The rotation angle.")
-    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    axis_of_rotation: Axis = pd.Field(
+        default=(0, 0, 1),
+        description="The rotation axis. Cannot change once specified.",
+        frozen=True,
+    )
+    angle_of_rotation: AngleType = pd.Field(
+        default=0 * u.degree,
+        description="The rotation angle. Cannot change once specified.",
+        frozen=True,
+    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+    private_attribute_input_cache: BoxCache = pd.Field(BoxCache(), frozen=True)
+    private_attribute_entity_type_name: Literal["Box"] = pd.Field("Box", frozen=True)
 
     # pylint: disable=no-self-argument
     @MultiConstructorBaseModel.model_constructor
@@ -321,11 +352,29 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         """Return the axes that the box is aligned with."""
         return self.private_attribute_input_cache.axes
 
+    @pd.field_validator("center", "size", mode="after")
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(info.data["private_attribute_input_cache"], info.field_name, value)
+        return value
+
 
 @final
 class Cylinder(_VolumeEntityBase):
     """
     :class:`Cylinder` class represents a cylinder in three-dimensional space.
+
+    Example
+    -------
+    >>> fl.Cylinder(
+    ...     name="bet_disk_volume",
+    ...     center=(0, 0, 0) * fl.u.inch,
+    ...     axis=(0, 0, 1),
+    ...     outer_radius=150 * fl.u.inch,
+    ...     height=15 * fl.u.inch,
+    ... )
+
+    ====
     """
 
     private_attribute_entity_type_name: Literal["Cylinder"] = pd.Field("Cylinder", frozen=True)

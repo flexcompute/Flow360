@@ -33,7 +33,7 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_entities import PointArray
+from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -73,7 +73,11 @@ from flow360.exceptions import Flow360TranslationError
 
 def dump_dict(input_params):
     """Dumping param/model to dictionary."""
-    return input_params.model_dump(by_alias=True, exclude_none=True)
+
+    result = input_params.model_dump(by_alias=True, exclude_none=True)
+    if result.pop("privateAttributeDict", None) is not None:
+        result.update(input_params.private_attribute_dict)
+    return result
 
 
 def init_non_average_output(
@@ -179,6 +183,7 @@ def rotation_translator(model: Rotation):
     """Rotation translator"""
     volume_zone = {
         "modelType": "FluidDynamics",
+        "isRotatingReferenceFrame": model.rotating_reference_frame_model,
         "referenceFrame": {},
     }
     if model.parent_volume is not None:
@@ -266,32 +271,46 @@ def inject_isosurface_info(entity: Isosurface):
 
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "probe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "surfaceProbe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_list_info(entity: EntityList):
@@ -455,9 +474,15 @@ def translate_acoustic_output(output_params: list):
     aeroacoustic_output = {}
     for output in output_params:
         if isinstance(output, AeroAcousticOutput):
-            aeroacoustic_output["observers"] = [item.value.tolist() for item in output.observers]
+            aeroacoustic_output["observers"] = [
+                item.position.value.tolist() for item in output.observers
+            ]
             aeroacoustic_output["writePerSurfaceOutput"] = output.write_per_surface_output
             aeroacoustic_output["patchType"] = output.patch_type
+            if output.permeable_surfaces is not None:
+                aeroacoustic_output["permeableSurfaces"] = [
+                    item.full_name for item in output.permeable_surfaces.stored_entities
+                ]
             return aeroacoustic_output
     return None
 
@@ -877,7 +902,7 @@ def get_solver_json(
         translated["timeStepping"] = {
             "CFL": dump_dict(ts.CFL),
             "physicalSteps": 1,
-            "orderOfAccuracy": ts.order_of_accuracy,
+            "orderOfAccuracy": 2,  # Solver always want to read this even if it is steady... Setting dummy value here.
             "maxPseudoSteps": ts.max_steps,
             "timeStepSize": "inf",
         }

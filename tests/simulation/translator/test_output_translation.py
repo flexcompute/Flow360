@@ -8,6 +8,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -421,17 +422,21 @@ def probe_output_config():
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "numberOfPoints": [1, 1],
                     "outputFields": ["primitiveVars", "Cp"],
-                    "type": "probe",
+                    "type": "lineProbe",
                 },
                 "prb 12": {
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "numberOfPoints": [1],
                     "outputFields": ["primitiveVars", "Cp"],
-                    "type": "probe",
+                    "type": "lineProbe",
                 },
                 "prb average": {
                     "animationFrequency": 1,
@@ -440,9 +445,11 @@ def probe_output_config():
                     "animationFrequencyTimeAverageOffset": 0,
                     "startAverageIntegrationStep": -1,
                     "computeTimeAverages": True,
-                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "numberOfPoints": [1],
                     "outputFields": ["primitiveVars", "Cp", "T"],
-                    "type": "probe",
+                    "type": "lineProbe",
                 },
             },
             "outputFields": [],
@@ -486,6 +493,22 @@ def probe_output_with_point_array():
                 ],
                 output_fields=["primitiveVars", "Cp"],
             ),
+            ProbeOutput(
+                name="prb mix",
+                entities=[
+                    Point(
+                        name="124",
+                        location=[1, 1.02, 0.03] * u.cm,
+                    ),
+                    PointArray(
+                        name="Line 1",
+                        start=[0.1, 0.2, 0.3] * u.m,
+                        end=[1.1, 1.2, 1.3] * u.m,
+                        number_of_points=5,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp"],
+            ),
         ],
         {
             "monitors": {
@@ -500,12 +523,24 @@ def probe_output_with_point_array():
                     "type": "lineProbe",
                 },
                 "prb point": {
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "numberOfPoints": [1, 1],
                     "outputFields": ["primitiveVars", "Cp"],
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "type": "probe",
+                    "type": "lineProbe",
+                },
+                "prb mix": {
+                    "start": [[1e-2, 1.02e-2, 0.0003], [0.1, 0.2, 0.3]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [1.1, 1.2, 1.3]],
+                    "numberOfPoints": [1, 5],
+                    "outputFields": ["primitiveVars", "Cp"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                    "type": "lineProbe",
                 },
             },
             "outputFields": [],
@@ -617,8 +652,10 @@ def test_surface_probe_output():
                     "computeTimeAverages": False,
                     "outputFields": ["Cp", "Cf"],
                     "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
-                    "type": "surfaceProbe",
+                    "start": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
+                    "numberOfPoints": [1, 1],
+                    "type": "lineProbe",
                 },
                 "SP-2": {
                     "animationFrequency": 1,
@@ -629,12 +666,18 @@ def test_surface_probe_output():
                     "computeTimeAverages": True,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
-                    "monitorLocations": [
+                    "start": [
                         [1e-2, 1.02e-2, 0.0003],
                         [2.0, 1.01, 0.03],
                         [3.0, 1.02, 0.03],
                     ],
-                    "type": "surfaceProbe",
+                    "end": [
+                        [1e-2, 1.02e-2, 0.0003],
+                        [2.0, 1.01, 0.03],
+                        [3.0, 1.02, 0.03],
+                    ],
+                    "numberOfPoints": [1, 1, 1],
+                    "type": "lineProbe",
                 },
                 "SP-3": {
                     "animationFrequency": 1,
@@ -725,9 +768,11 @@ def test_monitor_output(
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": False,
-                "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "numberOfPoints": [1, 1],
                 "outputFields": ["primitiveVars", "Cp"],
-                "type": "probe",
+                "type": "lineProbe",
             },
             "prb 110": {
                 "animationFrequency": 1,
@@ -741,9 +786,11 @@ def test_monitor_output(
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": False,
-                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                "numberOfPoints": [1],
                 "outputFields": ["primitiveVars", "Cp"],
-                "type": "probe",
+                "type": "lineProbe",
             },
             "prb 122": {
                 "animationFrequency": 1,
@@ -760,9 +807,11 @@ def test_monitor_output(
                 "animationFrequencyTimeAverageOffset": 0,
                 "startAverageIntegrationStep": -1,
                 "computeTimeAverages": True,
-                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                "numberOfPoints": [1],
                 "outputFields": ["primitiveVars", "Cp", "T"],
-                "type": "probe",
+                "type": "lineProbe",
             },
         },
         "outputFields": [],
@@ -775,20 +824,51 @@ def aeroacoustic_output_config():
     return (
         [
             AeroAcousticOutput(
-                observers=[[0.2, 0.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                observers=[
+                    Observer(position=[0.2, 0.02, 0.03] * u.m, group_name="0"),
+                    Observer(position=[0.0001, 0.02, 0.03] * u.m, group_name="0"),
+                ],
                 write_per_surface_output=True,
             ),
         ],
         {
-            "observers": [[0.002, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
+            "observers": [[0.2, 0.02, 0.03], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
         },
     )
 
 
-def test_acoustic_output(aeroacoustic_output_config):
-    ##:: monitorOutput with global probe settings
+@pytest.fixture()
+def aeroacoustic_output_permeable_config():
+    return (
+        [
+            AeroAcousticOutput(
+                observers=[
+                    Observer(position=[1.2, 0.02, 0.03] * u.cm, group_name="0"),
+                    Observer(position=[1, 0.02, 0.03] * u.cm, group_name="0"),
+                ],
+                patch_type="permeable",
+                permeable_surfaces=[
+                    Surface(
+                        name="interface-A-B", private_attribute_full_name="zoneA/interface-A-B"
+                    ),
+                    Surface(
+                        name="interface-A-C", private_attribute_full_name="zoneA/interface-A-C"
+                    ),
+                ],
+            ),
+        ],
+        {
+            "observers": [[0.012, 0.0002, 0.0003], [0.01, 0.0002, 0.0003]],
+            "patchType": "permeable",
+            "permeableSurfaces": ["zoneA/interface-A-B", "zoneA/interface-A-C"],
+            "writePerSurfaceOutput": False,
+        },
+    )
+
+
+def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeable_config):
     with SI_unit_system:
         param = SimulationParams(outputs=aeroacoustic_output_config[0])
     translated = {"boundaries": {}}
@@ -796,6 +876,16 @@ def test_acoustic_output(aeroacoustic_output_config):
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
+        translated["aeroacousticOutput"].items()
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(outputs=aeroacoustic_output_permeable_config[0])
+    translated = {"boundaries": {}}
+    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+
+    assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
         translated["aeroacousticOutput"].items()
     )
 

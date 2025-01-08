@@ -1,9 +1,12 @@
+import re
 import unittest
 
-import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from examples.migration_guide.extra_operating_condition import (
+    operating_condition_from_mach_muref,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -160,7 +163,7 @@ def test_simulation_params_serialization(get_the_param):
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
     converted = get_the_param.preprocess(mesh_unit=10 * u.m)
-    # converted.to_json("converted.json")
+
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
     # LengthType
@@ -255,7 +258,7 @@ def test_standard_atmosphere():
         assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
 
 
-def test_subsequent_param_with_different_unit_system(get_the_param):
+def test_subsequent_param_with_different_unit_system():
     with SI_unit_system:
         param_SI = SimulationParams(
             meshing=MeshingParams(
@@ -274,7 +277,7 @@ def test_subsequent_param_with_different_unit_system(get_the_param):
     assert param_CGS.meshing.defaults.boundary_layer_first_layer_thickness == 0.3 * u.cm
 
 
-def test_mach_reynodls_op_cond():
+def test_mach_reynolds_op_cond():
 
     condition = operating_condition_from_mach_reynolds(
         mach=0.2,
@@ -292,4 +295,50 @@ def test_mach_reynodls_op_cond():
             mach=0.2,
             reynolds=0,
             temperature=288.15 * u.K,
+            project_length_unit=u.m,
         )
+
+
+def test_mach_muref_op_cond():
+
+    condition = operating_condition_from_mach_muref(
+        mach=0.2,
+        mu_ref=4e-8,
+        temperature=288.15 * u.K,
+        alpha=2.0 * u.deg,
+        beta=0.0 * u.deg,
+        project_length_unit=u.m,
+    )
+    assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
+
+    with pytest.raises(ValueError, match="Input should be greater than 0"):
+        condition = operating_condition_from_mach_muref(
+            mach=0.2,
+            mu_ref=0,
+            temperature=288.15 * u.K,
+        )
+
+
+def test_unit_system_conversion(get_the_param):
+    param = get_the_param.convert_to_unit_system(unit_system="Imperial")
+    converted_json_dict = param.model_dump(mode="json")
+    imperial_units = {"ft", "lb", "s", "R", "rad"}
+
+    def is_all_imperial(unit_str):
+        tokens = re.findall(r"[A-Za-z]+", unit_str)
+        return all(token in imperial_units for token in tokens)
+
+    def validate_proper_unit(obj):
+        if isinstance(obj, dict):
+            if "value" in obj and "units" in obj:
+                assert is_all_imperial(obj["units"])
+
+            for _, val in obj.items():
+                validate_proper_unit(val)
+
+        elif isinstance(obj, list):
+            for item in obj:
+                validate_proper_unit(item)
+
+    validate_proper_unit(converted_json_dict)

@@ -48,7 +48,47 @@
 "operating_condition": {
   "type_name": "AerospaceCondition",
   "private_attribute_constructor": "default",
-  "private_attribute_input_cache": {},
+  "private_attribute_input_cache": {
+    "alpha": {
+      "value": 0.0,
+      "units": "degree"
+    },
+    "beta": {
+      "value": 0.0,
+      "units": "degree"
+    },
+    "thermal_state": {
+      "type_name": "ThermalState",
+      "private_attribute_constructor": "default",
+      "private_attribute_input_cache": {},
+      "temperature": {
+        "value": 288.15,
+        "units": "K"
+      },
+      "density": {
+        "value": 1.225,
+        "units": "kg/m**3"
+      },
+      "material": {
+        "type": "air",
+        "name": "air",
+        "dynamic_viscosity": {
+          "reference_viscosity": {
+            "value": 1.716e-05,
+            "units": "Pa*s"
+          },
+          "reference_temperature": {
+            "value": 273.15,
+            "units": "K"
+          },
+          "effective_temperature": {
+            "value": 110.4,
+            "units": "K"
+          }
+        }
+      }
+    }
+  },
   "alpha": {
     "value": 0.0,
     "units": "degree"
@@ -209,7 +249,6 @@
   }
 ],
 "time_stepping": {
-  "order_of_accuracy": 2,
   "type_name": "Steady",
   "max_steps": 2000,
   "CFL": {

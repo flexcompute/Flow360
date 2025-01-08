@@ -175,3 +175,31 @@ def test_entity_with_multi_constructor():
 
     data_parsed = parse_model_dict(incomplete_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
+
+
+def test_entity_modification(get_aerospace_condition_using_from):
+
+    my_box = Box.from_principal_axes(
+        name="box",
+        axes=[(0, 1, 0), (0, 0, 1)],
+        center=(0, 0, 0) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+    )
+
+    my_box.center = (1, 2, 3) * u.m
+    assert all(my_box.private_attribute_input_cache.center == (1, 2, 3) * u.m)
+
+    my_box = Box(
+        name="box2",
+        axis_of_rotation=(1, 0, 0),
+        angle_of_rotation=45 * u.deg,
+        center=(1, 1, 1) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+    )
+
+    my_box.size = (1, 2, 32) * u.m
+    assert all(my_box.private_attribute_input_cache.size == (1, 2, 32) * u.m)
+
+    my_op = get_aerospace_condition_using_from
+    my_op.alpha = -12 * u.rad
+    assert my_op.private_attribute_input_cache.alpha == -12 * u.rad

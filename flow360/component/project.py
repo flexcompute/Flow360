@@ -20,7 +20,11 @@ from flow360.component.interfaces import (
 )
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.outputs.output_entities import Point, Slice
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    Slice,
+)
 from flow360.component.simulation.primitives import Box, Cylinder, Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
@@ -70,7 +74,7 @@ def _set_up_param_entity_info(entity_info, params: SimulationParams):
 
     entity_registry = params.used_entity_registry
     # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, Slice]:
+    for draft_type in [Box, Cylinder, Point, PointArray, Slice]:
         draft_entities = entity_registry.find_by_type(draft_type)
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:
@@ -555,12 +559,14 @@ class Project(pd.BaseModel):
     # pylint: disable=too-many-arguments, too-many-locals
     def _run(
         self,
+        *,
         params: SimulationParams,
         target: AssetOrResource,
-        draft_name: str = None,
-        fork_from: Case = None,
-        run_async: bool = True,
-        solver_version: str = None,
+        draft_name: str,
+        fork_from: Case,
+        run_async: bool,
+        solver_version: str,
+        use_beta_mesher: bool,
     ):
         """
         Runs a simulation for the project.
@@ -625,7 +631,7 @@ class Project(pd.BaseModel):
 
         draft.update_simulation_params(params)
 
-        destination_id = draft.run_up_to_target_asset(target)
+        destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
 
         self._project_webapi.patch(
             # pylint: disable=protected-access
@@ -656,6 +662,7 @@ class Project(pd.BaseModel):
         name: str = "SurfaceMesh",
         run_async: bool = True,
         solver_version: str = None,
+        use_beta_mesher: bool = False,
     ):
         """
         Runs the surface mesher for the project.
@@ -689,6 +696,7 @@ class Project(pd.BaseModel):
                 run_async=run_async,
                 fork_from=None,
                 solver_version=solver_version,
+                use_beta_mesher=use_beta_mesher,
             )
         )
 
@@ -699,6 +707,7 @@ class Project(pd.BaseModel):
         name: str = "VolumeMesh",
         run_async: bool = True,
         solver_version: str = None,
+        use_beta_mesher: bool = False,
     ):
         """
         Runs the volume mesher for the project.
@@ -732,6 +741,7 @@ class Project(pd.BaseModel):
                 run_async=run_async,
                 fork_from=None,
                 solver_version=solver_version,
+                use_beta_mesher=use_beta_mesher,
             )
         )
 
@@ -743,6 +753,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         fork_from: Case = None,
         solver_version: str = None,
+        use_beta_mesher: bool = False,
     ):
         """
         Runs a case for the project.
@@ -769,5 +780,6 @@ class Project(pd.BaseModel):
                 run_async=run_async,
                 fork_from=fork_from,
                 solver_version=solver_version,
+                use_beta_mesher=use_beta_mesher,
             )
         )

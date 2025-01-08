@@ -43,7 +43,23 @@ class _PointEntityBase(EntityBase, metaclass=ABCMeta):
 
 
 class Slice(_SliceEntityBase):
-    """:class:`Slice` class for defining a slice for :class:`~flow360.SliceOutput`."""
+    """
+
+    :class:`Slice` class for defining a slice for :class:`~flow360.SliceOutput`.
+
+    Example
+    -------
+
+    Define a :class:`Slice` along (0,1,0) direction with the origin of (0,2,0) fl.u.m.
+
+    >>> fl.Slice(
+    ...     name="Slice",
+    ...     normal=(0, 1, 0),
+    ...     origin=(0, 2, 0)*fl.u.m
+    ... )
+
+    ====
+    """
 
     private_attribute_entity_type_name: Literal["Slice"] = pd.Field("Slice", frozen=True)
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
@@ -53,7 +69,23 @@ class Slice(_SliceEntityBase):
 
 
 class Isosurface(_OutputItemBase):
-    """:class:`Isosurface` class for defining an isosurface for :class:`~flow360.IsosurfaceOutput`."""
+    """
+
+    :class:`Isosurface` class for defining an isosurface for :class:`~flow360.IsosurfaceOutput`.
+
+    Example
+    -------
+
+    Define a :class:`Isosurface` of temperature equal to 1.5 non-dimensional temperature.
+
+    >>> fl.Isosurface(
+    ...     name="Isosurface_T_1.5",
+    ...     iso_value=1.5,
+    ...     field="T",
+    ... )
+
+    ====
+    """
 
     field: Union[IsoSurfaceFieldNames, str] = pd.Field(
         description="Isosurface field variable. One of :code:`p`, :code:`rho`, "
@@ -69,6 +101,16 @@ class Point(_PointEntityBase):
     """
     :class:`Point` class for defining a single point for
     :class:`~flow360.ProbeOutput`/:class:`~flow360.SurfaceProbeOutput`.
+
+    Example
+    -------
+
+    >>> fl.Point(
+    ...      name="Point",
+    ...      location=(1.0, 2.0, 3.0) * fl.u.m,
+    ...  )
+
+    ====
     """
 
     private_attribute_entity_type_name: Literal["Point"] = pd.Field("Point", frozen=True)
@@ -79,8 +121,23 @@ class Point(_PointEntityBase):
 
 class PointArray(_PointEntityBase):
     """
-    :class:`PointArray` class for defining a line for
+    :class:`PointArray` class for defining multiple equally spaced monitor points along a line for
     :class:`~flow360.ProbeOutput`/:class:`~flow360.SurfaceProbeOutput`.
+
+    Example
+    -------
+    Define :class:`PointArray` with 6 equally spaced points along a line starting from
+    (0,0,0) * fl.u.m to (1,2,3) * fl.u.m.
+    Both the starting and end points are included in the :class:`PointArray`.
+
+    >>> fl.PointArray(
+    ...     name="Line_1",
+    ...     start=(0.0, 0.0, 0.0) * fl.u.m,
+    ...     end=(1.0, 2.0, 3.0) * fl.u.m,
+    ...     number_of_points=6,
+    ... )
+
+    ====
     """
 
     private_attribute_entity_type_name: Literal["PointArray"] = pd.Field("PointArray", frozen=True)

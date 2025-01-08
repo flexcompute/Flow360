@@ -1,10 +1,6 @@
 # Import necessary modules from the Flow360 library
 import flow360 as fl
-from flow360 import SI_unit_system, u
 from flow360.examples import Airplane
-
-# Activate the pre-production environment because of beta testing status
-fl.Env.preprod.active()
 
 # Step 1: Create a new project from a predefined geometry file in the Airplane example
 # This initializes a project with the specified geometry and assigns it a name.
@@ -18,7 +14,7 @@ geo.show_available_groupings(verbose_mode=True)
 geo.group_faces_by_tag("groupName")
 
 # Step 4: Define simulation parameters within a specific unit system
-with SI_unit_system:
+with fl.SI_unit_system:
     # Define an automated far-field boundary condition for the simulation
     far_field_zone = fl.AutomatedFarfield()
 
@@ -37,7 +33,7 @@ with SI_unit_system:
         # Operating conditions: setting speed and angle of attack for the simulation
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=100,  # Velocity of 100 m/s
-            alpha=5 * u.deg,  # Angle of attack of 5 degrees
+            alpha=5 * fl.u.deg,  # Angle of attack of 5 degrees
         ),
         # Time-stepping configuration: specifying steady-state with a maximum step limit
         time_stepping=fl.Steady(max_steps=1000),
@@ -64,4 +60,4 @@ with SI_unit_system:
     )
 
 # Step 5: Run the simulation case with the specified parameters
-project.run_case(params=params, name="Case of Simple Airplane from Python")
+project.run_case(params=params, name="Case of Simple Airplane from Python", use_beta_mesher=False)

@@ -1,6 +1,5 @@
 """Time stepping setting for simulation"""
 
-from abc import ABCMeta
 from typing import Literal, Optional, Union
 
 import pydantic as pd
@@ -19,6 +18,13 @@ def _apply_default_to_none(original, default):
 class RampCFL(Flow360BaseModel):
     """
     :class:`RampCFL` class for the Ramp CFL setting of time stepping.
+
+    Example
+    -------
+
+    >>> fl.RampCFL(initial=1, final=200, ramp_steps=200)
+
+    ====
     """
 
     type: Literal["ramp"] = pd.Field("ramp", frozen=True)
@@ -51,6 +57,17 @@ class RampCFL(Flow360BaseModel):
 class AdaptiveCFL(Flow360BaseModel):
     """
     :class:`AdaptiveCFL` class for Adaptive CFL setting of time stepping.
+
+    Example
+    -------
+
+    >>> fl.AdaptiveCFL(
+    ...     min=1,
+    ...     max=100000,
+    ...     max_relative_change=50
+    ... )
+
+    ====
     """
 
     type: Literal["adaptive"] = pd.Field("adaptive", frozen=True)
@@ -87,17 +104,20 @@ class AdaptiveCFL(Flow360BaseModel):
         return cls(max=1e4, convergence_limiting_factor=0.25, max_relative_change=1)
 
 
-class BaseTimeStepping(Flow360BaseModel, metaclass=ABCMeta):
-    """
-    Base class for time stepping component
-    """
-
-    order_of_accuracy: Literal[1, 2] = pd.Field(2)
-
-
-class Steady(BaseTimeStepping):
+class Steady(Flow360BaseModel):
     """
     :class:`Steady` class for specifying steady simulation.
+
+    Example
+    -------
+
+    >>> fl.Steady(
+    ...     CFL=fl.RampCFL(initial=1, final=200, ramp_steps=200),
+    ...     max_steps=6000,
+    ... )
+
+    ====
+
     """
 
     type_name: Literal["Steady"] = pd.Field("Steady", frozen=True)
@@ -123,14 +143,28 @@ class Steady(BaseTimeStepping):
         return values
 
 
-class Unsteady(BaseTimeStepping):
+class Unsteady(Flow360BaseModel):
     """
     :class:`Unsteady` class for specifying unsteady simulation.
+
+    Example
+    -------
+
+    >>> fl.Unsteady(
+    ...     CFL=fl.AdaptiveCFL(
+    ...         convergence_limiting_factor=0.5
+    ...     ),
+    ...     step_size=0.01 * fl.u.s,
+    ...     steps=120,
+    ...     max_pseudo_steps=35,
+    ... )
+
+    ====
     """
 
     type_name: Literal["Unsteady"] = pd.Field("Unsteady", frozen=True)
     max_pseudo_steps: int = pd.Field(
-        100, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
+        20, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
     )
     steps: pd.PositiveInt = pd.Field(description="Number of physical steps.")
     # pylint: disable=no-member
@@ -140,6 +174,7 @@ class Unsteady(BaseTimeStepping):
         default=AdaptiveCFL.default_unsteady(),
         description="CFL settings within each physical step.",
     )
+    order_of_accuracy: Literal[1, 2] = pd.Field(2, description="Temporal order of accuracy.")
 
     @pd.model_validator(mode="before")
     @classmethod

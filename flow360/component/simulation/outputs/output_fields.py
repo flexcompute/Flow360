@@ -6,6 +6,7 @@ Output field definitions
 from typing import List, Literal, get_args, get_origin
 
 # Coefficient of pressure
+# Coefficient of total pressure
 # Gradient of primitive solution
 # k and omega
 # Mach number
@@ -79,7 +80,6 @@ SurfaceFieldNames = Literal[
 
 # BET Metrics
 # BET Metrics per Disk
-# Coefficient of total pressure
 # Linear residual of Navier-Stokes solver
 # Linear residual of turbulence solver
 # Linear residual of transition solver
@@ -90,7 +90,6 @@ VolumeFieldNames = Literal[
     CommonFieldNames,
     "betMetrics",
     "betMetricsPerDisk",
-    "Cpt",
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",

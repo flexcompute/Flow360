@@ -19,8 +19,8 @@ UPDATE_MAP = [
     ("23.3.*", "24.2.*", _no_update),
     ("24.2.*", "24.2.*", _no_update),
     ("24.2.*", "24.3.*", _no_update),  # we should not allow to submit Flow360Params to version 24.3
-    ("24.3.*", "24.11.*", _no_update),
-    ("24.11.*", "24.11.*", _no_update),
+    ("24.3.*", "24.11.*", _no_update),  # Note: Remove when we do not want V1 submit to 2.0 anymore
+    ("24.11.*", "24.11.*", _no_update),  # Note: Remove when we do not want V1 submit to 2.0 anymore
 ]
 
 
@@ -51,7 +51,7 @@ def _find_update_path(version_from, version_to, update_map=UPDATE_MAP):
 
         if not found_next_version:
             raise Flow360NotImplementedError(
-                f"No updater flow between {version_from} and {version_to} exists as of now"
+                f"No updater flow from {version_from} to {version_to} exists as of now"
             )
 
         if len(path) > len(update_map):

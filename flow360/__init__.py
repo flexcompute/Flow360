@@ -3,6 +3,7 @@ This module is flow360 for simulation based models
 """
 
 from flow360.accounts_utils import Accounts
+from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
@@ -96,13 +97,17 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
+    TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
+    TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
@@ -191,6 +196,7 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",
@@ -229,4 +235,7 @@ __all__ = [
     "VolumeMesh",
     "UserDefinedFarfield",
     "Geometry",
+    "TimeAverageProbeOutput",
+    "TimeAverageSurfaceProbeOutput",
+    "SurfaceSliceOutput",
 ]
