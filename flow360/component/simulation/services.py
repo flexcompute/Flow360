@@ -282,8 +282,6 @@ def validate_model(
             with unit_system:
                 with ValidationLevelContext(validation_levels_to_use):
                     validated_param = SimulationParams(**params_as_dict)
-        with unit_system:
-                validated_param = SimulationParams(**params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught

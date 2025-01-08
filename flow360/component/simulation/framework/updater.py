@@ -32,12 +32,16 @@ def _24_11_0_to_24_11_1_update(params_as_dict):
                 "value": {"value": 0, "units": "W / m**2"},
             }
 
+    # Check and remove the 'time_stepping' -> order_of_accuracy node
+    if "time_stepping" in params_as_dict:
+        params_as_dict["time_stepping"].pop("order_of_accuracy", None)
+
     return params_as_dict
 
 
 UPDATE_MAP = [
     ("24.11.0", "24.11.1", _24_11_0_to_24_11_1_update),
-    ("24.11.*", "24.11.*", _no_update),
+    ("24.11.1", "24.11.*", _no_update),
 ]
 
 

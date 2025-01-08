@@ -1272,7 +1272,7 @@ class Chart3D(Chart):
             script += [
                 ActionPayload(
                     action="set-lic",
-                    payload=SetLICPayload(object_id="boundaries", visibility=self.mode=="lic"),
+                    payload=SetLICPayload(object_id="boundaries", visibility=self.mode == "lic"),
                 )
             ]
 
@@ -1318,7 +1318,7 @@ class Chart3D(Chart):
                 script += [
                     ActionPayload(
                         action="set-lic",
-                        payload=SetLICPayload(object_id=slice, visibility=self.mode=="lic"),
+                        payload=SetLICPayload(object_id=slice, visibility=self.mode == "lic"),
                     )
                     for slice in self.include  # pylint: disable=not-an-iterable
                 ]
