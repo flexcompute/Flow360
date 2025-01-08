@@ -164,7 +164,7 @@ class Unsteady(Flow360BaseModel):
 
     type_name: Literal["Unsteady"] = pd.Field("Unsteady", frozen=True)
     max_pseudo_steps: int = pd.Field(
-        100, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
+        20, gt=0, le=100000, description="Maximum pseudo steps within one physical step."
     )
     steps: pd.PositiveInt = pd.Field(description="Number of physical steps.")
     # pylint: disable=no-member
