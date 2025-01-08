@@ -2,6 +2,7 @@
 Module containg detailed report items
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import os
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pydantic as pd
 import unyt
+from pandas import DataFrame
 from pydantic import (
     BaseModel,
     Field,
@@ -32,13 +34,13 @@ from flow360 import Case, SimulationParams
 from flow360.component.results import case_results
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
-    SurfaceFieldNames,
     IsoSurfaceFieldNames,
+    SurfaceFieldNames,
 )
 from flow360.component.simulation.unit_system import (
     DimensionedTypes,
-    unyt_quantity,
     is_flow360_unit,
+    unyt_quantity,
 )
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
@@ -49,11 +51,11 @@ from flow360.plugins.report.utils import (
     Tabulary,
     _requirements_mapping,
     data_from_path,
+    downsample_image_to_relative_width,
     generate_colorbar_from_image,
     get_requirements_from_data_path,
     get_root_path,
     split_path,
-    downsample_image_to_relative_width
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
@@ -70,6 +72,7 @@ from flow360.plugins.report.uvf_shutter import (
     Shutter,
     ShutterObjectTypes,
     TakeScreenshotPayload,
+    make_shutter_context,
 )
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -87,11 +90,12 @@ class Settings(Flow360BaseModel):
     Attributes
     ----------
     dpi : PositiveInt, optional
-        The resolution in dots per inch (DPI) for generated images in report (A4 assumed). 
+        The resolution in dots per inch (DPI) for generated images in report (A4 assumed).
         If not specified, defaults to 300.
     """
 
     dpi: Optional[pd.PositiveInt] = 300
+
 
 class ReportItem(Flow360BaseModel):
     """
@@ -102,11 +106,7 @@ class ReportItem(Flow360BaseModel):
     _requirements: List[str] = None
 
     # pylint: disable=unused-argument,too-many-arguments
-    def get_doc_item(
-        self,
-        context: ReportContext,
-        settings: Settings = None
-    ) -> None:
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
         returns doc item for report item
         """
@@ -143,11 +143,7 @@ class Summary(ReportItem):
     _requirements: List[str] = []
 
     # pylint: disable=too-many-arguments
-    def get_doc_item(
-        self,
-        context: ReportContext,
-        settings: Settings = None
-    ) -> None:
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
         returns doc item for report item
         """
@@ -169,11 +165,7 @@ class Inputs(ReportItem):
     _requirements: List[str] = [_requirements_mapping["params"]]
 
     # pylint: disable=too-many-arguments
-    def get_doc_item(
-        self,
-        context: ReportContext,
-        settings: Settings = None
-    ) -> None:
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
         returns doc item for inputs
         """
@@ -190,10 +182,9 @@ class Inputs(ReportItem):
         ).get_doc_item(context)
 
 
-
 def human_readable_formatter(value):
     """Custom formatter that uses k/M suffixes with a human-readable style.
-    For large numbers, it attempts to show a concise representation without 
+    For large numbers, it attempts to show a concise representation without
     scientific notation:
     - For millions, it will show something like 225M (no decimals if >100),
       22.5M (one decimal if between 10 and 100), or 2.3M (two decimals if <10).
@@ -206,16 +197,16 @@ def human_readable_formatter(value):
     abs_value = abs(value)
 
     def strip_trailing_zeros(s):
-        if '.' in s:
-            s = s.rstrip('0').rstrip('.')
+        if "." in s:
+            s = s.rstrip("0").rstrip(".")
         return s
 
     if abs_value >= 1e6:
         scale = 1e6
-        symbol = 'M'
+        symbol = "M"
     elif abs_value >= 1e3:
         scale = 1e3
-        symbol = 'k'
+        symbol = "k"
     else:
         return str(value)
 
@@ -232,9 +223,9 @@ def human_readable_formatter(value):
     formatted = strip_trailing_zeros(formatted)
     return formatted + symbol
 
-_SPECIAL_FORMATING_MAP = {
-    "volume_mesh/stats/n_nodes": human_readable_formatter
-}
+
+_SPECIAL_FORMATING_MAP = {"volume_mesh/stats/n_nodes": human_readable_formatter}
+
 
 class Table(ReportItem):
     """
@@ -256,14 +247,14 @@ class Table(ReportItem):
         list of str of the same length as `data`
     """
 
-    data: list[Union[str, Delta, DataItem]]
+    data: List[Union[str, Delta, DataItem]]
     section_title: Union[str, None]
     headers: Union[list[str], None] = None
     type_name: Literal["Table"] = Field("Table", frozen=True)
     formatter: Optional[Union[str, List[Union[str, None]]]] = None
 
-
     @model_validator(mode="before")
+    @classmethod
     def _process_formatter(cls, values):
         if not isinstance(values, dict):
             return values
@@ -291,7 +282,8 @@ class Table(ReportItem):
                     f"{len(self.headers)} instead of {len(self.data)}"
                 )
         return self
-    
+
+    # pylint: disable=unsupported-assignment-operation
     def _get_formatters(self):
         formatters = self.formatter
         for i, (fmt, data) in enumerate(zip(formatters, self.data)):
@@ -306,7 +298,7 @@ class Table(ReportItem):
                 return fmt
             return lambda x, ff=fmt: f"{x:{ff}}"
 
-        formatters = [make_callable(f) for f in formatters]
+        formatters = [make_callable(f) for f in formatters]  # pylint: disable=not-an-iterable
         return formatters
 
     def get_requirements(self):
@@ -315,54 +307,84 @@ class Table(ReportItem):
         """
         return get_requirements_from_data_path(self.data)
 
-    # pylint: disable=too-many-arguments
-    def get_doc_item(
-        self,
-        context: ReportContext,
-        settings: Settings = None
-    ) -> None:
+    def calculate_table_data(self, context: ReportContext) -> Tuple[List[str], List[List]]:
         """
-        Returns doc item for table
+        Calculate raw table data (headers + rows) without formatting.
+
+        Returns:
+            (headers, rows)
+                headers: list of column names (strings)
+                rows: list of rows, each row is a list of cell values
+        """
+
+        headers = ["Case No."]
+        if self.headers is None:
+            for path in self.data:
+                if isinstance(path, (Delta, DataItem)):
+                    field_label = str(path)
+                else:
+                    field_label = split_path(path)[-1]
+                headers.append(field_label)
+        else:
+            headers.extend(self.headers)
+
+        rows = []
+        for idx, case in enumerate(context.cases):
+            raw_values = []
+            for path in self.data:
+                value = data_from_path(
+                    case,
+                    path,
+                    context.cases,
+                    case_by_case=context.case_by_case,
+                )
+                raw_values.append(value)
+
+            row_values = [str(idx + 1)] + raw_values
+            rows.append(row_values)
+
+        return (headers, rows)
+
+    def to_dataframe(self, context: ReportContext) -> DataFrame:
+        """
+        Convert calculated data into a Pandas DataFrame for unit-testing
+        or external usage.
+        """
+        headers, rows = self.calculate_table_data(context)
+        df = DataFrame(rows, columns=headers)
+        return df
+
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
+        """
+        Returns a LaTeX doc item (Tabulary) for the table,
+        using previously calculated data.
         """
         if self.section_title is not None:
             section = context.section_func(self.section_title)
             context.doc.append(section)
 
-        with context.doc.create(
-            Tabulary("|C" * (len(self.data) + 1) + "|", width=len(self.data) + 1)
-        ) as table:
+        headers, rows = self.calculate_table_data(context)
+
+        num_columns = len(headers)
+        with context.doc.create(Tabulary("|C" * num_columns + "|", width=num_columns)) as table:
             table.add_hline()
 
-            field_titles = ["Case No."]
-            if self.headers is None:
-                for path in self.data:
-                    if isinstance(path, (Delta, DataItem)):
-                        field = path
-                    else:
-                        field = split_path(path)[-1]
-
-                    field_titles.append(str(field))
-            else:
-                field_titles.extend([heading for heading in self.headers])
-
             table.append(Command("rowcolor", "labelgray"))
-            table.add_row(field_titles)
+            table.add_row(headers)
             table.add_hline()
 
             formatters = self._get_formatters()
-            for idx, case in enumerate(context.cases):
-                raw_values = [
-                    data_from_path(case, path, context.cases, case_by_case=context.case_by_case)
-                    for path in self.data
-                ]
+            for row_values in rows:
 
-                formatted_values = [
-                    fmt(x) if isinstance(x, (int, float)) else str(x)
-                    for x, fmt in zip(raw_values, formatters)
-                ]
+                formatted = [row_values[0]]
+                for i, val in enumerate(row_values[1:], 1):
+                    fmt = formatters[i - 1]
+                    if isinstance(val, (int, float)):
+                        formatted.append(fmt(val))
+                    else:
+                        formatted.append(str(val))
 
-                formatted_values.insert(0, str(idx + 1))
-                table.add_row(formatted_values)
+                table.add_row(formatted)
                 table.add_hline()
 
 
@@ -410,7 +432,7 @@ class Chart(ReportItem):
                 raise ValueError(
                     "`Items_in_row` and `separate_plots=False` cannot be used together."
                 )
-            elif self.separate_plots is None:
+            if self.separate_plots is None:
                 self.separate_plots = True
         return self
 
@@ -441,8 +463,8 @@ class Chart(ReportItem):
 
         return cases
 
-    def _fig_exist(self, id, data_storage="."):
-        img_folder = os.path.join(data_storage, id)
+    def _fig_exist(self, resource_id, data_storage="."):
+        img_folder = os.path.join(data_storage, resource_id)
         img_name = self.fig_name + ".png"
         img_full_path = os.path.join(img_folder, img_name)
         if os.path.exists(img_full_path):
@@ -451,12 +473,15 @@ class Chart(ReportItem):
         return False
 
     def _downsample_png(self, img: str, relative_width=1, dpi=None):
-        if dpi is not None and img.lower().endswith('.png'):
+        if dpi is not None and img.lower().endswith(".png"):
             downsampled_img = os.path.splitext(img)[0] + f"_dpi{dpi}.png"
-            downsample_image_to_relative_width(img, downsampled_img, relative_width=relative_width, dpi=dpi)
+            downsample_image_to_relative_width(
+                img, downsampled_img, relative_width=relative_width, dpi=dpi
+            )
             img = downsampled_img
         return img
 
+    # pylint: disable=too-many-arguments
     def _add_figure(self, doc: Document, file_name, caption, legend_filename=None, dpi=None):
 
         file_name = self._downsample_png(file_name, dpi=dpi)
@@ -492,6 +517,7 @@ class Chart(ReportItem):
         )
         return sub_fig
 
+    # pylint: disable=too-many-arguments,too-many-locals
     def _add_row_figure(
         self,
         doc: Document,
@@ -499,7 +525,7 @@ class Chart(ReportItem):
         fig_caption: str,
         sub_fig_captions: List[str] = None,
         legend_filename=None,
-        dpi=None
+        dpi=None,
     ):
         """
         Build a figure from SubFigures which displays images in rows
@@ -507,7 +533,7 @@ class Chart(ReportItem):
         Using Doc manually here may be uncessary - but it does allow for more control
         """
 
-        # Smaller than 1 to avoid overflowing - single subfigure sizing seems to be weird
+        # Smaller than 1 to avoid overflowing
         minipage_size = 0.86 / self.items_in_row if self.items_in_row != 1 else 0.8
         doc.append(NoEscape(r"\begin{figure}[h!]"))
 
@@ -554,6 +580,10 @@ class Chart(ReportItem):
 
 
 class PlotModel(BaseModel):
+    """
+    PlotModel that holds data and ability to return matplotlib fig
+    """
+
     x_data: Union[List[float], List[List[float]]]
     y_data: Union[List[float], List[List[float]]]
     x_label: str
@@ -566,27 +596,27 @@ class PlotModel(BaseModel):
     ylim: Optional[Tuple[float, float]] = None
 
     @field_validator("x_data", "y_data", mode="before")
-    def ensure_y_data_is_list_of_lists(cls, v):
+    @classmethod
+    def _ensure_y_data_is_list_of_lists(cls, v):
         if isinstance(v, list):
             if all(isinstance(item, list) for item in v):
                 return v
-            else:
-                return [v]
-        else:
-            raise ValueError("x_data/y_data must be a list")
+            return [v]
+        raise ValueError("x_data/y_data must be a list")
 
     @model_validator(mode="after")
-    def check_lengths(self):
+    def _check_lengths(self):
         if len(self.x_data) == 1:
             self.x_data = [self.x_data[0] for _ in self.y_data]
         if len(self.x_data) != len(self.y_data):
             raise ValueError(
-                f"Number of x_data series but be one or equal to number of y_data series."
+                "Number of x_data series but be one or equal to number of y_data series."
             )
         for idx, (x_series, y_series) in enumerate(zip(self.x_data, self.y_data)):
             if len(x_series) != len(y_series):
                 raise ValueError(
-                    f"Length of y_data series at index {idx} ({len(y_series)}) does not match length of x_data ({len(x_series)})"
+                    f"Length of y_data series at index {idx} ({len(y_series)})"
+                    + f" does not match length of x_data ({len(x_series)})"
                 )
         if self.legend is not None:
             if len(self.legend) != len(self.y_data):
@@ -598,10 +628,16 @@ class PlotModel(BaseModel):
 
     @property
     def x_data_as_np(self):
+        """
+        returns X data as list of numpy arrays
+        """
         return [np.array(x_series) for x_series in self.x_data]
 
     @property
     def y_data_as_np(self):
+        """
+        returns Y data as list of numpy arrays
+        """
         return [np.array(y_series) for y_series in self.y_data]
 
     def _get_extent_for_background(self):
@@ -620,6 +656,37 @@ class PlotModel(BaseModel):
         return extent
 
     def get_plot(self):
+        """
+        Generates a matplotlib plot based on the provided x and y data.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            A matplotlib Figure object containing the generated plot.
+
+        Notes
+        -----
+        - If a background image is provided (`self.backgroung_png`), it is overlaid on the plot
+        with adjusted transparency and aspect ratio.
+        - The function supports both regular and logarithmic y-axis scales based on the
+        `self.is_log` attribute.
+        - Data series from `self.x_data` and `self.y_data` are plotted using the specified
+        style (`self.style`), and legends are included if provided (`self.legend`).
+
+        Examples
+        --------
+        >>> plot_model = PlotModel(
+        ...     x_data=[[1, 2, 3], [1, 2, 3]],
+        ...     y_data=[[4, 5, 6], [7, 8, 9]],
+        ...     x_label="Time (s)",
+        ...     y_label="Value",
+        ...     legend=["Series A", "Series B"],
+        ...     is_log=False,
+        ...     style="o-"
+        ... )
+        >>> fig = plot_model.get_plot()
+        >>> fig.show()
+        """
         figsize = 8
         fig, ax = plt.subplots(figsize=(figsize, figsize / FIG_ASPECT_RATIO))
         num_series = len(self.y_data)
@@ -633,6 +700,7 @@ class PlotModel(BaseModel):
         for idx in range(num_series):
             x_series = self.x_data_as_np[idx]
             y_series = self.y_data_as_np[idx]
+            # pylint: disable=unsubscriptable-object
             label = (
                 self.legend[idx] if self.legend and idx < len(self.legend) else f"Series {idx+1}"
             )
@@ -681,7 +749,7 @@ class Chart2D(Chart):
         The y-limits of the chart will be determined based on this data subset:
         the minimum and maximum y-values in this range will be found, then a
         25% margin is added above and below. This adjusted y-limit helps to
-        highlight the specified portion of the chart.         
+        highlight the specified portion of the chart.
     """
 
     x: Union[str, Delta, DataItem]
@@ -722,7 +790,7 @@ class Chart2D(Chart):
                         f"data: {data} contains data with units and without, cannot create plot."
                     )
 
-            dimesions = set([v.units.dimensions for v in data if data is not None])
+            dimesions = {v.units.dimensions for v in data if data is not None}
             if len(dimesions) > 1:
                 raise ValueError(
                     f"{data} contains data with different dimensions {dimesions=}, cannot create plot."
@@ -776,10 +844,9 @@ class Chart2D(Chart):
 
         return x_data, y_data, x_label, y_label
 
+    # pylint: disable=too-many-locals
     def _calculate_focus_y_limits(
-        self,
-        x_series_list: List[List[float]],
-        y_series_list: List[List[float]]
+        self, x_series_list: List[List[float]], y_series_list: List[List[float]]
     ) -> Tuple[Optional[float], Optional[float]]:
         """
         Calculate the y-limits based on the focus_x range.
@@ -790,7 +857,7 @@ class Chart2D(Chart):
         if self.focus_x is None:
             return None
 
-        start_frac, end_frac = self.focus_x
+        start_frac, end_frac = self.focus_x  # pylint: disable=unpacking-non-sequence
         all_focused_y = []
 
         for xs, ys in zip(x_series_list, y_series_list):
@@ -819,21 +886,54 @@ class Chart2D(Chart):
         return (y_min, y_max)
 
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
+        """
+        Loads and processes data for creating a 2D plot model.
+
+        Parameters
+        ----------
+        cases : List[Case]
+            A list of simulation cases to extract data from.
+        context : ReportContext
+            The report context providing additional configuration and case-specific data.
+
+        Returns
+        -------
+        PlotModel
+            A `PlotModel` instance containing the processed x and y data, axis labels,
+            legend, and optional background image for plotting.
+
+        Notes
+        -----
+        - Handles data with physical units and ensures dimensional consistency.
+        - Supports optional background images for geometry-related plots.
+        - Automatically determines y-axis limits if `focus_x` is specified.
+
+        Examples
+        --------
+        >>> chart = Chart2D(
+        ...     x="x_slicing_force_distribution/X",
+        ...     y="x_slicing_force_distribution/totalCumulative_CD_Curve",
+        ...     background="geometry"
+        ... )
+        >>> plot_model = chart.get_data(cases, context)
+        >>> fig = plot_model.get_plot()
+        >>> fig.show()
+        """
         x_data, y_data, x_label, y_label = self._load_data(cases)
         background = self._get_background_chart(x_data)
         background_png = None
         if background is not None:
+            # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
-
 
         if self._is_multiline_data(x_data, y_data):
             x_data = [float(data) for data in x_data]
             y_data = [float(data) for data in y_data]
             legend = None
-            style="o-"
+            style = "o-"
         else:
             legend = [case.name for case in cases]
-            style="-"
+            style = "-"
 
         ylim = self._calculate_focus_y_limits(x_data, y_data)
 
@@ -847,7 +947,7 @@ class Chart2D(Chart):
             is_log=self.is_log_plot(),
             backgroung_png=background_png,
             xlim=None,
-            ylim=ylim
+            ylim=ylim,
         )
 
     def _get_background_chart(self, x_data):
@@ -869,7 +969,8 @@ class Chart2D(Chart):
                 )
             else:
                 raise ValueError(
-                    f"background={self.background} can be only used with x == x_slicing_force_distribution/X OR x == y_slicing_force_distribution/Y"
+                    f"background={self.background} can be only used with x == x_slicing_force_distribution/X"
+                    + " OR x == y_slicing_force_distribution/Y"
                 )
             background = Chart3D(
                 show="boundaries",
@@ -880,8 +981,11 @@ class Chart2D(Chart):
             return background
         return None
 
-    def get_background_chart3D(self, cases) -> Tuple[Chart3D, Case]:
-        x_data, y_data, x_label, y_label = self._load_data(cases)
+    def get_background_chart3d(self, cases) -> Tuple[Chart3D, Case]:
+        """
+        returns Chart3D for background
+        """
+        x_data, _, _, _ = self._load_data(cases)
         reference_case = cases[0]
         return self._get_background_chart(x_data), reference_case
 
@@ -889,7 +993,6 @@ class Chart2D(Chart):
         file_names = []
         case_by_case, data_storage = context.case_by_case, context.data_storage
         cbc_str = "_cbc_" if case_by_case else "_"
-        case_by_case, data_storage
         if self.separate_plots:
             for case in cases:
                 file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".pdf")
@@ -910,11 +1013,7 @@ class Chart2D(Chart):
         return file_names, data.x_label, data.y_label
 
     # pylint: disable=too-many-arguments,too-many-locals
-    def get_doc_item(
-        self,
-        context: ReportContext,
-        settings: Settings = None
-    ) -> None:
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
         returns doc item for chart
         """
@@ -967,11 +1066,12 @@ class Chart3D(Chart):
     is_log_scale: bool = False
     show: Union[ShutterObjectTypes, Literal["isosurface"]]
     iso_field: Optional[Union[IsoSurfaceFieldNames, str]] = None
-    mode: Optional[Literal['contour', 'lic']] = 'contour'
+    mode: Optional[Literal["contour", "lic"]] = "contour"
     exclude: Optional[List[str]] = None
     include: Optional[List[str]] = None
     type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
 
+    # pylint: disable=unsubscriptable-object
     def _get_limits(self, case: Case):
         if self.limits is not None and not isinstance(self.limits[0], float):
             params: SimulationParams = case.params
@@ -979,9 +1079,9 @@ class Chart3D(Chart):
                 return (self.limits[0].value, self.limits[1].value)
 
             if isinstance(self.limits[0], unyt_quantity):
-                min = params.convert_unit(self.limits[0], target_system="flow360")
-                max = params.convert_unit(self.limits[1], target_system="flow360")
-                return (float(min.value), float(max.value))
+                min_val = params.convert_unit(self.limits[0], target_system="flow360")
+                max_val = params.convert_unit(self.limits[1], target_system="flow360")
+                return (float(min_val.value), float(max_val.value))
 
         return self.limits
 
@@ -1049,6 +1149,7 @@ class Chart3D(Chart):
         ]
         return script
 
+    # pylint: disable=too-many-arguments
     def _get_shutter_isosurface_script(
         self,
         iso_field: str,
@@ -1168,7 +1269,7 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if self.mode == 'lic':
+            if self.mode == "lic":
                 script += [
                     ActionPayload(
                         action="set-lic",
@@ -1214,12 +1315,13 @@ class Chart3D(Chart):
                     ),
                 )
             ]
-            if self.mode == 'lic' and self.include is not None:
+            if self.mode == "lic" and self.include is not None:
                 script += [
                     ActionPayload(
                         action="set-lic",
                         payload=SetLICPayload(object_id=slice, visibility=True),
-                    ) for slice in self.include
+                    )
+                    for slice in self.include  # pylint: disable=not-an-iterable
                 ]
 
         return script
@@ -1260,8 +1362,6 @@ class Chart3D(Chart):
             log.debug(
                 "Not implemented: getting geometry resource for showing geometry. Currently using case resource."
             )
-            # path_prefix = f"s3://flow360meshes-v1/users/{user_id}"
-            # resource = Resource(path_prefix=path_prefix, id="geo-21a4cfb4-84c7-413f-b9ea-136ad9c2fed5")
         resource = Resource(path_prefix=path_prefix, id=case.id)
         scenes_data = ScenesData(scenes=[scene], resource=resource)
         return scenes_data
@@ -1275,14 +1375,9 @@ class Chart3D(Chart):
         for case in cases:
             shutter_requests.append(self._get_shutter_request(case))
 
-        context_data = {
-            "data_storage": context.data_storage,
-            "url": context.shutter_url,
-            "access_token": context.shutter_access_token,
-            "screeshot_process_function": context.shutter_screeshot_process_function,
-        }
-        context_data = {k: v for k, v in context_data.items() if v is not None}
-        img_files = Shutter(**context_data).get_images(self.fig_name, shutter_requests, regenerate_if_not_found=False)
+        img_files = Shutter(**make_shutter_context(context)).get_images(
+            self.fig_name, shutter_requests, regenerate_if_not_found=False
+        )
         # taking "first" image from returned images as UVF-shutter
         # supports many screenshots generation on one call
         img_list = [img_files[case.id][0] for case in cases if img_files[case.id] is not None]
@@ -1306,11 +1401,7 @@ class Chart3D(Chart):
         return None
 
     # pylint: disable=too-many-arguments
-    def get_doc_item(
-        self,
-        context: ReportContext,
-        settings: Settings = None
-    ):
+    def get_doc_item(self, context: ReportContext, settings: Settings = None):
         """
         returns doc item for 3D chart
         """
@@ -1333,7 +1424,7 @@ class Chart3D(Chart):
                 self.caption,
                 sub_fig_captions=[case.name for case in cases],
                 legend_filename=legend_filename,
-                dpi=dpi
+                dpi=dpi,
             )
         else:
             for filename in img_list:

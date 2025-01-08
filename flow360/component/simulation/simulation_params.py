@@ -8,6 +8,7 @@ from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.conversion import unit_converter
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
@@ -50,12 +51,12 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
+    DimensionedTypes,
+    LengthType,
     UnitSystem,
     UnitSystemType,
-    unit_system_manager,
-    DimensionedTypes,
     is_flow360_unit,
-    LengthType,
+    unit_system_manager,
     unyt_quantity,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
@@ -80,8 +81,6 @@ from flow360.error_messages import (
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
 from flow360.version import __version__
-
-from flow360.component.simulation.conversion import unit_converter
 
 from .validation.validation_context import (
     CASE,
@@ -255,7 +254,47 @@ class SimulationParams(_ParamModelBase):
     def convert_unit(
         self, value: DimensionedTypes, target_system: str, length_unit: Optional[LengthType] = None
     ):
+        """
+        Converts a given value to the specified unit system.
+
+        This method takes a dimensioned quantity and converts it from its current unit system
+        to the target unit system, optionally considering a specific length unit for the conversion.
+
+        Parameters
+        ----------
+        value : DimensionedTypes
+            The dimensioned quantity to convert. This should have units compatible with Flow360's
+            unit system.
+        target_system : str
+            The target unit system for conversion. Common values include "SI", "Imperial", flow360".
+        length_unit : LengthType, optional
+            The length unit to use for conversion. If not provided, the method defaults to
+            the project length unit stored in the `private_attribute_asset_cache`.
+
+        Returns
+        -------
+        DimensionedTypes
+            The converted value in the specified target unit system.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If the input unit system is not compatible with the target system, or if the required
+            length unit is missing.
+
+        Examples
+        --------
+        Convert a value from the current system to Flow360's V2 unit system:
+
+        >>> simulation_params = SimulationParams()
+        >>> value = unyt_quantity(1.0, "meters")
+        >>> converted_value = simulation_params.convert_unit(value, target_system="flow360")
+        >>> print(converted_value)
+        1.0 (flow360_length_unit)
+        """
+
         if length_unit is None:
+            # pylint: disable=no-member
             length_unit = self.private_attribute_asset_cache.project_length_unit
 
         flow360_conv_system = unit_converter(
@@ -273,7 +312,7 @@ class SimulationParams(_ParamModelBase):
         if is_flow360_unit(value) and not isinstance(value, unyt_quantity):
             converted = value.in_base(target_system, flow360_conv_system)
         else:
-            value.units.registry = flow360_conv_system.registry
+            value.units.registry = flow360_conv_system.registry  # pylint: disable=no-member
             converted = value.in_base(unit_system=target_system)
         return converted
 

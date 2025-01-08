@@ -10,7 +10,7 @@ import time
 import zipfile
 from collections import defaultdict
 from functools import wraps
-from typing import Any, List, Literal, Optional, Tuple, Union, Callable
+from typing import Callable, List, Literal, Optional, Tuple, Union
 from urllib.parse import urljoin
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
@@ -21,9 +21,12 @@ import pydantic as pd
 
 from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.exceptions import Flow360WebError, Flow360WebNotFoundError
+from flow360.exceptions import (
+    Flow360RuntimeError,
+    Flow360WebError,
+    Flow360WebNotFoundError,
+)
 from flow360.log import log
-from flow360.exceptions import Flow360RuntimeError
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -109,6 +112,10 @@ class SetObjectVisibilityPayload(Flow360BaseModel):
 
 
 class SetColormapPayload(Flow360BaseModel):
+    """
+    SetColormapPayload
+    """
+
     type: Literal["Rainbow"] = "Rainbow"
     steps: Optional[
         List[float]
@@ -191,7 +198,8 @@ class Camera(Flow360BaseModel):
     dimension_direction : {'width', 'height', 'diagonal'}
         The direction `dimension_size_model_units` is for.
     dimension_size_model_units : float
-        The camera zoom will be set such that the extents of the scene's projection is this number of model units for the applicable `dimensionDirection`.
+        The camera zoom will be set such that the extents of the scene's projection is this number of model units for
+        the applicable `dimensionDirection`.
     """
 
     position: Optional[Tuple[float, float, float]] = (-1, -1, 1)
@@ -205,7 +213,9 @@ class Camera(Flow360BaseModel):
 
 
 class SetCameraPayload(Camera):
-    pass
+    """
+    Alias for Camera
+    """
 
 
 class TakeScreenshotPayload(Flow360BaseModel):
@@ -385,6 +395,48 @@ def http_interceptor(func):
 
 
 def combine(model_a, model_b, key_to_combine, eq: callable):
+    """
+    Combines attributes of two models based on a specified key if they satisfy a given equality condition.
+
+    This function checks if two models are considered equal using the provided `eq` function.
+    If they are equal, it combines the values of the specified attribute (referenced by `key_to_combine`)
+    into a single list, updates the first model with the combined values, and returns the updated model
+    along with a flag indicating that the models were combined.
+
+    Parameters
+    ----------
+    model_a : Any
+        The first model to combine.
+    model_b : Any
+        The second model to combine.
+    key_to_combine : str
+        The name of the attribute in both models to combine.
+    eq : callable
+        A function that takes two models as input and returns `True` if the models are considered equal,
+        `False` otherwise.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - The updated model (`model_a`) if the models were combined, or the original `model_a` if not.
+        - A boolean flag indicating whether the models were combined (`True`) or not (`False`).
+
+    Raises
+    ------
+    TypeError
+        If the specified attribute (`key_to_combine`) is not a list in both models.
+
+    Example
+    -------
+    >>> model_a = SomeModel(attr=["item1"])
+    >>> model_b = SomeModel(attr=["item2"])
+    >>> eq = lambda a, b: a.some_property == b.some_property
+    >>> combined_model, combined = combine(model_a, model_b, "attr", eq)
+    >>> print(combined_model.attr)  # ['item1', 'item2']
+    >>> print(combined)  # True
+    """
+
     if eq(model_a, model_b):
         attr_a = getattr(model_a, key_to_combine)
         attr_b = getattr(model_b, key_to_combine)
@@ -393,10 +445,23 @@ def combine(model_a, model_b, key_to_combine, eq: callable):
             combined_attr = attr_a + attr_b
             new_model = model_a.copy(update={key_to_combine: combined_attr})
             return new_model, True
-        else:
-            raise TypeError(f"The attribute '{key_to_combine}' is not a list in both models.")
+        raise TypeError(f"The attribute '{key_to_combine}' is not a list in both models.")
 
     return model_a, False
+
+
+def make_shutter_context(context):
+    """
+    Extracts relevant data for shutter from context
+    """
+    context_data = {
+        "data_storage": context.data_storage,
+        "url": context.shutter_url,
+        "access_token": context.shutter_access_token,
+        "screeshot_process_function": context.shutter_screeshot_process_function,
+    }
+    context_data = {k: v for k, v in context_data.items() if v is not None}
+    return context_data
 
 
 class ShutterBatchService:
@@ -414,6 +479,7 @@ class ShutterBatchService:
         stored_scenes: List[Scene] = self.requests.get(resource, [])
         for scene in new_scenes:
             appended = False
+            # pylint: disable=unnecessary-lambda-assignment
             eq = lambda a, b: a.name == b.name and a.settings == b.settings
             for i, stored_scene in enumerate(stored_scenes):
                 combined_scene, appended = combine(stored_scene, scene, "script", eq)
@@ -516,7 +582,8 @@ class ShutterBatchService:
         Removes redundant 'set-field' actions when the payload has not changed between calls.
 
         Rules:
-        - If a 'set-field' action has the same payload as the previous one and no intervening actions affect the field settings,
+        - If a 'set-field' action has the same payload as the previous one and no intervening actions affect the field
+        settings,
         remove the latter 'set-field' action.
         - Other action types are preserved and ignored in this optimization unless they affect the field settings.
 
@@ -536,8 +603,7 @@ class ShutterBatchService:
 
                 if last_set_field_payload == payload:
                     continue
-                else:
-                    last_set_field_payload = payload
+                last_set_field_payload = payload
             elif action.action in field_affecting_actions:
                 last_set_field_payload = None
             optimized_actions.append(action)
@@ -545,6 +611,39 @@ class ShutterBatchService:
         return optimized_actions
 
     def add_request(self, request: ScenesData):
+        """
+        Adds a new request to the batch and processes it to optimize actions.
+
+        This method merges the provided request's scenes with any existing scenes for the same resource,
+        ensuring that similar scenes are combined and redundant actions are removed.
+
+        Parameters
+        ----------
+        request : ScenesData
+            The new request containing scenes and associated resource information.
+
+        Processing Steps
+        ----------------
+        1. Merges similar scenes based on their name and settings.
+        2. Optimizes scripts within each scene by:
+            - Merging consecutive 'set-object-visibility' actions with the same visibility value.
+            - Removing redundant 'set-object-visibility' actions across the script.
+            - Eliminating redundant 'set-field' actions when the payload is unchanged.
+
+        Raises
+        ------
+        TypeError
+            If an invalid payload type is encountered during processing.
+
+        Example
+        -------
+        >>> resource = Resource(path_prefix="user", id="case1")
+        >>> scenes = [Scene(name="scene1", settings=Settings(), script=[])]
+        >>> request = ScenesData(resource=resource, scenes=scenes)
+        >>> service = ShutterBatchService()
+        >>> service.add_request(request)
+        """
+
         stored_scenes = self._merge_similar_scenes(request.resource, request.scenes)
 
         for stored_scene in stored_scenes:
@@ -559,6 +658,19 @@ class ShutterBatchService:
         self.requests[request.resource] = stored_scenes
 
     def get_batch_requests(self):
+        """
+        Retrieves all batched requests currently stored in the service.
+
+        This method compiles the collected scenes and their associated resources into a
+        list of `ScenesData` objects, which can be sent to the UVF shutter service for processing.
+
+        Returns
+        -------
+        List[ScenesData]
+            A list of `ScenesData` objects, where each object represents a resource and its
+            associated scenes.
+        """
+
         return [
             ScenesData(resource=resource, scenes=scenes)
             for resource, scenes in self.requests.items()
@@ -568,15 +680,9 @@ class ShutterBatchService:
         """
         Processes the collected requests by grouping and combining them.
         """
-
-        context_data = {
-            "data_storage": context.data_storage,
-            "url": context.shutter_url,
-            "access_token": context.shutter_access_token,
-            "screeshot_process_function": context.shutter_screeshot_process_function,
-        }
-        context_data = {k: v for k, v in context_data.items() if v is not None}
-        img_files = Shutter(**context_data).get_images("None", self.get_batch_requests())
+        img_files = Shutter(**make_shutter_context(context)).get_images(
+            "None", self.get_batch_requests()
+        )
         return img_files
 
 
@@ -653,7 +759,9 @@ class Shutter(Flow360BaseModel):
 
         return img_files
 
-    def get_images(self, fig_name, data: List[ScenesData], regenerate_if_not_found: bool=True) -> dict[str, List]:
+    def get_images(
+        self, fig_name, data: List[ScenesData], regenerate_if_not_found: bool = True
+    ) -> dict[str, List]:
         """
         Generates or retrieves cached image files for scenes.
 
@@ -682,11 +790,15 @@ class Shutter(Flow360BaseModel):
                         (
                             case_id,
                             img_folder,
-                            data_item.model_dump(by_alias=True, exclude_unset=True, exclude_none=True),
+                            data_item.model_dump(
+                                by_alias=True, exclude_unset=True, exclude_none=True
+                            ),
                         )
                     )
                 else:
-                    raise Flow360RuntimeError(f"File: {img_name=} not found, shutter generation failed.")
+                    raise Flow360RuntimeError(
+                        f"File: {img_name=} not found, shutter generation failed."
+                    )
             else:
                 log.debug(f"File: {img_name=} exists in cache, using.")
                 if case_id not in cached_files:

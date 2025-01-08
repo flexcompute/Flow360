@@ -386,7 +386,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         )
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Case(CaseBase, Flow360Resource):
     """
     Case component
@@ -515,10 +515,10 @@ class Case(CaseBase, Flow360Resource):
         from_cache = self.local_resource_cache[self.volume_mesh_id]
         if from_cache is not None:
             return from_cache
-        else:
-            from .volume_mesh import VolumeMeshV2
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from .volume_mesh import VolumeMeshV2
 
-            return VolumeMeshV2(self.volume_mesh_id)
+        return VolumeMeshV2(self.volume_mesh_id)
 
     @property
     def volume_mesh_id(self):
@@ -1015,6 +1015,16 @@ class CaseResultsModel(pd.BaseModel):
         )
 
     def set_local_storage(self, local_storage: str, keep_remote_structure: bool = False):
+        """
+        Set local storage for fetching data from. Used with Case.from_local_storage(...)
+
+        Parameters
+        ----------
+        local_storage : str
+            Path to local folder
+        keep_remote_structure : bool, optional
+            When true, remote folder structure is assumed to be preseved, otherwise flat structure, by default False
+        """
         for field_name in self.model_fields:
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):

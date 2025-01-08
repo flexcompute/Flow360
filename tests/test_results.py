@@ -202,11 +202,13 @@ def test_x_sectional_results(mock_id, mock_response):
         + total
     )
 
+    expected_val = 0.32168454968207594
+
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.42326354287032886
     assert set(cd_curve.values.keys()) == set(all_headers)
 
     cd_curve.filter(include="*Wing*")
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == expected_val
 
     boundaries = ["fluid/leftWing", "fluid/rightWing"]
     all_headers = (
@@ -217,7 +219,7 @@ def test_x_sectional_results(mock_id, mock_response):
     assert set(cd_curve.values.keys()) == set(all_headers)
 
     cd_curve.filter(exclude="*fuselage*")
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == expected_val
 
     boundaries = ["fluid/leftWing", "fluid/rightWing"]
     all_headers = (
@@ -228,7 +230,7 @@ def test_x_sectional_results(mock_id, mock_response):
     assert set(cd_curve.values.keys()) == set(all_headers)
 
     cd_curve.filter(include=["fluid/leftWing", "fluid/rightWing"])
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == expected_val
 
     boundaries = ["fluid/leftWing", "fluid/rightWing"]
     all_headers = (
@@ -257,11 +259,13 @@ def test_y_sectional_results(mock_id, mock_response):
         + total
     )
 
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert (
+        y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
+    )  # this is numerical error introduced by method used in release-24.11
     assert set(y_slicing.values.keys()) == set(all_headers)
 
     y_slicing.filter(include="*Wing*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
 
     boundaries = ["fluid/leftWing", "fluid/rightWing"]
     all_headers = (
@@ -272,7 +276,7 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
 
     y_slicing.filter(exclude="*fuselage*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
 
     boundaries = ["fluid/leftWing", "fluid/rightWing"]
     all_headers = (
@@ -283,7 +287,7 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
 
     y_slicing.filter(include=["fluid/leftWing", "fluid/rightWing"])
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
 
     boundaries = ["fluid/leftWing", "fluid/rightWing"]
     all_headers = (

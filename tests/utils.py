@@ -8,6 +8,7 @@ from numbers import Number
 import numpy as np
 import pytest
 import unyt
+from pylatex import Document
 
 from flow360.cloud.rest_api import RestApi
 from flow360.cloud.s3_utils import (
@@ -222,3 +223,11 @@ def generate_mock_webapi_data_one_case_params():
 
     with open("case_params.json", "w") as fh:
         json.dump({"data": resp}, fh, indent=4)
+
+
+@pytest.fixture()
+def generate_pdf(monkeypatch):
+    def mock_generate_pdf(*args, **kwargs):
+        print("MOCK generate_pdf!!!")
+
+    monkeypatch.setattr(Document, "generate_pdf", mock_generate_pdf)

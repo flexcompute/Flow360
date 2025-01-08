@@ -10,16 +10,16 @@ from enum import Enum
 from numbers import Number
 from operator import add, sub
 from threading import Lock
-from typing import Annotated, Any, Collection, List, Literal, Union, get_args, get_origin
+from typing import Annotated, Any, Collection, List, Literal, Union
 
 import annotated_types
 import numpy as np
 import pydantic as pd
 import unyt as u
 import unyt.dimensions as udim
-from unyt import unyt_quantity
 from pydantic import PlainSerializer
 from pydantic_core import InitErrorDetails, core_schema
+from unyt import unyt_quantity  # pylint: disable=unused-import
 
 from flow360.log import log
 from flow360.utils import classproperty

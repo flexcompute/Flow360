@@ -1,3 +1,7 @@
+"""
+Report DOC representation
+"""
+
 import os
 import posixpath
 
@@ -5,10 +9,8 @@ import posixpath
 # pylint: disable=import-error
 from pylatex import (
     Center,
-    Command,
     Document,
     Foot,
-    Head,
     HugeText,
     LargeText,
     MediumText,
@@ -17,9 +19,7 @@ from pylatex import (
     NoEscape,
     Package,
     PageStyle,
-    Section,
     StandAloneGraphic,
-    Subsection,
 )
 from pylatex.utils import bold
 
@@ -28,6 +28,9 @@ from flow360.plugins.report.utils import detect_latex_compiler, font_definition
 
 
 class ReportDoc:
+    """
+    ReportDoc
+    """
 
     def __init__(self, title, landscape=True) -> None:
         self.compiler, self.compiler_args = detect_latex_compiler()
@@ -49,7 +52,15 @@ class ReportDoc:
         self.doc.change_document_style("customstyle")
 
     @property
-    def doc(self):
+    def doc(self) -> Document:
+        """
+        Get current pylatex document
+
+        Returns
+        -------
+        Document
+            Current pylatex document
+        """
         return self._doc
 
     def _define_preamble(self, doc, landscape):
@@ -80,7 +91,9 @@ class ReportDoc:
         doc.preamble.append(NoEscape(r"\definecolor{customgray}{HTML}{E0E2E7}"))
         doc.preamble.append(NoEscape(r"\definecolor{labelgray}{HTML}{F4F5F7}"))
 
-        doc.preamble.append(NoEscape(r"\DeclareCaptionLabelFormat{graybox}{\colorbox{labelgray}{}}"))
+        doc.preamble.append(
+            NoEscape(r"\DeclareCaptionLabelFormat{graybox}{\colorbox{labelgray}{}}")
+        )
         doc.preamble.append(
             NoEscape(
                 r"\captionsetup[figure]{position=bottom, font=large, labelformat=graybox, "
@@ -133,7 +146,7 @@ class ReportDoc:
         page_style = PageStyle("customstyle")
         padding = r"\vspace{10pt}"
 
-        doc.preamble.append(NoEscape(r"\setlength{\footskip}{40pt}"))  # Adjust as needed
+        doc.preamble.append(NoEscape(r"\setlength{\footskip}{40pt}"))
 
         with page_style.create(Foot("C")) as footer:
             footer.append(NoEscape(r"\textcolor{customgray}{\rule{\textwidth}{0.5pt}}"))
@@ -183,6 +196,7 @@ class ReportDoc:
         doc.preamble.append(page_style)
 
     def _make_title(self, doc, title: str = None):
+        # pylint: disable=invalid-name
         NewLine = NoEscape(r"\\")  # pylatex NewLine() is causing problems with centering
         doc.append(NoEscape(r"\thispagestyle{titlestyle}"))
 
@@ -204,8 +218,26 @@ class ReportDoc:
         doc.append(NoEscape(r"\vspace*{\fill}"))
         doc.append(NewPage())
 
-    def generate_pdf(self, filename):
+    def generate_pdf(self, filename: str):
+        """
+        Generates PDF from ReportTemplate and Cases
+
+        Parameters
+        ----------
+        filename : str
+            Filename for PDF
+        """
+        pdf_ext = ".pdf"
+        name_without_ext, file_ext = os.path.splitext(filename)
+        if file_ext.lower() != pdf_ext:
+            name_without_ext = filename
+            filename = name_without_ext + pdf_ext
+
         self.doc.generate_pdf(
-            filename, compiler=self.compiler, compiler_args=self.compiler_args, clean_tex=False
+            name_without_ext,
+            compiler=self.compiler,
+            compiler_args=self.compiler_args,
+            clean_tex=False,
         )
-        log.info(f"PDF '{filename}.pdf' generated successfully using '{self.compiler}'.")
+
+        log.info(f"PDF '{filename}' generated successfully using '{self.compiler}'.")

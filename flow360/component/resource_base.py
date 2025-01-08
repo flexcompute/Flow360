@@ -312,16 +312,30 @@ class Flow360Resource(RestApi):
         return self.get(method="files")
 
     def get_cloud_path_prefix(self):
+        """
+        Retrieves the cloud path prefix for the resource.
+
+        If the `cloud_path_prefix` is already available in the resource's metadata, it is returned directly.
+        Otherwise, this method determines the prefix based on the associated files of the resource.
+
+        Returns
+        -------
+        str
+            The cloud path prefix for the resource.
+
+        Raises
+        ------
+        ValueError
+            If no files are associated with the resource, making it impossible to determine the cloud path prefix.
+        """
         if self.info.cloud_path_prefix is not None:
             return self.info.cloud_path_prefix
-        else:
-            files = self.get_download_file_list()
-            print(files)
-            if len(files) == 0:
-                raise ValueError(
-                    "Cannot determine cloud path prefix. Not files accociated with this resource."
-                )
-            return self.s3_transfer_method.get_cloud_path_prefix(self.id, files[0]["fileName"])
+        files = self.get_download_file_list()
+        if len(files) == 0:
+            raise ValueError(
+                "Cannot determine cloud path prefix. Not files accociated with this resource."
+            )
+        return self.s3_transfer_method.get_cloud_path_prefix(self.id, files[0]["fileName"])
 
     @property
     def local_resource_cache(self):

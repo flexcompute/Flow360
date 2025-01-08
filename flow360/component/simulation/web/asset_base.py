@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import time
 from abc import ABCMeta
 from typing import List, Union
 
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
-from flow360.cloud.s3_utils import get_local_filename_and_create_folders
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
@@ -55,10 +53,16 @@ class AssetBase(metaclass=ABCMeta):
 
     @property
     def project_id(self):
+        """
+        get project ID
+        """
         return self.info.project_id
 
     @property
     def solver_version(self):
+        """
+        get solver version
+        """
         return self.info.solver_version
 
     @classmethod
@@ -220,9 +224,9 @@ class AssetBase(metaclass=ABCMeta):
             params_dict = json.load(f)
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id), None)
-        asset_obj._webapi._download_file = _local_download_file
+        asset_obj._webapi._download_file = _local_download_file  # pylint: disable=protected-access
         if meta_data is not None:
-            asset_obj._webapi._set_meta(meta_data)
+            asset_obj._webapi._set_meta(meta_data)  # pylint: disable=protected-access
         return asset_obj
 
     def wait(self, timeout_minutes=60):

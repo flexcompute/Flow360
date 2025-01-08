@@ -1,7 +1,7 @@
 import pytest
+
 import flow360 as fl
 from flow360 import SI_unit_system, u
-
 from flow360.component.simulation.primitives import Surface
 
 

@@ -10,7 +10,6 @@ import posixpath
 import re
 import shutil
 import uuid
-from PIL import Image
 from abc import ABCMeta, abstractmethod
 from numbers import Number
 from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
@@ -39,6 +38,10 @@ here = os.path.dirname(os.path.abspath(__file__))
 
 
 class RequirementItem(pd.BaseModel):
+    """
+    RequirementItem
+    """
+
     resource_type: Literal["case", "volume_mesh", "surface_mesh", "geometry"] = "case"
     filename: str
 
@@ -70,7 +73,7 @@ _requirements_mapping = {
 }
 
 
-def get_requirements_from_data_path(data_path) -> List[RequirementItem]:
+def get_requirements_from_data_path(data_path: List) -> List[RequirementItem]:
     """
     Retrieves requirements based on data path entries by mapping root paths
     to their corresponding requirements.
@@ -95,9 +98,9 @@ def get_requirements_from_data_path(data_path) -> List[RequirementItem]:
     for item in data_path:
         root_path = get_root_path(item)
         matched_requirement = None
-        for key in _requirements_mapping:
+        for key, value in _requirements_mapping.items():
             if root_path.startswith(key):
-                matched_requirement = _requirements_mapping[key]
+                matched_requirement = value
                 requirements.add(matched_requirement)
         if matched_requirement is None:
             raise ValueError(f"Unknown result type: {item}")
@@ -200,7 +203,9 @@ def get_root_path(data_path):
 
 
 def split_path(path):
-    # Split the path using both '/' and '.' as separators
+    """
+    Split the path using both '/' and '.' as separators
+    """
     path_components = [comp for comp in re.split(r"[/.]", path) if comp]
     return path_components
 
@@ -319,12 +324,53 @@ def data_from_path(
 
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
+    """
+    Abstraction for operations
+    """
+
     @abstractmethod
-    def calculate(self, data, case, cases, variables, new_variable_name):
-        pass
+    def calculate(
+        self, data, case, cases, variables, new_variable_name
+    ):  # pylint: disable=too-many-arguments
+        """
+        evaluate operation
+        """
 
 
 class Average(GenericOperation):
+    """
+    Represents an averaging operation on simulation results.
+
+    This operation calculates the average of a given data set over a specified range of steps, time,
+    or fraction of the dataset.
+
+    Attributes
+    ----------
+    start_step : Optional[pd.NonNegativeInt]
+        The starting step for averaging. If not specified, averaging starts from the beginning.
+    end_step : Optional[pd.NonNegativeInt]
+        The ending step for averaging. If not specified, averaging continues to the end.
+    start_time : Optional[pd.NonNegativeFloat]
+        The starting time for averaging. If not specified, averaging starts from the beginning.
+    end_time : Optional[pd.NonNegativeFloat]
+        The ending time for averaging. If not specified, averaging continues to the end.
+    fraction : Optional[pd.PositiveFloat]
+        The fraction of the dataset to be averaged, ranging from 0 to 1.
+        Only the fraction-based method is implemented.
+    type_name : Literal["Average"]
+        A literal string indicating the operation type.
+
+    Raises
+    ------
+    NotImplementedError
+        If the method of averaging (e.g., step-based or time-based) is not implemented or the data type is unsupported.
+
+    Example
+    -------
+    avg = Average(fraction=0.1)
+    result = avg.calculate(data, case, cases, variables, new_variable_name)
+    """
+
     start_step: Optional[pd.NonNegativeInt] = None
     end_step: Optional[pd.NonNegativeInt] = None
     start_time: Optional[pd.NonNegativeFloat] = None
@@ -344,10 +390,15 @@ class Average(GenericOperation):
         require_one_of=["start_step", "start_time", "fraction"],
     )
 
-    def calculate(self, data, case, cases, variables, new_variable_name):
+    def calculate(
+        self, data, case, cases, variables, new_variable_name
+    ):  # pylint: disable=too-many-arguments
+        """
+        Performs the averaging operation on the provided data.
+        """
         if isinstance(data, case_results.ResultCSVModel):
             if self.fraction is None:
-                raise NotImplementedError(f'Only "fraction" average method implemented.')
+                raise NotImplementedError('Only "fraction" average method implemented.')
             averages = data.get_averages(avarage_fraction=self.fraction)
             return data, cases, averages
 
@@ -357,26 +408,61 @@ class Average(GenericOperation):
 
 
 class Variable(Flow360BaseModel):
+    """
+    Variable model used in expressions
+    """
+
     name: str
     data: str
 
 
 class Expression(GenericOperation):
+    """
+    Represents a mathematical expression to be evaluated on simulation result data.
+
+    This operation allows for defining and calculating custom expressions using
+    variables extracted from simulation results. The results of the expression
+    evaluation can be added as a new column to a dataframe for further analysis.
+
+    Attributes
+    ----------
+    expr : str
+        The mathematical expression to evaluate. It should be written in a syntax
+        compatible with the `numexpr` library, using variable names that correspond
+        to columns in the dataframe or user-defined variables.
+
+    Example
+    -------
+    expr = Expression(expr="totalCD * area")
+    result = expr.calculate(data, case, cases, variables, new_variable_name)
+
+    Raises
+    ------
+    ValueError
+        If variables in the expression are missing from the dataframe or if the
+        expression cannot be evaluated due to syntax or other issues.
+    NotImplementedError
+        If the data type is unsupported by the `calculate` method.
+    """
+
     expr: str
     type_name: Literal["Expression"] = pd.Field("Expression", frozen=True)
 
     @classmethod
     def get_variables(cls, expr):
         """
-        Parse the expression and return a set of variable names.
+        Parses the given expression and returns a set of variable names used in it.
         """
         tree = ast.parse(expr, mode="eval")
         return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
 
     @classmethod
-    def evaluate_expression(cls, df, expr, variables: List[Variable], new_variable_name, case):
+    def evaluate_expression(
+        cls, df, expr, variables: List[Variable], new_variable_name, case
+    ):  # pylint: disable=too-many-arguments
         """
-        Evaluate the expression on the dataframe and add the result as a new column.
+        Evaluates the given expression on the provided dataframe, using the specified variables.
+        The result is added as a new column in the dataframe.
         """
         expr_variables = cls.get_variables(expr)
         missing_vars = expr_variables - set(df.columns)
@@ -388,7 +474,7 @@ class Expression(GenericOperation):
                         if missing_var == v.name:
                             df[missing_var] = data_from_path(case, v.data)
                             found_variables.add(missing_var)
-            except Exception as e:
+            except (ValueError, KeyError) as e:
                 log.warning(e)
         missing_vars -= found_variables
         if missing_vars:
@@ -401,12 +487,17 @@ class Expression(GenericOperation):
         try:
             result = ne.evaluate(expr, local_dict)
         except Exception as e:
-            raise ValueError(f"Error evaluating expression: {e}")
+            raise ValueError(f"Error evaluating expression: {e}") from e
 
         df[new_variable_name] = result
         return df
 
-    def calculate(self, data, case, cases, variables, new_variable_name):
+    def calculate(
+        self, data, case, cases, variables, new_variable_name
+    ):  # pylint: disable=too-many-arguments
+        """
+        Executes the expression evaluation for the given simulation data and returns the result.
+        """
         log.debug(f"evaluating expression {self.expr}, {case.id=}")
 
         if isinstance(data, case_results.SurfaceForcesResultCSVModel):
@@ -500,7 +591,8 @@ class DataItem(pd.BaseModel):
     type_name: Literal["DataItem"] = pd.Field("DataItem", frozen=True)
 
     @pd.model_validator(mode="before")
-    def validate_operations(cls, values):
+    @classmethod
+    def _validate_operations(cls, values):
         operations = values.get("operations")
         if operations is None:
             values["operations"] = []
@@ -522,7 +614,8 @@ class DataItem(pd.BaseModel):
                 self.operations.insert(0, Expression(expr=variable_name))
             else:
                 raise ValueError(
-                    f"{self.__class__.__name__}, unknown input: data={self.data}, allowed single <source> or <source>/<variable>"
+                    f"{self.__class__.__name__}, unknown input: data={self.data},"
+                    + " allowed single <source> or <source>/<variable>"
                 )
 
             return source, new_variable_name
@@ -561,13 +654,17 @@ class DataItem(pd.BaseModel):
 
             source, new_variable_name = self._preprocess_data(case)
             if len(self.operations) > 0:
-                for opr in self.operations:
+                for opr in self.operations:  # pylint: disable=not-an-iterable
                     source, cases, result = opr.calculate(
                         source, case, cases, self.variables, new_variable_name
                     )
                 return result[new_variable_name]
 
             return source
+
+        raise NotImplementedError(
+            f"{self.__class__.__name__} not implemented for data type: {type(source)=}"
+        )
 
     def __str__(self):
         if self.title is not None:
@@ -599,7 +696,7 @@ def generate_colorbar_from_image(
     output_filename="colorbar_with_ticks.png",
     height_px=25,
     is_log_scale=False,
-):
+):  # pylint: disable=too-many-arguments,too-many-locals
     """
     Generate a color bar image from an existing PNG file with ticks and labels.
 
@@ -641,7 +738,7 @@ def generate_colorbar_from_image(
     img = Image.open(image_filename)
     original_width, _ = img.size
     new_size = (original_width, height_px)
-    img_resized = img.resize(new_size, Image.LANCZOS)
+    img_resized = img.resize(new_size, Image.LANCZOS)  # pylint: disable=no-member
     img_array = np.array(img_resized)
 
     dpi = 200
@@ -710,10 +807,10 @@ def downsample_image_to_relative_width(input_path, output_path, relative_width=1
     dpi : int
         Desired DPI (pixels per inch).
     """
-    A4_WIDTH_MM = 297.0  # A4 width in mm in landscape orientation
-    MM_PER_INCH = 25.4
+    a4_width_in_mm = 297.0  # A4 width in mm in landscape orientation
+    mm_per_inch = 25.4
 
-    final_width_inches = (A4_WIDTH_MM * relative_width) / MM_PER_INCH
+    final_width_inches = (a4_width_in_mm * relative_width) / mm_per_inch
     desired_pixel_width = final_width_inches * dpi
 
     img = Image.open(input_path)
@@ -724,6 +821,6 @@ def downsample_image_to_relative_width(input_path, output_path, relative_width=1
     if scale < 1:
         new_width = int(round(original_width * scale))
         new_height = int(round(original_height * scale))
-        img = img.resize((new_width, new_height), Image.LANCZOS)
+        img = img.resize((new_width, new_height), Image.LANCZOS)  # pylint: disable=no-member
 
     img.save(output_path)

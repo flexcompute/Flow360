@@ -731,7 +731,6 @@ class LocalResourceCache:
         """
         Initializes the resource cache instance.
         """
-        pass
 
     def add(self, resource):
         """

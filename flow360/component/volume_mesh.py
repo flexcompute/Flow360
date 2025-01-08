@@ -827,15 +827,19 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
     file_name: Optional[str] = pd_v2.Field(None, alias="fileName")
 
 
-class MeshStats(pd.BaseModel):
-    n_nodes: int = pd.Field(..., alias="nNodes")
-    n_triangles: int = pd.Field(..., alias="nTriangles")
-    n_quadrilaterals: int = pd.Field(..., alias="nQuadrilaterals")
-    n_tetrahedron: int = pd.Field(..., alias="nTetrahedron")
-    n_prism: int = pd.Field(..., alias="nPrism")
-    n_pyramid: int = pd.Field(..., alias="nPyramid")
-    n_hexahedron: int = pd.Field(..., alias="nHexahedron")
-    n_tet_wedge: int = pd.Field(..., alias="nTetWedge")
+class MeshStats(pd_v2.BaseModel):
+    """
+    Mesh stats
+    """
+
+    n_nodes: int = pd_v2.Field(..., alias="nNodes")
+    n_triangles: int = pd_v2.Field(..., alias="nTriangles")
+    n_quadrilaterals: int = pd_v2.Field(..., alias="nQuadrilaterals")
+    n_tetrahedron: int = pd_v2.Field(..., alias="nTetrahedron")
+    n_prism: int = pd_v2.Field(..., alias="nPrism")
+    n_pyramid: int = pd_v2.Field(..., alias="nPyramid")
+    n_hexahedron: int = pd_v2.Field(..., alias="nHexahedron")
+    n_tet_wedge: int = pd_v2.Field(..., alias="nTetWedge")
 
 
 class VolumeMeshDraftV2(ResourceDraft):
@@ -1120,6 +1124,15 @@ class VolumeMeshV2(AssetBase):
 
     @cached_property
     def stats(self) -> MeshStats:
+        """
+        Get mesh stats
+
+        Returns
+        -------
+        MeshStats
+            return MeshStats object
+        """
+        # pylint: disable=protected-access
         data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
         return MeshStats(**data)
 

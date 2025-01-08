@@ -3,8 +3,7 @@ Report generation interface
 """
 
 import os
-import posixpath
-from typing import List, Optional, Set, Union, Callable
+from typing import Callable, List, Optional, Set, Union
 
 import pydantic as pd
 
@@ -18,6 +17,7 @@ from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ReportInterface
 from flow360.component.resource_base import AssetMetaBaseModel, Flow360Resource
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.utils import validate_type
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_items import (
@@ -26,15 +26,19 @@ from flow360.plugins.report.report_items import (
     Chart3D,
     FileNameStr,
     Inputs,
+    Settings,
     Summary,
     Table,
-    Settings
 )
 from flow360.plugins.report.utils import RequirementItem
 from flow360.plugins.report.uvf_shutter import ShutterBatchService
 
 
 class Report(Flow360Resource):
+    """
+    Report component for interacting with cloud
+    """
+
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
         super().__init__(
@@ -42,6 +46,13 @@ class Report(Flow360Resource):
             meta_class=AssetMetaBaseModel,
             id=id,
         )
+
+    @classmethod
+    def _from_meta(cls, meta: AssetMetaBaseModel):
+        validate_type(meta, "meta", AssetMetaBaseModel)
+        report = cls(id=meta.id)
+        report._set_meta(meta)
+        return report
 
     def download(self, file_name, to_file=None, to_folder=".", overwrite: bool = True):
         """
@@ -134,15 +145,17 @@ class ReportTemplate(Flow360BaseModel):
     """
 
     title: Optional[str] = None
-    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = pd.Field(discriminator="type_name")
+    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = pd.Field(
+        discriminator="type_name"
+    )
     include_case_by_case: bool = False
     settings: Optional[Settings] = Settings()
 
     @pd.model_validator(mode="after")
-    def check_fig_names(cls, model):
+    def check_fig_names(self):
         """Validate and assign unique fig_names to report items."""
         used_fig_names: Set[str] = set()
-        for idx, item in enumerate(model.items):
+        for idx, item in enumerate(self.items):
             if hasattr(item, "fig_name"):
                 fig_name = getattr(item, "fig_name", None)
                 if not fig_name:
@@ -156,19 +169,20 @@ class ReportTemplate(Flow360BaseModel):
                         f"Duplicate fig_name '{fig_name}' found in item at index {idx}"
                     )
                 used_fig_names.add(fig_name)
-        return model
+        # return model
 
+    # pylint: disable=protected-access
     def _generate_shutter_screenshots(self, context: ReportContext):
         service = ShutterBatchService()
 
-        for chart in self.items:
+        for chart in self.items:  # pylint: disable=not-an-iterable
             if isinstance(chart, Chart3D):
                 for case in context.cases:
                     if not chart._fig_exist(case.id, context.data_storage):
                         req = chart._get_shutter_request(case)
                         service.add_request(req)
             elif isinstance(chart, Chart2D):
-                chart3d, reference_case = chart.get_background_chart3D(context.cases)
+                chart3d, reference_case = chart.get_background_chart3d(context.cases)
                 if chart3d is not None:
                     if not chart3d._fig_exist(reference_case.id, context.data_storage):
                         req = chart3d._get_shutter_request(reference_case)
@@ -227,6 +241,7 @@ class ReportTemplate(Flow360BaseModel):
             solver_version=solver_version,
         )
 
+    # pylint: disable=too-many-arguments
     @pd.validate_call(config={"arbitrary_types_allowed": True})
     def create_pdf(
         self,
@@ -234,7 +249,6 @@ class ReportTemplate(Flow360BaseModel):
         cases: list[Case],
         landscape: bool = True,
         data_storage: str = ".",
-        use_cache: bool = True,
         shutter_url: str = None,
         shutter_access_token: str = None,
         shutter_screeshot_process_function: Callable = None,
@@ -252,8 +266,6 @@ class ReportTemplate(Flow360BaseModel):
             Orientation of the report, where `True` represents landscape.
         data_storage : str, default="."
             Directory where the PDF file will be saved.
-        use_cache : bool
-            Whether to force generate data or use cached data
 
         Returns
         -------
@@ -279,20 +291,15 @@ class ReportTemplate(Flow360BaseModel):
 
         self._generate_shutter_screenshots(context)
 
-        # Iterate through all cases together
         for item in self.items:  # pylint: disable=not-an-iterable
             item.get_doc_item(context, self.settings)
 
-        # Iterate each case one at a time
         if self.include_case_by_case is True:
             with report_doc.doc.create(Section("Appendix", numbering=False)):
                 for case in cases:
                     with report_doc.doc.create(Section(f"Case: {case.id}")):
                         case_context = case_context.model_copy(update={"cases": [case]})
                         for item in self.items:  # pylint: disable=not-an-iterable
-                            # Don't attempt to create ReportItems that have a
-                            # select_case_ids which don't include the current case.id
-                            # Checks for valid selecte_case_ids can be done later
                             if isinstance(item, Chart) and item.select_indices is not None:
                                 selected_case_ids = [cases[i].id for i in item.select_indices]
                                 if case.id not in selected_case_ids:
@@ -300,6 +307,4 @@ class ReportTemplate(Flow360BaseModel):
 
                             item.get_doc_item(case_context, self.settings)
 
-        # Generate the PDF
-        # doc.generate_pdf(os.path.join(data_storage, filename), clean_tex=False)
         report_doc.generate_pdf(os.path.join(data_storage, filename))

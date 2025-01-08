@@ -2,7 +2,7 @@
 Module for ReportContext to hold shared configurations between Report and ReportItem
 """
 
-from typing import List, Optional, Type, Union, Callable
+from typing import Callable, List, Optional, Type, Union
 
 import pydantic as pd
 
