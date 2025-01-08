@@ -97,6 +97,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     SliceOutput,
     SurfaceIntegralOutput,
@@ -194,6 +195,7 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",

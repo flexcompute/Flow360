@@ -474,7 +474,9 @@ def translate_acoustic_output(output_params: list):
     aeroacoustic_output = {}
     for output in output_params:
         if isinstance(output, AeroAcousticOutput):
-            aeroacoustic_output["observers"] = [item.value.tolist() for item in output.observers]
+            aeroacoustic_output["observers"] = [
+                item.position.value.tolist() for item in output.observers
+            ]
             aeroacoustic_output["writePerSurfaceOutput"] = output.write_per_surface_output
             aeroacoustic_output["patchType"] = output.patch_type
             if output.permeable_surfaces is not None:

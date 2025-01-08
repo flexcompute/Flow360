@@ -27,6 +27,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.log import log
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -707,6 +708,31 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     )
 
 
+class Observer(Flow360BaseModel):
+    """
+    :class:`Observer` class for setting up the :py:attr:`AeroAcousticOutput.observers`.
+
+    Example
+    -------
+
+    >>> fl.Observer(position=[1, 2, 3] * fl.u.m, group_name="1")
+
+    ====
+    """
+
+    # pylint: disable=no-member
+    position: LengthType.Point = pd.Field(
+        description="Position at which time history of acoustic pressure signal "
+        + "is stored in aeroacoustic output file. The observer position can be outside the simulation domain, "
+        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    )
+    group_name: str = pd.Field(
+        description="Name of the group to which the observer will be assigned "
+        + "for postprocessing purposes in Flow360 web client."
+    )
+    private_attribute_expand: Optional[bool] = pd.Field(None)
+
+
 class AeroAcousticOutput(Flow360BaseModel):
     """
 
@@ -717,16 +743,16 @@ class AeroAcousticOutput(Flow360BaseModel):
 
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [0.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.0, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ... )
 
     Using permeable surfaces:
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [1.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.2, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ...     patch_type="permeable",
     ...     permeable_surfaces=[volume_mesh["inner/interface*"]]
@@ -750,10 +776,8 @@ class AeroAcousticOutput(Flow360BaseModel):
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
-    observers: List[LengthType.Point] = pd.Field(
-        description="List of observer locations at which time history of acoustic pressure signal "
-        + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
-        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    observers: List[Observer] = pd.Field(
+        description="A List of :class:`Observer` objects specifying each observer's position and group name."
     )
     write_per_surface_output: bool = pd.Field(
         False,
@@ -761,6 +785,47 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+
+    @pd.field_validator("observers", mode="before")
+    @classmethod
+    def observer_legacy_converter(cls, input_value):
+        """Convert legacy format of the "observer" field to the new `Observer` format."""
+        converted_observers = []
+        # pylint: disable=fixme
+        # TODO: This should really be done in the updater module.
+        if not isinstance(input_value, list):
+            raise ValueError(
+                f"The `observer` field must be a list. It is {type(input_value)} instead."
+            )
+
+        try:
+            for item in input_value:
+                legacy_field = LengthType.validate(item)
+                converted_observers.append(Observer(position=legacy_field, group_name="0"))
+            log.info(
+                "Items in the provided input list are of an outdated type "
+                + "and will be automatically updated to Observer class."
+            )
+            return converted_observers
+        except pd.ValidationError:
+            return input_value
+
+    @pd.field_validator("observers", mode="after")
+    @classmethod
+    def validate_observer_has_same_unit(cls, input_value):
+        """
+        All observer location should have the same length unit.
+        This is because UI has single toggle for all coordinates.
+        """
+        unit_set = {}
+        for observer in input_value:
+            unit_set[observer.position.units] = None
+            if len(unit_set.keys()) > 1:
+                raise ValueError(
+                    "All observer locations should have the same unit."
+                    f" But now it has both `{list(unit_set.keys())[0]}` and `{list(unit_set.keys())[1]}`."
+                )
+        return input_value
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):

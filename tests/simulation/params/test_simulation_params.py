@@ -37,7 +37,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
-from flow360.component.simulation.outputs.outputs import AeroAcousticOutput
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
