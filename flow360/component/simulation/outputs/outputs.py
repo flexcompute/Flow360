@@ -27,6 +27,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.log import log
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -720,8 +721,15 @@ class Observer(Flow360BaseModel):
     """
 
     # pylint: disable=no-member
-    position: LengthType.Point = pd.Field()
-    group_name: str = pd.Field()
+    position: LengthType.Point = pd.Field(
+        description="Position at which time history of acoustic pressure signal "
+        + "is stored in aeroacoustic output file. The observer position can be outside the simulation domain, "
+        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    )
+    group_name: str = pd.Field(
+        description="Name of the group to which the observer will be assigned "
+        + "for postprocessing purposes in Flow360 web client."
+    )
     private_attribute_expand: Optional[bool] = pd.Field(None)
 
 
@@ -769,9 +777,7 @@ class AeroAcousticOutput(Flow360BaseModel):
     )
     # pylint: disable=no-member
     observers: List[Observer] = pd.Field(
-        description="List of observer locations at which time history of acoustic pressure signal "
-        + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
-        + "but cannot be on or inside the solid surfaces of the simulation domain."
+        description="A List of :class:`Observer` objects specifying each observer's position and group name."
     )
     write_per_surface_output: bool = pd.Field(
         False,
@@ -795,12 +801,13 @@ class AeroAcousticOutput(Flow360BaseModel):
         try:
             for item in input_value:
                 legacy_field = LengthType.validate(item)
-                # Using "0" for group should be fine since it is not possible to use mixture of
-                # legacy and new format in the same list.
                 converted_observers.append(Observer(position=legacy_field, group_name="0"))
+            log.info(
+                "Items in the provided input list are of an outdated type "
+                + "and will be automatically updated to Observer class."
+            )
             return converted_observers
         except pd.ValidationError:
-            # Indicate this is likely already the latest one
             return input_value
 
     @pd.field_validator("observers", mode="after")
@@ -819,16 +826,6 @@ class AeroAcousticOutput(Flow360BaseModel):
                     f" But now it has both `{list(unit_set.keys())[0]}` and `{list(unit_set.keys())[1]}`."
                 )
         return input_value
-
-    # # pylint: disable=no-self-argument
-    # @pd.model_validator(mode="before")
-    # def ensure_consistent_observer_type_and_sort_by_group(cls, input_value):
-    #     """Ensure that items in observers have consistent type."""
-    #     for number, value in enumerate(input_value["observers"]):
-    #         if not isinstance(value, Observer):
-    #             new_value = Observer(position=value, group_name="0")
-    #             input_value["observers"][number] = new_value
-    #     return input_value
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):
