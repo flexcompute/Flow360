@@ -19,7 +19,11 @@ try:
     import aiohttp
 except ImportError:
     aiohttp = None
-import backoff
+try:
+    import backoff
+except ImportError:
+    backoff = None
+
 import pydantic as pd
 
 from flow360 import Env
@@ -715,6 +719,11 @@ class Shutter(Flow360BaseModel):
     screeshot_process_function: Optional[Callable] = None
 
     async def _get_3d_images_api(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
+        if backoff is None:
+            raise RuntimeError(
+                "backoff is not installed. Please install backoff to use this functionality."
+            )
+
         @backoff.on_exception(
             lambda: backoff.constant(3), Flow360WebNotAvailableError, max_time=3600
         )
