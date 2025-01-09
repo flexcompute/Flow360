@@ -4,7 +4,8 @@ from flow360.examples import TutorialUDDDynamicGridRotation
 TutorialUDDDynamicGridRotation.get_files()
 
 project = fl.Project.from_file(
-    TutorialUDDDynamicGridRotation.mesh_filename, name="Tutorial UDD dynamic grid rotation from Python"
+    TutorialUDDDynamicGridRotation.mesh_filename,
+    name="Tutorial UDD dynamic grid rotation from Python",
 )
 
 volume_mesh = project.volume_mesh
@@ -52,7 +53,7 @@ with fl.SI_unit_system:
         ],
         time_stepping=fl.Unsteady(
             steps=500,
-            step_size=0.0014697236919459142,
+            step_size=0.0014693176825506479,
             CFL=fl.RampCFL(initial=1, final=50000, ramp_steps=5),
         ),
         user_defined_dynamics=[
@@ -67,7 +68,7 @@ with fl.SI_unit_system:
                     "theta0": 0.17453292519943295,
                 },
                 output_vars={"omegaDot": "state[0];", "omega": "state[1];", "theta": "state[2];"},
-                state_vars_initial_value=["-1.82621384e-02", "0.0", "1.39626340e-01"],
+                state_vars_initial_value=["-1.82621384e-02", "0.0", "0.5235987755982988"],
                 update_law=[
                     "if (pseudoStep == 0) (momentY - K * ( state[2] - theta0 ) - 2 * zeta * omegaN * I *state[1] ) / I; else state[0];",
                     "if (pseudoStep == 0) state[1] + state[0] * timeStepSize; else state[1];",
