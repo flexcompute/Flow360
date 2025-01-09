@@ -2994,6 +2994,20 @@ doc = ["intersphinx-registry", "matplotlib (>=3.5)", "numpy (>=1.22)", "pydata-s
 test = ["matplotlib", "pytest", "pytest-cov"]
 
 [[package]]
+name = "ordered-set"
+version = "4.1.0"
+description = "An OrderedSet is a custom MutableSet that remembers its order, so that every"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ordered-set-4.1.0.tar.gz", hash = "sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8"},
+    {file = "ordered_set-4.1.0-py3-none-any.whl", hash = "sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562"},
+]
+
+[package.extras]
+dev = ["black", "mypy", "pytest"]
+
+[[package]]
 name = "overrides"
 version = "7.7.0"
 description = "A decorator to automatically detect mismatch when overriding a method."
@@ -3557,6 +3571,28 @@ files = [
 
 [package.extras]
 windows-terminal = ["colorama (>=0.4.6)"]
+
+[[package]]
+name = "pylatex"
+version = "1.4.2"
+description = "A Python library for creating LaTeX files and snippets"
+optional = false
+python-versions = "*"
+files = [
+    {file = "PyLaTeX-1.4.2.tar.gz", hash = "sha256:bb7b21bec57ecdba3f6f44c856ebebdf6549fd6e80661bd44fd5094236729242"},
+]
+
+[package.dependencies]
+ordered-set = "*"
+
+[package.extras]
+all = ["MarkupSafe (==2.0.1)", "alabaster (<0.7.12)", "black", "coverage", "isort", "jinja2 (<3.0)", "matplotlib", "numpy", "pytest (>=4.6)", "pytest-cov", "quantities", "sphinx", "twine"]
+docs = ["MarkupSafe (==2.0.1)", "alabaster (<0.7.12)", "jinja2 (<3.0)", "sphinx"]
+matplotlib = ["matplotlib"]
+matrices = ["numpy"]
+packaging = ["twine"]
+quantities = ["numpy", "quantities"]
+testing = ["black", "coverage", "isort", "pytest (>=4.6)", "pytest-cov"]
 
 [[package]]
 name = "pylint"
@@ -5288,4 +5324,4 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "0e49831c759a1119b47bd954e79f75de6bec2fa4ee0c08f10781000c63ef28b7"
+content-hash = "f9e0baad721660ad3581a26cc62cd7d4116eeacfa2053f56312c157976f534b8"
