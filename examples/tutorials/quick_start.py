@@ -60,4 +60,4 @@ with fl.SI_unit_system:
     )
 
 # Step 5: Run the simulation case with the specified parameters
-project.run_case(params=params, name="Case of Simple Airplane from Python")
+project.run_case(params=params, name="Case of Simple Airplane from Python", use_beta_mesher=False)

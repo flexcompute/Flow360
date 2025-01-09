@@ -101,11 +101,13 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
@@ -198,6 +200,7 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",
@@ -242,4 +245,5 @@ __all__ = [
     "XFOILFile",
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
+    "SurfaceSliceOutput",
 ]

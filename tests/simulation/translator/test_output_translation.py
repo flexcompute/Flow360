@@ -8,6 +8,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -823,12 +824,15 @@ def aeroacoustic_output_config():
     return (
         [
             AeroAcousticOutput(
-                observers=[[0.2, 0.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                observers=[
+                    Observer(position=[0.2, 0.02, 0.03] * u.m, group_name="0"),
+                    Observer(position=[0.0001, 0.02, 0.03] * u.m, group_name="0"),
+                ],
                 write_per_surface_output=True,
             ),
         ],
         {
-            "observers": [[0.002, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
+            "observers": [[0.2, 0.02, 0.03], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
         },
@@ -840,7 +844,10 @@ def aeroacoustic_output_permeable_config():
     return (
         [
             AeroAcousticOutput(
-                observers=[[1.2, 0.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                observers=[
+                    Observer(position=[1.2, 0.02, 0.03] * u.cm, group_name="0"),
+                    Observer(position=[1, 0.02, 0.03] * u.cm, group_name="0"),
+                ],
                 patch_type="permeable",
                 permeable_surfaces=[
                     Surface(
@@ -853,7 +860,7 @@ def aeroacoustic_output_permeable_config():
             ),
         ],
         {
-            "observers": [[0.012, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
+            "observers": [[0.012, 0.0002, 0.0003], [0.01, 0.0002, 0.0003]],
             "patchType": "permeable",
             "permeableSurfaces": ["zoneA/interface-A-B", "zoneA/interface-A-C"],
             "writePerSurfaceOutput": False,
