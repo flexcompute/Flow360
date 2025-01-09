@@ -15,7 +15,10 @@ from urllib.parse import urljoin
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
 # pylint: disable=import-error
-import aiohttp
+try:
+    import aiohttp
+except ImportError:
+    aiohttp = None
 import backoff
 import pydantic as pd
 
@@ -354,6 +357,11 @@ def http_interceptor(func):
 
         log.debug(f"call: {func.__name__}({reprlib.repr(args)}, {reprlib.repr(kwargs)})")
         start_time = time.time()
+
+        if aiohttp is None:
+            raise RuntimeError(
+                "aiohttp is not installed. Please install aiohttp to use this functionality."
+            )
 
         async with await func(*args, **kwargs) as resp:
             log.debug(f"response: {resp}")
