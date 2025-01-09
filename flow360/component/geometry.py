@@ -347,9 +347,11 @@ class Geometry(AssetBase):
         for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
                 continue
-            log.info(f"    >> Tag {tag_index}: {attribute_tag}. Grouping with this tag results in:")
+            log.info(
+                f"    >> Tag '{tag_index}': {attribute_tag}. Grouping with this tag results in:"
+            )
             for index, entity in enumerate(grouped_items[tag_index]):
-                log.info(f"        >> Group {index}: {entity.name}")
+                log.info(f"        >> Boundary {index}: {entity.name}")
                 if show_ids_in_each_group is True:
                     log.info(f"           IDs: {entity.private_attribute_sub_components}")
 

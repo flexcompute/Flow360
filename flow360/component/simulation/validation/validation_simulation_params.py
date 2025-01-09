@@ -4,6 +4,7 @@ validation for SimulationParams
 
 from typing import get_args
 
+from flow360.component.simulation.meshing_param.volume_params import FarfieldModelBase
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
@@ -262,6 +263,7 @@ def _validate_cht_has_heat_transfer(params):
 
 
 def _check_complete_boundary_condition_and_unknown_surface(params):
+    # pylint: disable=too-many-branches
     ## Step 1: Get all boundaries patches from asset cache
 
     current_lvls = get_validation_levels() if get_validation_levels() else []
@@ -269,6 +271,21 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
         return params
 
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
+    # Loop through the ghost surfaces and filter out the ones that are
+    # obsolete depending on the type of automated farfield used.
+    allowed_ghost_surface_names = []
+    if params.meshing is not None and params.meshing.volume_zones is not None:
+        for volume_zone in params.meshing.volume_zones:
+            if isinstance(volume_zone, FarfieldModelBase):
+                # pylint: disable=protected-access
+                allowed_ghost_surface_names = volume_zone._valid_ghost_surface_names()
+
+    asset_boundary_entities = [
+        boundary
+        for boundary in asset_boundary_entities
+        if isinstance(boundary, GhostSurface) is False
+        or boundary.name in allowed_ghost_surface_names
+    ]
 
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
@@ -295,8 +312,6 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
             ]
 
         for entity in entities:
-            if isinstance(entity, GhostSurface):
-                continue
             used_boundaries.add(entity.name)
 
     ## Step 3: Use set operations to find missing and unknown boundaries
@@ -313,8 +328,7 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
     if unknown_boundaries:
         unknown_list = ", ".join(sorted(unknown_boundaries))
         raise ValueError(
-            f"The following boundaries are not known `Surface` "
-            f"entities but appear in the `models` section: {unknown_list}."
+            f"The following boundaries are not valid entities but appear in the `models` section: {unknown_list}."
         )
 
     return params

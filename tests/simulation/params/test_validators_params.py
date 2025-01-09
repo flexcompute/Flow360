@@ -1,13 +1,16 @@
 import json
+import os
 import re
 import unittest
-from typing import Literal
 
 import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    VolumeMeshEntityInfo,
+)
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -48,7 +51,13 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
+from flow360.component.simulation.primitives import (
+    Cylinder,
+    GenericVolume,
+    GhostCircularPlane,
+    GhostSphere,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -412,7 +421,6 @@ def test_incomplete_BC():
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
         ),
     )
-    auto_farfield = AutomatedFarfield(name="my_farfield")
 
     with pytest.raises(
         ValueError,
@@ -440,7 +448,7 @@ def test_incomplete_BC():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
+            r"The following boundaries are not valid entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
         with ValidationLevelContext(ALL):
@@ -460,6 +468,90 @@ def test_incomplete_BC():
                         SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
                     ],
                     private_attribute_asset_cache=asset_cache,
+                )
+
+
+def test_incomplete_BC_geometry():
+    ##:: Construct a dummy asset cache
+    ghost_farfield = GhostSphere(name="farfield", center=(0, 0, 0), max_radius=10)
+    ghost_symmetric_1 = GhostCircularPlane(
+        name="symmetric-1", center=(0, 0, 0), max_radius=10, normalAxis=[0, 0, 1]
+    )
+    ghost_symmetric_2 = GhostCircularPlane(
+        name="symmetric-2", center=(0, 0, 0), max_radius=10, normalAxis=[0, 0, 1]
+    )
+    bc_1 = Surface(
+        name="bc1",
+        private_attribute_tag_key="one_and_only",
+        private_attribute_sub_components=["0"],
+    )
+    bc_2 = Surface(
+        name="bc2",
+        private_attribute_tag_key="one_and_only",
+        private_attribute_sub_components=["1"],
+    )
+    geometry_entity_info = GeometryEntityInfo(
+        ghost_entities=[ghost_farfield, ghost_symmetric_1, ghost_symmetric_2],
+        face_ids=["0", "1"],
+        face_attribute_names=["one_and_only"],
+        grouped_faces=[
+            [bc_1, bc_2],
+        ],
+        face_group_tag="one_and_only",
+    )
+
+    # Missing BC for ghost entities
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries do not have a boundary condition: farfield. Please add them to a boundary condition model in the `models` section."
+        ),
+    ):
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        ),
+                        volume_zones=[AutomatedFarfield(name="farfield", method="auto")],
+                    ),
+                    models=[
+                        Fluid(),
+                        Periodic(surface_pairs=(bc_1, bc_2), spec=Translational()),
+                    ],
+                    private_attribute_asset_cache=AssetCache(
+                        project_length_unit="inch", project_entity_info=geometry_entity_info
+                    ),
+                )
+
+    # Misuse invalid ghost entities
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries are not valid entities but appear in the `models` section: symmetric-2."
+        ),
+    ):
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        ),
+                        volume_zones=[AutomatedFarfield(name="farfield", method="auto")],
+                    ),
+                    models=[
+                        Fluid(),
+                        Periodic(surface_pairs=(bc_1, bc_2), spec=Translational()),
+                        Freestream(entities=[ghost_farfield]),
+                        SlipWall(entities=[ghost_symmetric_2]),
+                    ],
+                    private_attribute_asset_cache=AssetCache(
+                        project_length_unit="inch", project_entity_info=geometry_entity_info
+                    ),
                 )
 
 

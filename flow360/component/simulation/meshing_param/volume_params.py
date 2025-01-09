@@ -2,7 +2,7 @@
 Meshing settings that applies to volumes.
 """
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import Literal, Optional
 
 import pydantic as pd
@@ -113,7 +113,15 @@ class RotationCylinder(CylindricalRefinementBase):
         return values
 
 
-class AutomatedFarfield(Flow360BaseModel):
+class FarfieldModelBase(Flow360BaseModel, metaclass=ABCMeta):
+    """Virtual base class for different farfield meshing models"""
+
+    @abstractmethod
+    def _valid_ghost_surface_names(self):
+        """Returns the valid ghost surface names for the farfield model."""
+
+
+class AutomatedFarfield(FarfieldModelBase):
     """
     Settings for automatic farfield volume zone generation.
     """
@@ -147,11 +155,19 @@ class AutomatedFarfield(Flow360BaseModel):
         raise DeprecationWarning(
             "use of `.symmetry_planes` is deprecated. Please retrieve the symmetric surface(s) directly"
             " from geometry instance like other surfaces instead. e.g. `my_geometry['symmetric']` or"
-            " `my_geometry['symmetric-1']` depending on their availability."
+            " `my_geometry['symmetric-1'], my_geometry['symmetric-2']` depending on their availability."
         )
 
+    def _valid_ghost_surface_names(self):
+        """Returns the valid ghost surface names for the farfield model."""
+        if self.method == "auto":
+            return ["farfield", "symmetric"]
+        if self.method == "quasi-3d":
+            return ["farfield", "symmetric-1", "symmetric-2"]
+        raise ValueError(f"Unknown method for `AutomatedFarfield`: {self.method}")
 
-class UserDefinedFarfield(Flow360BaseModel):
+
+class UserDefinedFarfield(FarfieldModelBase):
     """
     Setting for user defined farfield zone generation.
     This means the "farfield" boundaries are coming from the supplied geometry file
@@ -160,3 +176,7 @@ class UserDefinedFarfield(Flow360BaseModel):
 
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
     name: Optional[str] = pd.Field(None)
+
+    def _valid_ghost_surface_names(self):
+        """Returns the valid ghost surface names for the farfield model."""
+        return []
