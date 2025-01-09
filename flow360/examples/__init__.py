@@ -17,6 +17,7 @@ from .tutorial_cht_solver import TutorialCHTSolver
 from .tutorial_dynamic_derivatives import TutorialDynamicDerivatives
 from .tutorial_periodic_BC import TutorialPeriodicBC
 from .tutorial_RANS_xv15 import TutorialRANSXv15
+from .tutorial_UDD_dynamic_grid_rotation import TutorialUDDDynamicGridRotation
 from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 
 __all__ = [
@@ -39,5 +40,6 @@ __all__ = [
     "TutorialAutoMeshingInternalFlow",
     "TutorialDynamicDerivatives",
     "TutorialRANSXv15",
+    "TutorialUDDDynamicGridRotation",
     "TutorialUDDForcesMoments",
 ]
