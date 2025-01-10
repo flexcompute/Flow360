@@ -109,7 +109,7 @@ def test_reporttemplate_create_in_cloud(mocker, cases):
     assert resp == "mock-response"
 
 
-@pytest.mark.usefixtures("generate_pdf")
+@pytest.mark.usefixtures("generate_pdf", "mock_detect_latex_compiler")
 def test_reporttemplate_create_pdf(cases, tmp_path):
     template = ReportTemplate(
         title="PDF Test", items=[Summary(), Inputs()], include_case_by_case=True
