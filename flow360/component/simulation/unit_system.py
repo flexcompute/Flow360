@@ -169,7 +169,6 @@ def _unit_object_parser(value, unyt_types: List[type]):
         )
     for unyt_type in unyt_types:
         try:
-            print("value = ", value)
             return unyt_type(value["value"], value["units"], dtype=np.float64)
         except u.exceptions.UnitParseError:
             pass
