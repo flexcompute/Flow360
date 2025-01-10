@@ -214,7 +214,8 @@ class ReportTemplate(Flow360BaseModel):
         for item in self.items:  # pylint: disable=not-an-iterable
             for req in item.get_requirements():
                 requirements.add(req)
-        [requirements.add(req) for req in self._get_baseline_requirements()]
+        for req in self._get_baseline_requirements():
+            requirements.add(req)
         return list(requirements)
 
     # pylint: disable=unused-argument

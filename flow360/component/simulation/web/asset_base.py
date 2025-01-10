@@ -164,7 +164,7 @@ class AssetBase(metaclass=ABCMeta):
         return self._webapi.get_download_file_list()
 
     @classmethod
-    def from_cloud(cls, id: str, **kwargs):
+    def from_cloud(cls, id: str, **_):
         """
         Create asset with the given ID.
 
