@@ -14,7 +14,7 @@ from flow360.plugins.report.report_items import (
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 
 # do project_id = None if running for the first time, than replace it with project ID to avoid re-creation of projects
-project_id = None
+project_id = 'prj-7096e7c1-2d6e-4e0a-803d-da1d61a99d96'
 
 if project_id is not None:
     project = fl.Project.from_cloud(project_id)
@@ -152,83 +152,90 @@ for alpha in [0, 2, 4]:
 top_camera = Camera(
     position=(0, 0, 1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(5, 0, 0),
     up=(0, 1, 0),
-    dimension=5,
+    dimension=15,
     dimension_dir="width",
 )
 top_camera_slice = Camera(
     position=(0, 0, 1),
     look_at=(0, 0, 0),
-    pan_target=(2.5, 0, 0),
+    pan_target=(4, 0, 0),
     up=(0, 1, 0),
-    dimension=8,
+    dimension=18,
     dimension_dir="width",
 )
 side_camera = Camera(
     position=(0, -1, 0),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(5, 0, 0),
     up=(0, 0, 1),
-    dimension=5,
+    dimension=12,
     dimension_dir="width",
 )
 side_camera_slice = Camera(
     position=(0, -1, 0),
     look_at=(0, 0, 0),
-    pan_target=(2.5, 0, 1.5),
+    pan_target=(4, 0, 0),
     up=(0, 0, 1),
-    dimension=8,
+    dimension=18,
     dimension_dir="width",
 )
-back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
-front_camera = Camera(position=(-1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
+side_camera_slice_lic = Camera(
+    position=(0, 1, 0),
+    look_at=(0, 0, 0),
+    pan_target=(4, 0, 0),
+    up=(0, 0, 1),
+    dimension=18,
+    dimension_dir="width",
+)
+
+back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=12, dimension_dir="width")
+front_camera = Camera(position=(-1, 0, 0), up=(0, 0, 1), dimension=12, dimension_dir="width")
 bottom_camera = Camera(
     position=(0, 0, -1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(5, 0, 0),
     up=(0, -1, 0),
-    dimension=5,
+    dimension=15,
     dimension_dir="width",
 )
 front_left_bottom_camera = Camera(
     position=(-1, -1, -1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(4, 0, 0),
     up=(0, 0, 1),
-    dimension=5,
+    dimension=15,
     dimension_dir="width",
 )
 rear_right_bottom_camera = Camera(
     position=(1, 1, -1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(4, 0, 0),
     up=(0, 0, 1),
-    dimension=6,
+    dimension=15,
     dimension_dir="width",
 )
 front_left_top_camera = Camera(
     position=(-1, -1, 1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(4, 0, 0),
     up=(0, 0, 1),
-    dimension=6,
+    dimension=15,
     dimension_dir="width",
 )
 rear_left_top_camera = Camera(
     position=(1, -1, 1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(4, 0, 0),
     up=(0, 0, 1),
-    dimension=6,
+    dimension=15,
     dimension_dir="width",
 )
 
 cameras_geo = [
     top_camera,
     side_camera,
-    back_camera,
-    bottom_camera,
     front_left_bottom_camera,
     rear_right_bottom_camera,
 ]
@@ -239,8 +246,6 @@ cameras_cp = [
     front_left_top_camera,
     side_camera,
     rear_left_top_camera,
-    back_camera,
-    bottom_camera,
     front_left_bottom_camera,
     rear_right_bottom_camera,
 ]
@@ -350,8 +355,8 @@ y_slices_screenshots = [
         force_new_page=True,
         show="slices",
         include=[f"slice_y_{name}"],
-        field="velocity",
-        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        field="velocityMag",
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
         camera=side_camera_slice,
         fig_name=f"slice_y_{name}",
     )
@@ -368,8 +373,8 @@ y_slices_lic_screenshots = [
         include=[f"slice_y_{name}"],
         field="velocityVec",
         mode="lic",
-        limits=(0 * u.m / u.s, 50 * u.m / u.s),
-        camera=side_camera_slice,
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
+        camera=side_camera_slice_lic,
         fig_name=f"slice_y_vec_{name}",
     )
     for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
@@ -382,8 +387,8 @@ z_slices_screenshots = [
         force_new_page=True,
         show="slices",
         include=[f"slice_z_{name}"],
-        field="velocity",
-        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        field="velocityMag",
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
         camera=top_camera_slice,
         fig_name=f"slice_z_{name}",
     )
@@ -396,7 +401,7 @@ y_plus_screenshots = [
         items_in_row=2,
         show="boundaries",
         field="yPlus",
-        limits=(0, 5),
+        limits=(0, 100),
         camera=camera,
         fig_name=f"yplus_{i}",
     )
