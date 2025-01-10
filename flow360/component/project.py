@@ -61,9 +61,12 @@ def _set_up_param_entity_info(entity_info, params: SimulationParams):
         for entity in entity_registry.find_by_type(entity_type):
             if entity.private_attribute_tag_key is None:
                 raise Flow360ValueError(
-                    f"`{entity_type.__name__}` without taging information is found."
+                    f"`{entity_type.__name__}` without tagging information is found."
                     f" Please make sure all `{entity_type.__name__}` come from the geometry and is not created ad-hoc."
                 )
+            if entity.private_attribute_tag_key == "__standalone__":
+                # Does not provide information on what grouping user selected.
+                continue
             if group_tag is not None and group_tag != entity.private_attribute_tag_key:
                 raise Flow360ValueError(
                     f"Multiple `{entity_type.__name__}` group tags detected in"
