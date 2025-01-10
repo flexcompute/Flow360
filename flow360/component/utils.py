@@ -9,7 +9,7 @@ import shutil
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Generic, Iterable, Literal, Protocol, TypeVar
+from typing import Literal, Protocol
 
 import zstandard as zstd
 
@@ -18,7 +18,6 @@ from ..cloud.s3_utils import get_local_filename_and_create_folders
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
 from ..exceptions import (
-    Flow360DuplicateAssetError,
     Flow360FileError,
     Flow360RuntimeError,
     Flow360TypeError,
@@ -620,134 +619,6 @@ class HasId(Protocol):
     """
 
     id: str
-
-
-AssetT = TypeVar("AssetT", bound=HasId)
-
-
-class ProjectAssetCache(Generic[AssetT]):
-    """
-    A cache to manage project assets with a unique ID system.
-
-    Attributes
-    ----------
-    current_asset_id : str, optional
-        The ID of the currently set asset.
-    asset_cache : dict of str to AssetT
-        Dictionary storing assets with their IDs as keys.
-    """
-
-    # current_asset_id: str = None
-    # asset_cache: dict[str, AssetT] = {}
-
-    def __init__(self):
-        self.current_asset_id: str = None
-        self.asset_cache: dict[str, AssetT] = {}
-
-    def get_asset(self, asset_id: str = None) -> AssetT:
-        """
-        Retrieve an asset from the cache by ID.
-
-        Parameters
-        ----------
-        asset_id : str, optional
-            The ID of the asset to retrieve. If None, retrieves the asset with `current_id`.
-
-        Returns
-        -------
-        AssetT
-            The asset associated with the specified `asset_id`.
-
-        Raises
-        ------
-        Flow360ValueError
-            If the cache is empty or if the asset is not found.
-        """
-        if not self.asset_cache:
-            raise Flow360ValueError("Cache is empty, no assets are available")
-
-        asset = self.asset_cache.get(self.current_asset_id if not asset_id else asset_id)
-
-        if not asset:
-            raise Flow360ValueError(f"{asset_id} is not available in the project.")
-
-        return asset
-
-    def get_ids(self) -> Iterable[str]:
-        """
-        Retrieve all asset IDs in the cache.
-
-        Returns
-        -------
-        Iterable[str]
-            An iterable of asset IDs.
-        """
-        return list(self.asset_cache.keys())
-
-    def add_asset(self, asset: AssetT):
-        """
-        Add an asset to the cache.
-
-        Parameters
-        ----------
-        asset : AssetT
-            The asset to add. Must have a unique `id` attribute.
-
-        Raises
-        ------
-        Flow360DuplicateAssetError
-            If the specified `asset_id` already exists in the cache.
-        """
-        if self.asset_cache.get(asset.id, None):
-            # pylint: disable=protected-access,no-member
-            raise Flow360DuplicateAssetError(
-                f"{asset._cloud_resource_type_name}:{asset.id} already exists in the project."
-            )
-        self.asset_cache[asset.id] = asset
-        self.current_asset_id = asset.id
-
-    def remove_asset(self, asset_id: str):
-        """
-        Remove an asset from the cache.
-
-        Parameters
-        ----------
-        asset_id : str
-            ID of the asset to be removed.
-
-        Raises
-        ------
-        Flow360ValueError
-            If the cache is empty or if the asset is not found.
-        """
-        if not self.asset_cache:
-            raise Flow360ValueError("Cache is empty, no assets are available")
-
-        asset = self.asset_cache.get(asset_id)
-
-        if not asset:
-            raise Flow360ValueError(f"{asset_id} is not available in the project.")
-
-        self.asset_cache.pop(asset_id)
-
-    def set_id(self, asset_id: str):
-        """
-        Set the current ID to the given `asset_id`, if it exists in the cache.
-
-        Parameters
-        ----------
-        asset_id : str
-            The ID to set as the current ID.
-
-        Raises
-        ------
-        Flow360ValueError
-            If the specified `asset_id` does not exist in the cache.
-        """
-        if asset_id not in self.asset_cache:
-            raise Flow360ValueError(f"{asset_id} is not available in the project.")
-
-        self.current_asset_id = asset_id
 
 
 def _local_download_overwrite(local_storage_path, class_name):

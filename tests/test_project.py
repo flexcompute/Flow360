@@ -17,9 +17,9 @@ def test_from_cloud(mock_id, mock_response):
     project.print_project_tree(is_horizontal=True, str_length=15)
 
     assert isinstance(project._root_asset, fl.Geometry)
-    assert len(project.get_cached_surface_meshe_ids()) == 1
-    assert len(project.get_cached_volume_meshe_ids()) == 1
-    assert len(project.get_cached_case_ids()) == 2
+    assert len(project.get_surface_mesh_ids()) == 1
+    assert len(project.get_volume_mesh_ids()) == 1
+    assert len(project.get_case_ids()) == 2
 
     current_geometry_id = "geo-2877e124-96ff-473d-864b-11eec8648d42"
     current_surface_mesh_id = "sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a"
@@ -31,8 +31,9 @@ def test_from_cloud(mock_id, mock_response):
     assert project.volume_mesh.id == current_volume_mesh_id
     assert project.case.id == current_case_id
 
-    project._case_cache.asset_cache = {}
-    error_msg = "Cache is empty, no assets are available"
+    for case_id in project.get_case_ids():
+        project.project_tree.remove_node(node_id=case_id)
+    error_msg = "No Case is available in this project."
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=current_case_id)
 
