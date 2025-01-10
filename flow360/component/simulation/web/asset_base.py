@@ -17,7 +17,10 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.simulation.entity_info import EntityInfoModel
+from flow360.component.simulation.entity_info import (
+    EntityInfoModel,
+    parse_entity_info_model,
+)
 from flow360.component.utils import (
     _local_download_overwrite,
     remove_properties_by_name,
@@ -94,7 +97,6 @@ class AssetBase(metaclass=ABCMeta):
         cls,
         simulation_dict: dict,
         asset_obj,
-        root_item_entity_info_type: Union[None, type[EntityInfoModel]],
     ):
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
@@ -113,10 +115,7 @@ class AssetBase(metaclass=ABCMeta):
         # Note: This should be addressed when we design the new project client interface.
         remove_properties_by_name(entity_info, "_id")
         # pylint: disable=protected-access
-        if root_item_entity_info_type is None:
-            asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
-        else:
-            asset_obj._entity_info = root_item_entity_info_type.model_validate(entity_info)
+        asset_obj._entity_info = parse_entity_info_model(entity_info)
         return asset_obj
 
     @classmethod
@@ -173,12 +172,9 @@ class AssetBase(metaclass=ABCMeta):
         is not the project root asset and should store the given entity info type instead
         """
         asset_obj = cls(id)
-        root_item_entity_info_type = kwargs.get("root_item_entity_info_type", None)
         # populating the entityInfo object
         simulation_dict = cls._get_simulation_json(asset_obj)
-        asset_obj = cls._from_supplied_entity_info(
-            simulation_dict, asset_obj, root_item_entity_info_type
-        )
+        asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
         return asset_obj
 
     @classmethod
@@ -223,7 +219,7 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id), None)
+        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
         asset_obj._webapi._download_file = _local_download_file  # pylint: disable=protected-access
         if meta_data is not None:
             asset_obj._webapi._set_meta(meta_data)  # pylint: disable=protected-access

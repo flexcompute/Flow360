@@ -127,6 +127,7 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
     id: str = pd_v2.Field()
     solver_version: Optional[str] = pd_v2.Field(None, alias="solverVersion")
     project_id: Optional[str] = pd_v2.Field(None, alias="projectId")
+    parent_id: Optional[str] = pd_v2.Field(None, alias="parentId")
     status: Flow360Status = pd_v2.Field()
     tags: Optional[List[str]] = pd_v2.Field([])
     created_at: Optional[str] = pd_v2.Field(None, alias="createdAt")

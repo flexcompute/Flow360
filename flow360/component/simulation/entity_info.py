@@ -194,3 +194,16 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
         raise NotImplementedError("Not implemented yet.")
+
+
+EntityInfoUnion = Annotated[
+    Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo],
+    pd.Field(discriminator="type_name"),
+]
+
+
+def parse_entity_info_model(data) -> EntityInfoUnion:
+    """
+    parse entity info data and return one of [GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
+    """
+    return pd.TypeAdapter(EntityInfoUnion).validate_python(data)

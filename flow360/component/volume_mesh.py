@@ -822,7 +822,6 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
     VolumeMeshMetaV2 component
     """
 
-    project_id: Optional[str] = pd_v2.Field(None, alias="projectId")
     status: VolumeMeshStatusV2 = pd_v2.Field()  # Overshadowing to ensure correct is_final() method
     file_name: Optional[str] = pd_v2.Field(None, alias="fileName")
 
