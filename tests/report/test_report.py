@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import pytest
 
@@ -110,13 +111,13 @@ def test_reporttemplate_create_in_cloud(mocker, cases):
 
 
 @pytest.mark.usefixtures("generate_pdf", "mock_detect_latex_compiler")
-def test_reporttemplate_create_pdf(cases, tmp_path):
+def test_reporttemplate_create_pdf(cases):
     template = ReportTemplate(
         title="PDF Test", items=[Summary(), Inputs()], include_case_by_case=True
     )
-
-    template.create_pdf("test_report.pdf", cases, data_storage=str(tmp_path))
-    template.create_pdf("test_report", cases, data_storage=str(tmp_path))
+    with tempfile.TemporaryDirectory() as dir:
+        template.create_pdf("test_report.pdf", cases, data_storage=dir)
+        template.create_pdf("test_report", cases, data_storage=dir)
 
 
 def test_reporttemplate_no_items():

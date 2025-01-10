@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import pandas
 import pytest
@@ -41,16 +42,6 @@ def cases(here):
         case = Case.from_local_storage(os.path.join(here, "data", cid), case_meta)
         cases.append(case)
     return cases
-
-
-@pytest.fixture
-def context(cases, tmp_path):
-    context = ReportContext(
-        cases=cases,
-        doc=Document(),
-        data_storage=str(tmp_path),
-    )
-    return context
 
 
 @pytest.mark.parametrize(
@@ -361,79 +352,85 @@ def test_operation():
     Average(fraction=0.5)
 
 
-def test_tables(context):
+def test_tables(cases):
+    with tempfile.TemporaryDirectory() as dir:
+        context = ReportContext(
+            cases=cases,
+            doc=Document(),
+            data_storage=dir,
+        )
 
-    exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+        exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
 
-    avg = Average(fraction=0.1)
-    CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
+        avg = Average(fraction=0.1)
+        CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
 
-    CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
+        CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
 
-    CLCompare = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CL_compare",
-        operations=[Expression(expr="totalCL - 1.5467"), avg],
-    )
+        CLCompare = DataItem(
+            data="surface_forces",
+            exclude=exclude,
+            title="CL_compare",
+            operations=[Expression(expr="totalCL - 1.5467"), avg],
+        )
 
-    CDCompare = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CD_compare",
-        operations=[Expression(expr="totalCD - 0.02100"), avg],
-    )
+        CDCompare = DataItem(
+            data="surface_forces",
+            exclude=exclude,
+            title="CD_compare",
+            operations=[Expression(expr="totalCD - 0.02100"), avg],
+        )
 
-    CLf = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CLf",
-        operations=[Expression(expr="1/2*totalCL + totalCMy"), avg],
-    )
+        CLf = DataItem(
+            data="surface_forces",
+            exclude=exclude,
+            title="CLf",
+            operations=[Expression(expr="1/2*totalCL + totalCMy"), avg],
+        )
 
-    CLr = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CLr",
-        operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
-    )
+        CLr = DataItem(
+            data="surface_forces",
+            exclude=exclude,
+            title="CLr",
+            operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
+        )
 
-    CFy = DataItem(data="surface_forces/totalCFy", exclude=exclude, title="CS", operations=avg)
+        CFy = DataItem(data="surface_forces/totalCFy", exclude=exclude, title="CS", operations=avg)
 
-    statistical_data = Table(
-        data=[
-            "params/reference_geometry/area",
-            CD,
-            Delta(data=CD),
-            CL,
-            CLCompare,
-            CDCompare,
-            CLf,
-            CLr,
-            CFy,
-        ],
-        section_title="Statistical data",
-    )
+        statistical_data = Table(
+            data=[
+                "params/reference_geometry/area",
+                CD,
+                Delta(data=CD),
+                CL,
+                CLCompare,
+                CDCompare,
+                CLf,
+                CLr,
+                CFy,
+            ],
+            section_title="Statistical data",
+        )
 
-    table_df = statistical_data.to_dataframe(context)
-    table_df["Case No."] = table_df["Case No."].astype(int)
-    table_df["area"] = table_df["area"].astype(str)
+        table_df = statistical_data.to_dataframe(context)
+        table_df["Case No."] = table_df["Case No."].astype(int)
+        table_df["area"] = table_df["area"].astype(str)
 
-    print(table_df)
+        print(table_df)
 
-    expected_data = {
-        "Case No.": [1, 2],
-        "area": ["2.17 m**2", "2.17 m**2"],
-        "CD": [0.279249, 0.288997],
-        "Delta CD": [0.000000, 0.009748],
-        "CL": [0.145825, 0.169557],
-        "CL_compare": [-1.400875, -1.377143],
-        "CD_compare": [0.258249, 0.267997],
-        "CLf": [-0.050186, -0.157447],
-        "CLr": [0.196011, 0.327003],
-        "CS": [-0.002243102563079525, -0.0763879853938102],
-    }
-    df_expected = pandas.DataFrame(expected_data)
-    print(df_expected)
+        expected_data = {
+            "Case No.": [1, 2],
+            "area": ["2.17 m**2", "2.17 m**2"],
+            "CD": [0.279249, 0.288997],
+            "Delta CD": [0.000000, 0.009748],
+            "CL": [0.145825, 0.169557],
+            "CL_compare": [-1.400875, -1.377143],
+            "CD_compare": [0.258249, 0.267997],
+            "CLf": [-0.050186, -0.157447],
+            "CLr": [0.196011, 0.327003],
+            "CS": [-0.002243102563079525, -0.0763879853938102],
+        }
+        df_expected = pandas.DataFrame(expected_data)
+        print(df_expected)
 
-    pandas.testing.assert_frame_equal(table_df, df_expected)
+        pandas.testing.assert_frame_equal(table_df, df_expected)
