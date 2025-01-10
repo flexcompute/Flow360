@@ -122,9 +122,8 @@ def test_reporttemplate_create_pdf(cases):
     template = ReportTemplate(
         title="PDF Test", items=[Summary(), Inputs()], include_case_by_case=True
     )
-    with tempfile.TemporaryDirectory() as dir:
-        template.create_pdf("test_report.pdf", cases, data_storage=dir)
-        template.create_pdf("test_report", cases, data_storage=dir)
+    template.create_pdf("test_report.pdf", cases, data_storage='.')
+    template.create_pdf("test_report", cases, data_storage='.')
 
 
 def test_reporttemplate_no_items():
