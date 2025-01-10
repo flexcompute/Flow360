@@ -1,5 +1,4 @@
 import os
-import tempfile
 
 import pytest
 
@@ -122,8 +121,8 @@ def test_reporttemplate_create_pdf(cases):
     template = ReportTemplate(
         title="PDF Test", items=[Summary(), Inputs()], include_case_by_case=True
     )
-    template.create_pdf("test_report.pdf", cases, data_storage='.')
-    template.create_pdf("test_report", cases, data_storage='.')
+    template.create_pdf("test_report.pdf", cases, data_storage=".")
+    template.create_pdf("test_report", cases, data_storage=".")
 
 
 def test_reporttemplate_no_items():
