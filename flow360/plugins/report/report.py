@@ -30,7 +30,10 @@ from flow360.plugins.report.report_items import (
     Summary,
     Table,
 )
-from flow360.plugins.report.utils import RequirementItem
+from flow360.plugins.report.utils import (
+    RequirementItem,
+    get_requirements_from_data_path,
+)
 from flow360.plugins.report.uvf_shutter import ShutterBatchService
 
 
@@ -191,6 +194,9 @@ class ReportTemplate(Flow360BaseModel):
 
         service.process_requests(context)
 
+    def _get_baseline_requirements(self):
+        return get_requirements_from_data_path(["volume_mesh", "surface_mesh", "geometry"])
+
     def get_requirements(self) -> List[RequirementItem]:
         """
         Collects and returns unique requirements from all items.
@@ -208,6 +214,7 @@ class ReportTemplate(Flow360BaseModel):
         for item in self.items:  # pylint: disable=not-an-iterable
             for req in item.get_requirements():
                 requirements.add(req)
+        [requirements.add(req) for req in self._get_baseline_requirements()]
         return list(requirements)
 
     # pylint: disable=unused-argument

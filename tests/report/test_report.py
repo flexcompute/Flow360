@@ -91,7 +91,14 @@ def test_reporttemplate_requirements():
         ]
     )
     reqs = template.get_requirements()
-    expected_keys = ["params", "y_slicing_force_distribution", "total_forces"]
+    expected_keys = [
+        "params",
+        "y_slicing_force_distribution",
+        "total_forces",
+        "volume_mesh",
+        "surface_mesh",
+        "geometry",
+    ]
     expected_reqs = {_requirements_mapping[k] for k in expected_keys}
     assert set(reqs) == expected_reqs
 
@@ -124,4 +131,7 @@ def test_reporttemplate_no_items():
     template = ReportTemplate(title="Empty", items=[])
     assert template.title == "Empty"
     assert template.items == []
-    assert template.get_requirements() == []
+    reqs = template.get_requirements()
+    expected_keys = ["volume_mesh", "surface_mesh", "geometry"]
+    expected_reqs = {_requirements_mapping[k] for k in expected_keys}
+    assert set(reqs) == expected_reqs

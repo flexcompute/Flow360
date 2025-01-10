@@ -70,6 +70,8 @@ _requirements_mapping = {
     "volume_mesh/stats": RequirementItem(
         resource_type="volume_mesh", filename=VolumeMeshV2._mesh_stats_file
     ),
+    "surface_mesh": RequirementItem(resource_type="surface_mesh", filename="simulation.json"),
+    "geometry": RequirementItem(resource_type="geometry", filename="simulation.json"),
 }
 
 
