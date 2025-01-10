@@ -5,7 +5,7 @@ Caveats:
 2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
-from typing import Annotated, List, Literal, Optional, Union, get_args
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -799,6 +799,8 @@ class AeroAcousticOutput(Flow360BaseModel):
             )
 
         class LegacyObserver(Flow360BaseModel):
+            """Legacy schema of the observer"""
+
             legacy_position: LengthType.Point = pd.Field()
 
         try:
