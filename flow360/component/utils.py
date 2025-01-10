@@ -111,6 +111,36 @@ def is_valid_uuid(id, allow_none=False):
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
 
 
+def check_asset_id_type(
+    query_id: str,
+    asset_type: str = Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
+    min_length_short_id: int = 7,
+):
+    """
+    Checks the length of asset_id and if asset id matches the asset type.
+    """
+
+    if query_id is None:
+        return
+
+    prefix_map = {"Geometry": "geo", "SurfaceMesh": "sm", "VolumeMesh": "vm", "Case": "case"}
+
+    query_id_split = query_id.split("-")
+    if len(query_id_split) < 2:
+        raise Flow360ValueError(
+            f"The input asset ID ({query_id}) is too short to retrive the correct asset."
+        )
+
+    if query_id_split[0] != prefix_map[asset_type]:
+        raise Flow360ValueError(f"The input asset ID ({query_id}) is not a {asset_type} ID.")
+
+    query_id_processed = "".join(query_id_split[1:])
+    if len(query_id_processed) < min_length_short_id:
+        raise Flow360ValueError(
+            f"The input asset ID ({query_id}) is too short to retrive the correct asset."
+        )
+
+
 def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
     """Generate the short asset id given the minimum number of the characters excluding hyphen and prefix"""
     full_asset_split = full_asset_id.split("-")

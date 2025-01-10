@@ -91,10 +91,6 @@ class Flow360CloudFileError(Flow360Error):
     """Error when getting file from cloud."""
 
 
-class Flow360DuplicateAssetError(Exception):
-    """Error when attempting to create a duplicate asset."""
-
-
 class Flow360WebError(Flow360Error):
     """Error with the webAPI."""
 

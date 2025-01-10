@@ -42,6 +42,18 @@ def test_get_asset_with_id(mock_id, mock_response):
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
     print(f"The correct asset_id: {project.case.id}")
 
+    query_id = "case"
+    error_msg = (
+        r"The input asset ID \(" + query_id + r"\) is too short to retrive the correct asset."
+    )
+    with pytest.raises(Flow360ValueError, match=error_msg):
+        project.get_case(asset_id=query_id)
+
+    query_id = "sm-123456"
+    error_msg = r"The input asset ID \(" + query_id + r"\) is not a Case ID."
+    with pytest.raises(Flow360ValueError, match=error_msg):
+        project.get_case(asset_id=query_id)
+
     query_id = "case-b0"
     error_msg = (
         r"The input asset ID \(" + query_id + r"\) is too short to retrive the correct asset."

@@ -41,16 +41,12 @@ from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     MeshNameParser,
+    check_asset_id_type,
     get_short_asset_id,
     match_file_pattern,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import (
-    Flow360DuplicateAssetError,
-    Flow360FileError,
-    Flow360ValueError,
-    Flow360WebError,
-)
+from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
 from flow360.version import __solver_version__
 
@@ -232,13 +228,12 @@ class ProjectTree(pd.BaseModel):
 
     def _update_case_mesh_label(self):
         """Check and remove unnecessary case mesh label"""
-        for node in self.nodes.values():
-            if not node.case_mesh_id:
-                continue
+        for node_id in self._get_asset_ids_by_type(asset_type="Case"):
+            node = self.nodes.get(node_id)
             parent_node = self.get_parent_node(node=node)
             if not parent_node:
                 continue
-            if node.case_mesh_id == parent_node.case_mesh_id:
+            if parent_node.asset_type != "Case" or node.case_mesh_id == parent_node.case_mesh_id:
                 node.case_mesh_label = None
 
     def get_parent_node(self, node: ProjectTreeNode):
@@ -262,7 +257,7 @@ class ProjectTree(pd.BaseModel):
     def add_node(self, asset_record: dict):
         """Add new node to the tree"""
         if self._has_node(asset_id=asset_record["id"]):
-            return
+            return False
 
         parent_id = asset_record["parentId"]
         parent_case_id = asset_record["parentCaseId"]
@@ -270,7 +265,7 @@ class ProjectTree(pd.BaseModel):
         if parent_case_id:
             parent_id = parent_case_id
         if asset_record["type"] == "Case":
-            case_mesh_id = parent_id
+            case_mesh_id = asset_record["parentId"]
 
         new_node = ProjectTreeNode(
             asset_id=asset_record["id"],
@@ -278,7 +273,7 @@ class ProjectTree(pd.BaseModel):
             asset_type=asset_record["type"],
             parent_id=parent_id,
             case_mesh_id=case_mesh_id,
-            case_mesh_label=None,
+            case_mesh_label=case_mesh_id,
             min_length_short_id=self.min_length_short_id,
         )
         if new_node.parent_id is None:
@@ -294,6 +289,7 @@ class ProjectTree(pd.BaseModel):
                 new_node.min_length_short_id += 1
         self.nodes.update({new_node.asset_id: new_node})
         self._update_case_mesh_label()
+        return True
 
     def remove_node(self, node_id: str):
         """Remove node from the tree"""
@@ -310,8 +306,24 @@ class ProjectTree(pd.BaseModel):
         asset_type: str = Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
         query_id: str = None,
     ) -> str:
-        """Use asset_id to check if the asset already exists in the project tree"""
+        """
+        Returns full asset id of a certain asset type given the query_id.
 
+        Raises
+        ------
+        Flow360ValueError
+            1. If query_id does not match the asset type.
+            2. If query_id is too short.
+            3. If query_id is doet not exist in the project tree.
+
+        Returns
+        -------
+        The full asset id.
+        """
+
+        check_asset_id_type(
+            query_id=query_id, asset_type=asset_type, min_length_short_id=self.min_length_short_id
+        )
         asset_type_ids = self._get_asset_ids_by_type(asset_type=asset_type)
         if len(asset_type_ids) == 0:
             raise Flow360ValueError(f"No {asset_type} is available in this project.")
@@ -319,16 +331,6 @@ class ProjectTree(pd.BaseModel):
         if query_id is None:
             return asset_type_ids[-1]
 
-        query_id_split = query_id.split("-")
-        if len(query_id_split) < 2:
-            raise Flow360ValueError(
-                f"The input asset ID ({query_id}) is too short to retrive the correct asset."
-            )
-        query_id_processed = "".join(query_id_split[1:])
-        if len(query_id_processed) < self.min_length_short_id:
-            raise Flow360ValueError(
-                f"The input asset ID ({query_id}) is too short to retrive the correct asset."
-            )
         for asset_id in asset_type_ids:
             if asset_id.startswith(query_id):
                 return asset_id
@@ -415,10 +417,6 @@ class Project(pd.BaseModel):
             The surface mesh asset.
         """
         self._check_initialized()
-        if self.metadata.root_item_type is not RootType.GEOMETRY:
-            raise Flow360ValueError(
-                "Surface mesh assets are only present in projects initialized from geometry."
-            )
         asset_id = self.project_tree.get_full_asset_id(query_id=asset_id, asset_type="SurfaceMesh")
         return SurfaceMesh.from_cloud(surface_mesh_id=asset_id)
 
@@ -460,14 +458,6 @@ class Project(pd.BaseModel):
             The volume mesh asset.
         """
         self._check_initialized()
-        if self.metadata.root_item_type is RootType.VOLUME_MESH:
-            if asset_id is not None:
-                raise Flow360ValueError(
-                    "Cannot retrieve volume meshes by asset ID in a project created from volume mesh, "
-                    "there is only one root volume mesh asset in this project. Use project.volume_mesh()."
-                )
-
-            return self._root_asset
         asset_id = self.project_tree.get_full_asset_id(query_id=asset_id, asset_type="VolumeMesh")
         return VolumeMeshV2.from_cloud(id=asset_id)
 
@@ -538,10 +528,6 @@ class Project(pd.BaseModel):
         Iterable[str]
             An iterable of asset IDs.
         """
-        if self.metadata.root_item_type is not RootType.GEOMETRY:
-            raise Flow360ValueError(
-                "Surface mesh assets are only present in objects initialized from geometry."
-            )
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="SurfaceMesh")
 
@@ -554,11 +540,6 @@ class Project(pd.BaseModel):
         Iterable[str]
             An iterable of asset IDs.
         """
-        if self.metadata.root_item_type is RootType.VOLUME_MESH:
-            raise Flow360ValueError(
-                "Cannot retrieve volume meshes by asset ID in a project created from volume mesh, "
-                "there is only one root volume mesh asset in this project. Use project.volume_mesh()."
-            )
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="VolumeMesh")
 
@@ -792,8 +773,12 @@ class Project(pd.BaseModel):
             key=lambda d: parse_datetime(d["updatedAt"]),
         )
 
+        is_duplicate = True
         for record in asset_records:
-            self.project_tree.add_node(asset_record=record)
+            success = self.project_tree.add_node(asset_record=record)
+            if success:
+                is_duplicate = False
+        return is_duplicate
 
     def refresh_project_tree(self):
         """Refresh the local project tree by fetching the latest project tree from cloud."""
@@ -954,13 +939,8 @@ class Project(pd.BaseModel):
         if not run_async:
             destination_obj.wait()
 
-        if self.project_tree._has_node(asset_id=destination_obj.id):
-            # pylint: disable=protected-access,no-member
-            raise Flow360DuplicateAssetError(
-                f"{destination_obj._cloud_resource_type_name}:{destination_obj.id} already exists in the project."
-            )
-        self._get_tree_from_cloud(destination_obj=destination_obj)
-        return destination_obj
+        is_duplicate = self._get_tree_from_cloud(destination_obj=destination_obj)
+        return destination_obj, is_duplicate
 
     @pd.validate_call
     def generate_surface_mesh(
@@ -995,18 +975,18 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesher can only be run by projects with a geometry root asset"
             )
-        try:
-            self._run(
-                params=params,
-                target=SurfaceMesh,
-                draft_name=name,
-                run_async=run_async,
-                fork_from=None,
-                solver_version=solver_version,
-                use_beta_mesher=use_beta_mesher,
-            )
-        except Flow360DuplicateAssetError:
+        surface_mesh, is_duplicate = self._run(
+            params=params,
+            target=SurfaceMesh,
+            draft_name=name,
+            run_async=run_async,
+            fork_from=None,
+            solver_version=solver_version,
+            use_beta_mesher=use_beta_mesher,
+        )
+        if is_duplicate:
             log.warning("We already generated this Surface Mesh in the project.")
+        return surface_mesh
 
     @pd.validate_call
     def generate_volume_mesh(
@@ -1041,18 +1021,18 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Volume mesher can only be run by projects with a geometry root asset"
             )
-        try:
-            self._run(
-                params=params,
-                target=VolumeMeshV2,
-                draft_name=name,
-                run_async=run_async,
-                fork_from=None,
-                solver_version=solver_version,
-                use_beta_mesher=use_beta_mesher,
-            )
-        except Flow360DuplicateAssetError:
+        volume_mesh, is_duplicate = self._run(
+            params=params,
+            target=VolumeMeshV2,
+            draft_name=name,
+            run_async=run_async,
+            fork_from=None,
+            solver_version=solver_version,
+            use_beta_mesher=use_beta_mesher,
+        )
+        if is_duplicate:
             log.warning("We already generated this Volume Mesh in the project.")
+        return volume_mesh
 
     @pd.validate_call(config={"arbitrary_types_allowed": True})
     def run_case(
@@ -1081,15 +1061,16 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         """
         self._check_initialized()
-        try:
-            self._run(
-                params=params,
-                target=Case,
-                draft_name=name,
-                run_async=run_async,
-                fork_from=fork_from,
-                solver_version=solver_version,
-                use_beta_mesher=use_beta_mesher,
-            )
-        except Flow360DuplicateAssetError:
+        case, is_duplicate = self._run(
+            params=params,
+            target=Case,
+            draft_name=name,
+            run_async=run_async,
+            fork_from=fork_from,
+            solver_version=solver_version,
+            use_beta_mesher=use_beta_mesher,
+        )
+        if is_duplicate:
+            print("We already submitted this Case in the project.")
             log.warning("We already submitted this Case in the project.")
+        return case
