@@ -9,8 +9,9 @@ import shutil
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Literal, Protocol
+from typing import Literal, Optional, Protocol
 
+import pydantic as pd
 import zstandard as zstd
 
 from ..accounts_utils import Accounts
@@ -109,36 +110,6 @@ def is_valid_uuid(id, allow_none=False):
             raise ValueError(f"{id} is not a valid UUID.")
     except ValueError as exc:
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
-
-
-def check_asset_id_type(
-    query_id: str,
-    asset_type: str = Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
-    min_length_short_id: int = 7,
-):
-    """
-    Checks the length of asset_id and if asset id matches the asset type.
-    """
-
-    if query_id is None:
-        return
-
-    prefix_map = {"Geometry": "geo", "SurfaceMesh": "sm", "VolumeMesh": "vm", "Case": "case"}
-
-    query_id_split = query_id.split("-")
-    if len(query_id_split) < 2:
-        raise Flow360ValueError(
-            f"The input asset ID ({query_id}) is too short to retrive the correct asset."
-        )
-
-    if query_id_split[0] != prefix_map[asset_type]:
-        raise Flow360ValueError(f"The input asset ID ({query_id}) is not a {asset_type} ID.")
-
-    query_id_processed = "".join(query_id_split[1:])
-    if len(query_id_processed) < min_length_short_id:
-        raise Flow360ValueError(
-            f"The input asset ID ({query_id}) is too short to retrive the correct asset."
-        )
 
 
 def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
@@ -649,6 +620,64 @@ class HasId(Protocol):
     """
 
     id: str
+
+
+class AssetInfo(pd.BaseModel):
+    """
+    AssetInfo model for retrieving an asset from the cloud
+    The asset id and asset type are validated before the retrieval.
+
+    Attributes
+    ----------
+    asset_id : Optional[str]
+        Unique identifier for the asset. If not provided, the latest asset of this asset_type
+        will be retrieved.
+
+    asset_type: str
+        The asset type for retrieval.
+
+    min_length_short_id: pd.PositiveInt
+        The minimum length of the asset id allowed for retrieving the asset.
+    """
+
+    asset_id: Optional[str] = pd.Field(None)
+    asset_type: Literal["Project", "Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+    min_length_short_id: pd.PositiveInt = pd.Field(7)
+
+    @pd.model_validator(mode="after")
+    def check_asset_id_type(self):
+        """
+        Checks the length of asset_id and if asset id matches the asset type.
+        """
+
+        if self.asset_id is None:
+            return self
+        prefix_map = {
+            "Project": "prj",
+            "Geometry": "geo",
+            "SurfaceMesh": "sm",
+            "VolumeMesh": "vm",
+            "Case": "case",
+        }
+
+        # pylint: disable=no-member
+        query_id_split = self.asset_id.split("-")
+        if len(query_id_split) < 2:
+            raise Flow360ValueError(
+                f"The input asset ID ({self.asset_id}) is too short to retrive the correct asset."
+            )
+
+        if query_id_split[0] != prefix_map[self.asset_type]:
+            raise Flow360ValueError(
+                f"The input asset ID ({self.asset_id}) is not a {self.asset_type} ID."
+            )
+
+        query_id_processed = "".join(query_id_split[1:])
+        if len(query_id_processed) < self.min_length_short_id:
+            raise Flow360ValueError(
+                f"The input asset ID ({self.asset_id}) is too short to retrive the correct asset."
+            )
+        return self
 
 
 def _local_download_overwrite(local_storage_path, class_name):

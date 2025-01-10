@@ -40,8 +40,8 @@ from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
+    AssetInfo,
     MeshNameParser,
-    check_asset_id_type,
     get_short_asset_id,
     match_file_pattern,
 )
@@ -301,11 +301,8 @@ class ProjectTree(pd.BaseModel):
             parent_node.remove_child(node)
         self.nodes.pop(node.asset_id)
 
-    def get_full_asset_id(
-        self,
-        asset_type: str = Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
-        query_id: str = None,
-    ) -> str:
+    @pd.validate_call
+    def get_full_asset_id(self, query_asset: AssetInfo) -> str:
         """
         Returns full asset id of a certain asset type given the query_id.
 
@@ -321,21 +318,18 @@ class ProjectTree(pd.BaseModel):
         The full asset id.
         """
 
-        check_asset_id_type(
-            query_id=query_id, asset_type=asset_type, min_length_short_id=self.min_length_short_id
-        )
-        asset_type_ids = self._get_asset_ids_by_type(asset_type=asset_type)
+        asset_type_ids = self._get_asset_ids_by_type(asset_type=query_asset.asset_type)
         if len(asset_type_ids) == 0:
-            raise Flow360ValueError(f"No {asset_type} is available in this project.")
+            raise Flow360ValueError(f"No {query_asset.asset_type} is available in this project.")
 
-        if query_id is None:
+        if query_asset.asset_id is None:
             return asset_type_ids[-1]
 
         for asset_id in asset_type_ids:
-            if asset_id.startswith(query_id):
+            if asset_id.startswith(query_asset.asset_id):
                 return asset_id
         raise Flow360ValueError(
-            f"This asset does not exist in this project. Please check the input asset ID ({query_id})."
+            f"This asset does not exist in this project. Please check the input asset ID ({query_asset.asset_id})."
         )
 
 
@@ -417,7 +411,9 @@ class Project(pd.BaseModel):
             The surface mesh asset.
         """
         self._check_initialized()
-        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id, asset_type="SurfaceMesh")
+        asset_id = self.project_tree.get_full_asset_id(
+            query_asset=AssetInfo(asset_id=asset_id, asset_type="SurfaceMesh")
+        )
         return SurfaceMesh.from_cloud(surface_mesh_id=asset_id)
 
     @property
@@ -458,7 +454,9 @@ class Project(pd.BaseModel):
             The volume mesh asset.
         """
         self._check_initialized()
-        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id, asset_type="VolumeMesh")
+        asset_id = self.project_tree.get_full_asset_id(
+            query_asset=AssetInfo(asset_id=asset_id, asset_type="VolumeMesh")
+        )
         return VolumeMeshV2.from_cloud(id=asset_id)
 
     @property
@@ -499,7 +497,9 @@ class Project(pd.BaseModel):
             The case asset.
         """
         self._check_initialized()
-        asset_id = self.project_tree.get_full_asset_id(query_id=asset_id, asset_type="Case")
+        asset_id = self.project_tree.get_full_asset_id(
+            query_asset=AssetInfo(asset_id=asset_id, asset_type="Case")
+        )
         return Case.from_cloud(case_id=asset_id)
 
     @property
@@ -682,12 +682,16 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the root asset cannot be retrieved for the project.
         """
-        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
+
+        project_info = AssetInfo(asset_id=project_id, asset_type="Project")
+        project_api = RestApi(ProjectInterface.endpoint, id=project_info.asset_id)
         info = project_api.get()
         if not isinstance(info, dict):
-            raise Flow360WebError(f"Cannot load project {project_id}, missing project data.")
+            raise Flow360WebError(
+                f"Cannot load project {project_info.asset_id}, missing project data."
+            )
         if not info:
-            raise Flow360WebError(f"Couldn't retrieve project info for {project_id}")
+            raise Flow360WebError(f"Couldn't retrieve project info for {project_info.asset_id}")
         meta = ProjectMeta(**info)
         root_asset = None
         root_type = meta.root_item_type
@@ -696,7 +700,7 @@ class Project(pd.BaseModel):
         elif root_type == RootType.VOLUME_MESH:
             root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
         if not root_asset:
-            raise Flow360ValueError(f"Couldn't retrieve root asset for {project_id}")
+            raise Flow360ValueError(f"Couldn't retrieve root asset for {project_info.asset_id}")
         project = Project(
             metadata=meta, project_tree=ProjectTree(), solver_version=root_asset.solver_version
         )

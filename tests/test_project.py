@@ -1,3 +1,4 @@
+import pydantic as pd
 import pytest
 
 import flow360 as fl
