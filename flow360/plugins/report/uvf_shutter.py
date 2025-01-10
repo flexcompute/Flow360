@@ -823,10 +823,12 @@ class Shutter(Flow360BaseModel):
                 else:
                     cached_files[case_id].append(img_full_path)
 
-        if self.screeshot_process_function is not None:
-            process_function = self.screeshot_process_function
-        else:
-            process_function = self._get_3d_images_api
-        img_files_generated = asyncio.run(process_function(screenshots))
+        img_files_generated = {}
+        if len(screenshots) > 0:
+            if self.screeshot_process_function is not None:
+                process_function = self.screeshot_process_function
+            else:
+                process_function = self._get_3d_images_api
+            img_files_generated = asyncio.run(process_function(screenshots))
 
         return {**img_files_generated, **cached_files}
