@@ -128,7 +128,9 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     ##:: >> Step 6: Tell surface mesher how do we group boundaries.
     translated["boundaries"] = {}
     grouped_faces: List[Surface] = (
-        input_params.private_attribute_asset_cache.project_entity_info.get_boundaries()
+        input_params.private_attribute_asset_cache.project_entity_info.get_boundaries(
+            include_ghost_entities=False
+        )
     )
     for surface in grouped_faces:
         for face_id in surface.private_attribute_sub_components:

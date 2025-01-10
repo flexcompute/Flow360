@@ -603,13 +603,6 @@ class Project(pd.BaseModel):
             if length_key not in defaults[cache_key]:
                 raise Flow360ValueError("Simulation params do not contain default length unit info")
 
-        length_unit = defaults[cache_key][length_key]
-
-        with model_attribute_unlock(params.private_attribute_asset_cache, length_key):
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
-            )
-
         root_asset = self._root_asset
 
         draft = Draft.create(
@@ -620,6 +613,13 @@ class Project(pd.BaseModel):
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
         ).submit()
+
+        length_unit = defaults[cache_key][length_key]
+
+        with model_attribute_unlock(params.private_attribute_asset_cache, length_key):
+            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
+                length_unit
+            )
 
         # Check if there are any new draft entities that have been added in the params by the user
         entity_info = _set_up_param_entity_info(root_asset.entity_info, params)

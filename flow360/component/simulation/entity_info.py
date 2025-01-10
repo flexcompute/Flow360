@@ -149,14 +149,15 @@ class GeometryEntityInfo(EntityInfoModel):
             registry.register(item)
         return registry
 
-    def get_boundaries(self, attribute_name: str = None) -> list:
+    def get_boundaries(
+        self, attribute_name: str = None, include_ghost_entities: bool = True
+    ) -> list:
         """
         Get the full list of boundaries.
         If attribute_name is supplied then ignore stored face_group_tag and use supplied one.
         """
-        return (
-            self._get_list_of_entities_by_attribute_name(attribute_name, "face")
-            + self.ghost_entities
+        return self._get_list_of_entities_by_attribute_name(attribute_name, "face") + (
+            self.ghost_entities if include_ghost_entities else []
         )
 
 

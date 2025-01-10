@@ -4,9 +4,7 @@ from flow360.examples import Airplane
 
 # Step 1: Create a new project from a predefined geometry file in the Airplane example
 # This initializes a project with the specified geometry and assigns it a name.
-project = fl.Project.from_file(
-    Airplane.geometry, name="DELETE ME!!!", solver_version="TestGhostEntities-24.11.16"
-)
+project = fl.Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
 geo = project.geometry  # Access the geometry of the project
 
 # Step 2: Display available groupings in the geometry (helpful for identifying group names)
@@ -46,7 +44,9 @@ with fl.SI_unit_system:
                 name="Wall",
             ),
             fl.Freestream(
-                surfaces=[geo["farfield"]],  # Apply freestream boundary to the far-field zone
+                surfaces=[
+                    far_field_zone.farfield
+                ],  # Apply freestream boundary to the far-field zone
                 name="Freestream",
             ),
         ],
@@ -60,4 +60,4 @@ with fl.SI_unit_system:
     )
 
 # Step 5: Run the simulation case with the specified parameters
-project.run_case(params=params, name="With new farfield")
+project.run_case(params=params, name="Case of Simple Airplane from Python")
