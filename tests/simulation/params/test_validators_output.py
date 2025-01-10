@@ -15,6 +15,24 @@ def test_aeroacoustic_output_observer_converter():
     assert all(model.observers[1].position == [0.0001, 0.02, 0.03] * u.m)
     assert model.observers[1].group_name == "0"
 
+    model = AeroAcousticOutput.model_validate(
+        {
+            "name": "Aeroacoustic output",
+            "observers": [
+                {"units": "m", "value": [0.2, 0.02, 0.03]},
+                {"units": "m", "value": [0.0001, 0.02, 0.03]},
+            ],
+            "output_type": "AeroAcousticOutput",
+            "patch_type": "solid",
+            "write_per_surface_output": False,
+        }
+    )
+
+    assert all(model.observers[0].position == [0.2, 0.02, 0.03] * u.m)
+    assert model.observers[0].group_name == "0"
+    assert all(model.observers[1].position == [0.0001, 0.02, 0.03] * u.m)
+    assert model.observers[1].group_name == "0"
+
 
 def test_aeroacoustic_observer_unit_validator():
     with pytest.raises(
