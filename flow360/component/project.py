@@ -898,6 +898,9 @@ class Project(pd.BaseModel):
                 length_unit
             )
 
+        online_project_tree_dict = self._project_webapi.get(method="tree")["records"]
+        online_asset_ids = [record["id"] for record in online_project_tree_dict]
+
         root_asset = self._root_asset
 
         draft = Draft.create(
@@ -939,8 +942,9 @@ class Project(pd.BaseModel):
         if not run_async:
             destination_obj.wait()
 
-        is_duplicate = self._get_tree_from_cloud(destination_obj=destination_obj)
-        return destination_obj, is_duplicate
+        is_cloud_duplicate = destination_id in online_asset_ids
+        is_local_duplicate = self._get_tree_from_cloud(destination_obj=destination_obj)
+        return destination_obj, (is_local_duplicate or is_cloud_duplicate)
 
     @pd.validate_call
     def generate_surface_mesh(
@@ -1071,6 +1075,5 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
         )
         if is_duplicate:
-            print("We already submitted this Case in the project.")
             log.warning("We already submitted this Case in the project.")
         return case
