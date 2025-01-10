@@ -2,7 +2,7 @@
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver.
 (Yes but they share the same output_fields)
-2. We do not support mulitple output frequencies/file format for the same type of output.
+2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
 from typing import Annotated, List, Literal, Optional, Union, get_args
