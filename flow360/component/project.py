@@ -675,7 +675,7 @@ class Project(pd.BaseModel):
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
-        project._update_project_tree()
+        project._get_tree_from_cloud()
         return project
 
     @classmethod
@@ -727,7 +727,7 @@ class Project(pd.BaseModel):
             project._root_asset = root_asset
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
-        project._update_project_tree()
+        project._get_tree_from_cloud()
         return project
 
     def _check_initialized(self):
@@ -745,9 +745,9 @@ class Project(pd.BaseModel):
             )
 
     # pylint: disable=protected-access
-    def _update_project_tree(self, destination_obj: AssetOrResource = None):
+    def _get_tree_from_cloud(self, destination_obj: AssetOrResource = None):
         """
-        Update the local project tree based on the input.
+        Get the project tree from cloud.
 
         Parameters
         ----------
@@ -797,7 +797,7 @@ class Project(pd.BaseModel):
 
     def refresh_project_tree(self):
         """Refresh the local project tree by fetching the latest project tree from cloud."""
-        return self._update_project_tree()
+        return self._get_tree_from_cloud()
 
     def print_project_tree(self, str_length: int = 20, is_horizontal: bool = False):
         """Print the project tree to the terminal.
@@ -959,7 +959,7 @@ class Project(pd.BaseModel):
             raise Flow360DuplicateAssetError(
                 f"{destination_obj._cloud_resource_type_name}:{destination_obj.id} already exists in the project."
             )
-        self._update_project_tree(destination_obj=destination_obj)
+        self._get_tree_from_cloud(destination_obj=destination_obj)
         return destination_obj
 
     @pd.validate_call
