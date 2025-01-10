@@ -176,7 +176,7 @@ class KOmegaSSTModelConstants(Flow360BaseModel):
 
     Example
     -------
-    >>> fl.SpalartAllmaras(
+    >>> fl.KOmegaSST(
     ...     modeling_constants = KOmegaSSTModelConstants(C_sigma_omega1=2.718)
     ... )
     """
