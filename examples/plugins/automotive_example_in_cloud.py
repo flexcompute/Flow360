@@ -1,15 +1,16 @@
 import flow360 as fl
-from flow360 import log
+from flow360 import log, u
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
     Camera,
     Chart2D,
     Chart3D,
     Inputs,
+    Settings,
     Summary,
     Table,
 )
-from flow360.plugins.report.utils import Average, DataItem, Delta, Expression
+from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 from flow360.user_config import UserConfig
 
 log.set_logging_level("DEBUG")
@@ -18,12 +19,34 @@ UserConfig.set_profile("auto_test_1")
 
 fl.Env.preprod.active()
 
+case1 = fl.Case("case-ae75de95-bc8d-4f12-8607-6fec7763d36a")
+case2 = fl.Case("case-713d66b6-4fc5-49ed-a5ea-2850d0d8d2bb")
+case3 = fl.Case("case-1c8f54e9-c3cb-415f-bd58-54a37b4baaca")
 
-case1 = fl.Case("case-bbf9a4dc-f5f7-42ee-bfe8-8905d9e45386")  # DrivAer
-case2 = fl.Case("case-739c1c4d-aeb1-4c6e-af0c-b3ffb66c7a63")  # DrivAer beta=2
-case3 = fl.Case("case-84582ff7-e421-4b6d-bb02-9af4f897764c")  # DrivAer beta=4
 
-SOLVER_VERSION = "reportPipeline-24.10.4"
+cases = [case1, case2, case3]
+freestream_surfaces = ["24", "25"]
+slip_wall_surfaces = ["27", "28", "29", "30", "58"]
+exclude = ["26", "33", "57", "59"]
+size = "225M"
+
+# # dev:
+# fl.Env.dev.active()
+# case1 = fl.Case("case-1e3f910e-337b-4e69-a313-0a42cefef7dc")  # // 0 Cpt, wall shear stress,
+# case2 = fl.Case("case-f71193a2-0ce1-40b5-a087-c456fcf0bb21")  # // 2
+# case3 = fl.Case("case-4dc6f67a-1bce-4152-b523-5822e09ce122")  # // 4
+
+
+# cases = [case1]
+# freestream_surfaces = ["blk-1/WT_side1", "blk-1/WT_side2", "blk-1/WT_inlet", "blk-1/WT_outlet"]
+# slip_wall_surfaces = ["blk-1/WT_ceiling", "blk-1/WT_ground_front", "blk-1/WT_ground"]
+# exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+# size = "5.7M"
+
+
+exclude += freestream_surfaces + slip_wall_surfaces
+
+SOLVER_VERSION = "reportPipeline-24.10.13"
 
 
 top_camera = Camera(
@@ -37,9 +60,9 @@ top_camera = Camera(
 top_camera_slice = Camera(
     position=(0, 0, 1),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
+    pan_target=(2.5, 0, 0),
     up=(0, 1, 0),
-    dimension=10,
+    dimension=8,
     dimension_dir="width",
 )
 side_camera = Camera(
@@ -53,9 +76,9 @@ side_camera = Camera(
 side_camera_slice = Camera(
     position=(0, -1, 0),
     look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 1.5),
+    pan_target=(2.5, 0, 1.5),
     up=(0, 0, 1),
-    dimension=10,
+    dimension=8,
     dimension_dir="width",
 )
 back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
@@ -81,7 +104,7 @@ rear_right_bottom_camera = Camera(
     look_at=(0, 0, 0),
     pan_target=(1.5, 0, 0),
     up=(0, 0, 1),
-    dimension=5,
+    dimension=6,
     dimension_dir="width",
 )
 front_left_top_camera = Camera(
@@ -100,15 +123,6 @@ rear_left_top_camera = Camera(
     dimension=6,
     dimension_dir="width",
 )
-front_side_bottom_camera = Camera(
-    position=(-1, -1, -1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 0, 1),
-    dimension=6,
-    dimension_dir="width",
-)
-
 
 cameras_geo = [
     top_camera,
@@ -132,14 +146,19 @@ cameras_cp = [
     rear_right_bottom_camera,
 ]
 
-exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
-
 
 avg = Average(fraction=0.1)
 CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
 
 CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
 
+CDA = DataItem(
+    data="surface_forces",
+    exclude=exclude,
+    title="CD*area",
+    variables=[Variable(name="area", data="params.reference_geometry.area")],
+    operations=[Expression(expr="totalCD * area"), avg],
+)
 
 CLf = DataItem(
     data="surface_forces",
@@ -157,28 +176,187 @@ CLr = DataItem(
 
 CFy = DataItem(data="surface_forces/totalCFy", exclude=exclude, title="CS", operations=avg)
 
-statistical_data = Table(
-    data=[
-        "params/reference_geometry/area",
-        CD,
-        Delta(data=CD),
-        CL,
-        CLf,
-        CLr,
-        CFy,
-        "volume_mesh/stats/n_nodes",
-        "params/time_stepping/max_steps",
-    ],
+statistical_data = [
+    "params/reference_geometry/area",
+    CD,
+    CDA,
+    Delta(data=CD),
+    CL,
+    CLf,
+    CLr,
+    CFy,
+    "volume_mesh/stats/n_nodes",
+    "params/time_stepping/max_steps",
+]
+statistical_table = Table(
+    data=statistical_data,
     section_title="Statistical data",
+    formatter=[
+        (
+            None
+            if d
+            in [
+                "params/reference_geometry/area",
+                "volume_mesh/stats/n_nodes",
+                "params/time_stepping/max_steps",
+            ]
+            else ".4f"
+        )
+        for d in statistical_data
+    ],
 )
 
+
+geometry_screenshots = [
+    Chart3D(
+        section_title="Geometry",
+        items_in_row=2,
+        force_new_page=True,
+        show="boundaries",
+        camera=camera,
+        exclude=exclude,
+        fig_name=f"geo_{i}",
+    )
+    for i, camera in enumerate(cameras_geo)
+]
+
+cpt_screenshots = [
+    Chart3D(
+        section_title="Isosurface, Cpt=-1",
+        items_in_row=2,
+        force_new_page=True,
+        show="isosurface",
+        iso_field="Cpt",
+        exclude=exclude,
+        camera=camera,
+    )
+    for camera in cameras_cp
+]
+
+cfvec_screenshots = [
+    Chart3D(
+        section_title="CfVec",
+        items_in_row=2,
+        force_new_page=True,
+        show="boundaries",
+        field="CfVec",
+        mode="lic",
+        limits=(1e-4, 10),
+        is_log_scale=True,
+        exclude=exclude,
+        camera=camera,
+    )
+    for camera in cameras_cp
+]
+
+
+y_slices_screenshots = [
+    Chart3D(
+        section_title=f"Slice velocity y={y}",
+        items_in_row=2,
+        force_new_page=True,
+        show="slices",
+        include=[f"slice_y_{name}"],
+        field="velocity",
+        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        camera=side_camera_slice,
+        fig_name=f"slice_y_{name}",
+    )
+    for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
+]
+
+
+y_slices_lic_screenshots = [
+    Chart3D(
+        section_title=f"Slice velocity LIC y={y}",
+        items_in_row=2,
+        force_new_page=True,
+        show="slices",
+        include=[f"slice_y_{name}"],
+        field="velocityVec",
+        mode="lic",
+        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        camera=side_camera_slice,
+        fig_name=f"slice_y_vec_{name}",
+    )
+    for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
+]
+
+z_slices_screenshots = [
+    Chart3D(
+        section_title=f"Slice velocity z={z}",
+        items_in_row=2,
+        force_new_page=True,
+        show="slices",
+        include=[f"slice_z_{name}"],
+        field="velocity",
+        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        camera=top_camera_slice,
+        fig_name=f"slice_z_{name}",
+    )
+    for name, z in zip(["neg0_2", "0", "0_2", "0_4", "0_6", "0_8"], [-0.2, 0, 0.2, 0.4, 0.6, 0.8])
+]
+
+y_plus_screenshots = [
+    Chart3D(
+        section_title="y+",
+        items_in_row=2,
+        show="boundaries",
+        field="yPlus",
+        exclude=exclude,
+        limits=(0, 5),
+        camera=camera,
+        fig_name=f"yplus_{i}",
+    )
+    for i, camera in enumerate([top_camera, bottom_camera])
+]
+cp_screenshots = [
+    Chart3D(
+        section_title="Cp",
+        items_in_row=2,
+        show="boundaries",
+        field="Cp",
+        exclude=exclude,
+        limits=limits,
+        camera=camera,
+        fig_name=f"cp_{i}",
+    )
+    for i, (limits, camera) in enumerate(zip(limits_cp, cameras_cp))
+]
+cpx_screenshots = [
+    Chart3D(
+        section_title="Cpx",
+        items_in_row=2,
+        show="boundaries",
+        field="Cpx",
+        exclude=exclude,
+        limits=(-0.3, 0.3),
+        camera=camera,
+        fig_name=f"cpx_{i}",
+    )
+    for i, camera in enumerate(cameras_cp)
+]
+
+wall_shear_screenshots = [
+    Chart3D(
+        section_title="Wall shear stress magnitude",
+        items_in_row=2,
+        show="boundaries",
+        field="wallShearMag",
+        exclude=exclude,
+        limits=(0 * u.Pa, 5 * u.Pa),
+        camera=camera,
+        fig_name=f"wallShearMag_{i}",
+    )
+    for i, camera in enumerate(cameras_cp)
+]
 
 report = ReportTemplate(
     title="Aerodynamic analysis of DrivAer",
     items=[
         Summary(),
         Inputs(),
-        statistical_data,
+        statistical_table,
         Chart2D(
             x="x_slicing_force_distribution/X",
             y="x_slicing_force_distribution/totalCumulative_CD_Curve",
@@ -192,90 +370,25 @@ report = ReportTemplate(
             section_title="Drag Coefficient",
             fig_name="cd_fig",
             exclude=exclude,
+            focus_x=(1 / 3, 1),
         ),
-        Chart2D(
-            x="nonlinear_residuals/pseudo_step",
-            y="nonlinear_residuals/1_momx",
-            section_title=None,
-            fig_name="residuals",
-        ),
-        *[
-            Chart3D(
-                section_title="Geometry",
-                items_in_row=2,
-                force_new_page=True,
-                show="boundaries",
-                camera=camera,
-                exclude=exclude,
-                fig_name=f"geo_{i}",
-            )
-            for i, camera in enumerate(cameras_geo)
-        ],
-        Chart3D(
-            section_title="Slice velocity",
-            items_in_row=2,
-            force_new_page=True,
-            show="slices",
-            include=["y-slice through moment center"],
-            field="velocity",
-            limits=(0, 0.18),
-            camera=side_camera_slice,
-            fig_name="slice_y",
-        ),
-        Chart3D(
-            section_title="Slice velocity",
-            items_in_row=2,
-            force_new_page=True,
-            show="slices",
-            include=["z-slice through moment center"],
-            field="velocity",
-            limits=(0, 0.18),
-            camera=top_camera_slice,
-            fig_name="slice_z",
-        ),
-        *[
-            Chart3D(
-                section_title="y+",
-                items_in_row=2,
-                show="boundaries",
-                field="yPlus",
-                exclude=exclude,
-                limits=(0, 100),
-                camera=camera,
-                fig_name=f"yplus_{i}",
-                caption=f"limits={(0, 100)}",
-            )
-            for i, camera in enumerate([top_camera, bottom_camera])
-        ],
-        *[
-            Chart3D(
-                section_title="Cp",
-                items_in_row=2,
-                show="boundaries",
-                field="Cp",
-                exclude=exclude,
-                limits=limits,
-                camera=camera,
-                fig_name=f"cp_{i}",
-                caption=f"limits={limits}",
-            )
-            for i, (limits, camera) in enumerate(zip(limits_cp, cameras_cp))
-        ],
-        Chart3D(
-            section_title="Q-criterion",
-            items_in_row=2,
-            force_new_page=True,
-            show="qcriterion",
-            exclude=exclude,
-            field="Mach",
-            limits=(0, 0.18),
-            fig_name="qcriterion",
-        ),
+        *geometry_screenshots,
+        *cpt_screenshots,
+        *y_slices_screenshots,
+        # *y_slices_lic_screenshots,
+        *z_slices_screenshots,
+        *y_plus_screenshots,
+        *cp_screenshots,
+        *cpx_screenshots,
+        *wall_shear_screenshots,
     ],
+    settings=Settings(dpi=150),
 )
 
 report = report.create_in_cloud(
-    "running_report_from_python", [case1, case2, case3], solver_version=SOLVER_VERSION
+    f"{size}-{len(cases)}cases-slices-using-groups-Cpt, Cpx, wallShear, dpi=default",
+    cases,
+    solver_version=SOLVER_VERSION,
 )
 
 report.wait()
