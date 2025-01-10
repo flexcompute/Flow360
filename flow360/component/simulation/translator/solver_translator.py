@@ -33,7 +33,7 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_entities import PointArray
+from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -271,32 +271,46 @@ def inject_isosurface_info(entity: Isosurface):
 
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "probe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "surfaceProbe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_list_info(entity: EntityList):
@@ -460,7 +474,9 @@ def translate_acoustic_output(output_params: list):
     aeroacoustic_output = {}
     for output in output_params:
         if isinstance(output, AeroAcousticOutput):
-            aeroacoustic_output["observers"] = [item.value.tolist() for item in output.observers]
+            aeroacoustic_output["observers"] = [
+                item.position.value.tolist() for item in output.observers
+            ]
             aeroacoustic_output["writePerSurfaceOutput"] = output.write_per_surface_output
             aeroacoustic_output["patchType"] = output.patch_type
             if output.permeable_surfaces is not None:
@@ -729,6 +745,8 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
                 output[key_name]["type"] = "SolidIsofluxWall"
             else:
                 output[key_name]["type"] = "SolidAdiabaticWall"
+            if "roughnessHeight" in translated_setting:
+                output[key_name].pop("roughnessHeight")
     return output
 
 
@@ -753,6 +771,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
             boundary["heatFlux"] = model_dict["heatSpec"]["value"]
+        boundary["roughnessHeight"] = model_dict["roughnessHeight"]
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
         if model.velocity_direction is not None:
@@ -894,9 +913,7 @@ def get_solver_json(
 
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
-
         if isinstance(model, Fluid):
-
             if model.navier_stokes_solver.low_mach_preconditioner:
                 if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
                     model.navier_stokes_solver.low_mach_preconditioner_threshold = (

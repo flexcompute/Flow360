@@ -27,9 +27,7 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.validation.validation_output import (
-    _check_unique_probe_type,
-)
+from flow360.log import log
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -414,48 +412,39 @@ class ProbeOutput(Flow360BaseModel):
     Example
     -------
 
-    - Define :class:`ProbeOutput` on multiple monitor points.
+    Define :class:`ProbeOutput` on multiple specific monitor points and monitor points along the line.
 
-      >>> fl.ProbeOutput(
-      ...     name="probe_group_points",
-      ...     entities=[
-      ...         fl.Point(
-      ...             name="Point_1",
-      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...         fl.Point(
-      ...             name="Point_2",
-      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...     ],
-      ...     output_fields=["primitiveVars"],
-      ... )
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
+    - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
+    - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
+      namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
 
-
-    - Define :class:`ProbeOutput` on monitor points along the line.
-
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
-
-      >>> fl.ProbeOutput(
-      ...     name="probe_group_lines",
-      ...     entities=[
-      ...         fl.PointArray(
-      ...             name="Line_1",
-      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(1.5, 0.0, 0.0) * fl.u.m,
-      ...             number_of_points=6,
-      ...         ),
-      ...         fl.PointArray(
-      ...             name="Line_2",
-      ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
-      ...             number_of_points=3,
-      ...         ),
-      ...     ],
-      ...     output_fields=["primitiveVars"],
-      ... )
+    >>> fl.ProbeOutput(
+    ...     name="probe_group_points_and_lines",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_1",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=6,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_2",
+    ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=3,
+    ...         ),
+    ...     ],
+    ...     output_fields=["primitiveVars"],
+    ... )
 
     ====
     """
@@ -479,12 +468,6 @@ class ProbeOutput(Flow360BaseModel):
         """Load probe point locations from a file. (Not implemented yet)"""
         raise NotImplementedError("Not implemented yet.")
 
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "ProbeOutput")
-
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
@@ -495,48 +478,36 @@ class SurfaceProbeOutput(Flow360BaseModel):
     Example
     -------
 
-    - Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
-      with multiple monitor points.
+    Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
+    with multiple specific monitor points and monitor points along the line.
 
-      >>> fl.SurfaceProbeOutput(
-      ...     name="surface_probe_group_points",
-      ...     entities=[
-      ...         fl.Point(
-      ...             name="Point_1",
-      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...         fl.Point(
-      ...             name="Point_2",
-      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...     ],
-      ...     target_surfaces=[
-      ...         geometry["wall"],
-      ...     ],
-      ...     output_fields=["heatFlux", "T"],
-      ... )
-
-
-    - Define :class:`SurafceProbeOutput` on the :code:`volume_mesh["fluid/wall"]` surface
-      with monitor points along the line.
-      :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
+    - :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
       including both starting and end points.
 
-      >>> fl.SurfaceProbeOutput(
-      ...     name="surface_probe_group_lines",
-      ...     entities=[
-      ...         fl.PointArray(
-      ...             name="Line_surface",
-      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(1.0, 0.0, -10.0) * fl.u.m,
-      ...             number_of_points=11,
-      ...         ),
-      ...     ],
-      ...     target_surfaces=[
-      ...         volume_mesh["fluid/wall"],
-      ...     ],
-      ...     output_fields=["heatFlux", "T"],
-      ... )
+    >>> fl.SurfaceProbeOutput(
+    ...     name="surface_probe_group_points",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_surface",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...     ],
+    ...     target_surfaces=[
+    ...         geometry["wall"],
+    ...     ],
+    ...     output_fields=["heatFlux", "T"],
+    ... )
 
     ====
     """
@@ -561,12 +532,6 @@ class SurfaceProbeOutput(Flow360BaseModel):
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "SurfaceProbeOutput")
-
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     """
@@ -589,12 +554,6 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
-
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "SurfaceSliceOutput")
 
 
 class TimeAverageProbeOutput(ProbeOutput):
@@ -749,6 +708,31 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     )
 
 
+class Observer(Flow360BaseModel):
+    """
+    :class:`Observer` class for setting up the :py:attr:`AeroAcousticOutput.observers`.
+
+    Example
+    -------
+
+    >>> fl.Observer(position=[1, 2, 3] * fl.u.m, group_name="1")
+
+    ====
+    """
+
+    # pylint: disable=no-member
+    position: LengthType.Point = pd.Field(
+        description="Position at which time history of acoustic pressure signal "
+        + "is stored in aeroacoustic output file. The observer position can be outside the simulation domain, "
+        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    )
+    group_name: str = pd.Field(
+        description="Name of the group to which the observer will be assigned "
+        + "for postprocessing purposes in Flow360 web client."
+    )
+    private_attribute_expand: Optional[bool] = pd.Field(None)
+
+
 class AeroAcousticOutput(Flow360BaseModel):
     """
 
@@ -759,16 +743,16 @@ class AeroAcousticOutput(Flow360BaseModel):
 
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [0.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.0, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ... )
 
     Using permeable surfaces:
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [1.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.2, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ...     patch_type="permeable",
     ...     permeable_surfaces=[volume_mesh["inner/interface*"]]
@@ -792,10 +776,8 @@ class AeroAcousticOutput(Flow360BaseModel):
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
-    observers: List[LengthType.Point] = pd.Field(
-        description="List of observer locations at which time history of acoustic pressure signal "
-        + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
-        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    observers: List[Observer] = pd.Field(
+        description="A List of :class:`Observer` objects specifying each observer's position and group name."
     )
     write_per_surface_output: bool = pd.Field(
         False,
@@ -803,6 +785,47 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+
+    @pd.field_validator("observers", mode="before")
+    @classmethod
+    def observer_legacy_converter(cls, input_value):
+        """Convert legacy format of the "observer" field to the new `Observer` format."""
+        converted_observers = []
+        # pylint: disable=fixme
+        # TODO: This should really be done in the updater module.
+        if not isinstance(input_value, list):
+            raise ValueError(
+                f"The `observer` field must be a list. It is {type(input_value)} instead."
+            )
+
+        try:
+            for item in input_value:
+                legacy_field = LengthType.validate(item)
+                converted_observers.append(Observer(position=legacy_field, group_name="0"))
+            log.info(
+                "Items in the provided input list are of an outdated type "
+                + "and will be automatically updated to Observer class."
+            )
+            return converted_observers
+        except pd.ValidationError:
+            return input_value
+
+    @pd.field_validator("observers", mode="after")
+    @classmethod
+    def validate_observer_has_same_unit(cls, input_value):
+        """
+        All observer location should have the same length unit.
+        This is because UI has single toggle for all coordinates.
+        """
+        unit_set = {}
+        for observer in input_value:
+            unit_set[observer.position.units] = None
+            if len(unit_set.keys()) > 1:
+                raise ValueError(
+                    "All observer locations should have the same unit."
+                    f" But now it has both `{list(unit_set.keys())[0]}` and `{list(unit_set.keys())[1]}`."
+                )
+        return input_value
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):
