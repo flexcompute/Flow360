@@ -216,7 +216,8 @@ def test_resources_from_local_storage_geo():
         assert boundary in cases[0].volume_mesh.boundary_names
 
     for case in cases:
-        assert case.params.time_stepping.type_name == 'Steady'
+        assert case.params.time_stepping.type_name == "Steady"
+
 
 def test_resource_from_local_storage_vm():
     resource_data_dict = {
