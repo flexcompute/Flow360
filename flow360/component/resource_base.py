@@ -393,11 +393,17 @@ class Flow360Resource(RestApi):
         """
         returns simulation params
         """
-        with NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-            self._download_file(filename, to_file=temp_file.name, log_error=False, verbose=False)
-            with open(temp_file.name, "r", encoding="utf-8") as fh:
+        with NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp_file:
+            temp_path = tmp_file.name
+        try:
+            self._download_file(filename, to_file=temp_path, log_error=False, verbose=False)
+            with open(temp_path, "r", encoding="utf-8") as fh:
                 data_as_dict = json.load(fh)
-        return data_as_dict
+            return data_as_dict
+
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
     def _upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
         """
