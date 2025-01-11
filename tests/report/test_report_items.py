@@ -38,7 +38,7 @@ def cases(here):
             caseMeshId="vm-11111111-1111-1111-1111-111111111111",
             cloud_path_prefix="s3://flow360cases-v1/users/user-id",
         )
-        case = Case.from_local_storage(os.path.join(here, "data", cid), case_meta)
+        case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
         cases.append(case)
     return cases
 

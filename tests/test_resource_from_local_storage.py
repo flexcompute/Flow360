@@ -52,7 +52,7 @@ def test_resources_from_local_storage_geo():
     resource_data_dict = {
         "cases": [
             {
-                "id": "case-ce617825-da14-46ce-a2c0-fc664eb01b85",
+                "id": "case-11111111-1111-1111-1111-111111111111",
                 "name": "Case_alpha=5",
                 "path": {
                     "geometry": {
@@ -86,9 +86,9 @@ def test_resources_from_local_storage_geo():
                     },
                     "cases": [
                         {
-                            "s3Path": "s3://case-bucket/users/user-29083u29irfjsdkfns/case-ce617825-da14-46ce-a2c0-fc664eb01b85",
+                            "s3Path": "s3://case-bucket/users/user-29083u29irfjsdkfns/case-11111111-1111-1111-1111-111111111111",
                             "userId": "user-29083u29irfjsdkfns",
-                            "id": "case-ce617825-da14-46ce-a2c0-fc664eb01b85",
+                            "id": "case-11111111-1111-1111-1111-111111111111",
                             "name": "Case_alpha=5",
                             "type": "Case",
                             "projectId": "prj-ca07aab4-c0f8-4a0c-b07d-67a3804d8dab",
@@ -99,7 +99,7 @@ def test_resources_from_local_storage_geo():
                 },
             },
             {
-                "id": "case-2f313cd8-df7f-4026-b19b-8e3cd9fe1887",
+                "id": "case-2222222222-2222-2222-2222-2222222222",
                 "name": "Case_alpha=0",
                 "path": {
                     "geometry": {
@@ -133,57 +133,10 @@ def test_resources_from_local_storage_geo():
                     },
                     "cases": [
                         {
-                            "s3Path": "s3://case-bucket/users/user-29083u29irfjsdkfns/case-2f313cd8-df7f-4026-b19b-8e3cd9fe1887",
+                            "s3Path": "s3://case-bucket/users/user-29083u29irfjsdkfns/case-2222222222-2222-2222-2222-2222222222",
                             "userId": "user-29083u29irfjsdkfns",
-                            "id": "case-2f313cd8-df7f-4026-b19b-8e3cd9fe1887",
+                            "id": "case-2222222222-2222-2222-2222-2222222222",
                             "name": "Case_alpha=0",
-                            "type": "Case",
-                            "projectId": "prj-ca07aab4-c0f8-4a0c-b07d-67a3804d8dab",
-                            "parentId": "vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
-                            "parentFolderId": "folder-86a7bcb3-fb9d-44ca-acd5-c6744b15f582",
-                        }
-                    ],
-                },
-            },
-            {
-                "id": "case-d125eae6-56d8-4244-8199-093f7b92ace4",
-                "name": "Case_alpha=10",
-                "path": {
-                    "geometry": {
-                        "s3Path": "s3://mesh-bucket/users/user-29083u29irfjsdkfns/geo-e5c01a98-2180-449e-b255-d60162854a83",
-                        "userId": "user-29083u29irfjsdkfns",
-                        "id": "geo-e5c01a98-2180-449e-b255-d60162854a83",
-                        "name": "simple-airplane",
-                        "type": "Geometry",
-                        "projectId": "prj-ca07aab4-c0f8-4a0c-b07d-67a3804d8dab",
-                        "parentFolderId": "folder-86a7bcb3-fb9d-44ca-acd5-c6744b15f582",
-                    },
-                    "surfaceMesh": {
-                        "s3Path": "s3://mesh-bucket/users/user-29083u29irfjsdkfns/sm-3a7eb4c4-e8c0-4664-b85c-255fe23a3474",
-                        "userId": "user-29083u29irfjsdkfns",
-                        "id": "sm-3a7eb4c4-e8c0-4664-b85c-255fe23a3474",
-                        "name": "SurfaceMesh_v1",
-                        "type": "SurfaceMesh",
-                        "projectId": "prj-ca07aab4-c0f8-4a0c-b07d-67a3804d8dab",
-                        "parentId": "geo-e5c01a98-2180-449e-b255-d60162854a83",
-                        "parentFolderId": "folder-86a7bcb3-fb9d-44ca-acd5-c6744b15f582",
-                    },
-                    "volumeMesh": {
-                        "s3Path": "s3://mesh-bucket/users/user-29083u29irfjsdkfns/vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
-                        "userId": "user-29083u29irfjsdkfns",
-                        "id": "vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
-                        "name": "VolumeMesh_v1",
-                        "type": "VolumeMesh",
-                        "projectId": "prj-ca07aab4-c0f8-4a0c-b07d-67a3804d8dab",
-                        "parentId": "sm-3a7eb4c4-e8c0-4664-b85c-255fe23a3474",
-                        "parentFolderId": "folder-86a7bcb3-fb9d-44ca-acd5-c6744b15f582",
-                    },
-                    "cases": [
-                        {
-                            "s3Path": "s3://case-bucket/users/user-29083u29irfjsdkfns/case-d125eae6-56d8-4244-8199-093f7b92ace4",
-                            "userId": "user-29083u29irfjsdkfns",
-                            "id": "case-d125eae6-56d8-4244-8199-093f7b92ace4",
-                            "name": "Case_alpha=10",
                             "type": "Case",
                             "projectId": "prj-ca07aab4-c0f8-4a0c-b07d-67a3804d8dab",
                             "parentId": "vm-93a5dad9-a54c-4db9-a8ab-e22a976bb27a",
@@ -262,6 +215,8 @@ def test_resources_from_local_storage_geo():
     for boundary in ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]:
         assert boundary in cases[0].volume_mesh.boundary_names
 
+    for case in cases:
+        assert case.params.time_stepping.type_name == 'Steady'
 
 def test_resource_from_local_storage_vm():
     resource_data_dict = {
