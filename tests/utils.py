@@ -147,22 +147,6 @@ def compare_to_ref(obj, ref_path, content_only=False):
             compare_dict_to_ref(a, ref_path)
 
 
-def safe_copy(src: str, dst: str, **kwargs):
-    """
-    Copy the src to dst using shutil.copy, unless src and dst
-    refer to the same absolute file path. In that case, do nothing
-    (or handle however you prefer).
-    """
-    abs_src = os.path.abspath(src)
-    abs_dst = os.path.abspath(dst)
-
-    if abs_src == abs_dst:
-        print(f"Skipping copy: source and destination are the same file ({abs_src}).")
-        return
-
-    shutil.copy(src, dst, **kwargs)
-
-
 @pytest.fixture()
 def s3_download_override(monkeypatch):
     def s3_mock_download(
@@ -183,8 +167,11 @@ def s3_download_override(monkeypatch):
         to_file = get_local_filename_and_create_folders(
             remote_file_name, to_file=to_file, to_folder=to_folder
         )
-        safe_copy(os.path.join("data", remote_file_name), to_file)
-        print(f"MOCK_DOWNLOAD: Saved to {to_file}")
+        abs_src = os.path.abspath(os.path.join("data", remote_file_name))
+        to_file = os.path.abspath(to_file)
+        if abs_src != to_file:
+            shutil.copy(abs_src, to_file, **kwargs)
+            print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
     monkeypatch.setattr(S3TransferType.CASE, "download_file", s3_mock_download)
     monkeypatch.setattr(S3TransferType.GEOMETRY, "download_file", s3_mock_download)

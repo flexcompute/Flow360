@@ -709,6 +709,8 @@ def _local_download_overwrite(local_storage_path, class_name):
                 f"{class_name}.from_local_storage()."
             )
         new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
+        expected_local_file = os.path.abspath(expected_local_file)
+        new_local_file = os.path.abspath(new_local_file)
         if new_local_file != expected_local_file:
             shutil.copy(expected_local_file, new_local_file)
 
