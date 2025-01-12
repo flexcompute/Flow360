@@ -429,6 +429,7 @@ def test_tables(cases):
         "CS": [-0.002243102563079525, -0.0763879853938102],
     }
     df_expected = pandas.DataFrame(expected_data)
+    df_expected["Case No."] = df_expected["Case No."].astype("Int64")
     print(df_expected)
 
     pandas.testing.assert_frame_equal(table_df, df_expected)
