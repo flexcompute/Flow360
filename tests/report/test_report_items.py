@@ -411,7 +411,7 @@ def test_tables(cases):
     )
 
     table_df = statistical_data.to_dataframe(context)
-    table_df["Case No."] = table_df["Case No."].astype(int)
+    table_df["Case No."] = table_df["Case No."].astype("Int64")
     table_df["area"] = table_df["area"].astype(str)
 
     print(table_df)
