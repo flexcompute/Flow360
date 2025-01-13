@@ -179,9 +179,8 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     CaseMetaV2 component
     """
 
-    id: str = pd.Field(alias="projectId")
+    id: str = pd.Field(alias="caseId")
     case_mesh_id: str = pd.Field(alias="caseMeshId")
-    parent_id: Optional[str] = pd.Field(None, alias="parentId")
     status: Flow360Status = pd.Field()
 
     def to_case(self) -> Case:
@@ -434,9 +433,9 @@ class Case(CaseBase, Flow360Resource):
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
         self._manifest = None
+        # _web_api_v2 handles all V2 communications for Case
         self._web_api_v2 = self._web_api_v2_class(
             interface=CaseInterfaceV2,
-            # pylint: disable=fixme
             meta_class=CaseMetaV2,
             id=id,
         )

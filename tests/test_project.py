@@ -43,10 +43,14 @@ def test_get_asset_with_id(mock_id, mock_response):
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
     print(f"The correct asset_id: {project.case.id}")
 
+    query_id = "  case-84d4604e-f3cd-4c6b-8517-92a80a3346d3   "
+    assert project.get_case(asset_id=query_id)
+
+    query_id = "=case-84d4604e-f3cd-4c6b-8517-92a80a3346d3&"
+    assert project.get_case(asset_id=query_id)
+
     query_id = "case"
-    error_msg = (
-        r"The input asset ID \(" + query_id + r"\) is too short to retrive the correct asset."
-    )
+    error_msg = r"The input string \(" + query_id + r"\) is not a valid asset ID."
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=query_id)
 
@@ -57,7 +61,7 @@ def test_get_asset_with_id(mock_id, mock_response):
 
     query_id = "case-b0"
     error_msg = (
-        r"The input asset ID \(" + query_id + r"\) is too short to retrive the correct asset."
+        r"The input asset ID \(" + query_id + r"\) is too short to retrieve the correct asset."
     )
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=query_id)
@@ -78,13 +82,15 @@ def test_run(mock_response, capsys):
     case = project.case
     params = case.params
 
-    warning_msg = "We already generated this Volume Mesh in the project."
+    warning_msg = "The VolumeMesh that matches the input already exists in project. No new VolumeMesh will be generated."
     project.generate_volume_mesh(params=params)
     captured_text = capsys.readouterr().out
     captured_text = " ".join(captured_text.split())
     assert warning_msg in captured_text
 
-    warning_msg = "We already submitted this Case in the project."
+    warning_msg = (
+        "The Case that matches the input already exists in project. No new Case will be generated."
+    )
     project.run_case(params=params, fork_from=parent_case)
     captured_text = capsys.readouterr().out
     captured_text = " ".join(captured_text.split())

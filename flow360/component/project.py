@@ -40,7 +40,7 @@ from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh import SurfaceMesh
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
-    AssetInfo,
+    AssetShortID,
     MeshNameParser,
     get_short_asset_id,
     match_file_pattern,
@@ -188,7 +188,6 @@ class ProjectTreeNode(pd.BaseModel):
         """Remove a child asset of the current asset"""
         self.children = [child for child in self.children if child is not child_to_remove]
 
-    @pd.computed_field
     @property
     def short_id(self) -> str:
         """Compute short asset id"""
@@ -197,9 +196,9 @@ class ProjectTreeNode(pd.BaseModel):
         )
 
     @property
-    def branch_label(self) -> str:
+    def edge_label(self) -> str:
         """
-        Add branch label in the printed project tree to
+        Add edge label in the printed project tree to
         display the different volume mesh used in a forked case.
         """
         if self.case_mesh_label:
@@ -262,13 +261,12 @@ class ProjectTree(pd.BaseModel):
         if self._has_node(asset_id=asset_record["id"]):
             return False
 
-        parent_id = asset_record["parentId"]
-        parent_case_id = asset_record["parentCaseId"]
-        case_mesh_id = None
-        if parent_case_id:
-            parent_id = parent_case_id
-        if asset_record["type"] == "Case":
-            case_mesh_id = asset_record["parentId"]
+        parent_id = (
+            asset_record["parentCaseId"]
+            if asset_record["parentCaseId"]
+            else asset_record["parentId"]
+        )
+        case_mesh_id = asset_record["parentId"] if asset_record["type"] == "Case" else None
 
         new_node = ProjectTreeNode(
             asset_id=asset_record["id"],
@@ -305,16 +303,16 @@ class ProjectTree(pd.BaseModel):
         self.nodes.pop(node.asset_id)
 
     @pd.validate_call
-    def get_full_asset_id(self, query_asset: AssetInfo) -> str:
+    def get_full_asset_id(self, query_asset: AssetShortID) -> str:
         """
         Returns full asset id of a certain asset type given the query_id.
 
         Raises
         ------
         Flow360ValueError
-            1. If query_id does not match the asset type.
+            1. If derived asset type from query_id does not match the asset type.
             2. If query_id is too short.
-            3. If query_id is doet not exist in the project tree.
+            3. If query_id is does not exist in the project tree.
 
         Returns
         -------
@@ -326,6 +324,7 @@ class ProjectTree(pd.BaseModel):
             raise Flow360ValueError(f"No {query_asset.asset_type} is available in this project.")
 
         if query_asset.asset_id is None:
+            # The latest asset of this asset_type will be returned.
             return asset_type_ids[-1]
 
         for asset_id in asset_type_ids:
@@ -415,7 +414,7 @@ class Project(pd.BaseModel):
         """
         self._check_initialized()
         asset_id = self.project_tree.get_full_asset_id(
-            query_asset=AssetInfo(asset_id=asset_id, asset_type="SurfaceMesh")
+            query_asset=AssetShortID(asset_id=asset_id, asset_type="SurfaceMesh")
         )
         return SurfaceMesh.from_cloud(surface_mesh_id=asset_id)
 
@@ -458,7 +457,7 @@ class Project(pd.BaseModel):
         """
         self._check_initialized()
         asset_id = self.project_tree.get_full_asset_id(
-            query_asset=AssetInfo(asset_id=asset_id, asset_type="VolumeMesh")
+            query_asset=AssetShortID(asset_id=asset_id, asset_type="VolumeMesh")
         )
         return VolumeMeshV2.from_cloud(id=asset_id)
 
@@ -501,7 +500,7 @@ class Project(pd.BaseModel):
         """
         self._check_initialized()
         asset_id = self.project_tree.get_full_asset_id(
-            query_asset=AssetInfo(asset_id=asset_id, asset_type="Case")
+            query_asset=AssetShortID(asset_id=asset_id, asset_type="Case")
         )
         return Case.from_cloud(case_id=asset_id)
 
@@ -686,7 +685,7 @@ class Project(pd.BaseModel):
             If the root asset cannot be retrieved for the project.
         """
 
-        project_info = AssetInfo(asset_id=project_id, asset_type="Project")
+        project_info = AssetShortID(asset_id=project_id, asset_type="Project")
         project_api = RestApi(ProjectInterface.endpoint, id=project_info.asset_id)
         info = project_api.get()
         if not isinstance(info, dict):
@@ -716,6 +715,8 @@ class Project(pd.BaseModel):
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
+        # pylint: disable=fixme
+        # TODO: When initializing the tree for a project the complexity is o(N^2), which should be improved.
         return project
 
     def _check_initialized(self):
@@ -814,10 +815,10 @@ class Project(pd.BaseModel):
             get_val=lambda x: wrapstring(long_str=str(x), str_length=str_length),
             get_label=lambda x: (
                 wrapstring(
-                    long_str=x.branch_label,
+                    long_str=x.edge_label,
                     str_length=str_length,
                 )
-                if x.branch_label
+                if x.edge_label
                 else None
             ),
             color="",
@@ -905,9 +906,6 @@ class Project(pd.BaseModel):
                 length_unit
             )
 
-        online_project_tree_dict = self._project_webapi.get(method="tree")["records"]
-        online_asset_ids = [record["id"] for record in online_project_tree_dict]
-
         root_asset = self._root_asset
 
         draft = Draft.create(
@@ -926,6 +924,9 @@ class Project(pd.BaseModel):
             params.private_attribute_asset_cache.project_entity_info = entity_info
 
         draft.update_simulation_params(params)
+
+        remote_project_tree_dict = self._project_webapi.get(method="tree")["records"]
+        remote_asset_ids = [record["id"] for record in remote_project_tree_dict]
 
         destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
 
@@ -949,9 +950,16 @@ class Project(pd.BaseModel):
         if not run_async:
             destination_obj.wait()
 
-        is_cloud_duplicate = destination_id in online_asset_ids
+        is_cloud_duplicate = destination_id in remote_asset_ids
         is_local_duplicate = self._get_tree_from_cloud(destination_obj=destination_obj)
-        return destination_obj, (is_local_duplicate or is_cloud_duplicate)
+
+        if is_local_duplicate or is_cloud_duplicate:
+            target_asset_type = target._cloud_resource_type_name
+            log.warning(
+                f"The {target_asset_type} that matches the input already exists in project. "
+                f"No new {target_asset_type} will be generated."
+            )
+        return destination_obj
 
     @pd.validate_call
     def generate_surface_mesh(
@@ -986,7 +994,7 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesher can only be run by projects with a geometry root asset"
             )
-        surface_mesh, is_duplicate = self._run(
+        surface_mesh = self._run(
             params=params,
             target=SurfaceMesh,
             draft_name=name,
@@ -995,8 +1003,6 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
         )
-        if is_duplicate:
-            log.warning("We already generated this Surface Mesh in the project.")
         return surface_mesh
 
     @pd.validate_call
@@ -1032,7 +1038,7 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Volume mesher can only be run by projects with a geometry root asset"
             )
-        volume_mesh, is_duplicate = self._run(
+        volume_mesh = self._run(
             params=params,
             target=VolumeMeshV2,
             draft_name=name,
@@ -1041,8 +1047,6 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
         )
-        if is_duplicate:
-            log.warning("We already generated this Volume Mesh in the project.")
         return volume_mesh
 
     @pd.validate_call(config={"arbitrary_types_allowed": True})
@@ -1072,7 +1076,7 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         """
         self._check_initialized()
-        case, is_duplicate = self._run(
+        case = self._run(
             params=params,
             target=Case,
             draft_name=name,
@@ -1081,6 +1085,4 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
         )
-        if is_duplicate:
-            log.warning("We already submitted this Case in the project.")
         return case

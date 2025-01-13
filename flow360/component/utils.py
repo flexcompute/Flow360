@@ -9,7 +9,7 @@ import shutil
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Literal, Optional, Protocol
+from typing import Literal, Optional
 
 import pydantic as pd
 import zstandard as zstd
@@ -608,23 +608,9 @@ def storage_size_formatter(size_in_bytes):
     return f"{size_in_bytes / (1024 ** 3):.2f} GB"
 
 
-# pylint: disable=too-few-public-methods
-class HasId(Protocol):
+class AssetShortID(pd.BaseModel):
     """
-    Protocol for objects that have an `id` attribute.
-
-    Attributes
-    ----------
-    id : str
-        Unique identifier for the asset.
-    """
-
-    id: str
-
-
-class AssetInfo(pd.BaseModel):
-    """
-    AssetInfo model for retrieving an asset from the cloud
+    AssetShortID model for retrieving an asset from the cloud through short ID (full ID scenario included)
     The asset id and asset type are validated before the retrieval.
 
     Attributes
@@ -637,12 +623,20 @@ class AssetInfo(pd.BaseModel):
         The asset type for retrieval.
 
     min_length_short_id: pd.PositiveInt
-        The minimum length of the asset id allowed for retrieving the asset.
+        The minimum length of the asset id (after the asset type prefix) allowed for retrieving the asset.
     """
 
     asset_id: Optional[str] = pd.Field(None)
     asset_type: Literal["Project", "Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
     min_length_short_id: pd.PositiveInt = pd.Field(7)
+
+    @pd.field_validator("asset_id", mode="after")
+    @classmethod
+    def remove_leading_trailing_nonalphanumeric(cls, value):
+        """Remove leading and trailing non-alphanumeric characters from string."""
+        if value:
+            return re.sub(r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "", value)
+        return value
 
     @pd.model_validator(mode="after")
     def check_asset_id_type(self):
@@ -663,9 +657,7 @@ class AssetInfo(pd.BaseModel):
         # pylint: disable=no-member
         query_id_split = self.asset_id.split("-")
         if len(query_id_split) < 2:
-            raise Flow360ValueError(
-                f"The input asset ID ({self.asset_id}) is too short to retrive the correct asset."
-            )
+            raise Flow360ValueError(f"The input string ({self.asset_id}) is not a valid asset ID.")
 
         if query_id_split[0] != prefix_map[self.asset_type]:
             raise Flow360ValueError(
@@ -675,7 +667,7 @@ class AssetInfo(pd.BaseModel):
         query_id_processed = "".join(query_id_split[1:])
         if len(query_id_processed) < self.min_length_short_id:
             raise Flow360ValueError(
-                f"The input asset ID ({self.asset_id}) is too short to retrive the correct asset."
+                f"The input asset ID ({self.asset_id}) is too short to retrieve the correct asset."
             )
         return self
 
