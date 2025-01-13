@@ -2,7 +2,7 @@
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver.
 (Yes but they share the same output_fields)
-2. We do not support mulitple output frequencies/file format for the same type of output.
+2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
 from typing import Annotated, List, Literal, Optional, Union
@@ -798,10 +798,17 @@ class AeroAcousticOutput(Flow360BaseModel):
                 f"The `observer` field must be a list. It is {type(input_value)} instead."
             )
 
+        class LegacyObserver(Flow360BaseModel):
+            """Legacy schema of the observer"""
+
+            legacy_position: LengthType.Point = pd.Field()
+
         try:
             for item in input_value:
-                legacy_field = LengthType.validate(item)
-                converted_observers.append(Observer(position=legacy_field, group_name="0"))
+                legacy_position = LegacyObserver.model_validate(
+                    {"legacy_position": item}
+                ).legacy_position
+                converted_observers.append(Observer(position=legacy_position, group_name="0"))
             log.info(
                 "Items in the provided input list are of an outdated type "
                 + "and will be automatically updated to Observer class."
