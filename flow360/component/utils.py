@@ -7,6 +7,7 @@ import itertools
 import os
 import re
 import shutil
+import textwrap
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
@@ -127,6 +128,13 @@ def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
         break
 
     return short_id
+
+
+def wrapstring(long_str: str, str_length: str = None):
+    """ "Wrap a long string given a preset string length"""
+    if str_length:
+        return textwrap.fill(text=long_str, width=str_length, break_long_words=True)
+    return long_str
 
 
 def parse_datetime(dt_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> datetime.datetime:

@@ -15,7 +15,7 @@ def change_test_dir(request, monkeypatch):
 
 def test_from_cloud(mock_id, mock_response):
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
-    project.print_project_tree(is_horizontal=True, str_length=15)
+    project.print_project_tree(is_horizontal=True, line_width=15)
 
     assert isinstance(project._root_asset, fl.Geometry)
     assert len(project.get_surface_mesh_ids()) == 1

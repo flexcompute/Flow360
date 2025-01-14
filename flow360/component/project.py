@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import json
-import textwrap
 from enum import Enum
 from typing import Iterable, List, Literal, Optional, Union
 
@@ -44,6 +43,7 @@ from flow360.component.utils import (
     get_short_asset_id,
     match_file_pattern,
     parse_datetime,
+    wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
@@ -174,11 +174,21 @@ class ProjectTreeNode(pd.BaseModel):
     children: List = pd.Field([])
     min_length_short_id: PositiveInt = pd.Field(7)
 
-    def __str__(self):
-        """__str__ function to define the output info when printing a project tree in the terminal"""
-        return f"""{self.asset_type}
-            name: {self.asset_name}
-            id: {self.short_id}"""
+    def construct_string(self, line_width):
+        """Define the output info within when printing a project tree in the terminal"""
+        title_line = "<<" + self.asset_type + ">>"
+        name_line = f"name: {self.asset_name}"
+        id_line = f"id:   {self.short_id}"
+
+        # Dynamically compute the line_width for each asset block to ensure
+        # 1. The asset type title always occupies a single line
+        # 2. The id and name line width is no more than the input line_width but is as small as possible.
+        max_line_width = min(line_width, max(len(name_line), len(id_line)))
+        block_line_width = max(len(title_line), max_line_width)
+
+        name_line = wrapstring(long_str=f"name: {self.asset_name}", str_length=block_line_width)
+        id_line = wrapstring(long_str=f"id:   {self.short_id}", str_length=block_line_width)
+        return f"{title_line.center(block_line_width)}\n{name_line}\n{id_line}"
 
     def add_child(self, child: ProjectTreeNode):
         """Add a child asset of the current asset"""
@@ -202,10 +212,12 @@ class ProjectTreeNode(pd.BaseModel):
         display the different volume mesh used in a forked case.
         """
         if self.case_mesh_label:
-            return "Using VolumeMesh:" + get_short_asset_id(
+            prefix = "Using VolumeMesh:\n"
+            mesh_short_id = get_short_asset_id(
                 full_asset_id=self.case_mesh_label,
                 num_character=self.min_length_short_id,
             )
+            return prefix + mesh_short_id.center(len(prefix))
         return None
 
 
@@ -221,15 +233,11 @@ class ProjectTree(pd.BaseModel):
         Dict of all nodes in the project tree.
     short_id_map: dict[str, List[str]]
         Dict of short_id to full_id mapping, used to ensure every short_id is unique in the project.
-    min_length_short_id : PositiveInt
-        The minimum length of the short asset id, excluding
-        hyphen and asset prefix.
     """
 
     root: ProjectTreeNode = pd.Field(None)
     nodes: dict[str, ProjectTreeNode] = pd.Field({})
     short_id_map: dict[str, List[str]] = pd.Field({})
-    min_length_short_id: PositiveInt = pd.Field(7)
 
     def _update_case_mesh_label(self):
         """Check and remove unnecessary case mesh label"""
@@ -241,7 +249,7 @@ class ProjectTree(pd.BaseModel):
             if parent_node.asset_type != "Case" or node.case_mesh_id == parent_node.case_mesh_id:
                 node.case_mesh_label = None
 
-    def _update_short_id(self):
+    def _update_node_short_id(self):
         """Update the minimum length of short ID to ensure each node has a unique short ID"""
         if len(self.nodes) == len(self.short_id_map):
             pass
@@ -283,7 +291,8 @@ class ProjectTree(pd.BaseModel):
         """Get the list of asset_ids in the project tree by asset_type."""
         return [node.asset_id for node in self.nodes.values() if node.asset_type == asset_type]
 
-    def _create_new_node(self, asset_record: dict):
+    @classmethod
+    def _create_new_node(cls, asset_record: dict):
         """Create a new node based on the asset record from API call"""
         parent_id = (
             asset_record["parentCaseId"]
@@ -299,24 +308,23 @@ class ProjectTree(pd.BaseModel):
             parent_id=parent_id,
             case_mesh_id=case_mesh_id,
             case_mesh_label=case_mesh_id,
-            min_length_short_id=self.min_length_short_id,
         )
 
-        if new_node.short_id in self.short_id_map.keys():
-            # pylint: disable=unsubscriptable-object
-            self.short_id_map[new_node.short_id].append(new_node.asset_id)
-        else:
-            self.short_id_map.update({new_node.short_id: [new_node.asset_id]})
-
         return new_node
+
+    def _update_short_id_map(self, new_node: ProjectTreeNode):
+        # pylint: disable=unsupported-assignment-operation,unsubscriptable-object
+        if new_node.short_id not in self.short_id_map.keys():
+            self.short_id_map[new_node.short_id] = []
+        self.short_id_map[new_node.short_id].append(new_node.asset_id)
 
     def add_node(self, asset_record: dict):
         """Add new node to the existing project tree"""
         if self._has_node(asset_id=asset_record["id"]):
             return False
 
-        new_node = self._create_new_node(asset_record)
-
+        new_node = ProjectTree._create_new_node(asset_record)
+        self._update_short_id_map(new_node)
         if new_node.parent_id is None:
             self.root = new_node
         for node in self.nodes.values():
@@ -325,7 +333,7 @@ class ProjectTree(pd.BaseModel):
             if node.asset_id == new_node.parent_id:
                 node.add_child(child=new_node)
         self.nodes.update({new_node.asset_id: new_node})
-        self._update_short_id()
+        self._update_node_short_id()
         self._update_case_mesh_label()
         return True
 
@@ -342,7 +350,8 @@ class ProjectTree(pd.BaseModel):
     def construct_tree(self, asset_records: List[dict]):
         """Construct the entire project tree"""
         for asset_record in asset_records:
-            new_node = self._create_new_node(asset_record)
+            new_node = ProjectTree._create_new_node(asset_record)
+            self._update_short_id_map(new_node)
             if new_node.parent_id is None:
                 self.root = new_node
             self.nodes.update({new_node.asset_id: new_node})
@@ -351,7 +360,7 @@ class ProjectTree(pd.BaseModel):
             if node.parent_id and self._has_node(node.parent_id):
                 # pylint: disable=unsubscriptable-object
                 self.nodes[node.parent_id].add_child(node)
-        self._update_short_id()
+        self._update_node_short_id()
         self._update_case_mesh_label()
 
     @pd.validate_call
@@ -841,35 +850,23 @@ class Project(pd.BaseModel):
         """Refresh the local project tree by fetching the latest project tree from cloud."""
         return self._get_tree_from_cloud()
 
-    def print_project_tree(self, str_length: int = 20, is_horizontal: bool = False):
+    def print_project_tree(self, line_width: int = 30, is_horizontal: bool = True):
         """Print the project tree to the terminal.
 
         Parameters
         ----------
-        str_length : str
+        line_width : str
             The maximum number of characters in each line.
 
         is_horizontal : bool
-            Choose if the project tree is printed in horizontal or vertical direction.
+            Choose if the project tree is printed in horizontal (default) or vertical direction.
 
         """
 
-        def wrapstring(long_str: str, str_length: str = None):
-            if str_length:
-                return textwrap.fill(text=long_str, width=str_length, break_long_words=True)
-            return long_str
-
         PrettyPrintTree(
             get_children=lambda x: x.children,
-            get_val=lambda x: wrapstring(long_str=str(x), str_length=str_length),
-            get_label=lambda x: (
-                wrapstring(
-                    long_str=x.edge_label,
-                    str_length=str_length,
-                )
-                if x.edge_label
-                else None
-            ),
+            get_val=lambda x: x.construct_string(line_width=line_width),
+            get_label=lambda x: x.edge_label if x.edge_label else None,
             color="",
             border=True,
             orientation=PrettyPrintTree.Horizontal if is_horizontal else PrettyPrintTree.Vertical,
