@@ -5,7 +5,6 @@
 # ProjectMeta instances as FieldInfo, I'd rather not have this line
 from __future__ import annotations
 
-import datetime
 import json
 import textwrap
 from enum import Enum
@@ -44,6 +43,7 @@ from flow360.component.utils import (
     MeshNameParser,
     get_short_asset_id,
     match_file_pattern,
+    parse_datetime,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
@@ -219,6 +219,8 @@ class ProjectTree(pd.BaseModel):
         Root item of the project.
     nodes : dict[str, ProjectTreeNode]
         Dict of all nodes in the project tree.
+    short_id_map: dict[str, List[str]]
+        Dict of short_id to full_id mapping, used to ensure every short_id is unique in the project.
     min_length_short_id : PositiveInt
         The minimum length of the short asset id, excluding
         hyphen and asset prefix.
@@ -226,19 +228,44 @@ class ProjectTree(pd.BaseModel):
 
     root: ProjectTreeNode = pd.Field(None)
     nodes: dict[str, ProjectTreeNode] = pd.Field({})
+    short_id_map: dict[str, List[str]] = pd.Field({})
     min_length_short_id: PositiveInt = pd.Field(7)
 
     def _update_case_mesh_label(self):
         """Check and remove unnecessary case mesh label"""
         for node_id in self._get_asset_ids_by_type(asset_type="Case"):
             node = self.nodes.get(node_id)
-            parent_node = self.get_parent_node(node=node)
+            parent_node = self._get_parent_node(node=node)
             if not parent_node:
                 continue
             if parent_node.asset_type != "Case" or node.case_mesh_id == parent_node.case_mesh_id:
                 node.case_mesh_label = None
 
-    def get_parent_node(self, node: ProjectTreeNode):
+    def _update_short_id(self):
+        """Update the minimum length of short ID to ensure each node has a unique short ID"""
+        if len(self.nodes) == len(self.short_id_map):
+            pass
+        full_id_to_update = []
+        short_id_duplicate = []
+        for short_id, full_ids in self.short_id_map.items():
+            if len(full_ids) > 1:
+                short_id_duplicate.append(short_id)
+                common_prefix = full_ids[0]
+                for full_id in full_ids[1:]:
+                    while not full_id.startswith(common_prefix):
+                        common_prefix = common_prefix[:-1]
+                common_prefix_processed = "".join(common_prefix.split("-")[1:])
+                for full_id in full_ids:
+                    # pylint: disable=unsubscriptable-object
+                    self.nodes[full_id].min_length_short_id = len(common_prefix_processed) + 1
+                    full_id_to_update.append(full_id)
+        for full_id in full_id_to_update:
+            # pylint: disable=unsubscriptable-object
+            self.short_id_map.update({self.nodes[full_id].short_id: [full_id]})
+        for short_id in short_id_duplicate:
+            self.short_id_map.pop(short_id, None)
+
+    def _get_parent_node(self, node: ProjectTreeNode):
         """Get the parent node of the input node"""
         if not node.parent_id:
             return None
@@ -256,11 +283,8 @@ class ProjectTree(pd.BaseModel):
         """Get the list of asset_ids in the project tree by asset_type."""
         return [node.asset_id for node in self.nodes.values() if node.asset_type == asset_type]
 
-    def add_node(self, asset_record: dict):
-        """Add new node to the tree"""
-        if self._has_node(asset_id=asset_record["id"]):
-            return False
-
+    def _create_new_node(self, asset_record: dict):
+        """Create a new node based on the asset record from API call"""
         parent_id = (
             asset_record["parentCaseId"]
             if asset_record["parentCaseId"]
@@ -277,18 +301,31 @@ class ProjectTree(pd.BaseModel):
             case_mesh_label=case_mesh_id,
             min_length_short_id=self.min_length_short_id,
         )
+
+        if new_node.short_id in self.short_id_map.keys():
+            # pylint: disable=unsubscriptable-object
+            self.short_id_map[new_node.short_id].append(new_node.asset_id)
+        else:
+            self.short_id_map.update({new_node.short_id: [new_node.asset_id]})
+
+        return new_node
+
+    def add_node(self, asset_record: dict):
+        """Add new node to the existing project tree"""
+        if self._has_node(asset_id=asset_record["id"]):
+            return False
+
+        new_node = self._create_new_node(asset_record)
+
         if new_node.parent_id is None:
             self.root = new_node
-
         for node in self.nodes.values():
             if node.parent_id == new_node.asset_id:
                 new_node.add_child(child=node)
             if node.asset_id == new_node.parent_id:
                 node.add_child(child=new_node)
-            while node.short_id == new_node.short_id:
-                node.min_length_short_id += 1
-                new_node.min_length_short_id += 1
         self.nodes.update({new_node.asset_id: new_node})
+        self._update_short_id()
         self._update_case_mesh_label()
         return True
 
@@ -298,9 +335,24 @@ class ProjectTree(pd.BaseModel):
         if not node:
             return
         if node.parent_id and self._has_node(node.parent_id):
-            parent_node = self.nodes.get(node.parent_id)
-            parent_node.remove_child(node)
+            # pylint: disable=unsubscriptable-object
+            self.nodes[node.parent_id].remove_child(node)
         self.nodes.pop(node.asset_id)
+
+    def construct_tree(self, asset_records: List[dict]):
+        """Construct the entire project tree"""
+        for asset_record in asset_records:
+            new_node = self._create_new_node(asset_record)
+            if new_node.parent_id is None:
+                self.root = new_node
+            self.nodes.update({new_node.asset_id: new_node})
+
+        for node in self.nodes.values():
+            if node.parent_id and self._has_node(node.parent_id):
+                # pylint: disable=unsubscriptable-object
+                self.nodes[node.parent_id].add_child(node)
+        self._update_short_id()
+        self._update_case_mesh_label()
 
     @pd.validate_call
     def get_full_asset_id(self, query_asset: AssetShortID) -> str:
@@ -715,8 +767,6 @@ class Project(pd.BaseModel):
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
-        # pylint: disable=fixme
-        # TODO: When initializing the tree for a project the complexity is o(N^2), which should be improved.
         return project
 
     def _check_initialized(self):
@@ -770,22 +820,21 @@ class Project(pd.BaseModel):
             asset_records = resp["records"]
             self.project_tree = ProjectTree()
 
-        def parse_datetime(dt_str, fmt="%Y-%m-%dT%H:%M:%S.%fZ"):
-            try:
-                return datetime.datetime.strptime(dt_str, fmt)
-            except ValueError:
-                return datetime.datetime.strptime(dt_str, fmt.replace("%S.%f", "%S"))
-
         asset_records = sorted(
             asset_records,
             key=lambda d: parse_datetime(d["updatedAt"]),
         )
+
+        if method == "tree":
+            self.project_tree.construct_tree(asset_records=asset_records)
+            return False
 
         is_duplicate = True
         for record in asset_records:
             success = self.project_tree.add_node(asset_record=record)
             if success:
                 is_duplicate = False
+
         return is_duplicate
 
     def refresh_project_tree(self):
@@ -925,9 +974,6 @@ class Project(pd.BaseModel):
 
         draft.update_simulation_params(params)
 
-        remote_project_tree_dict = self._project_webapi.get(method="tree")["records"]
-        remote_asset_ids = [record["id"] for record in remote_project_tree_dict]
-
         destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
 
         self._project_webapi.patch(
@@ -950,10 +996,9 @@ class Project(pd.BaseModel):
         if not run_async:
             destination_obj.wait()
 
-        is_cloud_duplicate = destination_id in remote_asset_ids
-        is_local_duplicate = self._get_tree_from_cloud(destination_obj=destination_obj)
+        is_duplicate = self._get_tree_from_cloud(destination_obj=destination_obj)
 
-        if is_local_duplicate or is_cloud_duplicate:
+        if is_duplicate:
             target_asset_type = target._cloud_resource_type_name
             log.warning(
                 f"The {target_asset_type} that matches the input already exists in project. "

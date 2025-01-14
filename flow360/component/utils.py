@@ -2,6 +2,7 @@
 Utility functions
 """
 
+import datetime
 import itertools
 import os
 import re
@@ -126,6 +127,14 @@ def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
         break
 
     return short_id
+
+
+def parse_datetime(dt_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> datetime.datetime:
+    """Parse the datetime from the API call."""
+    try:
+        return datetime.datetime.strptime(dt_str, fmt)
+    except ValueError:
+        return datetime.datetime.strptime(dt_str, fmt.replace("%S.%f", "%S"))
 
 
 def beta_feature(feature_name: str):
