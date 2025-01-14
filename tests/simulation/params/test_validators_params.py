@@ -770,7 +770,7 @@ def test_output_fields_with_time_average_output():
     # Valid simulation params
     with SI_unit_system:
         params = SimulationParams(
-            time_stepping=Unsteady(step_size=0.1, steps=10),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=[
                 TimeAverageVolumeOutput(
                     name="TimeAverageVolume",

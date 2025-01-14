@@ -3,6 +3,9 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -25,6 +28,7 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import translate_output
 from flow360.component.simulation.unit_system import SI_unit_system
 
@@ -86,14 +90,20 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
 
     ##:: timeAverageVolumeOutput only
     with SI_unit_system:
-        param = SimulationParams(outputs=[avg_volume_output_config[0]])
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[avg_volume_output_config[0]],
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(avg_volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
 
     ##:: timeAverageVolumeOutput and volumeOutput
     with SI_unit_system:
-        param = SimulationParams(outputs=[volume_output_config[0], avg_volume_output_config[0]])
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[volume_output_config[0], avg_volume_output_config[0]],
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
@@ -177,7 +187,10 @@ def test_surface_output(
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
-        param = SimulationParams(outputs=surface_output_config[0] + avg_surface_output_config)
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=surface_output_config[0] + avg_surface_output_config,
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
@@ -697,6 +710,8 @@ def test_surface_probe_output():
 
     with SI_unit_system:
         param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=param_with_ref[0],
             user_defined_fields=[UserDefinedField(name="my_own_field", expression="1+1")],
         )
@@ -714,7 +729,11 @@ def test_monitor_output(
 ):
     ##:: monitorOutput
     with SI_unit_system:
-        param = SimulationParams(outputs=probe_output_config[0])
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=probe_output_config[0],
+        )
     param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
@@ -752,6 +771,8 @@ def test_monitor_output(
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
         param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=surface_integral_output_config[0] + probe_output_config[0],
             user_defined_fields=[
                 UserDefinedField(name="My_field_1", expression="1+1"),
