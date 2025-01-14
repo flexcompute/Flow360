@@ -767,54 +767,52 @@ def test_rotating_reference_frame_model_flag():
 
 def test_output_fields_with_time_average_output():
 
-    with SI_unit_system:
-        outputs = [
-            TimeAverageVolumeOutput(
-                name="TimeAverageVolume",
-                output_fields=["primitiveVars"],
-                start_step=4,
-                frequency=10,
-                frequency_offset=14,
-            ),
-            TimeAverageSurfaceOutput(
-                name="TimeAverageSurface",
-                output_fields=["primitiveVars"],
-                entities=[
-                    Surface(name="VOLUME/LEFT"),
-                ],
-                start_step=4,
-                frequency=10,
-                frequency_offset=14,
-            ),
-            TimeAverageSurfaceOutput(
-                name="TimeAverageSurface",
-                output_fields=["T"],
-                entities=[
-                    Surface(name="VOLUME/RIGHT"),
-                ],
-                start_step=4,
-                frequency=10,
-                frequency_offset=14,
-            ),
-            TimeAverageSliceOutput(
-                entities=[
-                    Slice(
-                        name="TimeAverageSlice",
-                        origin=(0, 0, 0) * u.m,
-                        normal=(0, 0, 1),
-                    )
-                ],
-                output_fields=["s", "T"],
-                start_step=4,
-                frequency=10,
-                frequency_offset=14,
-            ),
-        ]
     # Valid simulation params
     with SI_unit_system:
         params = SimulationParams(
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
-            outputs=outputs,
+            outputs=[
+                TimeAverageVolumeOutput(
+                    name="TimeAverageVolume",
+                    output_fields=["primitiveVars"],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSurfaceOutput(
+                    name="TimeAverageSurface",
+                    output_fields=["primitiveVars"],
+                    entities=[
+                        Surface(name="VOLUME/LEFT"),
+                    ],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSurfaceOutput(
+                    name="TimeAverageSurface",
+                    output_fields=["T"],
+                    entities=[
+                        Surface(name="VOLUME/RIGHT"),
+                    ],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSliceOutput(
+                    entities=[
+                        Slice(
+                            name="TimeAverageSlice",
+                            origin=(0, 0, 0) * u.m,
+                            normal=(0, 0, 1),
+                        )
+                    ],
+                    output_fields=["s", "T"],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+            ],
         )
 
     assert params
@@ -824,16 +822,6 @@ def test_output_fields_with_time_average_output():
     for output in params.outputs:
         output_type_set.add(f"`{output.output_type}`")
     output_type_list = ",".join(sorted(output_type_set)).strip(",")
-    message = f"{output_type_list} are only allowed in unsteady simulations."
+    message = f"{output_type_list} can only be used in unsteady simulations."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        params = SimulationParams(
-            time_stepping=Steady(max_steps=1000),
-            outputs=outputs,
-        )
-
-    message = f"`TimeAverageVolumeOutput` is only allowed in unsteady simulations."
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        params = SimulationParams(
-            time_stepping=Steady(max_steps=1000),
-            outputs=[outputs[0]],
-        )
+        params.time_stepping = Steady(max_steps=1000)

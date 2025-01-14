@@ -389,6 +389,5 @@ def _check_time_average_output(params):
             f"`{output_type}`" for output_type in sorted(time_average_output_types)
         )
         output_type_list.strip(",")
-        be_verb = "is" if len(time_average_output_types) == 1 else "are"
-        raise ValueError(f"{output_type_list} {be_verb} only allowed in unsteady simulations.")
+        raise ValueError(f"{output_type_list} can only be used in unsteady simulations.")
     return params
