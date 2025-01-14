@@ -385,8 +385,9 @@ class MockResponseProjectPath(MockResponse):
         self._params = params
 
     def json(self):
-        print(self._params)
         with open(os.path.join(here, "data/mock_webapi/project_path_to_case_fork_resp.json")) as fh:
+            # The json file contains all the assets along the path from geometry to the forked case.
+            # Thus, to get the path to the intermediate asset, the extra items are removed from the response.
             res = json.load(fh)
             if self._params["itemType"] == "VolumeMesh":
                 res["data"]["cases"] = []
@@ -406,7 +407,6 @@ class MockResponseDraftSubmit(MockResponse):
         self._params = params
 
     def json(self):
-        print(self._params)
         res = None
         if self._params["name"] == "VolumeMesh":
             with open(
@@ -441,7 +441,6 @@ class MockResponseProjectPatchDraftSubmit(MockResponse):
         self._params = params
 
     def json(self):
-        print(self._params)
         with open(os.path.join(here, "data/mock_webapi/project_meta_resp.json")) as fh:
             res = json.load(fh)
         res["data"]["lastOpenItemId"] = self._params["lastOpenItemId"]
