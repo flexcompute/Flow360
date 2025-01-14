@@ -53,6 +53,7 @@ with fl.SI_unit_system:
         ],
         time_stepping=fl.Unsteady(
             steps=500,
+            max_pseudo_steps=100,
             step_size=0.0014693176825506479,
             CFL=fl.RampCFL(initial=1, final=50000, ramp_steps=5),
         ),
