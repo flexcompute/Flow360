@@ -164,8 +164,8 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     (14, 24, 34 etc.).
 
     >>> fl.TimeAverageSurfaceOutput(
-    ...     output_format=["primitiveVars"],
-    ...     output_fields=restart_output_fields,
+    ...     output_format="paraview",
+    ...     output_fields=["primitiveVars"],
     ...     entities=[
     ...         volume_mesh["VOLUME/LEFT"],
     ...         volume_mesh["VOLUME/RIGHT"],
@@ -645,9 +645,9 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
       >>> TimeAverageSurfaceProbeOutput(
       ...     name="time_average_surface_probe_group_points",
       ...     entities=[
-      ...         Point(name="Point_1", location=[1, 1.02, 0.03] * u.cm),
-      ...         Point(name="Point_2", location=[2, 1.01, 0.03] * u.m),
-      ...         Point(name="Point_3", location=[3, 1.02, 0.03] * u.m),
+      ...         Point(name="Point_1", location=[1, 1.02, 0.03] * fl.u.cm),
+      ...         Point(name="Point_2", location=[2, 1.01, 0.03] * fl.u.m),
+      ...         Point(name="Point_3", location=[3, 1.02, 0.03] * fl.u.m),
       ...     ],
       ...     target_surfaces=[
       ...         Surface(name="Surface_1", geometry["surface1"]),
@@ -863,4 +863,12 @@ OutputTypes = Annotated[
         AeroAcousticOutput,
     ],
     pd.Field(discriminator="output_type"),
+]
+
+TimeAverageOutputTypes = Union[
+    TimeAverageSurfaceOutput,
+    TimeAverageVolumeOutput,
+    TimeAverageSliceOutput,
+    TimeAverageProbeOutput,
+    TimeAverageSurfaceProbeOutput,
 ]

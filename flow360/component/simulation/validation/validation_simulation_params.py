@@ -12,6 +12,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SliceOutput,
     SurfaceOutput,
+    TimeAverageOutputTypes,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
@@ -19,7 +20,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -373,4 +374,21 @@ def _check_and_add_noninertial_reference_frame_flag(params):
                 "for steady state simulations."
             )
 
+    return params
+
+
+def _check_time_average_output(params):
+    if isinstance(params.time_stepping, Steady):
+        time_average_output_types = set()
+        for output in params.outputs:
+            if isinstance(output, TimeAverageOutputTypes):
+                time_average_output_types.add(output.output_type)
+        if len(time_average_output_types) > 0:
+            output_type_list = ",".join(
+                f"`{output_type}`" for output_type in sorted(time_average_output_types)
+            )
+            output_type_list.strip(",")
+            raise ValueError(
+                f"The time average outputs: {output_type_list} are only allowed in the unsteady simulation."
+            )
     return params
