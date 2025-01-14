@@ -865,10 +865,10 @@ OutputTypes = Annotated[
     pd.Field(discriminator="output_type"),
 ]
 
-TimeAverageOutputTypes = Union[
+TimeAverageOutputTypes = (
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     TimeAverageSliceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
-]
+)
