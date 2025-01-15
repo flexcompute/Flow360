@@ -318,7 +318,7 @@ class ProjectTree(pd.BaseModel):
             self.short_id_map[new_node.short_id] = []
         self.short_id_map[new_node.short_id].append(new_node.asset_id)
 
-    def add_node(self, asset_record: dict):
+    def add(self, asset_record: dict):
         """Add new node to the existing project tree"""
         if self._has_node(asset_id=asset_record["id"]):
             return False
@@ -840,7 +840,7 @@ class Project(pd.BaseModel):
 
         is_duplicate = True
         for record in asset_records:
-            success = self.project_tree.add_node(asset_record=record)
+            success = self.project_tree.add(asset_record=record)
             if success:
                 is_duplicate = False
 
