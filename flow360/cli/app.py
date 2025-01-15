@@ -88,7 +88,7 @@ def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
 
 # For displaying all projects
 @click.command("show_projects", context_settings={"show_default": True})
-@click.option("--keyword", help="Filter projects by keyword", default=None, type=str)
+@click.option("--keyword", "-k", help="Filter projects by keyword", default=None, type=str)
 def show_projects(keyword):
     """
     Display all available projects with optional keyword filter.
