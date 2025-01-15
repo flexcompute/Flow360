@@ -1023,7 +1023,7 @@ class CaseResultsModel(pd.BaseModel):
         local_storage : str
             Path to local folder
         keep_remote_structure : bool, optional
-            When true, remote folder structure is assumed to be preseved, otherwise flat structure, by default False
+            When true, remote folder structure is assumed to be preserved, otherwise flat structure, by default False
         """
         for field_name in self.model_fields:
             value = getattr(self, field_name)
