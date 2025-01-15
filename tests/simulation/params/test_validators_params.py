@@ -47,6 +47,9 @@ from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    TimeAverageSliceOutput,
+    TimeAverageSurfaceOutput,
+    TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -696,3 +699,65 @@ def test_velocity_direction_in_subsonic_inflow():
                 )
             ],
         )
+
+
+def test_output_fields_with_time_average_output():
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[
+                TimeAverageVolumeOutput(
+                    name="TimeAverageVolume",
+                    output_fields=["primitiveVars"],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSurfaceOutput(
+                    name="TimeAverageSurface",
+                    output_fields=["primitiveVars"],
+                    entities=[
+                        Surface(name="VOLUME/LEFT"),
+                    ],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSurfaceOutput(
+                    name="TimeAverageSurface",
+                    output_fields=["T"],
+                    entities=[
+                        Surface(name="VOLUME/RIGHT"),
+                    ],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSliceOutput(
+                    entities=[
+                        Slice(
+                            name="TimeAverageSlice",
+                            origin=(0, 0, 0) * u.m,
+                            normal=(0, 0, 1),
+                        )
+                    ],
+                    output_fields=["s", "T"],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+            ],
+        )
+
+    assert params
+
+    # Invalid simulation params
+    output_type_set = set()
+    for output in params.outputs:
+        output_type_set.add(f"`{output.output_type}`")
+    output_type_list = ",".join(sorted(output_type_set)).strip(",")
+    message = f"{output_type_list} can only be used in unsteady simulations."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        params.time_stepping = Steady(max_steps=1000)
