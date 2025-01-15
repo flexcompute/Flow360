@@ -841,14 +841,14 @@ class Shutter(Flow360BaseModel):
     # pylint: disable=too-many-locals
     async def _get_3d_images_api(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
         try:
-            import backoff # pylint: disable=import-outside-toplevel
+            import backoff  # pylint: disable=import-outside-toplevel
         except ImportError as err:
             raise RuntimeError(
                 "backoff is not installed. Please install backoff to use this functionality."
             ) from err
 
         try:
-            import aiohttp # pylint: disable=import-outside-toplevel
+            import aiohttp  # pylint: disable=import-outside-toplevel
         except ImportError as err:
             raise RuntimeError(
                 "aiohttp is not installed. Please install aiohttp to use this functionality."

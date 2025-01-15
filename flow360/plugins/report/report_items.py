@@ -1238,7 +1238,7 @@ class Chart3D(Chart):
         script += [
             ActionPayload(
                 action="set-camera",
-                payload=SetCameraPayload(**camera.model_dump(exclude_none=True, exclude=['type'])),
+                payload=SetCameraPayload(**camera.model_dump(exclude_none=True, exclude=["type"])),
             )
         ]
         return script
@@ -1374,7 +1374,7 @@ class Chart3D(Chart):
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
 
         script = self._get_shutter_set_camera(script, self.camera)
-        if self.camera.dimension is None: # pylint: disable=no-member
+        if self.camera.dimension is None:  # pylint: disable=no-member
             script = self._get_focus_camera(script)
 
         script = self._get_shutter_screenshot_script(script=script, screenshot_name=self.fig_name)

@@ -517,7 +517,6 @@ class Expression(GenericOperation):
 OperationTypes = Annotated[Union[Average, Expression], pd.Field(discriminator="type_name")]
 
 
-
 class DataItem(Flow360BaseModel):
     """
     Represents a retrievable data item that can be post-processed.
