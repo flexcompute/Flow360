@@ -391,7 +391,7 @@ class Flow360Resource(RestApi):
 
     def _parse_json_from_cloud(self, filename) -> dict:
         """
-        returns simulation params
+        Return dictionary from cloud JSON file.
         """
         with NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp_file:
             temp_path = tmp_file.name
