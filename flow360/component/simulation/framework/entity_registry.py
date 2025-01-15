@@ -1,6 +1,5 @@
 """Registry for managing and storing instances of various entity types."""
 
-import re
 from typing import Any, Dict, Union
 
 import pydantic as pd
@@ -11,6 +10,7 @@ from flow360.component.simulation.framework.entity_base import (
     MergeConflictError,
     _merge_objects,
 )
+from flow360.component.utils import _naming_pattern_handler
 from flow360.log import log
 
 
@@ -109,13 +109,7 @@ class EntityRegistry(Flow360BaseModel):
             List[EntityBase]: A list of entities whose names match the pattern.
         """
         matched_entities = []
-        if "*" in pattern:
-            # Convert wildcard to regex pattern
-            regex_pattern = "^" + pattern.replace("*", ".*") + "$"
-        else:
-            regex_pattern = f"^{pattern}$"  # Exact match if no '*'
-
-        regex = re.compile(regex_pattern)
+        regex = _naming_pattern_handler(pattern=pattern)
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
