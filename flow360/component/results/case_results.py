@@ -340,7 +340,7 @@ class ResultCSVModel(ResultBaseModel):
 
     def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
-        change default behaviour of data loader, reload
+        Change default behavior of data loader, reload
         """
         self._values = self.raw_values
         self._preprocess(
