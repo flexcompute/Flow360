@@ -1,5 +1,5 @@
 """
-This module is reponsible for communicating with UVF-shutter service
+This module is responsible for communicating with UVF-shutter service
 """
 
 import asyncio
