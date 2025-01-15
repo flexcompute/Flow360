@@ -17,7 +17,7 @@ def _no_update(params_as_dict):
 
 def _24_11_0_to_24_11_1_update(params_as_dict):
     # Check and remove the 'meshing' node if conditions are met
-    if "meshing" in params_as_dict:
+    if params_as_dict.get("meshing") is not None:
         meshing_defaults = params_as_dict["meshing"].get("defaults", {})
         bl_thickness = meshing_defaults.get("boundary_layer_first_layer_thickness")
         max_edge_length = meshing_defaults.get("surface_max_edge_length")

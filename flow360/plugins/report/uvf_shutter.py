@@ -13,17 +13,6 @@ from functools import wraps
 from typing import Callable, List, Literal, Optional, Tuple, Union
 from urllib.parse import urljoin
 
-# this plugin is optional, thus pylatex is not required: TODO add handling of installation of aiohttp, backoff
-# pylint: disable=import-error
-try:
-    import aiohttp
-except ImportError:
-    aiohttp = None
-try:
-    import backoff
-except ImportError:
-    backoff = None
-
 import pydantic as pd
 
 from flow360 import Env
@@ -42,9 +31,6 @@ class ShutterRequestBaseModel(Flow360BaseModel):
     """
     Base model for UVF shutter requests
     """
-
-    # def model_dump_json(self, **kwargs):
-    #     return super().model_dump_json(by_alias=True, **kwargs)
 
 
 ShutterObjectTypes = Literal["slices", "qcriterion", "isosurfaces", "boundaries", "edges"]
@@ -76,9 +62,9 @@ class Resolution(Flow360BaseModel):
 
     Parameters
     ----------
-    width : int, default=3840
+    width : int, default=1920
         Width of the resolution in pixels.
-    height : int, default=2160
+    height : int, default=1080
         Height of the resolution in pixels.
     """
 
@@ -152,16 +138,25 @@ class SetFieldPayload(Flow360BaseModel):
 
 class TakeLegendScreenshotPayload(Flow360BaseModel):
     """
-    Payload for setting field parameters on an object.
+    Payload for taking a legend screenshot.
+
+    This payload is used to capture just the legend (color scale, range, and optional title) for
+    the specified object (e.g., slice, boundary). The legend is saved as an image file.
 
     Parameters
     ----------
     object_id : ShutterObjectTypes
-        Identifier of the object for field setting.
-    field_name : str
-        Name of the field to modify.
-    min_max : Tuple[float, float]
-        Minimum and maximum values for the field.
+        Identifier of the object whose legend will be captured.
+    file_name : str
+        The name of the output screenshot file, aliased as "filename".
+    type : str, default="png"
+        Image format for the legend screenshot.
+    width : int, default=400
+        Width of the screenshot in pixels.
+    height : int, default=60
+        Height of the screenshot in pixels.
+    title : str, optional
+        Title to display on the legend. If omitted, the default is the field name being visualized.
     """
 
     object_id: ShutterObjectTypes
@@ -169,7 +164,7 @@ class TakeLegendScreenshotPayload(Flow360BaseModel):
     type: str = "png"
     width: Optional[pd.PositiveInt] = 400
     height: Optional[pd.PositiveInt] = 60
-    title: Optional[str] = None  # use to overwrite title, default is field name
+    title: Optional[str] = None
 
 
 class SetLICPayload(Flow360BaseModel):
@@ -196,17 +191,20 @@ class Camera(Flow360BaseModel):
     ----------
     position : Vector3
         Camera eye position, think of the eye position as a position on the unit sphere centered at the `lookAt`.
+        The units are in lenght units used in geometry or volume mesh.
     up : Vector3
         Up orientation of the camera.
     look_at : Vector3
         Target point the camera will look at from the position. Default: center of bbox
+        The units are in lenght units used in geometry or volume mesh.
     pan_target : Vector3 or None
         Position to pan the viewport center to; if undefined, the default is `look_at`.
-    dimension_direction : {'width', 'height', 'diagonal'}
+        The units are in lenght units used in geometry or volume mesh.
+    dimension_dir : {'width', 'height', 'diagonal'}
         The direction `dimension_size_model_units` is for.
-    dimension_size_model_units : float
+    dimension : float
         The camera zoom will be set such that the extents of the scene's projection is this number of model units for
-        the applicable `dimensionDirection`.
+        the applicable `dimension_dir`. The units are in lenght units used in geometry or volume mesh.
     """
 
     position: Optional[Tuple[float, float, float]] = (-1, -1, 1)
@@ -217,6 +215,133 @@ class Camera(Flow360BaseModel):
         "width", alias="dimensionDirection"
     )
     dimension: Optional[float] = pd.Field(None, alias="dimensionSizeModelUnits")
+    type: Literal["Camera"] = "Camera"
+
+
+class TopCamera(Camera):
+    """
+    Camera looking down from above (along +Z).
+    Position: (0, 0, 1)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 1, 0)
+    """
+
+    position: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 1.0, 0.0)
+    type: Literal["TopCamera"] = "TopCamera"
+
+
+class LeftCamera(Camera):
+    """
+    Camera looking from the positive Y side toward the origin (i.e. along -Y).
+    Position: (0, -1, 0)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    type: Literal["LeftCamera"] = "LeftCamera"
+    position: Tuple[float, float, float] = (0.0, -1.0, 0.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+
+
+class RearCamera(Camera):
+    """
+    Camera looking from negative X toward the origin (i.e. along +X).
+    Position: (1, 0, 0)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    position: Tuple[float, float, float] = (1.0, 0.0, 0.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["RearCamera"] = "RearCamera"
+
+
+class FrontCamera(Camera):
+    """
+    Camera looking from positive X side toward the origin (i.e. along -X).
+    Position: (-1, 0, 0)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    position: Tuple[float, float, float] = (-1.0, 0.0, 0.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["FrontCamera"] = "FrontCamera"
+
+
+class BottomCamera(Camera):
+    """
+    Camera looking up from below (along -Z).
+    Position: (0, 0, -1)
+    Look-at:  (0, 0, 0)
+    Up:       (0, -1, 0)
+    """
+
+    position: Tuple[float, float, float] = (0.0, 0.0, -1.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, -1.0, 0.0)
+    type: Literal["BottomCamera"] = "BottomCamera"
+
+
+class FrontLeftBottomCamera(Camera):
+    """
+    Camera placed front-left-bottom, diagonally looking at the model.
+    Position: (-1, -1, -1)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    position: Tuple[float, float, float] = (-1.0, -1.0, -1.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["FrontLeftBottomCamera"] = "FrontLeftBottomCamera"
+
+
+class RearRightBottomCamera(Camera):
+    """
+    Camera placed rear-right-bottom, diagonally looking at the model.
+    Position: (1, 1, -1)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    position: Tuple[float, float, float] = (1.0, 1.0, -1.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["RearRightBottomCamera"] = "RearRightBottomCamera"
+
+
+class FrontLeftTopCamera(Camera):
+    """
+    Camera placed front-left-top, diagonally looking at the model.
+    Position: (-1, -1, 1)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    position: Tuple[float, float, float] = (-1.0, -1.0, 1.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["FrontLeftTopCamera"] = "FrontLeftTopCamera"
+
+
+class RearLeftTopCamera(Camera):
+    """
+    Camera placed rear-left-top, diagonally looking at the model.
+    Position: (1, -1, 1)
+    Look-at:  (0, 0, 0)
+    Up:       (0, 0, 1)
+    """
+
+    position: Tuple[float, float, float] = (1.0, -1.0, 1.0)
+    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
+    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["RearLeftTopCamera"] = "RearLeftTopCamera"
 
 
 class SetCameraPayload(Camera):
@@ -362,11 +487,6 @@ def http_interceptor(func):
         log.debug(f"call: {func.__name__}({reprlib.repr(args)}, {reprlib.repr(kwargs)})")
         start_time = time.time()
 
-        if aiohttp is None:
-            raise RuntimeError(
-                "aiohttp is not installed. Please install aiohttp to use this functionality."
-            )
-
         async with await func(*args, **kwargs) as resp:
             log.debug(f"response: {resp}")
 
@@ -470,7 +590,7 @@ def make_shutter_context(context):
         "data_storage": context.data_storage,
         "url": context.shutter_url,
         "access_token": context.shutter_access_token,
-        "screeshot_process_function": context.shutter_screeshot_process_function,
+        "screenshot_process_function": context.shutter_screenshot_process_function,
     }
     context_data = {k: v for k, v in context_data.items() if v is not None}
     return context_data
@@ -716,20 +836,30 @@ class Shutter(Flow360BaseModel):
     url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
     use_cache: bool = True
     access_token: Optional[str] = None
-    screeshot_process_function: Optional[Callable] = None
+    screenshot_process_function: Optional[Callable] = None
 
+    # pylint: disable=too-many-locals
     async def _get_3d_images_api(self, screenshots: dict[str, Tuple]) -> dict[str, list]:
-        if backoff is None:
+        try:
+            import backoff # pylint: disable=import-outside-toplevel
+        except ImportError as err:
             raise RuntimeError(
                 "backoff is not installed. Please install backoff to use this functionality."
-            )
+            ) from err
+
+        try:
+            import aiohttp # pylint: disable=import-outside-toplevel
+        except ImportError as err:
+            raise RuntimeError(
+                "aiohttp is not installed. Please install aiohttp to use this functionality."
+            ) from err
 
         @backoff.on_exception(
             lambda: backoff.constant(3), Flow360WebNotAvailableError, max_time=3600
         )
         @http_interceptor
         async def _get_image_sequence(
-            session: aiohttp.client.ClientSession, url: str, shutter_request: list[dict]
+            session: aiohttp.ClientSession, url: str, shutter_request: list[dict]
         ) -> str:
             log.debug(
                 f"sending request to uvf-shutter: {url=}, {type(shutter_request)=}, {len(json.dumps(shutter_request))=}"
@@ -825,8 +955,8 @@ class Shutter(Flow360BaseModel):
 
         img_files_generated = {}
         if len(screenshots) > 0:
-            if self.screeshot_process_function is not None:
-                process_function = self.screeshot_process_function
+            if self.screenshot_process_function is not None:
+                process_function = self.screenshot_process_function
             else:
                 process_function = self._get_3d_images_api
             img_files_generated = asyncio.run(process_function(screenshots))

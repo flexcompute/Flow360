@@ -826,7 +826,7 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
     file_name: Optional[str] = pd_v2.Field(None, alias="fileName")
 
 
-class MeshStats(pd_v2.BaseModel):
+class VolumeMeshStats(pd_v2.BaseModel):
     """
     Mesh stats
     """
@@ -1033,7 +1033,7 @@ class VolumeMeshV2(AssetBase):
 
     @classmethod
     def from_local_storage(
-        cls, mesh_id: str = None, local_storage_path="", meta_data: AssetMetaBaseModelV2 = None
+        cls, mesh_id: str = None, local_storage_path="", meta_data: VolumeMeshMetaV2 = None
     ) -> VolumeMeshV2:
         """
         Parameters
@@ -1124,18 +1124,18 @@ class VolumeMeshV2(AssetBase):
             )
 
     @cached_property
-    def stats(self) -> MeshStats:
+    def stats(self) -> VolumeMeshStats:
         """
         Get mesh stats
 
         Returns
         -------
-        MeshStats
-            return MeshStats object
+        VolumeMeshStats
+            return VolumeMeshStats object
         """
         # pylint: disable=protected-access
         data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
-        return MeshStats(**data)
+        return VolumeMeshStats(**data)
 
     @property
     def boundary_names(self) -> List[str]:

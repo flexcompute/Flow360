@@ -46,7 +46,7 @@ from .results.case_results import (
     ResultsDownloaderSettings,
     ResultTarGZModel,
     SurfaceForcesResultCSVModel,
-    SurfaceHeatTrasferResultCSVModel,
+    SurfaceHeatTransferResultCSVModel,
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
     XSlicingForceDistributionResultCSVModel,
@@ -428,7 +428,10 @@ class Case(CaseBase, Flow360Resource):
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
         param, errors, _ = services.validate_model(
-            params_as_dict=params_as_dict, root_item_type=None, treat_as_file=True
+            params_as_dict=params_as_dict,
+            root_item_type=None,
+            treat_as_file_content=True,
+            validation_level=None,
         )
 
         if errors is not None:
@@ -795,8 +798,8 @@ class CaseResultsModel(pd.BaseModel):
     )
 
     # others
-    surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(
-        default_factory=lambda: SurfaceHeatTrasferResultCSVModel()
+    surface_heat_transfer: SurfaceHeatTransferResultCSVModel = pd.Field(
+        default_factory=lambda: SurfaceHeatTransferResultCSVModel()
     )
     aeroacoustics: AeroacousticsResultCSVModel = pd.Field(
         default_factory=lambda: AeroacousticsResultCSVModel()

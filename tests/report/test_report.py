@@ -4,7 +4,7 @@ import pytest
 
 from flow360 import Case
 from flow360.component.case import CaseMeta
-from flow360.plugins.report.report import Report, ReportApi, ReportTemplate
+from flow360.plugins.report.report import Report, ReportDraft, ReportTemplate
 from flow360.plugins.report.report_items import Chart2D, Inputs, Summary, Table
 from flow360.plugins.report.utils import _requirements_mapping
 
@@ -42,9 +42,9 @@ def test_report_init():
 
 def test_reportapi_submit(mocker):
     mock_post = mocker.patch.object(
-        ReportApi._webapi, "post", return_value={"id": "report-idxyz342-dasdad-dsadasda-3fsfdsf"}
+        ReportDraft._webapi, "post", return_value={"id": "report-idxyz342-dasdad-dsadasda-3fsfdsf"}
     )
-    response = ReportApi.submit(
+    response = ReportDraft.submit(
         name="My Report", case_ids=["case1", "case2"], config="{}", solver_version="release-1.2.3"
     )
     mock_post.assert_called_once()
@@ -103,7 +103,7 @@ def test_reporttemplate_requirements():
 
 
 def test_reporttemplate_create_in_cloud(mocker, cases):
-    mock_submit = mocker.patch.object(ReportApi, "submit", return_value="mock-response")
+    mock_submit = mocker.patch.object(ReportDraft, "submit", return_value="mock-response")
     template = ReportTemplate(title="Cloud Report", items=[Summary(), Inputs()])
     resp = template.create_in_cloud(name="CloudTest", cases=cases, solver_version="release-1.2.3")
     mock_submit.assert_called_once()

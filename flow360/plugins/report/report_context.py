@@ -24,6 +24,6 @@ class ReportContext(pd.BaseModel):
     data_storage: str = "."
     shutter_url: Optional[str] = None
     shutter_access_token: Optional[str] = None
-    shutter_screeshot_process_function: Optional[Callable] = None
+    shutter_screenshot_process_function: Optional[Callable] = None
 
     model_config = pd.ConfigDict(arbitrary_types_allowed=True)

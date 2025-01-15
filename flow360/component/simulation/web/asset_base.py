@@ -12,7 +12,6 @@ from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
-    AssetMetaBaseModel,
     AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
@@ -33,7 +32,7 @@ class AssetBase(metaclass=ABCMeta):
     """Base class for resource asset"""
 
     _interface_class: type[BaseInterface] = None
-    _meta_class: type[AssetMetaBaseModel] = None
+    _meta_class: type[AssetMetaBaseModelV2] = None
     _draft_class: type[ResourceDraft] = None
     _web_api_class: type[Flow360Resource] = None
     _entity_info_class: type[EntityInfoModel] = None
@@ -70,7 +69,7 @@ class AssetBase(metaclass=ABCMeta):
 
     @classmethod
     # pylint: disable=protected-access
-    def _from_meta(cls, meta: AssetMetaBaseModel):
+    def _from_meta(cls, meta: AssetMetaBaseModelV2):
         validate_type(meta, "meta", cls._meta_class)
         resource = cls(id=meta.id)
         resource._webapi._set_meta(meta)
@@ -136,7 +135,7 @@ class AssetBase(metaclass=ABCMeta):
         return json.loads(simulation_json)
 
     @property
-    def info(self) -> AssetMetaBaseModel:
+    def info(self) -> AssetMetaBaseModelV2:
         """Return the metadata of the asset"""
         return self._webapi.info
 

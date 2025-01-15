@@ -68,6 +68,7 @@ _CMx_VISCOUS = "CMxViscous"
 _CMy_VISCOUS = "CMyViscous"
 _CMz_VISCOUS = "CMzViscous"
 _HEAT_TRANSFER = "HeatTransfer"
+_HEAT_FLUX = "HeatFlux"
 _X = "X"
 _Y = "Y"
 _CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
@@ -525,7 +526,7 @@ class ResultCSVModel(ResultBaseModel):
                 )
         else:
             raise ValueError(
-                f"Uknnown params model: {params}, allowed (Flow360Params, SimulationParams)"
+                f"Unknown params model: {params}, allowed (Flow360Params, SimulationParams)"
             )
 
         physical_step = self.as_dataframe()[_PHYSICAL_STEP]
@@ -559,13 +560,13 @@ class ResultCSVModel(ResultBaseModel):
         return first_iter_mask, last_iter_mask
 
     @classmethod
-    def _average_last_fraction(cls, df, avarage_fraction):
-        selected_fraction = df.tail(int(len(df) * avarage_fraction))
+    def _average_last_fraction(cls, df, average_fraction):
+        selected_fraction = df.tail(int(len(df) * average_fraction))
         return selected_fraction.mean()
 
-    def get_averages(self, avarage_fraction):
+    def get_averages(self, average_fraction):
         df = self.as_dataframe()
-        return self._average_last_fraction(df, avarage_fraction)
+        return self._average_last_fraction(df, average_fraction)
 
     @property
     def averages(self):
@@ -809,10 +810,13 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     _x_columns: List[str] = [_Y]
 
 
-class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
-    """SurfaceHeatTrasferResultCSVModel"""
+class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel):
+    """SurfaceHeatTransferResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, frozen=True)
+    _variables: List[str] = [_HEAT_FLUX]
+    _filter_when_zero = []
+    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
 
 class AeroacousticsResultCSVModel(ResultCSVModel):

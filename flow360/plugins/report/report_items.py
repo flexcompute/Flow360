@@ -59,8 +59,16 @@ from flow360.plugins.report.utils import (
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
+    BottomCamera,
     Camera,
     FocusPayload,
+    FrontCamera,
+    FrontLeftBottomCamera,
+    FrontLeftTopCamera,
+    LeftCamera,
+    RearCamera,
+    RearLeftTopCamera,
+    RearRightBottomCamera,
     ResetFieldPayload,
     Resource,
     Scene,
@@ -72,6 +80,7 @@ from flow360.plugins.report.uvf_shutter import (
     Shutter,
     ShutterObjectTypes,
     TakeScreenshotPayload,
+    TopCamera,
     make_shutter_context,
 )
 
@@ -102,7 +111,6 @@ class ReportItem(Flow360BaseModel):
     Base class for for all report items
     """
 
-    boundaries: Union[Literal["ALL"], List[str]] = "ALL"
     _requirements: List[str] = None
 
     # pylint: disable=unused-argument,too-many-arguments
@@ -278,7 +286,7 @@ class Table(ReportItem):
         if self.headers is not None:
             if len(self.data) != len(self.headers):
                 raise ValueError(
-                    "Suppled `headers` must be the same length as `data`: "
+                    "Supplied `headers` must be the same length as `data`: "
                     f"{len(self.headers)} instead of {len(self.data)}"
                 )
         return self
@@ -530,7 +538,7 @@ class Chart(ReportItem):
         """
         Build a figure from SubFigures which displays images in rows
 
-        Using Doc manually here may be uncessary - but it does allow for more control
+        Using Doc manually here may be unnecessary - but it does allow for more control
         """
 
         # Smaller than 1 to avoid overflowing
@@ -955,14 +963,14 @@ class Chart2D(Chart):
             dimension = np.amax(x_data[0]) - np.amin(x_data[0])
             if self.x == "x_slicing_force_distribution/X":
                 log.warning(
-                    "First case is used as a background image with dimensiones matched to the extent of X data"
+                    "First case is used as a background image with dimensions matched to the extent of X data"
                 )
                 camera = Camera(
                     position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
                 )
             elif self.x == "y_slicing_force_distribution/Y":
                 log.warning(
-                    "First case is used as a background image with dimensiones matched to the extent of X data"
+                    "First case is used as a background image with dimensions matched to the extent of X data"
                 )
                 camera = Camera(
                     position=(-1, 0, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
@@ -1053,7 +1061,10 @@ class Chart3D(Chart):
     limits : Optional[Tuple[float, float]], default=None
         Optional limits for the field values, specified as a tuple (min, max).
     camera: Camera
-        Camera settings: camera position, look at, up.
+        Camera settings: camera position, look at, up. Use some predefined cameras:
+            BottomCamera, FrontCamera, FrontLeftBottomCamera,
+            FrontLeftTopCamera,LeftCamera, RearCamera, RearLeftTopCamera, RearRightBottomCamera, TopCamera
+
     show : ShutterObjectTypes
         Type of object to display in the 3D chart.
     exclude : List[str], optional
@@ -1061,7 +1072,20 @@ class Chart3D(Chart):
     """
 
     field: Optional[Union[SurfaceFieldNames, str]] = None
-    camera: Optional[Camera] = Camera()
+    camera: Optional[
+        Union[
+            Camera,
+            BottomCamera,
+            FrontCamera,
+            FrontLeftBottomCamera,
+            FrontLeftTopCamera,
+            LeftCamera,
+            RearCamera,
+            RearLeftTopCamera,
+            RearRightBottomCamera,
+            TopCamera,
+        ]
+    ] = pd.Field(default=Camera(), discriminator="type")
     limits: Optional[Union[Tuple[float, float], Tuple[DimensionedTypes, DimensionedTypes]]] = None
     is_log_scale: bool = False
     show: Union[ShutterObjectTypes, Literal["isosurface"]]
@@ -1214,7 +1238,7 @@ class Chart3D(Chart):
         script += [
             ActionPayload(
                 action="set-camera",
-                payload=SetCameraPayload(**camera.model_dump(exclude_none=True)),
+                payload=SetCameraPayload(**camera.model_dump(exclude_none=True, exclude=['type'])),
             )
         ]
         return script
@@ -1350,7 +1374,7 @@ class Chart3D(Chart):
             raise ValueError(f'"{self.show}" is not corect type for 3D chart.')
 
         script = self._get_shutter_set_camera(script, self.camera)
-        if self.camera.dimension is None:
+        if self.camera.dimension is None: # pylint: disable=no-member
             script = self._get_focus_camera(script)
 
         script = self._get_shutter_screenshot_script(script=script, screenshot_name=self.fig_name)

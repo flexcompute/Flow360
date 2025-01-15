@@ -2,13 +2,21 @@ import flow360 as fl
 from flow360 import log, u
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
-    Camera,
+    BottomCamera,
     Chart2D,
     Chart3D,
+    FrontCamera,
+    FrontLeftBottomCamera,
+    FrontLeftTopCamera,
     Inputs,
+    LeftCamera,
+    RearCamera,
+    RearLeftTopCamera,
+    RearRightBottomCamera,
     Settings,
     Summary,
     Table,
+    TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 from flow360.user_config import UserConfig
@@ -49,85 +57,28 @@ exclude += freestream_surfaces + slip_wall_surfaces
 SOLVER_VERSION = "reportPipeline-24.10.13"
 
 
-top_camera = Camera(
-    position=(0, 0, 1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 1, 0),
-    dimension=5,
-    dimension_dir="width",
+top_camera = TopCamera(pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width")
+top_camera_slice = TopCamera(pan_target=(2.5, 0, 0), dimension=8, dimension_dir="width")
+side_camera = LeftCamera(pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width")
+side_camera_slice = LeftCamera(pan_target=(2.5, 0, 1.5), dimension=8, dimension_dir="width")
+rear_camera = RearCamera(dimension=2.5, dimension_dir="width")
+front_camera = FrontCamera(dimension=2.5, dimension_dir="width")
+bottom_camera = BottomCamera(pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width")
+front_left_bottom_camera = FrontLeftBottomCamera(
+    pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width"
 )
-top_camera_slice = Camera(
-    position=(0, 0, 1),
-    look_at=(0, 0, 0),
-    pan_target=(2.5, 0, 0),
-    up=(0, 1, 0),
-    dimension=8,
-    dimension_dir="width",
+rear_right_bottom_camera = RearRightBottomCamera(
+    pan_target=(1.5, 0, 0), dimension=6, dimension_dir="width"
 )
-side_camera = Camera(
-    position=(0, -1, 0),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 0, 1),
-    dimension=5,
-    dimension_dir="width",
+front_left_top_camera = FrontLeftTopCamera(
+    pan_target=(1.5, 0, 0), dimension=6, dimension_dir="width"
 )
-side_camera_slice = Camera(
-    position=(0, -1, 0),
-    look_at=(0, 0, 0),
-    pan_target=(2.5, 0, 1.5),
-    up=(0, 0, 1),
-    dimension=8,
-    dimension_dir="width",
-)
-back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
-front_camera = Camera(position=(-1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
-bottom_camera = Camera(
-    position=(0, 0, -1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, -1, 0),
-    dimension=5,
-    dimension_dir="width",
-)
-front_left_bottom_camera = Camera(
-    position=(-1, -1, -1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 0, 1),
-    dimension=5,
-    dimension_dir="width",
-)
-rear_right_bottom_camera = Camera(
-    position=(1, 1, -1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 0, 1),
-    dimension=6,
-    dimension_dir="width",
-)
-front_left_top_camera = Camera(
-    position=(-1, -1, 1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 0, 1),
-    dimension=6,
-    dimension_dir="width",
-)
-rear_left_top_camera = Camera(
-    position=(1, -1, 1),
-    look_at=(0, 0, 0),
-    pan_target=(1.5, 0, 0),
-    up=(0, 0, 1),
-    dimension=6,
-    dimension_dir="width",
-)
+rear_left_top_camera = RearLeftTopCamera(pan_target=(1.5, 0, 0), dimension=6, dimension_dir="width")
 
 cameras_geo = [
     top_camera,
     side_camera,
-    back_camera,
+    rear_camera,
     bottom_camera,
     front_left_bottom_camera,
     rear_right_bottom_camera,
@@ -140,7 +91,7 @@ cameras_cp = [
     front_left_top_camera,
     side_camera,
     rear_left_top_camera,
-    back_camera,
+    rear_camera,
     bottom_camera,
     front_left_bottom_camera,
     rear_right_bottom_camera,

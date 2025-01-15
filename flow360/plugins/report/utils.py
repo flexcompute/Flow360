@@ -401,7 +401,7 @@ class Average(GenericOperation):
         if isinstance(data, case_results.ResultCSVModel):
             if self.fraction is None:
                 raise NotImplementedError('Only "fraction" average method implemented.')
-            averages = data.get_averages(avarage_fraction=self.fraction)
+            averages = data.get_averages(average_fraction=self.fraction)
             return data, cases, averages
 
         raise NotImplementedError(
@@ -517,72 +517,34 @@ class Expression(GenericOperation):
 OperationTypes = Annotated[Union[Average, Expression], pd.Field(discriminator="type_name")]
 
 
-class Delta(pd.BaseModel):
+
+class DataItem(Flow360BaseModel):
     """
-    Represents a delta calculation between a reference case and a target case based on specified data.
+    Represents a retrievable data item that can be post-processed.
+
+    The `DataItem` class retrieves data from a specified path within a `Case` and allows for:
+     - Excluding specific boundaries (if applicable).
+     - Applying one or more post-processing operations (e.g., mathematical expressions, averaging).
+     - Introducing additional variables for use in these operations.
 
     Parameters
     ----------
     data : str
-        Path to the data item used for delta calculation.
-    ref_index : Optional[NonNegativeInt], default=0
-        Index of the reference case in the list of cases for comparison.
-    """
-
-    data: Union[str, DataItem]
-    ref_index: Optional[pd.NonNegativeInt] = 0
-    type_name: Literal["Delta"] = pd.Field("Delta", frozen=True)
-
-    def calculate(self, case: Case, cases: List[Case]) -> float:
-        """
-        Calculates the delta between the specified case and the reference case.
-
-        Parameters
-        ----------
-        case : Case
-            The target case for which the delta is calculated.
-        cases : List[Case]
-            A list of available cases, including the reference case.
-
-        Returns
-        -------
-        float
-            The computed delta value between the case and reference case data.
-
-        Raises
-        ------
-        ValueError
-            If `ref_index` is out of bounds or `None`, indicating a missing reference.
-        """
-
-        if self.ref_index is None or self.ref_index >= len(cases):
-            return "Ref not found."
-        ref = cases[self.ref_index]
-        case_result = data_from_path(case, self.data)
-        ref_result = data_from_path(ref, self.data)
-        return case_result - ref_result
-
-    def __str__(self):
-        if isinstance(self.data, str):
-            data_str = split_path(self.data)[-1]
-        else:
-            data_str = str(self.data)
-        return f"Delta {data_str}"
-
-
-class DataItem(pd.BaseModel):
-    """
-    Represents a delta calculation between a reference case and a target case based on specified data.
-
-    Parameters
-    ----------
-    data : str
-        Path to the data item used for delta calculation.
-    ref_index : Optional[NonNegativeInt], default=0
-        Index of the reference case in the list of cases for comparison.
-    exclude : Optional[List[str]]
-        List of boundaries to exclude from data. Applicable to:
-        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
+        Path to the data item to retrieve from a `Case`. The path can include nested attributes
+        and dictionary keys (e.g., "results.surface_forces").
+    title : str, optional
+        A human-readable title for this data item. If omitted, the title defaults to the
+        last component of the `data` path.
+    exclude : list[str], optional
+        A list of boundaries to exclude from the retrieved data (e.g., certain surfaces). Only
+        applicable to some data types, such as surface forces or slicing force distributions.
+    operations : list[OperationTypes], optional
+        A list of operations to apply to the retrieved data. Supported operations include:
+        `Expression` and `Average`.
+    variables : list[Variable], optional
+        Additional user-defined variables that may be referenced in the `Expression` operations.
+    type_name : Literal["DataItem"]
+        A literal string identifying the type of the item, set to "DataItem".
     """
 
     data: str
@@ -672,6 +634,59 @@ class DataItem(pd.BaseModel):
         if self.title is not None:
             return self.title
         return split_path(self.data)[-1]
+
+
+class Delta(Flow360BaseModel):
+    """
+    Represents a delta calculation between a reference case and a target case based on specified data.
+
+    Parameters
+    ----------
+    data : str
+        Path to the data item used for delta calculation.
+    ref_index : Optional[NonNegativeInt], default=0
+        Index of the reference case in the list of cases for comparison.
+    """
+
+    data: Union[str, DataItem]
+    ref_index: Optional[pd.NonNegativeInt] = 0
+    type_name: Literal["Delta"] = pd.Field("Delta", frozen=True)
+
+    def calculate(self, case: Case, cases: List[Case]) -> float:
+        """
+        Calculates the delta between the specified case and the reference case.
+
+        Parameters
+        ----------
+        case : Case
+            The target case for which the delta is calculated.
+        cases : List[Case]
+            A list of available cases, including the reference case.
+
+        Returns
+        -------
+        float
+            The computed delta value between the case and reference case data.
+
+        Raises
+        ------
+        ValueError
+            If `ref_index` is out of bounds or `None`, indicating a missing reference.
+        """
+
+        if self.ref_index is None or self.ref_index >= len(cases):
+            return "Ref not found."
+        ref = cases[self.ref_index]
+        case_result = data_from_path(case, self.data)
+        ref_result = data_from_path(ref, self.data)
+        return case_result - ref_result
+
+    def __str__(self):
+        if isinstance(self.data, str):
+            data_str = split_path(self.data)[-1]
+        else:
+            data_str = str(self.data)
+        return f"Delta {data_str}"
 
 
 # pylint: disable=too-few-public-methods

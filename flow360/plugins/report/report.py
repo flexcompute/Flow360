@@ -82,9 +82,9 @@ class Report(Flow360Resource):
 
 
 # pylint: disable=too-few-public-methods
-class ReportApi:
+class ReportDraft:
     """
-    ReportApi interface
+    ReportDraft interface
     """
 
     _webapi = RestApi(ReportInterface.endpoint)
@@ -242,7 +242,7 @@ class ReportTemplate(Flow360BaseModel):
             The response from the Report API submission.
         """
 
-        return ReportApi.submit(
+        return ReportDraft.submit(
             name=name,
             case_ids=[case.id for case in cases],
             config=self.model_dump_json(),
@@ -259,7 +259,7 @@ class ReportTemplate(Flow360BaseModel):
         data_storage: str = ".",
         shutter_url: str = None,
         shutter_access_token: str = None,
-        shutter_screeshot_process_function: Callable = None,
+        shutter_screenshot_process_function: Callable = None,
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -288,7 +288,7 @@ class ReportTemplate(Flow360BaseModel):
             data_storage=data_storage,
             shutter_url=shutter_url,
             shutter_access_token=shutter_access_token,
-            shutter_screeshot_process_function=shutter_screeshot_process_function,
+            shutter_screenshot_process_function=shutter_screenshot_process_function,
         )
         case_context = context.model_copy(
             update={
