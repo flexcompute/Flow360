@@ -335,7 +335,7 @@ class Flow360Resource(RestApi):
         files = self.get_download_file_list()
         if len(files) == 0:
             raise ValueError(
-                "Cannot determine cloud path prefix. Not files accociated with this resource."
+                "Cannot determine cloud path prefix. Not files associated with this resource."
             )
         return self.s3_transfer_method.get_cloud_path_prefix(self.id, files[0]["fileName"])
 
