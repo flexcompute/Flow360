@@ -18,7 +18,10 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.simulation.entity_info import EntityInfoModel
+from flow360.component.simulation.entity_info import (
+    EntityInfoModel,
+    get_entity_info_type_from_str,
+)
 from flow360.component.utils import remove_properties_by_name, validate_type
 from flow360.log import log
 
@@ -93,7 +96,7 @@ class AssetBase(metaclass=ABCMeta):
         # Note: Only the draft's and non-root item simulation.json will have it.
         # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
         # Note: This should be addressed when we design the new project client interface.
-        remove_properties_by_name(entity_info, "_id")
+        entity_info = remove_properties_by_name(entity_info, "_id")
         # pylint: disable=protected-access
         if root_item_entity_info_type is None:
             asset_obj._entity_info = cls._entity_info_class.model_validate(entity_info)
@@ -146,6 +149,13 @@ class AssetBase(metaclass=ABCMeta):
         """
         asset_obj = cls(id)
         root_item_entity_info_type = kwargs.get("root_item_entity_info_type", None)
+        if not root_item_entity_info_type:
+            project_id = asset_obj.project_id
+            project_api = RestApi(ProjectInterface.endpoint, id=project_id)
+            info = project_api.get()
+            if info:
+                root_item_entity_info_type = get_entity_info_type_from_str(info["rootItemType"])
+
         # populating the entityInfo object
         simulation_dict = cls._get_simulation_json(asset_obj)
         asset_obj = cls._from_supplied_entity_info(

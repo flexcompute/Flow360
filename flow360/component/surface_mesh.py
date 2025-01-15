@@ -60,6 +60,7 @@ class SurfaceMeshMeta(AssetMetaBaseModel, extra=pd.Extra.allow):
 
     params: Union[SurfaceMeshingParams, None, dict] = pd.Field(alias="config")
     mesh_format: Union[MeshFileFormat, None]
+    geometry_id: Union[str, None] = pd.Field(alias="geometryId")
 
     @pd.validator("params", pre=True)
     def init_params(cls, value):

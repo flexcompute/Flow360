@@ -76,6 +76,7 @@ class AssetMetaBaseModel(pd.BaseModel):
     name: str = pd.Field()
     user_id: str = pd.Field(alias="userId")
     id: str = pd.Field()
+    parent_id: Union[str, None] = pd.Field(alias="parentId")
     solver_version: Union[str, None] = pd.Field(alias="solverVersion")
     status: Flow360Status = pd.Field()
     tags: Optional[List[str]]
@@ -122,6 +123,7 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
     name: str = pd_v2.Field()
     user_id: str = pd_v2.Field(alias="userId")
     id: str = pd_v2.Field()
+    parent_id: Optional[str] = pd_v2.Field(None, alias="parentId")
     solver_version: str = pd_v2.Field(alias="solverVersion")
     status: Flow360Status = pd_v2.Field()
     tags: List[str] = pd_v2.Field([])

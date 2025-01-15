@@ -194,3 +194,14 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
         raise NotImplementedError("Not implemented yet.")
+
+
+def get_entity_info_type_from_str(entity_type: str) -> type[EntityInfoModel]:
+    """Get EntityInfo type from the asset type from the project tree"""
+    entity_info_type = None
+    if entity_type == "Geometry":
+        entity_info_type = GeometryEntityInfo
+    if entity_type == "VolumeMesh":
+        entity_info_type = VolumeMeshEntityInfo
+
+    return entity_info_type

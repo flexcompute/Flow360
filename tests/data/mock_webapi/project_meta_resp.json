@@ -1,13 +1,13 @@
 {
     "data": {
         "userId": "AIDAXWCOWJGJJBXX543AQ",
-        "id": "prj-dc708f0d-f89f-4228-be44-3a8da700a4c2",
-        "name": "Tutorial 2D CRM from Python",
+        "id": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "name": "NEW Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
         "tags": [],
         "parentFolderId": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
         "deleted": false,
         "description": "",
-        "icon": null,
+        "icon": "{\"fontColor\":\"#0062FF\",\"bgColor\":\"#E6EFFF\",\"icon\":\"fc:flight-takeoff_outline\"}",
         "statistics": {
             "Geometry": {
                 "count": 1,
@@ -24,8 +24,8 @@
                 "errorCount": 0
             },
             "VolumeMesh": {
-                "count": 2,
-                "successCount": 2,
+                "count": 1,
+                "successCount": 1,
                 "runningCount": 0,
                 "divergedCount": 0,
                 "errorCount": 0
@@ -47,8 +47,8 @@
                 "id": "ROOT.FLOW360",
                 "parentFolderId": null,
                 "parentFolders": null,
-                "createdAt": "2023-09-01T09: 14: 15.293797Z",
-                "updatedAt": "2023-09-01T09: 14: 15.293797Z"
+                "createdAt": "2023-09-01T09:14:15.293797Z",
+                "updatedAt": "2023-09-01T09:14:15.293797Z"
             },
             {
                 "type": "Folder",
@@ -58,25 +58,25 @@
                 "id": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
                 "parentFolderId": "ROOT.FLOW360",
                 "parentFolders": null,
-                "createdAt": "2024-10-15T08: 42: 46.036068Z",
-                "updatedAt": "2024-10-15T08: 42: 46.036068Z"
+                "createdAt": "2024-10-15T08:42:46.036068Z",
+                "updatedAt": "2024-10-15T08:42:46.036068Z"
             }
         ],
         "viewed": true,
-        "lastOpenDraftId": "dft-968a2cf8-0b38-4dc3-a56e-05309650b282",
-        "lastOpenItemId": "vm-010ee1e5-4f3f-4ab7-aa29-001572dbb2ee",
-        "lastOpenItemType": "VolumeMesh",
-        "latestItemId": "case-22a058df-8f7d-4091-9c99-927fb67384b2",
+        "lastOpenDraftId": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
+        "lastOpenItemId": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
+        "lastOpenItemType": "Case",
+        "latestItemId": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
         "latestItemType": "Case",
-        "rootItemId": "geo-6cd9ba2c-2683-4ab4-8230-ac1ed7662561",
+        "rootItemId": "geo-2877e124-96ff-473d-864b-11eec8648d42",
         "rootItemType": "Geometry",
-        "createdAt": "2024-11-06T13: 57: 32.199Z",
-        "updatedAt": "2024-11-27T15: 27: 15.443Z",
+        "createdAt": "2024-12-05T12:26:30.250998Z",
+        "updatedAt": "2024-12-08T17:10:49.5Z",
         "createdBy": "AIDAXWCOWJGJJBXX543AQ",
         "updatedBy": "AIDAXWCOWJGJJBXX543AQ",
         "canOpen": true,
         "rootItemStatus": "processed",
-        "rootItemUploadedAt": "2024-11-06T13: 57: 48.892Z",
+        "rootItemUploadedAt": "2024-12-05T12:26:48.165Z",
         "rootItemVisualizationStatus": null,
         "rootItemUploadStatus": "success",
         "copyStatus": "notCopy",
