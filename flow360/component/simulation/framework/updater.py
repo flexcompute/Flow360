@@ -7,10 +7,10 @@ TODO: remove duplication code with FLow360Params updater.
 # pylint: disable=R0801
 
 import re
-from typing import List
 
 from ....exceptions import Flow360NotImplementedError, Flow360RuntimeError
 from .entity_base import generate_uuid
+from .updater_utils import compare_dicts
 
 
 def _no_update(params_as_dict):
@@ -20,18 +20,6 @@ def _no_update(params_as_dict):
 def _24_11_6_to_24_11_7_update(params_as_dict):
     # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
     # to all occurance of the same PointArray
-    def compare_entity(
-        entity_dict_new: dict, entity_dict_to_match: dict, exclude_keys: List[str] = None
-    ):
-        for key in entity_dict_to_match.keys():
-            if key in exclude_keys:
-                continue
-            if not entity_dict_new.get(key) or entity_dict_new.get(key) != entity_dict_to_match.get(
-                key
-            ):
-                return False
-        return True
-
     if params_as_dict.get("outputs") is None:
         return params_as_dict
 
@@ -47,17 +35,17 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
                     entity["private_attribute_id"] = new_uuid
                     point_array_list.append(entity)
 
-    if params_as_dict.get("private_attribute_asset_cache"):
+    if params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
         for idx, draft_entity in enumerate(
             params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
         ):
             if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
                 continue
             for point_array in point_array_list:
-                if compare_entity(
-                    entity_dict_new=draft_entity,
-                    entity_dict_to_match=point_array,
-                    exclude_keys=["private_attribute_id"],
+                if compare_dicts(
+                    dict1=draft_entity,
+                    dict2=point_array,
+                    ignore_keys=["private_attribute_id"],
                 ):
                     params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
                         "draft_entities"
