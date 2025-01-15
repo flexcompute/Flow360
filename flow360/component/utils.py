@@ -674,7 +674,9 @@ class AssetShortID(pd.BaseModel):
         # pylint: disable=no-member
         query_id_split = self.asset_id.split("-")
         if len(query_id_split) < 2:
-            raise Flow360ValueError(f"The input string ({self.asset_id}) is not a valid asset ID.")
+            raise Flow360ValueError(
+                f"The supplied ID ({self.asset_id}) does not have a proper surffix-ID structure."
+            )
 
         if query_id_split[0] != prefix_map[self.asset_type]:
             raise Flow360ValueError(

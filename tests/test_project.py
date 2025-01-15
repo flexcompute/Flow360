@@ -50,7 +50,9 @@ def test_get_asset_with_id(mock_id, mock_response):
     assert project.get_case(asset_id=query_id)
 
     query_id = "case"
-    error_msg = r"The input string \(" + query_id + r"\) is not a valid asset ID."
+    error_msg = (
+        r"The supplied ID \(" + query_id + r"\) does not have a proper surffix-ID structure."
+    )
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=query_id)
 
