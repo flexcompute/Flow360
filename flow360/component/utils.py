@@ -709,3 +709,20 @@ def _local_download_overwrite(local_storage_path, class_name):
             shutil.copy(expected_local_file, new_local_file)
 
     return _local_download_file
+
+
+def _naming_pattern_handler(pattern: str) -> re.Pattern[str]:
+    """
+    Handler of the user supplied naming pattern.
+    This enables both glob pattern and regexp pattern.
+    If "*" is found in the pattern, it will be treated as a glob pattern.
+    """
+
+    if "*" in pattern:
+        # Convert wildcard to regex pattern
+        regex_pattern = "^" + pattern.replace("*", ".*") + "$"
+    else:
+        regex_pattern = f"^{pattern}$"  # Exact match if no '*'
+
+    regex = re.compile(regex_pattern)
+    return regex
