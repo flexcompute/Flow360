@@ -1,9 +1,12 @@
+"""Utiliy functions for updater"""
+
 from numbers import Number
 
 import numpy as np
 
 
 def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
+    """Check two dictionaries are same or not"""
     if ignore_keys is None:
         ignore_keys = set()
 
@@ -27,17 +30,18 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
 
 def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
+    """Check two values are same or not"""
     if isinstance(value1, Number) and isinstance(value2, Number):
         return np.isclose(value1, value2, rtol, atol)
-    elif isinstance(value1, dict) and isinstance(value2, dict):
+    if isinstance(value1, dict) and isinstance(value2, dict):
         return compare_dicts(value1, value2, atol, rtol, ignore_keys)
-    elif isinstance(value1, list) and isinstance(value2, list):
+    if isinstance(value1, list) and isinstance(value2, list):
         return compare_lists(value1, value2, atol, rtol, ignore_keys)
-    else:
-        return value1 == value2
+    return value1 == value2
 
 
 def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
+    """Check two lists are same or not"""
     if len(list1) != len(list2):
         return False
 
