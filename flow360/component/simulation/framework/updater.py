@@ -7,16 +7,70 @@ TODO: remove duplication code with FLow360Params updater.
 # pylint: disable=R0801
 
 import re
+from typing import List
 
 from ....exceptions import Flow360NotImplementedError, Flow360RuntimeError
+from .entity_base import generate_uuid
 
 
 def _no_update(params_as_dict):
     return params_as_dict
 
 
+def _24_11_6_to_24_11_7_update(params_as_dict):
+    # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
+    # to all occurance of the same PointArray
+    def compare_entity(
+        entity_dict_new: dict, entity_dict_to_match: dict, exclude_keys: List[str] = None
+    ):
+        for key in entity_dict_to_match.keys():
+            if key in exclude_keys:
+                continue
+            if not entity_dict_new.get(key) or entity_dict_new.get(key) != entity_dict_to_match.get(
+                key
+            ):
+                return False
+        return True
+
+    if params_as_dict.get("outputs") is None:
+        return params_as_dict
+
+    point_array_list = []
+    for output in params_as_dict["outputs"]:
+        if output.get("entities", None):
+            for entity in output["entities"]["stored_entities"]:
+                if (
+                    entity.get("private_attribute_entity_type_name") == "PointArray"
+                    and entity.get("private_attribute_id") is None
+                ):
+                    new_uuid = generate_uuid()
+                    entity["private_attribute_id"] = new_uuid
+                    point_array_list.append(entity)
+
+    if params_as_dict.get("private_attribute_asset_cache"):
+        for idx, draft_entity in enumerate(
+            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+        ):
+            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
+                continue
+            for point_array in point_array_list:
+                if compare_entity(
+                    entity_dict_new=draft_entity,
+                    entity_dict_to_match=point_array,
+                    exclude_keys=["private_attribute_id"],
+                ):
+                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+                        "draft_entities"
+                    ][idx] = point_array
+                    continue
+
+    return params_as_dict
+
+
 UPDATE_MAP = [
-    ("24.11.*", "24.11.*", _no_update),
+    ("24.11.^([0-5])$", "24.11.6", _no_update),
+    ("24.11.6", "24.11.7", _24_11_6_to_24_11_7_update),
+    ("24.11.7", "24.11.*", _no_update),
 ]
 
 
