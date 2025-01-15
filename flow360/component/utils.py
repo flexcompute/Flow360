@@ -127,7 +127,7 @@ def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
         short_id += f"-{str_split[:num_character-count]}"
         break
 
-    return short_id
+    return short_id.rstrip("-")
 
 
 def wrapstring(long_str: str, str_length: str = None):
