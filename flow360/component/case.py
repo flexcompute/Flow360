@@ -17,11 +17,7 @@ from .. import error_messages
 from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
-from ..exceptions import (
-    Flow360RuntimeError,
-    Flow360ValidationError,
-    Flow360ValueError,
-)
+from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .folder import Folder
 from .interfaces import (
