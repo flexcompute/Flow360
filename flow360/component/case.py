@@ -21,7 +21,6 @@ from ..exceptions import (
     Flow360RuntimeError,
     Flow360ValidationError,
     Flow360ValueError,
-    Flow360WebNotFoundError,
 )
 from ..log import log
 from .folder import Folder
@@ -485,7 +484,7 @@ class Case(CaseBase, Flow360Resource):
             try:
                 self._params = self.get_simulation_params()
                 return self._params
-            except Flow360WebNotFoundError:
+            except Flow360ValueError:
                 pass
 
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])

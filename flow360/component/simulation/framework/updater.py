@@ -38,6 +38,8 @@ def _24_11_0_to_24_11_1_update(params_as_dict):
     if "time_stepping" in params_as_dict:
         params_as_dict["time_stepping"].pop("order_of_accuracy", None)
 
+    return params_as_dict
+
 
 def _24_11_6_to_24_11_7_update(params_as_dict):
     # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
