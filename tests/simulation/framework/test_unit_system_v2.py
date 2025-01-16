@@ -8,6 +8,7 @@ from numpy import nan
 
 from flow360.component.simulation import units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater_utils import compare_dicts
 from flow360.component.simulation.unit_system import (
     AngleType,
     AngularVelocityType,
@@ -25,7 +26,6 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from tests.utils import compare_dicts
 
 
 class DataWithUnits(pd.BaseModel):
