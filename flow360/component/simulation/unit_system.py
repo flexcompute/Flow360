@@ -934,7 +934,7 @@ class _Flow360BaseUnit(_DimensionedType):
 
     @classmethod
     def factory(cls, value, unit_name, dtype=np.float64):
-        """Returns specialised class object based on unit name
+        """Returns specialized class object based on unit name
 
         Parameters
         ----------
@@ -945,13 +945,13 @@ class _Flow360BaseUnit(_DimensionedType):
 
         Returns
         -------
-        Specialised _Flow360BaseUnit
-            Returns specialised _Flow360BaseUnit such as unit_name equals provided unit_name
+        Specialized _Flow360BaseUnit
+            Returns specialized _Flow360BaseUnit such as unit_name equals provided unit_name
 
         Raises
         ------
         ValueError
-            If specialised class was not found based on provided unit_name
+            If specialized class was not found based on provided unit_name
         """
         for sub_classes in _Flow360BaseUnit.__subclasses__():
             if sub_classes.unit_name == unit_name:

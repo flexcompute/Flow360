@@ -17,12 +17,23 @@ from .. import error_messages
 from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
-from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
+from ..exceptions import (
+    Flow360RuntimeError,
+    Flow360ValidationError,
+    Flow360ValueError,
+    Flow360WebNotFoundError,
+)
 from ..log import log
 from .folder import Folder
-from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
+from .interfaces import (
+    CaseInterface,
+    CaseInterfaceV2,
+    FolderInterface,
+    VolumeMeshInterface,
+)
 from .resource_base import (
     AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     Flow360ResourceListBase,
     Flow360Status,
@@ -157,6 +168,22 @@ class CaseMeta(AssetMetaBaseModel):
         if value is Flow360Status.UPLOADED:
             return Flow360Status.CASE_UPLOADED
         return value
+
+    def to_case(self) -> Case:
+        """
+        returns Case object from case meta info
+        """
+        return Case(self.id)
+
+
+class CaseMetaV2(AssetMetaBaseModelV2):
+    """
+    CaseMetaV2 component
+    """
+
+    id: str = pd.Field(alias="caseId")
+    case_mesh_id: str = pd.Field(alias="caseMeshId")
+    status: Flow360Status = pd.Field()
 
     def to_case(self) -> Case:
         """
@@ -394,6 +421,7 @@ class Case(CaseBase, Flow360Resource):
 
     _manifest_path = "visualize/manifest/manifest.json"
     _cloud_resource_type_name = "Case"
+    _web_api_v2_class = Flow360Resource
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
@@ -406,6 +434,13 @@ class Case(CaseBase, Flow360Resource):
         self._params = None
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
+        self._manifest = None
+        # _web_api_v2 handles all V2 communications for Case
+        self._web_api_v2 = self._web_api_v2_class(
+            interface=CaseInterfaceV2,
+            meta_class=CaseMetaV2,
+            id=id,
+        )
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):
@@ -450,7 +485,7 @@ class Case(CaseBase, Flow360Resource):
             try:
                 self._params = self.get_simulation_params()
                 return self._params
-            except Flow360ValueError:
+            except Flow360WebNotFoundError:
                 pass
 
             self._raw_params = json.loads(self.get(method="runtimeParams")["content"])

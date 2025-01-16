@@ -1,0 +1,27 @@
+{
+    "data": {
+        "userId": "AIDAXWCOWJGJJBXX543AQ",
+        "id": "vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3",
+        "name": "VolumeMesh_Tutorial Calculating Dynamic Derivatives using Sliding Interfaces (Steady)",
+        "type": "VolumeMesh",
+        "projectId": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "parentFolderId": "ROOT.FLOW360",
+        "tags": null,
+        "status": "completed",
+        "parentId": "sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a",
+        "parentCaseId": null,
+        "visualizationStatus": "completed",
+        "postProcessStatus": null,
+        "solverVersion": "release-24.11",
+        "viewed": false,
+        "solverStartAt": "2024-12-05T14:29:15.256Z",
+        "solverFinishAt": "2024-12-05T14:31:40.553Z",
+        "runSequence": "run-76d0e8a7-69d7-4c45-b04d-1581fbd2f43b",
+        "createdAt": "2024-12-05T12:27:12.696Z",
+        "updatedAt": "2024-12-05T14:32:25.816Z",
+        "visualizedAt": null,
+        "postProcessedAt": null,
+        "requestStopAt": null,
+        "displayStatus": "completed"
+    }
+}

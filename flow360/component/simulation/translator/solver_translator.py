@@ -745,6 +745,8 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
                 output[key_name]["type"] = "SolidIsofluxWall"
             else:
                 output[key_name]["type"] = "SolidAdiabaticWall"
+            if "roughnessHeight" in translated_setting:
+                output[key_name].pop("roughnessHeight")
     return output
 
 
@@ -769,6 +771,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
             boundary["heatFlux"] = model_dict["heatSpec"]["value"]
+        boundary["roughnessHeight"] = model_dict["roughnessHeight"]
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
         if model.velocity_direction is not None:
@@ -910,9 +913,7 @@ def get_solver_json(
 
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
-
         if isinstance(model, Fluid):
-
             if model.navier_stokes_solver.low_mach_preconditioner:
                 if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
                     model.navier_stokes_solver.low_mach_preconditioner_threshold = (

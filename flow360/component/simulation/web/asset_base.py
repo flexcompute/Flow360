@@ -112,7 +112,7 @@ class AssetBase(metaclass=ABCMeta):
         # Note: Only the draft's and non-root item simulation.json will have it.
         # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
         # Note: This should be addressed when we design the new project client interface.
-        remove_properties_by_name(entity_info, "_id")
+        entity_info = remove_properties_by_name(entity_info, "_id")
         # pylint: disable=protected-access
         asset_obj._entity_info = parse_entity_info_model(entity_info)
         return asset_obj
@@ -171,7 +171,6 @@ class AssetBase(metaclass=ABCMeta):
         is not the project root asset and should store the given entity info type instead
         """
         asset_obj = cls(id)
-        # populating the entityInfo object
         simulation_dict = cls._get_simulation_json(asset_obj)
         asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
         return asset_obj

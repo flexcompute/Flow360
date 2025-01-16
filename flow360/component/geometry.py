@@ -281,12 +281,12 @@ class Geometry(AssetBase):
 
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""
-        self._show_avaliable_entity_groups(
+        self._show_available_entity_groups(
             "faces",
             ignored_attribute_tags=["__all__", "faceId"],
             show_ids_in_each_group=verbose_mode,
         )
-        self._show_avaliable_entity_groups(
+        self._show_available_entity_groups(
             "edges",
             ignored_attribute_tags=["__all__", "edgeId"],
             show_ids_in_each_group=verbose_mode,
@@ -315,7 +315,7 @@ class Geometry(AssetBase):
             asset_id=geometry_id, local_storage_path=local_storage_path, meta_data=meta_data
         )
 
-    def _show_avaliable_entity_groups(
+    def _show_available_entity_groups(
         self,
         entity_type_name: Literal["faces", "edges"],
         ignored_attribute_tags: list = None,
@@ -359,8 +359,6 @@ class Geometry(AssetBase):
             else self.edge_group_tag is not None
         )
         if found_existing_grouping is True:
-            # pylint: disable=fixme
-            # TODO: We need to make sure only 1 grouping is used in simluationParams.
             log.warning(
                 f"Grouping already exists for {entity_type_name}. Resetting the grouping and regroup with {tag_name}."
             )

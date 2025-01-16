@@ -99,7 +99,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 
 assertions = unittest.TestCase("__init__")
 
-from tests.utils import compare_values
+from flow360.component.simulation.framework.updater_utils import compare_values
 
 
 @pytest.fixture()
