@@ -52,6 +52,7 @@ from flow360.component.simulation.models.surface_models import (
     Mach,
     MassFlowRate,
     Outflow,
+    SlaterPorousBleed,
     Periodic,
     Pressure,
     Rotational,
