@@ -243,9 +243,15 @@ The `Camera` class specifies a 3D viewpoint and zoom for rendering geometry or v
 
 ### Camera Examples
 
-See how changing `position` and `look_at` the orientation of the camera.
+<img width="500" src="https://github.com/user-attachments/assets/1a0df86e-ff1d-423f-958e-efc0b250783b" />
+
+See how changing `position` and `look_at` affects the orientation of the camera.
+
+<img width="500" src="https://github.com/user-attachments/assets/1cd4fbec-fa30-40c8-8946-73ca01d32bf0" />
 
 See how `pan_target` changes the view.
+
+<img width="500" src="https://github.com/user-attachments/assets/174043ae-f0f8-4100-bba2-af75a4b32755" />
 
 See the effect of `dimension` and `dimension_dir` on zoom level.
 
