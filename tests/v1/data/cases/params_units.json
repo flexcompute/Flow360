@@ -2,7 +2,7 @@
   "unitSystem": {
     "name": "SI"
   },
-  "version": "24.11.7",
+  "version": "24.11.8",
   "geometry": {
     "refArea": {
       "value": 1.0,
