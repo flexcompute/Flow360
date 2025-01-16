@@ -4,12 +4,13 @@ import re
 import pytest
 
 from flow360.component.simulation import services
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
     VOLUME_MESH,
 )
-from tests.utils import compare_dict_to_ref, compare_values
+from tests.utils import compare_dict_to_ref
 
 
 @pytest.fixture(autouse=True)

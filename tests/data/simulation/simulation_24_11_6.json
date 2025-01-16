@@ -1,0 +1,561 @@
+{
+    "version": "24.11.6",
+    "unit_system": {
+        "name": "SI"
+    },
+    "meshing": null,
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0.25,
+                -0.5,
+                0
+            ],
+            "units": "m"
+        },
+        "moment_length": {
+            "value": [
+                1,
+                1,
+                1
+            ],
+            "units": "m"
+        },
+        "area": {
+            "value": 1,
+            "units": "m**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "from_mach",
+        "private_attribute_input_cache": {
+            "mach": 0.15,
+            "alpha": {
+                "value": 15,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {
+                    "altitude": null,
+                    "temperature_offset": null
+                },
+                "temperature": {
+                    "value": 300,
+                    "units": "K"
+                },
+                "density": {
+                    "value": 2.1265048131848094,
+                    "units": "Pa*s**2/m**2"
+                },
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {
+                            "value": 0.00001716,
+                            "units": "Pa*s"
+                        },
+                        "reference_temperature": {
+                            "value": 273.15,
+                            "units": "K"
+                        },
+                        "effective_temperature": {
+                            "value": 110.4,
+                            "units": "K"
+                        }
+                    }
+                }
+            },
+            "reference_mach": null
+        },
+        "alpha": {
+            "value": 15,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0,
+            "units": "degree"
+        },
+        "velocity_magnitude": {
+            "value": 52.08310575416946,
+            "units": "m/s"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {
+                "altitude": null,
+                "temperature_offset": null
+            },
+            "temperature": {
+                "value": 300,
+                "units": "K"
+            },
+            "density": {
+                "value": 2.1265048131848094,
+                "units": "Pa*s**2/m**2"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 0.00001716,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        },
+        "reference_velocity_magnitude": null
+    },
+    "models": [
+        {
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 0.00001716,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "constants": null,
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 30,
+                    "absolute_tolerance": null,
+                    "relative_tolerance": null
+                },
+                "private_attribute_dict": null,
+                "CFL_multiplier": 1,
+                "kappa_MUSCL": -1,
+                "numerical_dissipation_factor": 1,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "low_mach_preconditioner_threshold": null,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 1000000
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-8,
+                "relative_tolerance": 0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 20,
+                    "absolute_tolerance": null,
+                    "relative_tolerance": null
+                },
+                "private_attribute_dict": null,
+                "CFL_multiplier": 2,
+                "type_name": "SpalartAllmaras",
+                "DDES": false,
+                "grid_size_for_LES": "maxEdgeLength",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 1000000,
+                "rotation_correction": true
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        },
+        {
+            "type": "SlipWall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": null,
+                        "name": "Zone/QUAD_bdy    1",
+                        "private_attribute_full_name": "Zone/QUAD_bdy    1",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": null,
+                        "name": "Zone/QUAD_bdy    2",
+                        "private_attribute_full_name": "Zone/QUAD_bdy    2",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": null
+        },
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": null,
+                        "name": "Zone/QUAD_bdy    5",
+                        "private_attribute_full_name": "Zone/QUAD_bdy    5",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": "Airfoil",
+            "use_wall_function": false,
+            "velocity": null,
+            "heat_spec": {
+                "value": {
+                    "value": 0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            }
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": null,
+                        "name": "Zone/QUAD_bdy    6",
+                        "private_attribute_full_name": "Zone/QUAD_bdy    6",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": null,
+                        "name": "Zone/QUAD_bdy    3",
+                        "private_attribute_full_name": "Zone/QUAD_bdy    3",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": null,
+                        "name": "Zone/QUAD_bdy    4",
+                        "private_attribute_full_name": "Zone/QUAD_bdy    4",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "turbulence_quantities": {
+                "type_name": "TurbulentViscosityRatio",
+                "turbulent_viscosity_ratio": 0.210438
+            },
+            "name": null,
+            "velocity": null
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 100000,
+        "CFL": {
+            "type": "ramp",
+            "initial": 5,
+            "final": 100,
+            "ramp_steps": 10000
+        }
+    },
+    "user_defined_dynamics": null,
+    "outputs": [
+        {
+            "name": "Probe output",
+            "output_type": "ProbeOutput",
+            "output_fields": {
+                "items": [
+                    "T"
+                ]
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_id": null,
+                        "name": "Point array",
+                        "private_attribute_entity_type_name": "PointArray",
+                        "start": {
+                            "value": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "units": "m"
+                        },
+                        "end": {
+                            "value": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "units": "m"
+                        },
+                        "number_of_points": 10
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Probe output",
+            "output_type": "ProbeOutput",
+            "output_fields": {
+                "items": [
+                    "T"
+                ]
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_id": null,
+                        "name": "Point array",
+                        "private_attribute_entity_type_name": "PointArray",
+                        "start": {
+                            "value": [
+                                2,
+                                0,
+                                0
+                            ],
+                            "units": "m"
+                        },
+                        "end": {
+                            "value": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "units": "m"
+                        },
+                        "number_of_points": 10
+                    }
+                ]
+            }
+        },
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "tecplot",
+            "name": "Volume output",
+            "output_fields": {
+                "items": [
+                    "primitiveVars",
+                    "residualNavierStokes",
+                    "residualTurbulence",
+                    "solutionTurbulence",
+                    "T",
+                    "s",
+                    "Cp",
+                    "mut",
+                    "nuHat",
+                    "mutRatio",
+                    "Mach",
+                    "gradW",
+                    "wallDistance"
+                ]
+            },
+            "output_type": "VolumeOutput"
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1,
+            "units": "m"
+        },
+        "project_entity_info": {
+            "zones": [
+                {
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_id": null,
+                    "name": "Zone",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "Zone/QUAD_bdy    1",
+                            "Zone/QUAD_bdy    2",
+                            "Zone/QUAD_bdy    3",
+                            "Zone/QUAD_bdy    4",
+                            "Zone/QUAD_bdy    5",
+                            "Zone/QUAD_bdy    6"
+                        ]
+                    },
+                    "private_attribute_full_name": "Zone",
+                    "axes": null,
+                    "axis": [
+                        0,
+                        0,
+                        1
+                    ],
+                    "center": {
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "units": "m"
+                    }
+                }
+            ],
+            "boundaries": [
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": null,
+                    "name": "Zone/QUAD_bdy    5",
+                    "private_attribute_full_name": "Zone/QUAD_bdy    5",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": null,
+                    "name": "Zone/QUAD_bdy    1",
+                    "private_attribute_full_name": "Zone/QUAD_bdy    1",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": null,
+                    "name": "Zone/QUAD_bdy    6",
+                    "private_attribute_full_name": "Zone/QUAD_bdy    6",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": null,
+                    "name": "Zone/QUAD_bdy    3",
+                    "private_attribute_full_name": "Zone/QUAD_bdy    3",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": null,
+                    "name": "Zone/QUAD_bdy    4",
+                    "private_attribute_full_name": "Zone/QUAD_bdy    4",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_tag_key": null
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": null,
+                    "name": "Zone/QUAD_bdy    2",
+                    "private_attribute_full_name": "Zone/QUAD_bdy    2",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_tag_key": null
+                }
+            ],
+            "draft_entities": [
+                {
+                    "private_attribute_id": null,
+                    "name": "Point array",
+                    "private_attribute_entity_type_name": "PointArray",
+                    "start": {
+                        "value": [
+                            2,
+                            0,
+                            0
+                        ],
+                        "units": "m"
+                    },
+                    "end": {
+                        "value": [
+                            1,
+                            0,
+                            0
+                        ],
+                        "units": "m"
+                    },
+                    "number_of_points": 10
+                },
+                {
+                    "private_attribute_id": null,
+                    "name": "Point array",
+                    "private_attribute_entity_type_name": "PointArray",
+                    "start": {
+                        "value": [
+                            0,
+                            0,
+                            0
+                        ],
+                        "units": "m"
+                    },
+                    "end": {
+                        "value": [
+                            1,
+                            0,
+                            0
+                        ],
+                        "units": "m"
+                    },
+                    "number_of_points": 10
+                }
+            ],
+            "type_name": "VolumeMeshEntityInfo"
+        }
+    }
+}
