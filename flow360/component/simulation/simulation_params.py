@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -62,7 +62,6 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
 )
@@ -353,7 +352,7 @@ class SimulationParams(_ParamModelBase):
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
     @classmethod
-    def apply_defult_fluid_settings(cls, v):
+    def apply_default_fluid_settings(cls, v):
         """apply default Fluid() settings if not found in models"""
         if v is None:
             v = []
