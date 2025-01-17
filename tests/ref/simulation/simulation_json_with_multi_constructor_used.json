@@ -244,10 +244,8 @@
             },
             "turbulence_model_solver": {
                 "CFL_multiplier": 2.0,
-                "DDES": false,
                 "absolute_tolerance": 1e-08,
                 "equation_evaluation_frequency": 4,
-                "grid_size_for_LES": "maxEdgeLength",
                 "linear_solver": {
                     "max_iterations": 20
                 },

@@ -287,6 +287,7 @@ def test_init():
     assert "velocity_magnitude" not in data["operating_condition"].keys()
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
+    print(data)
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
 
     ##2: test default values for volume mesh starting point
