@@ -129,6 +129,7 @@ class Pressure(SingleAttributeModel):
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field(description="The static pressure value.")
 
+
 class SlaterPorousBleed(Flow360BaseModel):
     """
     :class:`SlaterBleedPressure` class to specify the static pressure of the Slater bleed model
@@ -145,7 +146,9 @@ class SlaterPorousBleed(Flow360BaseModel):
     type_name: Literal["SlaterPorousBleed"] = pd.Field("SlaterPorousBleed", frozen=True)
     # pylint: disable=no-member
     static_pressure: PressureType.Positive = pd.Field(description="The static pressure value.")
-    porosity: float = pd.Field(gt=0,le=1, description="The porosity of the bleed region.")
+    porosity: float = pd.Field(
+        gt=0, le=1, description="The porosity of the bleed region. Range [0,1]."
+    )
 
 
 class MassFlowRate(SingleAttributeModel):
@@ -344,8 +347,9 @@ class Outflow(BoundaryBase):
     - Define outflow boundary condition with Slater porous bleed model::
 
       >>> fl.Outflow(
-      ...     surfaces=volume_mesh["fluid/outlet"],
-      ...     spec=fl.SlaterPorousBleed(value = 0.99e6 * fl.u.Pa)
+      ...     surfaces=volume_mesh["fluid/bleed1"],
+      ...     spec=fl.SlaterPorousBleed(static_pressure = 0.99e6 * fl.u.Pa,
+      ...                               porosity = 0.4)
       ... )
 
     ====
@@ -355,7 +359,8 @@ class Outflow(BoundaryBase):
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
     spec: Union[Pressure, MassFlowRate, Mach, SlaterPorousBleed] = pd.Field(
         discriminator="type_name",
-        description="Specify the static pressure, mass flow rate, Mach number, or SlaterPorousBleed parameters at the `Outflow` boundary.",
+        description="Specify the static pressure, mass flow rate, Mach number, or "
+        + "SlaterPorousBleed parameters at the `Outflow` boundary.",
     )
 
 
