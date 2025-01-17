@@ -24,7 +24,7 @@ jobs:
           python-version: '3.9'
           cache: 'poetry'
       - name: Install black
-        run: poetry install --only=dev
+        run: poetry install
       - name: Run black
         run: poetry run black . --check
 
@@ -39,7 +39,7 @@ jobs:
           python-version: '3.9'
           cache: 'poetry'
       - name: Install isort
-        run: poetry install --only=dev
+        run: poetry install
       - name: Check isort version
         run: poetry run isort --version 
       - name: Run isort

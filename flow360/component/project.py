@@ -22,6 +22,7 @@ from flow360.component.interfaces import (
     ProjectInterface,
     VolumeMeshInterfaceV2,
 )
+from flow360.component.project_utils import show_projects_with_keyword_filter
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.outputs.output_entities import (
@@ -417,6 +418,18 @@ class Project(pd.BaseModel):
     _root_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _project_webapi: Optional[RestApi] = pd.PrivateAttr(None)
     _root_simulation_json: Optional[dict] = pd.PrivateAttr(None)
+
+    @classmethod
+    def show_remote(cls, search_keyword: Union[None, str] = None):
+        """
+        Shows all projects on the cloud.
+
+        Parameters
+        ----------
+        search_keyword : str, optional
+
+        """
+        show_projects_with_keyword_filter(search_keyword)
 
     @property
     def id(self) -> str:

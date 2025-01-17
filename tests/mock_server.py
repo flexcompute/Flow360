@@ -259,6 +259,16 @@ class MockResponseProject(MockResponse):
         return res
 
 
+class MockResponseAllProjects(MockResponse):
+    """response of projects get"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/get_projects_resp.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 class MockResponseProjectTree(MockResponse):
     """response for Project.from_cloud(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s tree json"""
 
@@ -475,6 +485,7 @@ GET_RESPONSE_MAP = {
     "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation/file": MockResponseProjectCaseSimConfig,
     "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3": MockResponseProjectCaseFork,
     "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
+    "/v2/projects": MockResponseAllProjects,
 }
 
 PUT_RESPONSE_MAP = {
@@ -494,7 +505,7 @@ POST_RESPONSE_MAP = {
 
 def mock_webapi(type, url, params):
     method = url.split("flow360")[-1]
-    print("<><><><><><<><<><<><><>><<>")
+    print("<><><><><><><><><><><><><><><>")
 
     print(type, method)
 
