@@ -165,11 +165,11 @@ def _check_numerical_dissipation_factor_output(v):
     return v
 
 
-def _check_consistency_ddes_volume_output(v):
+def _check_consistency_hybrid_model_volume_output(v):
     model_type = None
     models = v.models
 
-    run_ddes = False
+    run_hybrid_model = False
 
     if models:
         for model in models:
@@ -177,10 +177,10 @@ def _check_consistency_ddes_volume_output(v):
                 turbulence_model_solver = model.turbulence_model_solver
                 if (
                     not isinstance(turbulence_model_solver, NoneSolver)
-                    and turbulence_model_solver.DDES
+                    and turbulence_model_solver.hybrid_model is not None
                 ):
                     model_type = turbulence_model_solver.type_name
-                    run_ddes = True
+                    run_hybrid_model = True
                     break
 
     outputs = v.outputs
@@ -191,16 +191,18 @@ def _check_consistency_ddes_volume_output(v):
     for output in outputs:
         if isinstance(output, VolumeOutput) and output.output_fields is not None:
             output_fields = output.output_fields.items
-            if "SpalartAllmaras_DDES" in output_fields and not (
-                model_type == "SpalartAllmaras" and run_ddes
+            if "SpalartAllmaras_hybridModel" in output_fields and not (
+                model_type == "SpalartAllmaras" and run_hybrid_model
             ):
                 raise ValueError(
-                    "SpalartAllmaras_DDES output can only be specified with "
-                    "SpalartAllmaras turbulence model and DDES turned on."
+                    "SpalartAllmaras_hybridModel output can only be specified with "
+                    "SpalartAllmaras turbulence model and hybrid RANS-LES used."
                 )
-            if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_ddes):
+            if "kOmegaSST_hybridModel" in output_fields and not (
+                model_type == "kOmegaSST" and run_hybrid_model
+            ):
                 raise ValueError(
-                    "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on."
+                    "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model and hybrid RANS-LES used."
                 )
 
     return v
