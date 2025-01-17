@@ -149,6 +149,7 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
             value = None
         return value
 
+
 # pylint: disable=redefined-builtin
 def local_metadata_builder(
     id,
