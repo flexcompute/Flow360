@@ -249,8 +249,8 @@ def validate_model(
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
         The validation level, default is ALL. Also a list can be provided, eg: ["SurfaceMesh", "VolumeMesh"]
     treat_as_file_content: bool, optional
-        If True, the behaviour of SimulationParams constructor is the same as if reading a file,
-        that includes some hash checks, version checks, and updater.
+        If True, the behavior of SimulationParams constructor is the same as if reading a file,
+        that includes version checks, and updater.
 
     Returns
     -------

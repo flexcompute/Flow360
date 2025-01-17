@@ -101,6 +101,7 @@ class AssetMetaBaseModel(pd.BaseModel):
     class Config:
         extra = pd.Extra.allow
         allow_mutation = False
+        allow_population_by_field_name = True
 
 
 def before_submit_only(func):
@@ -127,18 +128,18 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
     name: str = pd_v2.Field()
     user_id: str = pd_v2.Field(alias="userId")
     id: str = pd_v2.Field()
-    solver_version: Optional[str] = pd_v2.Field(None, alias="solverVersion")
+    solver_version: str = pd_v2.Field(None, alias="solverVersion")
     project_id: Optional[str] = pd_v2.Field(None, alias="projectId")
     parent_id: Optional[str] = pd_v2.Field(None, alias="parentId")
     status: Flow360Status = pd_v2.Field()
-    tags: Optional[List[str]] = pd_v2.Field([])
-    created_at: Optional[str] = pd_v2.Field(None, alias="createdAt")
-    updated_at: Optional[datetime] = pd_v2.Field(None, alias="updatedAt")
+    tags: List[str] = pd_v2.Field([])
+    created_at: str = pd_v2.Field(alias="createdAt")
+    updated_at: datetime = pd_v2.Field(alias="updatedAt")
     updated_by: Optional[str] = pd_v2.Field(None, alias="updatedBy")
-    deleted: Optional[bool] = None
+    deleted: bool
     cloud_path_prefix: Optional[str] = None
 
-    model_config = pd_v2.ConfigDict(extra="allow", frozen=True)
+    model_config = pd_v2.ConfigDict(extra="allow", frozen=True, populate_by_name=True)
 
     # pylint: disable=no-self-argument
     @pd_v2.field_validator("*", mode="before")
@@ -147,6 +148,62 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
         if value == "None":
             value = None
         return value
+
+# pylint: disable=redefined-builtin
+def local_metadata_builder(
+    id,
+    name,
+    parent_id=None,
+    cloud_path_prefix=None,
+    **kwargs,
+) -> dict:
+    """
+    Constructs a metadata dictionary for local resources.
+
+    This function is intended to be used with `.from_local_storage()` resource constructors
+    to create metadata for resources that are loaded from local storage instead of the cloud.
+    It ensures that the metadata format aligns with the expected structure for Flow360 resources.
+
+    Parameters:
+    -----------
+    id : str
+        Unique identifier for the resource.
+    name : str
+        Name of the resource.
+    parent_id : str
+        Identifier of the parent resource.
+    cloud_path_prefix : str, optional
+        Cloud storage path prefix, used for mapping local resources to cloud paths if applicable.
+    **kwargs:
+        Additional metadata fields (and possibly overrides).
+
+    Returns:
+    --------
+    dict
+        A dictionary containing the structured metadata for the local resource.
+    """
+    meta_data = AssetMetaBaseModelV2(
+        id=id,
+        name=name,
+        parent_id=parent_id,
+        cloud_path_prefix=cloud_path_prefix,
+        userId="local",
+        solver_version="unknown",
+        status="completed",
+        createdAt="unknown",
+        updatedAt=datetime.now(),
+        deleted=False,
+    )
+
+    data = meta_data.model_dump()
+    for k, v in kwargs.items():
+        data[k] = v
+
+    for key, val in list(data.items()):
+        if isinstance(val, Enum):
+            data[key] = val.value
+
+    return data
 
 
 class ResourceDraft(metaclass=ABCMeta):

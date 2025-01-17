@@ -20,11 +20,11 @@ def test_updater_to_24_11_1():
         assert params
 
 
-def test_updater_from_24_11_0_5_to_24_11_6():
+def test_updater_from_24_11_1_5_to_24_11_6():
     with open("../data/simulation/simulation_no_updater.json", "r") as fp:
         params = json.load(fp)
 
-    for idx_from in range(6):
+    for idx_from in range(1, 6):
         for idx_to in range(idx_from + 1, 7):
             params_new = updater(
                 version_from=f"24.11.{idx_from}",

@@ -191,20 +191,20 @@ class Camera(Flow360BaseModel):
     ----------
     position : Vector3
         Camera eye position, think of the eye position as a position on the unit sphere centered at the `lookAt`.
-        The units are in lenght units used in geometry or volume mesh.
+        The units are in length units used in geometry or volume mesh.
     up : Vector3
         Up orientation of the camera.
     look_at : Vector3
         Target point the camera will look at from the position. Default: center of bbox
-        The units are in lenght units used in geometry or volume mesh.
+        The units are in length units used in geometry or volume mesh.
     pan_target : Vector3 or None
         Position to pan the viewport center to; if undefined, the default is `look_at`.
-        The units are in lenght units used in geometry or volume mesh.
+        The units are in length units used in geometry or volume mesh.
     dimension_dir : {'width', 'height', 'diagonal'}
         The direction `dimension_size_model_units` is for.
     dimension : float
         The camera zoom will be set such that the extents of the scene's projection is this number of model units for
-        the applicable `dimension_dir`. The units are in lenght units used in geometry or volume mesh.
+        the applicable `dimension_dir`. The units are in length units used in geometry or volume mesh.
     """
 
     position: Optional[Tuple[float, float, float]] = (-1, -1, 1)

@@ -19,6 +19,9 @@ import unyt as u
 import unyt.dimensions as udim
 from pydantic import PlainSerializer
 from pydantic_core import InitErrorDetails, core_schema
+
+# because unit_system.py is the only interface to our unit functions, you can import unit_quantity directly
+# "from unit_system import unyt_quantity" instead of knowing existence of unyt package.
 from unyt import unyt_quantity  # pylint: disable=unused-import
 
 from flow360.log import log

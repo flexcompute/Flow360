@@ -7,6 +7,7 @@ import pytest
 from flow360 import log
 from flow360.component.case import Case, CaseMeta
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.surface_mesh import SurfaceMesh, SurfaceMeshMeta
 from flow360.component.utils import LocalResourceCache
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
@@ -157,12 +158,13 @@ def test_resources_from_local_storage_geo():
         case = Case.from_local_storage(
             local_storage_path=os.path.join("data", case_meta.id),
             meta_data=CaseMeta(
-                caseId=case_meta.id,
-                name=case_meta.name,
-                status="completed",
-                userId="pipeline",
-                caseMeshId=case_meta.path.volume_mesh.id,
-                cloud_path_prefix=case_meta.path.cases[-1].s3_path.rsplit("/", 1)[0],
+                **local_metadata_builder(
+                    id=case_meta.id,
+                    name=case_meta.name,
+                    parent_id=case_meta.path.volume_mesh.id,
+                    case_mesh_id=case_meta.path.volume_mesh.id,
+                    cloud_path_prefix=case_meta.path.cases[-1].s3_path.rsplit("/", 1)[0],
+                )
             ),
         )
         cache.add(case)
@@ -171,11 +173,11 @@ def test_resources_from_local_storage_geo():
             mesh_id=vm_meta.id,
             local_storage_path=os.path.join("data", vm_meta.id),
             meta_data=VolumeMeshMetaV2(
-                id=vm_meta.id,
-                name=vm_meta.name,
-                status="completed",
-                userId="pipeline",
-                cloud_path_prefix=vm_meta.s3_path.rsplit("/", 1)[0],
+                **local_metadata_builder(
+                    id=vm_meta.id,
+                    name=vm_meta.name,
+                    cloud_path_prefix=vm_meta.s3_path.rsplit("/", 1)[0],
+                )
             ),
         )
         cache.add(vm)
@@ -185,11 +187,11 @@ def test_resources_from_local_storage_geo():
             sm = SurfaceMesh.from_local_storage(
                 local_storage_path=os.path.join("data", sm_meta.id),
                 meta_data=SurfaceMeshMeta(
-                    id=sm_meta.id,
-                    name=sm_meta.name,
-                    status="completed",
-                    userId="pipeline",
-                    cloud_path_prefix=sm_meta.s3_path.rsplit("/", 1)[0],
+                    **local_metadata_builder(
+                        id=sm_meta.id,
+                        name=sm_meta.name,
+                        cloud_path_prefix=sm_meta.s3_path.rsplit("/", 1)[0],
+                    )
                 ),
             )
             cache.add(sm)
@@ -200,11 +202,12 @@ def test_resources_from_local_storage_geo():
                 geometry_id=geo_meta.id,
                 local_storage_path=os.path.join("data", geo_meta.id),
                 meta_data=GeometryMeta(
-                    id=geo_meta.id,
-                    name=geo_meta.name,
-                    status="processed",
-                    userId="pipeline",
-                    cloud_path_prefix=geo_meta.s3_path.rsplit("/", 1)[0],
+                    **local_metadata_builder(
+                        id=geo_meta.id,
+                        name=geo_meta.name,
+                        cloud_path_prefix=geo_meta.s3_path.rsplit("/", 1)[0],
+                        status="processed",
+                    )
                 ),
             )
             cache.add(geo)
@@ -261,12 +264,13 @@ def test_resource_from_local_storage_vm():
         case = Case.from_local_storage(
             local_storage_path=os.path.join("data", case_meta.id),
             meta_data=CaseMeta(
-                caseId=case_meta.id,
-                name=case_meta.name,
-                status="completed",
-                userId="pipeline",
-                caseMeshId=case_meta.path.volume_mesh.id,
-                cloud_path_prefix=case_meta.path.cases[-1].s3_path.rsplit("/", 1)[0],
+                **local_metadata_builder(
+                    id=case_meta.id,
+                    name=case_meta.name,
+                    parent_id=case_meta.path.volume_mesh.id,
+                    case_mesh_id=case_meta.path.volume_mesh.id,
+                    cloud_path_prefix=case_meta.path.cases[-1].s3_path.rsplit("/", 1)[0],
+                )
             ),
         )
         cache.add(case)
@@ -275,11 +279,11 @@ def test_resource_from_local_storage_vm():
             mesh_id=vm_meta.id,
             local_storage_path=os.path.join("data", vm_meta.id),
             meta_data=VolumeMeshMetaV2(
-                id=vm_meta.id,
-                name=vm_meta.name,
-                status="completed",
-                userId="pipeline",
-                cloud_path_prefix=vm_meta.s3_path.rsplit("/", 1)[0],
+                **local_metadata_builder(
+                    id=vm_meta.id,
+                    name=vm_meta.name,
+                    cloud_path_prefix=vm_meta.s3_path.rsplit("/", 1)[0],
+                )
             ),
         )
         cache.add(vm)
@@ -289,11 +293,11 @@ def test_resource_from_local_storage_vm():
             sm = SurfaceMesh.from_local_storage(
                 local_storage_path=os.path.join("data", sm_meta.id),
                 meta_data=SurfaceMeshMeta(
-                    id=sm_meta.id,
-                    name=sm_meta.name,
-                    status="completed",
-                    userId="pipeline",
-                    cloud_path_prefix=sm_meta.s3_path.rsplit("/", 1)[0],
+                    **local_metadata_builder(
+                        id=sm_meta.id,
+                        name=sm_meta.name,
+                        cloud_path_prefix=sm_meta.s3_path.rsplit("/", 1)[0],
+                    )
                 ),
             )
             cache.add(sm)
@@ -304,11 +308,12 @@ def test_resource_from_local_storage_vm():
                 geometry_id=geo_meta.id,
                 local_storage_path=os.path.join("data", geo_meta.id),
                 meta_data=GeometryMeta(
-                    id=geo_meta.id,
-                    name=geo_meta.name,
-                    status="completed",
-                    userId="pipeline",
-                    cloud_path_prefix=geo_meta.s3_path.rsplit("/", 1)[0],
+                    **local_metadata_builder(
+                        id=geo_meta.id,
+                        name=geo_meta.name,
+                        cloud_path_prefix=geo_meta.s3_path.rsplit("/", 1)[0],
+                        status="processed",
+                    )
                 ),
             )
             cache.add(geo)
