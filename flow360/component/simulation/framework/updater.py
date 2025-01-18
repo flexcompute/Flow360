@@ -17,6 +17,30 @@ def _no_update(params_as_dict):
     return params_as_dict
 
 
+def _24_11_0_to_24_11_1_update(params_as_dict):
+    # Check and remove the 'meshing' node if conditions are met
+    if params_as_dict.get("meshing") is not None:
+        meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+        bl_thickness = meshing_defaults.get("boundary_layer_first_layer_thickness")
+        max_edge_length = meshing_defaults.get("surface_max_edge_length")
+        if bl_thickness is None and max_edge_length is None:
+            del params_as_dict["meshing"]
+
+    # Iterate over models and update 'heat_spec' where necessary
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Wall" and model.get("heat_spec") is None:
+            model["heat_spec"] = {
+                "type_name": "HeatFlux",
+                "value": {"value": 0, "units": "W / m**2"},
+            }
+
+    # Check and remove the 'time_stepping' -> order_of_accuracy node
+    if "time_stepping" in params_as_dict:
+        params_as_dict["time_stepping"].pop("order_of_accuracy", None)
+
+    return params_as_dict
+
+
 def _24_11_6_to_24_11_7_update(params_as_dict):
     # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
     # to all occurance of the same PointArray
@@ -56,7 +80,8 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
 
 
 UPDATE_MAP = [
-    ("24.11.([0-5])$", "24.11.6", _no_update),
+    ("24.11.0", "24.11.1", _24_11_0_to_24_11_1_update),
+    ("24.11.([1-5])$", "24.11.6", _no_update),
     ("24.11.6", "24.11.7", _24_11_6_to_24_11_7_update),
     ("24.11.7", "24.11.*", _no_update),
 ]

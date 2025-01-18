@@ -1,5 +1,7 @@
 """ Case results module"""
 
+from __future__ import annotations
+
 import os
 import re
 import shutil
@@ -7,7 +9,7 @@ import tempfile
 import time
 import uuid
 from enum import Enum
-from itertools import chain
+from itertools import chain, product
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
@@ -35,6 +37,45 @@ from ..v1.flow360_params import Flow360Params
 
 # pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()
+
+
+_PHYSICAL_STEP = "physical_step"
+_PSEUDO_STEP = "pseudo_step"
+_TIME = "time"
+_TIME_UNITS = "time_units"
+_CL = "CL"
+_CD = "CD"
+_CFx = "CFx"
+_CFy = "CFy"
+_CFz = "CFz"
+_CMx = "CMx"
+_CMy = "CMy"
+_CMz = "CMz"
+_CL_PRESSURE = "CLPressure"
+_CD_PRESSURE = "CDPressure"
+_CFx_PRESSURE = "CFxPressure"
+_CFy_PRESSURE = "CFyPressure"
+_CFz_PRESSURE = "CFzPressure"
+_CMx_PRESSURE = "CMxPressure"
+_CMy_PRESSURE = "CMyPressure"
+_CMz_PRESSURE = "CMzPressure"
+_CL_VISCOUS = "CLViscous"
+_CD_VISCOUS = "CDViscous"
+_CFx_VISCOUS = "CFxViscous"
+_CFy_VISCOUS = "CFyViscous"
+_CFz_VISCOUS = "CFzViscous"
+_CMx_VISCOUS = "CMxViscous"
+_CMy_VISCOUS = "CMyViscous"
+_CMz_VISCOUS = "CMzViscous"
+_HEAT_TRANSFER = "HeatTransfer"
+_HEAT_FLUX = "HeatFlux"
+_X = "X"
+_Y = "Y"
+_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
+_CD_PER_LENGTH = "CD_per_length"
+_CFx_PER_SPAN = "CFx_per_span"
+_CFz_PER_SPAN = "CFz_per_span"
+_CMy_PER_SPAN = "CMy_per_span"
 
 
 def _temp_file_generator(suffix: str = ""):
@@ -242,6 +283,7 @@ class ResultCSVModel(ResultBaseModel):
     )
     _values: Optional[Dict] = pd.PrivateAttr(None)
     _raw_values: Optional[Dict] = pd.PrivateAttr(None)
+    _averages: Optional[Dict] = pd.PrivateAttr(None)
 
     def _read_csv_file(self, filename: str):
         dataframe = pandas.read_csv(filename, skipinitialspace=True)
@@ -286,6 +328,25 @@ class ResultCSVModel(ResultBaseModel):
         else:
             self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
         self._raw_values = self._read_csv_file(self.local_file_name)
+
+    def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
+        """
+        run some processing after data is loaded
+        """
+        if self._is_physical_time_series_data() is True:
+            if filter_physical_steps_only is True:
+                self.filter_physical_steps_only()
+            if include_time is True:
+                self.include_time()
+
+    def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
+        """
+        Change default behavior of data loader, reload
+        """
+        self._values = self.raw_values
+        self._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
 
     def download(
         self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
@@ -337,6 +398,9 @@ class ResultCSVModel(ResultBaseModel):
         res_str += "\n .as_dataframe()\n .as_dict()\n .as_numpy()"
         return res_str
 
+    def update(self, df: pandas.DataFrame):
+        self._values = df.to_dict("list")
+
     @property
     def values(self):
         """
@@ -350,6 +414,7 @@ class ResultCSVModel(ResultBaseModel):
 
         if self._values is None:
             self._values = self.raw_values
+            self._preprocess()
         return self._values
 
     def to_base(self, base: str):
@@ -430,6 +495,94 @@ class ResultCSVModel(ResultBaseModel):
             "Timeout: post-processing did not finish within the specified timeout period."
         )
 
+    def _is_physical_time_series_data(self):
+        try:
+            physical_step = self.values[_PHYSICAL_STEP]
+            return physical_step[-1] - physical_step[0] > 0
+        except KeyError:
+            return False
+
+    def include_time(self):
+        if self._is_physical_time_series_data() is False:
+            raise ValueError(
+                "Physical time can be included only for physical time series data (unsteady simulations)"
+            )
+
+        params = self._get_params_method()
+        if isinstance(params, Flow360Params):
+            try:
+                step_size = params.time_stepping.time_step_size
+            except KeyError:
+                raise ValueError(
+                    "Cannot find time step size for this simulation. Check flow360.json file."
+                )
+
+        elif isinstance(params, SimulationParams):
+            try:
+                step_size = params.time_stepping.step_size
+            except KeyError:
+                raise ValueError(
+                    "Cannot find time step size for this simulation. Check simulation.json."
+                )
+        else:
+            raise ValueError(
+                f"Unknown params model: {params}, allowed (Flow360Params, SimulationParams)"
+            )
+
+        physical_step = self.as_dataframe()[_PHYSICAL_STEP]
+        self.values[_TIME] = (physical_step - physical_step[0]) * step_size
+        self.values[_TIME_UNITS] = step_size.units
+
+    def filter_physical_steps_only(self):
+        """
+        filters data to contain only last pseudo step data for every physical step
+        """
+        if self._is_physical_time_series_data() is False:
+            log.warning(
+                "Filtering out physical steps only but there is only one step in this simulation."
+            )
+
+        df = self.as_dataframe()
+        _, last_iter_mask = self._pseudo_step_masks(df)
+        self.update(df[last_iter_mask])
+
+    @classmethod
+    def _pseudo_step_masks(cls, df):
+        try:
+            physical_step = df[_PHYSICAL_STEP]
+        except KeyError:
+            raise ValueError(
+                "Filtering physical steps is only available for results with physical_step column."
+            )
+        iter_mask = np.diff(physical_step)
+        first_iter_mask = np.array([1, *iter_mask]) != 0
+        last_iter_mask = np.array([*iter_mask, 1]) != 0
+        return first_iter_mask, last_iter_mask
+
+    @classmethod
+    def _average_last_fraction(cls, df, average_fraction):
+        selected_fraction = df.tail(int(len(df) * average_fraction))
+        return selected_fraction.mean()
+
+    def get_averages(self, average_fraction):
+        df = self.as_dataframe()
+        return self._average_last_fraction(df, average_fraction)
+
+    @property
+    def averages(self):
+        """
+        Get average data over last 10%
+
+        Returns
+        -------
+        dict
+            Dictionary containing CL, CD, CFx/y/z, CMx/y/z and other columns available in data
+        """
+
+        if self._averages is None:
+            self._averages = self.get_averages(0.1).to_dict()
+        return self._averages
+
 
 class ResultTarGZModel(ResultBaseModel):
     """
@@ -490,52 +643,16 @@ class MaxResidualLocationResultCSVModel(ResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, frozen=True)
 
 
-class ResultOperations:
-    @classmethod
-    def average_last_fraction(obj: ResultCSVModel, column, avarage_fraction):
-        df = obj.as_dataframe()
-        selected_fraction = df.tail(int(len(df) * avarage_fraction))
-        average = selected_fraction[column].mean()
-        return average
-
-
 class TotalForcesResultCSVModel(ResultCSVModel):
     """TotalForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, frozen=True)
-    _averages: Optional[Dict] = pd.PrivateAttr(None)
-
-    def get_averages(self, avarage_fraction):
-        return {
-            column: ResultOperations.average_last_fraction(self, column, avarage_fraction)
-            for column in self.values.keys()
-        }
-
-    @property
-    def averages(self):
-        """
-        Get average data over last 10%
-
-        Returns
-        -------
-        dict
-            Dictionary containing CL, CD, CFx/y/z, CMx/y/z
-        """
-
-        if self._averages is None:
-            self._averages = self.get_averages(0.1)
-        return self._averages
-
-
-class SurfaceForcesResultCSVModel(ResultCSVModel):
-    """SurfaceForcesResultCSVModel"""
-
-    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
 
 
 class PerEntityResultCSVModel(ResultCSVModel):
     _variables: List[str] = []
     _x_columns: List[str] = []
+    _filter_when_zero = []
     _entities: List[str] = None
 
     @property
@@ -592,19 +709,75 @@ class PerEntityResultCSVModel(ResultCSVModel):
         )
 
         headers = _filter_headers_by_prefix(
-            self._raw_values.keys(), include_resolved, exclude_resolved
+            self.raw_values.keys(), include_resolved, exclude_resolved
         )
         self._values = {
             key: val for key, val in self.as_dict().items() if key in [*headers, *self._x_columns]
         }
         self._filtered_sum()
+        self._averages = None
+
+    def _remove_zero_rows(self, df: pandas.DataFrame) -> pandas.DataFrame:
+        headers = [
+            f"{x}_{y}"
+            for x, y in product(self.entities, self._filter_when_zero)
+            if f"{x}_{y}" in df.keys()
+        ]
+        if len(headers) > 0:
+            df = df[df[headers].apply(lambda row: not all(row == 0), axis=1)]
+        return df
 
     def _filtered_sum(self):
         df = self.as_dataframe()
+        df = self._remove_zero_rows(df)
         for variable in self._variables:
             new_col_name = "total" + variable
             regex_pattern = rf"^(?!total).*{variable}$"
-            self._values[new_col_name] = df.filter(regex=regex_pattern).sum(axis=1)
+            df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
+        self.update(df)
+
+
+class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
+    """SurfaceForcesResultCSVModel"""
+
+    remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
+
+    _variables: List[str] = [
+        _CL,
+        _CD,
+        _CFx,
+        _CFy,
+        _CFz,
+        _CMx,
+        _CMy,
+        _CMz,
+        _CL_PRESSURE,
+        _CD_PRESSURE,
+        _CFx_PRESSURE,
+        _CFy_PRESSURE,
+        _CFz_PRESSURE,
+        _CMx_PRESSURE,
+        _CMy_PRESSURE,
+        _CMz_PRESSURE,
+        _CL_VISCOUS,
+        _CD_VISCOUS,
+        _CFx_VISCOUS,
+        _CFy_VISCOUS,
+        _CFz_VISCOUS,
+        _CMx_VISCOUS,
+        _CMy_VISCOUS,
+        _CMz_VISCOUS,
+        _HEAT_TRANSFER,
+    ]
+    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
+
+    def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
+        """
+        run some processing after data is loaded
+        """
+        super()._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
@@ -620,8 +793,9 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         CaseDownloadable.X_SLICING_FORCE_DISTRIBUTION.value, frozen=True
     )
 
-    _variables: List[str] = ["Cumulative_CD_Curve", "CD_per_length"]
-    _x_columns: List[str] = ["X"]
+    _variables: List[str] = [_CUMULATIVE_CD_CURVE, _CD_PER_LENGTH]
+    _filter_when_zero = [_CD_PER_LENGTH]
+    _x_columns: List[str] = [_X]
 
 
 class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
@@ -631,14 +805,18 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         CaseDownloadable.Y_SLICING_FORCE_DISTRIBUTION.value, frozen=True
     )
 
-    _variables: List[str] = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
-    _x_columns: List[str] = ["Y"]
+    _variables: List[str] = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
+    _filter_when_zero = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
+    _x_columns: List[str] = [_Y]
 
 
-class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
-    """SurfaceHeatTrasferResultCSVModel"""
+class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel):
+    """SurfaceHeatTransferResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, frozen=True)
+    _variables: List[str] = [_HEAT_FLUX]
+    _filter_when_zero = []
+    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
 
 class AeroacousticsResultCSVModel(ResultCSVModel):

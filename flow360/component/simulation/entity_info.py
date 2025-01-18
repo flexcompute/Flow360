@@ -196,6 +196,19 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         raise NotImplementedError("Not implemented yet.")
 
 
+EntityInfoUnion = Annotated[
+    Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo],
+    pd.Field(discriminator="type_name"),
+]
+
+
+def parse_entity_info_model(data) -> EntityInfoUnion:
+    """
+    parse entity info data and return one of [GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
+    """
+    return pd.TypeAdapter(EntityInfoUnion).validate_python(data)
+
+
 def get_entity_info_type_from_str(entity_type: str) -> type[EntityInfoModel]:
     """Get EntityInfo type from the asset type from the project tree"""
     entity_info_type = None

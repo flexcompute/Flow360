@@ -81,7 +81,7 @@ class Flow360RequestsV2(pd_v2.BaseModel):
 
     def dict(self, *args, **kwargs) -> dict:
         """returns dict representation of request"""
-        return super().dict(*args, by_alias=True, exclude_none=True, **kwargs)
+        return super().model_dump(*args, by_alias=True, exclude_none=True, **kwargs)
 
     model_config = pd_v2.ConfigDict(populate_by_name=True, alias_generator=to_camel)
 

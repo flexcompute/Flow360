@@ -61,7 +61,9 @@ sphinx_design = {version="*", optional = true}
 sphinx_toolbox = {version="*", optional = true}
 sphinx_paramlinks = {version="*", optional = true}
 numpydoc = "^1.8.0"
+numexpr = "^2.10.1"
 sphinxcontrib-mermaid = {version="*", optional = true}
+pylatex = "^1.4.2"
 prettyprinttree = "^2.0.1"
 
 
@@ -76,6 +78,7 @@ pytest = "^7.3.0"
 pylint = "^3.1.0"
 black = "^24.1.0"
 notebook = "^7.0.6"
+pytest-mock = "^3.14.0"
 
 [tool.poetry.extras]
 docs = [

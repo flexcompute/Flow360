@@ -78,7 +78,10 @@ def require(required_parameter, required_by, params):
 
     required_msg = f'required by {" -> ".join(required_by)} for unit conversion'
     try:
-        value = get_from_dict_by_key_list(required_parameter, params.model_dump())
+        params_as_dict = params
+        if not isinstance(params_as_dict, dict):
+            params_as_dict = params.model_dump()
+        value = get_from_dict_by_key_list(required_parameter, params_as_dict)
         if value is None:
             raise ValueError
 
@@ -98,7 +101,7 @@ def require(required_parameter, required_by, params):
 
 
 # pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
-def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: List[str] = None):
+def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by: List[str] = None):
     """
 
     Returns a flow360 conversion unit system for a given dimension.
@@ -107,9 +110,9 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     ----------
     dimension : str
         The dimension for which the conversion unit system is needed. e.g., length
-    mesh_unit : unyt_attribute
-        Externally provided mesh unit.
-    params : SimulationParams
+    length_unit : unyt_attribute
+        Externally provided mesh unit or geometry unit.
+    params : SimulationParams or dict
         The parameters needed for unit conversion.
     required_by : List[str], optional
         List of keys specifying the path to the parameter that requires this unit conversion, by default [].
@@ -130,7 +133,8 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
         required_by = []
 
     def get_base_length():
-        base_length = mesh_unit.to("m").v.item()
+        require(["length_unit"], required_by, {"length_unit": length_unit})
+        base_length = length_unit.to("m").v.item()
         return base_length
 
     def get_base_temperature():
