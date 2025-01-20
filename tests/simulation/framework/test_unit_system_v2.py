@@ -10,6 +10,7 @@ from flow360.component.simulation import units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater_utils import compare_dicts
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
     AngleType,
     AngularVelocityType,
     AreaType,
@@ -21,7 +22,6 @@ from flow360.component.simulation.unit_system import (
     MassType,
     PressureType,
     SpecificEnergyType,
-    TemperatureType,
     TimeType,
     VelocityType,
     ViscosityType,
@@ -33,7 +33,7 @@ class DataWithUnits(pd.BaseModel):
     a: AngleType = pd.Field()
     m: MassType = pd.Field()
     t: TimeType = pd.Field()
-    T: TemperatureType = pd.Field()
+    T: AbsoluteTemperatureType = pd.Field()
     v: VelocityType = pd.Field()
     A: AreaType = pd.Field()
     F: ForceType = pd.Field()
@@ -49,8 +49,8 @@ class DataWithUnits(pd.BaseModel):
 class DataWithOptionalUnion(pd.BaseModel):
     L: LengthType = pd.Field()
     m: Optional[MassType] = pd.Field(None)
-    t: Union[TimeType, TemperatureType] = pd.Field()
-    v: Optional[Union[TimeType, TemperatureType]] = pd.Field(None)
+    t: Union[TimeType, AbsoluteTemperatureType] = pd.Field()
+    v: Optional[Union[TimeType, AbsoluteTemperatureType]] = pd.Field(None)
 
 
 class DataWithUnitsConstrained(pd.BaseModel):
@@ -58,7 +58,7 @@ class DataWithUnitsConstrained(pd.BaseModel):
     a: AngleType.NonNegative = pd.Field()
     m: MassType.Positive = pd.Field()
     t: TimeType.Negative = pd.Field()
-    T: TemperatureType.NonNegative = pd.Field()
+    T: AbsoluteTemperatureType.NonNegative = pd.Field()
     v: VelocityType.NonNegative = pd.Field()
     A: AreaType.Positive = pd.Field()
     F: ForceType.NonPositive = pd.Field()

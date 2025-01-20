@@ -172,7 +172,7 @@ def test_simulation_params_unit_conversion(get_the_param):
     assertions.assertAlmostEqual(converted.operating_condition.alpha.value, 0.5235987755982988)
     # TimeType
     assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.8888282)
-    # TemperatureType
+    # AbsoluteTemperatureType
     assertions.assertAlmostEqual(
         converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.368
     )

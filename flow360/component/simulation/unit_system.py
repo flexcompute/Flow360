@@ -347,9 +347,6 @@ class _DimensionedType(metaclass=ABCMeta):
                     str(_CGS_system[cls.dim_name]),
                     str(_imperial_system[cls.dim_name]),
                 ]
-                if cls.dim_name == "temperature":
-                    print("temperature units = ", units)
-
                 units += [str(unit) for unit in extra_units[cls.dim_name]]
                 units = list(dict.fromkeys(units))
             schema["properties"]["units"]["enum"] = units
@@ -667,15 +664,36 @@ class _TimeType(_DimensionedType):
 TimeType = Annotated[_TimeType, PlainSerializer(_dimensioned_type_serializer)]
 
 
-# pylint: disable=too-few-public-methods
-class _TemperatureType(_DimensionedType):
-    """:class: TemperatureType"""
+class _AbsoluteTemperatureType(_DimensionedType):
+    """
+    :class: AbsoluteTemperatureType.
+    This is the class for absolute temperature which is differentiated
+    from DeltaTemperatureType where the change/offset of temperatures are handled.
+    """
 
     dim = udim.temperature
     dim_name = "temperature"
 
 
-TemperatureType = Annotated[_TemperatureType, PlainSerializer(_dimensioned_type_serializer)]
+AbsoluteTemperatureType = Annotated[
+    _AbsoluteTemperatureType, PlainSerializer(_dimensioned_type_serializer)
+]
+
+
+class _DeltaTemperatureType(_DimensionedType):
+    """
+    :class: DeltaTemperatureType.
+    This is the class for absolute temperature which is differentiated
+    from DeltaTemperatureType where the change/offset of temperatures are handled.
+    """
+
+    dim = udim.temperature
+    dim_name = "temperature"
+
+
+DeltaTemperatureType = Annotated[
+    _DeltaTemperatureType, PlainSerializer(_dimensioned_type_serializer)
+]
 
 
 class _VelocityType(_DimensionedType):
@@ -868,7 +886,7 @@ DimensionedTypes = Union[
     AngleType,
     MassType,
     TimeType,
-    TemperatureType,
+    AbsoluteTemperatureType,
     VelocityType,
     AreaType,
     ForceType,
@@ -1109,7 +1127,7 @@ class Flow360TimeUnit(_Flow360BaseUnit):
 class Flow360TemperatureUnit(_Flow360BaseUnit):
     """:class: Flow360TemperatureUnit"""
 
-    dimension_type = TemperatureType
+    dimension_type = AbsoluteTemperatureType
     unit_name = "flow360_temperature_unit"
 
 
@@ -1311,7 +1329,7 @@ class UnitSystem(pd.BaseModel):
     length: LengthType = pd.Field()
     angle: AngleType = pd.Field()
     time: TimeType = pd.Field()
-    temperature: TemperatureType = pd.Field()
+    temperature: AbsoluteTemperatureType = pd.Field()
     velocity: VelocityType = pd.Field()
     area: AreaType = pd.Field()
     force: ForceType = pd.Field()
@@ -1629,7 +1647,7 @@ class _PredefinedUnitSystem(UnitSystem):
     length: LengthType = pd.Field(exclude=True)
     angle: AngleType = pd.Field(exclude=True)
     time: TimeType = pd.Field(exclude=True)
-    temperature: TemperatureType = pd.Field(exclude=True)
+    temperature: AbsoluteTemperatureType = pd.Field(exclude=True)
     velocity: VelocityType = pd.Field(exclude=True)
     area: AreaType = pd.Field(exclude=True)
     force: ForceType = pd.Field(exclude=True)
