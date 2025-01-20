@@ -747,6 +747,9 @@ class Chart2D(Chart):
         Internal list of requirements associated with the chart.
     type_name : Literal["Chart2D"], default="Chart2D"
         Specifies the type of report item as "Chart2D"; this field is immutable.
+    include : Optional[List[str]]
+        List of boundaries to include from data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
@@ -766,6 +769,7 @@ class Chart2D(Chart):
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
+    include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     focus_x: Optional[Tuple[float, float]] = None
 
@@ -782,11 +786,13 @@ class Chart2D(Chart):
         Returns
         -------
         bool
-            True if the root path of `self.y` corresponds to "nonlinear_residuals",
-            indicating a logarithmic plot; False otherwise.
+            True if the root path of `self.y` corresponds to "nonlinear_residuals"
+            and "linear_residuals", indicating a logarithmic plot; False otherwise.
         """
         root_path = get_root_path(self.y)
-        return root_path.startswith("nonlinear_residuals")
+        return root_path.startswith("nonlinear_residuals") or root_path.startswith(
+            "linear_residuals"
+        )
 
     def _check_dimensions_consistency(self, data):
         if any(isinstance(d, unyt.unyt_array) for d in data):
@@ -841,13 +847,13 @@ class Chart2D(Chart):
         component = x_label
         for i, data in enumerate(x_data):
             if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(exclude=self.exclude)
+                data.filter(include=self.include, exclude=self.exclude)
                 x_data[i] = data.values[component]
 
         component = y_label
         for i, data in enumerate(y_data):
             if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(exclude=self.exclude)
+                data.filter(include=self.include, exclude=self.exclude)
                 y_data[i] = data.values[component]
 
         return x_data, y_data, x_label, y_label
@@ -984,6 +990,7 @@ class Chart2D(Chart):
                 show="boundaries",
                 camera=camera,
                 fig_name="background_" + self.fig_name,
+                include=self.include,
                 exclude=self.exclude,
             )
             return background
