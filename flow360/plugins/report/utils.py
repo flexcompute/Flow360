@@ -57,6 +57,9 @@ _requirements_mapping = {
     "surface_forces": RequirementItem(
         filename=case_results.SurfaceForcesResultCSVModel()._remote_path()
     ),
+    "linear_residuals": RequirementItem(
+        filename=case_results.LinearResidualsResultCSVModel()._remote_path()
+    ),
     "nonlinear_residuals": RequirementItem(
         filename=case_results.NonlinearResidualsResultCSVModel()._remote_path()
     ),
