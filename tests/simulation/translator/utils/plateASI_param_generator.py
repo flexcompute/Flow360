@@ -5,6 +5,7 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.material import Air, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
+    DetachedEddySimulation,
     LinearSolver,
     NavierStokesSolver,
     SpalartAllmaras,
@@ -157,6 +158,9 @@ def create_plateASI_base_param(Reynolds, Mach):
                         update_jacobian_frequency=1,
                         reconstruction_gradient_limiter=0.5,
                         equation_evaluation_frequency=1,
+                        hybrid_model=DetachedEddySimulation(
+                            shielding_function="ZDES", grid_size_for_LES="meanEdgeLength"
+                        ),
                     ),
                 ),
             ],
