@@ -395,7 +395,9 @@ class SimulationParams(_ParamModelBase):
 
     @pd.model_validator(mode="after")
     def check_consistency_hybrid_model_volume_output(self):
-        """Only allow hybrid RANS-LES output field when there is a corresponding solver with hybrid RANS-LES enabled in models"""
+        """Only allow hybrid RANS-LES output field when there is a corresponding solver with
+        hybrid RANS-LES enabled in models
+        """
         return _check_consistency_hybrid_model_volume_output(self)
 
     @pd.model_validator(mode="after")

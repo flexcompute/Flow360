@@ -202,7 +202,8 @@ def _check_consistency_hybrid_model_volume_output(v):
                 model_type == "kOmegaSST" and run_hybrid_model
             ):
                 raise ValueError(
-                    "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model and hybrid RANS-LES used."
+                    "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model "
+                    "and hybrid RANS-LES used."
                 )
 
     return v
