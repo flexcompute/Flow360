@@ -60,6 +60,14 @@ def apply_plateASI_time_stepping(param, deltNonDimensional, physicalSteps):
     )
 
 
+def apply_plateASI_hybrid_model(param):
+    for model in param.models:
+        if isinstance(model, Fluid):
+            model.turbulence_model_solver.hybrid_model = DetachedEddySimulation(
+                shielding_function="ZDES", grid_size_for_LES="meanEdgeLength"
+            )
+
+
 def apply_plateASI_user_defined_dynamics(param, zeta, K, omegaN, theta0, initOmegaDot, initTheta):
     dynamic = UserDefinedDynamic(
         name="dynamicTheta",
@@ -158,9 +166,6 @@ def create_plateASI_base_param(Reynolds, Mach):
                         update_jacobian_frequency=1,
                         reconstruction_gradient_limiter=0.5,
                         equation_evaluation_frequency=1,
-                        hybrid_model=DetachedEddySimulation(
-                            shielding_function="ZDES", grid_size_for_LES="meanEdgeLength"
-                        ),
                     ),
                 ),
             ],
@@ -203,6 +208,7 @@ def create_plateASI_param():
     param = create_plateASI_base_param(Re, Mach)
     append_plateASI_boundaries(param)
     apply_plateASI_time_stepping(param, deltNonDimensional, physicalSteps)
+    apply_plateASI_hybrid_model(param)
     apply_plateASI_user_defined_dynamics(param, zeta, K, omegaN, theta0, initOmegaDot, initTheta)
     add_plateASI_rotation_zone(param)
     return param

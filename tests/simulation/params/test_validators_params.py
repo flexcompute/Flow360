@@ -233,7 +233,9 @@ def test_hybrid_model_wall_function_validator(
     # Valid simulation params
     with SI_unit_system:
         params = SimulationParams(
-            models=[fluid_model_with_hybrid_model], outputs=[volume_output_with_SA_hybrid_model]
+            models=[fluid_model_with_hybrid_model],
+            outputs=[volume_output_with_SA_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
         )
 
     assert params
@@ -243,12 +245,29 @@ def test_hybrid_model_wall_function_validator(
     # Invalid simulation params (wrong output type)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(
-            models=[fluid_model_with_hybrid_model], outputs=[volume_output_with_kOmega_hybrid_model]
+            models=[fluid_model_with_hybrid_model],
+            outputs=[volume_output_with_kOmega_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
         )
 
     # Invalid simulation params (no hybrid)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(models=[fluid_model], outputs=[volume_output_with_kOmega_hybrid_model])
+        SimulationParams(
+            models=[fluid_model],
+            outputs=[volume_output_with_kOmega_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+
+def test_hybrid_model_for_unsteady_validator(
+    fluid_model_with_hybrid_model,
+):
+
+    message = "hybrid RANS-LES model can only be used in unsteady simulations."
+
+    # Invalid simulation params (using hybrid model for steady simulations)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(models=[fluid_model_with_hybrid_model])
 
 
 def test_cht_solver_settings_validator(

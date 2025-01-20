@@ -20,7 +20,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -205,6 +205,28 @@ def _check_consistency_hybrid_model_volume_output(v):
                     "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model "
                     "and hybrid RANS-LES used."
                 )
+
+    return v
+
+
+def _check_unsteadiness_to_use_hybrid_model(v):
+    models = v.models
+
+    run_hybrid_model = False
+
+    if models:
+        for model in models:
+            if isinstance(model, Fluid):
+                turbulence_model_solver = model.turbulence_model_solver
+                if (
+                    not isinstance(turbulence_model_solver, NoneSolver)
+                    and turbulence_model_solver.hybrid_model is not None
+                ):
+                    run_hybrid_model = True
+                    break
+
+    if run_hybrid_model and v.time_stepping is not None and isinstance(v.time_stepping, Steady):
+        raise ValueError("hybrid RANS-LES model can only be used in unsteady simulations.")
 
     return v
 
