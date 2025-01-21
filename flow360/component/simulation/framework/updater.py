@@ -96,6 +96,17 @@ def _24_11_8_to_25_2_0_update(params_as_dict):
                 "grid_size_for_LES": grid_size_for_LES,
             }
 
+    for output in params_as_dict["outputs"]:
+        if output.get("output_type") == "VolumeOutput":
+            items = output.get("output_fields", {}).get("items", [])
+            for old, new in [
+                ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
+                ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
+            ]:
+                if old in items:
+                    items.remove(old)
+                    items.append(new)
+
     return params_as_dict
 
 

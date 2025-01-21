@@ -66,7 +66,7 @@ def test_updater_from_24_11_0_6_to_24_11_7():
     )
 
 
-def test_updater_from_24_11_8_to_24_11_9():
+def test_updater_from_24_11_8_to_25_2_0():
     with open("../data/simulation/simulation_24_11_8.json", "r") as fp:
         params = json.load(fp)
 

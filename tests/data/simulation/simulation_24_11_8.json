@@ -295,7 +295,8 @@
                     "primitiveVars",
                     "qcriterion",
                     "Cpt",
-                    "localCFL"
+                    "localCFL",
+                    "SpalartAllmaras_DDES"
                 ]
             },
             "output_format": "both",
