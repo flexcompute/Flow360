@@ -71,10 +71,9 @@ def test_updater_from_24_11_8_to_24_11_9():
         params = json.load(fp)
 
     for idx_from in range(1, 9):
-        idx_to = 9
         params_new = updater(
             version_from=f"24.11.{idx_from}",
-            version_to=f"24.11.{idx_to}",
+            version_to=f"25.2.0",
             params_as_dict=params,
         )
         assert compare_dicts(params, params_new)
