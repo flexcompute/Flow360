@@ -217,7 +217,7 @@ class DetachedEddySimulation(Flow360BaseModel):
 
     shielding_function: Literal["DDES", "ZDES"] = pd.Field(
         "DDES",
-        description="Specifies the type of shileding used for the detached eddy simulation. The allowed inputs are"
+        description="Specifies the type of shielding used for the detached eddy simulation. The allowed inputs are"
         ":code:`DDES` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and :code:`ZDES`"
         "(proposed by Deck and Renard 2020).",
     )
