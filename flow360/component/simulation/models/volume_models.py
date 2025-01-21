@@ -692,11 +692,15 @@ class Rotation(Flow360BaseModel):
 
 class PorousMedium(Flow360BaseModel):
     """
-    :class:`PorousMedium` class for specifying porous media settings.`.
-    For further information please refer to the :ref:`porous media knowledge base <knowledge_base_porousMedia>`
+    :class:`PorousMedium` class for specifying porous media settings.
+    For further information please refer to the :ref:`porous media knowledge base <knowledge_base_porousMedia>`.
 
     Example
     -------
+
+    Define a porous medium model :code:`porous_zone` with the :py:class:`Box` entity.
+    The center and size of the `porous_zone` box are (0, 0, 0) * fl.u.m and (0.2, 0.3, 2) * fl.u.m, respectively.
+    The axes of the :code:`porous_zone` are set as (0, 1, 0) and (0, 0, 1).
 
     >>> fl.PorousMedium(
     ...     entities=[
@@ -712,6 +716,19 @@ class PorousMedium(Flow360BaseModel):
     ...    volumetric_heat_source=1.0 * fl.u.W/ fl.u.m **3,
     ... )
 
+    Define a porous medium model :code:`porous_zone` with the :code:`volume_mesh["porous_zone"]` volume.
+    The axes of entity must be specified to serve as the the principle axes of the porous medium
+    material model, and we set the axes of the :code:`porous_zone` as (1, 0, 0) and (0, 1, 0).
+
+    >>> porous_zone = volume_mesh["porous_zone"]
+    >>> porous_zone.axes = [(1, 0, 0), (0, 1, 0)]
+    >>> porous_medium_model = fl.PorousMedium(
+    ...     entities=[porous_zone],
+    ...     darcy_coefficient=(1e6, 0, 0) / fl.u.m **2,
+    ...     forchheimer_coefficient=(1, 0, 0) / fl.u.m,
+    ...     volumetric_heat_source=1.0 * fl.u.W/ fl.u.m **3,
+    ... )
+
     ====
     """
 
@@ -720,7 +737,9 @@ class PorousMedium(Flow360BaseModel):
     entities: EntityList[GenericVolume, Box] = pd.Field(
         alias="volumes",
         description="The entity list for the `PorousMedium` model. "
-        + "The entity should be :class:`Box` type.",
+        + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
+        + "The axes of entity must be specified to serve as the the principle axes of the "
+        + "porous medium material model.",
     )
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(
@@ -735,7 +754,6 @@ class PorousMedium(Flow360BaseModel):
     volumetric_heat_source: Optional[Union[StringExpression, HeatSourceType]] = pd.Field(
         None, description="The volumetric heat source."
     )
-    # Note: Axes will always come from the entity
 
     @pd.field_validator("entities", mode="after")
     @classmethod
