@@ -51,7 +51,8 @@ def flow360():
     type=bool,
     help="Toggle beta features support",
 )
-def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features): #pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
+def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features):
     """
     Configure flow360.
     """
@@ -73,7 +74,6 @@ def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features)
             entry = {profile: {"apikey": apikey}}
         dict_utils.merge_overwrite(config, entry)
         changed = True
-
 
     if suppress_submit_warning is not None:
         dict_utils.merge_overwrite(
