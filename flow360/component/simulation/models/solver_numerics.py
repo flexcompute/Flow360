@@ -223,7 +223,7 @@ class DetachedEddySimulation(Flow360BaseModel):
     )
     grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(
         "maxEdgeLength",
-        description="Specifes the length used for the computation of LES length scale. "
+        description="Specifies the length used for the computation of LES length scale. "
         + "The allowed inputs are :code:`maxEdgeLength` and :code:`meanEdgeLength`.",
     )
 
