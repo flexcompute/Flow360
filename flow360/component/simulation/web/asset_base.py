@@ -219,10 +219,12 @@ class AssetBase(metaclass=ABCMeta):
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
         # pylint: disable=protected-access
-        if hasattr(asset_obj, "_webapi"):
-            asset_obj._webapi._download_file = _local_download_file
-            if meta_data is not None:
-                asset_obj._webapi._set_meta(meta_data)
+        if not hasattr(asset_obj, "_webapi"):
+            # Handle local test case execution which has no valid ID
+            return asset_obj
+        asset_obj._webapi._download_file = _local_download_file
+        if meta_data is not None:
+            asset_obj._webapi._set_meta(meta_data)
         return asset_obj
 
     def wait(self, timeout_minutes=60):
