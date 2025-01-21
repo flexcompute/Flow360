@@ -107,3 +107,21 @@ def test_temperature_offset():
         ),
     ):
         ThermalState.from_standard_atmosphere(altitude=10 * u.m, temperature_offset=11.11 * u.degC)
+
+    with fl.imperial_unit_system:
+        ts: ThermalState = ThermalState.from_standard_atmosphere(
+            altitude=10 * u.m, temperature_offset=11.11
+        )
+        assert ts.temperature_offset == 11.11 * u.delta_degF
+
+    with fl.SI_unit_system:
+        ts: ThermalState = ThermalState.from_standard_atmosphere(
+            altitude=10 * u.m, temperature_offset=11.11
+        )
+        assert ts.temperature_offset == 11.11 * u.K
+
+    with fl.CGS_unit_system:
+        ts: ThermalState = ThermalState.from_standard_atmosphere(
+            altitude=10 * u.m, temperature_offset=11.11
+        )
+        assert ts.temperature_offset == 11.11 * u.K

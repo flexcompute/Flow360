@@ -237,6 +237,7 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
         flow360_conversion_unit_system.base_temperature = base_temperature
+        flow360_conversion_unit_system.base_temperature_difference = base_temperature
 
     elif dimension == u.dimensions.area:
         base_length = get_base_length()

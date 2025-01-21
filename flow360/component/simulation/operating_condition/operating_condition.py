@@ -68,7 +68,7 @@ class ThermalState(MultiConstructorBaseModel):
     # pylint: disable=fixme
     # TODO: remove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
-    temperature: AbsoluteTemperatureType.Positive = pd.Field(
+    temperature: AbsoluteTemperatureType = pd.Field(
         288.15 * u.K, frozen=True, description="The temperature of the fluid."
     )
     density: DensityType.Positive = pd.Field(
@@ -148,16 +148,16 @@ class ThermalState(MultiConstructorBaseModel):
     @property
     def altitude(self) -> Optional[LengthType]:
         """Return user specified altitude."""
-        if not self._cached.altitude:
+        if not self.private_attribute_input_cache.altitude:
             log.warning("Altitude not provided from input")
-        return self._cached.altitude
+        return self.private_attribute_input_cache.altitude
 
     @property
     def temperature_offset(self) -> Optional[DeltaTemperatureType]:
         """Return user specified temperature offset."""
-        if not self._cached.altitude:
+        if not self.private_attribute_input_cache.temperature_offset:
             log.warning("Temperature offset not provided from input")
-        return self._cached.temperature_offset
+        return self.private_attribute_input_cache.temperature_offset
 
     @property
     def speed_of_sound(self) -> VelocityType.Positive:
@@ -411,7 +411,7 @@ def operating_condition_from_mach_reynolds(
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: AbsoluteTemperatureType.Positive = 288.15 * u.K,
+    temperature: AbsoluteTemperatureType = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
@@ -431,7 +431,7 @@ def operating_condition_from_mach_reynolds(
         Freestream Reynolds number defined with mesh unit (must be positive).
     project_length_unit: LengthType.Positive
         Project length unit.
-    temperature : AbsoluteTemperatureType.Positive, optional
+    temperature : AbsoluteTemperatureType, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.

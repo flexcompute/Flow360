@@ -695,6 +695,7 @@ def test_unit_system_init():
         "angle": {"value": 1.0, "units": "rad"},
         "time": {"value": 1.0, "units": "s"},
         "temperature": {"value": 1.0, "units": "K"},
+        "temperature_difference": {"value": 1.0, "units": "K"},
         "velocity": {"value": 1.0, "units": "m/s"},
         "area": {"value": 1.0, "units": "m**2"},
         "force": {"value": 1.0, "units": "N"},
@@ -724,3 +725,15 @@ def test_unit_system_init():
 def test_custom_unit_string_deserialization():
     assert u.unyt.unyt_quantity(1, "degC") == 1 * u.degC
     assert u.unyt.unyt_quantity(2, "degF") == 2 * u.degF
+
+
+def test_below_absolute_zero_temperature():
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"The specified temperature -333.0 K is below absolute zero. Please input a physical temperature value.",
+    ):
+
+        class tester(pd.BaseModel):
+            temp: AbsoluteTemperatureType = pd.Field()
+
+        tester(temp=-333 * u.K)
