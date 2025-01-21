@@ -13,8 +13,9 @@ from flow360.plugins.report.report_items import (
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 
-# do project_id = None if running for the first time, than replace it with project ID to avoid re-creation of projects
-project_id = "prj-7096e7c1-2d6e-4e0a-803d-da1d61a99d96"
+
+project_id = None # if running for the first time, than replace it with project ID to avoid re-creation of projects
+# project_id = "prj-b5a0ae52-14c7-4f0c-813b-542763f993a2"
 
 if project_id is not None:
     project = fl.Project.from_cloud(project_id)
@@ -136,12 +137,11 @@ def simulation_params(angle_of_attack):
 
 cases: list[fl.Case] = []
 for alpha in [0, 2, 4]:
-    project.run_case(
+    case = project.run_case(
         params=simulation_params(alpha),
-        name=f"Case for report, alpha={alpha}",
-        solver_version="release-24.11.17",
+        name=f"Case for report, alpha={alpha}"
     )
-    cases.append(project.case)
+    cases.append(case)
 
 [print(case.short_description()) for case in cases]
 
@@ -181,14 +181,7 @@ side_camera_slice = Camera(
     dimension=18,
     dimension_dir="width",
 )
-side_camera_slice_lic = Camera(
-    position=(0, 1, 0),
-    look_at=(0, 0, 0),
-    pan_target=(4, 0, 0),
-    up=(0, 0, 1),
-    dimension=18,
-    dimension_dir="width",
-)
+side_camera_slice_lic = side_camera_slice
 
 back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=12, dimension_dir="width")
 front_camera = Camera(position=(-1, 0, 0), up=(0, 0, 1), dimension=12, dimension_dir="width")
@@ -482,7 +475,7 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     f"Geometry to report - Report, dpi=150",
     cases,
-    solver_version="reportPipeline-24.10.13",
+    solver_version="reportPipeline-24.10.14",
 )
 
 report.wait()
