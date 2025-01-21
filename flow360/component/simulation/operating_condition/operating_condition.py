@@ -19,8 +19,8 @@ from flow360.component.simulation.operating_condition.atmosphere_model import (
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
-    DeltaTemperatureType,
     AngleType,
+    DeltaTemperatureType,
     DensityType,
     LengthType,
     PressureType,
@@ -46,7 +46,7 @@ class ThermalStateCache(Flow360BaseModel):
 
     # pylint: disable=no-member
     altitude: Optional[LengthType] = None
-    temperature_offset: Optional[AbsoluteTemperatureType] = None
+    temperature_offset: Optional[DeltaTemperatureType] = None
 
 
 class ThermalState(MultiConstructorBaseModel):
@@ -66,7 +66,7 @@ class ThermalState(MultiConstructorBaseModel):
     """
 
     # pylint: disable=fixme
-    # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
+    # TODO: remove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
     temperature: AbsoluteTemperatureType.Positive = pd.Field(
         288.15 * u.K, frozen=True, description="The temperature of the fluid."
@@ -123,11 +123,11 @@ class ThermalState(MultiConstructorBaseModel):
         >>> thermal_state.density
         <calculated_density>
 
-        Apply a temperature offset of -5 Kelvin at 5,000 meters:
+        Apply a temperature offset of -5 Fahrenheit at 5,000 meters:
 
         >>> thermal_state = ThermalState.from_standard_atmosphere(
         ...     altitude=5000 * u.m,
-        ...     temperature_offset=-5 * u.K
+        ...     temperature_offset=-5 * u.delta_degF
         ... )
         >>> thermal_state.temperature
         <adjusted_temperature>
@@ -153,7 +153,7 @@ class ThermalState(MultiConstructorBaseModel):
         return self._cached.altitude
 
     @property
-    def temperature_offset(self) -> Optional[AbsoluteTemperatureType]:
+    def temperature_offset(self) -> Optional[DeltaTemperatureType]:
         """Return user specified temperature offset."""
         if not self._cached.altitude:
             log.warning("Temperature offset not provided from input")

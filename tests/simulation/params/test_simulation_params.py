@@ -257,6 +257,17 @@ def test_standard_atmosphere():
         assert atm.pressure == pytest.approx(pressure, rel=1e-4)
         assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
 
+    for alt, temp_offset, temp, density, pressure, viscosity in ref_data:
+        delta_temp_in_F = (temp_offset * u.K).in_units("delta_degF")
+        atm = ThermalState.from_standard_atmosphere(
+            altitude=alt * u.m, temperature_offset=delta_temp_in_F
+        )
+
+        assert atm.temperature == pytest.approx(temp, rel=1e-6)
+        assert atm.density == pytest.approx(density, rel=1e-4)
+        assert atm.pressure == pytest.approx(pressure, rel=1e-4)
+        assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
+
 
 def test_subsequent_param_with_different_unit_system():
     with SI_unit_system:

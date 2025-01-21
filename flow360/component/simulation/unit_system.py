@@ -149,16 +149,26 @@ def _dimensioned_type_serializer(x):
 
 
 # pylint: disable=no-member
-def _has_dimensions(quant, dim):
+def _has_dimensions(quant, dim, expect_delta_unit: bool):
     """
     Checks the argument has the right dimensionality.
     """
 
     try:
+        # Delta unit check only needed for temperature
+        # Note: direct unit comparison won't work. Unyt consider u.Unit("degC") == u.Unit("K") as True
+        is_input_delta_unit = (
+            str(quant.units) == "Δ°C"  # delta unit
+            or str(quant.units) == "Δ°F"  # delta unit
+            or str(quant.units) == "K"  # absolute temperature so it can be considered delta
+            or str(quant.units) == "R"  # absolute temperature so it can be considered delta
+        )
+
         arg_dim = quant.units.dimensions
+
     except AttributeError:
         arg_dim = u.dimensionless
-    return arg_dim == dim
+    return arg_dim == dim and (is_input_delta_unit if expect_delta_unit else True)
 
 
 def _unit_object_parser(value, unyt_types: List[type]):
@@ -224,7 +234,7 @@ def _unit_inference_validator(value, dim_name, is_array=False):
     return value
 
 
-def _unit_array_validator(value, dim):
+def _unit_array_validator(value, dim, expect_delta_unit: bool):
     """
     Checks if units are provided for one component instead of entire object
 
@@ -240,8 +250,8 @@ def _unit_array_validator(value, dim):
     unyt_quantity or value
     """
 
-    if not _has_dimensions(value, dim):
-        if any(_has_dimensions(item, dim) for item in value):
+    if not _has_dimensions(value, dim, expect_delta_unit):
+        if any(_has_dimensions(item, dim, expect_delta_unit) for item in value):
             raise TypeError(
                 f"arg '{value}' has unit provided per component, "
                 "instead provide dimension for entire array."
@@ -249,12 +259,14 @@ def _unit_array_validator(value, dim):
     return value
 
 
-def _has_dimensions_validator(value, dim):
+def _has_dimensions_validator(value, dim, expect_delta_unit: bool):
     """
     Checks if value has expected dimension and raises TypeError
     """
-    if not _has_dimensions(value, dim):
-        raise TypeError(f"arg '{value}' does not match {dim}")
+    if not _has_dimensions(value, dim, expect_delta_unit):
+        if expect_delta_unit:
+            raise TypeError(f"arg '{value}' does not match unit representing difference in {dim}.")
+        raise TypeError(f"arg '{value}' does not match {dim} dimension.")
     return value
 
 
@@ -296,6 +308,9 @@ class _DimensionedType(metaclass=ABCMeta):
     dim_name = None
     has_defaults = True
 
+    # For temperature, the conversion is different if it is a delta or absolute
+    expect_delta_unit = False
+
     @classmethod
     # pylint: disable=unused-argument
     def validate(cls, value, *args, **kwargs):
@@ -308,7 +323,7 @@ class _DimensionedType(metaclass=ABCMeta):
             value = _is_unit_validator(value)
             if cls.has_defaults:
                 value = _unit_inference_validator(value, cls.dim_name)
-            value = _has_dimensions_validator(value, cls.dim)
+            value = _has_dimensions_validator(value, cls.dim, cls.expect_delta_unit)
             value = _enforce_float64(value)
         except TypeError as err:
             details = InitErrorDetails(type="value_error", ctx={"error": str(err)})
@@ -521,12 +536,18 @@ class _DimensionedType(metaclass=ABCMeta):
                         value = _unit_inference_validator(
                             value, vec_cls.type.dim_name, is_array=True
                         )
-                    value = _unit_array_validator(value, vec_cls.type.dim)
+                    value = _unit_array_validator(
+                        value, vec_cls.type.dim, vec_cls.type.expect_delta_unit
+                    )
 
                     if kwargs.get("allow_inf_nan", False) is False:
                         value = _nan_inf_vector_validator(value)
 
-                    value = _has_dimensions_validator(value, vec_cls.type.dim)
+                    value = _has_dimensions_validator(
+                        value,
+                        vec_cls.type.dim,
+                        vec_cls.type.expect_delta_unit,
+                    )
 
                     return value
                 except TypeError as err:
@@ -689,6 +710,7 @@ class _DeltaTemperatureType(_DimensionedType):
 
     dim = udim.temperature
     dim_name = "temperature"
+    expect_delta_unit = True
 
 
 DeltaTemperatureType = Annotated[
@@ -931,6 +953,7 @@ class _Flow360BaseUnit(_DimensionedType):
         # pylint: disable=invalid-name
         class _Units:
             dimensions = self.dimension_type.dim
+            base_offset = 0.0
 
             def __str__(self):
                 return f"{parent_self.unit_name}"
@@ -1125,7 +1148,10 @@ class Flow360TimeUnit(_Flow360BaseUnit):
 
 
 class Flow360TemperatureUnit(_Flow360BaseUnit):
-    """:class: Flow360TemperatureUnit"""
+    """
+    :class: Flow360TemperatureUnit.
+    This is absolute temperature because temperature is scaled with Kelvin temperature.
+    """
 
     dimension_type = AbsoluteTemperatureType
     unit_name = "flow360_temperature_unit"
