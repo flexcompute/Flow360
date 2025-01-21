@@ -144,6 +144,8 @@ class NavierStokesSolver(GenericSolverSettings):
         + "updated every pseudo step.",
     )
 
+    wall_resolution_length_scale_multiplier: Optional[PositiveFloat] = None
+
 
 class SpalartAllmarasModelConstants(Flow360BaseModel):
     """
