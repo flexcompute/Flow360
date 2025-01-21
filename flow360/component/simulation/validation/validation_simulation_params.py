@@ -4,7 +4,7 @@ validation for SimulationParams
 
 from typing import get_args
 
-from flow360.component.simulation.models.solver_numerics import NoneSolver
+from flow360.component.simulation.models.solver_numerics import KOmegaSST, NoneSolver
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (
@@ -227,6 +227,25 @@ def _check_unsteadiness_to_use_hybrid_model(v):
 
     if run_hybrid_model and v.time_stepping is not None and isinstance(v.time_stepping, Steady):
         raise ValueError("hybrid RANS-LES model can only be used in unsteady simulations.")
+
+    return v
+
+# pylint: disable=invalid-name
+def _check_support_for_ZDES(v):
+    models = v.models
+
+    if models:
+        for model in models:
+            if isinstance(model, Fluid):
+                turbulence_model_solver = model.turbulence_model_solver
+                if (
+                    isinstance(turbulence_model_solver, KOmegaSST)
+                    and turbulence_model_solver.hybrid_model is not None
+                    and turbulence_model_solver.hybrid_model.shielding_function == "ZDES"
+                ):
+                    raise ValueError(
+                        "ZDES is currently only supported with Spalart-Allmaras turbulence model."
+                    )
 
     return v
 
