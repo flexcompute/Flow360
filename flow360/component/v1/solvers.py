@@ -206,6 +206,8 @@ class NavierStokesSolver(GenericFlowSolverSettings):
         default=[], alias="lowDissipationControlFactors"
     )
 
+    wall_resolution_length_scale_multiplier: Optional[pd.PositiveFloat] = 1.0
+
     if Flags.beta_features():
         debug_type: Optional[
             Literal[
