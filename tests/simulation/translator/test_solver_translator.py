@@ -19,6 +19,7 @@ from flow360.component.simulation.models.surface_models import (
     MassFlowRate,
     Outflow,
     Pressure,
+    SlaterPorousBleed,
     SlipWall,
     Wall,
 )
@@ -492,6 +493,11 @@ def test_boundaries():
                     name="outflow-3",
                     surfaces=Surface(name="boundary_name_F"),
                     spec=Mach(0.3),
+                ),
+                Outflow(
+                    name="slater-porous-bleed",
+                    surfaces=Surface(name="boundary_name_G"),
+                    spec=SlaterPorousBleed(static_pressure=12.0 * u.psi, porosity=0.49),
                 ),
             ],
         )

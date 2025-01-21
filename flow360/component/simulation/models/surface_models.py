@@ -132,13 +132,18 @@ class Pressure(SingleAttributeModel):
 
 class SlaterPorousBleed(Flow360BaseModel):
     """
-    :class:`SlaterBleedPressure` class to specify the static pressure of the Slater bleed model
-    `Outflow` boundary condition via :py:attr:`Outflow.spec`.
+    :class:`SlaterPorousBleed` class to specify the static pressure of the Slater porous
+    bleed model `Outflow` boundary condition via :py:attr:`Outflow.spec`. This model is
+    often used for supersonic porous bleed regions, and used a porosity and static
+    pressure ratio to control the flow out of a porous bleed region.
 
     Example
     -------
+    - Specify a static pressure of 1.01e6 Pascals at the slater bleed boundary, and
+      set the porosity of the surface to 0.4 (40%).
 
-    >>> fl.SlaterPorousBleed(value = 1.01e6 * fl.u.Pa)
+    >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
+                             porosity = 0.4)
 
     ====
     """
@@ -146,9 +151,7 @@ class SlaterPorousBleed(Flow360BaseModel):
     type_name: Literal["SlaterPorousBleed"] = pd.Field("SlaterPorousBleed", frozen=True)
     # pylint: disable=no-member
     static_pressure: PressureType.Positive = pd.Field(description="The static pressure value.")
-    porosity: float = pd.Field(
-        gt=0, le=1, description="The porosity of the bleed region. Range [0,1]."
-    )
+    porosity: float = pd.Field(gt=0, le=1, description="The porosity of the bleed region.")
 
 
 class MassFlowRate(SingleAttributeModel):
