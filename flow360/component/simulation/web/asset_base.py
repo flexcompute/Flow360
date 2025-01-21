@@ -218,9 +218,13 @@ class AssetBase(metaclass=ABCMeta):
             params_dict = json.load(f)
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
-        asset_obj._webapi._download_file = _local_download_file  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        if not hasattr(asset_obj, "_webapi"):
+            # Handle local test case execution which has no valid ID
+            return asset_obj
+        asset_obj._webapi._download_file = _local_download_file
         if meta_data is not None:
-            asset_obj._webapi._set_meta(meta_data)  # pylint: disable=protected-access
+            asset_obj._webapi._set_meta(meta_data)
         return asset_obj
 
     def wait(self, timeout_minutes=60):
