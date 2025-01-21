@@ -36,7 +36,10 @@ def flow360():
 )
 @click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, dev.")
 @click.option(
-    "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in dev environment."
+    "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in DEV environment."
+)
+@click.option(
+    "--uat", prompt=False, type=bool, is_flag=True, help="Only use this apikey in UAT environment."
 )
 @click.option(
     "--suppress-submit-warning",
@@ -48,7 +51,7 @@ def flow360():
     type=bool,
     help="Toggle beta features support",
 )
-def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
+def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features):
     """
     Configure flow360.
     """
@@ -62,7 +65,12 @@ def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
             config = toml.loads(file_handler.read())
 
     if apikey is not None:
-        entry = {profile: {"apikey": apikey}} if not dev else {profile: {"dev": {"apikey": apikey}}}
+        if dev is True:
+            entry = {profile: {"dev": {"apikey": apikey}}}
+        elif uat is True:
+            entry = {profile: {"uat": {"apikey": apikey}}}
+        else:
+            entry = {profile: {"apikey": apikey}}
         dict_utils.merge_overwrite(config, entry)
         changed = True
 

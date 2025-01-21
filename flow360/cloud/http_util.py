@@ -31,6 +31,10 @@ def api_key_auth(request):
             raise Flow360AuthorisationError(
                 "API key not found for env=dev, please set it by commandline: flow360 configure --dev."
             )
+        if Env.current.name == "uat":
+            raise Flow360AuthorisationError(
+                "API key not found for env=uat, please set it by commandline: flow360 configure --uat."
+            )
         raise Flow360AuthorisationError(
             f"API key not found for profile={UserConfig.profile}, please set it by commandline: flow360 configure."
         )
