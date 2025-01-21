@@ -79,11 +79,31 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
     return params_as_dict
 
 
+def _24_11_8_to_25_2_0_update(params_as_dict):
+    # Migrates the old DDES turbulence model interface to the new hybrid_model format.
+    for model in params_as_dict.get("models", []):
+        turb_dict = model.get("turbulence_model_solver")
+        if not turb_dict:
+            continue
+
+        run_ddes = turb_dict.pop("DDES", None)
+        grid_size_for_LES = turb_dict.pop("grid_size_for_LES", None)
+
+        if run_ddes:
+            turb_dict["hybrid_model"] = {
+                "shielding_function": "DDES",
+                "grid_size_for_LES": grid_size_for_LES,
+            }
+
+    return params_as_dict
+
+
 UPDATE_MAP = [
     ("24.11.0", "24.11.1", _24_11_0_to_24_11_1_update),
     ("24.11.([1-5])$", "24.11.6", _no_update),
     ("24.11.6", "24.11.7", _24_11_6_to_24_11_7_update),
     ("24.11.7", "24.11.*", _no_update),
+    ("24.11.*", "24.11.9", _24_11_8_to_25_2_0_update),
 ]
 
 

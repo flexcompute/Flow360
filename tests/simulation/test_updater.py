@@ -64,3 +64,17 @@ def test_updater_from_24_11_0_6_to_24_11_7():
             1
         ]["private_attribute_id"]
     )
+
+
+def test_updater_from_24_11_8_to_24_11_9():
+    with open("../data/simulation/simulation_24_11_8.json", "r") as fp:
+        params = json.load(fp)
+
+    for idx_from in range(1, 9):
+        idx_to = 9
+        params_new = updater(
+            version_from=f"24.11.{idx_from}",
+            version_to=f"24.11.{idx_to}",
+            params_as_dict=params,
+        )
+        assert compare_dicts(params, params_new)
