@@ -19,13 +19,13 @@ def _no_update(params_as_dict):
 
 def _24_11_6_to_24_11_7_update(params_as_dict):
     # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
-    # to all occurance of the same PointArray
+    # to all occurrence of the same PointArray
     if params_as_dict.get("outputs") is None:
         return params_as_dict
 
     point_array_list = []
     for output in params_as_dict["outputs"]:
-        if output.get("entities", None):
+        if output.get("entities", None) and output["entities"].get("stored_entities", None):
             for entity in output["entities"]["stored_entities"]:
                 if (
                     entity.get("private_attribute_entity_type_name") == "PointArray"
