@@ -79,6 +79,7 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
     return params_as_dict
 
 
+# pylint: disable=invalid-name
 def _24_11_8_to_25_2_0_update(params_as_dict):
     # Migrates the old DDES turbulence model interface to the new hybrid_model format.
     for model in params_as_dict.get("models", []):
