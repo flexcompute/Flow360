@@ -233,6 +233,9 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
         flow360_conversion_unit_system.base_temperature = base_temperature
+        # Flow360 uses absolute temperature for scaling.
+        # So the base_delta_temperature and base_temperature can have same scaling.
+        flow360_conversion_unit_system.base_delta_temperature = base_temperature
 
     elif dimension == u.dimensions.area:
         base_length = get_base_length()

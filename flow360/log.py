@@ -1,6 +1,8 @@
 """Logging for Flow360."""
 
+import io
 import os
+import sys
 from datetime import datetime
 from typing import Union
 
@@ -262,6 +264,7 @@ def set_logging_console(stderr: bool = False) -> None:
     stderr : bool
         If False, logs are directed to stdout, otherwise to stderr.
     """
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     if "console" in log.handlers:
         previous_level = log.handlers["console"].level
     else:
@@ -305,7 +308,7 @@ def set_logging_file(
 
     try:
         # pylint: disable=consider-using-with,unspecified-encoding
-        file = open(fname, filemode)
+        file = open(fname, filemode, encoding="utf-8")
     except OSError:
         log.warning(f"File {fname} could not be opened. Logging to file disabled.")
         return

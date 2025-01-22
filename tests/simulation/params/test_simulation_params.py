@@ -173,7 +173,7 @@ def test_simulation_params_unit_conversion(get_the_param):
     assertions.assertAlmostEqual(converted.operating_condition.alpha.value, 0.5235987755982988)
     # TimeType
     assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.8888282)
-    # TemperatureType
+    # AbsoluteTemperatureType
     assertions.assertAlmostEqual(
         converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.368
     )
@@ -251,6 +251,17 @@ def test_standard_atmosphere():
     for alt, temp_offset, temp, density, pressure, viscosity in ref_data:
         atm = ThermalState.from_standard_atmosphere(
             altitude=alt * u.m, temperature_offset=temp_offset * u.K
+        )
+
+        assert atm.temperature == pytest.approx(temp, rel=1e-6)
+        assert atm.density == pytest.approx(density, rel=1e-4)
+        assert atm.pressure == pytest.approx(pressure, rel=1e-4)
+        assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
+
+    for alt, temp_offset, temp, density, pressure, viscosity in ref_data:
+        delta_temp_in_F = (temp_offset * u.K).in_units("delta_degF")
+        atm = ThermalState.from_standard_atmosphere(
+            altitude=alt * u.m, temperature_offset=delta_temp_in_F
         )
 
         assert atm.temperature == pytest.approx(temp, rel=1e-6)
@@ -343,3 +354,23 @@ def test_unit_system_conversion(get_the_param):
                 validate_proper_unit(item)
 
     validate_proper_unit(converted_json_dict)
+
+
+def test_delta_temperature_scaling():
+    with CGS_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                thermal_state=ThermalState.from_standard_atmosphere(
+                    temperature_offset=123 * u.delta_degF
+                )
+            )
+        )
+    reference_temperature = param.operating_condition.thermal_state.temperature.to("K")
+
+    scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
+    processed_param = param.preprocess(mesh_unit=1 * u.m)
+
+    assert (
+        processed_param.operating_condition.thermal_state.temperature_offset.value
+        == scaled_temperature_offset
+    )
