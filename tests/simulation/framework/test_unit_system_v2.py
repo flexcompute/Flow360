@@ -695,7 +695,7 @@ def test_unit_system_init():
         "angle": {"value": 1.0, "units": "rad"},
         "time": {"value": 1.0, "units": "s"},
         "temperature": {"value": 1.0, "units": "K"},
-        "temperature_difference": {"value": 1.0, "units": "K"},
+        "delta_temperature": {"value": 1.0, "units": "K"},
         "velocity": {"value": 1.0, "units": "m/s"},
         "area": {"value": 1.0, "units": "m**2"},
         "force": {"value": 1.0, "units": "N"},

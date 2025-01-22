@@ -140,7 +140,6 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
     def get_base_temperature():
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_temperature = params.operating_condition.thermal_state.temperature.to("K").v.item()
-        print(">>> my base temperature is ", base_temperature)
         return base_temperature
 
     def get_base_velocity():
@@ -239,12 +238,8 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
         base_temperature = get_base_temperature()
         flow360_conversion_unit_system.base_temperature = base_temperature
         # Flow360 uses absolute temperature for scaling.
-        # So the base_temperature_difference and base_temperature can have same scaling.
-        flow360_conversion_unit_system.base_temperature_difference = base_temperature
-        print(
-            ">>> base_temperature_difference = ",
-            flow360_conversion_unit_system.base_temperature_difference,
-        )
+        # So the base_delta_temperature and base_temperature can have same scaling.
+        flow360_conversion_unit_system.base_delta_temperature = base_temperature
 
     elif dimension == u.dimensions.area:
         base_length = get_base_length()
