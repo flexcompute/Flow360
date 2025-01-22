@@ -28,11 +28,11 @@ from flow360.component.simulation.primitives import (
     SurfacePair,
 )
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
     HeatFluxType,
     LengthType,
     MassFlowRateType,
     PressureType,
-    TemperatureType,
 )
 
 # pylint: disable=fixme
@@ -90,7 +90,7 @@ class Temperature(SingleAttributeModel):
 
     type_name: Literal["Temperature"] = pd.Field("Temperature", frozen=True)
     # pylint: disable=no-member
-    value: Union[StringExpression, TemperatureType.Positive] = pd.Field(
+    value: Union[StringExpression, AbsoluteTemperatureType] = pd.Field(
         description="The temperature value."
     )
 
@@ -378,7 +378,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     name: Optional[str] = pd.Field(None, description="Name of the `Inflow` boundary condition.")
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     # pylint: disable=no-member
-    total_temperature: TemperatureType.Positive = pd.Field(
+    total_temperature: AbsoluteTemperatureType = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
     )
     velocity_direction: Optional[Axis] = pd.Field(
