@@ -131,6 +131,30 @@ class Pressure(SingleAttributeModel):
     value: PressureType.Positive = pd.Field(description="The static pressure value.")
 
 
+class SlaterPorousBleed(Flow360BaseModel):
+    """
+    :class:`SlaterPorousBleed` class to specify the static pressure of the Slater porous
+    bleed model `Outflow` boundary condition via :py:attr:`Outflow.spec`. This model is
+    often used for supersonic porous bleed regions, and used a porosity and static
+    pressure ratio to control the flow out of a porous bleed region.
+
+    Example
+    -------
+    - Specify a static pressure of 1.01e6 Pascals at the slater bleed boundary, and
+      set the porosity of the surface to 0.4 (40%).
+
+    >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
+                             porosity = 0.4)
+
+    ====
+    """
+
+    type_name: Literal["SlaterPorousBleed"] = pd.Field("SlaterPorousBleed", frozen=True)
+    # pylint: disable=no-member
+    static_pressure: PressureType.Positive = pd.Field(description="The static pressure value.")
+    porosity: float = pd.Field(gt=0, le=1, description="The porosity of the bleed region.")
+
+
 class MassFlowRate(SingleAttributeModel):
     """
     :class:`MassFlowRate` class to specify the mass flow rate for `Inflow` or `Outflow`
@@ -328,14 +352,23 @@ class Outflow(BoundaryBase):
       ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s)
       ... )
 
+    - Define outflow boundary condition with Slater porous bleed model::
+
+      >>> fl.Outflow(
+      ...     surfaces=volume_mesh["fluid/bleed1"],
+      ...     spec=fl.SlaterPorousBleed(static_pressure = 0.99e6 * fl.u.Pa,
+      ...                               porosity = 0.4)
+      ... )
+
     ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Outflow` boundary condition.")
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
-    spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(
+    spec: Union[Pressure, MassFlowRate, Mach, SlaterPorousBleed] = pd.Field(
         discriminator="type_name",
-        description="Specify the static pressure, mass flow rate or Mach number at the `Outflow` boundary.",
+        description="Specify the static pressure, mass flow rate, Mach number, or "
+        + "SlaterPorousBleed parameters at the `Outflow` boundary.",
     )
 
 

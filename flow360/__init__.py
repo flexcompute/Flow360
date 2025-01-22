@@ -55,6 +55,7 @@ from flow360.component.simulation.models.surface_models import (
     Periodic,
     Pressure,
     Rotational,
+    SlaterPorousBleed,
     SlipWall,
     SymmetryPlane,
     Temperature,

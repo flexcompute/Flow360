@@ -88,7 +88,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "For input variables that already specified the source in the name (like bet_NUM_torque) "
         + "this entry does not have any effect.",
     )
-    output_target: Optional[Union[Cylinder, GenericVolume]] = pd.Field(
+    output_target: Optional[Union[Cylinder, GenericVolume, Surface]] = pd.Field(
         None,
         description="The target to which the output variables belong to. For example this can be the rotating "
         + "volume zone name. Only one output target is supported per user defined dynamics instance. Only "
