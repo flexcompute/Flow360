@@ -78,7 +78,7 @@ u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.
 u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
 u.unit_systems.imperial_unit_system["inverse_length"] = u.ft ** (-1)
 
-# parsed by unyt as 'ΔdegF and cannot find the unit. Had to use expr instead
+# u.Unit("delta_degF") is parsed by unyt as 'ΔdegF and cannot find the unit. Had to use expr instead.
 u.unit_systems.imperial_unit_system["temperature_difference"] = u.Unit("delta_degF").expr
 
 
@@ -950,7 +950,6 @@ class _Flow360BaseUnit(_DimensionedType):
         # pylint: disable=invalid-name
         class _Units:
             dimensions = self.dimension_type.dim
-            base_offset = 0.0
 
             def __str__(self):
                 return f"{parent_self.unit_name}"

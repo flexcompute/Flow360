@@ -353,3 +353,23 @@ def test_unit_system_conversion(get_the_param):
                 validate_proper_unit(item)
 
     validate_proper_unit(converted_json_dict)
+
+
+def test_delta_temperature_scaling():
+    with CGS_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                thermal_state=ThermalState.from_standard_atmosphere(
+                    temperature_offset=123 * u.delta_degF
+                )
+            )
+        )
+    reference_temperature = param.operating_condition.thermal_state.temperature.to("K")
+
+    scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
+    processed_param = param.preprocess(mesh_unit=1 * u.m)
+
+    assert (
+        processed_param.operating_condition.thermal_state.temperature_offset.value
+        == scaled_temperature_offset
+    )

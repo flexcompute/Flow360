@@ -24,7 +24,7 @@ def operating_condition_from_mach_muref(
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: AbsoluteTemperatureType.Positive = 288.15 * u.K,
+    temperature: AbsoluteTemperatureType = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
