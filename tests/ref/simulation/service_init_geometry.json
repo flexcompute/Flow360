@@ -1,5 +1,5 @@
 {
-  "version": "24.11.0",
+  "version": "24.11.8",
   "unit_system": {
     "name": "SI"
   },
@@ -150,6 +150,10 @@
         "units": "W/m**2"
       },
       "type_name": "HeatFlux"
+    },
+    "roughness_height": {
+      "value": 0.0,
+      "units": "m"
     }
   },
   {

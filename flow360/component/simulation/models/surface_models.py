@@ -29,6 +29,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import (
     HeatFluxType,
+    LengthType,
     MassFlowRateType,
     PressureType,
     TemperatureType,
@@ -275,6 +276,10 @@ class Wall(BoundaryBase):
         HeatFlux(0 * u.W / u.m**2),
         discriminator="type_name",
         description="Specify the heat flux or temperature at the `Wall` boundary.",
+    )
+    roughness_height: LengthType.NonNegative = pd.Field(
+        0 * u.m,
+        description="Equivalant sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
 
 

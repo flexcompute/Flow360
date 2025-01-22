@@ -20,6 +20,10 @@ import unyt.dimensions as udim
 from pydantic import PlainSerializer
 from pydantic_core import InitErrorDetails, core_schema
 
+# because unit_system.py is the only interface to our unit functions, you can import unit_quantity directly
+# "from unit_system import unyt_quantity" instead of knowing existence of unyt package.
+from unyt import unyt_quantity  # pylint: disable=unused-import
+
 from flow360.log import log
 from flow360.utils import classproperty
 
@@ -859,6 +863,33 @@ class _FrequencyType(_DimensionedType):
 FrequencyType = Annotated[_FrequencyType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+DimensionedTypes = Union[
+    LengthType,
+    AngleType,
+    MassType,
+    TimeType,
+    TemperatureType,
+    VelocityType,
+    AreaType,
+    ForceType,
+    PressureType,
+    DensityType,
+    ViscosityType,
+    PowerType,
+    MomentType,
+    AngularVelocityType,
+    HeatFluxType,
+    HeatSourceType,
+    SpecificHeatCapacityType,
+    ThermalConductivityType,
+    InverseAreaType,
+    InverseLengthType,
+    MassFlowRateType,
+    SpecificEnergyType,
+    FrequencyType,
+]
+
+
 def _iterable(obj):
     try:
         len(obj)
@@ -906,7 +937,7 @@ class _Flow360BaseUnit(_DimensionedType):
 
     @classmethod
     def factory(cls, value, unit_name, dtype=np.float64):
-        """Returns specialised class object based on unit name
+        """Returns specialized class object based on unit name
 
         Parameters
         ----------
@@ -917,13 +948,13 @@ class _Flow360BaseUnit(_DimensionedType):
 
         Returns
         -------
-        Specialised _Flow360BaseUnit
-            Returns specialised _Flow360BaseUnit such as unit_name equals provided unit_name
+        Specialized _Flow360BaseUnit
+            Returns specialized _Flow360BaseUnit such as unit_name equals provided unit_name
 
         Raises
         ------
         ValueError
-            If specialised class was not found based on provided unit_name
+            If specialized class was not found based on provided unit_name
         """
         for sub_classes in _Flow360BaseUnit.__subclasses__():
             if sub_classes.unit_name == unit_name:

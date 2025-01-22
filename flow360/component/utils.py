@@ -2,15 +2,18 @@
 Utility functions
 """
 
+import datetime
 import itertools
 import os
 import re
 import shutil
+import textwrap
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Generic, Iterable, Literal, Protocol, TypeVar
+from typing import Literal, Optional
 
+import pydantic as pd
 import zstandard as zstd
 
 from ..accounts_utils import Accounts
@@ -109,6 +112,37 @@ def is_valid_uuid(id, allow_none=False):
             raise ValueError(f"{id} is not a valid UUID.")
     except ValueError as exc:
         raise Flow360ValueError(f"{id} is not a valid UUID.") from exc
+
+
+def get_short_asset_id(full_asset_id: str, num_character: int = 7) -> str:
+    """Generate the short asset id given the minimum number of the characters excluding hyphen and prefix"""
+    full_asset_split = full_asset_id.split("-")
+    short_id = full_asset_split[0]
+    count = 0
+    for str_split in full_asset_split[1:]:
+        if len(str_split) + count <= num_character:
+            short_id += f"-{str_split}"
+            count += len(str_split)
+            continue
+        short_id += f"-{str_split[:num_character-count]}"
+        break
+
+    return short_id.rstrip("-")
+
+
+def wrapstring(long_str: str, str_length: str = None):
+    """ "Wrap a long string given a preset string length"""
+    if str_length:
+        return textwrap.fill(text=long_str, width=str_length, break_long_words=True)
+    return long_str
+
+
+def parse_datetime(dt_str: str, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> datetime.datetime:
+    """Parse the datetime from the API call."""
+    try:
+        return datetime.datetime.strptime(dt_str, fmt)
+    except ValueError:
+        return datetime.datetime.strptime(dt_str, fmt.replace("%S.%f", "%S"))
 
 
 def beta_feature(feature_name: str):
@@ -591,108 +625,70 @@ def storage_size_formatter(size_in_bytes):
     return f"{size_in_bytes / (1024 ** 3):.2f} GB"
 
 
-# pylint: disable=too-few-public-methods
-class HasId(Protocol):
+class AssetShortID(pd.BaseModel):
     """
-    Protocol for objects that have an `id` attribute.
+    AssetShortID model for retrieving an asset from the cloud through short ID (full ID scenario included)
+    The asset id and asset type are validated before the retrieval.
 
     Attributes
     ----------
-    id : str
-        Unique identifier for the asset.
+    asset_id : Optional[str]
+        Unique identifier for the asset. If not provided, the latest asset of this asset_type
+        will be retrieved.
+
+    asset_type: str
+        The asset type for retrieval.
+
+    min_length_short_id: pd.PositiveInt
+        The minimum length of the asset id (after the asset type prefix) allowed for retrieving the asset.
     """
 
-    id: str
+    asset_id: Optional[str] = pd.Field(None)
+    asset_type: Literal["Project", "Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+    min_length_short_id: pd.PositiveInt = pd.Field(7)
 
+    @pd.field_validator("asset_id", mode="after")
+    @classmethod
+    def remove_leading_trailing_nonalphanumeric(cls, value):
+        """Remove leading and trailing non-alphanumeric characters from string."""
+        if value:
+            return re.sub(r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "", value)
+        return value
 
-AssetT = TypeVar("AssetT", bound=HasId)
-
-
-class ProjectAssetCache(Generic[AssetT]):
-    """
-    A cache to manage project assets with a unique ID system.
-
-    Attributes
-    ----------
-    current_asset_id : str, optional
-        The ID of the currently set asset.
-    asset_cache : dict of str to AssetT
-        Dictionary storing assets with their IDs as keys.
-    """
-
-    current_asset_id: str = None
-    asset_cache: dict[str, AssetT] = {}
-
-    def get_asset(self, asset_id: str = None) -> AssetT:
+    @pd.model_validator(mode="after")
+    def check_asset_id_type(self):
         """
-        Retrieve an asset from the cache by ID.
-
-        Parameters
-        ----------
-        asset_id : str, optional
-            The ID of the asset to retrieve. If None, retrieves the asset with `current_id`.
-
-        Returns
-        -------
-        AssetT
-            The asset associated with the specified `asset_id`.
-
-        Raises
-        ------
-        Flow360ValueError
-            If the cache is empty or if the asset is not found.
+        Checks the length of asset_id and if asset id matches the asset type.
         """
-        if not self.asset_cache:
-            raise Flow360ValueError("Cache is empty, no assets are available")
 
-        asset = self.asset_cache.get(self.current_asset_id if not asset_id else asset_id)
+        if self.asset_id is None:
+            return self
+        prefix_map = {
+            "Project": "prj",
+            "Geometry": "geo",
+            "SurfaceMesh": "sm",
+            "VolumeMesh": "vm",
+            "Case": "case",
+        }
 
-        if not asset:
-            raise Flow360ValueError(f"{asset_id} is not available in the project.")
+        # pylint: disable=no-member
+        query_id_split = self.asset_id.split("-")
+        if len(query_id_split) < 2:
+            raise Flow360ValueError(
+                f"The supplied ID ({self.asset_id}) does not have a proper surffix-ID structure."
+            )
 
-        return asset
+        if query_id_split[0] != prefix_map[self.asset_type]:
+            raise Flow360ValueError(
+                f"The input asset ID ({self.asset_id}) is not a {self.asset_type} ID."
+            )
 
-    def get_ids(self) -> Iterable[str]:
-        """
-        Retrieve all asset IDs in the cache.
-
-        Returns
-        -------
-        Iterable[str]
-            An iterable of asset IDs.
-        """
-        return list(self.asset_cache.keys())
-
-    def add_asset(self, asset: AssetT):
-        """
-        Add an asset to the cache.
-
-        Parameters
-        ----------
-        asset : AssetT
-            The asset to add. Must have a unique `id` attribute.
-        """
-        self.asset_cache[asset.id] = asset
-        self.current_asset_id = asset.id
-
-    def set_id(self, asset_id: str):
-        """
-        Set the current ID to the given `asset_id`, if it exists in the cache.
-
-        Parameters
-        ----------
-        asset_id : str
-            The ID to set as the current ID.
-
-        Raises
-        ------
-        Flow360ValueError
-            If the specified `asset_id` does not exist in the cache.
-        """
-        if asset_id not in self.asset_cache:
-            raise Flow360ValueError(f"{asset_id} is not available in the project.")
-
-        self.current_asset_id = asset_id
+        query_id_processed = "".join(query_id_split[1:])
+        if len(query_id_processed) < self.min_length_short_id:
+            raise Flow360ValueError(
+                f"The input asset ID ({self.asset_id}) is too short to retrieve the correct asset."
+            )
+        return self
 
 
 def _local_download_overwrite(local_storage_path, class_name):
@@ -709,7 +705,71 @@ def _local_download_overwrite(local_storage_path, class_name):
                 f"{class_name}.from_local_storage()."
             )
         new_local_file = get_local_filename_and_create_folders(file_name, to_file, to_folder)
+        expected_local_file = os.path.abspath(expected_local_file)
+        new_local_file = os.path.abspath(new_local_file)
         if new_local_file != expected_local_file:
             shutil.copy(expected_local_file, new_local_file)
 
     return _local_download_file
+
+
+class LocalResourceCache:
+    """
+    A cache for preloading and storing resources to avoid redundant construction.
+
+    Class Attributes
+    ----------------
+    _storage : dict
+        A class-level dictionary storing resources keyed by their unique identifiers.
+    """
+
+    _storage = {}
+
+    def __init__(self) -> None:
+        """
+        Initializes the resource cache instance.
+        """
+
+    def add(self, resource):
+        """
+        Adds a resource to the cache.
+
+        Parameters
+        ----------
+        resource : object
+            The resource object to add to the cache. Must have an 'id' attribute.
+        """
+        self._storage[resource.id] = resource
+
+    def __getitem__(self, item):
+        """
+        Retrieves a resource from the cache using dictionary-like access.
+
+        Parameters
+        ----------
+        item : hashable
+            The unique identifier of the resource to retrieve.
+
+        Returns
+        -------
+        object or None
+            The resource associated with the given identifier, or None if not found.
+        """
+        return self._storage.get(item)
+
+
+def _naming_pattern_handler(pattern: str) -> re.Pattern[str]:
+    """
+    Handler of the user supplied naming pattern.
+    This enables both glob pattern and regexp pattern.
+    If "*" is found in the pattern, it will be treated as a glob pattern.
+    """
+
+    if "*" in pattern:
+        # Convert wildcard to regex pattern
+        regex_pattern = "^" + pattern.replace("*", ".*") + "$"
+    else:
+        regex_pattern = f"^{pattern}$"  # Exact match if no '*'
+
+    regex = re.compile(regex_pattern)
+    return regex

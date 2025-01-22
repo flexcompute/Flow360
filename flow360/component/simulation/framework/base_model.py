@@ -658,7 +658,7 @@ class Flow360BaseModel(pd.BaseModel):
             Full config definition as Flow360Params.
 
         mesh_unit: LengthType.Positive
-            The lenght represented by 1 unit length in the mesh.
+            The length represented by 1 unit length in the mesh.
 
         exclude: List[str] (optional)
             List of fields to not convert to solver dimensions.

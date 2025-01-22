@@ -8,6 +8,7 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.conversion import unit_converter
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
@@ -50,9 +51,13 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
+    DimensionedTypes,
+    LengthType,
     UnitSystem,
     UnitSystemType,
+    is_flow360_unit,
     unit_system_manager,
+    unyt_quantity,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
@@ -71,6 +76,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
+    _check_time_average_output,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -120,7 +126,7 @@ class _ParamModelBase(Flow360BaseModel):
 
         return kwargs
 
-    def _init_no_context(self, filename, **kwargs):
+    def _init_no_context(self, filename, file_content, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
         """
@@ -130,7 +136,10 @@ class _ParamModelBase(Flow360BaseModel):
                 "unit context must not be used."
             )
 
-        model_dict = self._handle_file(filename=filename, **kwargs)
+        if filename is not None:
+            model_dict = self._handle_file(filename=filename, **kwargs)
+        else:
+            model_dict = self._handle_dict(**file_content)
 
         version = model_dict.pop("version", None)
         unit_system = model_dict.get("unit_system")
@@ -157,9 +166,9 @@ class _ParamModelBase(Flow360BaseModel):
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
     # TODO: avoid overloading the __init__ so IDE can proper prompt root level keys
-    def __init__(self, filename: str = None, **kwargs):
-        if filename is not None:
-            self._init_no_context(filename, **kwargs)
+    def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
+        if filename is not None or file_content is not None:
+            self._init_no_context(filename, file_content, **kwargs)
         else:
             self._init_with_context(**kwargs)
 
@@ -275,6 +284,72 @@ class SimulationParams(_ParamModelBase):
             converted_param.unit_system = UnitSystem.from_dict(**{"name": unit_system})
         return converted_param
 
+    @pd.validate_call
+    def convert_unit(
+        self, value: DimensionedTypes, target_system: str, length_unit: Optional[LengthType] = None
+    ):
+        """
+        Converts a given value to the specified unit system.
+
+        This method takes a dimensioned quantity and converts it from its current unit system
+        to the target unit system, optionally considering a specific length unit for the conversion.
+
+        Parameters
+        ----------
+        value : DimensionedTypes
+            The dimensioned quantity to convert. This should have units compatible with Flow360's
+            unit system.
+        target_system : str
+            The target unit system for conversion. Common values include "SI", "Imperial", flow360".
+        length_unit : LengthType, optional
+            The length unit to use for conversion. If not provided, the method defaults to
+            the project length unit stored in the `private_attribute_asset_cache`.
+
+        Returns
+        -------
+        DimensionedTypes
+            The converted value in the specified target unit system.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If the input unit system is not compatible with the target system, or if the required
+            length unit is missing.
+
+        Examples
+        --------
+        Convert a value from the current system to Flow360's V2 unit system:
+
+        >>> simulation_params = SimulationParams()
+        >>> value = unyt_quantity(1.0, "meters")
+        >>> converted_value = simulation_params.convert_unit(value, target_system="flow360")
+        >>> print(converted_value)
+        1.0 (flow360_length_unit)
+        """
+
+        if length_unit is None:
+            # pylint: disable=no-member
+            length_unit = self.private_attribute_asset_cache.project_length_unit
+
+        flow360_conv_system = unit_converter(
+            value.units.dimensions,
+            length_unit,
+            params=self,
+            required_by=[
+                f"{self.__class__.__name__}.convert_unit(value=, target_system=, length_unit=)"
+            ],
+        )
+
+        if target_system == "flow360":
+            target_system = "flow360_v2"
+
+        if is_flow360_unit(value) and not isinstance(value, unyt_quantity):
+            converted = value.in_base(target_system, flow360_conv_system)
+        else:
+            value.units.registry = flow360_conv_system.registry  # pylint: disable=no-member
+            converted = value.in_base(unit_system=target_system)
+        return converted
+
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
     @classmethod
@@ -353,6 +428,11 @@ class SimulationParams(_ParamModelBase):
     def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
         """Ensure that all volume zones have the rotating_reference_frame_model flag with correct values"""
         return _check_and_add_noninertial_reference_frame_flag(params)
+
+    @pd.model_validator(mode="after")
+    def check_time_average_output(params):
+        """Only allow TimeAverage output field in the unsteady simulations"""
+        return _check_time_average_output(params)
 
     def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
