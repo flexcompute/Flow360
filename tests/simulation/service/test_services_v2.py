@@ -759,3 +759,29 @@ def test_CGS_unit_system_conversion():
 
     # General comparison
     compare_dict_to_ref(dict_to_convert, "./ref/unit_system_converted_CGS.json")
+
+
+def test_SI_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, new_unit_system="SI")
+    SI_units = {"m", "kg", "s", "K", "rad", "degree"}
+
+    validate_proper_unit(dict_to_convert, SI_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "K"
+    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # General comparison
+    compare_dict_to_ref(dict_to_convert, "data/simulation_param.json")

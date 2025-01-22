@@ -589,57 +589,9 @@ def generate_process_json(
     return surface_mesh_res, volume_mesh_res, case_res
 
 
-# def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"]):
-#     """
-#     Recursively traverse a nested structure of dicts/lists.
-#     If a dict has exactly the structure {'value': XX, 'units': XX},
-#     Try to convert to the new unit system
-#     """
-
-#     def _convert_unit(data, new_unit_system):
-#         # Get angle unit from the input because we do not want to change it.
-#         angle_unit = "degree" if re.search(r"\bdegree\b", data["units"]) else "rad"
-#         if new_unit_system == "SI":
-#             u.UnitSystem("__Converter", "m", "kg", "s", angle_unit=angle_unit)
-#         elif new_unit_system == "Imperial":
-#             u.UnitSystem(
-#                 "__Converter", "ft", "lb", "s", angle_unit=angle_unit, temperature_unit="degF"
-#             )
-#         elif new_unit_system == "CGS":
-#             u.UnitSystem("__Converter", "cm", "g", "s", angle_unit=angle_unit)
-#         else:
-#             raise ValueError(f"Unknown input unit system: {new_unit_system}")
-#         old_unit = u.Unit(data["units"])
-
-#         if isinstance(data["value"], Collection):
-#             new_value = []
-#             for value in data["value"]:
-#                 value = (value * old_unit).in_base("__Converter").value
-#                 new_value.append(float(value))
-#             data["value"] = new_value
-#         else:
-#             data["value"] = float((data["value"] * old_unit).in_base("__Converter").value)
-
-#         convert_constant = (1 * old_unit).in_base("__Converter")
-#         data["units"] = str(convert_constant.units.expr)
-#         return data
-
-#     if isinstance(data, dict):
-#         # 1. Check if dict matches the desired pattern
-#         if set(data.keys()) == {"value", "units"}:
-#             data = _convert_unit(data=data, new_unit_system=new_unit_system)
-
-#         # 2. Otherwise, recurse into each item in the dictionary
-#         for _, val in data.items():
-#             change_unit_system(data=val, new_unit_system=new_unit_system)
-
-#     elif isinstance(data, list):
-#         # Recurse into each item in the list
-#         for _, item in enumerate(data):
-#             change_unit_system(data=item, new_unit_system=new_unit_system)
-
-
-def _convert_unit(*, data: dict, target_unit_system: u.UnitSystem, delta_temperature_unit: u.Unit):
+def _convert_unit_in_dict(
+    *, data: dict, target_unit_system: u.UnitSystem, delta_temperature_unit: u.Unit
+):
     # Get angle unit from the input because we do not want to change it.
     angle_unit = "degree" if re.search(r"\bdegree\b", data["units"]) else "rad"
     target_unit_system["angle"] = angle_unit
@@ -668,7 +620,7 @@ def _recursive_change_unit_system(*, data, target_unit_system, delta_temperature
     if isinstance(data, dict):
         # 1. Check if dict matches the desired pattern
         if set(data.keys()) == {"value", "units"}:
-            data = _convert_unit(
+            data = _convert_unit_in_dict(
                 data=data,
                 target_unit_system=target_unit_system,
                 delta_temperature_unit=delta_temperature_unit,
