@@ -76,7 +76,6 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
-    _check_support_for_ZDES,
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
 )
@@ -406,12 +405,6 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_hybrid_model(self):
         """Only allow hybrid RANS-LES output field for unsteady simulations"""
         return _check_unsteadiness_to_use_hybrid_model(self)
-
-    # pylint: disable=invalid-name
-    @pd.model_validator(mode="after")
-    def check_support_for_ZDES(self):
-        """Only allow ZDES shielding function for SpalartAllmaras turbulence model"""
-        return _check_support_for_ZDES(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
