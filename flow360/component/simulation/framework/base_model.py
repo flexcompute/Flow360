@@ -709,3 +709,53 @@ class Flow360BaseModel(pd.BaseModel):
                         )
 
         return self.__class__(**solver_values)
+
+    def convert_to_unit_system(
+        self,
+        *,
+        to_unit_system: Literal["SI", "Imperial", "CGS"],
+        exclude: List[str] = None,
+    ) -> Flow360BaseModel:
+        """
+        Loops through all fields and performs unit conversion to given unit system.
+        Separated from preprocess() to allow unit conversion only. preprocess may contain additonal processing.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Full config definition as Flow360Params.
+
+        exclude: List[str] (optional)
+            List of fields to not convert to solver dimensions.
+
+
+        Returns
+        -------
+        caller class
+            returns caller class with units all in flow360 base unit system
+        """
+
+        if exclude is None:
+            exclude = []
+
+        solver_values = self._convert_unit(
+            exclude=exclude,
+            to_unit_system=to_unit_system,
+        )
+        for property_name, value in self.__dict__.items():
+            if property_name in exclude:
+                continue
+            if isinstance(value, Flow360BaseModel):
+                solver_values[property_name] = value.convert_to_unit_system(
+                    exclude=exclude,
+                    to_unit_system=to_unit_system,
+                )
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, Flow360BaseModel):
+                        solver_values[property_name][i] = item.convert_to_unit_system(
+                            exclude=exclude,
+                            to_unit_system=to_unit_system,
+                        )
+
+        return self.__class__(**solver_values)

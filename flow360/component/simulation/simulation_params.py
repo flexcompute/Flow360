@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -62,6 +62,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
 )
