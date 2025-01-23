@@ -171,8 +171,7 @@ class Air(MaterialBase):
         PressureType.Positive
             The calculated pressure.
         """
-        if temperature.units is u.degC or temperature.units is u.degF:
-            temperature = temperature.to("K")
+        temperature = temperature.to("K")
         return density * self.gas_constant * temperature
 
     @pd.validate_call
