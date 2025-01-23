@@ -71,8 +71,8 @@ _HEAT_TRANSFER = "HeatTransfer"
 _HEAT_FLUX = "HeatFlux"
 _X = "X"
 _Y = "Y"
+_STRIDE = "stride"
 _CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
-_CD_PER_LENGTH = "CD_per_length"
 _CFx_PER_SPAN = "CFx_per_span"
 _CFz_PER_SPAN = "CFz_per_span"
 _CMy_PER_SPAN = "CMy_per_span"
@@ -156,8 +156,8 @@ class CaseDownloadable(Enum):
     BET_FORCES = "bet_forces_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
     LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
-    Y_SLICING_FORCE_DISTRIBUTION = "postprocess/Y_slicing_forceDistribution.csv"
-    X_SLICING_FORCE_DISTRIBUTION = "postprocess/X_slicing_forceDistribution.csv"
+    Y_SLICING_FORCE_DISTRIBUTION = "Y_slicing_forceDistribution.csv"
+    X_SLICING_FORCE_DISTRIBUTION = "X_slicing_forceDistribution.csv"
 
     # user defined:
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
@@ -793,8 +793,7 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         CaseDownloadable.X_SLICING_FORCE_DISTRIBUTION.value, frozen=True
     )
 
-    _variables: List[str] = [_CUMULATIVE_CD_CURVE, _CD_PER_LENGTH]
-    _filter_when_zero = [_CD_PER_LENGTH]
+    _variables: List[str] = [_CUMULATIVE_CD_CURVE]
     _x_columns: List[str] = [_X]
 
 
@@ -807,7 +806,7 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
 
     _variables: List[str] = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
     _filter_when_zero = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
-    _x_columns: List[str] = [_Y]
+    _x_columns: List[str] = [_Y, _STRIDE]
 
 
 class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel):
