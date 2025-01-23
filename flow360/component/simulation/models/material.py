@@ -171,6 +171,8 @@ class Air(MaterialBase):
         PressureType.Positive
             The calculated pressure.
         """
+        if temperature.units is u.degC or temperature.units is u.degF:
+            temperature = temperature.to("K")
         return density * self.gas_constant * temperature
 
     @pd.validate_call
@@ -188,6 +190,8 @@ class Air(MaterialBase):
         VelocityType.Positive
             The speed of sound at the specified temperature.
         """
+        if temperature.units is u.degC or temperature.units is u.degF:
+            temperature = temperature.to("K")
         return sqrt(self.specific_heat_ratio * self.gas_constant * temperature)
 
     @pd.validate_call
@@ -207,6 +211,8 @@ class Air(MaterialBase):
         ViscosityType.NonNegative
             The dynamic viscosity at the specified temperature.
         """
+        if temperature.units is u.degC or temperature.units is u.degF:
+            temperature = temperature.to("K")
         if isinstance(self.dynamic_viscosity, Sutherland):
             return self.dynamic_viscosity.get_dynamic_viscosity(temperature)
         return self.dynamic_viscosity

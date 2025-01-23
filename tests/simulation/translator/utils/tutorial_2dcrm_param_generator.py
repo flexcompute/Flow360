@@ -40,3 +40,59 @@ def get_2dcrm_tutorial_param():
         )
 
     return param
+
+
+@pytest.fixture()
+def get_2dcrm_tutorial_param_deg_c():
+    with SI_unit_system:
+        my_wall = Surface(name="1")
+        my_symmetry_plane = Surface(name="2")
+        my_freestream = Surface(name="3")
+        param = SimulationParams(
+            reference_geometry=ReferenceGeometry(
+                moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
+            ),
+            operating_condition=operating_condition_from_mach_reynolds(
+                mach=0.2,
+                reynolds=5e6,
+                temperature=-1.05 * u.degC,
+                alpha=16 * u.deg,
+                beta=0 * u.deg,
+                project_length_unit=1 * u.m,
+            ),
+            models=[
+                Wall(surfaces=[my_wall]),
+                SlipWall(entities=[my_symmetry_plane]),
+                Freestream(entities=[my_freestream]),
+            ],
+        )
+
+    return param
+
+
+@pytest.fixture()
+def get_2dcrm_tutorial_param_deg_f():
+    with SI_unit_system:
+        my_wall = Surface(name="1")
+        my_symmetry_plane = Surface(name="2")
+        my_freestream = Surface(name="3")
+        param = SimulationParams(
+            reference_geometry=ReferenceGeometry(
+                moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
+            ),
+            operating_condition=operating_condition_from_mach_reynolds(
+                mach=0.2,
+                reynolds=5e6,
+                temperature=30.11 * u.degF,
+                alpha=16 * u.deg,
+                beta=0 * u.deg,
+                project_length_unit=1 * u.m,
+            ),
+            models=[
+                Wall(surfaces=[my_wall]),
+                SlipWall(entities=[my_symmetry_plane]),
+                Freestream(entities=[my_freestream]),
+            ],
+        )
+
+    return param
