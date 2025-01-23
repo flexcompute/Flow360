@@ -35,47 +35,65 @@ udim.inverse_length = 1 / udim.length
 udim.mass_flow_rate = udim.mass / udim.time
 udim.specific_energy = udim.length**2 * udim.time ** (-2)
 udim.frequency = udim.time ** (-1)
-udim.delta_temperature = udim.temperature
 
 # pylint: disable=fixme
 # TODO: IIRC below is automatically derived once you define things above.
 # pylint: disable=no-member
 u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["moment"] = u.N * u.m
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["specific_heat_capacity"] = u.m**2 / u.s**2 / u.K
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
+# pylint: disable=no-member
 u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
-u.unit_systems.mks_unit_system["delta_temperature"] = u.K
 
 # pylint: disable=no-member
 u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["specific_heat_capacity"] = u.cm**2 / u.s**2 / u.K
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
+# pylint: disable=no-member
 u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
-u.unit_systems.cgs_unit_system["delta_temperature"] = u.K
 
 # pylint: disable=no-member
 u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["specific_heat_capacity"] = u.ft**2 / u.s**2 / u.K
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
+# pylint: disable=no-member
 u.unit_systems.imperial_unit_system["inverse_length"] = u.ft ** (-1)
-
-# u.Unit("delta_degF") is parsed by unyt as 'ΔdegF and cannot find the unit. Had to use expr instead.
-u.unit_systems.imperial_unit_system["delta_temperature"] = u.Unit("delta_degF").expr
 
 
 class UnitSystemManager:
@@ -126,37 +144,17 @@ def _dimensioned_type_serializer(x):
     return {"value": _encode_ndarray(x.value), "units": str(x.units)}
 
 
-def _check_if_input_has_delta_unit(quant):
-    """
-    Parse the input unit and see if it can be considered a delta unit. This only handles temperatures now.
-    """
-    is_input_delta_unit = (
-        str(quant.units) == str(u.Unit("delta_degC"))  # delta unit
-        or str(quant.units) == str(u.Unit("delta_degF"))  # delta unit
-        or str(quant.units) == "K"  # absolute temperature so it can be considered delta
-        or str(quant.units) == "R"  # absolute temperature so it can be considered delta
-        # Flow360 temperature scaled by absolute temperature, making it also absolute temperature
-        or str(quant.units) == "flow360_delta_temperature_unit"
-    )
-    return is_input_delta_unit
-
-
 # pylint: disable=no-member
-def _has_dimensions(quant, dim, expect_delta_unit: bool):
+def _has_dimensions(quant, dim):
     """
     Checks the argument has the right dimensionality.
     """
 
     try:
-        # Delta unit check only needed for temperature
-        # Note: direct unit comparison won't work. Unyt consider u.Unit("degC") == u.Unit("K") as True
-
-        is_input_delta_unit = _check_if_input_has_delta_unit(quant=quant)
         arg_dim = quant.units.dimensions
-
     except AttributeError:
         arg_dim = u.dimensionless
-    return arg_dim == dim and (is_input_delta_unit if expect_delta_unit else True)
+    return arg_dim == dim
 
 
 def _unit_object_parser(value, unyt_types: List[type]):
@@ -222,7 +220,7 @@ def _unit_inference_validator(value, dim_name, is_array=False):
     return value
 
 
-def _unit_array_validator(value, dim, expect_delta_unit: bool):
+def _unit_array_validator(value, dim):
     """
     Checks if units are provided for one component instead of entire object
 
@@ -238,8 +236,8 @@ def _unit_array_validator(value, dim, expect_delta_unit: bool):
     unyt_quantity or value
     """
 
-    if not _has_dimensions(value, dim, expect_delta_unit):
-        if any(_has_dimensions(item, dim, expect_delta_unit) for item in value):
+    if not _has_dimensions(value, dim):
+        if any(_has_dimensions(item, dim) for item in value):
             raise TypeError(
                 f"arg '{value}' has unit provided per component, "
                 "instead provide dimension for entire array."
@@ -247,14 +245,12 @@ def _unit_array_validator(value, dim, expect_delta_unit: bool):
     return value
 
 
-def _has_dimensions_validator(value, dim, expect_delta_unit: bool):
+def _has_dimensions_validator(value, dim):
     """
     Checks if value has expected dimension and raises TypeError
     """
-    if not _has_dimensions(value, dim, expect_delta_unit):
-        if expect_delta_unit:
-            raise TypeError(f"arg '{value}' does not match unit representing difference in {dim}.")
-        raise TypeError(f"arg '{value}' does not match {dim} dimension.")
+    if not _has_dimensions(value, dim):
+        raise TypeError(f"arg '{value}' does not match {dim}")
     return value
 
 
@@ -296,9 +292,6 @@ class _DimensionedType(metaclass=ABCMeta):
     dim_name = None
     has_defaults = True
 
-    # For temperature, the conversion is different if it is a delta or absolute
-    expect_delta_unit = False
-
     @classmethod
     # pylint: disable=unused-argument
     def validate(cls, value, *args, **kwargs):
@@ -311,7 +304,7 @@ class _DimensionedType(metaclass=ABCMeta):
             value = _is_unit_validator(value)
             if cls.has_defaults:
                 value = _unit_inference_validator(value, cls.dim_name)
-            value = _has_dimensions_validator(value, cls.dim, cls.expect_delta_unit)
+            value = _has_dimensions_validator(value, cls.dim)
             value = _enforce_float64(value)
         except TypeError as err:
             details = InitErrorDetails(type="value_error", ctx={"error": str(err)})
@@ -350,6 +343,9 @@ class _DimensionedType(metaclass=ABCMeta):
                     str(_CGS_system[cls.dim_name]),
                     str(_imperial_system[cls.dim_name]),
                 ]
+                if cls.dim_name == "temperature":
+                    print("temperature units = ", units)
+
                 units += [str(unit) for unit in extra_units[cls.dim_name]]
                 units = list(dict.fromkeys(units))
             schema["properties"]["units"]["enum"] = units
@@ -524,18 +520,12 @@ class _DimensionedType(metaclass=ABCMeta):
                         value = _unit_inference_validator(
                             value, vec_cls.type.dim_name, is_array=True
                         )
-                    value = _unit_array_validator(
-                        value, vec_cls.type.dim, vec_cls.type.expect_delta_unit
-                    )
+                    value = _unit_array_validator(value, vec_cls.type.dim)
 
                     if kwargs.get("allow_inf_nan", False) is False:
                         value = _nan_inf_vector_validator(value)
 
-                    value = _has_dimensions_validator(
-                        value,
-                        vec_cls.type.dim,
-                        vec_cls.type.expect_delta_unit,
-                    )
+                    value = _has_dimensions_validator(value, vec_cls.type.dim)
 
                     return value
                 except TypeError as err:
@@ -673,50 +663,15 @@ class _TimeType(_DimensionedType):
 TimeType = Annotated[_TimeType, PlainSerializer(_dimensioned_type_serializer)]
 
 
-class _AbsoluteTemperatureType(_DimensionedType):
-    """
-    :class: AbsoluteTemperatureType.
-    This is the class for absolute temperature which is differentiated
-    from DeltaTemperatureType where the change/offset of temperatures are handled.
-    """
+# pylint: disable=too-few-public-methods
+class _TemperatureType(_DimensionedType):
+    """:class: TemperatureType"""
 
     dim = udim.temperature
     dim_name = "temperature"
 
 
-def _check_temperature_is_physical(value):
-    if str(value.units).startswith("flow360_") or value is None:
-        # Scaled. No need to check
-        return value
-    if value.in_units("K").value < 0:
-        raise ValueError(
-            f"The specified temperature {value} is below absolute zero. Please input a physical temperature value."
-        )
-    return value
-
-
-AbsoluteTemperatureType = Annotated[
-    _AbsoluteTemperatureType,
-    PlainSerializer(_dimensioned_type_serializer),
-    pd.AfterValidator(_check_temperature_is_physical),
-]
-
-
-class _DeltaTemperatureType(_DimensionedType):
-    """
-    :class: DeltaTemperatureType.
-    This is the class for absolute temperature which is differentiated
-    from DeltaTemperatureType where the change/offset of temperatures are handled.
-    """
-
-    dim = udim.temperature
-    dim_name = "delta_temperature"
-    expect_delta_unit = True
-
-
-DeltaTemperatureType = Annotated[
-    _DeltaTemperatureType, PlainSerializer(_dimensioned_type_serializer)
-]
+TemperatureType = Annotated[_TemperatureType, PlainSerializer(_dimensioned_type_serializer)]
 
 
 class _VelocityType(_DimensionedType):
@@ -936,7 +891,7 @@ class _Flow360BaseUnit(_DimensionedType):
     @property
     def value(self):
         """
-        Retrieve value of a flow360 unit system value, use np.ndarray to keep interface consistent with unyt
+        Retrieve value of a flow360 unit system value, use np.ndarray to keep interface consistant with unyt
         """
         return np.asarray(self.val)
 
@@ -997,7 +952,7 @@ class _Flow360BaseUnit(_DimensionedType):
         if isinstance(other, Number):
             return self.val < other
         raise ValueError(
-            f"Invalid other value type for comparison, expected Number or Flow360BaseUnit but got {type(other)}"
+            f"Invalid other value type for comarison, expected Number or Flow360BaseUnit but got {type(other)}"
         )
 
     def __gt__(self, other):
@@ -1006,7 +961,7 @@ class _Flow360BaseUnit(_DimensionedType):
         if isinstance(other, Number):
             return self.val > other
         raise ValueError(
-            f"Invalid other value type for comparison, expected Number or Flow360BaseUnit but got {type(other)}"
+            f"Invalid other value type for comarison, expected Number or Flow360BaseUnit but got {type(other)}"
         )
 
     def __len__(self):
@@ -1121,22 +1076,10 @@ class Flow360TimeUnit(_Flow360BaseUnit):
 
 
 class Flow360TemperatureUnit(_Flow360BaseUnit):
-    """
-    :class: Flow360TemperatureUnit.
-    This is absolute temperature because temperature is scaled with Kelvin temperature.
-    """
+    """:class: Flow360TemperatureUnit"""
 
-    dimension_type = AbsoluteTemperatureType
+    dimension_type = TemperatureType
     unit_name = "flow360_temperature_unit"
-
-
-class Flow360DeltaTemperatureUnit(_Flow360BaseUnit):
-    """
-    :class: Flow360DeltaTemperatureUnit.
-    """
-
-    dimension_type = DeltaTemperatureType
-    unit_name = "flow360_delta_temperature_unit"
 
 
 class Flow360VelocityUnit(_Flow360BaseUnit):
@@ -1325,7 +1268,6 @@ _dim_names = [
     "mass_flow_rate",
     "specific_energy",
     "frequency",
-    "delta_temperature",
 ]
 
 
@@ -1338,7 +1280,7 @@ class UnitSystem(pd.BaseModel):
     length: LengthType = pd.Field()
     angle: AngleType = pd.Field()
     time: TimeType = pd.Field()
-    temperature: AbsoluteTemperatureType = pd.Field()
+    temperature: TemperatureType = pd.Field()
     velocity: VelocityType = pd.Field()
     area: AreaType = pd.Field()
     force: ForceType = pd.Field()
@@ -1357,7 +1299,6 @@ class UnitSystem(pd.BaseModel):
     mass_flow_rate: MassFlowRateType = pd.Field()
     specific_energy: SpecificEnergyType = pd.Field()
     frequency: FrequencyType = pd.Field()
-    delta_temperature: DeltaTemperatureType = pd.Field()
 
     name: Literal["Custom"] = pd.Field("Custom")
 
@@ -1491,7 +1432,6 @@ flow360_inverse_area_unit = Flow360InverseAreaUnit()
 flow360_inverse_length_unit = Flow360InverseLengthUnit()
 flow360_mass_flow_rate_unit = Flow360MassFlowRateUnit()
 flow360_specific_energy_unit = Flow360SpecificEnergyUnit()
-flow360_delta_temperature_unit = Flow360DeltaTemperatureUnit()
 flow360_frequency_unit = Flow360FrequencyUnit()
 
 dimensions = [
@@ -1516,7 +1456,6 @@ dimensions = [
     flow360_inverse_length_unit,
     flow360_mass_flow_rate_unit,
     flow360_specific_energy_unit,
-    flow360_delta_temperature_unit,
     flow360_frequency_unit,
     flow360_heat_source_unit,
 ]
@@ -1527,7 +1466,7 @@ _flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
 # pylint: disable=too-many-instance-attributes
 class Flow360ConversionUnitSystem(pd.BaseModel):
     """
-    Flow360ConversionUnitSystem class for setting conversion rates for converting from dimensioned values into flow360
+    Flow360ConversionUnitSystem class for setting convertion rates for converting from dimensioned values into flow360
     values
     """
 
@@ -1584,9 +1523,6 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_frequency: float = pd.Field(
         np.inf, json_schema_extra={"target_dimension": Flow360FrequencyUnit}
     )
-    base_delta_temperature: float = pd.Field(
-        np.inf, json_schema_extra={"target_dimension": Flow360DeltaTemperatureUnit}
-    )
 
     registry: Any = pd.Field(frozen=False)
     conversion_system: Any = pd.Field(frozen=False)
@@ -1633,7 +1569,6 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["inverse_length"] = "flow360_inverse_length_unit"
         conversion_system["mass_flow_rate"] = "flow360_mass_flow_rate_unit"
         conversion_system["specific_energy"] = "flow360_specific_energy_unit"
-        conversion_system["delta_temperature"] = "flow360_delta_temperature_unit"
         conversion_system["frequency"] = "flow360_frequency_unit"
         conversion_system["angle"] = "flow360_angle_unit"
 
@@ -1663,7 +1598,7 @@ class _PredefinedUnitSystem(UnitSystem):
     length: LengthType = pd.Field(exclude=True)
     angle: AngleType = pd.Field(exclude=True)
     time: TimeType = pd.Field(exclude=True)
-    temperature: AbsoluteTemperatureType = pd.Field(exclude=True)
+    temperature: TemperatureType = pd.Field(exclude=True)
     velocity: VelocityType = pd.Field(exclude=True)
     area: AreaType = pd.Field(exclude=True)
     force: ForceType = pd.Field(exclude=True)
@@ -1681,7 +1616,6 @@ class _PredefinedUnitSystem(UnitSystem):
     inverse_length: InverseLengthType = pd.Field(exclude=True)
     mass_flow_rate: MassFlowRateType = pd.Field(exclude=True)
     specific_energy: SpecificEnergyType = pd.Field(exclude=True)
-    delta_temperature: DeltaTemperatureType = pd.Field(exclude=True)
     frequency: FrequencyType = pd.Field(exclude=True)
 
     # pylint: disable=missing-function-docstring
@@ -1773,4 +1707,4 @@ flow360_unit_system = Flow360UnitSystem()
 # register SI, CGS unit system
 u.UnitSystem("SI", "m", "kg", "s")
 u.UnitSystem("CGS", "cm", "g", "s")
-u.UnitSystem("Imperial", "ft", "lb", "s", temperature_unit="degF")
+u.UnitSystem("Imperial", "ft", "lb", "s", temperature_unit="R")

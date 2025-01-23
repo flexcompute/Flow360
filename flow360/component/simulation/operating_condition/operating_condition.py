@@ -18,12 +18,11 @@ from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
 from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
     AngleType,
-    DeltaTemperatureType,
     DensityType,
     LengthType,
     PressureType,
+    TemperatureType,
     VelocityType,
     ViscosityType,
 )
@@ -46,7 +45,7 @@ class ThermalStateCache(Flow360BaseModel):
 
     # pylint: disable=no-member
     altitude: Optional[LengthType] = None
-    temperature_offset: Optional[DeltaTemperatureType] = None
+    temperature_offset: Optional[TemperatureType] = None
 
 
 class ThermalState(MultiConstructorBaseModel):
@@ -66,9 +65,9 @@ class ThermalState(MultiConstructorBaseModel):
     """
 
     # pylint: disable=fixme
-    # TODO: remove frozen and throw warning if temperature/density is modified after construction from atmospheric model
+    # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
-    temperature: AbsoluteTemperatureType = pd.Field(
+    temperature: TemperatureType.Positive = pd.Field(
         288.15 * u.K, frozen=True, description="The temperature of the fluid."
     )
     density: DensityType.Positive = pd.Field(
@@ -88,7 +87,7 @@ class ThermalState(MultiConstructorBaseModel):
     def from_standard_atmosphere(
         cls,
         altitude: LengthType = 0 * u.m,
-        temperature_offset: DeltaTemperatureType = 0 * u.K,
+        temperature_offset: TemperatureType = 0 * u.K,
     ):
         """
         Constructs a :class:`ThermalState` instance from the standard atmosphere model.
@@ -97,7 +96,7 @@ class ThermalState(MultiConstructorBaseModel):
         ----------
         altitude : LengthType, optional
             The altitude at which the thermal state is calculated. Defaults to ``0 * u.m``.
-        temperature_offset : DeltaTemperatureType, optional
+        temperature_offset : TemperatureType, optional
             The temperature offset to be applied to the standard temperature at the given altitude.
             Defaults to ``0 * u.K``.
 
@@ -123,11 +122,11 @@ class ThermalState(MultiConstructorBaseModel):
         >>> thermal_state.density
         <calculated_density>
 
-        Apply a temperature offset of -5 Fahrenheit at 5,000 meters:
+        Apply a temperature offset of -5 Kelvin at 5,000 meters:
 
         >>> thermal_state = ThermalState.from_standard_atmosphere(
         ...     altitude=5000 * u.m,
-        ...     temperature_offset=-5 * u.delta_degF
+        ...     temperature_offset=-5 * u.K
         ... )
         >>> thermal_state.temperature
         <adjusted_temperature>
@@ -148,16 +147,16 @@ class ThermalState(MultiConstructorBaseModel):
     @property
     def altitude(self) -> Optional[LengthType]:
         """Return user specified altitude."""
-        if not self.private_attribute_input_cache.altitude:
+        if not self._cached.altitude:
             log.warning("Altitude not provided from input")
-        return self.private_attribute_input_cache.altitude
+        return self._cached.altitude
 
     @property
-    def temperature_offset(self) -> Optional[DeltaTemperatureType]:
+    def temperature_offset(self) -> Optional[TemperatureType]:
         """Return user specified temperature offset."""
-        if not self.private_attribute_input_cache.temperature_offset:
+        if not self._cached.altitude:
             log.warning("Temperature offset not provided from input")
-        return self.private_attribute_input_cache.temperature_offset
+        return self._cached.temperature_offset
 
     @property
     def speed_of_sound(self) -> VelocityType.Positive:
@@ -411,7 +410,7 @@ def operating_condition_from_mach_reynolds(
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: AbsoluteTemperatureType = 288.15 * u.K,
+    temperature: TemperatureType.Positive = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
@@ -431,7 +430,7 @@ def operating_condition_from_mach_reynolds(
         Freestream Reynolds number defined with mesh unit (must be positive).
     project_length_unit: LengthType.Positive
         Project length unit.
-    temperature : AbsoluteTemperatureType, optional
+    temperature : TemperatureType.Positive, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.

@@ -10,7 +10,6 @@ from flow360.component.simulation import units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater_utils import compare_dicts
 from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
     AngleType,
     AngularVelocityType,
     AreaType,
@@ -22,6 +21,7 @@ from flow360.component.simulation.unit_system import (
     MassType,
     PressureType,
     SpecificEnergyType,
+    TemperatureType,
     TimeType,
     VelocityType,
     ViscosityType,
@@ -33,7 +33,7 @@ class DataWithUnits(pd.BaseModel):
     a: AngleType = pd.Field()
     m: MassType = pd.Field()
     t: TimeType = pd.Field()
-    T: AbsoluteTemperatureType = pd.Field()
+    T: TemperatureType = pd.Field()
     v: VelocityType = pd.Field()
     A: AreaType = pd.Field()
     F: ForceType = pd.Field()
@@ -49,8 +49,8 @@ class DataWithUnits(pd.BaseModel):
 class DataWithOptionalUnion(pd.BaseModel):
     L: LengthType = pd.Field()
     m: Optional[MassType] = pd.Field(None)
-    t: Union[TimeType, AbsoluteTemperatureType] = pd.Field()
-    v: Optional[Union[TimeType, AbsoluteTemperatureType]] = pd.Field(None)
+    t: Union[TimeType, TemperatureType] = pd.Field()
+    v: Optional[Union[TimeType, TemperatureType]] = pd.Field(None)
 
 
 class DataWithUnitsConstrained(pd.BaseModel):
@@ -58,7 +58,7 @@ class DataWithUnitsConstrained(pd.BaseModel):
     a: AngleType.NonNegative = pd.Field()
     m: MassType.Positive = pd.Field()
     t: TimeType.Negative = pd.Field()
-    T: AbsoluteTemperatureType.NonNegative = pd.Field()
+    T: TemperatureType.NonNegative = pd.Field()
     v: VelocityType.NonNegative = pd.Field()
     A: AreaType.Positive = pd.Field()
     F: ForceType.NonPositive = pd.Field()
@@ -695,7 +695,6 @@ def test_unit_system_init():
         "angle": {"value": 1.0, "units": "rad"},
         "time": {"value": 1.0, "units": "s"},
         "temperature": {"value": 1.0, "units": "K"},
-        "delta_temperature": {"value": 1.0, "units": "K"},
         "velocity": {"value": 1.0, "units": "m/s"},
         "area": {"value": 1.0, "units": "m**2"},
         "force": {"value": 1.0, "units": "N"},
@@ -725,15 +724,3 @@ def test_unit_system_init():
 def test_custom_unit_string_deserialization():
     assert u.unyt.unyt_quantity(1, "degC") == 1 * u.degC
     assert u.unyt.unyt_quantity(2, "degF") == 2 * u.degF
-
-
-def test_below_absolute_zero_temperature():
-    with pytest.raises(
-        pd.ValidationError,
-        match=r"The specified temperature -333.0 K is below absolute zero. Please input a physical temperature value.",
-    ):
-
-        class tester(pd.BaseModel):
-            temp: AbsoluteTemperatureType = pd.Field()
-
-        tester(temp=-333 * u.K)
