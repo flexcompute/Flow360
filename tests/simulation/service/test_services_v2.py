@@ -784,4 +784,4 @@ def test_SI_unit_system_conversion():
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
 
     # General comparison
-    compare_dict_to_ref(dict_to_convert, "data/simulation_param.json")
+    compare_dict_to_ref(dict_to_convert, "./ref/unit_system_converted_SI.json")
