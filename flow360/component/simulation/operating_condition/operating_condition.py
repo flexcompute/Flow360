@@ -67,7 +67,7 @@ class ThermalState(MultiConstructorBaseModel):
     # pylint: disable=fixme
     # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
-    temperature: TemperatureType.Positive = pd.Field(
+    temperature: TemperatureType = pd.Field(
         288.15 * u.K, frozen=True, description="The temperature of the fluid."
     )
     density: DensityType.Positive = pd.Field(
@@ -410,7 +410,7 @@ def operating_condition_from_mach_reynolds(
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: TemperatureType.Positive = 288.15 * u.K,
+    temperature: TemperatureType = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
@@ -430,7 +430,7 @@ def operating_condition_from_mach_reynolds(
         Freestream Reynolds number defined with mesh unit (must be positive).
     project_length_unit: LengthType.Positive
         Project length unit.
-    temperature : TemperatureType.Positive, optional
+    temperature : TemperatureType, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.
