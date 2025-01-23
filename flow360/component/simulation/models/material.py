@@ -8,10 +8,10 @@ from numpy import sqrt
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
     DensityType,
     PressureType,
     SpecificHeatCapacityType,
-    TemperatureType,
     ThermalConductivityType,
     VelocityType,
     ViscosityType,
@@ -50,21 +50,23 @@ class Sutherland(Flow360BaseModel):
     reference_viscosity: ViscosityType.NonNegative = pd.Field(
         description="The reference dynamic viscosity at the reference temperature."
     )
-    reference_temperature: TemperatureType = pd.Field(
+    reference_temperature: AbsoluteTemperatureType = pd.Field(
         description="The reference temperature associated with the reference viscosity."
     )
-    effective_temperature: TemperatureType = pd.Field(
+    effective_temperature: AbsoluteTemperatureType = pd.Field(
         description="The effective temperature constant used in Sutherland's formula."
     )
 
     @pd.validate_call
-    def get_dynamic_viscosity(self, temperature: TemperatureType) -> ViscosityType.NonNegative:
+    def get_dynamic_viscosity(
+        self, temperature: AbsoluteTemperatureType
+    ) -> ViscosityType.NonNegative:
         """
         Calculates the dynamic viscosity at a given temperature using Sutherland's law.
 
         Parameters
         ----------
-        temperature : TemperatureType
+        temperature : AbsoluteTemperatureType
             The temperature at which to calculate the dynamic viscosity.
 
         Returns
@@ -152,7 +154,7 @@ class Air(MaterialBase):
 
     @pd.validate_call
     def get_pressure(
-        self, density: DensityType.Positive, temperature: TemperatureType
+        self, density: DensityType.Positive, temperature: AbsoluteTemperatureType
     ) -> PressureType.Positive:
         """
         Calculates the pressure of air using the ideal gas law.
@@ -161,7 +163,7 @@ class Air(MaterialBase):
         ----------
         density : DensityType.Positive
             The density of the air.
-        temperature : TemperatureType
+        temperature : AbsoluteTemperatureType
             The temperature of the air.
 
         Returns
@@ -173,13 +175,13 @@ class Air(MaterialBase):
         return density * self.gas_constant * temperature
 
     @pd.validate_call
-    def get_speed_of_sound(self, temperature: TemperatureType) -> VelocityType.Positive:
+    def get_speed_of_sound(self, temperature: AbsoluteTemperatureType) -> VelocityType.Positive:
         """
         Calculates the speed of sound in air at a given temperature.
 
         Parameters
         ----------
-        temperature : TemperatureType
+        temperature : AbsoluteTemperatureType
             The temperature at which to calculate the speed of sound.
 
         Returns
@@ -191,13 +193,15 @@ class Air(MaterialBase):
         return sqrt(self.specific_heat_ratio * self.gas_constant * temperature)
 
     @pd.validate_call
-    def get_dynamic_viscosity(self, temperature: TemperatureType) -> ViscosityType.NonNegative:
+    def get_dynamic_viscosity(
+        self, temperature: AbsoluteTemperatureType
+    ) -> ViscosityType.NonNegative:
         """
         Calculates the dynamic viscosity of air at a given temperature.
 
         Parameters
         ----------
-        temperature : TemperatureType
+        temperature : AbsoluteTemperatureType
             The temperature at which to calculate the dynamic viscosity.
 
         Returns

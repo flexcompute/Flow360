@@ -9,9 +9,9 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
     AngleType,
     LengthType,
-    TemperatureType,
 )
 from flow360.log import log
 
@@ -24,7 +24,7 @@ def operating_condition_from_mach_muref(
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: TemperatureType = 288.15 * u.K,
+    temperature: AbsoluteTemperatureType = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
@@ -44,7 +44,7 @@ def operating_condition_from_mach_muref(
         Freestream reference dynamic viscosity defined with mesh unit (must be positive).
     project_length_unit: LengthType.Positive
         Project length unit.
-    temperature : TemperatureType, optional
+    temperature : TemperatureType.Positive, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.
