@@ -123,8 +123,7 @@ def _dimensioned_type_serializer(x):
     """
     encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
     """
-    # adding .expr helps to avoid degF/C becoming serialized as °F/C
-    return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
+    return {"value": _encode_ndarray(x.value), "units": str(x.units)}
 
 
 def _check_if_input_has_delta_unit(quant):
@@ -931,10 +930,6 @@ class _Flow360BaseUnit(_DimensionedType):
 
             def __str__(self):
                 return f"{parent_self.unit_name}"
-
-            def expr(self):
-                """alias for __str__ so the serializer can work"""
-                return str(self)
 
         return _Units()
 
