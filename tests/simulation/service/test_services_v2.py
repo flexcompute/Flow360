@@ -731,8 +731,10 @@ def test_imperial_unit_system_conversion():
     assert temperature_tester["units"] == "degF"
     assert abs(temperature_tester["value"] - 302) / 302 < 1e-10
 
-    # General comparison
-    compare_dict_to_ref(dict_to_convert, "./ref/unit_system_converted_imperial.json")
+    # General comparison\
+    with open("./ref/unit_system_converted_imperial.json", "r") as fp:
+        ref_dict = json.load(fp)
+    compare_values(dict_to_convert, ref_dict)
 
 
 def test_CGS_unit_system_conversion():
@@ -758,7 +760,9 @@ def test_CGS_unit_system_conversion():
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
 
     # General comparison
-    compare_dict_to_ref(dict_to_convert, "./ref/unit_system_converted_CGS.json")
+    with open("./ref/unit_system_converted_CGS.json", "r") as fp:
+        ref_dict = json.load(fp)
+    compare_values(dict_to_convert, ref_dict)
 
 
 def test_SI_unit_system_conversion():
@@ -784,4 +788,6 @@ def test_SI_unit_system_conversion():
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
 
     # General comparison
-    compare_dict_to_ref(dict_to_convert, "./ref/unit_system_converted_SI.json")
+    with open("./ref/unit_system_converted_SI.json", "r") as fp:
+        ref_dict = json.load(fp)
+    compare_values(dict_to_convert, ref_dict)
