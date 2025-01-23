@@ -189,8 +189,7 @@ class Air(MaterialBase):
         VelocityType.Positive
             The speed of sound at the specified temperature.
         """
-        if temperature.units is u.degC or temperature.units is u.degF:
-            temperature = temperature.to("K")
+        temperature = temperature.to("K")
         return sqrt(self.specific_heat_ratio * self.gas_constant * temperature)
 
     @pd.validate_call
