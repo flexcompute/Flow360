@@ -137,13 +137,19 @@ def _unit_inference_validator(value, dim_name, is_array=False):
     -------
     unyt_quantity or value
     """
+
     if unit_system_manager.current:
         unit = unit_system_manager.current[dim_name]
         if is_array:
             if all(isinstance(item, Number) for item in value):
-                return value * unit
+                float64_tuple = tuple(np.float64(item) for item in value)
+                if isinstance(unit, _Flow360BaseUnit):
+                    return float64_tuple * unit
+                return float64_tuple * unit.units
         if isinstance(value, Number):
-            return value * unit
+            if isinstance(unit, _Flow360BaseUnit):
+                return np.float64(value) * unit
+            return np.float64(value) * unit.units
     return value
 
 
