@@ -33,7 +33,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
-    ThermalState
+    ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
