@@ -2,7 +2,8 @@
 
 # pylint: disable=duplicate-code
 import json
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+import re
+from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
@@ -24,8 +25,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box  # For parse_model_dict
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import Box, Surface  # For parse_model_dict
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -44,6 +44,7 @@ from flow360.component.simulation.unit_system import (
     UnitSystem,
     flow360_unit_system,
     imperial_unit_system,
+    u,
     unit_system_manager,
 )
 from flow360.component.simulation.utils import (
@@ -52,8 +53,6 @@ from flow360.component.simulation.utils import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ALL,
-    SURFACE_MESH,
-    VOLUME_MESH,
     ValidationLevelContext,
 )
 from flow360.component.utils import remove_properties_by_name
@@ -581,11 +580,82 @@ def generate_process_json(
     return surface_mesh_res, volume_mesh_res, case_res
 
 
-def change_unit_system(
-    *, simulation_params: SimulationParams, target_unit_system: Literal["SI", "Imperial", "CGS"]
+def _convert_unit_in_dict(
+    *, data: dict, target_unit_system: u.UnitSystem, delta_temperature_unit: u.Unit
 ):
+    # Get angle unit from the input because we do not want to change it.
+    angle_unit = "degree" if re.search(r"\bdegree\b", data["units"]) else "rad"
+    target_unit_system["angle"] = angle_unit
+    old_unit = u.Unit(data["units"])
+    if str(old_unit) == str(u.Unit("delta_degC")) or str(old_unit) == str(u.Unit("delta_degC")):
+        # Special treatment for delta temperatures
+        new_unit = delta_temperature_unit
+    else:
+        new_unit = target_unit_system[old_unit.dimensions]
+
+    if isinstance(data["value"], Collection):
+        new_value = []
+        for value in data["value"]:
+            value = (value * old_unit).to(new_unit).value
+            new_value.append(float(value))
+        data["value"] = new_value
+    else:
+        data["value"] = float((data["value"] * old_unit).to(new_unit).value)
+
+    data["units"] = str(new_unit.expr)
+    return data
+
+
+def _recursive_change_unit_system(*, data, target_unit_system, delta_temperature_unit) -> None:
+
+    if isinstance(data, dict):
+        # 1. Check if dict matches the desired pattern
+        if set(data.keys()) == {"value", "units"}:
+            data = _convert_unit_in_dict(
+                data=data,
+                target_unit_system=target_unit_system,
+                delta_temperature_unit=delta_temperature_unit,
+            )
+
+        # 2. Otherwise, recurse into each item in the dictionary
+        for _, val in data.items():
+            _recursive_change_unit_system(
+                data=val,
+                target_unit_system=target_unit_system,
+                delta_temperature_unit=delta_temperature_unit,
+            )
+
+    elif isinstance(data, list):
+        # Recurse into each item in the list
+        for _, item in enumerate(data):
+            _recursive_change_unit_system(
+                data=item,
+                target_unit_system=target_unit_system,
+                delta_temperature_unit=delta_temperature_unit,
+            )
+
+
+def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"]):
     """
-    Changes the unit system of the simulation parameters and convert the values accordingly.
+    Recursively traverse a nested structure of dicts/lists.
+    If a dict has exactly the structure {'value': XX, 'units': XX},
+    Try to convert to the new unit system
     """
-    converted_params = simulation_params.convert_to_unit_system(unit_system=target_unit_system)
-    return converted_params.model_dump_json(exclude_none=True)
+    # Step 1: Get the new unit system that we want
+    if new_unit_system == "SI":
+        delta_temperature_unit = u.Unit("K")
+        target_unit_system = u.UnitSystem("__Converter", "m", "kg", "s")
+    elif new_unit_system == "Imperial":
+        delta_temperature_unit = u.Unit("delta_degF")
+        target_unit_system = u.UnitSystem("__Converter", "ft", "lb", "s", temperature_unit="degF")
+    elif new_unit_system == "CGS":
+        delta_temperature_unit = u.Unit("K")
+        target_unit_system = u.UnitSystem("__Converter", "cm", "g", "s")
+    else:
+        raise ValueError(f"Unknown input unit system: {new_unit_system}")
+
+    _recursive_change_unit_system(
+        data=data,
+        target_unit_system=target_unit_system,
+        delta_temperature_unit=delta_temperature_unit,
+    )
