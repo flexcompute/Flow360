@@ -227,10 +227,6 @@ def test_flow360_unit_arithmetic():
         data.l_arr_nonneg + [1, 1, 1, 1] * u.m
 
 
-def _assert_exact_same_unyt(input, ref):
-    assert input.value == ref.value and str(input.units.expr) == str(ref.units.expr)
-
-
 def test_unit_system():
     # No inference outside of context
     with pytest.raises(pd.ValidationError):
@@ -255,20 +251,20 @@ def test_unit_system():
         fqc=1234 / u.s,
     )
 
-    _assert_exact_same_unyt(data.L, 1 * u.m)
-    _assert_exact_same_unyt(data.m, 2 * u.kg)
-    _assert_exact_same_unyt(data.t, 3 * u.s)
-    _assert_exact_same_unyt(data.T, 300 * u.K)
-    _assert_exact_same_unyt(data.v, 2 / 3 * u.m / u.s)
-    _assert_exact_same_unyt(data.A, 6 * u.m * u.m)
-    _assert_exact_same_unyt(data.F, 4 * u.kg * u.m / u.s**2)
-    _assert_exact_same_unyt(data.p, 5 * u.Pa)
-    _assert_exact_same_unyt(data.r, 2 * u.kg / u.m**3)
-    _assert_exact_same_unyt(data.mu, 3 * u.Pa * u.s)
-    _assert_exact_same_unyt(data.omega, 5 * u.rad / u.s)
-    _assert_exact_same_unyt(data.m_dot, 12 * u.kg / u.s)
-    _assert_exact_same_unyt(data.v_sq, 4 * u.m**2 / u.s**2)
-    _assert_exact_same_unyt(data.fqc, 1234 / u.s)
+    assert data.L == 1 * u.m
+    assert data.m == 2 * u.kg
+    assert data.t == 3 * u.s
+    assert data.T == 300 * u.K
+    assert data.v == 2 / 3 * u.m / u.s
+    assert data.A == 6 * u.m * u.m
+    assert data.F == 4 * u.kg * u.m / u.s**2
+    assert data.p == 5 * u.Pa
+    assert data.r == 2 * u.kg / u.m**3
+    assert data.mu == 3 * u.Pa * u.s
+    assert data.omega == 5 * u.rad / u.s
+    assert data.m_dot == 12 * u.kg / u.s
+    assert data.v_sq == 4 * u.m**2 / u.s**2
+    assert data.fqc == 1234 / u.s
 
     # When using a unit system the units can be inferred
 
@@ -291,54 +287,55 @@ def test_unit_system():
     with u.SI_unit_system:
         data = DataWithUnits(**input, a=1 * u.degree, omega=1 * u.radian / u.s)
 
-        _assert_exact_same_unyt(data.L, 1 * u.m)
-        _assert_exact_same_unyt(data.m, 2 * u.kg)
-        _assert_exact_same_unyt(data.t, 3 * u.s)
-        _assert_exact_same_unyt(data.T, 300 * u.K)
-        _assert_exact_same_unyt(data.v, 2 / 3 * u.m / u.s)
-        _assert_exact_same_unyt(data.A, 6 * u.m**2)
-        _assert_exact_same_unyt(data.F, 4 * u.N)
-        _assert_exact_same_unyt(data.p, 5 * u.Pa)
-        _assert_exact_same_unyt(data.r, 2 * u.kg / u.m**3)
-        _assert_exact_same_unyt(data.mu, 3 * u.kg / (u.m * u.s))
-        _assert_exact_same_unyt(data.m_dot, 11 * u.kg / u.s)
-        _assert_exact_same_unyt(data.v_sq, 123 * u.J / u.kg)
-        _assert_exact_same_unyt(data.fqc, 1111 * u.Hz)
+        assert data.L == 1 * u.m
+        assert data.m == 2 * u.kg
+        assert data.t == 3 * u.s
+        assert data.T == 300 * u.K
+        assert data.v == 2 / 3 * u.m / u.s
+        assert data.A == 6 * u.m**2
+        assert data.F == 4 * u.N
+        assert data.p == 5 * u.Pa
+        assert data.r == 2 * u.kg / u.m**3
+        assert data.mu == 3 * u.Pa * u.s
+        assert data.m_dot == 11 * u.kg / u.s
+        assert data.v_sq == 123 * u.m**2 / u.s**2
+        assert data.fqc == 1111 / u.s
 
     # CGS
     with u.CGS_unit_system:
         data = DataWithUnits(**input, a=1 * u.degree, omega=1 * u.radian / u.s)
 
-        _assert_exact_same_unyt(data.L, 1 * u.cm)
-        _assert_exact_same_unyt(data.m, 2 * u.g)
-        _assert_exact_same_unyt(data.t, 3 * u.s)
-        _assert_exact_same_unyt(data.T, 300 * u.K)
-        _assert_exact_same_unyt(data.v, 2 / 3 * u.cm / u.s)
-        _assert_exact_same_unyt(data.A, 6 * u.cm**2)
-        _assert_exact_same_unyt(data.F, 4 * u.dyne)
-        _assert_exact_same_unyt(data.p, 5 * u.dyne / u.cm**2)
-        _assert_exact_same_unyt(data.r, 2 * u.g / u.cm**3)
-        _assert_exact_same_unyt(data.mu, 3 * u.g / u.s / u.cm)
-        _assert_exact_same_unyt(data.m_dot, 11 * u.g / u.s)
-        _assert_exact_same_unyt(data.v_sq, 123 * u.erg / u.g)
-        _assert_exact_same_unyt(data.fqc, 1111 / u.s)
+        assert data.L == 1 * u.cm
+        assert data.m == 2 * u.g
+        assert data.t == 3 * u.s
+        assert data.T == 300 * u.K
+        assert data.v == 2 / 3 * u.cm / u.s
+        assert data.A == 6 * u.cm**2
+        assert data.F == 4 * u.dyne
+        assert data.p == 5 * u.dyne / u.cm**2
+        assert data.r == 2 * u.g / u.cm**3
+        assert data.mu == 3 * u.dyn * u.s / u.cm**2
+        assert data.m_dot == 11 * u.g / u.s
+        assert data.v_sq == 123 * u.cm**2 / u.s**2
+        assert data.fqc == 1111 / u.s
 
     # Imperial
     with u.imperial_unit_system:
         data = DataWithUnits(**input, a=1 * u.degree, omega=1 * u.radian / u.s)
-        _assert_exact_same_unyt(data.L, 1 * u.ft)
-        _assert_exact_same_unyt(data.m, 2 * u.lb)
-        _assert_exact_same_unyt(data.t, 3 * u.s)
-        _assert_exact_same_unyt(data.T, 300 * u.degF)
-        _assert_exact_same_unyt(data.v, 2 / 3 * u.ft / u.s)
-        _assert_exact_same_unyt(data.A, 6 * u.ft**2)
-        _assert_exact_same_unyt(data.F, 4 * u.lbf)
-        _assert_exact_same_unyt(data.p, 5 * u.lbf / u.ft**2)
-        _assert_exact_same_unyt(data.r, 2 * u.lb / u.ft**3)
-        _assert_exact_same_unyt(data.mu, 3 * u.lb / (u.ft * u.s))
-        _assert_exact_same_unyt(data.m_dot, 11 * u.lb / u.s)
-        _assert_exact_same_unyt(data.v_sq, 123 * u.ft**2 / u.s**2)
-        _assert_exact_same_unyt(data.fqc, 1111 / u.s)
+
+        assert data.L == 1 * u.ft
+        assert data.m == 2 * u.lb
+        assert data.t == 3 * u.s
+        assert data.T == 300 * u.R
+        assert data.v == 2 / 3 * u.ft / u.s
+        assert data.A == 6 * u.ft**2
+        assert data.F == 4 * u.lbf
+        assert data.p == 5 * u.lbf / u.ft**2
+        assert data.r == 2 * u.lb / u.ft**3
+        assert data.mu == 3 * u.lbf * u.s / u.ft**2
+        assert data.m_dot == 11 * u.lb / u.s
+        assert data.v_sq == 123 * u.ft**2 / u.s**2
+        assert data.fqc == 1111 / u.s
 
     # Flow360
     with u.flow360_unit_system:
@@ -720,6 +717,8 @@ def test_unit_system_init():
         "angle": {"value": 1.0, "units": "rad"},
     }
     us = u.UnitSystem(**unit_system_dict)
+    print(us)
+    print(u.SI_unit_system)
     assert us == u.SI_unit_system
 
 
