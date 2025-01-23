@@ -172,8 +172,6 @@
                 },
                 "CFL_multiplier": 2.0,
                 "type_name": "SpalartAllmaras",
-                "DDES": false,
-                "grid_size_for_LES": "maxEdgeLength",
                 "reconstruction_gradient_limiter": 0.5,
                 "quadratic_constitutive_relation": false,
                 "modeling_constants": {

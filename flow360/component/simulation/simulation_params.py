@@ -70,13 +70,14 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_and_add_noninertial_reference_frame_flag,
     _check_cht_solver_settings,
     _check_complete_boundary_condition_and_unknown_surface,
-    _check_consistency_ddes_volume_output,
+    _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
+    _check_unsteadiness_to_use_hybrid_model,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -394,9 +395,16 @@ class SimulationParams(_ParamModelBase):
         return _check_consistency_wall_function_and_surface_output(self)
 
     @pd.model_validator(mode="after")
-    def check_consistency_ddes_volume_output(self):
-        """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
-        return _check_consistency_ddes_volume_output(self)
+    def check_consistency_hybrid_model_volume_output(self):
+        """Only allow hybrid RANS-LES output field when there is a corresponding solver with
+        hybrid RANS-LES enabled in models
+        """
+        return _check_consistency_hybrid_model_volume_output(self)
+
+    @pd.model_validator(mode="after")
+    def check_unsteadiness_to_use_hybrid_model(self):
+        """Only allow hybrid RANS-LES output field for unsteady simulations"""
+        return _check_unsteadiness_to_use_hybrid_model(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):

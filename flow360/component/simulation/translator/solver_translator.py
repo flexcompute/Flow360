@@ -975,6 +975,24 @@ def get_solver_json(
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
 
+            if not isinstance(model.turbulence_model_solver, NoneSolver):
+                hybrid_model = model.turbulence_model_solver.hybrid_model
+                if hybrid_model is not None:
+                    if hybrid_model.shielding_function == "DDES":
+                        translated["turbulenceModelSolver"]["DDES"] = True
+                        translated["turbulenceModelSolver"]["ZDES"] = False
+                    if hybrid_model.shielding_function == "ZDES":
+                        translated["turbulenceModelSolver"]["ZDES"] = True
+                        translated["turbulenceModelSolver"]["DDES"] = False
+                    translated["turbulenceModelSolver"][
+                        "gridSizeForLES"
+                    ] = hybrid_model.grid_size_for_LES
+                    translated["turbulenceModelSolver"].pop("hybridModel")
+                else:
+                    translated["turbulenceModelSolver"]["DDES"] = False
+                    translated["turbulenceModelSolver"]["ZDES"] = False
+                    translated["turbulenceModelSolver"]["gridSizeForLES"] = "maxEdgeLength"
+
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
                 translated["transitionModelSolver"] = dump_dict(model.transition_model_solver)

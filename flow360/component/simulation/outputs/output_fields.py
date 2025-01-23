@@ -83,8 +83,8 @@ SurfaceFieldNames = Literal[
 # Linear residual of Navier-Stokes solver
 # Linear residual of turbulence solver
 # Linear residual of transition solver
-# DDES output for Spalart-Allmaras solver
-# DDES output for kOmegaSST solver
+# Hybrid RANS-LES output for Spalart-Allmaras solver
+# Hybrid RANS-LES output for kOmegaSST solver
 # Local CFL number
 VolumeFieldNames = Literal[
     CommonFieldNames,
@@ -93,8 +93,8 @@ VolumeFieldNames = Literal[
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",
-    "SpalartAllmaras_DDES",
-    "kOmegaSST_DDES",
+    "SpalartAllmaras_hybridModel",
+    "kOmegaSST_hybridModel",
     "localCFL",
 ]
 
