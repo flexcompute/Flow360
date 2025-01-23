@@ -13,20 +13,19 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
+
+# pylint: disable=unused-import
 from flow360.component.simulation.operating_condition.operating_condition import (
     GenericReferenceCondition,  # For parse_model_dict
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     ThermalState,  # For parse_model_dict
 )
-from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import (  # pylint: disable=unused-import; For parse_model_dict
-    Box,
-    Surface,
-)
+from flow360.component.simulation.primitives import Box, Surface  # For parse_model_dict
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
