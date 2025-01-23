@@ -32,6 +32,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    ThermalState
 )
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
@@ -76,6 +77,8 @@ from tests.simulation.translator.utils.TurbFlatPlate137x97_BoxTrip_generator imp
 )
 from tests.simulation.translator.utils.tutorial_2dcrm_param_generator import (
     get_2dcrm_tutorial_param,
+    get_2dcrm_tutorial_param_deg_c,
+    get_2dcrm_tutorial_param_deg_f,
 )
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
@@ -189,6 +192,24 @@ def translate_and_compare(
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+
+def test_om6wing_temperature(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.operating_condition.thermal_state = ThermalState(temperature=15 * u.degC)
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+    params.operating_condition.thermal_state = ThermalState(temperature=59 * u.degF)
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+    params.operating_condition.thermal_state = ThermalState(temperature=518.67 * u.R)
     translate_and_compare(
         get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
     )
@@ -378,6 +399,16 @@ def test_TurbFlatPlate137x97_BoxTrip(create_turb_flat_plate_box_trip_param):
 
 def test_2dcrm_tutorial(get_2dcrm_tutorial_param):
     param = get_2dcrm_tutorial_param
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
+
+
+def test_2dcrm_tutorial_temperature_c(get_2dcrm_tutorial_param_deg_c):
+    param = get_2dcrm_tutorial_param_deg_c
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
+
+
+def test_2dcrm_tutorial_temperature_f(get_2dcrm_tutorial_param_deg_f):
+    param = get_2dcrm_tutorial_param_deg_f
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
 
 
