@@ -19,6 +19,7 @@ import unyt as u
 import unyt.dimensions as udim
 from pydantic import PlainSerializer
 from pydantic_core import InitErrorDetails, core_schema
+from sympy import Symbol
 
 # because unit_system.py is the only interface to our unit functions, you can import unit_quantity directly
 # "from unit_system import unyt_quantity" instead of knowing existence of unyt package.
@@ -39,47 +40,13 @@ udim.inverse_length = 1 / udim.length
 udim.mass_flow_rate = udim.mass / udim.time
 udim.specific_energy = udim.length**2 * udim.time ** (-2)
 udim.frequency = udim.time ** (-1)
-udim.delta_temperature = udim.temperature
-
-# pylint: disable=fixme
-# TODO: IIRC below is automatically derived once you define things above.
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
-u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
-u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
-u.unit_systems.mks_unit_system["moment"] = u.N * u.m
-u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
-u.unit_systems.mks_unit_system["specific_heat_capacity"] = u.m**2 / u.s**2 / u.K
-u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
-u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
-u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
-u.unit_systems.mks_unit_system["delta_temperature"] = u.K
-
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
-u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
-u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
-u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
-u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
-u.unit_systems.cgs_unit_system["specific_heat_capacity"] = u.cm**2 / u.s**2 / u.K
-u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
-u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
-u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
-u.unit_systems.cgs_unit_system["delta_temperature"] = u.K
-
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
-u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
-u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
-u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
-u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
-u.unit_systems.imperial_unit_system["specific_heat_capacity"] = u.ft**2 / u.s**2 / u.K
-u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
-u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
-u.unit_systems.imperial_unit_system["inverse_length"] = u.ft ** (-1)
+udim.delta_temperature = Symbol("(delta temperature)", positive=True)
 
 # u.Unit("delta_degF") is parsed by unyt as 'ΔdegF and cannot find the unit. Had to use expr instead.
+u.unit_systems.imperial_unit_system["temperature"] = u.Unit("degF").expr
 u.unit_systems.imperial_unit_system["delta_temperature"] = u.Unit("delta_degF").expr
+u.unit_systems.mks_unit_system["delta_temperature"] = u.Unit("K").expr
+u.unit_systems.cgs_unit_system["delta_temperature"] = u.Unit("K").expr
 
 
 class UnitSystemManager:
@@ -142,6 +109,7 @@ def _check_if_input_has_delta_unit(quant):
         or str(quant.units) == "R"  # absolute temperature so it can be considered delta
         # Flow360 temperature scaled by absolute temperature, making it also absolute temperature
         or str(quant.units) == "flow360_delta_temperature_unit"
+        or str(quant.units) == "flow360_temperature_unit"
     )
     return is_input_delta_unit
 
@@ -221,9 +189,13 @@ def _unit_inference_validator(value, dim_name, is_array=False):
         if is_array:
             if all(isinstance(item, Number) for item in value):
                 float64_tuple = tuple(np.float64(item) for item in value)
-                return float64_tuple * unit
+                if isinstance(unit, _Flow360BaseUnit):
+                    return float64_tuple * unit
+                return float64_tuple * unit.units
         if isinstance(value, Number):
-            return np.float64(value) * unit
+            if isinstance(unit, _Flow360BaseUnit):
+                return np.float64(value) * unit
+            return np.float64(value) * unit.units
     return value
 
 
@@ -1805,8 +1777,3 @@ SI_unit_system = SIUnitSystem()
 CGS_unit_system = CGSUnitSystem()
 imperial_unit_system = ImperialUnitSystem()
 flow360_unit_system = Flow360UnitSystem()
-
-# register SI, CGS unit system
-u.UnitSystem("SI", "m", "kg", "s")
-u.UnitSystem("CGS", "cm", "g", "s")
-u.UnitSystem("Imperial", "ft", "lb", "s", temperature_unit="degF")
