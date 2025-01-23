@@ -32,6 +32,7 @@ from .utils import (
     MeshFileFormat,
     MeshNameParser,
     UGRIDEndianness,
+    _local_download_overwrite,
     shared_account_confirm_proceed,
     validate_type,
     zstd_compress,
@@ -397,6 +398,34 @@ class SurfaceMesh(Flow360Resource):
             name=name,
             tags=tags,
         )
+
+    @classmethod
+    def from_local_storage(cls, local_storage_path, meta_data: SurfaceMeshMeta) -> SurfaceMesh:
+        """
+        Create a `SurfaceMesh` instance from local storage.
+
+        Parameters
+        ----------
+        local_storage_path : str
+            The path to the local storage directory.
+        meta_data : SurfaceMeshMeta
+            surface mesh metadata such as:
+            id : str
+                The unique identifier for the case.
+            name : str
+                The name of the case.
+            user_id : str
+                The user ID associated with the case, can be "local".
+
+        Returns
+        -------
+        SurfaceMesh
+            An instance of `SurfaceMesh` with data loaded from local storage.
+        """
+        _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
+        case = cls._from_meta(meta_data)
+        case._download_file = _local_download_file
+        return case
 
     @classmethod
     def create(

@@ -9,6 +9,7 @@ from __future__ import annotations
 import os.path
 import threading
 from enum import Enum
+from functools import cached_property
 from typing import Any, Iterator, List, Optional, Union
 
 import numpy as np
@@ -822,10 +823,23 @@ class VolumeMeshMetaV2(AssetMetaBaseModelV2):
     VolumeMeshMetaV2 component
     """
 
-    project_id: str = pd_v2.Field(alias="projectId")
-    deleted: bool = pd_v2.Field()
     status: VolumeMeshStatusV2 = pd_v2.Field()  # Overshadowing to ensure correct is_final() method
-    file_name: str = pd_v2.Field(alias="fileName")
+    file_name: Optional[str] = pd_v2.Field(None, alias="fileName")
+
+
+class VolumeMeshStats(pd_v2.BaseModel):
+    """
+    Mesh stats
+    """
+
+    n_nodes: int = pd_v2.Field(..., alias="nNodes")
+    n_triangles: int = pd_v2.Field(..., alias="nTriangles")
+    n_quadrilaterals: int = pd_v2.Field(..., alias="nQuadrilaterals")
+    n_tetrahedron: int = pd_v2.Field(..., alias="nTetrahedron")
+    n_prism: int = pd_v2.Field(..., alias="nPrism")
+    n_pyramid: int = pd_v2.Field(..., alias="nPyramid")
+    n_hexahedron: int = pd_v2.Field(..., alias="nHexahedron")
+    n_tet_wedge: int = pd_v2.Field(..., alias="nTetWedge")
 
 
 class VolumeMeshDraftV2(ResourceDraft):
@@ -995,6 +1009,7 @@ class VolumeMeshV2(AssetBase):
     _draft_class = VolumeMeshDraftV2
     _web_api_class = Flow360Resource
     _entity_info_class = VolumeMeshEntityInfo
+    _mesh_stats_file = "meshStats.json"
     _cloud_resource_type_name = "VolumeMesh"
 
     @classmethod
@@ -1018,7 +1033,9 @@ class VolumeMeshV2(AssetBase):
         return asset_obj
 
     @classmethod
-    def from_local_storage(cls, mesh_id: str = None, local_storage_path="") -> VolumeMeshV2:
+    def from_local_storage(
+        cls, mesh_id: str = None, local_storage_path="", meta_data: VolumeMeshMetaV2 = None
+    ) -> VolumeMeshV2:
         """
         Parameters
         ----------
@@ -1033,7 +1050,9 @@ class VolumeMeshV2(AssetBase):
         VolumeMeshV2
             Volume mesh object
         """
-        return super()._from_local_storage(asset_id=mesh_id, local_storage_path=local_storage_path)
+        return super()._from_local_storage(
+            asset_id=mesh_id, local_storage_path=local_storage_path, meta_data=meta_data
+        )
 
     @classmethod
     # pylint: disable=too-many-arguments,arguments-renamed
@@ -1104,6 +1123,20 @@ class VolumeMeshV2(AssetBase):
                 "Currently entity info is populated only when loading "
                 "an asset from the cloud using the from_cloud method "
             )
+
+    @cached_property
+    def stats(self) -> VolumeMeshStats:
+        """
+        Get mesh stats
+
+        Returns
+        -------
+        VolumeMeshStats
+            return VolumeMeshStats object
+        """
+        # pylint: disable=protected-access
+        data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
+        return VolumeMeshStats(**data)
 
     @property
     def boundary_names(self) -> List[str]:
