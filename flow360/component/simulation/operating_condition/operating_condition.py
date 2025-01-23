@@ -470,7 +470,7 @@ def operating_condition_from_mach_reynolds(
 
     """
 
-    if temperature == 288.15 * u.K:
+    if temperature.units is u.K and temperature.value == 288.15:
         log.info("Default value of 288.15 K will be used as temperature.")
 
     material = Air()
