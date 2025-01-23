@@ -34,63 +34,6 @@ u.dimensions.thermal_conductivity = (
 u.dimensions.inverse_area = 1 / u.dimensions.area
 u.dimensions.inverse_length = 1 / u.dimensions.length
 
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["viscosity"] = u.Pa * u.s
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["angular_velocity"] = u.rad / u.s
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_flux"] = u.kg / u.s**3
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["moment"] = u.N * u.m
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_source"] = u.kg / u.s**3 / u.m
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["heat_capacity"] = u.kg / u.s**2 / u.m / u.K
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["thermal_conductivity"] = u.kg / u.s**3 * u.m / u.K
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["inverse_area"] = u.m ** (-2)
-# pylint: disable=no-member
-u.unit_systems.mks_unit_system["inverse_length"] = u.m ** (-1)
-
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["viscosity"] = u.dyn * u.s / u.cm**2
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["angular_velocity"] = u.rad / u.s
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_flux"] = u.g / u.s**3
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["moment"] = u.dyn * u.m
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_source"] = u.g / u.s**3 / u.cm
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["heat_capacity"] = u.g / u.s**2 / u.cm / u.K
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["thermal_conductivity"] = u.g / u.s**3 * u.cm / u.K
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["inverse_area"] = u.cm ** (-2)
-# pylint: disable=no-member
-u.unit_systems.cgs_unit_system["inverse_length"] = u.cm ** (-1)
-
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["viscosity"] = u.lbf * u.s / u.ft**2
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["angular_velocity"] = u.rad / u.s
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_flux"] = u.lb / u.s**3
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["moment"] = u.lbf * u.ft
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_source"] = u.lb / u.s**3 / u.ft
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["heat_capacity"] = u.lb / u.s**2 / u.ft / u.K
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["thermal_conductivity"] = u.lb / u.s**3 * u.ft / u.K
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["inverse_area"] = u.ft ** (-2)
-# pylint: disable=no-member
-u.unit_systems.imperial_unit_system["inverse_length"] = u.ft ** (-1)
-
 
 class UnitSystemManager:
     """
