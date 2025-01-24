@@ -186,6 +186,66 @@
             "type": "Wall",
             "use_wall_function": false,
             "velocity": null
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "1",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "1",
+                        "private_attribute_id": null,
+                        "private_attribute_is_interface": false,
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": null,
+            "spec": {
+                "type_name": "TotalPressure",
+                "value": {
+                    "units": "Pa",
+                    "value": 123.0
+                }
+            },
+            "total_temperature": {
+                "units": "K",
+                "value": 300.0
+            },
+            "turbulence_quantities": null,
+            "type": "Inflow",
+            "velocity_direction": [
+                1.0,
+                0.0,
+                0.0
+            ]
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "2",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "2",
+                        "private_attribute_id": null,
+                        "private_attribute_is_interface": false,
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "name": null,
+            "spec": {
+                "type_name": "MassFlowRate",
+                "value": {
+                    "units": "lb/s",
+                    "value": 123.0
+                }
+            },
+            "type": "Outflow"
         }
     ],
     "operating_condition": {

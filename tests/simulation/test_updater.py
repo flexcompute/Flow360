@@ -1,3 +1,4 @@
+import copy
 import json
 from enum import Enum
 
@@ -9,10 +10,7 @@ from flow360.component.simulation.framework.updater import (
     _find_update_path,
     updater,
 )
-from flow360.component.simulation.framework.updater_utils import (
-    Flow360Version,
-    compare_dicts,
-)
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 
 
 @pytest.fixture(autouse=True)
@@ -194,20 +192,33 @@ def test_updater_completeness():
 
 
 def test_updater_to_24_11_1():
-    files = ["simulation_24_11_0.json"]
 
-    for file in files:
-        params = fl.SimulationParams(f"../data/simulation/{file}")
-        assert params
+    with open("../data/simulation/simulation_pre_24_11_1.json", "r") as fp:
+        params_pre_24_11_1 = json.load(fp)
+
+    params_24_11_1 = updater(
+        version_from="24.11.0", version_to="24.11.1", params_as_dict=params_pre_24_11_1
+    )
+
+    assert params_24_11_1.get("meshing") is None
+
+    for model in params_24_11_1["models"]:
+        if model["type"] == "Wall":
+            assert model["heat_spec"] == {
+                "type_name": "HeatFlux",
+                "value": {"value": 0, "units": "W / m**2"},
+            }
+
+    assert params_24_11_1["time_stepping"].get("order_of_accuracy") is None
 
 
 def test_updater_to_24_11_7():
 
-    with open("../data/simulation/simulation_24_11_6.json", "r") as fp:
-        params_24_11_6 = json.load(fp)
+    with open("../data/simulation/simulation_pre_24_11_7.json", "r") as fp:
+        params_pre_24_11_7 = json.load(fp)
 
     params_24_11_7 = updater(
-        version_from="24.11.6", version_to="24.11.7", params_as_dict=params_24_11_6
+        version_from="24.11.6", version_to="24.11.7", params_as_dict=params_pre_24_11_7
     )
 
     assert params_24_11_7["outputs"][0]["entities"]["stored_entities"][0]["private_attribute_id"]
@@ -234,13 +245,40 @@ def test_updater_to_24_11_7():
 
 
 def test_updater_to_25_2_0():
-    with open("../data/simulation/simulation_24_11_8.json", "r") as fp:
+    with open("../data/simulation/simulation_pre_25_2_0.json", "r") as fp:
         params = json.load(fp)
 
-    for idx_from in range(1, 9):
-        params_new = updater(
-            version_from=f"24.11.{idx_from}",
-            version_to=f"25.2.0",
-            params_as_dict=params,
-        )
-        assert compare_dicts(params, params_new)
+    params_pre_25_2_0 = copy.deepcopy(params)
+    params_new = updater(
+        version_from=f"24.11.8",
+        version_to=f"25.2.0",
+        params_as_dict=params,
+    )
+
+    for idx, model in enumerate(params_pre_25_2_0["models"]):
+        if model["type"] == "Fluid":
+            assert params_new["models"][idx]["turbulence_model_solver"]["hybrid_model"] == {
+                "shielding_function": "DDES",
+                "grid_size_for_LES": model["turbulence_model_solver"]["grid_size_for_LES"],
+            }
+        if model["type"] == "Inflow":
+            assert (
+                params_new["models"][idx]["spec"]["velocity_direction"]
+                == params_pre_25_2_0["models"][idx]["velocity_direction"]
+            )
+        if model["type"] == "Outflow":
+            assert params_new["models"][idx]["spec"]["ramp_steps"] == None
+
+    for idx_output, output in enumerate(params_pre_25_2_0["outputs"]):
+        if output["output_type"] == "VolumeOutput":
+            for idx_field, field in enumerate(output["output_fields"]):
+                if field == "SpalartAllmaras_DDES":
+                    assert (
+                        params_new["outputs"][idx_output]["output_fields"][idx_field]
+                        == "SpalartAllmaras_hybridModel"
+                    )
+                if field == "kOmegaSST_DDES":
+                    assert (
+                        params_new["outputs"][idx_output]["output_fields"][idx_field]
+                        == "kOmegaSST_hybridModel"
+                    )
