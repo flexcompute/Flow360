@@ -743,7 +743,7 @@ class Project(pd.BaseModel):
         # Checking if the file is both a volume mesh and a surface mesh file:
         if validated_objects[1] and validated_objects[2]:
             raise Flow360FileError(
-                f"The given file: {files} may be recoginized as both volume mesh and surface mesh input."
+                f"The given file: {files} may be recognized as both volume mesh and surface mesh input."
                 f" Please use `SurfaceMeshFile('{files}')` or `VolumeMeshFile('{files}')` to be specific."
             )
         if sum(item is not None for item in validated_objects) > 1:
