@@ -114,7 +114,7 @@ VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
     (Flow360Version("25.2.0"), _to_25_2_0),
-]  # A list of the Python API version tupled with there corresponding updaters.
+]  # A list of the Python API version tuple with there corresponding updaters.
 
 
 # pylint: disable=dangerous-default-value
@@ -130,12 +130,12 @@ def _find_update_path(
 
     if version_from > version_to:
         raise ValueError(
-            "Input `SimulationParams` have higher version than the target version and thus cannot be handeled."
+            "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
         )
 
     if version_from > version_milestones[-1][0]:
         raise ValueError(
-            "Input `SimulationParams` have higher version than all known versions and thus cannot be handeled."
+            "Input `SimulationParams` have higher version than all known versions and thus cannot be handled."
         )
 
     if version_from == version_milestones[-1][0]:

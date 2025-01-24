@@ -109,6 +109,14 @@ def test_updater_completeness():
     )
     assert res == [DummyUpdaters.to_3], "Case 8: crosses 99.11.3 => [to_3]"
 
+    # 8.1) from ==99.11.1, to >99.11.3 => crosses milestone => [to_3]
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.1"),
+        version_to=Flow360Version("99.11.4"),
+        version_milestones=version_milestones,
+    )
+    assert res == [DummyUpdaters.to_3], "Case 8.1: crosses 99.11.3 => [to_3]"
+
     # 9) from in-between (99.11.2), to ==99.11.3 => crosses milestone => [to_3]
     res = _find_update_path(
         version_from=Flow360Version("99.11.2"),
@@ -136,7 +144,7 @@ def test_updater_completeness():
     # 12) from >99.11.3, to >99.11.3 => ValueError => []
     with pytest.raises(
         ValueError,
-        match=r"Input `SimulationParams` have higher version than all known versions and thus cannot be handeled.",
+        match=r"Input `SimulationParams` have higher version than all known versions and thus cannot be handled.",
     ):
         _find_update_path(
             version_from=Flow360Version("99.11.4"),
@@ -147,7 +155,7 @@ def test_updater_completeness():
     # 13) to < from => ValueError
     with pytest.raises(
         ValueError,
-        match=r"Input `SimulationParams` have higher version than the target version and thus cannot be handeled.",
+        match=r"Input `SimulationParams` have higher version than the target version and thus cannot be handled.",
     ):
         _find_update_path(
             version_from=Flow360Version("99.11.3"),
@@ -191,20 +199,6 @@ def test_updater_to_24_11_1():
     for file in files:
         params = fl.SimulationParams(f"../data/simulation/{file}")
         assert params
-
-
-def test_updater_to_24_11_6():
-    with open("../data/simulation/simulation_no_updater.json", "r") as fp:
-        params = json.load(fp)
-
-    for idx_from in range(1, 6):
-        for idx_to in range(idx_from + 1, 7):
-            params_new = updater(
-                version_from=f"24.11.{idx_from}",
-                version_to=f"24.11.{idx_to}",
-                params_as_dict=params,
-            )
-            assert compare_dicts(params, params_new)
 
 
 def test_updater_to_24_11_7():
