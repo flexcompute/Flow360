@@ -79,7 +79,7 @@ def _to_24_11_7(params_as_dict):
     return params_as_dict
 
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name, too-many-branches
 def _to_25_2_0(params_as_dict):
     # Migrates the old DDES turbulence model interface to the new hybrid_model format.
     for model in params_as_dict.get("models", []):
@@ -96,26 +96,27 @@ def _to_25_2_0(params_as_dict):
                 "grid_size_for_LES": grid_size_for_LES,
             }
 
-    for output in params_as_dict["outputs"]:
-        if output.get("output_type") == "VolumeOutput":
-            items = output.get("output_fields", {}).get("items", [])
-            for old, new in [
-                ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
-                ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
-            ]:
-                if old in items:
-                    items.remove(old)
-                    items.append(new)
+    if params_as_dict.get("outputs") is not None:
+        for output in params_as_dict["outputs"]:
+            if output.get("output_type") == "VolumeOutput":
+                items = output.get("output_fields", {}).get("items", [])
+                for old, new in [
+                    ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
+                    ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
+                ]:
+                    if old in items:
+                        items.remove(old)
+                        items.append(new)
 
-        # Convert the observers in the AeroAcousticOutput to new schema
-        if output.get("output_type") == "AeroAcousticOutput":
-            legacy_observers = output.get("observers", [])
-            converted_observers = []
-            for position in legacy_observers:
-                converted_observers.append(
-                    {"group_name": "0", "position": position, "private_attribute_expand": None}
-                )
-            output["observers"] = converted_observers
+            # Convert the observers in the AeroAcousticOutput to new schema
+            if output.get("output_type") == "AeroAcousticOutput":
+                legacy_observers = output.get("observers", [])
+                converted_observers = []
+                for position in legacy_observers:
+                    converted_observers.append(
+                        {"group_name": "0", "position": position, "private_attribute_expand": None}
+                    )
+                output["observers"] = converted_observers
 
     # Add ramping to MassFlowRate and move velocity direction to TotalPressure
     for model in params_as_dict.get("models", []):

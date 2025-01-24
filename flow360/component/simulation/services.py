@@ -279,11 +279,11 @@ def validate_model(
         params_as_dict = parse_model_dict(params_as_dict, globals())
         if treat_as_file_content is True:
             with ValidationLevelContext(validation_levels_to_use):
-                validated_param = SimulationParams(file_content=params_as_dict)
+                validated_param = SimulationParams(file_content=params_as_dict, use_updater=True)
         else:
             with unit_system:
                 with ValidationLevelContext(validation_levels_to_use):
-                    validated_param = SimulationParams(**params_as_dict)
+                    validated_param = SimulationParams(use_updater=True, **params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
