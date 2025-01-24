@@ -3,14 +3,93 @@ Support class and functions for project interface.
 """
 
 import datetime
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
-from flow360.component.utils import parse_datetime
+from flow360.component.simulation.framework.single_attribute_base import (
+    SingleAttributeModel,
+)
+from flow360.component.utils import (
+    SUPPORTED_GEOMETRY_FILE_PATTERNS,
+    MeshNameParser,
+    MeshFileFormat,
+    match_file_pattern,
+    parse_datetime,
+)
 from flow360.log import log
+
+
+class GeometryFiles(SingleAttributeModel):
+    """Validation model to check if the given files are geometry files"""
+
+    type_name: Literal["GeometryFile"] = pd.Field("GeometryFile", frozen=True)
+    value: Union[List[str], str] = pd.Field()
+
+    @pd.field_validator("value", mode="after")
+    @classmethod
+    def _validate_files(cls, value):
+        if isinstance(value, str):
+            if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
+                raise ValueError(
+                    f"The given file: {value} is not a supported geometry file. "
+                    f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
+                )
+        else:  # list
+            for file in value:
+                if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, file):
+                    raise ValueError(
+                        f"The given file: {file} is not a supported geometry file. "
+                        f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
+                    )
+        return value
+
+
+class SurfaceMeshFile(SingleAttributeModel):
+    """Validation model to check if the given file is a surface mesh file"""
+
+    type_name: Literal["SurfaceMeshFile"] = pd.Field("SurfaceMeshFile", frozen=True)
+    value: str = pd.Field()
+
+    @pd.field_validator("value", mode="after")
+    @classmethod
+    def _validate_files(cls, value):
+        try:
+            parser = MeshNameParser(input_mesh_file=value)
+        except Exception as e:
+            raise ValueError(str(e)) from e
+        if parser.is_valid_surface_mesh() or parser.is_valid_volume_mesh():
+            # We support extracting surface mesh from volume mesh as well
+            return value
+        raise ValueError(
+            f"The given mesh file {value} is not a valid surface mesh file. "
+            f"Unsupported surface mesh file extensions: {parser.format.ext()}. "
+            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}, {MeshFileFormat.STL.ext()}]."
+        )
+
+
+class VolumeMeshFile(SingleAttributeModel):
+    """Validation model to check if the given file is a volume mesh file"""
+
+    type_name: Literal["VolumeMeshFile"] = pd.Field("VolumeMeshFile", frozen=True)
+    value: str = pd.Field()
+
+    @pd.field_validator("value", mode="after")
+    @classmethod
+    def _validate_files(cls, value):
+        try:
+            parser = MeshNameParser(input_mesh_file=value)
+        except Exception as e:
+            raise ValueError(str(e)) from e
+        if parser.is_valid_volume_mesh():
+            return value
+        raise ValueError(
+            f"The given mesh file {value} is not a valid volume mesh file. ",
+            f"Unsupported volume mesh file extensions: {parser.format.ext()}. "
+            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}].",
+        )
 
 
 class AssetStatistics(pd.BaseModel):

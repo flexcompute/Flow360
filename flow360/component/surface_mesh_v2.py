@@ -20,6 +20,7 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.project_utils import SurfaceMeshFile
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -100,6 +101,12 @@ class SurfaceMeshDraftV2(ResourceDraft):
         self._validate_surface_mesh()
 
     def _validate_surface_mesh(self):
+        if self._file_name is not None:
+            try:
+                SurfaceMeshFile(value = self._file_name)
+            except pd.ValidationError as e:
+                raise Flow360ValueError("Supplied surface mesh file name {} is invalid.")
+                
         if self.project_name is None:
             self.project_name = os.path.splitext(os.path.basename(self._file_name))[0]
             log.warning(

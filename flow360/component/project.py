@@ -23,12 +23,14 @@ from flow360.component.interfaces import (
     SurfaceMeshInterfaceV2,
     VolumeMeshInterfaceV2,
 )
-from flow360.component.project_utils import show_projects_with_keyword_filter
+from flow360.component.project_utils import (
+    GeometryFiles,
+    SurfaceMeshFile,
+    VolumeMeshFile,
+    show_projects_with_keyword_filter,
+)
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.framework.single_attribute_base import (
-    SingleAttributeModel,
-)
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -42,11 +44,8 @@ from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
-    SUPPORTED_GEOMETRY_FILE_PATTERNS,
     AssetShortID,
-    MeshNameParser,
     get_short_asset_id,
-    match_file_pattern,
     parse_datetime,
     wrapstring,
 )
@@ -56,7 +55,6 @@ from flow360.log import log
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
-RootAsset = Union[Geometry, VolumeMeshV2]
 
 
 def _set_up_param_entity_info(entity_info, params: SimulationParams):
@@ -102,68 +100,6 @@ def _set_up_param_entity_info(entity_info, params: SimulationParams):
         with model_attribute_unlock(entity_info, "edge_group_tag"):
             entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
     return entity_info
-
-
-class GeometryFiles(SingleAttributeModel):
-    """Validation model to check if the given files are geometry files"""
-
-    type_name: Literal["GeometryFile"] = pd.Field("GeometryFile", frozen=True)
-    value: Union[List[str], str] = pd.Field()
-
-    @pd.field_validator("value", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        if isinstance(value, str):
-            if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
-                raise ValueError(
-                    f"The given file: {value} is not a supported geometry file. "
-                    f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
-                )
-        else:  # list
-            for file in value:
-                if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, file):
-                    raise ValueError(
-                        f"The given file: {file} is not a supported geometry file. "
-                        f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
-                    )
-        return value
-
-
-class SurfaceMeshFile(SingleAttributeModel):
-    """Validation model to check if the given file is a surface mesh file"""
-
-    type_name: Literal["SurfaceMeshFile"] = pd.Field("SurfaceMeshFile", frozen=True)
-    value: str = pd.Field()
-
-    @pd.field_validator("value", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        try:
-            parser = MeshNameParser(input_mesh_file=value)
-        except Exception as e:
-            raise ValueError(str(e)) from e
-        if parser.is_valid_surface_mesh() or parser.is_valid_volume_mesh():
-            # We support extracting surface mesh from volume mesh as well
-            return value
-        raise ValueError(f"The given mesh file {value} is not a valid surface mesh file.")
-
-
-class VolumeMeshFile(SingleAttributeModel):
-    """Validation model to check if the given file is a volume mesh file"""
-
-    type_name: Literal["VolumeMeshFile"] = pd.Field("VolumeMeshFile", frozen=True)
-    value: str = pd.Field()
-
-    @pd.field_validator("value", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        try:
-            parser = MeshNameParser(input_mesh_file=value)
-        except Exception as e:
-            raise ValueError(str(e)) from e
-        if parser.is_valid_volume_mesh():
-            return value
-        raise ValueError(f"The given mesh file {value} is not a valid volume mesh file.")
 
 
 class RootType(Enum):
