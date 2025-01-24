@@ -424,6 +424,30 @@
             "output_format": "both",
             "output_type": "SurfaceOutput",
             "write_single_file": false
+        },
+        {
+            "name": "Aeroacoustic output",
+            "observers": [
+                {
+                    "units": "m",
+                    "value": [
+                        0.0,
+                        0.0,
+                        1.75
+                    ]
+                },
+                {
+                    "units": "m",
+                    "value": [
+                        0.0,
+                        0.3,
+                        1.725
+                    ]
+                }
+            ],
+            "output_type": "AeroAcousticOutput",
+            "patch_type": "solid",
+            "write_per_surface_output": false
         }
     ],
     "private_attribute_asset_cache": {

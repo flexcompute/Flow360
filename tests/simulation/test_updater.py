@@ -282,3 +282,20 @@ def test_updater_to_25_2_0():
                         params_new["outputs"][idx_output]["output_fields"][idx_field]
                         == "kOmegaSST_hybridModel"
                     )
+
+        if output["output_type"] == "AeroAcousticOutput":
+            for idx_observer, observer in enumerate(output["observers"]):
+                assert (
+                    params_new["outputs"][idx_output]["observers"][idx_observer]["position"]
+                    == observer
+                )
+                assert (
+                    params_new["outputs"][idx_output]["observers"][idx_observer]["group_name"]
+                    == "0"
+                )
+                assert (
+                    params_new["outputs"][idx_output]["observers"][idx_observer][
+                        "private_attribute_expand"
+                    ]
+                    is None
+                )
