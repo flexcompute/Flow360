@@ -70,6 +70,7 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
     SurfaceMeshMeta component
     """
 
+    file_name: Optional[str] = pd_v2.Field(None, alias="fileName")
     status: SurfaceMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
 
 
