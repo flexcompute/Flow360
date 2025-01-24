@@ -1,12 +1,25 @@
 {
     "boundaries": {
+        "boundary_name_A": {
+            "type": "SubsonicInflow",
+            "totalTemperatureRatio": 1.0411244143675171,
+            "totalPressureRatio": 0.9,
+            "velocityDirection": [1.0,0.0,0.0]
+        },
+        "boundary_name_B": {
+            "type": "MassInflow",
+            "totalTemperatureRatio": 1.0411244143675171,
+            "massFlowRate": 0.2,
+            "rampSteps": 10
+        },
         "boundary_name_E": {
             "type": "SubsonicOutflowPressure",
             "staticPressureRatio": 0.9
         },
         "boundary_name_H": {
             "type": "MassOutflow",
-            "massFlowRate": 0.2
+            "massFlowRate": 0.2,
+            "rampSteps": 10
         },
         "boundary_name_F": {
             "type": "SubsonicOutflowMach",

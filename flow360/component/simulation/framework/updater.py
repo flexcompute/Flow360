@@ -107,6 +107,25 @@ def _to_25_2_0(params_as_dict):
                     items.remove(old)
                     items.append(new)
 
+        # Convert the observers in the AeroAcousticOutput to new schema
+        if output.get("output_type") == "AeroAcousticOutput":
+            legacy_observers = output.get("observers", [])
+            converted_observers = []
+            for position in legacy_observers:
+                converted_observers.append(
+                    {"group_name": "0", "position": position, "private_attribute_expand": None}
+                )
+            output["observers"] = converted_observers
+
+    # Add ramping to MassFlowRate and move velocity direction to TotalPressure
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Inflow" and model.get("velocity_direction"):
+            velocity_direction = model.pop("velocity_direction", None)
+            model["spec"]["velocity_direction"] = velocity_direction
+
+        if model.get("spec") and model["spec"].get("type_name") == "MassFlowRate":
+            model["spec"]["ramp_steps"] = None
+
     return params_as_dict
 
 

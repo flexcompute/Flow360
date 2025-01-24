@@ -63,7 +63,7 @@ def create_turb_flat_plate_box_trip_param():
                 ),
                 srf_models.Inflow(
                     entities=[primitives.Surface(name="3")],
-                    spec=srf_models.TotalPressure(1.02828 * thermal_state.pressure),
+                    spec=srf_models.TotalPressure(value=1.02828 * thermal_state.pressure),
                     total_temperature=1.008 * thermal_state.temperature,
                 ),
                 srf_models.Outflow(
