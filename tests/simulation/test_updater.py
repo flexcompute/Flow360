@@ -1,3 +1,4 @@
+import copy
 import json
 from enum import Enum
 
@@ -237,10 +238,37 @@ def test_updater_to_25_2_0():
     with open("../data/simulation/simulation_24_11_8.json", "r") as fp:
         params = json.load(fp)
 
-    for idx_from in range(1, 9):
-        params_new = updater(
-            version_from=f"24.11.{idx_from}",
-            version_to=f"25.2.0",
-            params_as_dict=params,
-        )
-        assert compare_dicts(params, params_new)
+    params_24_11_8 = copy.deepcopy(params)
+    params_new = updater(
+        version_from=f"24.11.8",
+        version_to=f"25.2.0",
+        params_as_dict=params,
+    )
+
+    for idx, model in enumerate(params_24_11_8["models"]):
+        if model["type"] == "Fluid":
+            assert params_new["models"][idx]["turbulence_model_solver"]["hybrid_model"] == {
+                "shielding_function": "DDES",
+                "grid_size_for_LES": model["turbulence_model_solver"]["grid_size_for_LES"],
+            }
+        if model["type"] == "Inflow":
+            assert (
+                params_new["models"][idx]["spec"]["velocity_direction"]
+                == params_24_11_8["models"][idx]["velocity_direction"]
+            )
+        if model["type"] == "Outflow":
+            assert params_new["models"][idx]["spec"]["ramp_steps"] == None
+
+    for idx_output, output in enumerate(params_24_11_8["outputs"]):
+        if output["output_type"] == "VolumeOutput":
+            for idx_field, field in enumerate(output["output_fields"]):
+                if field == "SpalartAllmaras_DDES":
+                    assert (
+                        params_new["outputs"][idx_output]["output_fields"][idx_field]
+                        == "SpalartAllmaras_hybridModel"
+                    )
+                if field == "kOmegaSST_DDES":
+                    assert (
+                        params_new["outputs"][idx_output]["output_fields"][idx_field]
+                        == "kOmegaSST_hybridModel"
+                    )

@@ -759,7 +759,7 @@ def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
     return boundary
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-statements
 def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
     """Boundary translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
