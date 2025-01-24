@@ -146,7 +146,7 @@ class _ParamModelBase(Flow360BaseModel):
         unit_system = model_dict.get("unit_system")
         if version is not None and unit_system is not None:
             if version != __version__:
-                model_dict = updater(  # pylint: disable=R0801
+                model_dict = updater(
                     version_from=version, version_to=__version__, params_as_dict=model_dict
                 )
             # pylint: disable=not-context-manager
