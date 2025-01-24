@@ -6,7 +6,7 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import flow360 as fl
-from tests.utils import compare_values
+from flow360.component.simulation.framework.updater_utils import compare_values
 
 assertions = unittest.TestCase("__init__")
 
