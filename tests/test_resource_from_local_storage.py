@@ -8,7 +8,7 @@ from flow360 import log
 from flow360.component.case import Case, CaseMeta
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
-from flow360.component.surface_mesh import SurfaceMesh, SurfaceMeshMeta
+from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
 from flow360.component.utils import LocalResourceCache
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 
@@ -184,9 +184,9 @@ def test_resources_from_local_storage_geo():
 
         sm_meta = case_meta.path.surface_mesh
         if sm_meta is not None:
-            sm = SurfaceMesh.from_local_storage(
+            sm = SurfaceMeshV2.from_local_storage(
                 local_storage_path=os.path.join("data", sm_meta.id),
-                meta_data=SurfaceMeshMeta(
+                meta_data=SurfaceMeshMetaV2(
                     **local_metadata_builder(
                         id=sm_meta.id,
                         name=sm_meta.name,
@@ -230,8 +230,8 @@ def test_resource_from_local_storage_vm():
                 "name": "Case_DrivAer 225M",
                 "path": {
                     "volumeMesh": {
-                        "s3Path": "s3://flow360meshes/users/AIDAXWCOWJGJJBXX543AQ/vm-1cfdec99-3ce3-428c-85f8-2054812b2ddc",
-                        "userId": "AIDAXWCOWJGJJBXX543AQ",
+                        "s3Path": "s3://flow360meshes/users/XXXXXXX/vm-1cfdec99-3ce3-428c-85f8-2054812b2ddc",
+                        "userId": "XXXXXXX",
                         "id": "vm-1cfdec99-3ce3-428c-85f8-2054812b2ddc",
                         "name": "DrivAer",
                         "type": "VolumeMesh",
@@ -240,8 +240,8 @@ def test_resource_from_local_storage_vm():
                     },
                     "cases": [
                         {
-                            "s3Path": "s3://flow360cases/users/AIDAXWCOWJGJJBXX543AQ/case-bbf9a4dc-f5f7-42ee-bfe8-8905d9e45386",
-                            "userId": "AIDAXWCOWJGJJBXX543AQ",
+                            "s3Path": "s3://flow360cases/users/XXXXXXX/case-bbf9a4dc-f5f7-42ee-bfe8-8905d9e45386",
+                            "userId": "XXXXXXX",
                             "id": "case-bbf9a4dc-f5f7-42ee-bfe8-8905d9e45386",
                             "name": "Case_DrivAer 225M",
                             "type": "Case",
@@ -290,9 +290,9 @@ def test_resource_from_local_storage_vm():
 
         sm_meta = case_meta.path.surface_mesh
         if sm_meta is not None:
-            sm = SurfaceMesh.from_local_storage(
+            sm = SurfaceMeshV2.from_local_storage(
                 local_storage_path=os.path.join("data", sm_meta.id),
-                meta_data=SurfaceMeshMeta(
+                meta_data=SurfaceMeshMetaV2(
                     **local_metadata_builder(
                         id=sm_meta.id,
                         name=sm_meta.name,

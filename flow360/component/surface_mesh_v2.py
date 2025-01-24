@@ -70,10 +70,7 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
     SurfaceMeshMeta component
     """
 
-    project_id: str = pd.Field(alias="projectId")
-    deleted: bool = pd.Field()
     status: SurfaceMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
-    file_name: str = pd.Field(alias="fileName")
 
 
 class SurfaceMeshDraftV2(ResourceDraft):
@@ -233,7 +230,9 @@ class SurfaceMeshV2(AssetBase):
         return asset_obj
 
     @classmethod
-    def from_local_storage(cls, mesh_id: str = None, local_storage_path="") -> SurfaceMeshV2:
+    def from_local_storage(
+        cls, mesh_id: str = None, local_storage_path="", meta_data: SurfaceMeshMetaV2 = None
+    ) -> SurfaceMeshV2:
         """
         Parameters
         ----------
@@ -248,7 +247,9 @@ class SurfaceMeshV2(AssetBase):
         SurfaceMeshV2
             Surface mesh object
         """
-        return super()._from_local_storage(asset_id=mesh_id, local_storage_path=local_storage_path)
+        return super()._from_local_storage(
+            asset_id=mesh_id, local_storage_path=local_storage_path, meta_data=meta_data
+        )
 
     @classmethod
     # pylint: disable=too-many-arguments,arguments-renamed

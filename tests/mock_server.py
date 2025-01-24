@@ -311,6 +311,18 @@ class MockResponseProjectSurfaceMesh(MockResponse):
         return res
 
 
+class MockResponseProjectSurfaceMeshSimConfig(MockResponse):
+    """response for SurfaceMesh.from_cloud(id="sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a")'s simualtion json"""
+
+    @staticmethod
+    def json():
+        with open(
+            os.path.join(here, "data/mock_webapi/project_volume_mesh_simulation_json_resp.json")
+        ) as fh:
+            res = json.load(fh)
+        return res
+
+
 class MockResponseProjectVolumeMesh(MockResponse):
     """response for VolumeMesh.from_cloud(id="vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3")'s meta json"""
 
@@ -478,7 +490,8 @@ GET_RESPONSE_MAP = {
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e/tree": MockResponseProjectTree,
     "/v2/geometries/geo-2877e124-96ff-473d-864b-11eec8648d42": MockResponseProjectGeometry,
     "/v2/geometries/geo-2877e124-96ff-473d-864b-11eec8648d42/simulation/file": MockResponseProjectGeometrySimConfig,
-    "/surfacemeshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a": MockResponseProjectSurfaceMesh,
+    "/v2/surface-meshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a": MockResponseProjectSurfaceMesh,
+    "/v2/surface-meshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a/simulation/file": MockResponseProjectSurfaceMeshSimConfig,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
     "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
     "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,

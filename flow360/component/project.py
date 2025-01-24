@@ -573,7 +573,7 @@ class Project(pd.BaseModel):
 
         Returns
         -------
-        SurfaceMesh
+        SurfaceMeshV2
             The surface mesh asset.
         """
         return self.get_surface_mesh()
@@ -1092,7 +1092,6 @@ class Project(pd.BaseModel):
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = entity_info
 
-        params.to_file("simulation_DEBUG.json")
         draft.update_simulation_params(params)
 
         destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
