@@ -35,6 +35,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
 )
 from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
+    DetachedEddySimulation,
     HeatEquationSolver,
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -55,6 +56,7 @@ from flow360.component.simulation.models.surface_models import (
     Periodic,
     Pressure,
     Rotational,
+    SlaterPorousBleed,
     SlipWall,
     SymmetryPlane,
     Temperature,
@@ -207,6 +209,7 @@ __all__ = [
     "SpalartAllmaras",
     "KOmegaSST",
     "SpalartAllmarasModelConstants",
+    "DetachedEddySimulation",
     "KOmegaSSTModelConstants",
     "LinearSolver",
     "ForcePerArea",

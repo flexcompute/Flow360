@@ -4,12 +4,13 @@ import re
 import pytest
 
 from flow360.component.simulation import services
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
     VOLUME_MESH,
 )
-from tests.utils import compare_dict_to_ref, compare_values
+from tests.utils import compare_dict_to_ref
 
 
 @pytest.fixture(autouse=True)
@@ -689,3 +690,104 @@ def test_validation_level_intersection():
         "Case",
         "VolumeMesh",
     ]
+
+
+def validate_proper_unit(obj, allowed_units_string):
+    def is_expected_unit(unit_str, allowed_units_string):
+        tokens = re.findall(r"[A-Za-z_]+", unit_str)
+        return all(token in allowed_units_string for token in tokens)
+
+    if isinstance(obj, dict):
+        if "value" in obj and "units" in obj:
+            assert is_expected_unit(obj["units"], allowed_units_string)
+
+        for _, val in obj.items():
+            validate_proper_unit(val, allowed_units_string)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            validate_proper_unit(item, allowed_units_string)
+
+
+def test_imperial_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, new_unit_system="Imperial")
+    imperial_units = {"ft", "lb", "s", "degF", "delta_degF", "rad", "degree"}
+
+    validate_proper_unit(dict_to_convert, imperial_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "degF"
+    assert abs(temperature_tester["value"] - 302) / 302 < 1e-10
+
+    # General comparison\
+    with open("./ref/unit_system_converted_imperial.json", "r") as fp:
+        ref_dict = json.load(fp)
+    compare_values(dict_to_convert, ref_dict)
+
+
+def test_CGS_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, new_unit_system="CGS")
+    CGS_units = {"cm", "g", "s", "K", "rad", "degree"}
+
+    validate_proper_unit(dict_to_convert, CGS_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "K"
+    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # General comparison
+    with open("./ref/unit_system_converted_CGS.json", "r") as fp:
+        ref_dict = json.load(fp)
+    compare_values(dict_to_convert, ref_dict)
+
+
+def test_SI_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, new_unit_system="SI")
+    SI_units = {"m", "kg", "s", "K", "rad", "degree"}
+
+    validate_proper_unit(dict_to_convert, SI_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "K"
+    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # General comparison
+    with open("./ref/unit_system_converted_SI.json", "r") as fp:
+        ref_dict = json.load(fp)
+    compare_values(dict_to_convert, ref_dict)

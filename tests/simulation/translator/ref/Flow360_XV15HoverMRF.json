@@ -47,6 +47,7 @@
         },
         "CFLMultiplier": 2.0,
         "DDES": false,
+        "ZDES": false,
         "gridSizeForLES": "maxEdgeLength",
         "reconstructionGradientLimiter": 1.0,
         "quadraticConstitutiveRelation": false,

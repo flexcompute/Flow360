@@ -202,6 +202,32 @@ TurbulenceModelConstants = Annotated[
 ]
 
 
+class DetachedEddySimulation(Flow360BaseModel):
+    """
+    :class:`DetachedEddySimulation` class is used for running hybrid RANS-LES simulations
+    "It is supported for both SpalartAllmaras and kOmegaSST turbulence models, with and"
+    "without AmplificationFactorTransport transition model enabled."
+
+    Example
+    -------
+    >>> fl.SpalartAllmaras(
+    ...     hybrid_model = DetachedEddySimulation(shielding_function = 'ZDES', grid_size_for_LES = 'maxEdgeLength')
+    ... )
+    """
+
+    shielding_function: Literal["DDES", "ZDES"] = pd.Field(
+        "DDES",
+        description="Specifies the type of shielding used for the detached eddy simulation. The allowed inputs are"
+        ":code:`DDES` (Delayed Detached Eddy Simulation proposed by Spalart 2006) and :code:`ZDES`"
+        "(proposed by Deck and Renard 2020).",
+    )
+    grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(
+        "maxEdgeLength",
+        description="Specifies the length used for the computation of LES length scale. "
+        + "The allowed inputs are :code:`maxEdgeLength` and :code:`meanEdgeLength`.",
+    )
+
+
 class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     """:class:`TurbulenceModelSolver` class for setting up turbulence model solver.
     For more information on setting up the numerical parameters for the turbulence model solver,
@@ -227,17 +253,6 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     )
     equation_evaluation_frequency: PositiveInt = pd.Field(
         4, description="Frequency at which to update the turbulence equation."
-    )
-    DDES: bool = pd.Field(
-        False,
-        description=":code:`True` enables Delayed Detached Eddy Simulation. "
-        + "Supported for both SpalartAllmaras and kOmegaSST turbulence models, "
-        + "with and without AmplificationFactorTransport transition model enabled.",
-    )
-    grid_size_for_LES: Literal["maxEdgeLength", "meanEdgeLength"] = pd.Field(
-        "maxEdgeLength",
-        description="Specifes the length used for the computation of LES length scale. "
-        + "The allowed inputs are :code:`maxEdgeLength` and :code:`meanEdgeLength`.",
     )
     reconstruction_gradient_limiter: pd.confloat(ge=0, le=2) = pd.Field(
         1.0,
@@ -270,6 +285,10 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     linear_solver: LinearSolver = pd.Field(
         LinearSolver(max_iterations=20),
         description="Linear solver settings, see :class:`LinearSolver` documentation.",
+    )
+
+    hybrid_model: Optional[DetachedEddySimulation] = pd.Field(
+        None, description="Model used for running hybrid RANS-LES simulations"
     )
 
 

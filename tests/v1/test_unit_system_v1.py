@@ -257,7 +257,7 @@ def test_unit_system():
         assert data.F == 4 * u.lbf
         assert data.p == 5 * u.lbf / u.ft**2
         assert data.r == 2 * u.lb / u.ft**3
-        assert data.mu == 3 * u.lbf * u.s / u.ft**2
+        assert data.mu == 3 * u.lb / (u.ft * u.s)
         assert data.omega == 5 * u.rad / u.s
 
     # Flow360

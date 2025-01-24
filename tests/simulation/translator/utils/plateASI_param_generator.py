@@ -5,6 +5,7 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.material import Air, Sutherland
 from flow360.component.simulation.models.solver_numerics import (
+    DetachedEddySimulation,
     LinearSolver,
     NavierStokesSolver,
     SpalartAllmaras,
@@ -57,6 +58,14 @@ def apply_plateASI_time_stepping(param, deltNonDimensional, physicalSteps):
         steps=physicalSteps,
         CFL=RampCFL(final=50000, initial=1, ramp_steps=5),
     )
+
+
+def apply_plateASI_hybrid_model(param):
+    for model in param.models:
+        if isinstance(model, Fluid):
+            model.turbulence_model_solver.hybrid_model = DetachedEddySimulation(
+                shielding_function="ZDES", grid_size_for_LES="meanEdgeLength"
+            )
 
 
 def apply_plateASI_user_defined_dynamics(param, zeta, K, omegaN, theta0, initOmegaDot, initTheta):
@@ -199,6 +208,7 @@ def create_plateASI_param():
     param = create_plateASI_base_param(Re, Mach)
     append_plateASI_boundaries(param)
     apply_plateASI_time_stepping(param, deltNonDimensional, physicalSteps)
+    apply_plateASI_hybrid_model(param)
     apply_plateASI_user_defined_dynamics(param, zeta, K, omegaN, theta0, initOmegaDot, initTheta)
     add_plateASI_rotation_zone(param)
     return param

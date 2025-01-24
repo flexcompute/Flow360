@@ -1,0 +1,27 @@
+{
+    "data": {
+        "userId": "AIDAXWCOWJGJJBXX543AQ",
+        "id": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
+        "name": "Case_Tutorial Calculating Dynamic Derivatives using Sliding Interfaces (Unsteady)",
+        "type": "Case",
+        "projectId": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "parentFolderId": "ROOT.FLOW360",
+        "tags": null,
+        "status": "completed",
+        "parentId": "vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3",
+        "parentCaseId": "case-69b8c249-fce5-412a-9927-6a79049deebb",
+        "visualizationStatus": "completed",
+        "postProcessStatus": "completed",
+        "solverVersion": "release-24.11",
+        "viewed": false,
+        "solverStartAt": "2024-12-05T14:36:14.513Z",
+        "solverFinishAt": "2024-12-05T14:53:12.616Z",
+        "runSequence": "8866983b-6291-4203-bdcb-3d8eeb7efecf",
+        "createdAt": "2024-12-05T12:27:14.641Z",
+        "updatedAt": "2024-12-05T14:56:51.629Z",
+        "visualizedAt": "2024-12-05T14:56:49.006Z",
+        "postProcessedAt": "2024-12-05T14:54:16.517Z",
+        "requestStopAt": null,
+        "displayStatus": "completed"
+    }
+}

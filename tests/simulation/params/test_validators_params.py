@@ -15,7 +15,10 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
-from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
+from flow360.component.simulation.models.solver_numerics import (
+    DetachedEddySimulation,
+    TransitionModelSolver,
+)
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     Periodic,
@@ -45,6 +48,9 @@ from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    TimeAverageSliceOutput,
+    TimeAverageSurfaceOutput,
+    TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -75,14 +81,14 @@ def surface_output_with_wall_metric():
 
 
 @pytest.fixture()
-def volume_output_with_SA_DDES():
-    volume_output = VolumeOutput(name="volume", output_fields=["SpalartAllmaras_DDES"])
+def volume_output_with_SA_hybrid_model():
+    volume_output = VolumeOutput(name="volume", output_fields=["SpalartAllmaras_hybridModel"])
     return volume_output
 
 
 @pytest.fixture()
-def volume_output_with_kOmega_DDES():
-    volume_output = VolumeOutput(name="volume", output_fields=["kOmegaSST_DDES"])
+def volume_output_with_kOmega_hybrid_model():
+    volume_output = VolumeOutput(name="volume", output_fields=["kOmegaSST_hybridModel"])
     return volume_output
 
 
@@ -135,9 +141,9 @@ def fluid_model_with_low_numerical_dissipation():
 
 
 @pytest.fixture()
-def fluid_model_with_DDES():
+def fluid_model_with_hybrid_model():
     fluid_model = Fluid()
-    fluid_model.turbulence_model_solver.DDES = True
+    fluid_model.turbulence_model_solver.hybrid_model = DetachedEddySimulation()
     return fluid_model
 
 
@@ -218,29 +224,50 @@ def test_numerical_dissipation_mode_validator(
         )
 
 
-def test_ddes_wall_function_validator(
-    volume_output_with_SA_DDES,
-    volume_output_with_kOmega_DDES,
-    fluid_model_with_DDES,
+def test_hybrid_model_wall_function_validator(
+    volume_output_with_SA_hybrid_model,
+    volume_output_with_kOmega_hybrid_model,
+    fluid_model_with_hybrid_model,
     fluid_model,
 ):
     # Valid simulation params
     with SI_unit_system:
         params = SimulationParams(
-            models=[fluid_model_with_DDES], outputs=[volume_output_with_SA_DDES]
+            models=[fluid_model_with_hybrid_model],
+            outputs=[volume_output_with_SA_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
         )
 
     assert params
 
-    message = "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on."
+    message = "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model and hybrid RANS-LES used."
 
     # Invalid simulation params (wrong output type)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(models=[fluid_model_with_DDES], outputs=[volume_output_with_kOmega_DDES])
+        SimulationParams(
+            models=[fluid_model_with_hybrid_model],
+            outputs=[volume_output_with_kOmega_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
 
-    # Invalid simulation params (DDES turned off)
+    # Invalid simulation params (no hybrid)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(models=[fluid_model], outputs=[volume_output_with_kOmega_DDES])
+        SimulationParams(
+            models=[fluid_model],
+            outputs=[volume_output_with_kOmega_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+
+def test_hybrid_model_for_unsteady_validator(
+    fluid_model_with_hybrid_model,
+):
+
+    message = "hybrid RANS-LES model can only be used in unsteady simulations."
+
+    # Invalid simulation params (using hybrid model for steady simulations)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(models=[fluid_model_with_hybrid_model])
 
 
 def test_cht_solver_settings_validator(
@@ -532,7 +559,7 @@ def test_output_fields_with_user_defined_fields():
             ],
         )
 
-    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']."
+    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_hybridModel', 'kOmegaSST_hybridModel', 'localCFL', 'not_valid_field']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -760,3 +787,65 @@ def test_rotating_reference_frame_model_flag():
             )
 
     assert test_param.models[3].rotating_reference_frame_model == False
+
+
+def test_output_fields_with_time_average_output():
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[
+                TimeAverageVolumeOutput(
+                    name="TimeAverageVolume",
+                    output_fields=["primitiveVars"],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSurfaceOutput(
+                    name="TimeAverageSurface",
+                    output_fields=["primitiveVars"],
+                    entities=[
+                        Surface(name="VOLUME/LEFT"),
+                    ],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSurfaceOutput(
+                    name="TimeAverageSurface",
+                    output_fields=["T"],
+                    entities=[
+                        Surface(name="VOLUME/RIGHT"),
+                    ],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+                TimeAverageSliceOutput(
+                    entities=[
+                        Slice(
+                            name="TimeAverageSlice",
+                            origin=(0, 0, 0) * u.m,
+                            normal=(0, 0, 1),
+                        )
+                    ],
+                    output_fields=["s", "T"],
+                    start_step=4,
+                    frequency=10,
+                    frequency_offset=14,
+                ),
+            ],
+        )
+
+    assert params
+
+    # Invalid simulation params
+    output_type_set = set()
+    for output in params.outputs:
+        output_type_set.add(f"`{output.output_type}`")
+    output_type_list = ",".join(sorted(output_type_set)).strip(",")
+    message = f"{output_type_list} can only be used in unsteady simulations."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        params.time_stepping = Steady(max_steps=1000)

@@ -279,10 +279,8 @@ def test_simulation_to_case_json():
                 },
                 "turbulence_model_solver": {
                     "CFL_multiplier": 2.0,
-                    "DDES": False,
                     "absolute_tolerance": 1e-08,
                     "equation_evaluation_frequency": 4,
-                    "grid_size_for_LES": "maxEdgeLength",
                     "linear_solver": {"max_iterations": 15},
                     "max_force_jac_update_physical_steps": 0,
                     "modeling_constants": {

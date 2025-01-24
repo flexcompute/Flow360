@@ -12,6 +12,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SliceOutput,
     SurfaceOutput,
+    TimeAverageOutputTypes,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
@@ -19,7 +20,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -164,11 +165,11 @@ def _check_numerical_dissipation_factor_output(v):
     return v
 
 
-def _check_consistency_ddes_volume_output(v):
+def _check_consistency_hybrid_model_volume_output(v):
     model_type = None
     models = v.models
 
-    run_ddes = False
+    run_hybrid_model = False
 
     if models:
         for model in models:
@@ -176,10 +177,10 @@ def _check_consistency_ddes_volume_output(v):
                 turbulence_model_solver = model.turbulence_model_solver
                 if (
                     not isinstance(turbulence_model_solver, NoneSolver)
-                    and turbulence_model_solver.DDES
+                    and turbulence_model_solver.hybrid_model is not None
                 ):
                     model_type = turbulence_model_solver.type_name
-                    run_ddes = True
+                    run_hybrid_model = True
                     break
 
     outputs = v.outputs
@@ -190,17 +191,42 @@ def _check_consistency_ddes_volume_output(v):
     for output in outputs:
         if isinstance(output, VolumeOutput) and output.output_fields is not None:
             output_fields = output.output_fields.items
-            if "SpalartAllmaras_DDES" in output_fields and not (
-                model_type == "SpalartAllmaras" and run_ddes
+            if "SpalartAllmaras_hybridModel" in output_fields and not (
+                model_type == "SpalartAllmaras" and run_hybrid_model
             ):
                 raise ValueError(
-                    "SpalartAllmaras_DDES output can only be specified with "
-                    "SpalartAllmaras turbulence model and DDES turned on."
+                    "SpalartAllmaras_hybridModel output can only be specified with "
+                    "SpalartAllmaras turbulence model and hybrid RANS-LES used."
                 )
-            if "kOmegaSST_DDES" in output_fields and not (model_type == "kOmegaSST" and run_ddes):
+            if "kOmegaSST_hybridModel" in output_fields and not (
+                model_type == "kOmegaSST" and run_hybrid_model
+            ):
                 raise ValueError(
-                    "kOmegaSST_DDES output can only be specified with kOmegaSST turbulence model and DDES turned on."
+                    "kOmegaSST_hybridModel output can only be specified with kOmegaSST turbulence model "
+                    "and hybrid RANS-LES used."
                 )
+
+    return v
+
+
+def _check_unsteadiness_to_use_hybrid_model(v):
+    models = v.models
+
+    run_hybrid_model = False
+
+    if models:
+        for model in models:
+            if isinstance(model, Fluid):
+                turbulence_model_solver = model.turbulence_model_solver
+                if (
+                    not isinstance(turbulence_model_solver, NoneSolver)
+                    and turbulence_model_solver.hybrid_model is not None
+                ):
+                    run_hybrid_model = True
+                    break
+
+    if run_hybrid_model and v.time_stepping is not None and isinstance(v.time_stepping, Steady):
+        raise ValueError("hybrid RANS-LES model can only be used in unsteady simulations.")
 
     return v
 
@@ -373,4 +399,20 @@ def _check_and_add_noninertial_reference_frame_flag(params):
                 "for steady state simulations."
             )
 
+    return params
+
+
+def _check_time_average_output(params):
+    if isinstance(params.time_stepping, Unsteady) or params.outputs is None:
+        return params
+    time_average_output_types = set()
+    for output in params.outputs:
+        if isinstance(output, TimeAverageOutputTypes):
+            time_average_output_types.add(output.output_type)
+    if len(time_average_output_types) > 0:
+        output_type_list = ",".join(
+            f"`{output_type}`" for output_type in sorted(time_average_output_types)
+        )
+        output_type_list.strip(",")
+        raise ValueError(f"{output_type_list} can only be used in unsteady simulations.")
     return params

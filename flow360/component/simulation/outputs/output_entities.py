@@ -141,6 +141,7 @@ class PointArray(_PointEntityBase):
     """
 
     private_attribute_entity_type_name: Literal["PointArray"] = pd.Field("PointArray", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
     start: LengthType.Point = pd.Field(description="The starting point of the line.")
     end: LengthType.Point = pd.Field(description="The end point of the line.")

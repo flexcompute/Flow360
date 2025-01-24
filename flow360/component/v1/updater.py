@@ -21,6 +21,7 @@ UPDATE_MAP = [
     ("24.2.*", "24.3.*", _no_update),  # we should not allow to submit Flow360Params to version 24.3
     ("24.3.*", "24.11.*", _no_update),  # Note: Remove when we do not want V1 submit to 2.0 anymore
     ("24.11.*", "24.11.*", _no_update),  # Note: Remove when we do not want V1 submit to 2.0 anymore
+    ("24.11.*", "25.2.0", _no_update),
 ]
 
 

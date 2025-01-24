@@ -9,14 +9,117 @@ TODO: remove duplication code with FLow360Params updater.
 import re
 
 from ....exceptions import Flow360NotImplementedError, Flow360RuntimeError
+from .entity_base import generate_uuid
+from .updater_utils import compare_dicts
 
 
 def _no_update(params_as_dict):
     return params_as_dict
 
 
+def _24_11_0_to_24_11_1_update(params_as_dict):
+    # Check and remove the 'meshing' node if conditions are met
+    if params_as_dict.get("meshing") is not None:
+        meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+        bl_thickness = meshing_defaults.get("boundary_layer_first_layer_thickness")
+        max_edge_length = meshing_defaults.get("surface_max_edge_length")
+        if bl_thickness is None and max_edge_length is None:
+            del params_as_dict["meshing"]
+
+    # Iterate over models and update 'heat_spec' where necessary
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Wall" and model.get("heat_spec") is None:
+            model["heat_spec"] = {
+                "type_name": "HeatFlux",
+                "value": {"value": 0, "units": "W / m**2"},
+            }
+
+    # Check and remove the 'time_stepping' -> order_of_accuracy node
+    if "time_stepping" in params_as_dict:
+        params_as_dict["time_stepping"].pop("order_of_accuracy", None)
+
+    return params_as_dict
+
+
+def _24_11_6_to_24_11_7_update(params_as_dict):
+    # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
+    # to all occurrence of the same PointArray
+    if params_as_dict.get("outputs") is None:
+        return params_as_dict
+
+    point_array_list = []
+    for output in params_as_dict["outputs"]:
+        if output.get("entities", None) and output["entities"].get("stored_entities", None):
+            for entity in output["entities"]["stored_entities"]:
+                if (
+                    entity.get("private_attribute_entity_type_name") == "PointArray"
+                    and entity.get("private_attribute_id") is None
+                ):
+                    new_uuid = generate_uuid()
+                    entity["private_attribute_id"] = new_uuid
+                    point_array_list.append(entity)
+
+    if params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
+        for idx, draft_entity in enumerate(
+            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+        ):
+            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
+                continue
+            for point_array in point_array_list:
+                if compare_dicts(
+                    dict1=draft_entity,
+                    dict2=point_array,
+                    ignore_keys=["private_attribute_id"],
+                ):
+                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+                        "draft_entities"
+                    ][idx] = point_array
+                    continue
+
+    return params_as_dict
+
+
+# pylint: disable=invalid-name
+def _24_11_8_to_25_2_0_update(params_as_dict):
+    # Migrates the old DDES turbulence model interface to the new hybrid_model format.
+    for model in params_as_dict.get("models", []):
+        turb_dict = model.get("turbulence_model_solver")
+        if not turb_dict:
+            continue
+
+        run_ddes = turb_dict.pop("DDES", None)
+        grid_size_for_LES = turb_dict.pop("grid_size_for_LES", None)
+
+        if run_ddes:
+            turb_dict["hybrid_model"] = {
+                "shielding_function": "DDES",
+                "grid_size_for_LES": grid_size_for_LES,
+            }
+
+    for output in params_as_dict["outputs"]:
+        if output.get("output_type") == "VolumeOutput":
+            items = output.get("output_fields", {}).get("items", [])
+            for old, new in [
+                ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
+                ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
+            ]:
+                if old in items:
+                    items.remove(old)
+                    items.append(new)
+
+    return params_as_dict
+
+
 UPDATE_MAP = [
-    ("24.11.*", "24.11.*", _no_update),
+    ("24.11.0", "24.11.1", _24_11_0_to_24_11_1_update),
+    ("24.11.1", "24.11.2", _no_update),
+    ("24.11.2", "24.11.3", _no_update),
+    ("24.11.3", "24.11.4", _no_update),
+    ("24.11.4", "24.11.5", _no_update),
+    ("24.11.([1-5])$", "24.11.6", _no_update),
+    ("24.11.6", "24.11.7", _24_11_6_to_24_11_7_update),
+    ("24.11.7", "24.11.8", _no_update),
+    ("24.11.8", "25.2.0", _24_11_8_to_25_2_0_update),
 ]
 
 

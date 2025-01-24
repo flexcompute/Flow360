@@ -15,6 +15,7 @@ from flow360.component.simulation.models.surface_models import (
     Outflow,
     Periodic,
     Pressure,
+    SlaterPorousBleed,
     SlipWall,
     SurfaceModelTypes,
     SymmetryPlane,
@@ -791,6 +792,12 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
             boundary["staticPressureRatio"] = (
                 model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
             )
+        elif isinstance(model.spec, SlaterPorousBleed):
+            boundary["type"] = "SlaterPorousBleed"
+            boundary["staticPressureRatio"] = (
+                model_dict["spec"]["staticPressure"] * op_acousitc_to_static_pressure_ratio
+            )
+            boundary["porosity"] = model_dict["spec"]["porosity"]
         elif isinstance(model.spec, Mach):
             boundary["type"] = "SubsonicOutflowMach"
             boundary["MachNumber"] = model_dict["spec"]["value"]
@@ -967,6 +974,24 @@ def get_solver_json(
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
+
+            if not isinstance(model.turbulence_model_solver, NoneSolver):
+                hybrid_model = model.turbulence_model_solver.hybrid_model
+                if hybrid_model is not None:
+                    if hybrid_model.shielding_function == "DDES":
+                        translated["turbulenceModelSolver"]["DDES"] = True
+                        translated["turbulenceModelSolver"]["ZDES"] = False
+                    if hybrid_model.shielding_function == "ZDES":
+                        translated["turbulenceModelSolver"]["ZDES"] = True
+                        translated["turbulenceModelSolver"]["DDES"] = False
+                    translated["turbulenceModelSolver"][
+                        "gridSizeForLES"
+                    ] = hybrid_model.grid_size_for_LES
+                    translated["turbulenceModelSolver"].pop("hybridModel")
+                else:
+                    translated["turbulenceModelSolver"]["DDES"] = False
+                    translated["turbulenceModelSolver"]["ZDES"] = False
+                    translated["turbulenceModelSolver"]["gridSizeForLES"] = "maxEdgeLength"
 
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
