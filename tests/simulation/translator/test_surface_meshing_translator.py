@@ -9,6 +9,7 @@ from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
+    AspectRatioBasedRefinement,
     HeightBasedRefinement,
     ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
@@ -242,6 +243,39 @@ def om6wing_tutorial_global_plus_local_override():
 
 
 @pytest.fixture()
+def om6wing_tutorial_aspect_ratio():
+    my_geometry = TempGeometry("om6wing.csm")
+    with SI_unit_system:
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_edge_growth_rate=1.07,
+                    curvature_resolution_angle=10 * u.deg,
+                    surface_max_edge_length=15 * u.cm,
+                ),
+                refinements=[
+                    SurfaceRefinement(
+                        entities=[my_geometry["body01_face001"]],
+                        max_edge_length=14 * u.cm,
+                    ),
+                    SurfaceEdgeRefinement(
+                        entities=[my_geometry["body01_edge001"], my_geometry["body01_edge002"]],
+                        method=HeightBasedRefinement(value=3e-2 * u.cm),
+                    ),
+                    SurfaceEdgeRefinement(
+                        entities=[my_geometry["body01_edge003"], my_geometry["body01_edge004"]],
+                        method=AspectRatioBasedRefinement(value=10),
+                    ),
+                ],
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
 def get_om6wing_geometry():
     return TempGeometry("om6wing.csm")
 
@@ -414,6 +448,16 @@ def test_om6wing_tutorial(
         om6wing_tutorial_global_only,
         get_om6wing_geometry.mesh_unit,
         "om6wing_tutorial_use_global.json",
+    )
+
+
+def test_om6wing_tutorial_aspect_ratio(get_om6wing_geometry, om6wing_tutorial_aspect_ratio):
+    params = om6wing_tutorial_aspect_ratio
+    print(params.model_dump_json(indent=4))
+    _translate_and_compare(
+        om6wing_tutorial_aspect_ratio,
+        get_om6wing_geometry.mesh_unit,
+        "om6wing_tutorial_aspect_ratio.json",
     )
 
 
