@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import threading
 from enum import Enum
-from typing import Any, List
+from typing import Any, List, Optional
 
 import pydantic as pd
 
@@ -70,7 +70,7 @@ class SurfaceMeshMetaV2(AssetMetaBaseModelV2):
     SurfaceMeshMeta component
     """
 
-    file_name: Optional[str] = pd_v2.Field(None, alias="fileName")
+    file_name: Optional[str] = pd.Field(None, alias="fileName")
     status: SurfaceMeshStatusV2 = pd.Field()  # Overshadowing to ensure correct is_final() method
 
 
@@ -209,6 +209,9 @@ class SurfaceMeshV2(AssetBase):
     _web_api_class = Flow360Resource
     _entity_info_class = SurfaceMeshEntityInfo
     _cloud_resource_type_name = "SurfaceMesh"
+
+    # pylint: disable=fixme
+    # TODO: add _mesh_stats_file = "meshStats.json" like in VolumeMeshV2
 
     @classmethod
     # pylint: disable=redefined-builtin

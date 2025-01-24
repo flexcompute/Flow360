@@ -317,7 +317,7 @@ class MockResponseProjectSurfaceMeshSimConfig(MockResponse):
     @staticmethod
     def json():
         with open(
-            os.path.join(here, "data/mock_webapi/project_volume_mesh_simulation_json_resp.json")
+            os.path.join(here, "data/mock_webapi/project_surface_mesh_simulation_json_resp.json")
         ) as fh:
             res = json.load(fh)
         return res
