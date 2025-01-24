@@ -1,15 +1,188 @@
 import json
+from enum import Enum
 
 import pytest
 
 import flow360 as fl
-from flow360.component.simulation.framework.updater import updater
-from flow360.component.simulation.framework.updater_utils import compare_dicts
+from flow360.component.simulation.framework.updater import (
+    VERSION_MILESTONES,
+    _find_update_path,
+    updater,
+)
+from flow360.component.simulation.framework.updater_utils import (
+    Flow360Version,
+    compare_dicts,
+)
 
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+def test_milestone_ordering():
+    for index in range(len(VERSION_MILESTONES) - 1):
+        assert VERSION_MILESTONES[index][0] < VERSION_MILESTONES[index + 1][0]
+
+
+def test_updater_completeness():
+    class DummyUpdaters(Enum):
+        to_1 = "to_1"
+        to_3 = "to_3"
+        to_5 = "to_5"
+
+    version_milestones = [
+        (Flow360Version("99.11.1"), DummyUpdaters.to_1),
+        (Flow360Version("99.11.3"), DummyUpdaters.to_3),
+    ]
+
+    with pytest.raises(
+        ValueError,
+        match=r"Trying to update `SimulationParams` to a version lower than any known version.",
+    ):
+        # 1) from <99.11.1, to <99.11.1 => ValueError
+        _find_update_path(
+            version_from=Flow360Version("99.10.9"),
+            version_to=Flow360Version("99.10.10"),
+            version_milestones=version_milestones,
+        )
+
+    # 2) from <99.11.1, to ==99.11.1 => crosses milestone => [to_1]
+    res = _find_update_path(
+        version_from=Flow360Version("99.10.9"),
+        version_to=Flow360Version("99.11.1"),
+        version_milestones=version_milestones,
+    )
+    assert res == [DummyUpdaters.to_1], "Case 2: crosses only 99.11.1 => [to_1]"
+
+    # 3) from <99.11.1, to in-between (e.g., 99.11.2) => crosses 99.11.1 => [to_1]
+    res = _find_update_path(
+        version_from=Flow360Version("99.10.9"),
+        version_to=Flow360Version("99.11.2"),
+        version_milestones=version_milestones,
+    )
+    assert res == [DummyUpdaters.to_1], "Case 3: crosses only 99.11.1 => [to_1]"
+
+    # 4) from <99.11.1, to ==99.11.3 => crosses 99.11.1 and 99.11.3 => [to_1, to_3]
+    res = _find_update_path(
+        version_from=Flow360Version("99.10.9"),
+        version_to=Flow360Version("99.11.3"),
+        version_milestones=version_milestones,
+    )
+    assert res == [
+        DummyUpdaters.to_1,
+        DummyUpdaters.to_3,
+    ], "Case 4: crosses 99.11.1, 99.11.3 => [to_1, to_3]"
+
+    # 5) from <99.11.1, to >99.11.3 => crosses 99.11.1 and 99.11.3 => [to_1, to_3]
+    res = _find_update_path(
+        version_from=Flow360Version("99.10.9"),
+        version_to=Flow360Version("99.12.0"),
+        version_milestones=version_milestones,
+    )
+    assert res == [
+        DummyUpdaters.to_1,
+        DummyUpdaters.to_3,
+    ], "Case 5: crosses 99.11.1, 99.11.3 => [to_1, to_3]"
+
+    # 6) from ==99.11.1, to ==99.11.1 => no updates
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.1"),
+        version_to=Flow360Version("99.11.1"),
+        version_milestones=version_milestones,
+    )
+    assert res == [], "Case 6: same version => no updates"
+
+    # 7) from ==99.11.1, to in-between (99.11.2) => no milestone crossed => []
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.1"),
+        version_to=Flow360Version("99.11.2"),
+        version_milestones=version_milestones,
+    )
+    assert res == [], "Case 7: crosses nothing => no updates"
+
+    # 8) from ==99.11.1, to ==99.11.3 => crosses milestone => [to_3]
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.1"),
+        version_to=Flow360Version("99.11.3"),
+        version_milestones=version_milestones,
+    )
+    assert res == [DummyUpdaters.to_3], "Case 8: crosses 99.11.3 => [to_3]"
+
+    # 9) from in-between (99.11.2), to ==99.11.3 => crosses milestone => [to_3]
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.2"),
+        version_to=Flow360Version("99.11.3"),
+        version_milestones=version_milestones,
+    )
+    assert res == [DummyUpdaters.to_3], "Case 9: crosses 99.11.3 => [to_3]"
+
+    # 10) from in-between (99.11.2), to >99.11.3 => crosses milestone => [to_3]
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.2"),
+        version_to=Flow360Version("99.11.4"),
+        version_milestones=version_milestones,
+    )
+    assert res == [DummyUpdaters.to_3], "Case 10: crosses 99.11.3 => [to_3]"
+
+    # 11) from ==99.11.3, to >99.11.3 => crosses nothing => []
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.3"),
+        version_to=Flow360Version("99.11.4"),
+        version_milestones=version_milestones,
+    )
+    assert res == [], "Case 11: crosses nothing => []"
+
+    # 12) from >99.11.3, to >99.11.3 => ValueError => []
+    with pytest.raises(
+        ValueError,
+        match=r"Input `SimulationParams` have higher version than all known versions and thus cannot be handeled.",
+    ):
+        _find_update_path(
+            version_from=Flow360Version("99.11.4"),
+            version_to=Flow360Version("99.11.5"),
+            version_milestones=version_milestones,
+        )
+
+    # 13) to < from => ValueError
+    with pytest.raises(
+        ValueError,
+        match=r"Input `SimulationParams` have higher version than the target version and thus cannot be handeled.",
+    ):
+        _find_update_path(
+            version_from=Flow360Version("99.11.3"),
+            version_to=Flow360Version("99.11.2"),
+            version_milestones=version_milestones,
+        )
+
+    # 14) [more than 2 versions] to > max version
+    version_milestones = [
+        (Flow360Version("99.11.1"), DummyUpdaters.to_1),
+        (Flow360Version("99.11.3"), DummyUpdaters.to_3),
+        (Flow360Version("99.11.5"), DummyUpdaters.to_5),
+    ]
+
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.0"),
+        version_to=Flow360Version("99.11.8"),
+        version_milestones=version_milestones,
+    )
+    assert res == [
+        DummyUpdaters.to_1,
+        DummyUpdaters.to_3,
+        DummyUpdaters.to_5,
+    ], "Case 14: crosses all 3"
+
+    # 15) [more than 2 versions] to == second max version
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.0"),
+        version_to=Flow360Version("99.11.3"),
+        version_milestones=version_milestones,
+    )
+    assert res == [
+        DummyUpdaters.to_1,
+        DummyUpdaters.to_3,
+    ], "Case 15: crosses first 2"
 
 
 def test_updater_to_24_11_1():
@@ -20,7 +193,7 @@ def test_updater_to_24_11_1():
         assert params
 
 
-def test_updater_from_24_11_1_5_to_24_11_6():
+def test_updater_to_24_11_6():
     with open("../data/simulation/simulation_no_updater.json", "r") as fp:
         params = json.load(fp)
 
@@ -34,7 +207,7 @@ def test_updater_from_24_11_1_5_to_24_11_6():
             assert compare_dicts(params, params_new)
 
 
-def test_updater_from_24_11_0_6_to_24_11_7():
+def test_updater_to_24_11_7():
 
     with open("../data/simulation/simulation_24_11_6.json", "r") as fp:
         params_24_11_6 = json.load(fp)
@@ -66,7 +239,7 @@ def test_updater_from_24_11_0_6_to_24_11_7():
     )
 
 
-def test_updater_from_24_11_8_to_25_2_0():
+def test_updater_to_25_2_0():
     with open("../data/simulation/simulation_24_11_8.json", "r") as fp:
         params = json.load(fp)
 
