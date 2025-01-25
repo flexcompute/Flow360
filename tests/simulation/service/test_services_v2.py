@@ -95,6 +95,7 @@ def test_validate_service():
         "boundary_layer_first_layer_thickness": "1*m",
         "surface_max_edge_length": "1*m",
     }
+    params_data_from_geo["version"] = "24.11.0"
 
     _, errors, _ = services.validate_model(
         params_as_dict=params_data_from_geo, root_item_type="Geometry"
@@ -142,11 +143,12 @@ def test_validate_error():
         },
         "user_defined_dynamics": [],
         "unit_system": {"name": "SI"},
+        "version": "24.11.5",
     }
 
     _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
@@ -163,8 +165,8 @@ def test_validate_error():
             "ctx": {"relevant_for": ["SurfaceMesh", "VolumeMesh"]},
         },
     ]
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -207,11 +209,12 @@ def test_validate_multiple_errors():
         },
         "user_defined_dynamics": [],
         "unit_system": {"name": "SI"},
+        "version": "24.11.5",
     }
 
     _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "surface_max_edge_length"),
             "type": "value_error",
@@ -228,8 +231,8 @@ def test_validate_multiple_errors():
             "ctx": {"relevant_for": ["Case"]},
         },
     ]
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -306,7 +309,7 @@ def test_validate_init_data_errors():
     )
     _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="Geometry")
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
@@ -324,8 +327,8 @@ def test_validate_init_data_errors():
         },
     ]
 
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -342,7 +345,7 @@ def test_validate_init_data_for_sm_and_vm_errors():
         validation_level=[SURFACE_MESH, VOLUME_MESH],
     )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
@@ -355,8 +358,8 @@ def test_validate_init_data_for_sm_and_vm_errors():
         },
     ]
 
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -371,7 +374,7 @@ def test_validate_init_data_vm_workflow_errors():
         params_as_dict=data, root_item_type="VolumeMesh", validation_level=CASE
     )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("operating_condition", "velocity_magnitude"),
             "type": "missing",
@@ -379,8 +382,8 @@ def test_validate_init_data_vm_workflow_errors():
         },
     ]
 
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -557,7 +560,7 @@ def test_generate_process_json():
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.5",
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "private_attribute_constructor": "default",

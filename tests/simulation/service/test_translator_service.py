@@ -540,6 +540,7 @@ def test_simulation_to_case_json():
                 ],
             },
         },
+        "version": "25.2.0",
     }
 
     params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
@@ -602,7 +603,7 @@ def test_simulation_to_case_vm_workflow():
             "beta": {"value": 0, "units": "degree"},
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "25.2.0",
         "models": [
             {
                 "type": "Wall",
@@ -645,7 +646,7 @@ def test_simulation_to_case_vm_workflow():
         params_as_dict=param_data, root_item_type="Geometry", validation_level=CASE
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"input_params must be of type SimulationParams"):
         case_json, _ = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
 
@@ -653,7 +654,6 @@ def test_simulation_to_case_vm_workflow():
         params_as_dict=param_data, root_item_type="VolumeMesh", validation_level=CASE
     )
     case_json, _ = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
-    print(case_json)
 
 
 def test_simulation_to_all_translation_2():
@@ -738,6 +738,7 @@ def test_simulation_to_all_translation_2():
                 ],
             },
         },
+        "version": "25.2.0",
     }
 
     params, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
