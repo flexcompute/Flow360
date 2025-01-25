@@ -251,4 +251,5 @@ __all__ = [
     "VolumeMeshFile",
     "SurfaceMeshFile",
     "GeometryFiles",
+    "SlaterPorousBleed",
 ]

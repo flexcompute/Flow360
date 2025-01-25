@@ -28,6 +28,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+from flow360.component.project_utils import VolumeMeshFile
 from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
 from flow360.component.v1.meshing.params import VolumeMeshingParams
 from flow360.exceptions import (
@@ -869,12 +870,10 @@ class VolumeMeshDraftV2(ResourceDraft):
 
     def _validate_volume_mesh(self):
         if self.file_name is not None:
-            mesh_parser = MeshNameParser(self.file_name)
-            if not mesh_parser.is_valid_volume_mesh():
-                raise Flow360ValueError(
-                    f"Unsupported volume mesh file extensions: {mesh_parser.format.ext()}. "
-                    f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}]."
-                )
+            try:
+                VolumeMeshFile(value=self.file_name)
+            except pd.ValidationError as e:
+                raise Flow360ValueError(str(e)) from e
 
         if self.project_name is None:
             self.project_name = os.path.splitext(os.path.basename(self.file_name))[0]

@@ -14,8 +14,8 @@ from flow360.component.simulation.framework.single_attribute_base import (
 )
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
-    MeshNameParser,
     MeshFileFormat,
+    MeshNameParser,
     match_file_pattern,
     parse_datetime,
 )
