@@ -873,7 +873,7 @@ class VolumeMeshDraftV2(ResourceDraft):
             try:
                 VolumeMeshFile(value=self.file_name)
             except pd.ValidationError as e:
-                raise Flow360ValueError(str(e)) from e
+                raise Flow360FileError(str(e)) from e
 
         if self.project_name is None:
             self.project_name = os.path.splitext(os.path.basename(self.file_name))[0]

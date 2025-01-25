@@ -25,7 +25,7 @@ from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import MeshNameParser, shared_account_confirm_proceed
-from flow360.exceptions import Flow360ValueError
+from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
 from .simulation.primitives import Surface
@@ -105,7 +105,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
             try:
                 SurfaceMeshFile(value=self._file_name)
             except pd.ValidationError as e:
-                raise Flow360ValueError(str(e)) from e
+                raise Flow360FileError(str(e)) from e
 
         if self.project_name is None:
             self.project_name = os.path.splitext(os.path.basename(self._file_name))[0]

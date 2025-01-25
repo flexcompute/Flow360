@@ -107,7 +107,7 @@ class GeometryDraft(ResourceDraft):
         try:
             GeometryFiles(value=self.file_names)
         except pd.ValidationError as e:
-            raise Flow360ValueError(str(e)) from e
+            raise Flow360FileError(str(e)) from e
 
         for geometry_file in self.file_names:
             if not os.path.exists(geometry_file):
