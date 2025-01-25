@@ -109,6 +109,22 @@ class NewGeometryRequest(Flow360RequestsV2):
     description: str = pd_v2.Field(default="", description="project description")
 
 
+class NewSurfaceMeshRequestV2(Flow360RequestsV2):
+    """[Simulation V2] Creates new project and a new surface mesh resource."""
+
+    name: str = pd_v2.Field(description="project name")
+    solver_version: str = pd_v2.Field(
+        alias="solverVersion", description="solver version used for the project"
+    )
+    tags: List[str] = pd_v2.Field(default=[], description="project tags")
+    parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")
+    length_unit: Literal["m", "mm", "cm", "inch", "ft"] = pd_v2.Field(
+        alias="lengthUnit", description="project length unit"
+    )
+    description: str = pd_v2.Field(default="", description="project description")
+    file_name: str = pd_v2.Field(alias="fileName", description="file name of the surface mesh")
+
+
 class NewVolumeMeshRequestV2(Flow360RequestsV2):
     """[Simulation V2] Creates new project and a new volume mesh resource."""
 

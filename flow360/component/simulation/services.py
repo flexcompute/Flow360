@@ -115,7 +115,7 @@ def _store_project_length_unit(length_unit, params: SimulationParams):
 
 
 def get_default_params(
-    unit_system_name, length_unit, root_item_type: Literal["Geometry", "VolumeMesh"]
+    unit_system_name, length_unit, root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
 ) -> SimulationParams:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
@@ -148,7 +148,7 @@ def get_default_params(
             output_fields=["Cp", "yPlus", "Cf", "CfVec"],
         )
 
-    if root_item_type == "Geometry":
+    if root_item_type in ("Geometry", "SurfaceMesh"):
         automated_farfield = AutomatedFarfield(name="Farfield")
         with unit_system:
             params = SimulationParams(
@@ -173,6 +173,7 @@ def get_default_params(
                 "private_attribute_asset_cache": {"registry": True},
             },
         )
+
     if root_item_type == "VolumeMesh":
         with unit_system:
             params = SimulationParams(
@@ -203,7 +204,7 @@ def get_default_params(
             },
         )
     raise ValueError(
-        f"Unknown root item type: {root_item_type}. Expected one of Geometry or VolumeMesh"
+        f"Unknown root item type: {root_item_type}. Expected one of Geometry or SurfaceMesh or VolumeMesh"
     )
 
 
@@ -230,7 +231,7 @@ def _intersect_validation_levels(requested_levels, available_levels):
 def validate_model(
     *,
     params_as_dict,
-    root_item_type: Union[Literal["Geometry", "VolumeMesh"], None],
+    root_item_type: Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
@@ -243,7 +244,7 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
-    root_item_type : Union[Literal["Geometry", "VolumeMesh"], None],
+    root_item_type : Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
         The root item type for validation. If None then no context-aware validation is performed.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
         The validation level, default is ALL. Also a list can be provided, eg: ["SurfaceMesh", "VolumeMesh"]
@@ -499,7 +500,7 @@ def _get_mesh_unit(params_as_dict: dict) -> str:
 
 def _determine_validation_level(
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
-    root_item_type: Union[Literal["Geometry", "VolumeMesh"], None],
+    root_item_type: Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
 ) -> list:
     if root_item_type is None:
         return None
@@ -535,7 +536,7 @@ def _process_case(params: dict, mesh_unit: str, up_to: str) -> Optional[Dict[str
 def generate_process_json(
     *,
     simulation_json: str,
-    root_item_type: Literal["Geometry", "VolumeMesh"],
+    root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"],
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
 ):
     """
@@ -548,7 +549,7 @@ def generate_process_json(
     ----------
     simulation_json : str
         The JSON string containing simulation parameters.
-    root_item_type : Literal["Geometry", "VolumeMesh"]
+    root_item_type : Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
         The root item type for the simulation (e.g., "Geometry", "VolumeMesh").
     up_to : Literal["SurfaceMesh", "VolumeMesh", "Case"]
         Specifies the highest level of processing to be performed ("SurfaceMesh", "VolumeMesh", or "Case").
