@@ -114,8 +114,7 @@ def test_mesh_filename_detection():
 
     file = "sdfdlkjd/kjsdf.cgns.ad"
     cmp, filename = CompressionFormat.detect(file)
-    with pytest.raises(Flow360FileError):
-        mesh_format = MeshFileFormat.detect(filename)
+    assert MeshFileFormat.detect(filename) == MeshFileFormat.UNKNOWN
 
     file = "sdfdlkjd/kjsdf.ugrid"
     cmp, filename = CompressionFormat.detect(file)
