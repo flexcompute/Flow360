@@ -19,8 +19,6 @@ import pydantic as pd_v2
 # structure refactors
 import pydantic.v1 as pd
 
-from flow360.component.folder import Folder
-
 from flow360.cloud.compress_upload import compress_and_upload_chunks
 from flow360.cloud.flow360_requests import (
     CopyExampleVolumeMeshRequest,
@@ -29,6 +27,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+from flow360.component.folder import Folder
 from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
 from flow360.component.v1.meshing.params import VolumeMeshingParams
 from flow360.exceptions import (
