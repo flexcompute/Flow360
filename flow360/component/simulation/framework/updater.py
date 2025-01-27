@@ -219,7 +219,7 @@ def updater(version_from, version_to, params_as_dict):
     This function iterates through the update map starting from version_from and
     updates the parameters based on the update path found.
     """
-
+    log.info(f"Input SimulationParam has version: {version_from}.")
     update_functions = _find_update_path(
         version_from=Flow360Version(version_from),
         version_to=Flow360Version(version_to),
