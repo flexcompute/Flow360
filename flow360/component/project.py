@@ -1030,7 +1030,10 @@ class Project(pd.BaseModel):
 
         draft.update_simulation_params(params)
 
-        destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
+        try:
+            destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
+        except RuntimeError:
+            return None
 
         self._project_webapi.patch(
             # pylint: disable=protected-access
