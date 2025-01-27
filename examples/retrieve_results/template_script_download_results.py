@@ -10,7 +10,7 @@ import click
 
 import flow360 as fl
 
-case_id = input("please enter case ID string: ")
+case_id = "ENTER YOUR CASE ID HERE"
 
 # used only if we are interested in downloading specific data sets
 download_surfaces = True
