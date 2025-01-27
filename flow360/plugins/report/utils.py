@@ -381,6 +381,7 @@ class Average(GenericOperation):
     start_time: Optional[pd.NonNegativeFloat] = None
     end_time: Optional[pd.NonNegativeFloat] = None
     fraction: Optional[pd.PositiveFloat] = pd.Field(None, le=1)
+    output_bool: pd.StrictBool = pd.Field(False)
     type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
     model_config = pd.ConfigDict(
@@ -405,6 +406,8 @@ class Average(GenericOperation):
             if self.fraction is None:
                 raise NotImplementedError('Only "fraction" average method implemented.')
             averages = data.get_averages(average_fraction=self.fraction)
+            if self.output_bool:
+                averages = averages.astype(bool)
             return data, cases, averages
 
         raise NotImplementedError(
@@ -459,7 +462,27 @@ class Expression(GenericOperation):
         Parses the given expression and returns a set of variable names used in it.
         """
         tree = ast.parse(expr, mode="eval")
-        return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+
+        import math
+        class VariableVisitor(ast.NodeVisitor):
+            def __init__(self):
+                self.variables = set()
+                self.known_functions = {name for name in dir(math) if callable(getattr(math, name))}
+
+            def visit_Name(self, node):
+                if isinstance(node.ctx, ast.Load) and node.id not in self.known_functions:
+                    self.variables.add(node.id)
+
+            def visit_Call(self, node):
+                for arg in node.args:
+                    self.visit(arg)
+                for keyword in node.keywords:
+                    self.visit(keyword.value)
+        
+        visitor = VariableVisitor()
+        visitor.visit(tree)
+
+        return visitor.variables
 
     @classmethod
     def evaluate_expression(
@@ -488,7 +511,6 @@ class Expression(GenericOperation):
             )
 
         local_dict = {var: df[var].values for var in expr_variables}
-
         try:
             result = ne.evaluate(expr, local_dict)
         except Exception as e:
