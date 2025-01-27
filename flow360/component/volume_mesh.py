@@ -19,6 +19,8 @@ import pydantic as pd_v2
 # structure refactors
 import pydantic.v1 as pd
 
+from flow360.component.folder import Folder
+
 from flow360.cloud.compress_upload import compress_and_upload_chunks
 from flow360.cloud.flow360_requests import (
     CopyExampleVolumeMeshRequest,
@@ -749,6 +751,12 @@ class VolumeMesh(Flow360Resource):
         return Case.create(
             name, params, volume_mesh_id=self.id, tags=tags, solver_version=solver_version
         )
+
+    def move_to_folder(self, folder: Folder):
+        """Move the volume mesh to the given folder"""
+        # Implementation use V2 Interface to reduce reliance on V1 APIs
+        # Returns None if no error occurs.
+        RestApi(VolumeMeshInterfaceV2.endpoint, id=self.id).patch({"parentFolderId": folder.id})
 
 
 class VolumeMeshList(Flow360ResourceListBase):
