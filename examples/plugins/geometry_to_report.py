@@ -13,8 +13,10 @@ from flow360.plugins.report.report_items import (
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 
-project_id = None  # if running for the first time, then replace it with project ID to avoid re-creation of projects
-# project_id = "prj-b5a0ae52-14c7-4f0c-813b-542763f993a2"
+project_id = None  # if running for the first time
+
+# then replace it with your project ID to avoid re-creation of projects. You can find project ID on web GUI:
+# project_id = "prj-...."
 
 if project_id is not None:
     project = fl.Project.from_cloud(project_id)
