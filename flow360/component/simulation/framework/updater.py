@@ -7,6 +7,7 @@ TODO: remove duplication code with FLow360Params updater.
 # pylint: disable=R0801
 
 
+import re
 from typing import Any
 
 from flow360.component.simulation.framework.entity_base import generate_uuid
@@ -14,6 +15,7 @@ from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
     compare_dicts,
 )
+from flow360.log import log
 from flow360.version import __version__
 
 
@@ -120,7 +122,7 @@ def _to_25_2_0(params_as_dict):
 
     # Add ramping to MassFlowRate and move velocity direction to TotalPressure
     for model in params_as_dict.get("models", []):
-        if model.get("type") == "Inflow" and model.get("velocity_direction"):
+        if model.get("type") == "Inflow" and "velocity_direction" in model.keys():
             velocity_direction = model.pop("velocity_direction", None)
             model["spec"]["velocity_direction"] = velocity_direction
 
@@ -224,6 +226,8 @@ def updater(version_from, version_to, params_as_dict):
         version_milestones=VERSION_MILESTONES,
     )
     for fun in update_functions:
+        _to_version = re.search(r"_to_(\d+_\d+_\d+)", fun.__name__).group(1)
+        log.info(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
-
+    params_as_dict["version"] = str(version_to)
     return params_as_dict
