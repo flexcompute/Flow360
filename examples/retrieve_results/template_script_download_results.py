@@ -12,7 +12,7 @@ import flow360 as fl
 
 case_id = "ENTER YOUR CASE ID HERE"
 
-# used only if we are interested in downloading specific data sets
+# Used only if we are interested in downloading specific data sets
 download_surfaces = True
 download_volumes = True
 download_monitors = True
@@ -30,10 +30,9 @@ if os.path.exists(destination):
         abort=True,
     )
 
-start = timeit.default_timer()
 results.download(all=True, destination=destination)  # download all files generated
 
-# download only specific data sets
+# Download only specific data sets
 # results.download(
 #     surface=download_surfaces,
 #     volume=download_volumes,
@@ -42,7 +41,6 @@ results.download(all=True, destination=destination)  # download all files genera
 #     destination=destination
 # )
 
-print(f"Downloading done in {(timeit.default_timer() - start):.1f} secs")
 
 # extract tar.gz files
 tar_gz_files = [f for f in os.listdir(destination) if f.endswith(".tar.gz")]
@@ -57,4 +55,4 @@ for tar_gz_file in tar_gz_files:
 
     os.remove(file_path)
     print(f"  Removed: {file_path}")
-    print(f"Extracting files for {tar_gz_file} done in {(timeit.default_timer() - start):.1f} secs")
+    print(f"Extracting files for {tar_gz_file} done")
