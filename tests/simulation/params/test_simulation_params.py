@@ -13,6 +13,11 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.models.material import SolidMaterial
+from flow360.component.simulation.models.solver_numerics import (
+    LinearSolver,
+    NavierStokesSolver,
+    SpalartAllmaras,
+)
 from flow360.component.simulation.models.surface_models import (
     HeatFlux,
     Inflow,
@@ -373,3 +378,20 @@ def test_delta_temperature_scaling():
         processed_param.operating_condition.thermal_state.temperature_offset.value
         == scaled_temperature_offset
     )
+
+
+def test_get_fluid_model():
+    with SI_unit_system:
+        fluid_model = Fluid(
+            navier_stokes_solver=NavierStokesSolver(
+                absolute_tolerance=1e-10,
+                linear_solver=LinearSolver(max_iterations=25),
+                kappa_MUSCL=-1.0,
+            ),
+            turbulence_model_solver=SpalartAllmaras(
+                absolute_tolerance=1e-8,
+                linear_solver=LinearSolver(max_iterations=15),
+            ),
+        )
+        param = SimulationParams(models=[fluid_model])
+    assert param.fluid == fluid_model

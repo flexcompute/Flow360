@@ -490,6 +490,41 @@ class SimulationParams(_ParamModelBase):
 
         return registry
 
+    def _get_model_by_type(self, model_type: ModelTypes) -> ModelTypes | List[ModelTypes]:
+        """
+        Given the model type, returns the model in the simulation params
+
+        Returns
+        -------
+        The single model or a list of model of the model_type
+        """
+        if not self.models:
+            return None
+
+        models = []
+        # pylint: disable=not-an-iterable
+        for model in self.models:
+            if isinstance(model, model_type):
+                models.append(model)
+
+        if len(models) == 0:
+            return None
+        if len(models) == 1:
+            return models[0]
+        return models
+
+    @property
+    def fluid(self) -> Fluid:
+        """
+        Returns the fluid model of the simulation params
+
+        Returns
+        -------
+        Fluid
+            The fluid model in the params
+        """
+        return self._get_model_by_type(model_type=Fluid)
+
     @property
     def used_entity_registry(self) -> EntityRegistry:
         """
