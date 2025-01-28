@@ -27,7 +27,6 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.primitives import GhostSurface, Surface
 from flow360.component.simulation.unit_system import LengthType
-from flow360.log import log
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -785,37 +784,6 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
-
-    @pd.field_validator("observers", mode="before")
-    @classmethod
-    def observer_legacy_converter(cls, input_value):
-        """Convert legacy format of the "observer" field to the new `Observer` format."""
-        converted_observers = []
-        # pylint: disable=fixme
-        # TODO: This should really be done in the updater module.
-        if not isinstance(input_value, list):
-            raise ValueError(
-                f"The `observer` field must be a list. It is {type(input_value)} instead."
-            )
-
-        class LegacyObserver(Flow360BaseModel):
-            """Legacy schema of the observer"""
-
-            legacy_position: LengthType.Point = pd.Field()
-
-        try:
-            for item in input_value:
-                legacy_position = LegacyObserver.model_validate(
-                    {"legacy_position": item}
-                ).legacy_position
-                converted_observers.append(Observer(position=legacy_position, group_name="0"))
-            log.info(
-                "Items in the provided input list are of an outdated type "
-                + "and will be automatically updated to Observer class."
-            )
-            return converted_observers
-        except pd.ValidationError:
-            return input_value
 
     @pd.field_validator("observers", mode="after")
     @classmethod

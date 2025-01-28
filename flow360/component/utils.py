@@ -20,12 +20,7 @@ from ..accounts_utils import Accounts
 from ..cloud.s3_utils import get_local_filename_and_create_folders
 from ..cloud.utils import _get_progress, _S3Action
 from ..error_messages import shared_submit_warning
-from ..exceptions import (
-    Flow360FileError,
-    Flow360RuntimeError,
-    Flow360TypeError,
-    Flow360ValueError,
-)
+from ..exceptions import Flow360RuntimeError, Flow360TypeError, Flow360ValueError
 from ..log import log
 
 SUPPORTED_GEOMETRY_FILE_PATTERNS = [
@@ -409,10 +404,11 @@ class MeshFileFormat(Enum):
     UGRID = "aflr3"
     CGNS = "cgns"
     STL = "stl"
+    UNKNOWN = "unknown"
 
     def ext(self) -> str:
         """
-        Get the extention for a file name.
+        Get the extension for a file name.
         :return:
         """
         if self is MeshFileFormat.UGRID:
@@ -435,7 +431,7 @@ class MeshFileFormat(Enum):
             return MeshFileFormat.CGNS
         if ext == MeshFileFormat.STL.ext():
             return MeshFileFormat.STL
-        raise Flow360FileError(f"Unsupported file format {file}")
+        return MeshFileFormat.UNKNOWN
 
 
 class UGRIDEndianness(Enum):
@@ -449,7 +445,7 @@ class UGRIDEndianness(Enum):
 
     def ext(self) -> str:
         """
-        Get the extention for a file name.
+        Get the extension for a file name.
         :return:
         """
         if self is UGRIDEndianness.LITTLE:
@@ -461,7 +457,7 @@ class UGRIDEndianness(Enum):
     @classmethod
     def detect(cls, file: str):
         """
-        detects endianess UGRID mesh from filename
+        detects endianness UGRID mesh from filename
         """
         if MeshFileFormat.detect(file) is not MeshFileFormat.UGRID:
             return UGRIDEndianness.NONE
@@ -489,7 +485,7 @@ class CompressionFormat(Enum):
 
     def ext(self) -> str:
         """
-        Get the extention for a file name.
+        Get the extension for a file name.
         :return:
         """
         if self is CompressionFormat.GZ:

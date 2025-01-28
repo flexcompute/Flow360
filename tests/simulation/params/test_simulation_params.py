@@ -130,7 +130,7 @@ def get_the_param():
                 Inflow(
                     surfaces=[my_inflow1],
                     total_temperature=300 * u.K,
-                    spec=TotalPressure(123 * u.Pa),
+                    spec=TotalPressure(value=123 * u.Pa),
                     turbulence_quantities=TurbulenceQuantities(
                         turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
                     ),
@@ -138,7 +138,7 @@ def get_the_param():
                 Inflow(
                     surfaces=[my_inflow2],
                     total_temperature=300 * u.K,
-                    spec=MassFlowRate(123 * u.lb / u.s),
+                    spec=MassFlowRate(value=123 * u.lb / u.s),
                 ),
             ],
             time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),

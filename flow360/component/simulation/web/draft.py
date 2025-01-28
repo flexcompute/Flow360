@@ -148,7 +148,7 @@ class Draft(Flow360Resource):
         try:
             # pylint: disable=protected-access
             if use_beta_mesher is True:
-                log.info("Selecting beta/inhouse mesher for possible meshing tasks.")
+                log.info("Selecting beta/in-house mesher for possible meshing tasks.")
             run_response = self.post(
                 json={
                     "upTo": target_asset._cloud_resource_type_name,
@@ -156,11 +156,15 @@ class Draft(Flow360Resource):
                 },
                 method="run",
             )
+            destination_id = run_response["id"]
+            return destination_id
         except Flow360WebError as err:
-            # Error found when translating/runing the simulation
-            detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
-            log.error(f"Failure detail: {detailed_error}")
-            raise RuntimeError(f"Failure detail: {detailed_error}") from err
-
-        destination_id = run_response["id"]
-        return destination_id
+            # Error found when translating/running the simulation
+            log.error(">>Submission failed.<<")
+            try:
+                detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
+                log.error(f"Failure detail: {detailed_error}")
+            except json.decoder.JSONDecodeError:
+                # No detail given.
+                log.error("An unexpected error has occurred. Please contact customer support.")
+        raise RuntimeError("Submission not successful.")

@@ -4,7 +4,10 @@ from flow360.examples import Airplane
 
 # Step 1: Create a new project from a predefined geometry file in the Airplane example
 # This initializes a project with the specified geometry and assigns it a name.
-project = fl.Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+project = fl.Project.from_file(
+    files=Airplane.geometry,
+    name="Python Project (Geometry, from file)",
+)
 geo = project.geometry  # Access the geometry of the project
 
 # Step 2: Display available groupings in the geometry (helpful for identifying group names)

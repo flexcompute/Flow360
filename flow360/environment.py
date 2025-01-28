@@ -87,7 +87,7 @@ dev = EnvironmentConfig.from_domain(
     name="dev", domain="dev-simulation.cloud", aws_region="us-east-1", apikey_profile="dev"
 )
 uat = EnvironmentConfig.from_domain(
-    name="uat", domain="uat-simulation.cloud", aws_region="us-west-2"
+    name="uat", domain="uat-simulation.cloud", aws_region="us-west-2", apikey_profile="uat"
 )
 prod = EnvironmentConfig.from_domain(
     name="prod", domain="simulation.cloud", aws_region="us-gov-west-1"
