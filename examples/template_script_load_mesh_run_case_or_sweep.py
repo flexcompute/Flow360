@@ -33,6 +33,19 @@ def upload_mesh(file_path, project_name):
 
 ######################################################################################################################
 def make_params(mesh_object):
+    '''
+    Create the params object that contains all the run parameters
+    Needs the mesh_object to get the list of surfaces
+
+    Parameters
+    ----------
+    mesh_object
+
+    Returns
+    -------
+    Params object contain run parameters
+
+    '''
     with fl.imperial_unit_system:
         params = fl.SimulationParams(
             # Dimensions can  be either in inches, or m or mm or many other units
@@ -71,9 +84,7 @@ def make_params(mesh_object):
 ######################################################################################################################
 def launch_sweep(params, project):
     """
-
     launch a sweep of cases
-
 
     Parameters
     ----------
@@ -99,6 +110,14 @@ def launch_sweep(params, project):
 
 ######################################################################################################################
 def main():
+    '''
+    Main function that drives the mesh upload and case launching functions
+
+    Returns
+    -------
+    '''
+
+
     # if you want to upload a new mesh and create a new project
     mesh_file_path = os.path.join(os.getcwd(), "MESHNAME.cgns")  # mesh could also be ugrid format
     project_name = "SOME_PROJECT_NAME"
