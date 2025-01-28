@@ -187,13 +187,16 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
     """Data model for surface mesh entityInfo.json"""
 
     type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
+    boundaries: list[Surface] = pd.Field([])
+    ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
 
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:
         """
-        Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
+        Get the full list of boundary names.
         """
-        raise NotImplementedError("Not implemented yet.")
+        # pylint: disable=not-an-iterable
+        return [item.name for item in self.boundaries]
 
 
 EntityInfoUnion = Annotated[

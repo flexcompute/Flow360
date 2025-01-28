@@ -19,6 +19,7 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import GeometryInterface
+from flow360.component.project_utils import GeometryFiles
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
@@ -29,11 +30,7 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.utils import (
-    SUPPORTED_GEOMETRY_FILE_PATTERNS,
-    match_file_pattern,
-    shared_account_confirm_proceed,
-)
+from flow360.component.utils import shared_account_confirm_proceed
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
@@ -107,14 +104,12 @@ class GeometryDraft(ResourceDraft):
         if not isinstance(self.file_names, list) or len(self.file_names) == 0:
             raise Flow360FileError("file_names field has to be a non-empty list.")
 
-        for geometry_file in self.file_names:
-            _, ext = os.path.splitext(geometry_file)
-            if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, geometry_file):
-                raise Flow360FileError(
-                    f"Unsupported geometry file extensions: {ext.lower()}. "
-                    f"Supported: [{', '.join(SUPPORTED_GEOMETRY_FILE_PATTERNS)}]."
-                )
+        try:
+            GeometryFiles(value=self.file_names)
+        except pd.ValidationError as e:
+            raise Flow360FileError(str(e)) from e
 
+        for geometry_file in self.file_names:
             if not os.path.exists(geometry_file):
                 raise Flow360FileError(f"{geometry_file} not found.")
 

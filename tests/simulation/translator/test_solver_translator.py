@@ -15,12 +15,14 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    Inflow,
     Mach,
     MassFlowRate,
     Outflow,
     Pressure,
     SlaterPorousBleed,
     SlipWall,
+    TotalPressure,
     Wall,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
@@ -510,6 +512,21 @@ def test_boundaries():
         param = SimulationParams(
             operating_condition=operating_condition,
             models=[
+                Inflow(
+                    name="inflow-1",
+                    total_temperature=300 * u.K,
+                    surfaces=Surface(name="boundary_name_A"),
+                    spec=TotalPressure(
+                        value=operating_condition.thermal_state.pressure * 0.9,
+                        velocity_direction=(1, 0, 0),
+                    ),
+                ),
+                Inflow(
+                    name="inflow-2",
+                    total_temperature=300 * u.K,
+                    surfaces=Surface(name="boundary_name_B"),
+                    spec=MassFlowRate(value=mass_flow_rate, ramp_steps=10),
+                ),
                 Outflow(
                     name="outflow-1",
                     surfaces=Surface(name="boundary_name_E"),
@@ -518,7 +535,7 @@ def test_boundaries():
                 Outflow(
                     name="outflow-2",
                     surfaces=Surface(name="boundary_name_H"),
-                    spec=MassFlowRate(mass_flow_rate),
+                    spec=MassFlowRate(value=mass_flow_rate, ramp_steps=10),
                 ),
                 Outflow(
                     name="outflow-3",

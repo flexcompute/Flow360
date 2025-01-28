@@ -95,7 +95,7 @@ class Temperature(SingleAttributeModel):
     )
 
 
-class TotalPressure(SingleAttributeModel):
+class TotalPressure(Flow360BaseModel):
     """
     :class:`TotalPressure` class to specify the total pressure for `Inflow`
     boundary condition via :py:attr:`Inflow.spec`.
@@ -103,7 +103,10 @@ class TotalPressure(SingleAttributeModel):
     Example
     -------
 
-    >>> fl.TotalPressure(value = 1.04e6 * fl.u.Pa)
+    >>> fl.TotalPressure(
+    ...     value = 1.04e6 * fl.u.Pa,
+    ...     velocity_direction = (1, 0, 0),
+    ... )
 
     ====
     """
@@ -111,6 +114,11 @@ class TotalPressure(SingleAttributeModel):
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field(description="The total pressure value.")
+    velocity_direction: Optional[Axis] = pd.Field(
+        None,
+        description="Direction of the incoming flow. Must be a unit vector pointing "
+        + "into the volume. If unspecified, the direction will be normal to the surface.",
+    )
 
 
 class Pressure(SingleAttributeModel):
@@ -155,7 +163,7 @@ class SlaterPorousBleed(Flow360BaseModel):
     porosity: float = pd.Field(gt=0, le=1, description="The porosity of the bleed region.")
 
 
-class MassFlowRate(SingleAttributeModel):
+class MassFlowRate(Flow360BaseModel):
     """
     :class:`MassFlowRate` class to specify the mass flow rate for `Inflow` or `Outflow`
     boundary condition via :py:attr:`Inflow.spec`/:py:attr:`Outflow.spec`.
@@ -163,7 +171,10 @@ class MassFlowRate(SingleAttributeModel):
     Example
     -------
 
-    >>> fl.MassFlowRate(value = 123 * fl.u.lb / fl.u.s)
+    >>> fl.MassFlowRate(
+    ...     value = 123 * fl.u.lb / fl.u.s,
+    ...     ramp_steps = 100,
+    ... )
 
     ====
     """
@@ -171,6 +182,10 @@ class MassFlowRate(SingleAttributeModel):
     type_name: Literal["MassFlowRate"] = pd.Field("MassFlowRate", frozen=True)
     # pylint: disable=no-member
     value: MassFlowRateType.NonNegative = pd.Field(description="The mass flow rate.")
+    ramp_steps: Optional[pd.PositiveInt] = pd.Field(
+        None,
+        description="Number of pseudo steps before reaching :py:attr:`MassFlowRate.value` within 1 physical step.",
+    )
 
 
 class Mach(SingleAttributeModel):
@@ -349,7 +364,7 @@ class Outflow(BoundaryBase):
 
       >>> fl.Outflow(
       ...     surfaces=volume_mesh["fluid/outlet"],
-      ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s)
+      ...     spec=fl.MassFlowRate(value = 123 * fl.u.lb / fl.u.s)
       ... )
 
     - Define outflow boundary condition with Slater porous bleed model::
@@ -384,7 +399,10 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       >>> fl.Inflow(
       ...     entities=[geometry["inflow"]],
       ...     total_temperature=300 * fl.u.K,
-      ...     spec=fl.TotalPressure(1.028e6 * fl.u.Pa),
+      ...     spec=fl.TotalPressure(
+      ...         value = 1.028e6 * fl.u.Pa,
+      ...         velocity_direction = (1, 0, 0),
+      ...     ),
       ... )
 
     - Define inflow boundary condition with mass flow rate:
@@ -392,14 +410,17 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       >>> fl.Inflow(
       ...     entities=[volume_mesh["fluid/inflow"]],
       ...     total_temperature=300 * fl.u.K,
-      ...     spec=fl.MassFlowRate(123 * fl.u.lb / fl.u.s),
+      ...     spec=fl.MassFlowRate(
+      ...         value = 123 * fl.u.lb / fl.u.s,
+      ...         ramp_steps = 10,
+      ...     ),
       ... )
 
     - Define inflow boundary condition with turbulence quantities:
 
       >>> fl.Inflow(
       ...     entities=[volume_mesh["fluid/inflow"]],
-      ...     turbulence_quantities= fl.TurbulenceQuantities(
+      ...     turbulence_quantities=fl.TurbulenceQuantities(
       ...         turbulent_kinetic_energy=2.312e-3 * fl.u.m **2 / fl.u.s**2,
       ...         specific_dissipation_rate= 1020 / fl.u.s,
       ...     )
@@ -413,11 +434,6 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     # pylint: disable=no-member
     total_temperature: AbsoluteTemperatureType = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
-    )
-    velocity_direction: Optional[Axis] = pd.Field(
-        None,
-        description=" Direction of the incoming flow. Must be a unit vector pointing "
-        + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
     spec: Union[TotalPressure, MassFlowRate] = pd.Field(
         discriminator="type_name",

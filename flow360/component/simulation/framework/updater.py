@@ -6,18 +6,20 @@ TODO: remove duplication code with FLow360Params updater.
 
 # pylint: disable=R0801
 
+
 import re
+from typing import Any
 
-from ....exceptions import Flow360NotImplementedError, Flow360RuntimeError
-from .entity_base import generate_uuid
-from .updater_utils import compare_dicts
+from flow360.component.simulation.framework.entity_base import generate_uuid
+from flow360.component.simulation.framework.updater_utils import (
+    Flow360Version,
+    compare_dicts,
+)
+from flow360.log import log
+from flow360.version import __version__
 
 
-def _no_update(params_as_dict):
-    return params_as_dict
-
-
-def _24_11_0_to_24_11_1_update(params_as_dict):
+def _to_24_11_1(params_as_dict):
     # Check and remove the 'meshing' node if conditions are met
     if params_as_dict.get("meshing") is not None:
         meshing_defaults = params_as_dict["meshing"].get("defaults", {})
@@ -41,7 +43,7 @@ def _24_11_0_to_24_11_1_update(params_as_dict):
     return params_as_dict
 
 
-def _24_11_6_to_24_11_7_update(params_as_dict):
+def _to_24_11_7(params_as_dict):
     # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
     # to all occurrence of the same PointArray
     if params_as_dict.get("outputs") is None:
@@ -79,8 +81,8 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
     return params_as_dict
 
 
-# pylint: disable=invalid-name
-def _24_11_8_to_25_2_0_update(params_as_dict):
+# pylint: disable=invalid-name, too-many-branches
+def _to_25_2_0(params_as_dict):
     # Migrates the old DDES turbulence model interface to the new hybrid_model format.
     for model in params_as_dict.get("models", []):
         turb_dict = model.get("turbulence_model_solver")
@@ -96,69 +98,97 @@ def _24_11_8_to_25_2_0_update(params_as_dict):
                 "grid_size_for_LES": grid_size_for_LES,
             }
 
-    for output in params_as_dict["outputs"]:
-        if output.get("output_type") == "VolumeOutput":
-            items = output.get("output_fields", {}).get("items", [])
-            for old, new in [
-                ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
-                ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
-            ]:
-                if old in items:
-                    items.remove(old)
-                    items.append(new)
+    if params_as_dict.get("outputs") is not None:
+        for output in params_as_dict["outputs"]:
+            if output.get("output_type") == "VolumeOutput":
+                items = output.get("output_fields", {}).get("items", [])
+                for old, new in [
+                    ("SpalartAllmaras_DDES", "SpalartAllmaras_hybridModel"),
+                    ("kOmegaSST_DDES", "kOmegaSST_hybridModel"),
+                ]:
+                    if old in items:
+                        items.remove(old)
+                        items.append(new)
+
+            # Convert the observers in the AeroAcousticOutput to new schema
+            if output.get("output_type") == "AeroAcousticOutput":
+                legacy_observers = output.get("observers", [])
+                converted_observers = []
+                for position in legacy_observers:
+                    converted_observers.append(
+                        {"group_name": "0", "position": position, "private_attribute_expand": None}
+                    )
+                output["observers"] = converted_observers
+
+    # Add ramping to MassFlowRate and move velocity direction to TotalPressure
+    for model in params_as_dict.get("models", []):
+        if model.get("type") == "Inflow" and "velocity_direction" in model.keys():
+            velocity_direction = model.pop("velocity_direction", None)
+            model["spec"]["velocity_direction"] = velocity_direction
+
+        if model.get("spec") and model["spec"].get("type_name") == "MassFlowRate":
+            model["spec"]["ramp_steps"] = None
 
     return params_as_dict
 
 
-UPDATE_MAP = [
-    ("24.11.0", "24.11.1", _24_11_0_to_24_11_1_update),
-    ("24.11.1", "24.11.2", _no_update),
-    ("24.11.2", "24.11.3", _no_update),
-    ("24.11.3", "24.11.4", _no_update),
-    ("24.11.4", "24.11.5", _no_update),
-    ("24.11.([1-5])$", "24.11.6", _no_update),
-    ("24.11.6", "24.11.7", _24_11_6_to_24_11_7_update),
-    ("24.11.7", "24.11.8", _no_update),
-    ("24.11.8", "25.2.0", _24_11_8_to_25_2_0_update),
-]
-
-
-def _version_match(version_1, version_2):
-    pattern_1 = re.compile(version_1.replace(".", r"\.").replace("*", r".*"))
-    pattern_2 = re.compile(version_2.replace(".", r"\.").replace("*", r".*"))
-    return pattern_1.match(version_2) or pattern_2.match(version_1)
+VERSION_MILESTONES = [
+    (Flow360Version("24.11.1"), _to_24_11_1),
+    (Flow360Version("24.11.7"), _to_24_11_7),
+    (Flow360Version("25.2.0"), _to_25_2_0),
+]  # A list of the Python API version tuple with there corresponding updaters.
 
 
 # pylint: disable=dangerous-default-value
-def _find_update_path(version_from, version_to, update_map=UPDATE_MAP):
-    path = []
+def _find_update_path(
+    *,
+    version_from: Flow360Version,
+    version_to: Flow360Version,
+    version_milestones: list[tuple[Flow360Version, Any]],
+):
 
-    current_version = version_from
-    while not _version_match(current_version, version_to):
-        found_next_version = False
+    if version_from == version_to:
+        return []
 
-        for map_version_from, map_version_to, update_function in update_map:
-            if (
-                _version_match(map_version_from, current_version)
-                and map_version_to != current_version
-            ):
-                next_version = map_version_to
-                path.append(update_function)
-                current_version = next_version
-                found_next_version = True
-                break
+    if version_from > version_to:
+        raise ValueError(
+            "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
+        )
 
-        if not found_next_version:
-            raise Flow360NotImplementedError(
-                f"No updater flow from {version_from} to {version_to} exists as of now"
-            )
+    if version_from > version_milestones[-1][0]:
+        raise ValueError(
+            "Input `SimulationParams` have higher version than all known versions and thus cannot be handled."
+        )
 
-        if len(path) > len(update_map):
-            raise Flow360RuntimeError(
-                f"An error occured when trying to update from {version_from} to {version_to}. Contact support."
-            )
+    if version_from == version_milestones[-1][0]:
+        return []
 
-    return path
+    if version_to < version_milestones[0][0]:
+        raise ValueError(
+            "Trying to update `SimulationParams` to a version lower than any known version."
+        )
+
+    def _get_path_start():
+        for index, item in enumerate(version_milestones):
+            milestone_version = item[0]
+            if milestone_version > version_from:
+                # exclude equal because then it is already `milestone_version` version
+                return index
+        return None
+
+    def _get_path_end():
+        for index, item in enumerate(version_milestones):
+            milestone_version = item[0]
+            if milestone_version > version_to:
+                return index - 1
+        return len(version_milestones) - 1
+
+    path_start = _get_path_start()
+    path_end = _get_path_end()
+
+    return [
+        item[1] for index, item in enumerate(version_milestones) if path_start <= index <= path_end
+    ]
 
 
 def updater(version_from, version_to, params_as_dict):
@@ -189,9 +219,15 @@ def updater(version_from, version_to, params_as_dict):
     This function iterates through the update map starting from version_from and
     updates the parameters based on the update path found.
     """
-
-    update_functions = _find_update_path(version_from=version_from, version_to=version_to)
+    log.info(f"Input SimulationParam has version: {version_from}.")
+    update_functions = _find_update_path(
+        version_from=Flow360Version(version_from),
+        version_to=Flow360Version(version_to),
+        version_milestones=VERSION_MILESTONES,
+    )
     for fun in update_functions:
+        _to_version = re.search(r"_to_(\d+_\d+_\d+)", fun.__name__).group(1)
+        log.info(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
-
+    params_as_dict["version"] = str(version_to)
     return params_as_dict
