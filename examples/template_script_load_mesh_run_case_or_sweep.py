@@ -8,12 +8,11 @@ Requires that you have a mesh that you are ready to upload and run cases on.
 import os
 
 import flow360 as fl
-from flow360 import u  # used to give us access to dimensional units
 
-# VARIABLES WE WANT TO EXPORT IN OUR VOLUME SOLUTION FILES. MANY MORE ARE AVAILABLE
+# Variables we want to export in our volume solution files. Many more are available
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
 
-# VARIABLES WE WANT TO EXPORT IN OUR SURFACE SOLUTION FILES. MANY MORE ARE AVAILABLE
+# Variables we want to export in our surface solution files. Many more are available
 surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 
 
@@ -36,32 +35,31 @@ def upload_mesh(file_path, project_name):
 def make_params(mesh_object):
     with fl.imperial_unit_system:
         params = fl.SimulationParams(
-            # dimensions can  be either in inches, or m or mm or many other units
+            # Dimensions can  be either in inches, or m or mm or many other units
             reference_geometry=fl.ReferenceGeometry(
-                moment_center=(0, 0, 0) * u.inch, moment_length=1 * u.inch, area=1 * u.inch * u.inch
+                moment_center=(0, 0, 0) * fl.u.inch, moment_length=1 * fl.u.inch, area=1 * fl.u.inch * fl.u.inch
             ),
-            operating_condition=fl.FreestreamFromVelocity(velocity=100 * u.kt, alpha=10 * u.deg),
+            operating_condition=fl.AerospaceCondition(velocity_magnitude=100 * fl.u.kt, alpha=10 * fl.u.deg),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 fl.Wall(surfaces=mesh_object["BOUNDARY1"], name="Boundary1"),
-                # these boundary names can be taken from the vm.boundary_names printout
+                # These boundary names can be taken from the vm.boundary_names printout
                 fl.Wall(surfaces=mesh_object["BOUNDARY2"], name="Boundary2"),
                 fl.SlipWall(
                     surfaces=mesh_object["BOUNDARY3"], name="Boundary3"
-                ),  # slip wall boundary
+                ),  # Slip wall boundary
                 fl.Freestream(
                     surfaces=mesh_object["BOUNDARY4"], name="Boundary4"
-                ),  # for far field boundaries
-                # define what sort of physical model of a fluid we will use
+                ),  # For far field boundaries
+                # Define what sort of physical model of a fluid we will use
                 fl.Fluid(
-                    navier_stokes_solver=fl.NavierStokesSolver(),
                     turbulence_model_solver=fl.SpalartAllmaras(),
                 ),
             ],
             outputs=[
                 fl.VolumeOutput(output_format="tecplot", output_fields=vol_fields),
                 # This mesh_object['*'] will select all the boundaries in the mesh and export the surface results.
-                # Regular expressions can be used to fileter for certain boundaries
+                # Regular expressions can be used to filter for certain boundaries
                 fl.SurfaceOutput(
                     surfaces=[mesh_object["*"]], output_fields=surf_fields, output_format="tecplot"
                 ),
@@ -92,7 +90,7 @@ def launch_sweep(params, project):
 
     for alpha_angle in alphas:
         # modify the alpha
-        params.operating_condition.alpha = alpha_angle * u.deg
+        params.operating_condition.alpha = alpha_angle * fl.u.deg
 
         # launch the case
         project.run_case(params=params, name=f"{alpha_angle}_case ")
