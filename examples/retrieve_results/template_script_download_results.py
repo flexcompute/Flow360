@@ -11,7 +11,7 @@ import click
 import flow360 as fl
 
 case_id = "ENTER CASE ID HERE"
-
+case_id = 'case-789f852a-529a-4e9e-b394-d8d8bdcd15e5'
 # Used only if we are interested in downloading specific data sets
 download_surfaces = True
 download_volumes = True
@@ -29,15 +29,14 @@ if os.path.exists(destination):
         abort=True,
     )
 print('Beginning downloading')
-results.download(all=True, destination=destination, overwrite=True)  # download all files generated
 
 # Download only specific data sets
-# results.download(
-#     surface=download_surfaces,
-#     volume=download_volumes,
-#     destination=destination,
-#     overwrite=True
-# )
+results.download(
+    surface=download_surfaces,
+    volume=download_volumes,
+    destination=destination,
+    overwrite=True
+)
 
 # Extract tar.gz files
 tar_gz_files = [f for f in os.listdir(destination) if f.endswith(".tar.gz")]
