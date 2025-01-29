@@ -63,7 +63,7 @@ class Flow360Version:
     Expected pattern is `major.minor.patch` (integers).
     """
 
-    __slots__ = ["major", "minor", "patch", "beta"]
+    __slots__ = ["major", "minor", "patch"]
 
     def __init__(self, version: str):
         """
@@ -78,7 +78,6 @@ class Flow360Version:
         self.major = int(match.group(1))
         self.minor = int(match.group(2))
         self.patch = int(match.group(3))
-        self.beta = int(match.group(4)) if match.group(4) else None
 
     def __lt__(self, other):
         return (self.major, self.minor, self.patch) < (other.major, other.minor, other.patch)
