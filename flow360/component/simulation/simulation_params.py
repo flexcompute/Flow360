@@ -251,7 +251,7 @@ class SimulationParams(_ParamModelBase):
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
+    def _preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
         """Internal function for non-dimensionalizing the simulation parameters"""
         if exclude is None:
             exclude = []
