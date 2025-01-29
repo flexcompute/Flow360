@@ -62,15 +62,14 @@ def get_simulation_param_dict(
         try:
             # If input is a JSON string
             param_dict = json.loads(input_params)
+            if param_dict is None:
+                raise ValueError(f"Invalid input <{input_params}> for translator. ")
+            param = SimulationParams(file_content=param_dict)
         except json.JSONDecodeError:
             # If input is a file path
-            with open(input_params, "r", encoding="utf-8") as file:
-                param_dict = json.load(file)
-        if param_dict is None:
-            raise ValueError(f"Invalid input <{input_params}> for translator. ")
-        param = SimulationParams(use_updater=True, **param_dict)
+            param = SimulationParams(filename=input_params)
     elif isinstance(input_params, dict):
-        param = SimulationParams(use_updater=True, **input_params)
+        param = SimulationParams(**input_params)
 
     if param is not None:
         return param.preprocess(validated_mesh_unit, exclude=preprocess_exclude)

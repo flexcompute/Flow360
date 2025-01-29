@@ -156,6 +156,7 @@ class _ParamModelBase(Flow360BaseModel):
         else:
             model_dict = self._handle_dict(**file_content)
 
+        # When treating files/file like contents the updater will always be run.
         model_dict = _ParamModelBase._update_input(model_dict)
 
         unit_system = model_dict.get("unit_system")
@@ -163,28 +164,22 @@ class _ParamModelBase(Flow360BaseModel):
         with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
             super().__init__(**model_dict)
 
-    def _init_with_unit_context(self, use_updater: bool, **kwargs):
+    def _init_with_unit_context(self, **kwargs):
         """
         Initializes the simulation parameters with the given unit context.
         """
-        if use_updater:
-            kwargs = _ParamModelBase._update_input(kwargs)
+        # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
     # TODO: avoid overloading the __init__ so IDE can proper prompt root level keys
-    def __init__(
-        self, filename: str = None, file_content: dict = None, use_updater: bool = False, **kwargs
-    ):
+    def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
         if filename is not None or file_content is not None:
-            # When treating files/file like contents the updater will always be run.
             self._init_no_unit_context(filename, file_content, **kwargs)
         else:
-            # When treating dicts the updater can be skipped if it is trying
-            # to use the vanilla constructor. use_updater is set to true otherwise.
-            self._init_with_unit_context(use_updater, **kwargs)
+            self._init_with_unit_context(**kwargs)
 
     def copy(self, update=None, **kwargs) -> _ParamModelBase:
         if unit_system_manager.current is None:
