@@ -1,9 +1,8 @@
 """
-Sample Flow 360 API scripts
-
-Requires that you have a mesh that you are ready to upload and run cases on.
-
+Sample Flow 360 API scripts.
+Requires a mesh that you are ready to upload and run cases on.
 """
+
 
 import os
 
