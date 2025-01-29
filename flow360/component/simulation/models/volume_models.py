@@ -1,9 +1,6 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
-import json
-import os
-from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -21,10 +18,8 @@ from flow360.component.simulation.framework.single_attribute_base import (
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_c81_bet_json,
     generate_dfdc_bet_json,
-    generate_flow360_bet_json,
     generate_xfoil_bet_json,
     generate_xrotor_bet_json,
-    parse_flow360_bet_disk_dict,
 )
 from flow360.component.simulation.models.material import (
     Air,
@@ -57,7 +52,6 @@ from flow360.component.simulation.unit_system import (
     InverseLengthType,
     LengthType,
     PressureType,
-    TimeType,
     u,
 )
 from flow360.component.simulation.validation_utils import (
@@ -492,23 +486,6 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     )
 
 
-class BETInputFileBase(Flow360BaseModel, metaclass=ABCMeta):
-    """Base class for BET Disk input files"""
-
-    file_name: str
-    type_name: Literal["BETInputFileBase"] = pd.Field("BETInputFileBase", frozen=True)
-    content: Optional[str] = pd.Field(None)
-
-    def read_file(self):
-        """
-        Read the file content and store it as string.
-        """
-        if os.path.isfile(self.file_name) is False:
-            raise FileNotFoundError(f"Supplied file: {self.file_name} cannot be found.")
-        with open(self.file_name, "r") as file:
-            self.content = file.read()
-
-
 class XROTORFile(Flow360BaseModel):
     file_name: str
     type_name: Literal["XRotorFile"] = pd.Field("XRotorFile", frozen=True)
@@ -565,14 +542,8 @@ class XFOILFile(Flow360BaseModel):
         return {"file_name": input_data["file_name"], "content": content_to_store}
 
 
-class Flow360File(BETInputFileBase):
-    """Flow360 File containing setting for a single BET disk"""
-
-    type_name: Literal["Flow360File"] = pd.Field("Flow360File", frozen=True)
-
-
 BETFileTypes = Annotated[
-    Union[XROTORFile, DFDCFile, XFOILFile, C81File, Flow360File],
+    Union[XROTORFile, DFDCFile, XFOILFile, C81File],
     pd.Field(discriminator="type_name"),
 ]
 
@@ -592,7 +563,6 @@ class BETDiskCache(Flow360BaseModel):
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
     blade_line_chord: Optional[LengthType.NonNegative] = None
-    time_unit: Optional[TimeType.Positive] = None
 
 
 # pylint: disable=no-member
@@ -636,7 +606,6 @@ class BETDisk(MultiConstructorBaseModel):
 
     name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
-    type_name: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field(
@@ -1072,102 +1041,6 @@ class BETDisk(MultiConstructorBaseModel):
         )
 
         return cls(**params)
-
-    @MultiConstructorBaseModel.model_constructor
-    @pd.validate_call
-    def from_flow360(
-        cls,
-        file: Flow360File,
-        mesh_unit: LengthType.NonNegative,
-        time_unit: TimeType.Positive,
-    ):
-        """Constructs a :class: `BETDisk` instance from a given V1 (legacy) Flow360 input.
-
-        Parameters
-        ----------
-        file: XROTORFile
-            XROTORFile class instance containing information about the XROTOR file.
-        mesh_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        time_unit: TimeType.Positive
-            Time unit used for non-dimensionalization.
-
-        Returns
-        -------
-        BETDisk
-            An instance of :class:`BETDisk` completed with given inputs.
-
-        Examples
-        --------
-        Create a BET disk with an XROTOR file.
-
-        >>> param = fl.BETDisk.from_flow360(
-        ...     file=fl.Flow360File(file_name="flow360.json")),
-        ...     mesh_unit=param.length_unit,
-        ...     time_unit=param.time_unit,
-        ... )
-        """
-        file.read_file()
-        try:
-            bet_disk_dict, cylinder_dict = generate_flow360_bet_json(
-                flow360_file_content=file.content,
-                mesh_unit=mesh_unit,
-                time_unit=time_unit,
-            )
-            return cls(**bet_disk_dict, entities=Cylinder(**cylinder_dict))
-        except KeyError as err:
-            raise ValueError(
-                "The supplied Flow360 input for BETDisk is invalid. Details: " + str(err) + "."
-            )
-
-    @classmethod
-    def read_flow360_BETDisk_list(
-        cls, file_path: str, mesh_unit: LengthType.NonNegative, time_unit: TimeType.Positive
-    ) -> list:
-        """
-        Read in Legacy V1 Flow360.json and convert its BETDisks settings to a list of :class: `BETDisk` instances
-
-        Parameters
-        ----------
-        file_path: str
-            Path to the Flow360.json file.
-        mesh_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters.
-        time_unit: TimeType.Positive
-            Time unit used for non-dimensionalization.
-
-        Examples
-        --------
-        Create a BET disk with an XROTOR file.
-
-        >>> param = fl.BETDisk.from_flow360(
-        ...     file=fl.Flow360File(file_name="flow360.json")),
-        ...     mesh_unit=param.length_unit,
-        ...     time_unit=param.time_unit,
-        ... )
-        """
-        if os.path.isfile(file_path) is False:
-            raise FileNotFoundError(f"Supplied file: {file_path} cannot be found.")
-        with open(file_path, "r") as file:
-            data_dict: dict = json.load(file)
-
-        bet_list = []
-
-        if "BETDisks" not in data_dict:
-            raise ValueError("Cannot find 'BETDisk' key in the supplied JSON file.")
-        if not data_dict.get("BETDisks", None):
-            raise ValueError("'BETDisk'in the supplied JSON file contains no info.")
-
-        bet_disk_index = 0
-        for item in data_dict.get("BETDisks"):
-            bet_disk_dict, cylinder_dict = parse_flow360_bet_disk_dict(
-                flow360_bet_disk_dict=item,
-                mesh_unit=mesh_unit,
-                time_unit=time_unit,
-            )
-            bet_list.append(cls(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
-            bet_disk_index += 1
-        return bet_list
 
 
 class Rotation(Flow360BaseModel):

@@ -6,7 +6,12 @@ from tempfile import NamedTemporaryFile
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.volume_models import BETDisk, Flow360File
+from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.migration.BETDisk import (
+    read_all_v1_BETDisks,
+    read_single_v1_BETDisk,
+)
+from flow360.component.simulation.models.volume_models import BETDisk
 
 
 @pytest.fixture(autouse=True)
@@ -15,27 +20,30 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_single_flow360_bet_convert():
-    disk = BETDisk.from_flow360(
-        file=Flow360File(file_name="./data/single_flow360_bet_disk.json"),
+    disk = read_single_v1_BETDisk(
+        file_path="./data/single_flow360_bet_disk.json",
         mesh_unit=1 * u.cm,
         time_unit=2 * u.s,
     )
     assert isinstance(disk, BETDisk)
+    with open("./ref/ref_single_bet_disk.json", mode="r") as fp:
+        ref_dict = json.load(fp=fp)
+    compare_values(disk.model_dump(), ref_dict)
 
     with pytest.raises(
         ValueError,
         match=re.escape("Please pass in single BETDisk setting at a time."),
     ):
         # Wrong usage by supplying the complete Flow360.json
-        disk = BETDisk.from_flow360(
-            file=Flow360File(file_name="./data/full_flow360.json"),
+        disk = read_single_v1_BETDisk(
+            file_path="./data/full_flow360.json",
             mesh_unit=1 * u.cm,
             time_unit=2 * u.s,
         )
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The supplied Flow360 input for BETDisk is invalid. Details: 'axisOfRotation'"
+            "The supplied Flow360 input for BETDisk hsa invalid format. Details: 'axisOfRotation'."
         ),
     ):
         # Wrong usage by supplying incorrect schema json
@@ -45,8 +53,8 @@ def test_single_flow360_bet_convert():
             temp_file_name = temp_file.name
 
         try:
-            BETDisk.from_flow360(
-                file=Flow360File(file_name=temp_file_name),
+            read_single_v1_BETDisk(
+                file_path=temp_file_name,
                 mesh_unit=1 * u.cm,
                 time_unit=2 * u.s,
             )
@@ -56,7 +64,7 @@ def test_single_flow360_bet_convert():
 
 def test_full_flow360_bet_convert():
 
-    list_of_disks = BETDisk.read_flow360_BETDisk_list(
+    list_of_disks = read_all_v1_BETDisks(
         file_path="./data/full_flow360.json",
         mesh_unit=1 * u.cm,
         time_unit=2 * u.s,
@@ -71,7 +79,7 @@ def test_full_flow360_bet_convert():
         match=re.escape("Cannot find 'BETDisk' key in the supplied JSON file."),
     ):
 
-        BETDisk.read_flow360_BETDisk_list(
+        read_all_v1_BETDisks(
             file_path="./data/single_flow360_bet_disk.json",
             mesh_unit=1 * u.cm,
             time_unit=2 * u.s,
