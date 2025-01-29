@@ -43,9 +43,8 @@ def make_params(mesh_object):
             operating_condition=fl.AerospaceCondition(velocity_magnitude=100 * fl.u.kt, alpha=10 * fl.u.deg),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
-                fl.Wall(surfaces=mesh_object["BOUNDARY1"], name="Boundary1"),
                 # These boundary names can be taken from the vm.boundary_names printout
-                fl.Wall(surfaces=mesh_object["BOUNDARY2"], name="Boundary2"),
+                fl.Wall(surfaces=[mesh_object["BOUNDARY1"], mesh_object["BOUNDARY2"]], name="BoundaryWall"),
                 fl.SlipWall(
                     surfaces=mesh_object["BOUNDARY3"], name="Boundary3"
                 ),  # Slip wall boundary
@@ -72,16 +71,7 @@ def make_params(mesh_object):
 ######################################################################################################################
 def launch_sweep(params, project):
     """
-    launch a sweep of cases
-
-    Parameters
-    ----------
-    params
-    project
-
-    Returns
-    -------
-
+    Launch a sweep of cases.
     """
 
     # for example let's vary alpha:
@@ -99,10 +89,7 @@ def launch_sweep(params, project):
 ######################################################################################################################
 def main():
     '''
-    Main function that drives the mesh upload and case launching functions
-
-    Returns
-    -------
+    Main function that drives the mesh upload and case launching functions.
     '''
 
 
