@@ -1,6 +1,7 @@
 """
-Download volume, surface,acoustic etc... files to the directory it is run from.
+Download volume, surface, acoustic and other types of output files to the directory it is run from.
 """
+
 
 import os
 import tarfile
