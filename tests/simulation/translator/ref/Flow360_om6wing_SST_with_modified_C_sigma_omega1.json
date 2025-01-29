@@ -154,7 +154,8 @@
         "quadraticConstitutiveRelation": false,
         "reconstructionGradientLimiter": 1.0,
         "relativeTolerance": 0.0,
-        "updateJacobianFrequency": 4
+        "updateJacobianFrequency": 4,
+        "rotationCorrection": false
     },
     "volumeOutput": {
         "animationFrequency": -1,
