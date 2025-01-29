@@ -291,6 +291,10 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
         None, description="Model used for running hybrid RANS-LES simulations"
     )
 
+    rotation_correction: bool = pd.Field(
+        False, description="Rotation correction for the turbulence model."
+    )
+
 
 class KOmegaSST(TurbulenceModelSolver):
     """
@@ -330,7 +334,6 @@ class SpalartAllmaras(TurbulenceModelSolver):
     """
 
     type_name: Literal["SpalartAllmaras"] = pd.Field("SpalartAllmaras", frozen=True)
-    rotation_correction: bool = pd.Field(False)
 
     modeling_constants: Optional[SpalartAllmarasModelConstants] = pd.Field(
         SpalartAllmarasModelConstants(),
