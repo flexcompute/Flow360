@@ -292,7 +292,7 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     )
 
     rotation_correction: bool = pd.Field(
-        False, description="Rotation correction for the turbulence model. "
+        False, description="Rotation correction for the turbulence model."
     )
 
 
