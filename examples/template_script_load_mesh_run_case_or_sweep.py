@@ -31,17 +31,8 @@ def upload_mesh(file_path, project_name):
 ######################################################################################################################
 def make_params(mesh_object):
     '''
-    Create the params object that contains all the run parameters
-    Needs the mesh_object to get the list of surfaces
-
-    Parameters
-    ----------
-    mesh_object
-
-    Returns
-    -------
-    Params object contain run parameters
-
+    Create the params object that contains all the run parameters.
+    Needs the mesh_object to get the list of surfaces.
     '''
     with fl.imperial_unit_system:
         params = fl.SimulationParams(
