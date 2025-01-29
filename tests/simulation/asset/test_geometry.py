@@ -1,3 +1,4 @@
+import re
 import unittest
 
 import pytest
@@ -15,7 +16,12 @@ def change_test_dir(request, monkeypatch):
 
 
 def test_draft_geometry_from_file():
-    with pytest.raises(ex.Flow360FileError, match="Unsupported geometry file extensions"):
+    with pytest.raises(
+        ex.Flow360FileError,
+        match=re.escape(
+            "The given file: file.unsupported is not a supported geometry file. Allowed file suffixes are: ['.csm', '.egads', '.sat', '.sab', '.asat', '.asab', '.iam', '.catpart', '.catproduct', '.gt', '.prt', '.prt.*', '.asm.*', '.par', '.asm', '.psm', '.sldprt', '.sldasm', '.stp', '.step', '.x_t', '.xmt_txt', '.x_b', '.xmt_bin', '.3dm', '.ipt']"
+        ),
+    ):
         sm = Geometry.from_file("file.unsupported")
 
     with pytest.raises(ex.Flow360FileError, match="not found"):

@@ -25,6 +25,12 @@ SurfaceMeshInterface = BaseInterface(
     endpoint="surfacemeshes",
 )
 
+SurfaceMeshInterfaceV2 = BaseInterface(
+    resource_type="Surface Mesh",
+    s3_transfer_method=S3TransferType.SURFACE_MESH,
+    endpoint="v2/surface-meshes",
+)
+
 
 VolumeMeshInterface = BaseInterface(
     resource_type="Volume Mesh",

@@ -69,7 +69,7 @@ def _create_porous_media_param(slip_wall_list, inflow, outflow, porous_zone):
                 Inflow(
                     entities=[inflow],
                     total_temperature=1.008 * default_thermal_state.temperature,
-                    spec=TotalPressure(1.028281 * default_thermal_state.pressure),
+                    spec=TotalPressure(value=1.028281 * default_thermal_state.pressure),
                 ),
                 Outflow(entities=[outflow], spec=Pressure(default_thermal_state.pressure)),
             ],

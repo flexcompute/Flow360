@@ -107,7 +107,8 @@ class _ParamModelBase(Flow360BaseModel):
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
     model_config = pd.ConfigDict(include_hash=True)
 
-    def _init_check_unit_system(self, **kwargs):
+    @classmethod
+    def _init_check_unit_system(cls, **kwargs):
         """
         Check existence of unit system and raise an error if it is not set or inconsistent.
         """
@@ -127,7 +128,20 @@ class _ParamModelBase(Flow360BaseModel):
 
         return kwargs
 
-    def _init_no_context(self, filename, file_content, **kwargs):
+    @classmethod
+    def _update_input(cls, model_dict):
+        version = model_dict.pop("version", None)
+        if version is None:
+            raise Flow360RuntimeError(
+                "Missing version or unit system info in file content, please check the input file."
+            )
+        if version != __version__:
+            model_dict = updater(
+                version_from=version, version_to=__version__, params_as_dict=model_dict
+            )
+        return model_dict
+
+    def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
         """
@@ -142,36 +156,35 @@ class _ParamModelBase(Flow360BaseModel):
         else:
             model_dict = self._handle_dict(**file_content)
 
-        version = model_dict.pop("version", None)
-        unit_system = model_dict.get("unit_system")
-        if version is not None and unit_system is not None:
-            if version != __version__:
-                model_dict = updater(  # pylint: disable=R0801
-                    version_from=version, version_to=__version__, params_as_dict=model_dict
-                )
-            # pylint: disable=not-context-manager
-            with UnitSystem.from_dict(**unit_system):
-                super().__init__(**model_dict)
-        else:
-            raise Flow360RuntimeError(
-                "Missing version or unit system info in file content, please check the input file."
-            )
+        model_dict = _ParamModelBase._update_input(model_dict)
 
-    def _init_with_context(self, **kwargs):
+        unit_system = model_dict.get("unit_system")
+
+        with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+            super().__init__(**model_dict)
+
+    def _init_with_unit_context(self, use_updater: bool, **kwargs):
         """
         Initializes the simulation parameters with the given unit context.
         """
-        kwargs = self._init_check_unit_system(**kwargs)
+        if use_updater:
+            kwargs = _ParamModelBase._update_input(kwargs)
+        kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
     # TODO: avoid overloading the __init__ so IDE can proper prompt root level keys
-    def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
+    def __init__(
+        self, filename: str = None, file_content: dict = None, use_updater: bool = False, **kwargs
+    ):
         if filename is not None or file_content is not None:
-            self._init_no_context(filename, file_content, **kwargs)
+            # When treating files/file like contents the updater will always be run.
+            self._init_no_unit_context(filename, file_content, **kwargs)
         else:
-            self._init_with_context(**kwargs)
+            # When treating dicts the updater can be skipped if it is trying
+            # to use the vanilla constructor. use_updater is set to true otherwise.
+            self._init_with_unit_context(use_updater, **kwargs)
 
     def copy(self, update=None, **kwargs) -> _ParamModelBase:
         if unit_system_manager.current is None:

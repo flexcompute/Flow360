@@ -7,6 +7,11 @@ from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
+from flow360.component.project_utils import (
+    GeometryFiles,
+    SurfaceMeshFile,
+    VolumeMeshFile,
+)
 from flow360.component.simulation import services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
@@ -130,6 +135,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.version import __solver_version__, __version__
@@ -236,9 +242,14 @@ __all__ = [
     "UserDefinedField",
     "operating_condition_from_mach_reynolds",
     "VolumeMesh",
+    "SurfaceMesh",
     "UserDefinedFarfield",
     "Geometry",
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
     "SurfaceSliceOutput",
+    "VolumeMeshFile",
+    "SurfaceMeshFile",
+    "GeometryFiles",
+    "SlaterPorousBleed",
 ]

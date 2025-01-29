@@ -79,6 +79,8 @@ class BasicUserConfig:
         key = self.config.get(self.profile, {})
         if key and env.name == "dev":
             key = key.get("dev")
+        elif key and env.name == "uat":
+            key = key.get("uat")
         return None if key is None else key.get("apikey", "")
 
     def suppress_submit_warning(self):

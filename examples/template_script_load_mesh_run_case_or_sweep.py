@@ -1,9 +1,8 @@
 """
-Sample Flow 360 API scripts
-
-Requires that you have a mesh that you are ready to upload and run cases on.
-
+Sample Flow 360 API scripts.
+Requires a mesh that you are ready to upload and run cases on.
 """
+
 
 import os
 
@@ -19,11 +18,9 @@ surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 ######################################################################################################################
 def upload_mesh(file_path, project_name):
     """
-    given a file path it will uplaod a mesh
-    Returns
-    -------
-    project id associated with that mesh
+    Given a file path and name of the project, this function creates a project and uploads a mesh.
     """
+
 
     project = fl.Project.from_file(file_path, length_unit="inch", name=project_name)
     print(f"The project id is {project.id}")
@@ -34,17 +31,8 @@ def upload_mesh(file_path, project_name):
 ######################################################################################################################
 def make_params(mesh_object):
     '''
-    Create the params object that contains all the run parameters
-    Needs the mesh_object to get the list of surfaces
-
-    Parameters
-    ----------
-    mesh_object
-
-    Returns
-    -------
-    Params object contain run parameters
-
+    Create the params object that contains all the run parameters.
+    Needs the mesh_object to get the list of surfaces.
     '''
     with fl.imperial_unit_system:
         params = fl.SimulationParams(
@@ -55,9 +43,8 @@ def make_params(mesh_object):
             operating_condition=fl.AerospaceCondition(velocity_magnitude=100 * fl.u.kt, alpha=10 * fl.u.deg),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
-                fl.Wall(surfaces=mesh_object["BOUNDARY1"], name="Boundary1"),
                 # These boundary names can be taken from the vm.boundary_names printout
-                fl.Wall(surfaces=mesh_object["BOUNDARY2"], name="Boundary2"),
+                fl.Wall(surfaces=[mesh_object["BOUNDARY1"], mesh_object["BOUNDARY2"]], name="BoundaryWall"),
                 fl.SlipWall(
                     surfaces=mesh_object["BOUNDARY3"], name="Boundary3"
                 ),  # Slip wall boundary
@@ -84,16 +71,7 @@ def make_params(mesh_object):
 ######################################################################################################################
 def launch_sweep(params, project):
     """
-    launch a sweep of cases
-
-    Parameters
-    ----------
-    params
-    project
-
-    Returns
-    -------
-
+    Launch a sweep of cases.
     """
 
     # for example let's vary alpha:
@@ -111,10 +89,7 @@ def launch_sweep(params, project):
 ######################################################################################################################
 def main():
     '''
-    Main function that drives the mesh upload and case launching functions
-
-    Returns
-    -------
+    Main function that drives the mesh upload and case launching functions.
     '''
 
 
