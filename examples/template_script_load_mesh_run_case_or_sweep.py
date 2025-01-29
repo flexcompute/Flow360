@@ -40,7 +40,7 @@ def make_params(mesh_object):
             reference_geometry=fl.ReferenceGeometry(
                 moment_center=(0, 0, 0) * fl.u.inch, moment_length=1 * fl.u.inch, area=1 * fl.u.inch * fl.u.inch
             ),
-            operating_condition=fl.AerospaceCondition(velocity_magnitude=100 * fl.u.kt, alpha=10 * fl.u.deg),
+            operating_condition=fl.AerospaceCondition(velocity_magnitude=100 * fl.u.m / fl.u.s, alpha=10 * fl.u.deg),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 # These boundary names can be taken from the vm.boundary_names printout
