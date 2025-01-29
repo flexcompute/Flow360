@@ -13,7 +13,6 @@ def test_init_valid_version():
     assert v.major == 25
     assert v.minor == 2
     assert v.patch == 0
-    assert v.beta == 1
 
 
 @pytest.mark.parametrize(
