@@ -68,7 +68,8 @@
             "C_sigma_k2": 1.0,
             "C_sigma_omega1": 0.5,
             "C_sigma_omega2": 0.856
-        }
+        },
+        "rotationCorrection": false
     },
     "volumeZones": {
         "innerRotating": {
