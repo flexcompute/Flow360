@@ -1,4 +1,5 @@
 from examples.migration_guide.bet_disk_converter import bet_disk_convert
+from flow360 import BETDisk
 from flow360.component.simulation.unit_system import u
 from flow360.component.simulation.units import flow360_angular_velocity_unit
 

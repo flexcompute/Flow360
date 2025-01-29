@@ -1,5 +1,6 @@
 """Translator for C81, DFDC, XFOIL and XROTOR BET input files."""
 
+import json
 import os
 
 # pylint: disable=redefined-builtin, wildcard-import
@@ -1526,4 +1527,95 @@ def generate_dfdc_bet_json(
         angle_unit=angle_unit,
         length_unit=length_unit,
         mesh_unit=mesh_unit,
+    )
+
+
+def parse_flow360_bet_disk_dict(
+    *, flow360_bet_disk_dict: dict, mesh_unit, time_unit, bet_disk_index: int = 0
+):
+    """
+    Read in the provided Flow360 BETDisk config.
+    This handles the conversion of **1** instance of BETDisk.
+    For populating a list of BETDisks, use the function in SimulationParams.
+
+    Returns the BETDisk and the cylinder entity used.
+    """
+    if "BETDisks" in flow360_bet_disk_dict:
+        raise ValueError(
+            "'BETDisks' list found in input file."
+            "Please pass in single BETDisk setting at a time. To read in all the BETDisks, use BETDisks.read_flow360_BETDisk_list()"
+        )
+
+    key_mapping = {
+        "rotationDirectionRule": "rotation_direction_rule",
+        "numberOfBlades": "number_of_blades",
+        "ReynoldsNumbers": "reynolds_numbers",
+        "chordRef": "chord_ref",
+        "nLoadingNodes": "n_loading_nodes",
+        "sectionalRadiuses": "sectional_radiuses",
+        "sectionalPolars": "sectional_polars",
+        "MachNumbers": "mach_numbers",
+        "liftCoeffs": "lift_coeffs",
+        "dragCoeffs": "drag_coeffs",
+        "tipGap": "tip_gap",
+        "initialBladeDirection": "initial_blade_direction",
+        "bladeLineChord": "blade_line_chord",
+    }
+
+    keys_to_remove = [
+        "axisOfRotation",
+        "centerOfRotation",
+        "radius",
+        "thickness",
+    ]
+
+    cylinder_dict = {
+        "name": f"betcylinder{bet_disk_index+1}",
+        "axis": flow360_bet_disk_dict["axisOfRotation"],
+        "center": flow360_bet_disk_dict["centerOfRotation"] * mesh_unit,
+        "inner_radius": 0 * mesh_unit,
+        "outer_radius": flow360_bet_disk_dict["radius"] * mesh_unit,
+        "height": flow360_bet_disk_dict["thickness"] * mesh_unit,
+    }
+
+    updated_bet_dict = {
+        key_mapping.get(key, key): value
+        for key, value in flow360_bet_disk_dict.items()
+        if key not in keys_to_remove
+    }
+
+    updated_bet_dict["twists"] = [
+        {"radius": twist["radius"] * mesh_unit, "twist": twist["twist"] * u.deg}
+        for twist in updated_bet_dict["twists"]
+    ]
+
+    updated_bet_dict["chords"] = [
+        {"radius": chord["radius"] * mesh_unit, "chord": chord["chord"] * mesh_unit}
+        for chord in updated_bet_dict["chords"]
+    ]
+
+    updated_bet_dict["sectional_polars"] = [
+        {
+            key_mapping.get(key, key): value
+            for key, value in polars.items()
+            if key not in keys_to_remove
+        }
+        for polars in updated_bet_dict["sectional_polars"]
+    ]
+
+    updated_bet_dict["alphas"] = updated_bet_dict["alphas"] * u.deg
+    updated_bet_dict["omega"] = updated_bet_dict["omega"] * u.rad / time_unit
+    updated_bet_dict["chord_ref"] = updated_bet_dict["chord_ref"] * mesh_unit
+    updated_bet_dict["sectional_radiuses"] = updated_bet_dict["sectional_radiuses"] * mesh_unit
+
+    if "blade_line_chord" in updated_bet_dict:
+        updated_bet_dict["blade_line_chord"] = updated_bet_dict["blade_line_chord"] * mesh_unit
+    return updated_bet_dict, cylinder_dict
+
+
+def generate_flow360_bet_json(*, flow360_file_content: str, mesh_unit, time_unit):
+
+    data_dict = json.loads(flow360_file_content)
+    return parse_flow360_bet_disk_dict(
+        flow360_bet_disk_dict=data_dict, mesh_unit=mesh_unit, time_unit=time_unit
     )
