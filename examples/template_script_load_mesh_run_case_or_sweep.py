@@ -53,6 +53,7 @@ def make_params(mesh_object):
                 ),  # For far field boundaries
                 # Define what sort of physical model of a fluid we will use
                 fl.Fluid(
+                    navier_stokes_solver=fl.NavierStokesSolver(),
                     turbulence_model_solver=fl.SpalartAllmaras(),
                 ),
             ],
