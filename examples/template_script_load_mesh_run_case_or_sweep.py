@@ -18,11 +18,9 @@ surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 ######################################################################################################################
 def upload_mesh(file_path, project_name):
     """
-    given a file path it will uplaod a mesh
-    Returns
-    -------
-    project id associated with that mesh
+    Given a file path and name of the project, this function creates a project and uploads a mesh.
     """
+
 
     project = fl.Project.from_file(file_path, length_unit="inch", name=project_name)
     print(f"The project id is {project.id}")
