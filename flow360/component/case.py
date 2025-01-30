@@ -460,7 +460,6 @@ class Case(CaseBase, Flow360Resource):
         param, errors, _ = services.validate_model(
             params_as_dict=params_as_dict,
             root_item_type=None,
-            treat_as_file_content=True,
             validation_level=None,
         )
 
