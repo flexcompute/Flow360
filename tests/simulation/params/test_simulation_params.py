@@ -162,7 +162,7 @@ def test_simulation_params_serialization(get_the_param):
 
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
-    converted = get_the_param.preprocess(mesh_unit=10 * u.m)
+    converted = get_the_param._preprocess(mesh_unit=10 * u.m)
 
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
@@ -367,7 +367,7 @@ def test_delta_temperature_scaling():
     reference_temperature = param.operating_condition.thermal_state.temperature.to("K")
 
     scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
-    processed_param = param.preprocess(mesh_unit=1 * u.m)
+    processed_param = param._preprocess(mesh_unit=1 * u.m)
 
     assert (
         processed_param.operating_condition.thermal_state.temperature_offset.value
