@@ -5,9 +5,11 @@ Download volume, surface, acoustic and other types of output files to the direct
 import os
 import tarfile
 import timeit
+
 import click
-from flow360.log import log
+
 import flow360 as fl
+from flow360.log import log
 
 # Enter case specific settings here.
 case_id = "ENTER CASE ID HERE"
