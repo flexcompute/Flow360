@@ -3,10 +3,10 @@ Sample Flow 360 API scripts.
 Requires a mesh that you are ready to upload and run cases on.
 """
 
-
 import os
 
 import flow360 as fl
+from flow360.log import log
 
 # Variables we want to export in our volume solution files. Many more are available
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
@@ -21,30 +21,36 @@ def upload_mesh(file_path, project_name):
     Given a file path and name of the project, this function creates a project and uploads a mesh.
     """
 
-
     project = fl.Project.from_file(file_path, length_unit="inch", name=project_name)
-    print(f"The project id is {project.id}")
+    log.info(f"The project id is {project.id}")
 
     return project
 
 
 ######################################################################################################################
 def make_params(mesh_object):
-    '''
+    """
     Create the params object that contains all the run parameters.
     Needs the mesh_object to get the list of surfaces.
-    '''
+    """
     with fl.imperial_unit_system:
         params = fl.SimulationParams(
             # Dimensions can  be either in inches, or m or mm or many other units
             reference_geometry=fl.ReferenceGeometry(
-                moment_center=(0, 0, 0) * fl.u.inch, moment_length=1 * fl.u.inch, area=1 * fl.u.inch * fl.u.inch
+                moment_center=(0, 0, 0) * fl.u.inch,
+                moment_length=1 * fl.u.inch,
+                area=1 * fl.u.inch * fl.u.inch,
             ),
-            operating_condition=fl.AerospaceCondition(velocity_magnitude=100 * fl.u.m / fl.u.s, alpha=10 * fl.u.deg),
+            operating_condition=fl.AerospaceCondition(
+                velocity_magnitude=100 * fl.u.m / fl.u.s, alpha=10 * fl.u.deg
+            ),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 # These boundary names can be taken from the vm.boundary_names printout
-                fl.Wall(surfaces=[mesh_object["BOUNDARY1"], mesh_object["BOUNDARY2"]], name="BoundaryWall"),
+                fl.Wall(
+                    surfaces=[mesh_object["BOUNDARY1"], mesh_object["BOUNDARY2"]],
+                    name="BoundaryWall",
+                ),
                 fl.SlipWall(
                     surfaces=mesh_object["BOUNDARY3"], name="Boundary3"
                 ),  # Slip wall boundary
@@ -84,15 +90,14 @@ def launch_sweep(params, project):
 
         # launch the case
         project.run_case(params=params, name=f"{alpha_angle}_case ")
-        print(f"case id is {project.case.id} with {alpha_angle=} ")
+        log.info(f"case id is {project.case.id} with {alpha_angle=} ")
 
 
 ######################################################################################################################
 def main():
-    '''
+    """
     Main function that drives the mesh upload and case launching functions.
-    '''
-
+    """
 
     # if you want to upload a new mesh and create a new project
     mesh_file_path = os.path.join(os.getcwd(), "MESHNAME.cgns")  # mesh could also be ugrid format
@@ -104,8 +109,8 @@ def main():
     #     'prj-XXXXXXXXXX')  # where the prj-XXXXXX ID can be saved from a previously created project or read off the WEBUI
 
     vm = project.volume_mesh  # get the volume mesh entity associated with that project.
-    print("The volume mesh contains the following boundaries:\n", vm.boundary_names)
-    print(f"The mesh id is {vm.id}")
+    log.info("The volume mesh contains the following boundaries:\n", vm.boundary_names)
+    log.info(f"The mesh id is {vm.id}")
 
     params = make_params(vm)  # define the run params used to launch the run
 
@@ -113,7 +118,7 @@ def main():
 
     # or if you want to simply launch the case
     project.run_case(params=params, name=f"name_of_case ")
-    print(f"case id is {project.case.id}")
+    log.info(f"case id is {project.case.id}")
 
 
 ######################################################################################################################
