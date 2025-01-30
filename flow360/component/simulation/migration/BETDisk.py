@@ -1,3 +1,7 @@
+# pylint: disable=invalid-name
+
+"""Module for loading the BETDisk settings from Flow360 V1 configs"""
+
 import json
 import os
 
@@ -23,12 +27,12 @@ def _parse_flow360_bet_disk_dict(
         if len(flow360_bet_disk_dict["BETDisks"]) > 1:
             raise ValueError(
                 "'BETDisks' list found in input file."
-                "Please pass in single BETDisk setting at a time. To read in all the BETDisks, use BETDisks.read_flow360_BETDisk_list()"
+                " Please pass in single BETDisk setting at a time."
+                " To read in all the BETDisks, use BETDisks.read_flow360_BETDisk_list()."
             )
-        elif len(flow360_bet_disk_dict["BETDisks"]) == 0:
+        if len(flow360_bet_disk_dict["BETDisks"]) == 0:
             raise ValueError("Input file does not contain BETDisk setting.")
-        else:
-            flow360_bet_disk_dict = flow360_bet_disk_dict["BETDisks"][0]
+        flow360_bet_disk_dict = flow360_bet_disk_dict["BETDisks"][0]
 
     key_mapping = {
         "rotationDirectionRule": "rotation_direction_rule",
@@ -69,7 +73,10 @@ def _parse_flow360_bet_disk_dict(
     }
 
     updated_bet_dict["twists"] = [
-        {"radius": twist["radius"] * mesh_unit, "twist": twist["twist"] * u.deg}
+        {
+            "radius": twist["radius"] * mesh_unit,
+            "twist": twist["twist"] * u.deg,  # pylint: disable = no-member
+        }
         for twist in updated_bet_dict["twists"]
     ]
 
@@ -93,8 +100,10 @@ def _parse_flow360_bet_disk_dict(
         for polars in updated_bet_dict["sectional_polars"]
     ]
 
-    updated_bet_dict["alphas"] = updated_bet_dict["alphas"] * u.deg
-    updated_bet_dict["omega"] = updated_bet_dict["omega"] * u.rad / time_unit
+    updated_bet_dict["alphas"] = updated_bet_dict["alphas"] * u.deg  # pylint: disable = no-member
+    updated_bet_dict["omega"] = (
+        updated_bet_dict["omega"] * u.rad / time_unit  # pylint: disable = no-member
+    )
     updated_bet_dict["chord_ref"] = updated_bet_dict["chord_ref"] * mesh_unit
     updated_bet_dict["sectional_radiuses"] = updated_bet_dict["sectional_radiuses"] * mesh_unit
 
@@ -106,15 +115,15 @@ def _parse_flow360_bet_disk_dict(
 def _load_flow360_json(*, file_path: str) -> dict:
     if os.path.isfile(file_path) is False:
         raise FileNotFoundError(f"Supplied file: {file_path} cannot be found.")
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
 @validate_call
 def read_single_v1_BETDisk(
     file_path: str,
-    mesh_unit: LengthType.NonNegative,
-    time_unit: TimeType.Positive,
+    mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
+    time_unit: TimeType.Positive,  # pylint: disable = no-member
 ) -> BETDisk:
     """
     Constructs a single :class: `BETDisk` instance from a given V1 (legacy) Flow360 input.
@@ -155,12 +164,14 @@ def read_single_v1_BETDisk(
     except KeyError as err:
         raise ValueError(
             "The supplied Flow360 input for BETDisk hsa invalid format. Details: " + str(err) + "."
-        )
+        ) from err
 
 
 @validate_call
 def read_all_v1_BETDisks(
-    file_path: str, mesh_unit: LengthType.NonNegative, time_unit: TimeType.Positive
+    file_path: str,
+    mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
+    time_unit: TimeType.Positive,  # pylint: disable = no-member
 ) -> list[BETDisk]:
     """
     Read in Legacy V1 Flow360.json and convert its BETDisks settings to a list of :class: `BETDisk` instances

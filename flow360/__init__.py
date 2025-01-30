@@ -2,7 +2,6 @@
 This module is flow360 for simulation based models
 """
 
-from flow360.component.simulation import migration
 from flow360.accounts_utils import Accounts
 from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
@@ -13,7 +12,7 @@ from flow360.component.project_utils import (
     SurfaceMeshFile,
     VolumeMeshFile,
 )
-from flow360.component.simulation import services
+from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
