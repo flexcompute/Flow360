@@ -71,7 +71,7 @@ class Flow360Version:
         Each of major, minor, patch should be numeric.
         """
         # Match three groups of digits separated by dots
-        match = re.match(r"^(\d+)\.(\d+)\.(\d+)$", version.strip())
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$", version.strip())
         if not match:
             raise ValueError(f"Invalid version string: {version}")
 

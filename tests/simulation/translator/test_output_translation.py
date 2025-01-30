@@ -296,7 +296,7 @@ def test_slice_output(
     ##:: sliceOutput with NO global settings
     with SI_unit_system:
         param = SimulationParams(outputs=sliceoutput_config[0])
-    param = param.preprocess(1.0 * u.m, exclude=["models"])
+    param = param._preprocess(1.0 * u.m, exclude=["models"])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
@@ -715,7 +715,7 @@ def test_surface_probe_output():
             outputs=param_with_ref[0],
             user_defined_fields=[UserDefinedField(name="my_own_field", expression="1+1")],
         )
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -734,7 +734,7 @@ def test_monitor_output(
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=probe_output_config[0],
         )
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -743,7 +743,7 @@ def test_monitor_output(
     ##:: monitorOutput with line probes
     with SI_unit_system:
         param = SimulationParams(outputs=probe_output_with_point_array[0])
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -760,7 +760,7 @@ def test_monitor_output(
                 UserDefinedField(name="My_field_2", expression="1+12"),
             ],
         )
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -779,7 +779,7 @@ def test_monitor_output(
                 UserDefinedField(name="My_field_2", expression="1+12"),
             ],
         )
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -893,7 +893,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     with SI_unit_system:
         param = SimulationParams(outputs=aeroacoustic_output_config[0])
     translated = {"boundaries": {}}
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
@@ -903,7 +903,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     with SI_unit_system:
         param = SimulationParams(outputs=aeroacoustic_output_permeable_config[0])
     translated = {"boundaries": {}}
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
@@ -1003,7 +1003,7 @@ def test_surface_slice_output():
 
     with SI_unit_system:
         param = SimulationParams(outputs=param_with_ref[0])
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
