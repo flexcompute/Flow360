@@ -543,7 +543,8 @@ class XFOILFile(Flow360BaseModel):
 
 
 BETFileTypes = Annotated[
-    Union[XROTORFile, DFDCFile, XFOILFile, C81File], pd.Field(discriminator="type_name")
+    Union[XROTORFile, DFDCFile, XFOILFile, C81File],
+    pd.Field(discriminator="type_name"),
 ]
 
 
@@ -1098,7 +1099,7 @@ class Rotation(Flow360BaseModel):
     )
     rotating_reference_frame_model: Optional[bool] = pd.Field(
         None,
-        description="Flag to specify whether the noninertial referene frame model is "
+        description="Flag to specify whether the non-inertial reference frame model is "
         + "to be used for the rotation model. Steady state simulation requires this flag "
         + "to be True for all rotation models.",
     )
