@@ -4,6 +4,8 @@ Validation for output parameters
 
 from typing import List, Literal, Union, get_args, get_origin
 
+from flow360.component.simulation.models.volume_models import Fluid
+
 
 def _check_output_fields(params):
     """Check the specified output fields for each output item is valid."""
@@ -67,4 +69,43 @@ def _check_output_fields(params):
                         f"Allowed fields are {allowed_items}."
                     )
 
+    return params
+
+
+def _check_output_fields_valid_given_turbulence_model(params):
+    """Ensure that the output fields are consistent with the turbulence model used."""
+
+    if not params.models or not params.outputs:
+        return params
+
+    turbulence_model = None
+
+    invalid_output_fields = {
+        "None": ("kOmega", "nuHat", "residualTurbulence", "solutionTurbulence"),
+        "SpalartAllmaras": ("kOmega"),
+        "kOmegaSST": ("nuHat"),
+    }
+    for model in params.models:
+        if isinstance(model, Fluid):
+            turbulence_model = model.turbulence_model_solver.type_name
+            break
+
+    for output_index, output in enumerate(params.outputs):
+        if output.output_type == "AeroAcousticOutput":
+            continue
+        for item in output.output_fields.items:
+            if item in invalid_output_fields[turbulence_model]:
+                raise ValueError(
+                    f"In `outputs`[{output_index}]:, {item} is not valid"
+                    f" output field when using turbulence model: {turbulence_model}."
+                )
+
+        if output.output_type == "IsosurfaceOutput":
+            # using the 1st item as all items have same field definition as the 1st one.
+            for entity in output.entities.items:
+                if entity.field in invalid_output_fields[turbulence_model]:
+                    raise ValueError(
+                        f"In `outputs`[{output_index}]:, {entity.field} is not valid"
+                        f" iso field when using turbulence model: {turbulence_model}."
+                    )
     return params

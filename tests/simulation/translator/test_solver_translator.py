@@ -174,7 +174,7 @@ def get_om6Wing_tutorial_param():
                 SurfaceOutput(
                     entities=[my_wall, my_symmetry_plane, my_freestream],
                     output_format="paraview",
-                    output_fields=["nuHat"],
+                    output_fields=["Cp"],
                 ),
             ],
         )
