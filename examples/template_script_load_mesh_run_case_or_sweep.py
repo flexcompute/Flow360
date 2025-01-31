@@ -37,9 +37,7 @@ def make_params(mesh_object):
         params = fl.SimulationParams(
             # Dimensions can  be either in inches, or m or mm or many other units
             reference_geometry=fl.ReferenceGeometry(
-                moment_center=(0, 0, 0) * fl.u.m,
-                moment_length=1 * fl.u.m,
-                area=1 * fl.u.m * fl.u.m
+                moment_center=(0, 0, 0) * fl.u.m, moment_length=1 * fl.u.m, area=1 * fl.u.m * fl.u.m
             ),
             operating_condition=fl.AerospaceCondition(
                 velocity_magnitude=100 * fl.u.m / fl.u.s, alpha=0 * fl.u.deg
@@ -48,7 +46,11 @@ def make_params(mesh_object):
             models=[
                 # These boundary names can be taken from the vm.boundary_names printout
                 fl.Wall(
-                    surfaces=[mesh_object["fluid/leftWing"], mesh_object["fluid/rightWing"], mesh_object["fluid/fuselage"]],
+                    surfaces=[
+                        mesh_object["fluid/leftWing"],
+                        mesh_object["fluid/rightWing"],
+                        mesh_object["fluid/fuselage"],
+                    ],
                     name="Airplane",
                 ),
                 fl.Freestream(
@@ -106,7 +108,7 @@ def main():
     #     'prj-XXXXXXXXXX')  # where the prj-XXXXXX ID can be saved from a previously created project or read off the WEBUI
 
     vm = project.volume_mesh  # get the volume mesh entity associated with that project.
-    log.info(f"The volume mesh contains the following boundaries:{vm.boundary_names}" )
+    log.info(f"The volume mesh contains the following boundaries:{vm.boundary_names}")
     log.info(f"The mesh id is {vm.id}")
 
     params = make_params(vm)  # define the run params used to launch the run
