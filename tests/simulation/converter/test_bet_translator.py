@@ -496,11 +496,11 @@ def test_file_model():
     This test verifies:
     1. Normal object creation with valid file path
        - Instantiates a C81File object using a valid CSV file path from test data
-       
+
     2. Immutable file_path enforcement
        - Ensures the 'file_path' field cannot be modified post-creation by attempting
          assignment and expecting a ValueError with frozen fields message
-    
+
     3. Model serialization/deserialization round-trip
        - Validates that dumping the model to a dictionary and re-initializing produces
          an equivalent object using Pydantic's model_dump method
