@@ -52,12 +52,12 @@ def _check_output_fields(params):
         for item in output.output_fields.items:
             if item not in allowed_items:
                 raise ValueError(
-                    f"In `outputs`[{output_index}]:, {item} is not valid output field name. "
-                    f"Allowed fields are {allowed_items}."
+                    f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a"
+                    f" valid output field name. Allowed fields are {allowed_items}."
                 )
 
         if output.output_type == "IsosurfaceOutput":
-            # using the 1st item as all items have same field definition as the 1st one.
+            # using the 1st item's allowed field as all isosurface have same field definition
             allowed_items = (
                 extract_literal_values(output.entities.items[0].model_fields["field"].annotation)
                 + additional_fields
@@ -65,8 +65,8 @@ def _check_output_fields(params):
             for entity in output.entities.items:
                 if entity.field not in allowed_items:
                     raise ValueError(
-                        f"In `outputs`[{output_index}]:, {entity.field} is not valid iso field name. "
-                        f"Allowed fields are {allowed_items}."
+                        f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a"
+                        f" valid iso field name. Allowed fields are {allowed_items}."
                     )
 
     return params
@@ -96,16 +96,16 @@ def _check_output_fields_valid_given_turbulence_model(params):
         for item in output.output_fields.items:
             if item in invalid_output_fields[turbulence_model]:
                 raise ValueError(
-                    f"In `outputs`[{output_index}]:, {item} is not valid"
+                    f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a valid"
                     f" output field when using turbulence model: {turbulence_model}."
                 )
 
         if output.output_type == "IsosurfaceOutput":
-            # using the 1st item as all items have same field definition as the 1st one.
+            # using the 1st item's allowed field as all isosurface have same field definition
             for entity in output.entities.items:
                 if entity.field in invalid_output_fields[turbulence_model]:
                     raise ValueError(
-                        f"In `outputs`[{output_index}]:, {entity.field} is not valid"
+                        f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a valid"
                         f" iso field when using turbulence model: {turbulence_model}."
                     )
     return params

@@ -36,11 +36,11 @@ def test_aeroacoustic_observer_unit_validator():
         )
 
 
-def test_aeroacoustic_observer_unit_validator():
+def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0]:, kOmega is not valid output field when using turbulence model: None."
+            "In `outputs`[0] IsosurfaceOutput:, kOmega is not a valid output field when using turbulence model: None."
         ),
     ):
         with imperial_unit_system:
@@ -58,7 +58,7 @@ def test_aeroacoustic_observer_unit_validator():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0]:, nuHat is not valid iso field when using turbulence model: kOmegaSST."
+            "In `outputs`[0] IsosurfaceOutput:, nuHat is not a valid iso field when using turbulence model: kOmegaSST."
         ),
     ):
         with imperial_unit_system:
@@ -76,7 +76,7 @@ def test_aeroacoustic_observer_unit_validator():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "In `outputs`[0]:, kOmega is not valid output field when using turbulence model: SpalartAllmaras."
+            "In `outputs`[0] VolumeOutput:, kOmega is not a valid output field when using turbulence model: SpalartAllmaras."
         ),
     ):
         with imperial_unit_system:
