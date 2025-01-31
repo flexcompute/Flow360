@@ -33,7 +33,7 @@ def make_params(mesh_object):
     Create the params object that contains all the run parameters.
     Needs the mesh_object to get the list of surfaces.
     """
-    with fl.imperial_unit_system:
+    with fl.SI_unit_system:
         params = fl.SimulationParams(
             # Dimensions can  be either in inches, or m or mm or many other units
             reference_geometry=fl.ReferenceGeometry(
