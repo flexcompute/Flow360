@@ -710,10 +710,10 @@ class BETDisk(MultiConstructorBaseModel):
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
         number_of_blades: pd.StrictInt,
+        length_unit: LengthType.NonNegative,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
-        length_unit: LengthType.NonNegative = u.m,
     ):
         """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
 
@@ -733,6 +733,8 @@ class BETDisk(MultiConstructorBaseModel):
             List of Cylinder entities used for defining the BET volumes.
         number_of_blades: Int
             Number of blades to model.
+        length_unit: LengthType.NonNegative
+            Length unit of the geometry/mesh file.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
@@ -740,8 +742,6 @@ class BETDisk(MultiConstructorBaseModel):
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
 
         Returns
         -------
@@ -760,8 +760,8 @@ class BETDisk(MultiConstructorBaseModel):
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder,
         ...     angle_unit=fl.u.deg,
-        ...     length_unit=fl.u.m,
         ...     number_of_blades=3,
+        ...     length_unit=fl.u.m,
         ... )
         """
 
@@ -792,10 +792,10 @@ class BETDisk(MultiConstructorBaseModel):
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
+        length_unit: LengthType.NonNegative,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
-        length_unit: LengthType.NonNegative = u.m,
     ):
         """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
 
@@ -813,6 +813,8 @@ class BETDisk(MultiConstructorBaseModel):
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
+        length_unit: LengthType.NonNegative
+            Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
@@ -820,8 +822,6 @@ class BETDisk(MultiConstructorBaseModel):
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
 
         Returns
         -------
@@ -839,9 +839,9 @@ class BETDisk(MultiConstructorBaseModel):
         ...     chord_ref=14 * fl.u.m,
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder,
+        ...     length_unit=fl.u.m,
         ...     mesh_unit=fl.u.m,
         ...     angle_unit=fl.u.deg,
-        ...     length_unit=fl.u.m,
         ... )
         """
 
@@ -871,11 +871,11 @@ class BETDisk(MultiConstructorBaseModel):
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
+        length_unit: LengthType.NonNegative,
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
-        length_unit: LengthType.NonNegative = u.m,
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
 
@@ -893,6 +893,8 @@ class BETDisk(MultiConstructorBaseModel):
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
+        length_unit: LengthType.NonNegative
+            Length unit used for LengthType BETDisk parameters.
         number_of_blades: Int
             Number of blades to model.
         initial_blade_direction: Axis, optional
@@ -902,8 +904,6 @@ class BETDisk(MultiConstructorBaseModel):
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
 
         Returns
         -------
@@ -923,8 +923,8 @@ class BETDisk(MultiConstructorBaseModel):
         ...     chord_ref=14 * fl.u.m,
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder_imperial,
-        ...     angle_unit=fl.u.deg,
         ...     length_unit=fl.u.m,
+        ...     angle_unit=fl.u.deg,
         ...     number_of_blades=3,
         )
         """
@@ -956,10 +956,10 @@ class BETDisk(MultiConstructorBaseModel):
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
+        length_unit: LengthType.NonNegative,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
-        length_unit: LengthType.NonNegative = u.m,
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
 
@@ -977,6 +977,8 @@ class BETDisk(MultiConstructorBaseModel):
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
+        length_unit: LengthType.NonNegative
+            Length unit used for LengthType BETDisk parameters.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
@@ -984,8 +986,6 @@ class BETDisk(MultiConstructorBaseModel):
             Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
         angle_unit: AngleType
             Angle unit used for AngleType BETDisk parameters. Defaults to ``u.deg``.
-        length_unit: LengthType.NonNegative
-            Length unit used for LengthType BETDisk parameters. Defaults to ``u.m``.
 
         Returns
         -------
