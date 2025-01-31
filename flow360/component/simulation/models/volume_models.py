@@ -606,6 +606,7 @@ class BETDisk(MultiConstructorBaseModel):
 
     name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
+    type_name: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field(

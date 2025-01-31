@@ -10,13 +10,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.bet.utils import (
-    Array,
-    abs_list,
-    clip,
-    exp_list,
-    log_list,
-)
 
 
 # pylint: disable=too-many-locals
@@ -1344,7 +1337,7 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     for i, a in enumerate(alphas):
         cla[i] = dclda * pg * ((a * pi / 180) - a_zero)
     # pylint: disable=undefined-variable
-    cla = Array(cla)
+    cla = np.array(cla)
 
     cl_max = xrotor_dict["clmax"][nrR_station]
     cl_min = xrotor_dict["clmin"][nrR_station]
@@ -1359,9 +1352,9 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
 
     dcl_stall = xrotor_dict["dclstall"][nrR_station]
 
-    ec_max = exp_list(clip((cla - cl_max) / dcl_stall, -inf, 200))
-    ec_min = exp_list(clip((cla * (-1) + cl_min) / dcl_stall, -inf, 200))
-    cl_lim = log_list((ec_max + 1.0) / (ec_min + 1.0)) * dcl_stall
+    ec_max = np.exp(np.clip((cla - cl_max) / dcl_stall, -inf, 200))
+    ec_min = np.exp(np.clip((cla * (-1) + cl_min) / dcl_stall, -inf, 200))
+    cl_lim = np.log((ec_max + 1.0) / (ec_min + 1.0)) * dcl_stall
 
     dclda_stall = xrotor_dict["dcldastall"][nrR_station]
     f_stall = dclda_stall / dclda
@@ -1378,8 +1371,8 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     dcd = (dcdx**2) * 2.0
 
     dmdd = (cd_m_dd / cd_m_factor) ** (1.0 / mexp)
-    crit_mach = abs_list(c_lift - clcd_min) * cl_m_factor * (-1) + m_crit - dmdd
-    cdc = Array([0 for _ in range(len(crit_mach))])
+    crit_mach = np.abs(c_lift - clcd_min) * cl_m_factor * (-1) + m_crit - dmdd
+    cdc = np.zeros(len(crit_mach))
 
     for crit_mach_idx, value in enumerate(crit_mach):
         if mach < value:
