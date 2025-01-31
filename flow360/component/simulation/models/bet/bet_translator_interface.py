@@ -2,7 +2,6 @@
 
 import os
 from math import cos, inf, pi, sin, sqrt
-from os import path
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -11,14 +10,22 @@ import flow360.component.simulation.units as u
 from flow360.exceptions import Flow360ValueError
 
 
+def get_file_content(file_path: str):
+    """Get the file content and perform existence check. Returns the content of file."""
+    if os.path.isfile(file_path) is False:
+        raise FileNotFoundError(f"Supplied file: {file_path} cannot be found.")
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
+
+
 # pylint: disable=too-many-locals
-def read_in_xfoil_polar(polar_file):
+def parse_in_xfoil_polar(polar_file_content: str):
     """
     Read in the XFOIL format polar file.
 
     Parameters
     ----------
-    polar_file: path to the XFOIL polar file
+    polar_file_content: XFOIL polar file content
 
     Attributes
     ----------
@@ -28,29 +35,32 @@ def read_in_xfoil_polar(polar_file):
     cl_values = {}
     cd_values = {}
 
-    with open(polar_file, "r", encoding="utf-8") as xfoil_fid:
-        xfoil_fid.readline()
-        for i in range(8):
-            line = xfoil_fid.readline()
+    lines = polar_file_content.split("\n")
+    line_iter = iter(lines)
 
-        mach_num = line.strip().split(" ")[4]
-        cl_values[mach_num] = []
-        cd_values[mach_num] = []
-        for i in range(4):
-            line = xfoil_fid.readline()
-        while True:
-            line_contents = line.strip().split(" ")
+    next(line_iter)  # Assuming the first readline skips a header
 
-            c = line_contents.count("")
-            for i in range(c):
-                line_contents.remove("")
+    for i in range(8):
+        line = next(line_iter)
 
-            cl_alphas.append(float(line_contents[0]))
-            cl_values[mach_num].append(float(line_contents[1]))
-            cd_values[mach_num].append(float(line_contents[2]))
-            line = xfoil_fid.readline()
-            if len(line) == 0:
-                break
+    mach_num = line.strip().split(" ")[4]
+    cl_values[mach_num] = []
+    cd_values[mach_num] = []
+    for i in range(4):
+        line = next(line_iter)
+    while True:
+        line_contents = line.strip().split(" ")
+
+        c = line_contents.count("")
+        for i in range(c):
+            line_contents.remove("")
+
+        cl_alphas.append(float(line_contents[0]))
+        cl_values[mach_num].append(float(line_contents[1]))
+        cd_values[mach_num].append(float(line_contents[2]))
+        line = next(line_iter)
+        if len(line) == 0:
+            break
 
     cl_alphas, cl_mach_nums, cl_values, cd_values = blend_polars_to_flat_plate(
         cl_alphas, [mach_num], cl_values, cd_values
@@ -160,7 +170,7 @@ def blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-def read_in_c81_polar_c81_format(polar_file):
+def read_in_c81_polar_c81_format(polar_file_content):
     """
     Read in the c81 format polar file.
     This function checks that the list of Alphas is consistent across CL and CD
@@ -168,7 +178,7 @@ def read_in_c81_polar_c81_format(polar_file):
 
     Parameters
     ----------
-    polar_file: path to the c81 polar file
+    polar_file_content: c81 polar file content
 
     Attributes
     ----------
@@ -179,57 +189,60 @@ def read_in_c81_polar_c81_format(polar_file):
     cl_values = {}
     cd_values = {}
 
-    with open(polar_file, "r", encoding="utf-8") as c81_fid:
-        c81_fid.readline()
-        line = c81_fid.readline()
-        cl_mach_nums = line.strip().split(" ")
-        cl_mach_nums = [float(i) for i in cl_mach_nums if i]
-        for mach in cl_mach_nums:
-            cl_values[mach] = []
-        line = c81_fid.readline()
-        while True:
-            if line[:7] == "       ":
-                break
-            cl_alphas.append(float(line[:7]))
+    lines = polar_file_content.split("\n")
+    line_iter = iter(lines)
 
-            for i, mach in enumerate(cl_mach_nums):
-                index_beg = i * 7 + 7
-                index_end = (i + 1) * 7 + 7
-                cl_values[mach].append(float(line[index_beg:index_end]))
-            line = c81_fid.readline()
+    next(line_iter)  # Assuming the first readline skips a header
 
-        cd_mach_nums = line.strip().split(" ")
-        cd_mach_nums = [float(i) for i in cd_mach_nums if i]
-        if cl_mach_nums != cd_mach_nums:
-            raise Flow360ValueError(
-                f"ERROR: in file {polar_file}, The machs in the Cl polar do not match the machs in the CD polar. "
-                + f"We have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values."
-            )
+    line: str = next(line_iter)
+    cl_mach_nums = line.strip().split(" ")
+    cl_mach_nums = [float(i) for i in cl_mach_nums if i]
+    for mach in cl_mach_nums:
+        cl_values[mach] = []
+    line = next(line_iter)
+    while True:
+        if line[:7] == "       ":
+            break
+        cl_alphas.append(float(line[:7]))
 
-        for mach in cd_mach_nums:
-            cd_values[mach] = []
-        line = c81_fid.readline()
-        while True:
-            if line[:7] == "       ":
-                break
-            cd_alphas.append(float(line[:7]))
+        for i, mach in enumerate(cl_mach_nums):
+            index_beg = i * 7 + 7
+            index_end = (i + 1) * 7 + 7
+            cl_values[mach].append(float(line[index_beg:index_end]))
+        line = next(line_iter)
 
-            for i, mach in enumerate(cd_mach_nums):
-                index_beg = i * 7 + 7
-                index_end = (i + 1) * 7 + 7
-                cd_values[mach].append(float(line[index_beg:index_end]))
-            line = c81_fid.readline()
+    cd_mach_nums = line.strip().split(" ")
+    cd_mach_nums = [float(i) for i in cd_mach_nums if i]
+    if cl_mach_nums != cd_mach_nums:
+        raise Flow360ValueError(
+            "ERROR: in input file, The machs in the Cl polar do not match the machs in the CD polar. "
+            + f"We have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values."
+        )
 
-        if cl_alphas != cd_alphas:
-            raise Flow360ValueError(
-                f"ERROR: in file {polar_file}, The alphas in the Cl polar do not match the alphas in the CD polar. "
-                + f"We have {cl_alphas} Cls and {cd_alphas} Cds."
-            )
+    for mach in cd_mach_nums:
+        cd_values[mach] = []
+    line = next(line_iter)
+    while True:
+        if line[:7] == "       ":
+            break
+        cd_alphas.append(float(line[:7]))
+
+        for i, mach in enumerate(cd_mach_nums):
+            index_beg = i * 7 + 7
+            index_end = (i + 1) * 7 + 7
+            cd_values[mach].append(float(line[index_beg:index_end]))
+        line = next(line_iter)
+
+    if cl_alphas != cd_alphas:
+        raise Flow360ValueError(
+            "ERROR: in input file, The alphas in the Cl polar do not match the alphas in the CD polar. "
+            + f"We have {cl_alphas} Cls and {cd_alphas} Cds."
+        )
 
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-def read_in_c81_polar_csv(polar_file):
+def read_in_c81_polar_csv(polar_file_content):
     """
     Read in the c81 format polar file as a csv file.
     Check whether list of Alphas is consistent across CL and CD
@@ -237,7 +250,7 @@ def read_in_c81_polar_csv(polar_file):
 
     Parameters
     ----------
-    polar_file: path to the c81 csv polar file
+    polar_file_content: c81 csv polar file content
 
     Attributes
     ----------
@@ -249,51 +262,53 @@ def read_in_c81_polar_csv(polar_file):
     cl_values = {}
     cd_values = {}
 
-    with open(polar_file, "r", encoding="utf-8") as c81_fid:
-        c81_fid.readline()
-        line = c81_fid.readline()
-        cl_mach_nums = line.split(",")
-        cl_mach_nums = [float(i.strip()) for i in cl_mach_nums if i]
-        for mach in cl_mach_nums:
-            cl_values[mach] = []
-        line = c81_fid.readline()
-        while True:
-            values = line.split(",")
-            if values[0] == "":
-                break
-            cl_alphas.append(float(values[0]))
-            for i, mach in enumerate(cl_mach_nums):
-                cl_values[mach].append(float(values[i + 1].strip()))
-            line = c81_fid.readline()
+    lines = polar_file_content.split("\n")
+    line_iter = iter(lines)
 
-        cd_mach_nums = line.split(",")
-        cd_mach_nums = [float(i.strip()) for i in cd_mach_nums if i]
-        if cl_mach_nums != cd_mach_nums:
-            raise Flow360ValueError(
-                f"ERROR: in file {polar_file}, The machs in the Cl polar do not match the machs in the CD polar. "
-                + f"We have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values."
-            )
+    next(line_iter)
+    line = next(line_iter)
+    cl_mach_nums = line.split(",")
+    cl_mach_nums = [float(i.strip()) for i in cl_mach_nums if i]
+    for mach in cl_mach_nums:
+        cl_values[mach] = []
+    line = next(line_iter)
+    while True:
+        values = line.split(",")
+        if values[0] == "":
+            break
+        cl_alphas.append(float(values[0]))
+        for i, mach in enumerate(cl_mach_nums):
+            cl_values[mach].append(float(values[i + 1].strip()))
+        line = next(line_iter)
 
-        for mach in cd_mach_nums:
-            cd_values[mach] = []
-        line = c81_fid.readline()
-        while True:
-            values = line.split(",")
-            if values[0] == "":
-                break
-            cd_alphas.append(float(values[0]))
-            for i, mach in enumerate(cd_mach_nums):
-                cd_values[mach].append(float(values[i + 1].strip()))
-            line = c81_fid.readline()
+    cd_mach_nums = line.split(",")
+    cd_mach_nums = [float(i.strip()) for i in cd_mach_nums if i]
+    if cl_mach_nums != cd_mach_nums:
+        raise Flow360ValueError(
+            "ERROR: in input file, The machs in the Cl polar do not match the machs in the CD polar. "
+            + f"We have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values."
+        )
 
-        if cl_alphas != cd_alphas:
-            raise Flow360ValueError(
-                f"ERROR: in file {polar_file}, The alphas in the Cl polar do not match the alphas in the CD polar. "
-                + f"We have {len(cl_alphas)} Cls and {len(cd_alphas)} Cds."
-            )
+    for mach in cd_mach_nums:
+        cd_values[mach] = []
+    line = next(line_iter)
+    while True:
+        values = line.split(",")
+        if values[0] == "":
+            break
+        cd_alphas.append(float(values[0]))
+        for i, mach in enumerate(cd_mach_nums):
+            cd_values[mach].append(float(values[i + 1].strip()))
+        line = next(line_iter)
 
-        if cl_alphas[0] != -180 and cl_alphas[-1] != 180:
-            blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values)
+    if cl_alphas != cd_alphas:
+        raise Flow360ValueError(
+            "ERROR: in input file, The alphas in the Cl polar do not match the alphas in the CD polar. "
+            + f"We have {len(cl_alphas)} Cls and {len(cd_alphas)} Cds."
+        )
+
+    if cl_alphas[0] != -180 and cl_alphas[-1] != 180:
+        blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values)
 
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
@@ -330,11 +345,7 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
         polar_files = xfoil_polar_files[sec_idx]
         mach_numbers_for_section = []
         for polar_file in polar_files:
-            if not path.isfile(polar_file):
-                raise Flow360ValueError(
-                    f"Error: XFOIL format polar file {polar_file} does not exist."
-                )
-            alpha_list, mach_num, cl_values, cd_values = read_in_xfoil_polar(polar_file)
+            alpha_list, mach_num, cl_values, cd_values = parse_in_xfoil_polar(polar_file.content)
             mach_numbers_for_section.append(float(mach_num))
             secpol["lift_coeffs"].append([cl_values])
             secpol["drag_coeffs"].append([cd_values])
@@ -376,14 +387,13 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
     bet_disk["sectional_polars"] = []
     for sec_idx, _ in enumerate(bet_disk["sectional_radiuses"]):
         polar_file = c81_polar_files[sec_idx][0]
-        if not path.isfile(polar_file):
-            raise Flow360ValueError(f"Error: c81 format polar file {polar_file} does not exist.")
 
-        if "csv" in polar_file:
-            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file)
-
+        if "csv" in polar_file.file_path:
+            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file.content)
         else:
-            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(polar_file)
+            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(
+                polar_file.content
+            )
         if "mach_numbers" in bet_disk.keys() and bet_disk["mach_numbers"] != mach_list:
             raise Flow360ValueError(
                 "ERROR: The mach Numbers do not match across the various sectional radi polar c81 files. "
@@ -411,7 +421,8 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
 
 # pylint: disable=too-many-arguments
 def generate_xfoil_bet_json(
-    geometry_file_name,
+    geometry_file_content,
+    xfoil_polar_file_list,
     rotation_direction_rule,
     initial_blade_direction,
     blade_line_chord,
@@ -431,15 +442,15 @@ def generate_xfoil_bet_json(
 
     Attributes
     ----------
-    geometry_file_name: string, string, path to the geometry file
-    bet_disk: dictionary, contains required betdisk data
+    geometry_file_content: string, string, path to the geometry file
+    bet_disk: dictionary, contains required BETDisk data
     return: dictionary with BETDisk parameters
     """
 
     bet_disk = {}
 
-    twist_vec, chord_vec, sectional_radiuses, xfoil_polar_file_list = parse_geometry_file(
-        geometry_file_name, length_unit=length_unit, angle_unit=angle_unit
+    twist_vec, chord_vec, sectional_radiuses = parse_geometry_file(
+        geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
     )
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
@@ -462,7 +473,36 @@ def generate_xfoil_bet_json(
     return bet_disk
 
 
-def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
+def generate_polar_file_name_list(geometry_file_content: str) -> list[list[str]]:
+    """Get the list of"""
+    lines = geometry_file_content.split("\n")
+    line_iter = iter(lines)
+
+    line = next(line_iter)
+    if "#" not in line:
+        raise Flow360ValueError(
+            f"ERROR: first character of first line of geometry file {geometry_file_content} "
+            + "should be the # character to denote a header line"
+        )
+
+    polar_files = []
+    line = next(line_iter).strip("\n")
+    while True:
+        if "#" in line:
+            break
+        try:
+            split_line = line.split(",")
+            polar_files.append([file.strip() for file in split_line[1:] if file.strip()])
+            print("> polar_files = ", polar_files)
+            line = next(line_iter).strip("\n")
+        except Exception as error:
+            raise Flow360ValueError(
+                f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_content}"
+            ) from error
+    return polar_files
+
+
+def parse_geometry_file(geometry_file_content: str, length_unit, angle_unit):
     """
     Read in the geometry file. This file is a csv containing the filenames
     of the polar definition files along with the twist and chord definitions.
@@ -481,68 +521,66 @@ def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
 
     Parameters
     ----------
-    geometry_file_name: string, path to the geometry file
+    geometry_file_content: string, geometry file content
 
     Attributes
     ----------
     return: tuple of lists
     """
 
-    with open(geometry_file_name, "r", encoding="utf-8") as fid:
-        line = fid.readline()
-        if "#" not in line:
+    lines = geometry_file_content.split("\n")
+    line_iter = iter(lines)
+
+    line = next(line_iter)
+    if "#" not in line:
+        raise Flow360ValueError(
+            f"ERROR: first character of first line of geometry file {geometry_file_content} "
+            + "should be the # character to denote a header line"
+        )
+
+    sectional_radiuses = []
+    radius_station = []
+    chord = []
+    twist = []
+    line = next(line_iter).strip("\n")
+    while True:
+        if "#" in line:
+            break
+        try:
+            split_line = line.split(",")
+            sectional_radiuses.append(float(split_line[0]))
+            line = next(line_iter).strip("\n")
+        except Exception as error:
             raise Flow360ValueError(
-                f"ERROR: first character of first line of geometry file {geometry_file_name} "
-                + "should be the # character to denote a header line"
-            )
+                f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_content}"
+            ) from error
 
-        geometry_file_path = os.path.dirname(os.path.realpath(geometry_file_name))
-        sectional_radiuses = []
-        polar_files = []
-        radius_station = []
-        chord = []
-        twist = []
-        line = fid.readline().strip("\n")
-        while True:
-            if "#" in line:
+    while True:
+        try:
+            line = next(line_iter).strip("\n")
+            if not line:
                 break
-            try:
-                split_line = line.split(",")
-                sectional_radiuses.append(float(split_line[0]))
-                polar_files.append(
-                    [os.path.join(geometry_file_path, file.strip()) for file in split_line[1:]]
-                )
-                line = fid.readline().strip("\n")
-            except Exception as error:
-                raise Flow360ValueError(
-                    f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_name}"
-                ) from error
+            radius_station.append(float(line.split(",")[0]))
+            chord.append(float(line.split(",")[1]))
+            twist.append(float(line.split(",")[2]))
+        except:
+            raise Flow360ValueError(
+                f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_content}"
+            ) from error
 
-        while True:
-            try:
-                line = fid.readline().strip("\n")
-                if not line:
-                    break
-                radius_station.append(float(line.split(",")[0]))
-                chord.append(float(line.split(",")[1]))
-                twist.append(float(line.split(",")[2]))
-            except:
-                raise Flow360ValueError(
-                    f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_name}"
-                ) from error
+    chord_vec = [{"radius": 0.0 * length_unit, "chord": 0.0 * length_unit}]
+    twist_vec = [{"radius": 0.0 * length_unit, "twist": 0.0 * angle_unit}]
 
-        chord_vec = [{"radius": 0.0 * length_unit, "chord": 0.0 * length_unit}]
-        twist_vec = [{"radius": 0.0 * length_unit, "twist": 0.0 * angle_unit}]
+    for rad, tw, ch in zip(radius_station, twist, chord):
+        twist_vec.append({"radius": rad * length_unit, "twist": tw * angle_unit})
+        chord_vec.append({"radius": rad * length_unit, "chord": ch * length_unit})
 
-        for rad, tw, ch in zip(radius_station, twist, chord):
-            twist_vec.append({"radius": rad * length_unit, "twist": tw * angle_unit})
-            chord_vec.append({"radius": rad * length_unit, "chord": ch * length_unit})
-
-    return twist_vec, chord_vec, sectional_radiuses, polar_files
+    return twist_vec, chord_vec, sectional_radiuses
 
 
 def generate_c81_bet_json(
-    geometry_file_name,
+    geometry_file_content,
+    c81_polar_file_list,
     rotation_direction_rule,
     initial_blade_direction,
     blade_line_chord,
@@ -562,13 +600,13 @@ def generate_c81_bet_json(
 
     Attributes
     ----------
-    geometry_file_name: string, path to the geometry file
+    geometry_file_content: string, content of the config file.
     bet_disk: dictionary, contains required BETDisk data
     return: dictionary with BETDisk parameters
     """
 
-    twist_vec, chord_vec, sectional_radiuses, c81_polar_file_list = parse_geometry_file(
-        geometry_file_name=geometry_file_name, length_unit=length_unit, angle_unit=angle_unit
+    twist_vec, chord_vec, sectional_radiuses = parse_geometry_file(
+        geometry_file_content=geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
     )
 
     bet_disk = {}
@@ -628,14 +666,14 @@ def check_num_values(values_list, line_num, numelts):
 
 
 # pylint: disable=too-many-statements
-def read_dfdc_file(dfdc_file_name):
+def read_dfdc_file(dfdc_file_content: str):
     """
     Read in the provided dfdc file.
     Does rudimentary checks to make sure the file is truly in the dfdc format.
 
     Attributes
     ----------
-    dfdc_file_name: string
+    dfdc_file_content: string
     return: dictionary
 
     Description of the DFDC input File
@@ -680,133 +718,135 @@ def read_dfdc_file(dfdc_file_name):
       Ubody: (unused) Nacelle perturbation axial  velocity
     """
 
-    with open(dfdc_file_name, "r", encoding="utf-8") as fid:
-        dfdc_input_dict = {}
-        line_num = 0
-        for i in range(4):
-            fid.readline()
-            line_num += 1
-        comment_line = fid.readline().upper().split()
+    lines = dfdc_file_content.split("\n")
+    line_iter = iter(lines)
+
+    dfdc_input_dict = {}
+    line_num = 0
+    for i in range(4):
+        next(line_iter)
         line_num += 1
-        check_comment(comment_line, line_num, 4)
-        values = fid.readline().split()
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 4)
+    values = next(line_iter).split()
+    line_num += 1
+
+    dfdc_input_dict["vel"] = float(values[1])
+    dfdc_input_dict["RPM"] = float(values[2])
+
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 5)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 4)
+    dfdc_input_dict["rho"] = float(values[0])
+
+    for i in range(7):
+        next(line_iter)
         line_num += 1
 
-        dfdc_input_dict["vel"] = float(values[1])
-        dfdc_input_dict["RPM"] = float(values[2])
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 2)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 1)
+    dfdc_input_dict["nAeroSections"] = int(values[0])
+    dfdc_input_dict["rRstations"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["a0deg"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["dclda"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["clmax"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["clmin"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["dcldastall"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["dclstall"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["mcrit"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["cdmin"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["clcdmin"] = [0] * dfdc_input_dict["nAeroSections"]
+    dfdc_input_dict["dcddcl2"] = [0] * dfdc_input_dict["nAeroSections"]
 
-        comment_line = fid.readline().upper().split()
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 2)
+    for i in range(dfdc_input_dict["nAeroSections"]):
+
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 1)
+        dfdc_input_dict["rRstations"][i] = float(values[0])
+
+        comment_line = next(line_iter).upper().split()
         line_num += 1
         check_comment(comment_line, line_num, 5)
-        values = fid.readline().split()
+        values = next(line_iter).split()
         line_num += 1
         check_num_values(values, line_num, 4)
-        dfdc_input_dict["rho"] = float(values[0])
+        dfdc_input_dict["a0deg"][i] = float(values[0])
+        dfdc_input_dict["dclda"][i] = float(values[1])
+        dfdc_input_dict["clmax"][i] = float(values[2])
+        dfdc_input_dict["clmin"][i] = float(values[3])
 
-        for i in range(7):
-            fid.readline()
-            line_num += 1
-
-        comment_line = fid.readline().upper().split()
+        comment_line = next(line_iter).upper().split()
         line_num += 1
-        check_comment(comment_line, line_num, 2)
-        values = fid.readline().split()
+        check_comment(comment_line, line_num, 5)
+        values = next(line_iter).split()
         line_num += 1
-        check_num_values(values, line_num, 1)
-        dfdc_input_dict["nAeroSections"] = int(values[0])
-        dfdc_input_dict["rRstations"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["a0deg"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["dclda"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["clmax"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["clmin"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["dcldastall"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["dclstall"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["mcrit"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["cdmin"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["clcdmin"] = [0] * dfdc_input_dict["nAeroSections"]
-        dfdc_input_dict["dcddcl2"] = [0] * dfdc_input_dict["nAeroSections"]
+        check_num_values(values, line_num, 4)
+        dfdc_input_dict["dcldastall"][i] = float(values[0])
+        dfdc_input_dict["dclstall"][i] = float(values[1])
+        dfdc_input_dict["mcrit"][i] = float(values[3])
 
-        comment_line = fid.readline().upper().split()
-        line_num += 1
-        check_comment(comment_line, line_num, 2)
-        for i in range(dfdc_input_dict["nAeroSections"]):
-
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 1)
-            dfdc_input_dict["rRstations"][i] = float(values[0])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 5)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 4)
-            dfdc_input_dict["a0deg"][i] = float(values[0])
-            dfdc_input_dict["dclda"][i] = float(values[1])
-            dfdc_input_dict["clmax"][i] = float(values[2])
-            dfdc_input_dict["clmin"][i] = float(values[3])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 5)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 4)
-            dfdc_input_dict["dcldastall"][i] = float(values[0])
-            dfdc_input_dict["dclstall"][i] = float(values[1])
-            dfdc_input_dict["mcrit"][i] = float(values[3])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 4)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 3)
-            dfdc_input_dict["cdmin"][i] = float(values[0])
-            dfdc_input_dict["clcdmin"][i] = float(values[1])
-            dfdc_input_dict["dcddcl2"][i] = float(values[2])
-
-            for i in range(2):
-                fid.readline()
-                line_num += 1
-
-        for i in range(3):
-            fid.readline()
-            line_num += 1
-
-        comment_line = fid.readline().upper().split()
-        line_num += 1
-        check_comment(comment_line, line_num, 3)
-        values = fid.readline().split()
-        line_num += 1
-        check_num_values(values, line_num, 3)
-        dfdc_input_dict["nBlades"] = int(values[1])
-        comment_line = fid.readline().upper().split()
-        line_num += 1
-        check_comment(comment_line, line_num, 2)
-        values = fid.readline().split()
-        line_num += 1
-        check_num_values(values, line_num, 1)
-        dfdc_input_dict["nGeomStations"] = int(values[0])
-        dfdc_input_dict["rRGeom"] = [0] * dfdc_input_dict["nGeomStations"]
-        dfdc_input_dict["cRGeom"] = [0] * dfdc_input_dict["nGeomStations"]
-        dfdc_input_dict["beta0Deg"] = [0] * dfdc_input_dict["nGeomStations"]
-        comment_line = fid.readline().upper().split()
+        comment_line = next(line_iter).upper().split()
         line_num += 1
         check_comment(comment_line, line_num, 4)
-        for i in range(dfdc_input_dict["nGeomStations"]):
-            values = fid.readline().split()
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 3)
+        dfdc_input_dict["cdmin"][i] = float(values[0])
+        dfdc_input_dict["clcdmin"][i] = float(values[1])
+        dfdc_input_dict["dcddcl2"][i] = float(values[2])
+
+        for i in range(2):
+            next(line_iter)
             line_num += 1
-            check_num_values(values, line_num, 3)
-            dfdc_input_dict["rRGeom"][i] = float(values[0])
-            dfdc_input_dict["cRGeom"][i] = float(values[1])
-            dfdc_input_dict["beta0Deg"][i] = float(values[2])
-        if dfdc_input_dict["rRGeom"][0] != 0:
-            dfdc_input_dict["rRGeom"].insert(0, 0.0)
-            dfdc_input_dict["cRGeom"].insert(0, 0.0)
-            dfdc_input_dict["beta0Deg"].insert(0, 90.0)
-            dfdc_input_dict["nGeomStations"] += 1
+
+    for i in range(3):
+        next(line_iter)
+        line_num += 1
+
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 3)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 3)
+    dfdc_input_dict["nBlades"] = int(values[1])
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 2)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 1)
+    dfdc_input_dict["nGeomStations"] = int(values[0])
+    dfdc_input_dict["rRGeom"] = [0] * dfdc_input_dict["nGeomStations"]
+    dfdc_input_dict["cRGeom"] = [0] * dfdc_input_dict["nGeomStations"]
+    dfdc_input_dict["beta0Deg"] = [0] * dfdc_input_dict["nGeomStations"]
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 4)
+    for i in range(dfdc_input_dict["nGeomStations"]):
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 3)
+        dfdc_input_dict["rRGeom"][i] = float(values[0])
+        dfdc_input_dict["cRGeom"][i] = float(values[1])
+        dfdc_input_dict["beta0Deg"][i] = float(values[2])
+    if dfdc_input_dict["rRGeom"][0] != 0:
+        dfdc_input_dict["rRGeom"].insert(0, 0.0)
+        dfdc_input_dict["cRGeom"].insert(0, 0.0)
+        dfdc_input_dict["beta0Deg"].insert(0, 90.0)
+        dfdc_input_dict["nGeomStations"] += 1
 
     dfdc_input_dict["rad"] = dfdc_input_dict["rRGeom"][-1]
     dfdc_input_dict["omegaDim"] = dfdc_input_dict["RPM"] * pi / 30
@@ -815,14 +855,14 @@ def read_dfdc_file(dfdc_file_name):
 
 
 # pylint: disable=too-many-statements
-def read_xrotor_file(xrotor_file_name):
+def parse_xrotor_file(xrotor_file_content):
     """
     Read in the provided XROTOR file.
     Does rudimentary checks to make sure the file is truly in the XROTOR format.
 
     Attributes
     ----------
-    input: xrotor_file_name: string
+    input: xrotor_file_content: string
     returns: dictionary
 
     XROTOR file description
@@ -873,144 +913,146 @@ def read_xrotor_file(xrotor_file_name):
       Ubody: (unused) Nacelle perturbation axial  velocity
     """
 
-    with open(xrotor_file_name, "r", encoding="utf-8") as fid:
-        line_num = 0
-        top_line = fid.readline()
-        line_num += 1
-        if top_line.find("DFDC") == 0:
-            fid.close()
-            return read_dfdc_file(xrotor_file_name)
+    line_num = 0
 
-        if top_line.find("XROTOR") == -1:
-            raise Flow360ValueError(
-                "This input XROTOR file does not seem to be a valid XROTOR input file"
-            )
+    lines = xrotor_file_content.split("\n")
+    line_iter = iter(lines)
 
-        xrotor_input_dict = {}
+    top_line = next(line_iter)
+    line_num += 1
+    if top_line.find("DFDC") == 0:
+        return read_dfdc_file(xrotor_file_content)
 
-        fid.readline()
-        line_num += 1
-        comment_line = fid.readline().upper().split()
-        line_num += 1
-        check_comment(comment_line, line_num, 5)
+    if top_line.find("XROTOR") == -1:
+        raise Flow360ValueError(
+            "This input XROTOR file does not seem to be a valid XROTOR input file"
+        )
 
-        values = fid.readline().split()
-        line_num += 1
-        check_num_values(values, line_num, 4)
+    xrotor_input_dict = {}
 
-        comment_line = fid.readline().upper().split()
-        line_num += 1
-        check_comment(comment_line, line_num, 5)
-        values = fid.readline().split()
-        line_num += 1
-        check_num_values(values, line_num, 4)
-        xrotor_input_dict["rad"] = float(values[0])
-        xrotor_input_dict["vel"] = float(values[1])
-        xrotor_input_dict["adv"] = float(values[2])
+    next(line_iter)
+    line_num += 1
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 5)
 
-        fid.readline()
-        line_num += 1
-        fid.readline()
-        line_num += 1
-        comment_line = fid.readline().upper().split()
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 4)
+
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 5)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 4)
+    xrotor_input_dict["rad"] = float(values[0])
+    xrotor_input_dict["vel"] = float(values[1])
+    xrotor_input_dict["adv"] = float(values[2])
+
+    next(line_iter)
+    line_num += 1
+    next(line_iter)
+    line_num += 1
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 2)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 1)
+
+    n_aero_sections = int(values[0])
+
+    xrotor_input_dict["nAeroSections"] = n_aero_sections
+    xrotor_input_dict["rRstations"] = [0] * n_aero_sections
+    xrotor_input_dict["a0deg"] = [0] * n_aero_sections
+    xrotor_input_dict["dclda"] = [0] * n_aero_sections
+    xrotor_input_dict["clmax"] = [0] * n_aero_sections
+    xrotor_input_dict["clmin"] = [0] * n_aero_sections
+    xrotor_input_dict["dcldastall"] = [0] * n_aero_sections
+    xrotor_input_dict["dclstall"] = [0] * n_aero_sections
+    xrotor_input_dict["mcrit"] = [0] * n_aero_sections
+    xrotor_input_dict["cdmin"] = [0] * n_aero_sections
+    xrotor_input_dict["clcdmin"] = [0] * n_aero_sections
+    xrotor_input_dict["dcddcl2"] = [0] * n_aero_sections
+
+    for i in range(n_aero_sections):
+        comment_line = next(line_iter).upper().split()
         line_num += 1
         check_comment(comment_line, line_num, 2)
-        values = fid.readline().split()
+        values = next(line_iter).split()
         line_num += 1
         check_num_values(values, line_num, 1)
+        xrotor_input_dict["rRstations"][i] = float(values[0])
 
-        n_aero_sections = int(values[0])
-
-        xrotor_input_dict["nAeroSections"] = n_aero_sections
-        xrotor_input_dict["rRstations"] = [0] * n_aero_sections
-        xrotor_input_dict["a0deg"] = [0] * n_aero_sections
-        xrotor_input_dict["dclda"] = [0] * n_aero_sections
-        xrotor_input_dict["clmax"] = [0] * n_aero_sections
-        xrotor_input_dict["clmin"] = [0] * n_aero_sections
-        xrotor_input_dict["dcldastall"] = [0] * n_aero_sections
-        xrotor_input_dict["dclstall"] = [0] * n_aero_sections
-        xrotor_input_dict["mcrit"] = [0] * n_aero_sections
-        xrotor_input_dict["cdmin"] = [0] * n_aero_sections
-        xrotor_input_dict["clcdmin"] = [0] * n_aero_sections
-        xrotor_input_dict["dcddcl2"] = [0] * n_aero_sections
-
-        for i in range(n_aero_sections):
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 2)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 1)
-            xrotor_input_dict["rRstations"][i] = float(values[0])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 5)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 4)
-            xrotor_input_dict["a0deg"][i] = float(values[0])
-            xrotor_input_dict["dclda"][i] = float(values[1])
-            xrotor_input_dict["clmax"][i] = float(values[2])
-            xrotor_input_dict["clmin"][i] = float(values[3])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 5)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 4)
-            xrotor_input_dict["dcldastall"][i] = float(values[0])
-            xrotor_input_dict["dclstall"][i] = float(values[1])
-            xrotor_input_dict["mcrit"][i] = float(values[3])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 4)
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 3)
-            xrotor_input_dict["cdmin"][i] = float(values[0])
-            xrotor_input_dict["clcdmin"][i] = float(values[1])
-            xrotor_input_dict["dcddcl2"][i] = float(values[2])
-
-            comment_line = fid.readline().upper().split()
-            line_num += 1
-            check_comment(comment_line, line_num, 3)
-            values = fid.readline().split()
-            line_num += 1
-
-        fid.readline()
-        line_num += 1
-        fid.readline()
-        line_num += 1
-
-        comment_line = fid.readline().upper().split()
-        line_num += 1
-        check_comment(comment_line, line_num, 3)
-        values = fid.readline().split()
-        line_num += 1
-        check_num_values(values, line_num, 2)
-
-        n_geom_stations = int(values[0])
-        xrotor_input_dict["nGeomStations"] = n_geom_stations
-        xrotor_input_dict["nBlades"] = int(values[1])
-        xrotor_input_dict["rRGeom"] = [0] * n_geom_stations
-        xrotor_input_dict["cRGeom"] = [0] * n_geom_stations
-        xrotor_input_dict["beta0Deg"] = [0] * n_geom_stations
-
-        comment_line = fid.readline().upper().split()
+        comment_line = next(line_iter).upper().split()
         line_num += 1
         check_comment(comment_line, line_num, 5)
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 4)
+        xrotor_input_dict["a0deg"][i] = float(values[0])
+        xrotor_input_dict["dclda"][i] = float(values[1])
+        xrotor_input_dict["clmax"][i] = float(values[2])
+        xrotor_input_dict["clmin"][i] = float(values[3])
 
-        for i in range(n_geom_stations):
+        comment_line = next(line_iter).upper().split()
+        line_num += 1
+        check_comment(comment_line, line_num, 5)
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 4)
+        xrotor_input_dict["dcldastall"][i] = float(values[0])
+        xrotor_input_dict["dclstall"][i] = float(values[1])
+        xrotor_input_dict["mcrit"][i] = float(values[3])
 
-            values = fid.readline().split()
-            line_num += 1
-            check_num_values(values, line_num, 4)
-            xrotor_input_dict["rRGeom"][i] = float(values[0])
-            xrotor_input_dict["cRGeom"][i] = float(values[1])
-            xrotor_input_dict["beta0Deg"][i] = float(values[2])
+        comment_line = next(line_iter).upper().split()
+        line_num += 1
+        check_comment(comment_line, line_num, 4)
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 3)
+        xrotor_input_dict["cdmin"][i] = float(values[0])
+        xrotor_input_dict["clcdmin"][i] = float(values[1])
+        xrotor_input_dict["dcddcl2"][i] = float(values[2])
+
+        comment_line = next(line_iter).upper().split()
+        line_num += 1
+        check_comment(comment_line, line_num, 3)
+        values = next(line_iter).split()
+        line_num += 1
+
+    next(line_iter)
+    line_num += 1
+    next(line_iter)
+    line_num += 1
+
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 3)
+    values = next(line_iter).split()
+    line_num += 1
+    check_num_values(values, line_num, 2)
+
+    n_geom_stations = int(values[0])
+    xrotor_input_dict["nGeomStations"] = n_geom_stations
+    xrotor_input_dict["nBlades"] = int(values[1])
+    xrotor_input_dict["rRGeom"] = [0] * n_geom_stations
+    xrotor_input_dict["cRGeom"] = [0] * n_geom_stations
+    xrotor_input_dict["beta0Deg"] = [0] * n_geom_stations
+
+    comment_line = next(line_iter).upper().split()
+    line_num += 1
+    check_comment(comment_line, line_num, 5)
+
+    for i in range(n_geom_stations):
+
+        values = next(line_iter).split()
+        line_num += 1
+        check_num_values(values, line_num, 4)
+        xrotor_input_dict["rRGeom"][i] = float(values[0])
+        xrotor_input_dict["cRGeom"][i] = float(values[1])
+        xrotor_input_dict["beta0Deg"][i] = float(values[2])
 
     if xrotor_input_dict["rRGeom"][0] != 0:
         xrotor_input_dict["rRGeom"].insert(0, 0.0)
@@ -1126,55 +1168,12 @@ def generate_alphas():
     """
 
     neg_ang = float_range(-180, -9)
-    pos_ang = [
-        -9,
-        -8.5,
-        -8,
-        -7.5,
-        -7,
-        -6.5,
-        -6,
-        -5.5,
-        -5,
-        -4.5,
-        -4,
-        -3.5,
-        -3,
-        -2.5,
-        -2,
-        -1.5,
-        -1,
-        -0.75,
-        -0.5,
-        -0.25,
-        0,
-        0.25,
-        0.5,
-        0.75,
-        1,
-        1.25,
-        1.5,
-        1.75,
-        2,
-        2.25,
-        2.5,
-        2.75,
-        3,
-        3.5,
-        4,
-        4.5,
-        5,
-        5.5,
-        6,
-        6.5,
-        7,
-        7.5,
-        8,
-        8.5,
-        9,
-    ]
+    pos_ang = np.concatenate(
+        [np.arange(-9, -1, 0.5), np.arange(-1, 3, 0.25), np.arange(3, 9.5, 0.5)]
+    )
     pos_ang_2 = float_range(10, 181)
-    return neg_ang + pos_ang + pos_ang_2
+
+    return np.concatenate([neg_ang, pos_ang, pos_ang_2])
 
 
 def find_cl_min_max_alphas(c_lift, cl_min, cl_max):
@@ -1408,7 +1407,7 @@ def get_polar(xrotor_dict, alphas, machs, rR_station):
 
 
 def generate_xrotor_bet_json(
-    xrotor_file_name,
+    xrotor_file_content,
     rotation_direction_rule,
     initial_blade_direction,
     blade_line_chord,
@@ -1426,13 +1425,13 @@ def generate_xrotor_bet_json(
 
     Attributes
     ----------
-    geometry_file_name: string, path to the XROTOR file
+    geometry_file_content: string, path to the XROTOR file
     bet_disk: dictionary, contains required BETDisk data
     length_unit: float, grid unit length with units
     return: dictionary with BETDisk parameters
     """
 
-    xrotor_dict = read_xrotor_file(xrotor_file_name)
+    xrotor_dict = parse_xrotor_file(xrotor_file_content)
 
     bet_disk = {}
 
@@ -1469,7 +1468,7 @@ def generate_xrotor_bet_json(
 
 
 def generate_dfdc_bet_json(
-    dfdc_file_name,
+    dfdc_file_content,
     rotation_direction_rule,
     initial_blade_direction,
     blade_line_chord,
@@ -1487,13 +1486,13 @@ def generate_dfdc_bet_json(
 
     Attributes
     ----------
-    geometry_file_name: string, path to the XROTOR file
+    geometry_file_content: string, path to the XROTOR file
     bet_disk: dictionary, contains required BETDisk data
     length_unit: float, grid unit length with units
     return: dictionary with BETDisk parameters
     """
     return generate_xrotor_bet_json(
-        xrotor_file_name=dfdc_file_name,
+        xrotor_file_content=dfdc_file_content,
         rotation_direction_rule=rotation_direction_rule,
         initial_blade_direction=initial_blade_direction,
         blade_line_chord=blade_line_chord,

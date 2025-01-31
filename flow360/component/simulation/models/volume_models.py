@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-lines
 import os
+from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -19,8 +20,10 @@ from flow360.component.simulation.framework.single_attribute_base import (
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_c81_bet_json,
     generate_dfdc_bet_json,
+    generate_polar_file_name_list,
     generate_xfoil_bet_json,
     generate_xrotor_bet_json,
+    get_file_content,
 )
 from flow360.component.simulation.models.material import (
     Air,
@@ -487,7 +490,7 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     )
 
 
-class BETInputFileBaseModel(Flow360BaseModel):
+class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
     file_path: str = pd.Field(
         frozen=True,
         description="Path to the BET configuration file. It cannot be changed once initialized.",
@@ -508,27 +511,67 @@ class BETInputFileBaseModel(Flow360BaseModel):
         if "content" in input_data and input_data.get("content"):
             return input_data
 
+        file_content = get_file_content(input_data["file_path"])
+
+        return {"file_path": input_data["file_path"], "content": file_content}
+
+
+class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
+    """Auxiliary polar file for XFoil"""
+
+    type_name: Literal["AuxiliaryPolarFile"] = pd.Field("AuxiliaryPolarFile", frozen=True)
+
+
+class BETSingleMultiFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
+    file_path: str = pd.Field(
+        frozen=True,
+        description="Path to the BET configuration file. It cannot be changed once initialized.",
+    )
+    content: str = pd.Field(
+        frozen=True,
+        description="File content of the BET configuration file. It will be automatically loaded.",
+    )
+    polar_files: list[list[AuxiliaryPolarFile]] = pd.Field()
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        """
+        Read the file content and store it as string.
+        """
+        if "file_path" not in input_data:
+            raise ValueError("file_path is require but is not found in input.")
+        if "content" in input_data and input_data.get("content"):
+            return input_data
+        if "polar_files" in input_data and input_data.get("polar_files"):
+            return input_data
+
         file_path = input_data["file_path"]
-        if os.path.isfile(file_path) is False:
-            raise FileNotFoundError(f"Supplied file: {file_path} cannot be found.")
-        with open(file_path, "r", encoding="utf-8") as file:
-            file_content = file.read()
-        return {"file_path": file_path, "content": file_content}
+        file_content = get_file_content(file_path=file_path)
+
+        # Now read the polar files
+        polar_file_obj_list = []
+        file_dir = os.path.dirname(file_path)
+        for file_name_list in generate_polar_file_name_list(geometry_file_content=file_content):
+            polar_file_obj_list.append(
+                [{"file_path": os.path.join(file_dir, file_name)} for file_name in file_name_list]
+            )
+        return {"file_path": file_path, "content": file_content, "polar_files": polar_file_obj_list}
 
 
-class XROTORFile(BETInputFileBaseModel):
+class XROTORFile(BETSingleInputFileBaseModel):
     type_name: Literal["XRotorFile"] = pd.Field("XRotorFile", frozen=True)
 
 
-class DFDCFile(BETInputFileBaseModel):
+class DFDCFile(BETSingleInputFileBaseModel):
     type_name: Literal["DFDCFile"] = pd.Field("DFDCFile", frozen=True)
 
 
-class C81File(BETInputFileBaseModel):
+class C81File(BETSingleMultiFileBaseModel):
     type_name: Literal["C81File"] = pd.Field("C81File", frozen=True)
 
 
-class XFOILFile(BETInputFileBaseModel):
+class XFOILFile(BETSingleMultiFileBaseModel):
     type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
 
 
@@ -767,7 +810,8 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_c81_bet_json(
-            geometry_file_name=file.file_path,
+            geometry_file_content=file.content,
+            c81_polar_file_list=file.polar_files,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -848,7 +892,7 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_dfdc_bet_json(
-            dfdc_file_name=file.file_path,
+            dfdc_file_content=file.content,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -933,7 +977,8 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_xfoil_bet_json(
-            geometry_file_name=file.file_path,
+            geometry_file_content=file.content,
+            xfoil_polar_file_list=file.polar_files,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -1013,7 +1058,7 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_xrotor_bet_json(
-            xrotor_file_name=file.file_path,
+            xrotor_file_content=file.content,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,

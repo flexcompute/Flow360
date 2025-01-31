@@ -10,7 +10,7 @@ from flow360.component.simulation.framework.updater_utils import compare_values
 assertions = unittest.TestCase("__init__")
 
 
-def generate_BET_param(type):
+def generate_BET_param(type, given_path_prefix: str = None):
 
     with fl.SI_unit_system:
         bet_cylinder_SI = fl.Cylinder(
@@ -21,15 +21,13 @@ def generate_BET_param(type):
         bet_cylinder_imperial = fl.Cylinder(
             name="BET_cylinder", center=[0, 0, 0], axis=[0, 0, 1], outer_radius=150, height=15
         )
-
+    prepending_path = (
+        given_path_prefix if given_path_prefix else os.path.dirname(os.path.abspath(__file__))
+    )
     if type == "c81":
         param = fl.BETDisk.from_c81(
             file=fl.C81File(
-                file_path=(
-                    os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)), "data/c81", "Xv15_geometry.csv"
-                    )
-                )
+                file_path=(os.path.join(prepending_path, "data/c81", "Xv15_geometry.csv"))
             ),
             rotation_direction_rule="leftHand",
             omega=0.0046 * fl.u.deg / fl.u.s,
@@ -44,11 +42,7 @@ def generate_BET_param(type):
     elif type == "dfdc":
         param = fl.BETDisk.from_dfdc(
             file=fl.DFDCFile(
-                file_path=(
-                    os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)), "data", "dfdc_xv15_twist0.case"
-                    )
-                )
+                file_path=(os.path.join(prepending_path, "data", "dfdc_xv15_twist0.case"))
             ),
             rotation_direction_rule="leftHand",
             omega=0.0046 * fl.u.deg / fl.u.s,
@@ -64,7 +58,7 @@ def generate_BET_param(type):
             file=fl.XFOILFile(
                 file_path=(
                     os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)),
+                        prepending_path,
                         "data/xfoil",
                         "xv15_geometry_xfoil_translatorDisk0.csv",
                     )
@@ -87,7 +81,7 @@ def generate_BET_param(type):
             file=fl.XROTORFile(
                 file_path=(
                     os.path.join(
-                        os.path.dirname(os.path.abspath(__file__)),
+                        prepending_path,
                         "data",
                         "xv15_like_twist0.xrotor",
                     )

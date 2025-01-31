@@ -1,3 +1,4 @@
+import os
 from copy import deepcopy
 
 import pydantic as pd
@@ -217,13 +218,22 @@ def test_BETDisk_multi_constructor_full():
 
 def test_BETDisk_multi_constructor_cache_only():
     for bet_type in ["c81", "dfdc", "xfoil", "xrotor"]:
-        bet = generate_BET_param(bet_type)
+        original_workdir = os.getcwd()
+        try:
+            # Mimicking customer using a relative path for the files.
+            os.chdir(os.path.dirname(os.path.abspath(__file__)))
+            bet = generate_BET_param(bet_type, given_path_prefix="../converter/")
+        finally:
+            # Ooops I changed my directory (trying using the json in some other folder)
+            os.chdir(original_workdir)
+
         full_data = bet.model_dump(exclude_none=True)
         incomplete_data = {
             "type_name": full_data["type_name"],
             "private_attribute_constructor": full_data["private_attribute_constructor"],
             "private_attribute_input_cache": full_data["private_attribute_input_cache"],
         }
-
-    data_parsed = parse_model_dict(incomplete_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+        # Make sure cache only can be deserialized and that we won't have
+        # trouble even if we switch directory where the file path no longer is valid.
+        data_parsed = parse_model_dict(incomplete_data, globals())
+        assert sorted(data_parsed.items()) == sorted(full_data.items())
