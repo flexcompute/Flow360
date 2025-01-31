@@ -5,6 +5,7 @@ report utils, utils.py
 from __future__ import annotations
 
 import ast
+import math
 import os
 import posixpath
 import re
@@ -463,22 +464,42 @@ class Expression(GenericOperation):
         """
         tree = ast.parse(expr, mode="eval")
 
-        import math
         class VariableVisitor(ast.NodeVisitor):
+            """
+            A custom NodeVisitor class that visits nodes in an abstract syntax tree (AST)
+            to collect variable names that are not part of known functions.
+            """
+
+            # pylint: disable=invalid-name
             def __init__(self):
                 self.variables = set()
                 self.known_functions = {name for name in dir(math) if callable(getattr(math, name))}
 
             def visit_Name(self, node):
+                """
+                Visit a Name node and add the variable name to the variables set if it's not
+                a known function.
+
+                Args:
+                    node (ast.Name): The Name node to visit.
+                """
+
                 if isinstance(node.ctx, ast.Load) and node.id not in self.known_functions:
                     self.variables.add(node.id)
 
             def visit_Call(self, node):
+                """
+                Visit a Call node and recursively visit its arguments and keyword arguments
+                to find any additional variable names.
+
+                Args:
+                    node (ast.Call): The Call node to visit.
+                """
                 for arg in node.args:
                     self.visit(arg)
                 for keyword in node.keywords:
                     self.visit(keyword.value)
-        
+
         visitor = VariableVisitor()
         visitor.visit(tree)
 
@@ -573,6 +594,7 @@ class DataItem(Flow360BaseModel):
 
     data: str
     title: Optional[str] = None
+    include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     operations: Optional[List[OperationTypes]] = None
     variables: Optional[List[Variable]] = None
@@ -637,8 +659,8 @@ class DataItem(Flow360BaseModel):
 
         source = data_from_path(case, self.data)
         if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            if self.exclude is not None:
-                source.filter(exclude=self.exclude)
+            if self.exclude is not None or self.include is not None:
+                source.filter(include=self.include, exclude=self.exclude)
 
             source, new_variable_name = self._preprocess_data(case)
             if len(self.operations) > 0:
