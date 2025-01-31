@@ -106,6 +106,23 @@ class Settings(Flow360BaseModel):
     dpi: Optional[pd.PositiveInt] = 300
 
 
+class TableSettings(Settings):
+    """
+    Settings for controlling output tables.
+
+    Attributes
+    ----------
+    case_include : List[pd.NonNegativeInt], optional
+        The indices of cases to be included in the table
+
+    case_excluded : List[pd.NonNegativeInt], optional
+        The indices of cases to be excluded from the table
+    """
+
+    case_include: Optional[List[pd.NonNegativeInt]] = None
+    case_exclude: Optional[List[pd.NonNegativeInt]] = None
+
+
 class ReportItem(Flow360BaseModel):
     """
     Base class for for all report items
@@ -260,6 +277,7 @@ class Table(ReportItem):
     headers: Union[list[str], None] = None
     type_name: Literal["Table"] = Field("Table", frozen=True)
     formatter: Optional[Union[str, List[Union[str, None]]]] = None
+    settings: Optional[TableSettings] = TableSettings()
 
     @model_validator(mode="before")
     @classmethod
@@ -338,6 +356,11 @@ class Table(ReportItem):
 
         rows = []
         for idx, case in enumerate(context.cases):
+            # pylint: disable=unsupported-membership-test
+            if self.settings.case_include and idx not in self.settings.case_include:
+                continue
+            if self.settings.case_exclude and idx in self.settings.case_exclude:
+                continue
             raw_values = []
             for path in self.data:
                 value = data_from_path(
