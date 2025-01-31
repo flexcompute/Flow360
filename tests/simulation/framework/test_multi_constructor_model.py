@@ -9,6 +9,7 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
+from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     ThermalState,
@@ -16,6 +17,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.primitives import Box, Cylinder
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.utils import model_attribute_unlock
+from tests.simulation.converter.test_bet_translator import generate_BET_param
 
 
 @pytest.fixture
@@ -203,3 +205,25 @@ def test_entity_modification(get_aerospace_condition_using_from):
     my_op = get_aerospace_condition_using_from
     my_op.alpha = -12 * u.rad
     assert my_op.private_attribute_input_cache.alpha == -12 * u.rad
+
+
+def test_BETDisk_multi_constructor_full():
+    for bet_type in ["c81", "dfdc", "xfoil", "xrotor"]:
+        bet = generate_BET_param(bet_type)
+        full_data = bet.model_dump(exclude_none=True)
+        data_parsed = parse_model_dict(full_data, globals())
+        assert sorted(data_parsed.items()) == sorted(full_data.items())
+
+
+def test_BETDisk_multi_constructor_cache_only():
+    for bet_type in ["c81", "dfdc", "xfoil", "xrotor"]:
+        bet = generate_BET_param(bet_type)
+        full_data = bet.model_dump(exclude_none=True)
+        incomplete_data = {
+            "type_name": full_data["type_name"],
+            "private_attribute_constructor": full_data["private_attribute_constructor"],
+            "private_attribute_input_cache": full_data["private_attribute_input_cache"],
+        }
+
+    data_parsed = parse_model_dict(incomplete_data, globals())
+    assert sorted(data_parsed.items()) == sorted(full_data.items())
