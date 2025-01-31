@@ -20,8 +20,8 @@ def upload_mesh(file_path, project_name):
     """
     Given a file path and name of the project, this function creates a project and uploads a mesh.
     """
-
-    project = fl.Project.from_file(file_path, length_unit="inch", name=project_name)
+    # length_unit should be 'm', 'mm', 'cm', 'inch' or 'ft'
+    project = fl.Project.from_file(file_path, length_unit="m", name=project_name)
     log.info(f"The project id is {project.id}")
 
     return project
@@ -37,25 +37,22 @@ def make_params(mesh_object):
         params = fl.SimulationParams(
             # Dimensions can  be either in inches, or m or mm or many other units
             reference_geometry=fl.ReferenceGeometry(
-                moment_center=(0, 0, 0) * fl.u.inch,
-                moment_length=1 * fl.u.inch,
-                area=1 * fl.u.inch * fl.u.inch,
+                moment_center=(0, 0, 0) * fl.u.m,
+                moment_length=1 * fl.u.m,
+                area=1 * fl.u.m * fl.u.m
             ),
             operating_condition=fl.AerospaceCondition(
-                velocity_magnitude=100 * fl.u.m / fl.u.s, alpha=10 * fl.u.deg
+                velocity_magnitude=100 * fl.u.m / fl.u.s, alpha=0 * fl.u.deg
             ),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 # These boundary names can be taken from the vm.boundary_names printout
                 fl.Wall(
-                    surfaces=[mesh_object["BOUNDARY1"], mesh_object["BOUNDARY2"]],
-                    name="BoundaryWall",
+                    surfaces=[mesh_object["fluid/leftWing"], mesh_object["fluid/rightWing"], mesh_object["fluid/fuselage"]],
+                    name="Airplane",
                 ),
-                fl.SlipWall(
-                    surfaces=mesh_object["BOUNDARY3"], name="Boundary3"
-                ),  # Slip wall boundary
                 fl.Freestream(
-                    surfaces=mesh_object["BOUNDARY4"], name="Boundary4"
+                    surfaces=mesh_object["fluid/farfield"], name="FF"
                 ),  # For far field boundaries
                 # Define what sort of physical model of a fluid we will use
                 fl.Fluid(
@@ -100,8 +97,8 @@ def main():
     """
 
     # if you want to upload a new mesh and create a new project
-    mesh_file_path = os.path.join(os.getcwd(), "MESHNAME.cgns")  # mesh could also be ugrid format
-    project_name = "SOME_PROJECT_NAME"
+    mesh_file_path = os.path.join(os.getcwd(), "mesh_name.cgns")  # mesh could also be ugrid format
+    project_name = "project_name"
     project = upload_mesh(mesh_file_path, project_name)
 
     # Or as an alternative, if you want to run from an existing project:
@@ -109,15 +106,15 @@ def main():
     #     'prj-XXXXXXXXXX')  # where the prj-XXXXXX ID can be saved from a previously created project or read off the WEBUI
 
     vm = project.volume_mesh  # get the volume mesh entity associated with that project.
-    log.info("The volume mesh contains the following boundaries:\n", vm.boundary_names)
+    log.info(f"The volume mesh contains the following boundaries:{vm.boundary_names}" )
     log.info(f"The mesh id is {vm.id}")
 
     params = make_params(vm)  # define the run params used to launch the run
 
     # launch_sweep(params, project)  # if you want to launch a sweep
 
-    # or if you want to simply launch the case
-    project.run_case(params=params, name=f"name_of_case ")
+    # or if you want to simply launch the case\
+    project.run_case(params=params, name=f"case_name")
     log.info(f"case id is {project.case.id}")
 
 
