@@ -580,6 +580,9 @@ class DataItem(Flow360BaseModel):
     title : str, optional
         A human-readable title for this data item. If omitted, the title defaults to the
         last component of the `data` path.
+    include : list[str], optional
+        A list of boundaries to include in the retrieved data (e.g., certain surfaces). Only
+        applicable to some data types, such as surface forces or slicing force distributions.
     exclude : list[str], optional
         A list of boundaries to exclude from the retrieved data (e.g., certain surfaces). Only
         applicable to some data types, such as surface forces or slicing force distributions.

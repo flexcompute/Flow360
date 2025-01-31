@@ -771,7 +771,7 @@ class Chart2D(Chart):
     type_name : Literal["Chart2D"], default="Chart2D"
         Specifies the type of report item as "Chart2D"; this field is immutable.
     include : Optional[List[str]]
-        List of boundaries to include from data. Applicable to:
+        List of boundaries to include in data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
