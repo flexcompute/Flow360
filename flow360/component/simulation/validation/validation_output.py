@@ -101,7 +101,6 @@ def _check_output_fields_valid_given_turbulence_model(params):
                 )
 
         if output.output_type == "IsosurfaceOutput":
-            # using the 1st item's allowed field as all isosurface have same field definition
             for entity in output.entities.items:
                 if entity.field in invalid_output_fields[turbulence_model]:
                     raise ValueError(
