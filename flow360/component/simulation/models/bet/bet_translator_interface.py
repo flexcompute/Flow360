@@ -1,8 +1,6 @@
 """Translator for C81, DFDC, XFOIL and XROTOR BET input files."""
 
 import os
-
-# pylint: disable=redefined-builtin, wildcard-import
 from math import cos, inf, pi, sin, sqrt
 from os import path
 
@@ -10,6 +8,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
+from flow360.exceptions import Flow360ValueError
 
 
 # pylint: disable=too-many-locals
@@ -29,30 +28,29 @@ def read_in_xfoil_polar(polar_file):
     cl_values = {}
     cd_values = {}
 
-    # pylint: disable=unspecified-encoding, consider-using-with
-    xfoil_fid = open(polar_file, "r")
-    xfoil_fid.readline()
-    for i in range(8):
-        line = xfoil_fid.readline()
+    with open(polar_file, "r", encoding="utf-8") as xfoil_fid:
+        xfoil_fid.readline()
+        for i in range(8):
+            line = xfoil_fid.readline()
 
-    mach_num = line.strip().split(" ")[4]
-    cl_values[mach_num] = []
-    cd_values[mach_num] = []
-    for i in range(4):
-        line = xfoil_fid.readline()
-    while True:
-        linecontents = line.strip().split(" ")
+        mach_num = line.strip().split(" ")[4]
+        cl_values[mach_num] = []
+        cd_values[mach_num] = []
+        for i in range(4):
+            line = xfoil_fid.readline()
+        while True:
+            line_contents = line.strip().split(" ")
 
-        c = linecontents.count("")
-        for i in range(c):
-            linecontents.remove("")
+            c = line_contents.count("")
+            for i in range(c):
+                line_contents.remove("")
 
-        cl_alphas.append(float(linecontents[0]))
-        cl_values[mach_num].append(float(linecontents[1]))
-        cd_values[mach_num].append(float(linecontents[2]))
-        line = xfoil_fid.readline()
-        if len(line) == 0:
-            break
+            cl_alphas.append(float(line_contents[0]))
+            cl_values[mach_num].append(float(line_contents[1]))
+            cd_values[mach_num].append(float(line_contents[2]))
+            line = xfoil_fid.readline()
+            if len(line) == 0:
+                break
 
     cl_alphas, cl_mach_nums, cl_values, cd_values = blend_polars_to_flat_plate(
         cl_alphas, [mach_num], cl_values, cd_values
@@ -73,8 +71,6 @@ def read_in_xfoil_polar(polar_file):
     for i, alpha in enumerate(alphas):
         cls[i] = float(cl_interp(alpha))
         cds[i] = float(cd_interp(alpha))
-
-    xfoil_fid.close()
 
     return alphas, cl_mach_nums[0], cls, cds
 
@@ -102,9 +98,9 @@ def blend_polars_to_flat_plate(cl_alphas, cl_mach_nums, cl_values, cd_values):
     alpha_min = cl_alphas[0]
     alpha_max = cl_alphas[-1]
     if alpha_min < -180:
-        raise ValueError(f"ERROR: alpha_min is smaller than -180: {alpha_min}")
+        raise Flow360ValueError(f"ERROR: alpha_min is smaller than -180: {alpha_min}")
     if alpha_max > 180:
-        raise ValueError(f"ERROR: alpha_max is greater than 180: {alpha_max}")
+        raise Flow360ValueError(f"ERROR: alpha_max is greater than 180: {alpha_max}")
 
     blend_window = 0.5
 
@@ -183,8 +179,7 @@ def read_in_c81_polar_c81_format(polar_file):
     cl_values = {}
     cd_values = {}
 
-    # pylint: disable=unspecified-encoding, consider-using-with
-    with open(polar_file, "r") as c81_fid:
+    with open(polar_file, "r", encoding="utf-8") as c81_fid:
         c81_fid.readline()
         line = c81_fid.readline()
         cl_mach_nums = line.strip().split(" ")
@@ -206,7 +201,7 @@ def read_in_c81_polar_c81_format(polar_file):
         cd_mach_nums = line.strip().split(" ")
         cd_mach_nums = [float(i) for i in cd_mach_nums if i]
         if cl_mach_nums != cd_mach_nums:
-            raise ValueError(
+            raise Flow360ValueError(
                 f"ERROR: in file {polar_file}, The machs in the Cl polar do not match the machs in the CD polar. "
                 + f"We have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values."
             )
@@ -226,7 +221,7 @@ def read_in_c81_polar_c81_format(polar_file):
             line = c81_fid.readline()
 
         if cl_alphas != cd_alphas:
-            raise ValueError(
+            raise Flow360ValueError(
                 f"ERROR: in file {polar_file}, The alphas in the Cl polar do not match the alphas in the CD polar. "
                 + f"We have {cl_alphas} Cls and {cd_alphas} Cds."
             )
@@ -254,8 +249,7 @@ def read_in_c81_polar_csv(polar_file):
     cl_values = {}
     cd_values = {}
 
-    # pylint: disable=unspecified-encoding
-    with open(polar_file, "r") as c81_fid:
+    with open(polar_file, "r", encoding="utf-8") as c81_fid:
         c81_fid.readline()
         line = c81_fid.readline()
         cl_mach_nums = line.split(",")
@@ -275,7 +269,7 @@ def read_in_c81_polar_csv(polar_file):
         cd_mach_nums = line.split(",")
         cd_mach_nums = [float(i.strip()) for i in cd_mach_nums if i]
         if cl_mach_nums != cd_mach_nums:
-            raise ValueError(
+            raise Flow360ValueError(
                 f"ERROR: in file {polar_file}, The machs in the Cl polar do not match the machs in the CD polar. "
                 + f"We have {cl_mach_nums} Cl mach values and {cd_mach_nums} CD mach values."
             )
@@ -293,7 +287,7 @@ def read_in_c81_polar_csv(polar_file):
             line = c81_fid.readline()
 
         if cl_alphas != cd_alphas:
-            raise ValueError(
+            raise Flow360ValueError(
                 f"ERROR: in file {polar_file}, The alphas in the Cl polar do not match the alphas in the CD polar. "
                 + f"We have {len(cl_alphas)} Cls and {len(cd_alphas)} Cds."
             )
@@ -318,7 +312,7 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
     return: dictionary
     """
     if len(xfoil_polar_files) != len(bet_disk["sectional_radiuses"]):
-        raise ValueError(
+        raise Flow360ValueError(
             f"Error: There is an error in the number of polar files ({len(xfoil_polar_files)}) "
             + f'vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
@@ -328,7 +322,7 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
 
     mach_numbers = []
 
-    for sec_idx, section in enumerate(bet_disk["sectional_radiuses"]):
+    for sec_idx, _ in enumerate(bet_disk["sectional_radiuses"]):
         secpol = {}
         secpol["lift_coeffs"] = []
         secpol["drag_coeffs"] = []
@@ -336,9 +330,10 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
         polar_files = xfoil_polar_files[sec_idx]
         mach_numbers_for_section = []
         for polar_file in polar_files:
-            print(f"doing sectional_radius {section} with polar file {polar_file}")
             if not path.isfile(polar_file):
-                raise ValueError(f"Error: XFOIL format polar file {polar_file} does not exist.")
+                raise Flow360ValueError(
+                    f"Error: XFOIL format polar file {polar_file} does not exist."
+                )
             alpha_list, mach_num, cl_values, cd_values = read_in_xfoil_polar(polar_file)
             mach_numbers_for_section.append(float(mach_num))
             secpol["lift_coeffs"].append([cl_values])
@@ -347,7 +342,7 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
         bet_disk["sectional_polars"].append(secpol)
     for i in range(len(mach_numbers) - 1):
         if mach_numbers[i] != mach_numbers[i + 1]:
-            raise ValueError(
+            raise Flow360ValueError(
                 "ERROR: the mach numbers from the XFOIL polars need to be the same set for each cross section. "
                 + f"Here sections {i} and {i+1} have the following sets of mach numbers: "
                 + f'{secpol["mach_numbers"][i]} and {secpol["mach_numbers"][i+1]}'
@@ -373,17 +368,16 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
     return: dictionary
     """
     if len(c81_polar_files) != len(bet_disk["sectional_radiuses"]):
-        raise ValueError(
+        raise Flow360ValueError(
             f"Error: There is an error in the number of polar files ({len(c81_polar_files)}) "
             + f'vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
     bet_disk["sectional_polars"] = []
-    for sec_idx, section in enumerate(bet_disk["sectional_radiuses"]):
+    for sec_idx, _ in enumerate(bet_disk["sectional_radiuses"]):
         polar_file = c81_polar_files[sec_idx][0]
-        print(f"doing sectional_radius {section} with polar file {polar_file}")
         if not path.isfile(polar_file):
-            raise ValueError(f"Error: c81 format polar file {polar_file} does not exist.")
+            raise Flow360ValueError(f"Error: c81 format polar file {polar_file} does not exist.")
 
         if "csv" in polar_file:
             alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file)
@@ -391,12 +385,12 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
         else:
             alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(polar_file)
         if "mach_numbers" in bet_disk.keys() and bet_disk["mach_numbers"] != mach_list:
-            raise ValueError(
+            raise Flow360ValueError(
                 "ERROR: The mach Numbers do not match across the various sectional radi polar c81 files. "
                 + "All the sectional radi need to have the same mach Numbers across all c81 polar files"
             )
         if "alphas" in bet_disk.keys() and bet_disk["alphas"] != alpha_list:
-            raise ValueError(
+            raise Flow360ValueError(
                 "ERROR: The alphas do not match across the various sectional radi polar c81 files. "
                 + "All the sectional radi need to have the same alphas across all c81 polar files"
             )
@@ -494,11 +488,10 @@ def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
     return: tuple of lists
     """
 
-    # pylint: disable=unspecified-encoding
-    with open(geometry_file_name) as fid:
+    with open(geometry_file_name, "r", encoding="utf-8") as fid:
         line = fid.readline()
         if "#" not in line:
-            raise ValueError(
+            raise Flow360ValueError(
                 f"ERROR: first character of first line of geometry file {geometry_file_name} "
                 + "should be the # character to denote a header line"
             )
@@ -521,7 +514,7 @@ def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
                 )
                 line = fid.readline().strip("\n")
             except Exception as error:
-                raise ValueError(
+                raise Flow360ValueError(
                     f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_name}"
                 ) from error
 
@@ -534,20 +527,16 @@ def parse_geometry_file(geometry_file_name, length_unit, angle_unit):
                 chord.append(float(line.split(",")[1]))
                 twist.append(float(line.split(",")[2]))
             except:
-                raise ValueError(
+                raise Flow360ValueError(
                     f"ERROR: exception thrown when parsing line {line} from geometry file {geometry_file_name}"
                 ) from error
 
         chord_vec = [{"radius": 0.0 * length_unit, "chord": 0.0 * length_unit}]
         twist_vec = [{"radius": 0.0 * length_unit, "twist": 0.0 * angle_unit}]
-        # pylint: disable=consider-using-enumerate
-        for i in range(len(radius_station)):
-            twist_vec.append(
-                {"radius": radius_station[i] * length_unit, "twist": twist[i] * angle_unit}
-            )
-            chord_vec.append(
-                {"radius": radius_station[i] * length_unit, "chord": chord[i] * length_unit}
-            )
+
+        for rad, tw, ch in zip(radius_station, twist, chord):
+            twist_vec.append({"radius": rad * length_unit, "twist": tw * angle_unit})
+            chord_vec.append({"radius": rad * length_unit, "chord": ch * length_unit})
 
     return twist_vec, chord_vec, sectional_radiuses, polar_files
 
@@ -617,7 +606,7 @@ def check_comment(comment_line, line_num, numelts):
         return
 
     if not comment_line[0] == "!" and not len(comment_line) == numelts:
-        raise ValueError(f"wrong format for line #%i: {comment_line}" % (line_num))
+        raise Flow360ValueError(f"wrong format for line #%i: {comment_line}" % (line_num))
 
 
 def check_num_values(values_list, line_num, numelts):
@@ -632,7 +621,7 @@ def check_num_values(values_list, line_num, numelts):
     """
 
     if not len(values_list) == numelts:
-        raise ValueError(
+        raise Flow360ValueError(
             f"wrong number of items for line #%i: {values_list}. We were expecting %i numbers and got %i"
             % (line_num, len(values_list), numelts)
         )
@@ -691,8 +680,7 @@ def read_dfdc_file(dfdc_file_name):
       Ubody: (unused) Nacelle perturbation axial  velocity
     """
 
-    # pylint: disable=unspecified-encoding
-    with open(dfdc_file_name, "r") as fid:
+    with open(dfdc_file_name, "r", encoding="utf-8") as fid:
         dfdc_input_dict = {}
         line_num = 0
         for i in range(4):
@@ -885,8 +873,7 @@ def read_xrotor_file(xrotor_file_name):
       Ubody: (unused) Nacelle perturbation axial  velocity
     """
 
-    # pylint: disable=unspecified-encoding
-    with open(xrotor_file_name, "r") as fid:
+    with open(xrotor_file_name, "r", encoding="utf-8") as fid:
         line_num = 0
         top_line = fid.readline()
         line_num += 1
@@ -895,7 +882,9 @@ def read_xrotor_file(xrotor_file_name):
             return read_dfdc_file(xrotor_file_name)
 
         if top_line.find("XROTOR") == -1:
-            raise ValueError("This input XROTOR file does not seem to be a valid XROTOR input file")
+            raise Flow360ValueError(
+                "This input XROTOR file does not seem to be a valid XROTOR input file"
+            )
 
         xrotor_input_dict = {}
 
@@ -1048,14 +1037,13 @@ def float_range(start, stop, step=1):
     return [float(a) for a in range(start, stop, step)]
 
 
-def generate_twists(xrotor_dict, mesh_unit, length_unit, angle_unit):
+def generate_twists(xrotor_dict, length_unit, angle_unit):
     """
     Transform the XROTOR format blade twists distribution into the Flow360 standard.
 
     Attributes
     ----------
     xrotor_dict: dictionary, contains XROTOR data
-    mesh_unit: float, grid unit length with units
     return: list of dictionaries
     """
 
@@ -1065,25 +1053,25 @@ def generate_twists(xrotor_dict, mesh_unit, length_unit, angle_unit):
     elif xrotor_dict["inputType"] == "dfdc":
         multiplier = 1.0
     else:
-        raise ValueError("Unsupported input type")
+        raise Flow360ValueError("Unsupported input type")
 
     for i in range(xrotor_dict["nGeomStations"]):
         # pylint: disable=no-member
-        r = xrotor_dict["rRGeom"][i] * multiplier * u.m / mesh_unit
+        r = xrotor_dict["rRGeom"][i] * multiplier * u.m / length_unit
         twist = xrotor_dict["beta0Deg"][i]
         twist_vec.append({"radius": r * length_unit, "twist": twist * angle_unit})
 
     return twist_vec
 
 
-def generate_chords(xrotor_dict, mesh_unit, length_unit):
+def generate_chords(xrotor_dict, length_unit):
     """
     Transform the XROTOR format blade chords distribution into the Flow360 standard.
 
     Attributes
     ----------
     xrotor_dict: dictionary, contains XROTOR data
-    mesh_unit: float, grid unit length with units
+    length_unit: float, grid unit length with units
     return: list of dictionaries
     """
 
@@ -1093,12 +1081,12 @@ def generate_chords(xrotor_dict, mesh_unit, length_unit):
     elif xrotor_dict["inputType"] == "dfdc":
         multiplier = 1.0
     else:
-        raise ValueError("Unsupported input type")
+        raise Flow360ValueError("Unsupported input type")
 
     for i in range(xrotor_dict["nGeomStations"]):
         # pylint: disable=no-member
-        r = xrotor_dict["rRGeom"][i] * multiplier * u.m / mesh_unit
-        chord = xrotor_dict["cRGeom"][i] * multiplier * u.m / mesh_unit
+        r = xrotor_dict["rRGeom"][i] * multiplier * u.m / length_unit
+        chord = xrotor_dict["cRGeom"][i] * multiplier * u.m / length_unit
         chord_vec.append({"radius": r * length_unit, "chord": chord * length_unit})
 
     return chord_vec
@@ -1242,7 +1230,7 @@ def blend_func_value(blend_window, alpha, alpha_min_max, alpha_range):
         if alpha < alpha_min_max - blend_window:
             return 0
         return cos((alpha - alpha_min_max) / blend_window * pi / 2) ** 2
-    raise ValueError(
+    raise Flow360ValueError(
         f"alpha_range must be either above_cl_max or below_cl_min, it is: {alpha_range}"
     )
 
@@ -1336,7 +1324,7 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     cla = [0] * len(alphas)
     for i, a in enumerate(alphas):
         cla[i] = dclda * pg * ((a * pi / 180) - a_zero)
-    # pylint: disable=undefined-variable
+
     cla = np.array(cla)
 
     cl_max = xrotor_dict["clmax"][nrR_station]
@@ -1392,7 +1380,6 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     return list(c_lift), list(c_drag)
 
 
-# pylint: disable=invalid-name
 def get_polar(xrotor_dict, alphas, machs, rR_station):
     """
     Return the 2D Cl and CD polar expected by the Flow360 BET model.
@@ -1431,7 +1418,6 @@ def generate_xrotor_bet_json(
     entities,
     angle_unit,
     length_unit,
-    mesh_unit,
 ):
     """
     Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
@@ -1442,7 +1428,7 @@ def generate_xrotor_bet_json(
     ----------
     geometry_file_name: string, path to the XROTOR file
     bet_disk: dictionary, contains required BETDisk data
-    mesh_unit: float, grid unit length with units
+    length_unit: float, grid unit length with units
     return: dictionary with BETDisk parameters
     """
 
@@ -1459,11 +1445,11 @@ def generate_xrotor_bet_json(
     bet_disk["blade_line_chord"] = blade_line_chord
     bet_disk["number_of_blades"] = xrotor_dict["nBlades"]
     # pylint: disable=no-member
-    bet_disk["radius"] = xrotor_dict["rad"] * u.m / mesh_unit
+    bet_disk["radius"] = xrotor_dict["rad"] * u.m / length_unit
     bet_disk["twists"] = generate_twists(
-        xrotor_dict, mesh_unit=mesh_unit, length_unit=length_unit, angle_unit=angle_unit
+        xrotor_dict, length_unit=length_unit, angle_unit=angle_unit
     )
-    bet_disk["chords"] = generate_chords(xrotor_dict, mesh_unit=mesh_unit, length_unit=length_unit)
+    bet_disk["chords"] = generate_chords(xrotor_dict, length_unit=length_unit)
     bet_disk["mach_numbers"] = generate_machs()
     bet_disk["alphas"] = generate_alphas()
     bet_disk["reynolds_numbers"] = generate_reynolds()
@@ -1493,7 +1479,6 @@ def generate_dfdc_bet_json(
     entities,
     angle_unit,
     length_unit,
-    mesh_unit,
 ):
     """
     Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
@@ -1504,7 +1489,7 @@ def generate_dfdc_bet_json(
     ----------
     geometry_file_name: string, path to the XROTOR file
     bet_disk: dictionary, contains required BETDisk data
-    mesh_unit: float, grid unit length with units
+    length_unit: float, grid unit length with units
     return: dictionary with BETDisk parameters
     """
     return generate_xrotor_bet_json(
@@ -1518,5 +1503,4 @@ def generate_dfdc_bet_json(
         entities=entities,
         angle_unit=angle_unit,
         length_unit=length_unit,
-        mesh_unit=mesh_unit,
     )

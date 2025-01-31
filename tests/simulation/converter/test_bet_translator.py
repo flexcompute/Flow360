@@ -2,6 +2,8 @@ import json
 import os
 import unittest
 
+import pytest
+
 import flow360 as fl
 from flow360.component.simulation.framework.updater_utils import compare_values
 
@@ -23,7 +25,7 @@ def generate_BET_param(type):
     if type == "c81":
         param = fl.BETDisk.from_c81(
             file=fl.C81File(
-                file_name=(
+                file_path=(
                     os.path.join(
                         os.path.dirname(os.path.abspath(__file__)), "data/c81", "Xv15_geometry.csv"
                     )
@@ -42,7 +44,7 @@ def generate_BET_param(type):
     elif type == "dfdc":
         param = fl.BETDisk.from_dfdc(
             file=fl.DFDCFile(
-                file_name=(
+                file_path=(
                     os.path.join(
                         os.path.dirname(os.path.abspath(__file__)), "data", "dfdc_xv15_twist0.case"
                     )
@@ -53,7 +55,6 @@ def generate_BET_param(type):
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
             entities=bet_cylinder_SI,
-            mesh_unit=fl.u.m,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
         )
@@ -61,7 +62,7 @@ def generate_BET_param(type):
     elif type == "xfoil":
         param = fl.BETDisk.from_xfoil(
             file=fl.XFOILFile(
-                file_name=(
+                file_path=(
                     os.path.join(
                         os.path.dirname(os.path.abspath(__file__)),
                         "data/xfoil",
@@ -84,7 +85,7 @@ def generate_BET_param(type):
     elif type == "xrotor":
         param = fl.BETDisk.from_xrotor(
             file=fl.XROTORFile(
-                file_name=(
+                file_path=(
                     os.path.join(
                         os.path.dirname(os.path.abspath(__file__)),
                         "data",
@@ -97,7 +98,6 @@ def generate_BET_param(type):
             chord_ref=14 * fl.u.m,
             n_loading_nodes=20,
             entities=bet_cylinder_SI,
-            mesh_unit=fl.u.m,
             angle_unit=fl.u.deg,
             length_unit=fl.u.m,
         )
@@ -487,3 +487,22 @@ def test_xfoil_params():
     )
     assertions.assertEqual(refbetFlow360["thickness"], bet.entities.stored_entities[0].height)
     assertions.assertEqual(refbetFlow360["radius"], bet.entities.stored_entities[0].outer_radius)
+
+
+def test_file_model():
+    # 1: Normal construction
+    file = fl.C81File(
+        file_path=(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "data/c81", "Xv15_geometry.csv"
+            )
+        )
+    )
+
+    # 2: possible use case. Change file_path using assignment will be prohibited.
+    with pytest.raises(ValueError, match="Cannot modify immutable/frozen fields: file_path"):
+        file.file_path = "non_existing_file.csv"
+
+    # 3. Deserialization
+    kwargs = file.model_dump()
+    file_2 = fl.C81File(**kwargs)

@@ -1,6 +1,7 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
+import os
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -486,60 +487,49 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     )
 
 
-class XROTORFile(Flow360BaseModel):
-    file_name: str
+class BETInputFileBaseModel(Flow360BaseModel):
+    file_path: str = pd.Field(
+        frozen=True,
+        description="Path to the BET configuration file. It cannot be changed once initialized.",
+    )
+    content: str = pd.Field(
+        frozen=True,
+        description="File content of the BET configuration file. It will be automatically loaded.",
+    )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        """
+        Read the file content and store it as string.
+        """
+        if "file_path" not in input_data:
+            raise ValueError("file_path is require but is not found in input.")
+        if "content" in input_data and input_data.get("content"):
+            return input_data
+
+        file_path = input_data["file_path"]
+        if os.path.isfile(file_path) is False:
+            raise FileNotFoundError(f"Supplied file: {file_path} cannot be found.")
+        with open(file_path, "r", encoding="utf-8") as file:
+            file_content = file.read()
+        return {"file_path": file_path, "content": file_content}
+
+
+class XROTORFile(BETInputFileBaseModel):
     type_name: Literal["XRotorFile"] = pd.Field("XRotorFile", frozen=True)
-    content: str = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _extract_content(cls, input_data):
-        # pylint: disable=unspecified-encoding
-        with open(input_data["file_name"]) as file:
-            content_to_store = file.read()
-        return {"file_name": input_data["file_name"], "content": content_to_store}
 
 
-class DFDCFile(Flow360BaseModel):
-    file_name: str
+class DFDCFile(BETInputFileBaseModel):
     type_name: Literal["DFDCFile"] = pd.Field("DFDCFile", frozen=True)
-    content: str = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _extract_content(cls, input_data):
-        # pylint: disable=unspecified-encoding
-        with open(input_data["file_name"]) as file:
-            content_to_store = file.read()
-        return {"file_name": input_data["file_name"], "content": content_to_store}
 
 
-class C81File(Flow360BaseModel):
-    file_name: str
+class C81File(BETInputFileBaseModel):
     type_name: Literal["C81File"] = pd.Field("C81File", frozen=True)
-    content: str = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _extract_content(cls, input_data):
-        # pylint: disable=unspecified-encoding
-        with open(input_data["file_name"]) as file:
-            content_to_store = file.read()
-        return {"file_name": input_data["file_name"], "content": content_to_store}
 
 
-class XFOILFile(Flow360BaseModel):
-    file_name: str
+class XFOILFile(BETInputFileBaseModel):
     type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
-    content: str = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _extract_content(cls, input_data):
-        # pylint: disable=unspecified-encoding
-        with open(input_data["file_name"]) as file:
-            content_to_store = file.read()
-        return {"file_name": input_data["file_name"], "content": content_to_store}
 
 
 BETFileTypes = Annotated[
@@ -565,7 +555,6 @@ class BETDiskCache(Flow360BaseModel):
     blade_line_chord: Optional[LengthType.NonNegative] = None
 
 
-# pylint: disable=no-member
 class BETDisk(MultiConstructorBaseModel):
     """:class:`BETDisk` class for defining the Blade Element Theory (BET) model inputs.
     For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <knowledge_base_BETDisks>`.
@@ -730,7 +719,7 @@ class BETDisk(MultiConstructorBaseModel):
 
         Parameters
         ----------
-        File: C81File
+        file: C81File
             C81File class instance containing information about the C81 file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
@@ -764,7 +753,7 @@ class BETDisk(MultiConstructorBaseModel):
         Create a BET disk with an C81 file.
 
         >>> param = fl.BETDisk.from_xrotor(
-        ...     file=fl.C81File(file_name="c81_xv15.csv")),
+        ...     file=fl.C81File(file_path="c81_xv15.csv")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
         ...     chord_ref=14 * fl.u.m,
@@ -777,7 +766,7 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_c81_bet_json(
-            geometry_file_name=file.file_name,
+            geometry_file_name=file.file_path,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -803,7 +792,6 @@ class BETDisk(MultiConstructorBaseModel):
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        mesh_unit: LengthType.NonNegative,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
@@ -813,7 +801,7 @@ class BETDisk(MultiConstructorBaseModel):
 
         Parameters
         ----------
-        File: DFDCFile
+        file: DFDCFile
             DFDCFile class instance containing information about the DFDC file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
@@ -825,8 +813,6 @@ class BETDisk(MultiConstructorBaseModel):
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        mesh_unit: LengthType.NonNegative
-            Mesh/grid unit used for converting the XROTOR radius to mesh units.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
@@ -847,7 +833,7 @@ class BETDisk(MultiConstructorBaseModel):
         Create a BET disk with a DFDC file.
 
         >>> param = fl.BETDisk.from_xrotor(
-        ...     file=fl.DFDCFile(file_name="dfdc_xv15.case")),
+        ...     file=fl.DFDCFile(file_path="dfdc_xv15.case")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
         ...     chord_ref=14 * fl.u.m,
@@ -860,7 +846,7 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_dfdc_bet_json(
-            dfdc_file_name=file.file_name,
+            dfdc_file_name=file.file_path,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -870,7 +856,6 @@ class BETDisk(MultiConstructorBaseModel):
             entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
-            mesh_unit=mesh_unit,
         )
 
         return cls(**params)
@@ -896,7 +881,7 @@ class BETDisk(MultiConstructorBaseModel):
 
         Parameters
         ----------
-        File: XFOILFile
+        file: XFOILFile
             XFOILFile class instance containing information about the XFOIL file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
@@ -930,7 +915,7 @@ class BETDisk(MultiConstructorBaseModel):
         Create a BET disk with an XFOIL file.
 
         >>> param = fl.BETDisk.from_xfoil(
-        ...     file=fl.XFOILFile(file_name=("xfoil_xv15.csv")),
+        ...     file=fl.XFOILFile(file_path=("xfoil_xv15.csv")),
         ...     rotation_direction_rule="leftHand",
         ...     initial_blade_direction=[1, 0, 0],
         ...     blade_line_chord=1 * fl.u.m,
@@ -945,7 +930,7 @@ class BETDisk(MultiConstructorBaseModel):
         """
 
         params = generate_xfoil_bet_json(
-            geometry_file_name=file.file_name,
+            geometry_file_name=file.file_path,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -971,7 +956,6 @@ class BETDisk(MultiConstructorBaseModel):
         chord_ref: LengthType.Positive,
         n_loading_nodes: pd.StrictInt,
         entities: EntityList[Cylinder],
-        mesh_unit: LengthType.NonNegative,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
         angle_unit: AngleType = u.deg,
@@ -981,7 +965,7 @@ class BETDisk(MultiConstructorBaseModel):
 
         Parameters
         ----------
-        File: XROTORFile
+        file: XROTORFile
             XROTORFile class instance containing information about the XROTOR file.
         rotation_direction_rule: str
             Rule for rotation direction and thrust direction.
@@ -993,8 +977,6 @@ class BETDisk(MultiConstructorBaseModel):
             Number of nodes used to compute sectional thrust and torque coefficients.
         entities: EntityList[Cylinder]
             List of Cylinder entities used for defining the BET volumes.
-        mesh_unit: LengthType.NonNegative
-            Mesh/grid unit used for converting the XROTOR radius to mesh units.
         initial_blade_direction: Axis, optional
             Orientation of the first blade in BET model.
             Must be specified for unsteady BET simulation.
@@ -1015,20 +997,19 @@ class BETDisk(MultiConstructorBaseModel):
         Create a BET disk with an XROTOR file.
 
         >>> param = fl.BETDisk.from_xrotor(
-        ...     file=fl.XROTORFile(file_name="xrotor_xv15.xrotor")),
+        ...     file=fl.XROTORFile(file_path="xrotor_xv15.xrotor")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
         ...     chord_ref=14 * fl.u.m,
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder,
-        ...     mesh_unit=fl.u.m,
         ...     angle_unit=fl.u.deg,
         ...     length_unit=fl.u.m,
         ... )
         """
 
         params = generate_xrotor_bet_json(
-            xrotor_file_name=file.file_name,
+            xrotor_file_name=file.file_path,
             rotation_direction_rule=rotation_direction_rule,
             initial_blade_direction=initial_blade_direction,
             blade_line_chord=blade_line_chord,
@@ -1038,7 +1019,6 @@ class BETDisk(MultiConstructorBaseModel):
             entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
-            mesh_unit=mesh_unit,
         )
 
         return cls(**params)
