@@ -100,17 +100,17 @@
         "surfaces": {
             "1": {
                 "outputFields": [
-                    "nuHat"
+                    "Cp"
                 ]
             },
             "2": {
                 "outputFields": [
-                    "nuHat"
+                    "Cp"
                 ]
             },
             "3": {
                 "outputFields": [
-                    "nuHat"
+                    "Cp"
                 ]
             }
         },
