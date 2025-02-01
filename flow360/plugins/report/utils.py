@@ -52,6 +52,7 @@ class RequirementItem(pd.BaseModel):
 # pylint: disable=protected-access
 _requirements_mapping = {
     "params": RequirementItem(filename="simulation.json"),
+    "cfl": RequirementItem(filename=case_results.CFLResultCSVModel()._remote_path()),
     "total_forces": RequirementItem(
         filename=case_results.TotalForcesResultCSVModel()._remote_path()
     ),
