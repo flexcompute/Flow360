@@ -319,7 +319,7 @@ $RECYCLE.BIN/
 
 #results files
 *.csv
-!tests/data/**/*.csv
+!tests/**/data/**/*.csv
 *.tar.gz
 !tests/data/**/*.tar.gz
 

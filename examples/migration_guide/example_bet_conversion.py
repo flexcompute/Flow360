@@ -1,15 +1,20 @@
-from examples.migration_guide.bet_disk_converter import bet_disk_convert
-from flow360.component.simulation.unit_system import u
-from flow360.component.simulation.units import flow360_angular_velocity_unit
+import os
 
-BETDisks, Cylinders = bet_disk_convert(
-    file="BET_tutorial_Flow360.json",
-    save=True,
-    length_unit=u.m,
-    omega_unit=flow360_angular_velocity_unit,
+from flow360.component.simulation.migration import BETDisk
+from flow360.component.simulation.unit_system import u
+
+# Get the absolute path to the script file
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Change the current working directory to the script directory
+os.chdir(script_dir)
+
+my_BETDisk = BETDisk.read_single_v1_BETDisk(
+    file_path="./BET_tutorial_Flow360.json",
+    mesh_unit=u.m,
+    time_unit=u.s,
 )
 
-print(BETDisks[0])
+print(my_BETDisk)
 
 """
 with SI_unit_system:
@@ -17,7 +22,7 @@ with SI_unit_system:
         ...
         models=[
             ...
-            BETDisk(BETDisks[0]),
+            my_BETDisk,
             ...
         ]
         ...

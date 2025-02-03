@@ -1,6 +1,9 @@
 """Volume models for the simulation framework."""
 
-from typing import Dict, List, Literal, Optional, Union
+# pylint: disable=too-many-lines
+import os
+from abc import ABCMeta
+from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -8,8 +11,19 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.multi_constructor_model_base import (
+    MultiConstructorBaseModel,
+)
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
+)
+from flow360.component.simulation.models.bet.bet_translator_interface import (
+    generate_c81_bet_json,
+    generate_dfdc_bet_json,
+    generate_polar_file_name_list,
+    generate_xfoil_bet_json,
+    generate_xrotor_bet_json,
+    get_file_content,
 )
 from flow360.component.simulation.models.material import (
     Air,
@@ -476,8 +490,115 @@ class BETDiskSectionalPolar(Flow360BaseModel):
     )
 
 
-# pylint: disable=no-member
-class BETDisk(Flow360BaseModel):
+class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
+    file_path: str = pd.Field(
+        frozen=True,
+        description="Path to the BET configuration file. It cannot be changed once initialized.",
+    )
+    content: str = pd.Field(
+        frozen=True,
+        description="File content of the BET configuration file. It will be automatically loaded.",
+    )
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        """
+        Read the file content and store it as string.
+        """
+        if "file_path" not in input_data:
+            raise ValueError("file_path is require but is not found in input.")
+        if "content" in input_data and input_data.get("content"):
+            return input_data
+
+        file_content = get_file_content(input_data["file_path"])
+
+        return {"file_path": input_data["file_path"], "content": file_content}
+
+
+class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
+    """Auxiliary polar file for XFoil"""
+
+    type_name: Literal["AuxiliaryPolarFile"] = pd.Field("AuxiliaryPolarFile", frozen=True)
+
+
+class BETSingleMultiFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
+    file_path: str = pd.Field(
+        frozen=True,
+        description="Path to the BET configuration file. It cannot be changed once initialized.",
+    )
+    content: str = pd.Field(
+        frozen=True,
+        description="File content of the BET configuration file. It will be automatically loaded.",
+    )
+    polar_files: list[list[AuxiliaryPolarFile]] = pd.Field()
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _extract_content(cls, input_data):
+        """
+        Read the file content and store it as string.
+        """
+        if "file_path" not in input_data:
+            raise ValueError("file_path is require but is not found in input.")
+        if "content" in input_data and input_data.get("content"):
+            return input_data
+        if "polar_files" in input_data and input_data.get("polar_files"):
+            return input_data
+
+        file_path = input_data["file_path"]
+        file_content = get_file_content(file_path=file_path)
+
+        # Now read the polar files
+        polar_file_obj_list = []
+        file_dir = os.path.dirname(file_path)
+        for file_name_list in generate_polar_file_name_list(geometry_file_content=file_content):
+            polar_file_obj_list.append(
+                [{"file_path": os.path.join(file_dir, file_name)} for file_name in file_name_list]
+            )
+        return {"file_path": file_path, "content": file_content, "polar_files": polar_file_obj_list}
+
+
+class XROTORFile(BETSingleInputFileBaseModel):
+    type_name: Literal["XRotorFile"] = pd.Field("XRotorFile", frozen=True)
+
+
+class DFDCFile(BETSingleInputFileBaseModel):
+    type_name: Literal["DFDCFile"] = pd.Field("DFDCFile", frozen=True)
+
+
+class C81File(BETSingleMultiFileBaseModel):
+    type_name: Literal["C81File"] = pd.Field("C81File", frozen=True)
+
+
+class XFOILFile(BETSingleMultiFileBaseModel):
+    type_name: Literal["XFoilFile"] = pd.Field("XFoilFile", frozen=True)
+
+
+BETFileTypes = Annotated[
+    Union[XROTORFile, DFDCFile, XFOILFile, C81File],
+    pd.Field(discriminator="type_name"),
+]
+
+
+class BETDiskCache(Flow360BaseModel):
+    """[INTERNAL] Cache for BETDisk inputs"""
+
+    file: Optional[BETFileTypes] = None
+    rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
+    omega: Optional[AngularVelocityType.NonNegative] = None
+    chord_ref: Optional[LengthType.Positive] = None
+    n_loading_nodes: Optional[pd.StrictInt] = None
+    entities: Optional[EntityList[Cylinder]] = None
+    angle_unit: Optional[AngleType] = None
+    length_unit: Optional[LengthType.NonNegative] = None
+    mesh_unit: Optional[LengthType.NonNegative] = None
+    number_of_blades: Optional[pd.StrictInt] = None
+    initial_blade_direction: Optional[Axis] = None
+    blade_line_chord: Optional[LengthType.NonNegative] = None
+
+
+class BETDisk(MultiConstructorBaseModel):
     """:class:`BETDisk` class for defining the Blade Element Theory (BET) model inputs.
     For detailed information on the parameters, please refer to the :ref:`BET knowledge Base <knowledge_base_BETDisks>`.
     To generate the sectional polars the BET translators can be used which are
@@ -517,6 +638,7 @@ class BETDisk(Flow360BaseModel):
 
     name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
+    type_name: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
 
     rotation_direction_rule: Literal["leftHand", "rightHand"] = pd.Field(
@@ -578,6 +700,8 @@ class BETDisk(Flow360BaseModel):
         + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
     )
 
+    private_attribute_input_cache: BETDiskCache = BETDiskCache()
+
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
     def check_bet_disk_initial_blade_direction_and_blade_line_chord(self):
@@ -616,6 +740,337 @@ class BETDisk(Flow360BaseModel):
     def check_bet_disk_3d_coefficients_in_polars(self):
         """validate dimension of 3d coefficients in polars"""
         return _check_bet_disk_3d_coefficients_in_polars(self)
+
+    # pylint: disable=too-many-arguments, no-self-argument, not-callable
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_c81(
+        cls,
+        file: C81File,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        entities: EntityList[Cylinder],
+        number_of_blades: pd.StrictInt,
+        length_unit: LengthType.NonNegative,
+        angle_unit: AngleType,
+        initial_blade_direction: Optional[Axis] = None,
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+    ):
+        """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
+
+        Parameters
+        ----------
+        file: C81File
+            C81File class instance containing information about the C81 file.
+        rotation_direction_rule: str
+            Rule for rotation direction and thrust direction.
+        omega: AngularVelocityType.NonNegative
+            Rotating speed of the propeller.
+        chord_ref: LengthType.Positive
+            Dimensional reference cord used to compute sectional blade loadings.
+        n_loading_nodes: Int
+            Number of nodes used to compute sectional thrust and torque coefficients.
+        entities: EntityList[Cylinder]
+            List of Cylinder entities used for defining the BET volumes.
+        number_of_blades: Int
+            Number of blades to model.
+        length_unit: LengthType.NonNegative
+            Length unit of the geometry/mesh file.
+        angle_unit: AngleType
+            Angle unit used for AngleType BETDisk parameters.
+        initial_blade_direction: Axis, optional
+            Orientation of the first blade in BET model.
+            Must be specified for unsteady BET simulation.
+        blade_line_chord: LengthType.NonNegative
+            Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+
+
+        Returns
+        -------
+        BETDisk
+            An instance of :class:`BETDisk` completed with given inputs.
+
+        Examples
+        --------
+        Create a BET disk with an C81 file.
+
+        >>> param = fl.BETDisk.from_xrotor(
+        ...     file=fl.C81File(file_path="c81_xv15.csv")),
+        ...     rotation_direction_rule="leftHand",
+        ...     omega=0.0046 * fl.u.deg / fl.u.s,
+        ...     chord_ref=14 * fl.u.m,
+        ...     n_loading_nodes=20,
+        ...     entities=bet_cylinder,
+        ...     angle_unit=fl.u.deg,
+        ...     number_of_blades=3,
+        ...     length_unit=fl.u.m,
+        ... )
+        """
+
+        params = generate_c81_bet_json(
+            geometry_file_content=file.content,
+            c81_polar_file_list=file.polar_files,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            entities=entities,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+            number_of_blades=number_of_blades,
+        )
+
+        return cls(**params)
+
+    # pylint: disable=too-many-arguments, no-self-argument, not-callable
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_dfdc(
+        cls,
+        file: DFDCFile,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        entities: EntityList[Cylinder],
+        length_unit: LengthType.NonNegative,
+        angle_unit: AngleType,
+        initial_blade_direction: Optional[Axis] = None,
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+    ):
+        """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
+
+        Parameters
+        ----------
+        file: DFDCFile
+            DFDCFile class instance containing information about the DFDC file.
+        rotation_direction_rule: str
+            Rule for rotation direction and thrust direction.
+        omega: AngularVelocityType.NonNegative
+            Rotating speed of the propeller.
+        chord_ref: LengthType.Positive
+            Dimensional reference cord used to compute sectional blade loadings.
+        n_loading_nodes: Int
+            Number of nodes used to compute sectional thrust and torque coefficients.
+        entities: EntityList[Cylinder]
+            List of Cylinder entities used for defining the BET volumes.
+        length_unit: LengthType.NonNegative
+            Length unit used for LengthType BETDisk parameters.
+        angle_unit: AngleType
+            Angle unit used for AngleType BETDisk parameters.
+        initial_blade_direction: Axis, optional
+            Orientation of the first blade in BET model.
+            Must be specified for unsteady BET simulation.
+        blade_line_chord: LengthType.NonNegative
+            Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+
+
+        Returns
+        -------
+        BETDisk
+            An instance of :class:`BETDisk` completed with given inputs.
+
+        Examples
+        --------
+        Create a BET disk with a DFDC file.
+
+        >>> param = fl.BETDisk.from_xrotor(
+        ...     file=fl.DFDCFile(file_path="dfdc_xv15.case")),
+        ...     rotation_direction_rule="leftHand",
+        ...     omega=0.0046 * fl.u.deg / fl.u.s,
+        ...     chord_ref=14 * fl.u.m,
+        ...     n_loading_nodes=20,
+        ...     entities=bet_cylinder,
+        ...     length_unit=fl.u.m,
+        ...     mesh_unit=fl.u.m,
+        ...     angle_unit=fl.u.deg,
+        ... )
+        """
+
+        params = generate_dfdc_bet_json(
+            dfdc_file_content=file.content,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            entities=entities,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+        )
+
+        return cls(**params)
+
+    # pylint: disable=too-many-arguments, no-self-argument, not-callable
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_xfoil(
+        cls,
+        file: XFOILFile,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        entities: EntityList[Cylinder],
+        length_unit: LengthType.NonNegative,
+        angle_unit: AngleType,
+        number_of_blades: pd.StrictInt,
+        initial_blade_direction: Optional[Axis],
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+    ):
+        """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
+
+        Parameters
+        ----------
+        file: XFOILFile
+            XFOILFile class instance containing information about the XFOIL file.
+        rotation_direction_rule: str
+            Rule for rotation direction and thrust direction.
+        omega: AngularVelocityType.NonNegative
+            Rotating speed of the propeller.
+        chord_ref: LengthType.Positive
+            Dimensional reference cord used to compute sectional blade loadings.
+        n_loading_nodes: Int
+            Number of nodes used to compute sectional thrust and torque coefficients.
+        entities: EntityList[Cylinder]
+            List of Cylinder entities used for defining the BET volumes.
+        length_unit: LengthType.NonNegative
+            Length unit used for LengthType BETDisk parameters.
+        angle_unit: AngleType
+            Angle unit used for AngleType BETDisk parameters.
+        number_of_blades: Int
+            Number of blades to model.
+        initial_blade_direction: Axis, optional
+            Orientation of the first blade in BET model.
+            Must be specified for unsteady BET simulation.
+        blade_line_chord: LengthType.NonNegative
+            Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+
+
+        Returns
+        -------
+        BETDisk
+            An instance of :class:`BETDisk` completed with given inputs.
+
+        Examples
+        --------
+        Create a BET disk with an XFOIL file.
+
+        >>> param = fl.BETDisk.from_xfoil(
+        ...     file=fl.XFOILFile(file_path=("xfoil_xv15.csv")),
+        ...     rotation_direction_rule="leftHand",
+        ...     initial_blade_direction=[1, 0, 0],
+        ...     blade_line_chord=1 * fl.u.m,
+        ...     omega=0.0046 * fl.u.deg / fl.u.s,
+        ...     chord_ref=14 * fl.u.m,
+        ...     n_loading_nodes=20,
+        ...     entities=bet_cylinder_imperial,
+        ...     length_unit=fl.u.m,
+        ...     angle_unit=fl.u.deg,
+        ...     number_of_blades=3,
+        )
+        """
+
+        params = generate_xfoil_bet_json(
+            geometry_file_content=file.content,
+            xfoil_polar_file_list=file.polar_files,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            entities=entities,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+            number_of_blades=number_of_blades,
+        )
+
+        return cls(**params)
+
+    # pylint: disable=too-many-arguments, no-self-argument, not-callable
+    @MultiConstructorBaseModel.model_constructor
+    @pd.validate_call
+    def from_xrotor(
+        cls,
+        file: XROTORFile,
+        rotation_direction_rule: Literal["leftHand", "rightHand"],
+        omega: AngularVelocityType.NonNegative,
+        chord_ref: LengthType.Positive,
+        n_loading_nodes: pd.StrictInt,
+        entities: EntityList[Cylinder],
+        length_unit: LengthType.NonNegative,
+        angle_unit: AngleType,
+        initial_blade_direction: Optional[Axis] = None,
+        blade_line_chord: LengthType.NonNegative = 0 * u.m,
+    ):
+        """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
+
+        Parameters
+        ----------
+        file: XROTORFile
+            XROTORFile class instance containing information about the XROTOR file.
+        rotation_direction_rule: str
+            Rule for rotation direction and thrust direction.
+        omega: AngularVelocityType.NonNegative
+            Rotating speed of the propeller.
+        chord_ref: LengthType.Positive
+            Dimensional reference cord used to compute sectional blade loadings.
+        n_loading_nodes: Int
+            Number of nodes used to compute sectional thrust and torque coefficients.
+        entities: EntityList[Cylinder]
+            List of Cylinder entities used for defining the BET volumes.
+        length_unit: LengthType.NonNegative
+            Length unit used for LengthType BETDisk parameters.
+        angle_unit: AngleType
+            Angle unit used for AngleType BETDisk parameters.
+        initial_blade_direction: Axis, optional
+            Orientation of the first blade in BET model.
+            Must be specified for unsteady BET simulation.
+        blade_line_chord: LengthType.NonNegative
+            Dimensional chord used in unsteady BET simulation. Defaults to ``0 * u.m``.
+
+
+        Returns
+        -------
+        BETDisk
+            An instance of :class:`BETDisk` completed with given inputs.
+
+        Examples
+        --------
+        Create a BET disk with an XROTOR file.
+
+        >>> param = fl.BETDisk.from_xrotor(
+        ...     file=fl.XROTORFile(file_path="xrotor_xv15.xrotor")),
+        ...     rotation_direction_rule="leftHand",
+        ...     omega=0.0046 * fl.u.deg / fl.u.s,
+        ...     chord_ref=14 * fl.u.m,
+        ...     n_loading_nodes=20,
+        ...     entities=bet_cylinder,
+        ...     angle_unit=fl.u.deg,
+        ...     length_unit=fl.u.m,
+        ... )
+        """
+
+        params = generate_xrotor_bet_json(
+            xrotor_file_content=file.content,
+            rotation_direction_rule=rotation_direction_rule,
+            initial_blade_direction=initial_blade_direction,
+            blade_line_chord=blade_line_chord,
+            omega=omega,
+            chord_ref=chord_ref,
+            n_loading_nodes=n_loading_nodes,
+            entities=entities,
+            angle_unit=angle_unit,
+            length_unit=length_unit,
+        )
+
+        return cls(**params)
 
 
 class Rotation(Flow360BaseModel):
@@ -674,7 +1129,7 @@ class Rotation(Flow360BaseModel):
     )
     rotating_reference_frame_model: Optional[bool] = pd.Field(
         None,
-        description="Flag to specify whether the noninertial referene frame model is "
+        description="Flag to specify whether the non-inertial reference frame model is "
         + "to be used for the rotation model. Steady state simulation requires this flag "
         + "to be True for all rotation models.",
     )
