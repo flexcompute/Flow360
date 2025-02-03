@@ -63,7 +63,8 @@ def _check_duplicate_entities_in_models(params):
     dict_entity = {"Surface": {}, "Volume": {}}
 
     def _get_entity_key(entity):
-        if isinstance(entity, get_args(get_args(DraftEntityTypes))):
+        draft_entity_types = get_args(get_args(DraftEntityTypes)[0])
+        if isinstance(entity, draft_entity_types):
             return entity.private_attribute_id
         return entity.name
 

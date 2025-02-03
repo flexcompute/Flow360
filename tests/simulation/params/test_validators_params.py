@@ -510,12 +510,20 @@ def test_duplicate_entities_in_models():
         private_attribute_id="1",
     )
     entity_box = Box(
-        name="box",
+        name="Box",
         axis_of_rotation=(1, 0, 0),
         angle_of_rotation=45 * u.deg,
         center=(1, 1, 1) * u.m,
         size=(0.2, 0.3, 2) * u.m,
         private_attribute_id="2",
+    )
+    entity_box_same_name = Box(
+        name="Box",
+        axis_of_rotation=(1, 0, 0),
+        angle_of_rotation=45 * u.deg,
+        center=(1, 1, 1) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+        private_attribute_id="3",
     )
     volume_model1 = Solid(
         volumes=[entity_generic_volume],
@@ -544,7 +552,7 @@ def test_duplicate_entities_in_models():
         volumetric_heat_source=1.0 * u.W / u.m**3,
     )
     porous_medium_model2 = PorousMedium(
-        volumes=entity_box,
+        volumes=entity_box_same_name,
         darcy_coefficient=(3e5, 0, 0) / u.m**2,
         forchheimer_coefficient=(1, 0, 0) / u.m,
         volumetric_heat_source=1.0 * u.W / u.m**3,
@@ -554,6 +562,14 @@ def test_duplicate_entities_in_models():
     with SI_unit_system:
         params = SimulationParams(
             models=[volume_model1, surface_model1],
+        )
+
+    assert params
+
+    # Valid simulation params with the same Box name in the PorousMedium model
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[porous_medium_model1, porous_medium_model2],
         )
 
     assert params
@@ -569,15 +585,12 @@ def test_duplicate_entities_in_models():
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
         )
 
-    message = (
-        f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
-        f"Volume entity `{entity_box.name}` appears multiple times in `{porous_medium_model1.type}` model.\n"
-    )
+    message = f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
 
     # Invalid simulation params (Draft Entity)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
-            models=[rotation_model1, rotation_model2, porous_medium_model1, porous_medium_model2],
+            models=[rotation_model1, rotation_model2],
         )
 
 
