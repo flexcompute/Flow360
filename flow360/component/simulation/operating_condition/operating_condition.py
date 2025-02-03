@@ -417,10 +417,6 @@ class AerospaceCondition(MultiConstructorBaseModel):
             if self.reference_velocity_magnitude
             else self.velocity_magnitude
         )
-        print("Rho = ", self.thermal_state.density)
-        print("U = ", reference_velocity)
-        print("L = ", length_unit)
-        print("Mu = ", self.thermal_state.dynamic_viscosity)
         return (
             self.thermal_state.density
             * reference_velocity
