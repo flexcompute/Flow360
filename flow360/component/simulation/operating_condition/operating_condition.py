@@ -389,13 +389,44 @@ class AerospaceCondition(MultiConstructorBaseModel):
     @property
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
-        return self.velocity_magnitude / self.thermal_state.speed_of_sound
+        return (self.velocity_magnitude / self.thermal_state.speed_of_sound).value
 
     @pd.field_validator("alpha", "beta", "thermal_state", mode="after")
     @classmethod
     def _update_input_cache(cls, value, info: pd.ValidationInfo):
         setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
+
+    @pd.validate_call
+    def reynolds_number(self, length_unit: LengthType.Positive):
+        """
+        Computes the Reynolds number defined in Flow360 solver.
+        :math:`Re = \\rho_{\\infty} \\cdot U_{ref} \\cdot L_{grid}/\\mu_{\\infty}` where :math:`rho_{\\infty}` is the
+        freestream fluid density, :math:`U_{ref}` is the reference velocity magnitude or freestream velocity magnitude
+        if reference velocity magnitude is not set, :math:`L_{grid}` is physical length represented by unit length in
+        the given mesh/geometry file, and :math:`\\mu_{\\infty}` is the dynamic eddy viscosity of the fluid
+        of freestream.
+
+        Parameters
+        ----------
+        length_unit : LengthType.Positive
+            Physical length represented by unit length in the given mesh/geometry file.
+        """
+        reference_velocity = (
+            self.reference_velocity_magnitude
+            if self.reference_velocity_magnitude
+            else self.velocity_magnitude
+        )
+        print("Rho = ", self.thermal_state.density)
+        print("U = ", reference_velocity)
+        print("L = ", length_unit)
+        print("Mu = ", self.thermal_state.dynamic_viscosity)
+        return (
+            self.thermal_state.density
+            * reference_velocity
+            * length_unit
+            / self.thermal_state.dynamic_viscosity
+        ).value
 
 
 # pylint: disable=fixme
