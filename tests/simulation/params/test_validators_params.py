@@ -493,8 +493,16 @@ def test_incomplete_BC():
 
 
 def test_duplicate_entities_in_models():
-    entity_generic_volume = GenericVolume(name="Duplicate Volume", private_attribute_id="123")
-    entity_surface = Surface(name="Duplicate Surface", private_attribute_id="456")
+    entity_generic_volume = GenericVolume(name="Duplicate Volume")
+    entity_surface = Surface(name="Duplicate Surface")
+    entity_cylinder = Cylinder(
+        name="Duplicate Cylinder",
+        outer_radius=1 * u.cm,
+        height=1 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+        private_attribute_id="789",
+    )
     volume_model1 = Solid(
         volumes=[entity_generic_volume],
         material=aluminum,
@@ -504,6 +512,17 @@ def test_duplicate_entities_in_models():
     surface_model1 = SlipWall(entities=[entity_surface])
     surface_model2 = Wall(entities=[entity_surface])
     surface_model3 = surface_model1
+
+    rotation_model1 = Rotation(
+        volumes=[entity_cylinder],
+        name="innerRotation",
+        spec=AngleExpression("sin(t)"),
+    )
+    rotation_model2 = Rotation(
+        volumes=[entity_cylinder],
+        name="outerRotation",
+        spec=AngleExpression("sin(2t)"),
+    )
 
     # Valid simulation params
     with SI_unit_system:
@@ -522,6 +541,14 @@ def test_duplicate_entities_in_models():
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
+        )
+
+    message = f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
+
+    # Invalid simulation params (Draft Entity)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[rotation_model1, rotation_model2],
         )
 
 
