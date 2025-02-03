@@ -493,8 +493,8 @@ def test_incomplete_BC():
 
 
 def test_duplicate_entities_in_models():
-    entity_generic_volume = GenericVolume(name="Duplicate Volume")
-    entity_surface = Surface(name="Duplicate Surface")
+    entity_generic_volume = GenericVolume(name="Duplicate Volume", private_attribute_id="123")
+    entity_surface = Surface(name="Duplicate Surface", private_attribute_id="456")
     volume_model1 = Solid(
         volumes=[entity_generic_volume],
         material=aluminum,
