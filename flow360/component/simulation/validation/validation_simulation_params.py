@@ -4,14 +4,10 @@ validation for SimulationParams
 
 from typing import get_args
 
+from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
-from flow360.component.simulation.outputs.output_entities import (
-    Point,
-    PointArray,
-    Slice,
-)
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
@@ -21,8 +17,6 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
     GhostSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
@@ -68,9 +62,8 @@ def _check_duplicate_entities_in_models(params):
 
     dict_entity = {"Surface": {}, "Volume": {}}
 
-    def get_entity_key(entity):
-        draft_entity_types = (Box, Cylinder, Point, PointArray, Slice)
-        if isinstance(entity, draft_entity_types):
+    def _get_entity_key(entity):
+        if isinstance(entity, get_args(get_args(DraftEntityTypes))):
             return entity.private_attribute_id
         return entity.name
 
@@ -80,7 +73,7 @@ def _check_duplicate_entities_in_models(params):
             entity_type = "Surface"
         if isinstance(entity, _VolumeEntityBase):
             entity_type = "Volume"
-        entity_key = get_entity_key(entity=entity)
+        entity_key = _get_entity_key(entity=entity)
         entity_log = dict_entity[entity_type].get(
             entity_key, {"entity_name": entity.name, "model_list": []}
         )
