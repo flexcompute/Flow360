@@ -263,12 +263,11 @@ def test_x_sectional_results(mock_id, mock_response):
 def test_y_sectional_results(mock_id, mock_response):
     case = fl.Case(id=mock_id)
     y_slicing = case.results.y_slicing_force_distribution
-    # wait for postprocessing to finish
     y_slicing.wait()
 
-    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/fuselage", "blk-1/leftWing", "blk-1/rightWing"]
     variables = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
-    x_columns = ["Y"]
+    x_columns = ["Y", "stride"]
     total = [f"total{postfix}" for postfix in variables]
 
     all_headers = (
@@ -277,40 +276,70 @@ def test_y_sectional_results(mock_id, mock_response):
         + total
     )
 
-    assert (
-        y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
-    )  # this is numerical error introduced by method used in release-24.11
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 300
 
     y_slicing.filter(include="*Wing*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 280
 
+    y_slicing.reload_data()
     y_slicing.filter(exclude="*fuselage*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 280
 
-    y_slicing.filter(include=["fluid/leftWing", "fluid/rightWing"])
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == -0.017427309558312547
+    y_slicing.reload_data()
+    y_slicing.filter(include="*fuselage*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0010109367119019
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/fuselage"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 28
+
+    y_slicing.reload_data()
+    y_slicing.filter(include=["blk-1/leftWing", "blk-1/rightWing"])
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
+
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 280
+
+    y_slicing.reload_data()
+    y_slicing.filter(include=["blk-1/leftWing"])
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.000145645121735
+
+    boundaries = ["blk-1/leftWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 140

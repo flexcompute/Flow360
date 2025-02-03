@@ -73,6 +73,7 @@ _X = "X"
 _Y = "Y"
 _STRIDE = "stride"
 _CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
+_CD_PER_STRIP = "CD_per_strip"
 _CFx_PER_SPAN = "CFx_per_span"
 _CFz_PER_SPAN = "CFz_per_span"
 _CMy_PER_SPAN = "CMy_per_span"
@@ -694,6 +695,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
         exclude : list or single item, optional
             List of patterns or single pattern to exclude.
         """
+        self._preprocess()
         include = (
             [include] if include is not None and not isinstance(include, list) else include or []
         )
@@ -793,8 +795,23 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         CaseDownloadable.X_SLICING_FORCE_DISTRIBUTION.value, frozen=True
     )
 
-    _variables: List[str] = [_CUMULATIVE_CD_CURVE]
+    _variables: List[str] = [_CUMULATIVE_CD_CURVE, _CD_PER_STRIP]
+    _filter_when_zero = [_CD_PER_STRIP]
     _x_columns: List[str] = [_X]
+
+    def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
+        """
+        add _CD_PER_STRIP for filtering purpose and preprocess
+        """
+        for entity in self.entities:
+            header = f"{entity}_{_CUMULATIVE_CD_CURVE}"
+            cumulative_cd = np.array(self._values[header])
+            _cd_per_strip = np.diff(cumulative_cd)
+            cd_per_strip = np.insert(_cd_per_strip, 0, cumulative_cd[0])
+            header_to_add = f"{entity}_{_CD_PER_STRIP}"
+            self._values[header_to_add] = cd_per_strip.tolist()
+
+        super()._preprocess(filter_physical_steps_only=filter_physical_steps_only, include_time=include_time)
 
 
 class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
