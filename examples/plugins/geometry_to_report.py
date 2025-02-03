@@ -14,17 +14,18 @@ from flow360.plugins.report.report_items import (
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 
 # do project_id = None if running for the first time, than replace it with project ID to avoid re-creation of projects
-#project_id = "prj-7096e7c1-2d6e-4e0a-803d-da1d61a99d96"
+#project_id = "prj-33d0eab5-4795-42a1-b84f-e66e9fb8fc68"
 project_id = None
 
 if project_id is not None:
     project = fl.Project.from_cloud(project_id)
 else:
     project = fl.Project.from_file(
-        files=[Airplane.geometry], name="Python Project (Geometry, from file) - for Report"
+        files=[Airplane.geometry], name="Python Project (Geometry, from file) - for Report", solver_version="release-25.2.0"
     )
 
 geo = project.geometry
+geo.show_available_groupings(verbose_mode=True)
 geo.group_faces_by_tag("groupName")
 
 
@@ -140,7 +141,7 @@ for alpha in [0, 2, 4]:
     project.run_case(
         params=simulation_params(alpha),
         name=f"Case for report, alpha={alpha}",
-        solver_version="release-24.11.17",
+        solver_version="release-25.2.0",
     )
     cases.append(project.case)
 
