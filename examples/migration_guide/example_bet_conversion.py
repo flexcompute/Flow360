@@ -8,13 +8,13 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Change the current working directory to the script directory
 os.chdir(script_dir)
 
-BETDisk = BETDisk.read_single_v1_BETDisk(
+my_BETDisk = BETDisk.read_single_v1_BETDisk(
     file_path="./BET_tutorial_Flow360.json",
     mesh_unit=u.m,
     time_unit=u.s,
 )
 
-print(BETDisk)
+print(my_BETDisk)
 
 """
 with SI_unit_system:
@@ -22,7 +22,7 @@ with SI_unit_system:
         ...
         models=[
             ...
-            BETDisk(BETDisk),
+            my_BETDisk,
             ...
         ]
         ...
