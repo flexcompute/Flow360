@@ -12,7 +12,7 @@ from flow360.component.project_utils import (
     SurfaceMeshFile,
     VolumeMeshFile,
 )
-from flow360.component.simulation import services
+from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -80,6 +80,8 @@ from flow360.component.simulation.models.volume_models import (
     BETDiskChord,
     BETDiskSectionalPolar,
     BETDiskTwist,
+    C81File,
+    DFDCFile,
     Fluid,
     ForcePerArea,
     FromUserDefinedDynamics,
@@ -88,6 +90,8 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    XFOILFile,
+    XROTORFile,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -245,6 +249,10 @@ __all__ = [
     "SurfaceMesh",
     "UserDefinedFarfield",
     "Geometry",
+    "XROTORFile",
+    "DFDCFile",
+    "C81File",
+    "XFOILFile",
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
     "SurfaceSliceOutput",
@@ -252,4 +260,5 @@ __all__ = [
     "SurfaceMeshFile",
     "GeometryFiles",
     "SlaterPorousBleed",
+    "migration",
 ]
