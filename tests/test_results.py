@@ -234,8 +234,7 @@ def test_x_sectional_results(mock_id, mock_response):
     assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
     assert cd_curve.as_dataframe().shape[0] == 168
 
-
-    cd_on_fuselage = 0.0043524438673826 
+    cd_on_fuselage = 0.0043524438673826
     cd_curve.reload_data()
     cd_curve.filter(include="*fuselage*")
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_fuselage
@@ -258,6 +257,7 @@ def test_x_sectional_results(mock_id, mock_response):
     cd_curve.filter(exclude=["blk-1/leftWing", "blk-1/rightWing"])
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_fuselage
     assert cd_curve.as_dataframe().shape[0] == 300
+
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_y_sectional_results(mock_id, mock_response):

@@ -811,7 +811,9 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
             header_to_add = f"{entity}_{_CD_PER_STRIP}"
             self._values[header_to_add] = cd_per_strip.tolist()
 
-        super()._preprocess(filter_physical_steps_only=filter_physical_steps_only, include_time=include_time)
+        super()._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
 
 
 class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
