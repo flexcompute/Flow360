@@ -383,7 +383,6 @@ class Average(GenericOperation):
     start_time: Optional[pd.NonNegativeFloat] = None
     end_time: Optional[pd.NonNegativeFloat] = None
     fraction: Optional[pd.PositiveFloat] = pd.Field(None, le=1)
-    output_bool: pd.StrictBool = pd.Field(False)
     type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
     model_config = pd.ConfigDict(
@@ -408,8 +407,6 @@ class Average(GenericOperation):
             if self.fraction is None:
                 raise NotImplementedError('Only "fraction" average method implemented.')
             averages = data.get_averages(average_fraction=self.fraction)
-            if self.output_bool:
-                averages = averages.astype(bool)
             return data, cases, averages
 
         raise NotImplementedError(

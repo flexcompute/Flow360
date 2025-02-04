@@ -307,6 +307,8 @@ class Table(ReportItem):
         def make_callable(fmt):
             if callable(fmt):
                 return fmt
+            if fmt == "bool":
+                return lambda x: f"{bool(x)}"
             return lambda x, ff=fmt: f"{x:{ff}}"
 
         formatters = [make_callable(f) for f in formatters]  # pylint: disable=not-an-iterable
