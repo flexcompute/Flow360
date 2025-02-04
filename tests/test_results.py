@@ -290,9 +290,9 @@ def test_y_sectional_results(mock_id, mock_response):
 
     # make sure the data excluded in the previous filter operation can still be retrieved
     y_slicing.filter(include="*fuselage*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFz_per_span"] == 1.436235385808551646e-01
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFz_per_span"] == -0.0015624292568078
 
-    boundaries = ["fluid/fuselage"]
+    boundaries = ["blk-1/fuselage"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
