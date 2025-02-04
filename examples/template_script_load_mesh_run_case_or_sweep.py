@@ -21,7 +21,7 @@ def upload_mesh(file_path, project_name):
     Given a file path and name of the project, this function creates a project and uploads a mesh.
     """
     # length_unit should be 'm', 'mm', 'cm', 'inch' or 'ft'
-    project = fl.Project.from_file(file_path, length_unit="m", name=project_name)
+    project = fl.Project.from_file(files=fl.VolumeMeshFile(file_path), length_unit="m", name=project_name)
     log.info(f"The project id is {project.id}")
 
     return project
