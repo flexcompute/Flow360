@@ -235,7 +235,6 @@ def validate_model(
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
     ] = ALL,  # Fix implicit string concatenation
-    treat_as_file_content: bool = False,
 ) -> Tuple[Optional[SimulationParams], Optional[list], Optional[list]]:
     """
     Validate a params dict against the pydantic model.
@@ -248,9 +247,6 @@ def validate_model(
         The root item type for validation. If None then no context-aware validation is performed.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
         The validation level, default is ALL. Also a list can be provided, eg: ["SurfaceMesh", "VolumeMesh"]
-    treat_as_file_content: bool, optional
-        If True, the behavior of SimulationParams constructor is the same as if reading a file,
-        that includes version checks, and updater.
 
     Returns
     -------
@@ -261,11 +257,6 @@ def validate_model(
     validation_warnings : list or None
         A list of validation warnings if any occurred.
     """
-    unit_system_name = get_unit_system_name_from_simulation_params_dict(params_as_dict)
-    unit_system = init_unit_system(
-        unit_system_name
-    )  # Initialize unit system (to be implemented when supported)
-
     validation_errors = None
     validation_warnings = None
     validated_param = None
@@ -278,13 +269,8 @@ def validate_model(
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
-        if treat_as_file_content is True:
-            with ValidationLevelContext(validation_levels_to_use):
-                validated_param = SimulationParams(file_content=params_as_dict, use_updater=True)
-        else:
-            with unit_system:
-                with ValidationLevelContext(validation_levels_to_use):
-                    validated_param = SimulationParams(use_updater=True, **params_as_dict)
+        with ValidationLevelContext(validation_levels_to_use):
+            validated_param = SimulationParams(file_content=params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught

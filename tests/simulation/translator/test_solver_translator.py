@@ -174,7 +174,7 @@ def get_om6Wing_tutorial_param():
                 SurfaceOutput(
                     entities=[my_wall, my_symmetry_plane, my_freestream],
                     output_format="paraview",
-                    output_fields=["nuHat"],
+                    output_fields=["Cp"],
                 ),
             ],
         )
@@ -416,7 +416,7 @@ def test_2dcrm_tutorial_temperature_f(get_2dcrm_tutorial_param_deg_f):
 
 
 def test_operating_condition(get_2dcrm_tutorial_param):
-    converted = get_2dcrm_tutorial_param.preprocess(mesh_unit=1 * u.m)
+    converted = get_2dcrm_tutorial_param._preprocess(mesh_unit=1 * u.m)
     assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
     assertions.assertAlmostEqual(
         converted.operating_condition.thermal_state.dynamic_viscosity.value,

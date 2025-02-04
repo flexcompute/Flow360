@@ -83,7 +83,7 @@ def create_XV15HoverMRF_param(rotation_cylinder):
             outputs=[
                 VolumeOutput(
                     output_format="paraview",
-                    output_fields=["primitiveVars", "Mach", "qcriterion", "nuHat"],
+                    output_fields=["primitiveVars", "Mach", "qcriterion"],
                 ),
                 SurfaceOutput(
                     entities=[my_wall],

@@ -162,7 +162,7 @@ def test_simulation_params_serialization(get_the_param):
 
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
-    converted = get_the_param.preprocess(mesh_unit=10 * u.m)
+    converted = get_the_param._preprocess(mesh_unit=10 * u.m)
 
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
@@ -323,6 +323,10 @@ def test_mach_muref_op_cond():
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
+    assertions.assertAlmostEqual(
+        condition.flow360_reynolds_number(length_unit=1 * u.m), (1.0 / 4e-8) * condition.mach
+    )  # 1/muRef * freestream mach
+
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = operating_condition_from_mach_muref(
             mach=0.2,
@@ -367,7 +371,7 @@ def test_delta_temperature_scaling():
     reference_temperature = param.operating_condition.thermal_state.temperature.to("K")
 
     scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
-    processed_param = param.preprocess(mesh_unit=1 * u.m)
+    processed_param = param._preprocess(mesh_unit=1 * u.m)
 
     assert (
         processed_param.operating_condition.thermal_state.temperature_offset.value

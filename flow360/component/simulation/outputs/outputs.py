@@ -747,7 +747,8 @@ class AeroAcousticOutput(Flow360BaseModel):
     ...     ],
     ... )
 
-    Using permeable surfaces:
+    If using permeable surfaces:
+
     >>> fl.AeroAcousticOutput(
     ...     observers=[
     ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
