@@ -89,7 +89,7 @@ def launch_sweep(params, project):
 
         # launch the case
         project.run_case(params=params, name=f"{alpha_angle}_case ")
-        log.info(f"case id is {project.case.id} with {alpha_angle=} ")
+        log.info(f"The case ID is: {project.case.id} with {alpha_angle=} ")
 
 
 ######################################################################################################################
