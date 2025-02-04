@@ -400,7 +400,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     @pd.validate_call
     def flow360_reynolds_number(self, length_unit: LengthType.Positive):
         """
-        Computes the Reynolds number defined in Flow360 solver.
+        Computes length_unit based Reynolds number.
         :math:`Re = \\rho_{\\infty} \\cdot U_{ref} \\cdot L_{grid}/\\mu_{\\infty}` where
         - :math:`rho_{\\infty}` is the freestream fluid density.
         - :math:`U_{ref}` is the reference velocity magnitude or freestream velocity magnitude if reference
