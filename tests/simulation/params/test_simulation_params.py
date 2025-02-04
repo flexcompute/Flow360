@@ -323,6 +323,10 @@ def test_mach_muref_op_cond():
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
+    assertions.assertAlmostEqual(
+        condition.flow360_reynolds_number(length_unit=1 * u.m), (1.0 / 4e-8) * condition.mach
+    )  # 1/muRef * freestream mach
+
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = operating_condition_from_mach_muref(
             mach=0.2,
