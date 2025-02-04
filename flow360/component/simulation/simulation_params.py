@@ -66,6 +66,7 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
     _check_output_fields_valid_given_turbulence_model,
+    _check_unsteadiness_to_use_aero_acoustics,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_and_add_noninertial_reference_frame_flag,
@@ -414,6 +415,11 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_hybrid_model(self):
         """Only allow hybrid RANS-LES output field for unsteady simulations"""
         return _check_unsteadiness_to_use_hybrid_model(self)
+
+    @pd.model_validator(mode="after")
+    def check_unsteadiness_to_use_aero_acoustics(self):
+        """Only allow Aero acoustics when using unsteady simulation"""
+        return _check_unsteadiness_to_use_aero_acoustics(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
