@@ -695,7 +695,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
         exclude : list or single item, optional
             List of patterns or single pattern to exclude.
         """
-        self._preprocess()
+        self.reload_data()
         include = (
             [include] if include is not None and not isinstance(include, list) else include or []
         )
@@ -780,6 +780,9 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
         super()._preprocess(
             filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
         )
+
+    def reload_data(self, filter_physical_steps_only: bool = True, include_time: bool = True):
+        return super().reload_data(filter_physical_steps_only, include_time)
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
