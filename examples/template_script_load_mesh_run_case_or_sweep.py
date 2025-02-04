@@ -105,7 +105,7 @@ def main():
 
     # Or as an alternative, if you want to run from an existing project:
     # project = fl.Project.from_cloud(
-    #     'prj-XXXXXXXXXX')  # where the prj-XXXXXX ID can be saved from a previously created project or read off the WEBUI
+    #     'prj-XXXXXXXXXX')  # where prj-XXXXXXXXXX is an ID that can be saved from a previously created project or read off the WEBUI
 
     vm = project.volume_mesh  # get the volume mesh entity associated with that project.
     log.info(f"The volume mesh contains the following boundaries:{vm.boundary_names}")
