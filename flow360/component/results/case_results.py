@@ -806,8 +806,7 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         for entity in self.entities:
             header = f"{entity}_{_CUMULATIVE_CD_CURVE}"
             cumulative_cd = np.array(self._values[header])
-            _cd_per_strip = np.diff(cumulative_cd)
-            cd_per_strip = np.insert(_cd_per_strip, 0, cumulative_cd[0])
+            cd_per_strip = np.insert(np.diff(cumulative_cd), 0, cumulative_cd[0])
             header_to_add = f"{entity}_{_CD_PER_STRIP}"
             self._values[header_to_add] = cd_per_strip.tolist()
 
