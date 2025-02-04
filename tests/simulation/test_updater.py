@@ -12,6 +12,7 @@ from flow360.component.simulation.framework.updater import (
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.services import validate_model
+from flow360.component.simulation.validation.validation_context import ALL
 
 
 @pytest.fixture(autouse=True)
@@ -306,4 +307,4 @@ def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0
     with open("../data/simulation/simulation_24_11_0.json", "r") as fp:
         params = json.load(fp)
-    validate_model(params_as_dict=params, root_item_type="VolumeMesh", validation_level=All)
+    validate_model(params_as_dict=params, root_item_type="VolumeMesh", validation_level=ALL)
