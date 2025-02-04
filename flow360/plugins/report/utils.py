@@ -5,6 +5,7 @@ report utils, utils.py
 from __future__ import annotations
 
 import ast
+import math
 import os
 import posixpath
 import re
@@ -51,11 +52,15 @@ class RequirementItem(pd.BaseModel):
 # pylint: disable=protected-access
 _requirements_mapping = {
     "params": RequirementItem(filename="simulation.json"),
+    "cfl": RequirementItem(filename=case_results.CFLResultCSVModel()._remote_path()),
     "total_forces": RequirementItem(
         filename=case_results.TotalForcesResultCSVModel()._remote_path()
     ),
     "surface_forces": RequirementItem(
         filename=case_results.SurfaceForcesResultCSVModel()._remote_path()
+    ),
+    "linear_residuals": RequirementItem(
+        filename=case_results.LinearResidualsResultCSVModel()._remote_path()
     ),
     "nonlinear_residuals": RequirementItem(
         filename=case_results.NonlinearResidualsResultCSVModel()._remote_path()
@@ -456,7 +461,47 @@ class Expression(GenericOperation):
         Parses the given expression and returns a set of variable names used in it.
         """
         tree = ast.parse(expr, mode="eval")
-        return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+
+        class VariableVisitor(ast.NodeVisitor):
+            """
+            A custom NodeVisitor class that visits nodes in an abstract syntax tree (AST)
+            to collect variable names that are not part of known functions.
+            """
+
+            # pylint: disable=invalid-name
+            def __init__(self):
+                self.variables = set()
+                self.known_functions = {name for name in dir(math) if callable(getattr(math, name))}
+
+            def visit_Name(self, node):
+                """
+                Visit a Name node and add the variable name to the variables set if it's not
+                a known function.
+
+                Args:
+                    node (ast.Name): The Name node to visit.
+                """
+
+                if isinstance(node.ctx, ast.Load) and node.id not in self.known_functions:
+                    self.variables.add(node.id)
+
+            def visit_Call(self, node):
+                """
+                Visit a Call node and recursively visit its arguments and keyword arguments
+                to find any additional variable names.
+
+                Args:
+                    node (ast.Call): The Call node to visit.
+                """
+                for arg in node.args:
+                    self.visit(arg)
+                for keyword in node.keywords:
+                    self.visit(keyword.value)
+
+        visitor = VariableVisitor()
+        visitor.visit(tree)
+
+        return visitor.variables
 
     @classmethod
     def evaluate_expression(
@@ -485,7 +530,6 @@ class Expression(GenericOperation):
             )
 
         local_dict = {var: df[var].values for var in expr_variables}
-
         try:
             result = ne.evaluate(expr, local_dict)
         except Exception as e:
@@ -534,6 +578,9 @@ class DataItem(Flow360BaseModel):
     title : str, optional
         A human-readable title for this data item. If omitted, the title defaults to the
         last component of the `data` path.
+    include : list[str], optional
+        A list of boundaries to include in the retrieved data (e.g., certain surfaces). Only
+        applicable to some data types, such as surface forces or slicing force distributions.
     exclude : list[str], optional
         A list of boundaries to exclude from the retrieved data (e.g., certain surfaces). Only
         applicable to some data types, such as surface forces or slicing force distributions.
@@ -548,6 +595,7 @@ class DataItem(Flow360BaseModel):
 
     data: str
     title: Optional[str] = None
+    include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     operations: Optional[List[OperationTypes]] = None
     variables: Optional[List[Variable]] = None
@@ -612,8 +660,8 @@ class DataItem(Flow360BaseModel):
 
         source = data_from_path(case, self.data)
         if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            if self.exclude is not None:
-                source.filter(exclude=self.exclude)
+            if self.exclude is not None or self.include is not None:
+                source.filter(include=self.include, exclude=self.exclude)
 
             source, new_variable_name = self._preprocess_data(case)
             if len(self.operations) > 0:

@@ -228,19 +228,16 @@ def test_x_sectional_results(mock_id, mock_response):
     assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
     assert cd_curve.as_dataframe().shape[0] == 168
 
-    cd_curve.reload_data()
     cd_curve.filter(exclude="*fuselage*")
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_both_wings
     assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
     assert cd_curve.as_dataframe().shape[0] == 168
 
     cd_on_fuselage = 0.0043524438673826
-    cd_curve.reload_data()
     cd_curve.filter(include="*fuselage*")
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_fuselage
     assert cd_curve.as_dataframe().shape[0] == 300
 
-    cd_curve.reload_data()
     cd_curve.filter(include=["blk-1/leftWing", "blk-1/rightWing"])
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_both_wings
 
@@ -253,7 +250,6 @@ def test_x_sectional_results(mock_id, mock_response):
     assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
     assert cd_curve.as_dataframe().shape[0] == 168
 
-    cd_curve.reload_data()
     cd_curve.filter(exclude=["blk-1/leftWing", "blk-1/rightWing"])
     assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_fuselage
     assert cd_curve.as_dataframe().shape[0] == 300
@@ -292,7 +288,18 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
     assert y_slicing.as_dataframe().shape[0] == 280
 
-    y_slicing.reload_data()
+    # make sure the data excluded in the previous filter operation can still be retrieved
+    y_slicing.filter(include="*fuselage*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFz_per_span"] == -0.0015624292568078
+
+    boundaries = ["blk-1/fuselage"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+
     y_slicing.filter(exclude="*fuselage*")
     assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
 
@@ -305,7 +312,6 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
     assert y_slicing.as_dataframe().shape[0] == 280
 
-    y_slicing.reload_data()
     y_slicing.filter(include="*fuselage*")
     assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0010109367119019
 
@@ -318,7 +324,6 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
     assert y_slicing.as_dataframe().shape[0] == 28
 
-    y_slicing.reload_data()
     y_slicing.filter(include=["blk-1/leftWing", "blk-1/rightWing"])
     assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
 
@@ -331,7 +336,6 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
     assert y_slicing.as_dataframe().shape[0] == 280
 
-    y_slicing.reload_data()
     y_slicing.filter(include=["blk-1/leftWing"])
     assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.000145645121735
 
