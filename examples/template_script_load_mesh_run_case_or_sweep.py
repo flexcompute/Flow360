@@ -109,7 +109,7 @@ def main():
 
     vm = project.volume_mesh  # get the volume mesh entity associated with that project.
     log.info(f"The volume mesh contains the following boundaries:{vm.boundary_names}")
-    log.info(f"The mesh id is {vm.id}")
+    log.info(f"The volume mesh ID is: {vm.id}")
 
     params = make_params(vm)  # define the run params used to launch the run
 
