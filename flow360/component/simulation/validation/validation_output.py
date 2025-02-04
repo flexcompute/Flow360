@@ -5,6 +5,8 @@ Validation for output parameters
 from typing import List, Literal, Union, get_args, get_origin
 
 from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.outputs.outputs import AeroAcousticOutput
+from flow360.component.simulation.time_stepping.time_stepping import Steady
 
 
 def _check_output_fields(params):
@@ -107,4 +109,21 @@ def _check_output_fields_valid_given_turbulence_model(params):
                         f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a valid"
                         f" iso field when using turbulence model: {turbulence_model}."
                     )
+    return params
+
+
+def _check_unsteadiness_to_use_aero_acoustics(params):
+
+    if not params.outputs:
+        return params
+
+    if params.time_stepping is not None and isinstance(params.time_stepping, Steady):
+
+        for output_index, output in enumerate(params.outputs):
+            if isinstance(output, AeroAcousticOutput):
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}:"
+                    "`AeroAcousticOutput` can only be activated with `Unsteady` simulation."
+                )
+    # Not running case or is using unsteady
     return params

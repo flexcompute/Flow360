@@ -36,6 +36,34 @@ def test_aeroacoustic_observer_unit_validator():
         )
 
 
+def test_unsteadiness_to_use_aero_acoustics():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[1] AeroAcousticOutput:`AeroAcousticOutput` can only be activated with `Unsteady` simulation."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(turbulence_model_solver=NoneSolver())],
+                outputs=[
+                    IsosurfaceOutput(
+                        name="iso",
+                        entities=[Isosurface(name="tmp", field="mut", iso_value=1)],
+                        output_fields=["Cp"],
+                    ),
+                    AeroAcousticOutput(
+                        name="test",
+                        observers=[
+                            fl.Observer(position=[0.2, 0.02, 0.03] * u.mm, group_name="0"),
+                            fl.Observer(position=[0.0001, 0.02, 0.03] * u.mm, group_name="1"),
+                        ],
+                    ),
+                ],
+                time_stepping=fl.Steady(),
+            )
+
+
 def test_turbulence_enabled_output_fields():
     with pytest.raises(
         ValueError,
