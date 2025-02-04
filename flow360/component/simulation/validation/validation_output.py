@@ -117,7 +117,7 @@ def _check_unsteadiness_to_use_aero_acoustics(params):
     if not params.outputs:
         return params
 
-    if params.time_stepping is not None and isinstance(params.time_stepping, Steady):
+    if isinstance(params.time_stepping, Steady):
 
         for output_index, output in enumerate(params.outputs):
             if isinstance(output, AeroAcousticOutput):
