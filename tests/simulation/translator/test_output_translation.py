@@ -891,7 +891,11 @@ def aeroacoustic_output_permeable_config():
 
 def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeable_config):
     with SI_unit_system:
-        param = SimulationParams(outputs=aeroacoustic_output_config[0])
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=aeroacoustic_output_config[0],
+            time_stepping=Unsteady(steps=1, step_size=0.1),
+        )
     translated = {"boundaries": {}}
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
@@ -901,7 +905,11 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     )
 
     with SI_unit_system:
-        param = SimulationParams(outputs=aeroacoustic_output_permeable_config[0])
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=aeroacoustic_output_permeable_config[0],
+            time_stepping=Unsteady(steps=1, step_size=0.1),
+        )
     translated = {"boundaries": {}}
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
