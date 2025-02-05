@@ -15,6 +15,9 @@ from flow360.component.simulation.meshing_param.volume_params import AutomatedFa
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
 # pylint: disable=unused-import
+from flow360.component.simulation.models.volume_models import (
+    BETDisk,  # For parse_model_dict
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     GenericReferenceCondition,  # For parse_model_dict
 )
