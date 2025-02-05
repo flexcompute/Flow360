@@ -13,6 +13,8 @@ from flow360.plugins.report.report_items import (
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
 
+fl.Env.dev.active()
+
 # do project_id = None if running for the first time, than replace it with project ID to avoid re-creation of projects
 #project_id = "prj-33d0eab5-4795-42a1-b84f-e66e9fb8fc68"
 project_id = None
@@ -21,7 +23,7 @@ if project_id is not None:
     project = fl.Project.from_cloud(project_id)
 else:
     project = fl.Project.from_file(
-        files=[Airplane.geometry], name="Python Project (Geometry, from file) - for Report", solver_version="release-25.2.0"
+        files=[Airplane.geometry], name="Python Project (Geometry, from file) - for Report", solver_version="testPDFReport-25.2.0"
     )
 
 geo = project.geometry
@@ -141,7 +143,8 @@ for alpha in [0, 2, 4]:
     project.run_case(
         params=simulation_params(alpha),
         name=f"Case for report, alpha={alpha}",
-        solver_version="release-25.2.0",
+        solver_version="testPDFReport-25.2.0",
+        use_beta_mesher = True,
     )
     cases.append(project.case)
 
@@ -484,7 +487,7 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     f"Geometry to report - Report, dpi=150",
     cases,
-    solver_version="release-25.2.0",
+    solver_version="testPDFReport-25.2.0",
 )
 
 report.wait()
