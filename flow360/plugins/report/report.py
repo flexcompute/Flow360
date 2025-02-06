@@ -289,6 +289,7 @@ class ReportTemplate(Flow360BaseModel):
             shutter_url=shutter_url,
             shutter_access_token=shutter_access_token,
             shutter_screenshot_process_function=shutter_screenshot_process_function,
+            use_cache=False
         )
         case_context = context.model_copy(
             update={

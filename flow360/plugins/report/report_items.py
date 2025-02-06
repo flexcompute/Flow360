@@ -1414,7 +1414,7 @@ class Chart3D(Chart):
             shutter_requests.append(self._get_shutter_request(case))
 
         img_files = Shutter(**make_shutter_context(context)).get_images(
-            self.fig_name, shutter_requests, regenerate_if_not_found=False
+            self.fig_name, shutter_requests, regenerate_if_not_found=True
         )
         # taking "first" image from returned images as UVF-shutter
         # supports many screenshots generation on one call

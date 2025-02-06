@@ -591,6 +591,7 @@ def make_shutter_context(context):
         "url": context.shutter_url,
         "access_token": context.shutter_access_token,
         "screenshot_process_function": context.shutter_screenshot_process_function,
+        "use_cache": context.use_cache
     }
     context_data = {k: v for k, v in context_data.items() if v is not None}
     return context_data
@@ -909,6 +910,8 @@ class Shutter(Flow360BaseModel):
     def get_images(
         self, fig_name, data: List[ScenesData], regenerate_if_not_found: bool = True
     ) -> dict[str, List]:
+        print(f"DEBUG============= use_cache is = {self.use_cache}")
+        print(f"DEBUG============= regenreate_if_not_found is = {regenerate_if_not_found}")
         """
         Generates or retrieves cached image files for scenes.
 
