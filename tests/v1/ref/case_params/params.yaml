@@ -19,7 +19,7 @@ geometry:
     refArea:
         units: 2*m**2
         value: 1.0
-hash: 67473d2adcf3d746082cc9aba924b72b36a00185e893523557f3f5c6bff6eeba
+hash: ba12a22f75393df7d6bd6082340eeef7354e07739f981aaa0faade5367d5f361
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10
@@ -108,7 +108,7 @@ timeStepping:
     timeStepSize: inf
 unitSystem:
     name: SI
-version: 24.11.8
+version: 24.11.9
 volumeOutput:
     animationFrequency: -1
     animationFrequencyOffset: 0
