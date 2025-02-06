@@ -1,0 +1,16 @@
+{
+	"unitSystem": {
+		"name": "Flow360"
+	},
+	"monitorOutput": {
+		"monitors": {
+			"R1": {
+				"type": "probe",
+				"monitorLocations": [],
+				"outputFields": [
+					"primitiveVars"
+				]
+			}
+		}
+	}
+}
