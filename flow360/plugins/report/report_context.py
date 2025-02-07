@@ -22,6 +22,8 @@ class ReportContext(pd.BaseModel):
     section_func: Union[Type[Section], Type[Subsection]] = Section
     case_by_case: bool = False
     data_storage: str = "."
+    process_screenshot_in_parallel: bool = True
+
     shutter_url: Optional[str] = None
     shutter_access_token: Optional[str] = None
     shutter_screenshot_process_function: Optional[Callable] = None

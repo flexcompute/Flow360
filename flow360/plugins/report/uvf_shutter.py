@@ -23,6 +23,7 @@ from flow360.exceptions import (
     Flow360WebNotFoundError,
 )
 from flow360.log import log
+from flow360.plugins.report.report_context import ReportContext
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -582,7 +583,7 @@ def combine(model_a, model_b, key_to_combine, eq: callable):
     return model_a, False
 
 
-def make_shutter_context(context):
+def make_shutter_context(context: ReportContext):
     """
     Extracts relevant data for shutter from context
     """
@@ -591,6 +592,7 @@ def make_shutter_context(context):
         "url": context.shutter_url,
         "access_token": context.shutter_access_token,
         "screenshot_process_function": context.shutter_screenshot_process_function,
+        "process_screenshot_in_parallel": context.process_screenshot_in_parallel,
     }
     context_data = {k: v for k, v in context_data.items() if v is not None}
     return context_data
@@ -830,11 +832,14 @@ class Shutter(Flow360BaseModel):
         URL endpoint for the shutter service, defaults to "https://shutter-api.{Env.current.domain}".
     use_cache : bool
         Whether to force generate data or use cached data
+    process_screenshot_in_parallel : bool
+        Whether to process screenshots concurrently
     """
 
     data_storage: str = "."
     url: str = pd.Field(default_factory=lambda: f"https://shutter-api.{Env.current.domain}")
     use_cache: bool = True
+    process_screenshot_in_parallel: bool = True
     access_token: Optional[str] = None
     screenshot_process_function: Optional[Callable] = None
 
@@ -906,6 +911,7 @@ class Shutter(Flow360BaseModel):
 
         return img_files
 
+    # pylint: disable=too-many-branches
     def get_images(
         self, fig_name, data: List[ScenesData], regenerate_if_not_found: bool = True
     ) -> dict[str, List]:
@@ -959,6 +965,12 @@ class Shutter(Flow360BaseModel):
                 process_function = self.screenshot_process_function
             else:
                 process_function = self._get_3d_images_api
-            img_files_generated = asyncio.run(process_function(screenshots))
+
+            if self.process_screenshot_in_parallel:
+                img_files_generated = asyncio.run(process_function(screenshots))
+            else:
+                for screenshot in screenshots:
+                    img_files_generated_single_run = asyncio.run(process_function([screenshot]))
+                    img_files_generated.update(img_files_generated_single_run)
 
         return {**img_files_generated, **cached_files}
