@@ -12,7 +12,7 @@ from flow360.component.simulation.outputs.outputs import ProbeOutput
 
 
 @validate_call
-def read_all_v0_monitors(*, file_path: str, length_unit):
+def read_all_v0_monitors(*, file_path: str, mesh_unit):
     """
     Read in the provided Flow360 ProbeOutput config.
 
@@ -58,7 +58,7 @@ def read_all_v0_monitors(*, file_path: str, length_unit):
 
         output_fields = group_settings["outputFields"]
         for location in group_settings["monitorLocations"]:
-            entities.append(Point(name=f"Point-{point_idx}", location=location * length_unit))
+            entities.append(Point(name=f"Point-{point_idx}", location=location * mesh_unit))
             point_idx += 1
         monitor_list.append(
             ProbeOutput(name=monitor_group_name, entities=entities, output_fields=output_fields)

@@ -10,7 +10,6 @@ from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.migration.ProbeOutput import read_all_v0_monitors
 from flow360.component.simulation.outputs.outputs import ProbeOutput
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import flow360_length_unit
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +21,7 @@ def test_flow360_monitor_convert():
 
     monitor_list = read_all_v0_monitors(
         file_path="./data/monitor_flow360.json",
-        length_unit=flow360_length_unit,
+        mesh_unit=u.m,
     )
     assert isinstance(monitor_list, list)
     assert len(monitor_list) == 2
@@ -34,9 +33,19 @@ def test_flow360_monitor_convert():
 
     with u.SI_unit_system:
         params = SimulationParams(outputs=[*monitor_list])
+
+    params_dict = json.loads(
+        params.model_dump_json(
+            exclude={
+                "type_name",
+                "private_attribute_constructor",
+                "private_attribute_input_cache",
+            }
+        )
+    )
     with open("./ref/ref_monitor.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
-    compare_values(params.model_dump(), ref_dict)
+    assert compare_values(params_dict, ref_dict, ignore_keys=["private_attribute_id"])
 
     with pytest.raises(
         ValueError,
@@ -46,7 +55,7 @@ def test_flow360_monitor_convert():
     ):
         read_all_v0_monitors(
             file_path="./data/monitor_flow360_incomplete1.json",
-            length_unit=flow360_length_unit,
+            mesh_unit=u.m,
         )
 
     with pytest.raises(
@@ -57,5 +66,5 @@ def test_flow360_monitor_convert():
     ):
         read_all_v0_monitors(
             file_path="./data/monitor_flow360_incomplete2.json",
-            length_unit=flow360_length_unit,
+            mesh_unit=u.m,
         )
