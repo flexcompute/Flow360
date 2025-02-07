@@ -542,10 +542,12 @@ def test_boundaries():
                     surfaces=Surface(name="boundary_name_F"),
                     spec=Mach(0.3),
                 ),
-                Outflow(
+                Wall(
                     name="slater-porous-bleed",
                     surfaces=Surface(name="boundary_name_G"),
-                    spec=SlaterPorousBleed(static_pressure=12.0 * u.psi, porosity=0.49),
+                    wall_velocity_model=SlaterPorousBleed(
+                        static_pressure=12.0 * u.psi, porosity=0.49
+                    ),
                 ),
             ],
         )

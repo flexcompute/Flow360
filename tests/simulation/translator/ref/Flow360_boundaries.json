@@ -26,9 +26,14 @@
             "MachNumber": 0.3
         },
 	"boundary_name_G" : {
-	    "type" : "SlaterPorousBleed",
-	    "staticPressureRatio" :  0.8165514936615943,
-	    "porosity" : 0.49
+	    "type" : "NoSlipWall",
+	    "wallVelocityModel" : {
+		"type" : "SlaterPorousBleed",
+		"staticPressureRatio" :  0.8165514936615943,
+		"porosity" : 0.49
+	    },
+	    "heatFlux" : 0.0,
+	    "roughnessHeight" : 0.0
 	}
     },
     "freestream": {

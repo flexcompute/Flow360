@@ -768,6 +768,15 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
         if model.velocity is not None:
             boundary["velocity"] = list(model_dict["velocity"])
+        if model.wall_velocity_model is not None:
+            if isinstance(model.wall_velocity_model, SlaterPorousBleed):
+                boundary["wallVelocityModel"] = {}
+                boundary["wallVelocityModel"]["staticPressureRatio"] = (
+                    model.wall_velocity_model.static_pressure.value
+                    * op_acousitc_to_static_pressure_ratio
+                )
+                boundary["wallVelocityModel"]["porosity"] = model.wall_velocity_model.porosity
+                boundary["wallVelocityModel"]["type"] = model.wall_velocity_model.type_name
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
@@ -794,12 +803,6 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
             boundary["staticPressureRatio"] = (
                 model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
             )
-        elif isinstance(model.spec, SlaterPorousBleed):
-            boundary["type"] = "SlaterPorousBleed"
-            boundary["staticPressureRatio"] = (
-                model_dict["spec"]["staticPressure"] * op_acousitc_to_static_pressure_ratio
-            )
-            boundary["porosity"] = model_dict["spec"]["porosity"]
         elif isinstance(model.spec, Mach):
             boundary["type"] = "SubsonicOutflowMach"
             boundary["MachNumber"] = model_dict["spec"]["value"]
