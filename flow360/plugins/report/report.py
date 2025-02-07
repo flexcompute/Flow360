@@ -260,6 +260,7 @@ class ReportTemplate(Flow360BaseModel):
         shutter_url: str = None,
         shutter_access_token: str = None,
         shutter_screenshot_process_function: Callable = None,
+        process_screenshot_in_parallel: bool = True,
     ) -> None:
         """
         Generates a PDF report for a specified set of cases.
@@ -286,6 +287,7 @@ class ReportTemplate(Flow360BaseModel):
             cases=cases,
             doc=report_doc.doc,
             data_storage=data_storage,
+            process_screenshot_in_parallel=process_screenshot_in_parallel,
             shutter_url=shutter_url,
             shutter_access_token=shutter_access_token,
             shutter_screenshot_process_function=shutter_screenshot_process_function,
