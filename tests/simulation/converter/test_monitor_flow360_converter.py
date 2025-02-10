@@ -42,15 +42,6 @@ def test_flow360_monitor_convert():
             "private_attribute_input_cache",
         },
     )
-    # params_dict = json.loads(
-    #     params.model_dump_json(
-    #         exclude={
-    #             "type_name",
-    #             "private_attribute_constructor",
-    #             "private_attribute_input_cache",
-    #         }
-    #     )
-    # )
     with open("./ref/ref_monitor.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
     assert compare_values(params_dict, ref_dict, ignore_keys=["private_attribute_id"])
