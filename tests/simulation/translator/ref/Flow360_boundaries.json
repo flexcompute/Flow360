@@ -30,7 +30,8 @@
 	    "wallVelocityModel" : {
 		"type" : "SlaterPorousBleed",
 		"staticPressureRatio" :  0.8165514936615943,
-		"porosity" : 0.49
+		"porosity" : 0.49,
+		"initialStep" : 20
 	    },
 	    "heatFlux" : 0.0,
 	    "roughnessHeight" : 0.0

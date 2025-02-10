@@ -777,6 +777,9 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
                 )
                 boundary["wallVelocityModel"]["porosity"] = model.wall_velocity_model.porosity
                 boundary["wallVelocityModel"]["type"] = model.wall_velocity_model.type_name
+                boundary["wallVelocityModel"][
+                    "initialStep"
+                ] = model.wall_velocity_model.initial_step
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
