@@ -29,6 +29,7 @@ from flow360.component.simulation.services import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.component.simulation.validation.validation_context import (
+    ALL,
     CASE,
     SURFACE_MESH,
     VOLUME_MESH,
@@ -643,7 +644,7 @@ def test_simulation_to_case_vm_workflow():
     }
 
     params, _, _ = validate_model(
-        params_as_dict=param_data, root_item_type="Geometry", validation_level=CASE
+        params_as_dict=param_data, root_item_type="Geometry", validation_level=ALL
     )
 
     with pytest.raises(ValueError, match=r"input_params must be of type SimulationParams"):
