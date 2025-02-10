@@ -4,15 +4,17 @@
 
 import json
 import os
+from typing import List
 
 from pydantic import validate_call
 
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import ProbeOutput
+from flow360.log import log
 
 
 @validate_call
-def read_all_v0_monitors(*, file_path: str, mesh_unit):
+def read_all_v0_monitors(*, file_path: str, mesh_unit) -> List[ProbeOutput]:
     """
     Read in the provided Flow360 ProbeOutput config.
 
@@ -28,15 +30,15 @@ def read_all_v0_monitors(*, file_path: str, mesh_unit):
         data_dict = json.load(file)
 
     if data_dict.get("monitorOutput") is None:
-        print("Input file does not contain `monitorOutput` key.")
+        log.warning("Input file does not contain `monitorOutput` key.")
         return monitor_list
 
     if data_dict["monitorOutput"].get("monitors") is None:
-        print("Input file does not contain the `monitors` key in the monitorOutput setting.")
+        log.warning("Input file does not contain the `monitors` key in the monitorOutput setting.")
         return monitor_list
 
     flow360_monitor_dict = data_dict["monitorOutput"]["monitors"]
-    point_idx = 1
+    point_idx = 0
 
     for monitor_group_name, group_settings in flow360_monitor_dict.items():
         if group_settings["type"] != "probe":

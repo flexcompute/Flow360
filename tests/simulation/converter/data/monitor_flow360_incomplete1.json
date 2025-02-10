@@ -1,7 +1,4 @@
 {
-	"unitSystem": {
-		"name": "Flow360"
-	},
 	"monitorOutput": {
 		"monitors": {
 			"R1": {

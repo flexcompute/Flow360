@@ -1,7 +1,4 @@
 {
-	"unitSystem": {
-		"name": "Flow360"
-	},
 	"monitorOutput": {
 		"monitors": {
 			"R1": {
@@ -39,7 +36,22 @@
 				"outputFields": [
 					"mut"
 				]
+			},
+			"MySurfaceIntegral": {
+				"type": "surfaceIntegral",
+				"surfaces": [
+					"NoSlipWall1",
+					"NoSlipWall2"
+				],
+				"outputFields": [ "Area" ]
 			}
 		}
-	}
+	},
+	"userDefinedFields": [
+		{
+			"name": "Area",
+			"expression": "Area = magnitude(nodeNormals);",
+			"comment":"computes nodal surface area."
+		}
+	]
 }
