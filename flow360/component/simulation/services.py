@@ -264,12 +264,12 @@ def validate_model(
     validation_warnings = None
     validated_param = None
 
-    params_as_dict = clean_params_dict(params_as_dict, root_item_type)
-
     # The final validation levels will be the intersection of the requested levels and the levels available
     # We always assume we want to run case so that we can expose as many errors as possible
     available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
+    print(validation_levels_to_use)
+    params_as_dict = clean_params_dict(params_as_dict, validation_levels_to_use)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
         with ValidationLevelContext(validation_levels_to_use):
@@ -285,7 +285,7 @@ def validate_model(
     return validated_param, validation_errors, validation_warnings
 
 
-def clean_params_dict(params: dict, root_item_type: str) -> dict:
+def clean_params_dict(params: dict, validation_levels_to_use) -> dict:
     """
     Cleans the parameters dictionary by removing unwanted properties.
 
@@ -293,8 +293,8 @@ def clean_params_dict(params: dict, root_item_type: str) -> dict:
     ----------
     params : dict
         The original parameters dictionary.
-    root_item_type : str
-        The root item type determining specific cleaning actions.
+    validation_levels_to_use : str
+        The validation levels to determine specific cleaning actions.
 
     Returns
     -------
@@ -304,8 +304,31 @@ def clean_params_dict(params: dict, root_item_type: str) -> dict:
     params = remove_properties_by_name(params, "_id")
     params = remove_properties_by_name(params, "hash")  # From client
 
-    if root_item_type == "VolumeMesh":
+    if not validation_levels_to_use:
+        return params
+
+    if validation_levels_to_use == ["Case"]:
         params.pop("meshing", None)
+        return params
+
+    if "Case" not in validation_levels_to_use:
+        params.pop("reference_geometry", None)
+        params.pop("operating_condition", None)
+        params.pop("models", None)
+        params.pop("time_stepping", None)
+        params.pop("user_defined_dynamics", None)
+        params.pop("user_defined_fields", None)
+        params.pop("outputs", None)
+
+    if params.get("meshing") is not None and "VolumeMesh" not in validation_levels_to_use:
+        params["meshing"].pop("gap_treatment_strength", None)
+        params["meshing"]["defaults"].pop("boundary_layer_growth_rate", None)
+        params["meshing"]["defaults"].pop("boundary_layer_first_layer_thickness", None)
+
+    if params.get("meshing") is not None and "SurfaceMesh" not in validation_levels_to_use:
+        params["meshing"]["defaults"].pop("surface_edge_growth_rate", None)
+        params["meshing"]["defaults"].pop("surface_max_edge_length", None)
+        params["meshing"]["defaults"].pop("curvature_resolution_angle", None)
 
     return params
 
@@ -420,7 +443,7 @@ def _translate_simulation_json(
     translation_func=None,
 ):
     """
-    Get JSON for surface meshing from a given simulaiton JSON.
+    Get JSON for surface meshing from a given simulation JSON.
 
     """
     translated_dict = None
@@ -435,7 +458,7 @@ def _translate_simulation_json(
         translated_dict = translation_func(input_params, mesh_unit)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
-    except Exception as err:  # tranlsation itself is not supposed to raise any other exception
+    except Exception as err:  # translation itself is not supposed to raise any other exception
         raise ValueError(
             f"Unexpected error translating to {target_name} json: " + str(err)
         ) from err
@@ -449,7 +472,7 @@ def _translate_simulation_json(
 
 
 def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for surface meshing from a given simulaiton JSON."""
+    """Get JSON for surface meshing from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -459,7 +482,7 @@ def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit
 
 
 def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for volume meshing from a given simulaiton JSON."""
+    """Get JSON for volume meshing from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -469,7 +492,7 @@ def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit)
 
 
 def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for case from a given simulaiton JSON."""
+    """Get JSON for case from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
