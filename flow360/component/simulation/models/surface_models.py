@@ -23,6 +23,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
+    GhostSphere,
     GhostSurface,
     Surface,
     SurfacePair,
@@ -44,7 +45,10 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     """Boundary base"""
 
     type: str = pd.Field()
-    entities: EntityList[Surface] = pd.Field(alias="surfaces")
+    entities: EntityList[Surface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with boundary condition imposed.",
+    )
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -305,18 +309,19 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     Example
     -------
 
-    - Define freestream boundary condition with velocity expression:
+    - Define freestream boundary condition with velocity expression and boundaries from the volume mesh:
 
       >>> fl.Freestream(
-      ...     surfaces=[volume_mesh["blk-1/zblocks"],
-      ...               volume_mesh["blk-1/xblocks"]],
+      ...     surfaces=[volume_mesh["blk-1/freestream-part1"],
+      ...               volume_mesh["blk-1/freestream-part2"]],
       ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
       ... )
 
-    - Define freestream boundary condition with turbulence quantities:
+    - Define freestream boundary condition with turbulence quantities and automated farfield:
 
-      >>> fl.Freestream(
-      ...     entities=[volume_mesh['freestream']],
+      >>> auto_farfield = fl.AutomatedFarfield()
+      ... fl.Freestream(
+      ...     entities=[auto_farfield.farfield],
       ...     turbulence_quantities= fl.TurbulenceQuantities(
       ...         modified_viscosity_ratio=10,
       ...     )
@@ -333,10 +338,9 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="A list of :class:`Surface` entities with "
-        + "the `Freestream` boundary condition imposed.",
+        description="List of boundaries with the `Freestream` boundary condition imposed.",
     )
 
 
@@ -452,15 +456,24 @@ class SlipWall(BoundaryBase):
 
     >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
 
+    - Define `SlipWall` boundary condition with automated farfield symmetry plane boundaries:
+
+    >>> auto_farfield = fl.AutomatedFarfield()
+    ... fl.SlipWall(
+    ...     entities=[auto_farfield.symmetry_planes],
+    ...     turbulence_quantities= fl.TurbulenceQuantities(
+    ...         modified_viscosity_ratio=10,
+    ...     )
+    ... )
+
     ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="A list of :class:`Surface` entities with "
-        + "the `SlipWall` boundary condition imposed.",
+        description="List of boundaries with the `SlipWall` boundary condition imposed.",
     )
 
 
@@ -475,6 +488,13 @@ class SymmetryPlane(BoundaryBase):
 
     >>> fl.SymmetryPlane(entities=volume_mesh["fluid/symmetry"])
 
+    - Define `SymmetryPlane` boundary condition with automated farfield symmetry plane boundaries:
+
+    >>> auto_farfield = fl.AutomatedFarfield()
+    ... fl.SymmetryPlane(
+    ...     entities=[auto_farfield.symmetry_planes],
+    ... )
+
     ====
     """
 
@@ -484,8 +504,7 @@ class SymmetryPlane(BoundaryBase):
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="A list of :class:`Surface` entities with "
-        + "the `SymmetryPlane` boundary condition imposed.",
+        description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )
 
 
