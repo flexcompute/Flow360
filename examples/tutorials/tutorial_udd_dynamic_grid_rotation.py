@@ -4,7 +4,7 @@ from flow360.examples import TutorialUDDDynamicGridRotation
 TutorialUDDDynamicGridRotation.get_files()
 
 project = fl.Project.from_file(
-    TutorialUDDDynamicGridRotation.mesh_filename,
+    files=fl.VolumeMeshFile(TutorialUDDDynamicGridRotation.mesh_filename),
     name="Tutorial UDD dynamic grid rotation from Python",
 )
 
