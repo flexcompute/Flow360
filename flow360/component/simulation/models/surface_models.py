@@ -155,8 +155,8 @@ class SlaterPorousBleed(Flow360BaseModel):
     - Specify a static pressure of 1.01e6 Pascals at the slater bleed boundary, and
       set the porosity of the surface to 0.4 (40%).
 
-    >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
-                             porosity = 0.4)
+      >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
+                               porosity = 0.4)
 
     ====
     """
@@ -451,20 +451,20 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    Define :code:`SlipWall` boundary condition for entities with the naming pattern
+    - Define :code:`SlipWall` boundary condition for entities with the naming pattern
     :code:`"*/slipWall"` in the volume mesh.
 
-    >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
+      >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
 
-    Define :code:`SlipWall` boundary condition with automated farfield symmetry plane boundaries:
+    - Define :code:`SlipWall` boundary condition with automated farfield symmetry plane boundaries:
 
-    >>> auto_farfield = fl.AutomatedFarfield()
-    >>> fl.SlipWall(
-    ...     entities=[auto_farfield.symmetry_planes],
-    ...     turbulence_quantities= fl.TurbulenceQuantities(
-    ...         modified_viscosity_ratio=10,
-    ...     )
-    ... )
+      >>> auto_farfield = fl.AutomatedFarfield()
+      >>> fl.SlipWall(
+      ...     entities=[auto_farfield.symmetry_planes],
+      ...     turbulence_quantities= fl.TurbulenceQuantities(
+      ...         modified_viscosity_ratio=10,
+      ...     )
+      ... )
 
     ====
     """
@@ -490,10 +490,10 @@ class SymmetryPlane(BoundaryBase):
 
     - Define `SymmetryPlane` boundary condition with automated farfield symmetry plane boundaries:
 
-    >>> auto_farfield = fl.AutomatedFarfield()
-    >>> fl.SymmetryPlane(
-    ...     entities=[auto_farfield.symmetry_planes],
-    ... )
+      >>> auto_farfield = fl.AutomatedFarfield()
+      >>> fl.SymmetryPlane(
+      ...     entities=[auto_farfield.symmetry_planes],
+      ... )
 
     ====
     """
