@@ -459,7 +459,7 @@ class SlipWall(BoundaryBase):
     - Define `SlipWall` boundary condition with automated farfield symmetry plane boundaries:
 
     >>> auto_farfield = fl.AutomatedFarfield()
-    ... fl.SlipWall(
+    >>> fl.SlipWall(
     ...     entities=[auto_farfield.symmetry_planes],
     ...     turbulence_quantities= fl.TurbulenceQuantities(
     ...         modified_viscosity_ratio=10,
