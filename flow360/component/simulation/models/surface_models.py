@@ -456,7 +456,7 @@ class SlipWall(BoundaryBase):
 
     >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
 
-    - Define `SlipWall` boundary condition with automated farfield symmetry plane boundaries:
+    Define :code:`SlipWall` boundary condition with automated farfield symmetry plane boundaries:
 
     >>> auto_farfield = fl.AutomatedFarfield()
     >>> fl.SlipWall(
