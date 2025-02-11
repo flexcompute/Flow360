@@ -303,24 +303,6 @@ def test_updater_to_25_2_0():
                 )
 
 
-def test_updater_to_25_2_1():
-    with open("../data/simulation/simulation_pre_25_2_1.json", "r") as fp:
-        params = json.load(fp)
-
-    params_new = updater(
-        version_from=f"25.2.0",
-        version_to=f"25.2.1",
-        params_as_dict=params,
-    )
-    updated_ghost_sphere = params_new["private_attribute_asset_cache"]["project_entity_info"][
-        "ghost_entities"
-    ][0]
-    assert updated_ghost_sphere["private_attribute_entity_type_name"] == "GhostSphere"
-    assert "type_name" not in updated_ghost_sphere
-    assert updated_ghost_sphere["center"] == [0, 0, 0]
-    assert updated_ghost_sphere["max_radius"] == 5.000000000000003
-
-
 def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0
     with open("../data/simulation/simulation_24_11_0.json", "r") as fp:

@@ -44,7 +44,7 @@ class AssetCache(Flow360BaseModel):
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
     """
-    Registers entities used/occurred in a Flow360BaseModel instance to an EntityRegistry.
+    Registers entities used/occured in a Flow360BaseModel instance to an EntityRegistry.
 
     This function iterates through the attributes of the given model. If an attribute is an
     EntityList, it retrieves the expanded entities and registers each entity in the registry.
@@ -84,7 +84,7 @@ def _update_entity_full_name(
 ):
     """
     Update Surface/Boundary with zone name from volume mesh metadata.
-    TODO: Maybe no need to recursively looping the param and just manipulating the registry may suffice?
+    TODO: Maybe no need to recursivly looping the param and just manipulating the registry may suffice?
     """
     for field in model.__dict__.values():
         if isinstance(field, target_entity_type):
@@ -122,13 +122,13 @@ def _update_zone_boundaries_with_metadata(
 def _set_boundary_full_name_with_zone_name(
     registry: EntityRegistry, naming_pattern: str, give_zone_name: str
 ) -> None:
-    """Set the full name of surfaces that does not have full name specified."""
+    """Set the full name of surfaces that does not have full name spcified."""
     if registry.find_by_naming_pattern(naming_pattern):
         for surface in registry.find_by_naming_pattern(naming_pattern):
             if surface.private_attribute_full_name is not None:
                 # This indicates that full name has been set by mesh metadata because that and this are the
                 # only two places we set the full name.
-                # mesh meta data takes precedence as it is the most reliable source.
+                # meshmeta data takes precedence as it is the most reliable source.
                 # Note: Currently automated farfield assumes zone name to be "fluid" but the other mesher has "1".
                 # Note: We need to figure out how to handle this. Otherwise this may result in wrong
                 # Note: zone name getting prepended.
