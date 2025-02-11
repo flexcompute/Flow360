@@ -25,7 +25,12 @@ from flow360.component.simulation.outputs.output_fields import (
     SurfaceFieldNames,
     VolumeFieldNames,
 )
-from flow360.component.simulation.primitives import GhostSurface, Surface
+from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSphere,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.unit_system import LengthType
 
 
@@ -132,10 +137,9 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="List of output :class:`~flow360.Surface`/"
-        + ":class:`~flow360.GhostSurface` entities. ",
+        description="List of boundaries where output is generated.",
     )
     write_single_file: bool = pd.Field(
         default=False,
@@ -392,11 +396,9 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     """
 
     name: str = pd.Field(description="Name of integral.")
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="List of :class:`~flow360.component.simulation.primitives.Surface`/"
-        + ":class:`~flow360.component.simulation.primitives.GhostSurface` entities on which "
-        + "the surface integral will be calculated.",
+        description="List of boundaries where the surface integral will be calculated.",
     )
     output_fields: UniqueItemList[str] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
@@ -766,7 +768,9 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "embedded in the volumetric domain as aeroacoustic solver "
         + "input.",
     )
-    permeable_surfaces: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
+    permeable_surfaces: Optional[
+        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
+    ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
