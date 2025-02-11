@@ -491,7 +491,7 @@ class SymmetryPlane(BoundaryBase):
     - Define `SymmetryPlane` boundary condition with automated farfield symmetry plane boundaries:
 
     >>> auto_farfield = fl.AutomatedFarfield()
-    ... fl.SymmetryPlane(
+    >>> fl.SymmetryPlane(
     ...     entities=[auto_farfield.symmetry_planes],
     ... )
 
