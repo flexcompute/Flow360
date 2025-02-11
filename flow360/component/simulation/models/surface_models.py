@@ -473,7 +473,7 @@ class SlipWall(BoundaryBase):
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="List of boundaries with the `SlipWall` boundary condition imposed.",
+        description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
     )
 
 
