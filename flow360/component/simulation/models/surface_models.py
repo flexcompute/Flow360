@@ -23,7 +23,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
-    GhostSphere,
     GhostSurface,
     Surface,
     SurfacePair,
@@ -45,10 +44,7 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     """Boundary base"""
 
     type: str = pd.Field()
-    entities: EntityList[Surface] = pd.Field(
-        alias="surfaces",
-        description="List of boundaries with boundary condition imposed.",
-    )
+    entities: EntityList[Surface] = pd.Field(alias="surfaces")
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -155,8 +151,8 @@ class SlaterPorousBleed(Flow360BaseModel):
     - Specify a static pressure of 1.01e6 Pascals at the slater bleed boundary, and
       set the porosity of the surface to 0.4 (40%).
 
-      >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
-                               porosity = 0.4)
+    >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
+                             porosity = 0.4)
 
     ====
     """
@@ -309,19 +305,18 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     Example
     -------
 
-    - Define freestream boundary condition with velocity expression and boundaries from the volume mesh:
+    - Define freestream boundary condition with velocity expression:
 
       >>> fl.Freestream(
-      ...     surfaces=[volume_mesh["blk-1/freestream-part1"],
-      ...               volume_mesh["blk-1/freestream-part2"]],
+      ...     surfaces=[volume_mesh["blk-1/zblocks"],
+      ...               volume_mesh["blk-1/xblocks"]],
       ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
       ... )
 
-    - Define freestream boundary condition with turbulence quantities and automated farfield:
+    - Define freestream boundary condition with turbulence quantities:
 
-      >>> auto_farfield = fl.AutomatedFarfield()
-      ... fl.Freestream(
-      ...     entities=[auto_farfield.farfield],
+      >>> fl.Freestream(
+      ...     entities=[volume_mesh['freestream']],
       ...     turbulence_quantities= fl.TurbulenceQuantities(
       ...         modified_viscosity_ratio=10,
       ...     )
@@ -338,9 +333,10 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityList[Surface, GhostSurface, GhostSphere] = pd.Field(
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
-        description="List of boundaries with the `Freestream` boundary condition imposed.",
+        description="A list of :class:`Surface` entities with "
+        + "the `Freestream` boundary condition imposed.",
     )
 
 
@@ -451,29 +447,20 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    - Define :code:`SlipWall` boundary condition for entities with the naming pattern
+    Define :code:`SlipWall` boundary condition for entities with the naming pattern
     :code:`"*/slipWall"` in the volume mesh.
 
-      >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
-
-    - Define :code:`SlipWall` boundary condition with automated farfield symmetry plane boundaries:
-
-      >>> auto_farfield = fl.AutomatedFarfield()
-      >>> fl.SlipWall(
-      ...     entities=[auto_farfield.symmetry_planes],
-      ...     turbulence_quantities= fl.TurbulenceQuantities(
-      ...         modified_viscosity_ratio=10,
-      ...     )
-      ... )
+    >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
 
     ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityList[Surface, GhostSurface] = pd.Field(
         alias="surfaces",
-        description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
+        description="A list of :class:`Surface` entities with "
+        + "the `SlipWall` boundary condition imposed.",
     )
 
 
@@ -488,13 +475,6 @@ class SymmetryPlane(BoundaryBase):
 
     >>> fl.SymmetryPlane(entities=volume_mesh["fluid/symmetry"])
 
-    - Define `SymmetryPlane` boundary condition with automated farfield symmetry plane boundaries:
-
-      >>> auto_farfield = fl.AutomatedFarfield()
-      >>> fl.SymmetryPlane(
-      ...     entities=[auto_farfield.symmetry_planes],
-      ... )
-
     ====
     """
 
@@ -504,7 +484,8 @@ class SymmetryPlane(BoundaryBase):
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
+        description="A list of :class:`Surface` entities with "
+        + "the `SymmetryPlane` boundary condition imposed.",
     )
 
 

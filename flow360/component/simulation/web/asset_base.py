@@ -20,7 +20,6 @@ from flow360.component.simulation.entity_info import (
     EntityInfoModel,
     parse_entity_info_model,
 )
-from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
     remove_properties_by_name,
@@ -133,8 +132,7 @@ class AssetBase(metaclass=ABCMeta):
         simulation_json = asset._webapi.get(
             method="simulation/file", params={"type": "simulation"}
         )["simulationJson"]
-
-        return SimulationParams._update_input(json.loads(simulation_json))
+        return json.loads(simulation_json)
 
     @property
     def info(self) -> AssetMetaBaseModelV2:
