@@ -151,7 +151,7 @@ class SlaterPorousBleed(Flow360BaseModel):
       set the porosity of the surface to 0.4 (40%).
 
     >>> fl.SlaterPorousBleeed(static_pressure = 1.01e6 * fl.u.Pa,
-                              porosity = 0.4, initial_step = 200)
+    ...                          porosity = 0.4, activation_step = 200)
 
     ====
     """
@@ -160,7 +160,7 @@ class SlaterPorousBleed(Flow360BaseModel):
     # pylint: disable=no-member
     static_pressure: PressureType.Positive = pd.Field(description="The static pressure value.")
     porosity: float = pd.Field(gt=0, le=1, description="The porosity of the bleed region.")
-    initial_step: Optional[pd.PositiveInt] = pd.Field(
+    activation_step: Optional[pd.PositiveInt] = pd.Field(
         None, description="Pseudo step at which to start applying the SlaterPorousBleedModel."
     )
 
@@ -281,7 +281,8 @@ class Wall(BoundaryBase):
       >>> fl.Wall(
       ...     entities=volume_mesh["fluid/SlaterBoundary-*"],
       ...     wall_velocity_model = fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
-                                                         porosity = 0.4)
+      ...                                                porosity = 0.4,
+      ...                                                activation_step = 200)
       ... )
 
     ====
