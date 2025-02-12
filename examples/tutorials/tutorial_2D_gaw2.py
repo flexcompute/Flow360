@@ -3,7 +3,9 @@ from flow360.examples import Tutorial2DGAW2
 
 Tutorial2DGAW2.get_files()
 
-project = fl.Project.from_file(files=fl.GeometryFiles(Tutorial2DGAW2.geometry), name="Tutorial 2D GA(W)-2 from Python")
+project = fl.Project.from_file(
+    files=fl.GeometryFiles(Tutorial2DGAW2.geometry), name="Tutorial 2D GA(W)-2 from Python"
+)
 geometry = project.geometry
 
 # show face and edge groupings
