@@ -5,7 +5,7 @@ from flow360.examples import TutorialDynamicDerivatives
 
 TutorialDynamicDerivatives.get_files()
 project = fl.Project.from_file(
-    TutorialDynamicDerivatives.geometry,
+    files=fl.GeometryFiles(TutorialDynamicDerivatives.geometry),
     name="Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
 )
 geometry = project.geometry

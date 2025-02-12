@@ -3,7 +3,7 @@ from flow360.examples import TutorialCHTSolver
 
 TutorialCHTSolver.get_files()
 project = fl.Project.from_file(
-    TutorialCHTSolver.mesh_filename, name="Tutorial CHT Solver from Python"
+    files=fl.VolumeMeshFile(TutorialCHTSolver.mesh_filename), name="Tutorial CHT Solver from Python"
 )
 volume_mesh = project.volume_mesh
 
