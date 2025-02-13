@@ -181,6 +181,30 @@ def test_consistency_wall_function_validator(
         )
 
 
+def test_consistency_wall_function_validator():
+
+     # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[Wall(velocity=["0.1*t", "0.2*t", "0.3*t"],
+                         surfaces=[Surface(name="noSlipWall")])]
+        )
+
+    assert params
+
+    message = (
+        "Cannot specify both 'velocity' and 'wall_velocity_model' for the same patch. "
+        "Please specify either one or the other."         
+    )
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[Wall(velocity=[0.1, 0.2, 0.3],
+                         surfaces=[Surface(name="noSlipWall")],
+                         wall_velocity_model=SlaterPorousBleed(porosity=0.2, pressure=0.1))]
+        )
+
 def test_low_mach_preconditioner_validator(
     surface_output_with_low_mach_precond, fluid_model_with_low_mach_precond, fluid_model
 ):
