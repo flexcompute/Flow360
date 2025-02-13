@@ -3,7 +3,8 @@ from flow360.examples import TutorialPeriodicBC
 
 TutorialPeriodicBC.get_files()
 project = fl.Project.from_file(
-    TutorialPeriodicBC.mesh_filename, name="Tutorial Periodic Boundary Condition from Python"
+    files=fl.VolumeMeshFile(TutorialPeriodicBC.mesh_filename),
+    name="Tutorial Periodic Boundary Condition from Python",
 )
 volume_mesh = project.volume_mesh
 
@@ -57,8 +58,6 @@ with fl.SI_unit_system:
                     update_jacobian_frequency=1,
                     equation_evaluation_frequency=1,
                     order_of_accuracy=2,
-                    grid_size_for_LES="maxEdgeLength",
-                    DDES=False,
                 ),
             ),
             fl.Wall(

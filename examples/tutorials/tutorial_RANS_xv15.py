@@ -3,7 +3,7 @@ from flow360.examples import TutorialRANSXv15
 
 TutorialRANSXv15.get_files()
 project = fl.Project.from_file(
-    TutorialRANSXv15.mesh_filename,
+    files=fl.VolumeMeshFile(TutorialRANSXv15.mesh_filename),
     name="Tutorial Time-accurate RANS CFD on XV-15 from Python",
 )
 volume_mesh = project.volume_mesh
@@ -65,7 +65,7 @@ with fl.SI_unit_system:
                 turbulence_model_solver=fl.SpalartAllmaras(
                     absolute_tolerance=1e-8,
                     linear_solver=fl.LinearSolver(max_iterations=25),
-                    DDES=True,
+                    hybrid_model=fl.DetachedEddySimulation(shielding_function="DDES"),
                     rotation_correction=True,
                     equation_evaluation_frequency=1,
                 ),

@@ -4,7 +4,7 @@ from flow360.examples import OM6wing
 OM6wing.get_files()
 
 project = fl.Project.from_file(
-    OM6wing.mesh_filename, name="Tutorial UDD alpha controller from Python"
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Tutorial UDD alpha controller from Python"
 )
 
 volume_mesh = project.volume_mesh
