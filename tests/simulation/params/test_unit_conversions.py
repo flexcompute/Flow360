@@ -1,4 +1,5 @@
 import re
+import unittest
 
 import pydantic as pd
 import pytest
@@ -10,6 +11,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import Surface
 
+assertions = unittest.TestCase("__init__")
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
@@ -158,23 +160,23 @@ def test_operations_on_units():
         )
 
     replaced = params.operating_condition.velocity_magnitude * 3
-    assert float(replaced.value) == 70000
+    assertions.assertAlmostEqual(replaced.value, 70000)
     assert str(replaced.units) == "inch/s"
 
     replaced = params.operating_condition.velocity_magnitude / (27.3 * fl.u.m / fl.u.s)
-    assert float(replaced.value) == 21.70940170940171
+    assertions.assertAlmostEqual(replaced.value, 21.70940170940171)
     assert str(replaced.units) == "dimensionless"
 
     replaced = params.operating_condition.velocity_magnitude**5 - (1 / 50 * (fl.u.km / fl.u.s) ** 5)
-    assert float(replaced.value) == 502472105493.3395
+    assertions.assertAlmostEqual(replaced.value, 502472105493.3395)
     assert str(replaced.units) == "inch**5*m**5/(cm**5*s**5)"
 
     replaced = (
         params.operating_condition.thermal_state.temperature.to("degC") - 25 * fl.u.degC
     ).to("K")
-    assert float(replaced.value) == 263.15
+    assertions.assertAlmostEqual(replaced.value, 263.15)
     assert str(replaced.units) == "K"
 
     replaced = params.operating_condition.thermal_state.density + 2 * fl.u.g / fl.u.cm**3
-    assert float(replaced.value) == 2001.2249999999997
+    assertions.assertAlmostEqual(replaced.value, 2001.2249999999997)
     assert str(replaced.units) == "kg/m**3"
