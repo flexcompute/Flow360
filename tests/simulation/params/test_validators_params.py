@@ -517,7 +517,7 @@ def test_valid_reference_velocity():
 def test_output_fields_with_user_defined_fields():
     surface_1 = Surface(name="some_random_surface")
     # 1: No user defined fields
-    msg = "In `outputs`[0]:, not_valid_field is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
+    msg = "In `outputs`[0] SurfaceOutput:, not_valid_field is not a valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -537,7 +537,7 @@ def test_output_fields_with_user_defined_fields():
             ],
         )
 
-    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']."
+    msg = "In `outputs`[1] SliceOutput:, not_valid_field_2 is not a valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']"
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -560,7 +560,7 @@ def test_output_fields_with_user_defined_fields():
                 ],
             )
 
-    msg = "In `outputs`[0]:, Cp is not valid output field name. Allowed fields are ['not_valid_field']."
+    msg = "In `outputs`[0] SurfaceIntegralOutput:, Cp is not a valid output field name. Allowed fields are ['not_valid_field']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -591,7 +591,7 @@ def test_output_fields_with_user_defined_fields():
                 ]
             )
 
-    msg = "In `outputs`[1]:, Cpp is not valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'Cpt', 'not_valid_field']"
+    msg = "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'Cpt', 'not_valid_field']"
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
