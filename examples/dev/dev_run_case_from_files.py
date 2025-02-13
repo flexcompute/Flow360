@@ -2,14 +2,16 @@ import flow360 as fl
 from flow360.examples import OM6wing
 
 # Select the environment to which you want to submit your project
-fl.Env.dev.active() # Dev
+fl.Env.dev.active()  # Dev
 # fl.Env.preprod.active() # Preprod
 # fl.Env.uat.active() # UAT
 # fl.Env.prod.active() # Prod (it is also the default environment)
 
 OM6wing.get_files()
 
-project = fl.Project.from_file(files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="OM6wing Quick Start from Python")
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="OM6wing Quick Start from Python"
+)
 
 vm = project.volume_mesh
 
@@ -31,9 +33,7 @@ with fl.SI_unit_system:
             fl.Freestream(name="Freestream", surfaces=[vm["3"]]),
         ],
         outputs=[
-            fl.SurfaceOutput(
-                output_fields=["primitiveVars", "Cp", "Cf"], surfaces=[vm["1"]]
-            ),
+            fl.SurfaceOutput(output_fields=["primitiveVars", "Cp", "Cf"], surfaces=[vm["1"]]),
             fl.VolumeOutput(output_fields=["primitiveVars", "Mach"]),
         ],
     )

@@ -165,11 +165,13 @@ def test_operations_on_units():
     assert float(replaced.value) == 21.70940170940171
     assert str(replaced.units) == "dimensionless"
 
-    replaced = params.operating_condition.velocity_magnitude ** 5 - (1 / 50 * (fl.u.km / fl.u.s) ** 5)
+    replaced = params.operating_condition.velocity_magnitude**5 - (1 / 50 * (fl.u.km / fl.u.s) ** 5)
     assert float(replaced.value) == 502472105493.3395
     assert str(replaced.units) == "inch**5*m**5/(cm**5*s**5)"
 
-    replaced = (params.operating_condition.thermal_state.temperature.to("degC") - 25 * fl.u.degC).to("K")
+    replaced = (
+        params.operating_condition.thermal_state.temperature.to("degC") - 25 * fl.u.degC
+    ).to("K")
     assert float(replaced.value) == 263.15
     assert str(replaced.units) == "K"
 
