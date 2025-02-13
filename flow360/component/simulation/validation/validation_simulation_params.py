@@ -4,6 +4,7 @@ validation for SimulationParams
 
 from typing import get_args
 
+from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
@@ -61,15 +62,24 @@ def _check_duplicate_entities_in_models(params):
 
     dict_entity = {"Surface": {}, "Volume": {}}
 
+    def _get_entity_key(entity):
+        draft_entity_types = get_args(get_args(DraftEntityTypes)[0])
+        if isinstance(entity, draft_entity_types):
+            return entity.private_attribute_id
+        return entity.name
+
     def register_single_entity(entity, model_type, dict_entity):
         entity_type = None
         if isinstance(entity, _SurfaceEntityBase):
             entity_type = "Surface"
         if isinstance(entity, _VolumeEntityBase):
             entity_type = "Volume"
-        entity_log = dict_entity[entity_type].get(entity.name, [])
-        entity_log.append(model_type)
-        dict_entity[entity_type][entity.name] = entity_log
+        entity_key = _get_entity_key(entity=entity)
+        entity_log = dict_entity[entity_type].get(
+            entity_key, {"entity_name": entity.name, "model_list": []}
+        )
+        entity_log["model_list"].append(model_type)
+        dict_entity[entity_type][entity_key] = entity_log
         return dict_entity
 
     if models:
@@ -80,13 +90,13 @@ def _check_duplicate_entities_in_models(params):
 
     error_msg = ""
     for entity_type, entity_model_map in dict_entity.items():
-        for entity_name, model_list in entity_model_map.items():
-            if len(model_list) > 1:
-                model_set = set(model_list)
+        for entity_info in entity_model_map.values():
+            if len(entity_info["model_list"]) > 1:
+                model_set = set(entity_info["model_list"])
                 model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
                 model_string += " models.\n" if len(model_set) > 1 else " model.\n"
                 error_msg += (
-                    f"{entity_type} entity `{entity_name}` appears "
+                    f"{entity_type} entity `{entity_info['entity_name']}` appears "
                     f"multiple times in {model_string}"
                 )
 
