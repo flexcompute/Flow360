@@ -100,8 +100,7 @@
         "outputFields": [
             "primitiveVars",
             "Mach",
-            "qcriterion",
-            "nuHat"
+            "qcriterion"
         ],
         "outputFormat": "paraview",
         "computeTimeAverages": false,

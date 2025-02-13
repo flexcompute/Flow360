@@ -30,6 +30,7 @@ from flow360.component.simulation.models.volume_models import (
     Fluid,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
+    PorousMedium,
     Rotation,
     Solid,
 )
@@ -53,7 +54,12 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    GenericVolume,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -473,6 +479,30 @@ def test_incomplete_BC():
 def test_duplicate_entities_in_models():
     entity_generic_volume = GenericVolume(name="Duplicate Volume")
     entity_surface = Surface(name="Duplicate Surface")
+    entity_cylinder = Cylinder(
+        name="Duplicate Cylinder",
+        outer_radius=1 * u.cm,
+        height=1 * u.cm,
+        center=(0, 0, 0) * u.cm,
+        axis=(0, 0, 1),
+        private_attribute_id="1",
+    )
+    entity_box = Box(
+        name="Box",
+        axis_of_rotation=(1, 0, 0),
+        angle_of_rotation=45 * u.deg,
+        center=(1, 1, 1) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+        private_attribute_id="2",
+    )
+    entity_box_same_name = Box(
+        name="Box",
+        axis_of_rotation=(1, 0, 0),
+        angle_of_rotation=45 * u.deg,
+        center=(1, 1, 1) * u.m,
+        size=(0.2, 0.3, 2) * u.m,
+        private_attribute_id="3",
+    )
     volume_model1 = Solid(
         volumes=[entity_generic_volume],
         material=aluminum,
@@ -483,10 +513,41 @@ def test_duplicate_entities_in_models():
     surface_model2 = Wall(entities=[entity_surface])
     surface_model3 = surface_model1
 
+    rotation_model1 = Rotation(
+        volumes=[entity_cylinder],
+        name="innerRotation",
+        spec=AngleExpression("sin(t)"),
+    )
+    rotation_model2 = Rotation(
+        volumes=[entity_cylinder],
+        name="outerRotation",
+        spec=AngleExpression("sin(2t)"),
+    )
+    porous_medium_model1 = PorousMedium(
+        volumes=entity_box,
+        darcy_coefficient=(1e6, 0, 0) / u.m**2,
+        forchheimer_coefficient=(1, 0, 0) / u.m,
+        volumetric_heat_source=1.0 * u.W / u.m**3,
+    )
+    porous_medium_model2 = PorousMedium(
+        volumes=entity_box_same_name,
+        darcy_coefficient=(3e5, 0, 0) / u.m**2,
+        forchheimer_coefficient=(1, 0, 0) / u.m,
+        volumetric_heat_source=1.0 * u.W / u.m**3,
+    )
+
     # Valid simulation params
     with SI_unit_system:
         params = SimulationParams(
             models=[volume_model1, surface_model1],
+        )
+
+    assert params
+
+    # Valid simulation params with the same Box name in the PorousMedium model
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[porous_medium_model1, porous_medium_model2],
         )
 
     assert params
@@ -500,6 +561,14 @@ def test_duplicate_entities_in_models():
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
+        )
+
+    message = f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
+
+    # Invalid simulation params (Draft Entity)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[rotation_model1, rotation_model2],
         )
 
 
@@ -517,7 +586,7 @@ def test_valid_reference_velocity():
 def test_output_fields_with_user_defined_fields():
     surface_1 = Surface(name="some_random_surface")
     # 1: No user defined fields
-    msg = "In `outputs`[0]:, not_valid_field is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
+    msg = "In `outputs`[0] SurfaceOutput:, not_valid_field is not a valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -537,7 +606,7 @@ def test_output_fields_with_user_defined_fields():
             ],
         )
 
-    msg = "In `outputs`[1]:, not_valid_field_2 is not valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']."
+    msg = "In `outputs`[1] SliceOutput:, not_valid_field_2 is not a valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_DDES', 'kOmegaSST_DDES', 'localCFL', 'not_valid_field']"
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -560,7 +629,7 @@ def test_output_fields_with_user_defined_fields():
                 ],
             )
 
-    msg = "In `outputs`[0]:, Cp is not valid output field name. Allowed fields are ['not_valid_field']."
+    msg = "In `outputs`[0] SurfaceIntegralOutput:, Cp is not a valid output field name. Allowed fields are ['not_valid_field']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -591,7 +660,7 @@ def test_output_fields_with_user_defined_fields():
                 ]
             )
 
-    msg = "In `outputs`[1]:, Cpp is not valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'Cpt', 'not_valid_field']"
+    msg = "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'Cpt', 'not_valid_field']"
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
