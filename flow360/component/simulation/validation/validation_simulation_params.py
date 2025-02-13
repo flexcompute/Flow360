@@ -64,10 +64,11 @@ def _check_consistency_wall_velocity_and_model(v):
             if isinstance(model, Wall):
                 if model.velocity is not None and model.wall_velocity_model is not None:
                     raise ValueError(
-                    "Cannot specify both 'velocity' and 'wall_velocity_model' for the same patch. "
-                    "Please specify either one or the other."
+                        "Cannot specify both 'velocity' and 'wall_velocity_model' for the same patch. "
+                        "Please specify either one or the other."
                     )
 
+    return v
 
 
 def _check_duplicate_entities_in_models(params):
@@ -439,4 +440,3 @@ def _check_time_average_output(params):
         output_type_list.strip(",")
         raise ValueError(f"{output_type_list} can only be used in unsteady simulations.")
     return params
-
