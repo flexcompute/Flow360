@@ -18,11 +18,11 @@
                                 0.0
                             ],
                             "center": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    1.0,
-                                    2.0,
-                                    3.0
+                                    100.0,
+                                    200.0,
+                                    300.0
                                 ]
                             },
                             "name": "my_box_default",
@@ -47,18 +47,18 @@
                                 "items": []
                             },
                             "size": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    2.0,
-                                    2.0,
-                                    3.0
+                                    200.0,
+                                    200.0,
+                                    300.0
                                 ]
                             },
                             "type_name": "Box"
                         },
                         {
                             "angle_of_rotation": {
-                                "units": "rad",
+                                "units": "degree",
                                 "value": -3.141592653589793
                             },
                             "axis_of_rotation": [
@@ -67,11 +67,11 @@
                                 0.0
                             ],
                             "center": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    7.0,
-                                    1.0,
-                                    2.0
+                                    700.0,
+                                    100.0,
+                                    200.0
                                 ]
                             },
                             "name": "my_box_from",
@@ -91,20 +91,20 @@
                                     ]
                                 ],
                                 "center": {
-                                    "units": "m",
+                                    "units": "cm",
                                     "value": [
-                                        7.0,
-                                        1.0,
-                                        2.0
+                                        700.0,
+                                        100.0,
+                                        200.0
                                     ]
                                 },
                                 "name": "my_box_from",
                                 "size": {
-                                    "units": "m",
+                                    "units": "cm",
                                     "value": [
-                                        2.0,
-                                        2.0,
-                                        3.0
+                                        200.0,
+                                        200.0,
+                                        300.0
                                     ]
                                 }
                             },
@@ -113,11 +113,11 @@
                                 "items": []
                             },
                             "size": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    2.0,
-                                    2.0,
-                                    3.0
+                                    200.0,
+                                    200.0,
+                                    300.0
                                 ]
                             },
                             "type_name": "Box"
@@ -129,21 +129,21 @@
                                 0.0
                             ],
                             "center": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    1.0,
-                                    2.0,
-                                    3.0
+                                    100.0,
+                                    200.0,
+                                    300.0
                                 ]
                             },
                             "height": {
-                                "units": "m",
-                                "value": 3.0
+                                "units": "cm",
+                                "value": 300.0
                             },
                             "name": "my_cylinder_default",
                             "outer_radius": {
-                                "units": "m",
-                                "value": 2.0
+                                "units": "cm",
+                                "value": 200.0
                             },
                             "private_attribute_entity_type_name": "Cylinder",
                             "private_attribute_registry_bucket_name": "VolumetricEntityType",
@@ -174,15 +174,15 @@
                 "dynamic_viscosity": {
                     "effective_temperature": {
                         "units": "K",
-                        "value": 110.4
+                        "value": 423.15
                     },
                     "reference_temperature": {
                         "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
+                        "units": "g/(cm*s)",
+                        "value": 0.0001716
                     }
                 },
                 "name": "air",
@@ -234,42 +234,42 @@
     ],
     "operating_condition": {
         "alpha": {
-            "units": "degree",
+            "units": "rad",
             "value": 5.0
         },
         "beta": {
-            "units": "degree",
+            "units": "rad",
             "value": 0.0
         },
         "private_attribute_constructor": "from_mach",
         "private_attribute_input_cache": {
             "alpha": {
-                "units": "degree",
+                "units": "rad",
                 "value": 5.0
             },
             "beta": {
-                "units": "degree",
+                "units": "rad",
                 "value": 0.0
             },
             "mach": 0.8,
             "thermal_state": {
                 "density": {
-                    "units": "kg/m**3",
-                    "value": 1.225
+                    "units": "g/cm**3",
+                    "value": 0.0012250000000000002
                 },
                 "material": {
                     "dynamic_viscosity": {
                         "effective_temperature": {
                             "units": "K",
-                            "value": 110.4
+                            "value": 423.15
                         },
                         "reference_temperature": {
                             "units": "K",
                             "value": 273.15
                         },
                         "reference_viscosity": {
-                            "units": "Pa*s",
-                            "value": 1.716e-05
+                            "units": "g/(cm*s)",
+                            "value": 0.0001716
                         }
                     },
                     "name": "air",
@@ -278,12 +278,12 @@
                 "private_attribute_constructor": "from_standard_atmosphere",
                 "private_attribute_input_cache": {
                     "altitude": {
-                        "units": "m",
-                        "value": 1000.0
+                        "units": "cm",
+                        "value": 100000.0
                     },
                     "temperature_offset": {
                         "units": "K",
-                        "value": 0.0
+                        "value": -15.0
                     }
                 },
                 "temperature": {
@@ -295,22 +295,22 @@
         },
         "thermal_state": {
             "density": {
-                "units": "kg/m**3",
-                "value": 1.225
+                "units": "g/cm**3",
+                "value": 0.0012250000000000002
             },
             "material": {
                 "dynamic_viscosity": {
                     "effective_temperature": {
                         "units": "K",
-                        "value": 110.4
+                        "value": 423.15
                     },
                     "reference_temperature": {
                         "units": "K",
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "Pa*s",
-                        "value": 1.716e-05
+                        "units": "g/(cm*s)",
+                        "value": 0.0001716
                     }
                 },
                 "name": "air",
@@ -319,12 +319,12 @@
             "private_attribute_constructor": "from_standard_atmosphere",
             "private_attribute_input_cache": {
                 "altitude": {
-                    "units": "m",
-                    "value": 1000.0
+                    "units": "cm",
+                    "value": 100000.0
                 },
                 "temperature_offset": {
                     "units": "K",
-                    "value": 0.0
+                    "value": -15.0
                 }
             },
             "temperature": {
@@ -335,8 +335,8 @@
         },
         "type_name": "AerospaceCondition",
         "velocity_magnitude": {
-            "units": "m/s",
-            "value": 272.23520464657025
+            "units": "cm/s",
+            "value": 27223.520464657024
         }
     },
     "outputs": [
@@ -372,11 +372,11 @@
                             0.0
                         ],
                         "center": {
-                            "units": "m",
+                            "units": "cm",
                             "value": [
-                                1.0,
-                                2.0,
-                                3.0
+                                100.0,
+                                200.0,
+                                300.0
                             ]
                         },
                         "name": "my_box_default",
@@ -401,11 +401,11 @@
                             "items": []
                         },
                         "size": {
-                            "units": "m",
+                            "units": "cm",
                             "value": [
-                                2.0,
-                                2.0,
-                                3.0
+                                200.0,
+                                200.0,
+                                300.0
                             ]
                         },
                         "type_name": "Box"
@@ -421,11 +421,11 @@
                             0.0
                         ],
                         "center": {
-                            "units": "m",
+                            "units": "cm",
                             "value": [
-                                7.0,
-                                1.0,
-                                2.0
+                                700.0,
+                                100.0,
+                                200.0
                             ]
                         },
                         "name": "my_box_from",
@@ -445,20 +445,20 @@
                                 ]
                             ],
                             "center": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    7.0,
-                                    1.0,
-                                    2.0
+                                    700.0,
+                                    100.0,
+                                    200.0
                                 ]
                             },
                             "name": "my_box_from",
                             "size": {
-                                "units": "m",
+                                "units": "cm",
                                 "value": [
-                                    2.0,
-                                    2.0,
-                                    3.0
+                                    200.0,
+                                    200.0,
+                                    300.0
                                 ]
                             }
                         },
@@ -467,11 +467,11 @@
                             "items": []
                         },
                         "size": {
-                            "units": "m",
+                            "units": "cm",
                             "value": [
-                                2.0,
-                                2.0,
-                                3.0
+                                200.0,
+                                200.0,
+                                300.0
                             ]
                         },
                         "type_name": "Box"
@@ -483,21 +483,21 @@
                             0.0
                         ],
                         "center": {
-                            "units": "m",
+                            "units": "cm",
                             "value": [
-                                1.0,
-                                2.0,
-                                3.0
+                                100.0,
+                                200.0,
+                                300.0
                             ]
                         },
                         "height": {
-                            "units": "m",
-                            "value": 3.0
+                            "units": "cm",
+                            "value": 300.0
                         },
                         "name": "my_cylinder_default",
                         "outer_radius": {
-                            "units": "m",
-                            "value": 2.0
+                            "units": "cm",
+                            "value": 200.0
                         },
                         "private_attribute_entity_type_name": "Cylinder",
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",

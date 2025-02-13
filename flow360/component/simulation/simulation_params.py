@@ -279,7 +279,7 @@ class SimulationParams(_ParamModelBase):
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
     @classmethod
-    def apply_defult_fluid_settings(cls, v):
+    def apply_default_fluid_settings(cls, v):
         """apply default Fluid() settings if not found in models"""
         if v is None:
             v = []
