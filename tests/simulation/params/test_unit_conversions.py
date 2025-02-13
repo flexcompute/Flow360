@@ -13,6 +13,7 @@ from flow360.component.simulation.primitives import Surface
 
 assertions = unittest.TestCase("__init__")
 
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
