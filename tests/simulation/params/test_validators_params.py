@@ -22,6 +22,7 @@ from flow360.component.simulation.models.solver_numerics import (
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     Periodic,
+    SlaterPorousBleed,
     SlipWall,
     Translational,
     Wall,
@@ -178,6 +179,33 @@ def test_consistency_wall_function_validator(
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[wall_model_without_function], outputs=[surface_output_with_wall_metric]
+        )
+
+
+def test_consistency_wall_function_validator():
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Wall(velocity=["0.1*t", "0.2*t", "0.3*t"], surfaces=[Surface(name="noSlipWall")])
+            ]
+        )
+
+    assert params
+
+    message = "Using `SlaterPorousBleed` with wall function is not supported currently."
+
+    # Invalid simulation params
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        _ = SimulationParams(
+            models=[
+                Wall(
+                    velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1),
+                    surfaces=[Surface(name="noSlipWall")],
+                    use_wall_function=True,
+                )
+            ]
         )
 
 
@@ -918,3 +946,25 @@ def test_output_fields_with_time_average_output():
     message = f"{output_type_list} can only be used in unsteady simulations."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         params.time_stepping = Steady(max_steps=1000)
+
+
+def test_wall_deserialization():
+    # Wall->velocity accept discriminated AND non-discriminated unions.
+    # Need to check if all works when deserializing.
+    dummy_boundary = Surface(name="chameleon")
+    simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
+    assert simple_wall.velocity is None
+
+    const_vel_wall = Wall(
+        **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
+    )
+    assert all(const_vel_wall.velocity == [1, 2, 3] * u.m / u.s)
+
+    slater_bleed_wall = Wall(
+        **Wall(
+            entities=dummy_boundary,
+            velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1 * u.Pa),
+        ).model_dump(mode="json")
+    )
+    assert slater_bleed_wall.velocity.porosity == 0.2
+    assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
