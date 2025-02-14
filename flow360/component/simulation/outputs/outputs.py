@@ -462,11 +462,6 @@ class ProbeOutput(Flow360BaseModel):
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
-    @classmethod
-    def load_point_location_from_file(cls, file_path: str):
-        """Load probe point locations from a file. (Not implemented yet)"""
-        raise NotImplementedError("Not implemented yet.")
-
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
@@ -618,7 +613,6 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
-    # pylint: disable=abstract-method
     frequency: int = pd.Field(default=1, ge=1)
     frequency_offset: int = pd.Field(default=0, ge=0)
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
