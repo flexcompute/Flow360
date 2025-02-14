@@ -23,6 +23,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallVelocityModelTypes,
 )
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
@@ -68,7 +69,10 @@ from flow360.component.simulation.translator.utils import (
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import is_exact_instance
+from flow360.component.simulation.utils import (
+    is_exact_instance,
+    is_instance_of_type_in_union,
+)
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -760,14 +764,30 @@ def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
 
 
 # pylint: disable=too-many-branches, too-many-statements
-def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
+def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pressure_ratio):
     """Boundary translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
     boundary = {}
     if isinstance(model, Wall):
         boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
         if model.velocity is not None:
-            boundary["velocity"] = list(model_dict["velocity"])
+            if not is_instance_of_type_in_union(model.velocity, WallVelocityModelTypes):
+                boundary["velocity"] = list(model_dict["velocity"])
+            elif isinstance(model.velocity, SlaterPorousBleed):
+                boundary["wallVelocityModel"] = {}
+                boundary["wallVelocityModel"]["staticPressureRatio"] = (
+                    model.velocity.static_pressure.value * op_acoustic_to_static_pressure_ratio
+                )
+                boundary["wallVelocityModel"]["porosity"] = model.velocity.porosity
+                boundary["wallVelocityModel"]["type"] = model.velocity.type_name
+                if model.velocity.activation_step is not None:
+                    boundary["wallVelocityModel"]["activationStep"] = model.velocity.activation_step
+            else:
+                raise Flow360TranslationError(
+                    f"Unsupported wall velocity setting found with type: {type(model.velocity)}",
+                    input_value=model,
+                    location=["models"],
+                )
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
@@ -778,7 +798,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             boundary["totalPressureRatio"] = (
-                model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
+                model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
             )
             if model.spec.velocity_direction is not None:
                 boundary["velocityDirection"] = list(model_dict["spec"]["velocityDirection"])
@@ -792,14 +812,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         if isinstance(model.spec, Pressure):
             boundary["type"] = "SubsonicOutflowPressure"
             boundary["staticPressureRatio"] = (
-                model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
+                model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
             )
-        elif isinstance(model.spec, SlaterPorousBleed):
-            boundary["type"] = "SlaterPorousBleed"
-            boundary["staticPressureRatio"] = (
-                model_dict["spec"]["staticPressure"] * op_acousitc_to_static_pressure_ratio
-            )
-            boundary["porosity"] = model_dict["spec"]["porosity"]
         elif isinstance(model.spec, Mach):
             boundary["type"] = "SubsonicOutflowMach"
             boundary["MachNumber"] = model_dict["spec"]["value"]
@@ -898,7 +912,7 @@ def get_solver_json(
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
-    op_acousitc_to_static_pressure_ratio = (
+    op_acoustic_to_static_pressure_ratio = (
         op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
     ).value
 
@@ -1154,7 +1168,7 @@ def get_solver_json(
         entity_injection_func=boundary_entity_info_serializer,
         pass_translated_setting_to_entity_injection=True,
         custom_output_dict_entries=True,
-        translation_func_op_acousitc_to_static_pressure_ratio=op_acousitc_to_static_pressure_ratio,
+        translation_func_op_acoustic_to_static_pressure_ratio=op_acoustic_to_static_pressure_ratio,
         entity_injection_solid_zone_boundaries=solid_zone_boundaries,
     )
 
