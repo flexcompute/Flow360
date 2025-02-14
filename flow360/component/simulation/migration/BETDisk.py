@@ -11,7 +11,7 @@ from pydantic import validate_call
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
-from flow360.component.simulation.unit_system import LengthType, AbsoluteTemperatureType
+from flow360.component.simulation.unit_system import AbsoluteTemperatureType, LengthType
 from flow360.log import log
 
 
@@ -134,7 +134,7 @@ def _load_flow360_json(*, file_path: str) -> dict:
 def read_single_v1_BETDisk(
     file_path: str,
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
-    freestream_temperature: AbsoluteTemperatureType
+    freestream_temperature: AbsoluteTemperatureType,
 ) -> BETDisk:
     """
     Constructs a single :class: `BETDisk` instance from a given V1 (legacy) Flow360 input.
