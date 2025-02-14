@@ -37,7 +37,7 @@ def _parse_flow360_bet_disk_dict(
         flow360_bet_disk_dict = flow360_bet_disk_dict["BETDisks"][0]
 
     specific_heat_ratio = 1.4
-    gas_constant = 287.0529 * u.m**2 / u.s**2 / u.K
+    gas_constant = 287.0529 * u.m**2 / u.s**2 / u.K # pylint: disable=no-member
     speed_of_sound = sqrt(specific_heat_ratio * gas_constant * freestream_temperature.to("K"))
     time_unit = mesh_unit / speed_of_sound
 
