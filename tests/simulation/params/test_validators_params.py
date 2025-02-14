@@ -946,3 +946,25 @@ def test_output_fields_with_time_average_output():
     message = f"{output_type_list} can only be used in unsteady simulations."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         params.time_stepping = Steady(max_steps=1000)
+
+
+def test_wall_deserialization():
+    # Wall->velocity accept discriminated AND non-discriminated unions.
+    # Need to check if all works when deserializing.
+    dummy_boundary = Surface(name="chameleon")
+    simple_wall = Wall(**Wall(entities=dummy_boundary).model_dump(mode="json"))
+    assert simple_wall.velocity is None
+
+    const_vel_wall = Wall(
+        **Wall(entities=dummy_boundary, velocity=[1, 2, 3] * u.m / u.s).model_dump(mode="json")
+    )
+    assert all(const_vel_wall.velocity == [1, 2, 3] * u.m / u.s)
+
+    slater_bleed_wall = Wall(
+        **Wall(
+            entities=dummy_boundary,
+            velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1 * u.Pa),
+        ).model_dump(mode="json")
+    )
+    assert slater_bleed_wall.velocity.porosity == 0.2
+    assert slater_bleed_wall.velocity.static_pressure == 0.1 * u.Pa
