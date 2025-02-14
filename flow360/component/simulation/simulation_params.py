@@ -74,7 +74,6 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_complete_boundary_condition_and_unknown_surface,
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
-    _check_consistency_wall_velocity_and_model,
     _check_duplicate_entities_in_models,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
@@ -404,11 +403,6 @@ class SimulationParams(_ParamModelBase):
     def check_consistency_wall_function_and_surface_output(self):
         """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
         return _check_consistency_wall_function_and_surface_output(self)
-
-    @pd.model_validator(mode="after")
-    def check_consistency_wall_velocity_and_model(self):
-        """Only allow either prescribed 'wall_velocity' or 'wall_velocity_model' for Wall boundaries"""
-        return _check_consistency_wall_velocity_and_model(self)
 
     @pd.model_validator(mode="after")
     def check_consistency_hybrid_model_volume_output(self):

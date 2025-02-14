@@ -545,7 +545,7 @@ def test_boundaries():
                 Wall(
                     name="slater-porous-bleed",
                     surfaces=Surface(name="boundary_name_G"),
-                    wall_velocity_model=SlaterPorousBleed(
+                    velocity=SlaterPorousBleed(
                         static_pressure=12.0 * u.psi, porosity=0.49, activation_step=20
                     ),
                 ),

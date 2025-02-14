@@ -57,20 +57,6 @@ def _check_consistency_wall_function_and_surface_output(v):
     return v
 
 
-def _check_consistency_wall_velocity_and_model(v):
-    models = v.models
-    if models:
-        for model in models:
-            if isinstance(model, Wall):
-                if model.velocity is not None and model.wall_velocity_model is not None:
-                    raise ValueError(
-                        "Cannot specify both 'velocity' and 'wall_velocity_model' for the same patch. "
-                        "Please specify either one or the other."
-                    )
-
-    return v
-
-
 def _check_duplicate_entities_in_models(params):
     models = params.models
 

@@ -194,19 +194,16 @@ def test_consistency_wall_function_validator():
 
     assert params
 
-    message = (
-        "Cannot specify both 'velocity' and 'wall_velocity_model' for the same patch. "
-        "Please specify either one or the other."
-    )
+    message = "Using `SlaterPorousBleed` with wall function is not supported currently."
 
     # Invalid simulation params
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[
                 Wall(
-                    velocity=[0.1, 0.2, 0.3],
+                    velocity=SlaterPorousBleed(porosity=0.2, static_pressure=0.1),
                     surfaces=[Surface(name="noSlipWall")],
-                    wall_velocity_model=SlaterPorousBleed(porosity=0.2, static_pressure=0.1),
+                    use_wall_function=True,
                 )
             ]
         )

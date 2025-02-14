@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -34,6 +34,7 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
+from flow360.component.simulation.utils import is_instance_of_type_in_union
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
@@ -150,8 +151,7 @@ class SlaterPorousBleed(Flow360BaseModel):
     - Specify a static pressure of 1.01e6 Pascals at the slater bleed boundary, and
       set the porosity of the surface to 0.4 (40%).
 
-    >>> fl.SlaterPorousBleeed(static_pressure = 1.01e6 * fl.u.Pa,
-    ...                          porosity = 0.4, activation_step = 200)
+    >>> fl.SlaterPorousBleed(static_pressure=1.01e6 * fl.u.Pa, porosity=0.4, activation_step=200)
 
     ====
     """
@@ -234,6 +234,9 @@ class Rotational(Flow360BaseModel):
 ##########################################
 
 
+WallVelocityModelTypes = Annotated[Union[SlaterPorousBleed], pd.Field(discriminator="type_name")]
+
+
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
@@ -280,9 +283,9 @@ class Wall(BoundaryBase):
 
       >>> fl.Wall(
       ...     entities=volume_mesh["fluid/SlaterBoundary-*"],
-      ...     wall_velocity_model = fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
-      ...                                                porosity = 0.4,
-      ...                                                activation_step = 200)
+      ...     velocity=fl.SlaterPorousBleed(
+      ...         static_pressure=1.01e6 * fl.u.Pa, porosity=0.4, activation_step=200
+      ...     ),
       ... )
 
     ====
@@ -295,8 +298,9 @@ class Wall(BoundaryBase):
         description="Specify if use wall functions to estimate the velocity field "
         + "close to the solid boundaries.",
     )
-    velocity: Optional[VelocityVectorType] = pd.Field(
-        None, description="Prescribe a velocity on the wall."
+
+    velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
+        None, description="Prescribe a velocity or the velocity model on the wall."
     )
     # pylint: disable=no-member
     heat_spec: Union[HeatFlux, Temperature] = pd.Field(
@@ -306,13 +310,19 @@ class Wall(BoundaryBase):
     )
     roughness_height: LengthType.NonNegative = pd.Field(
         0 * u.m,
-        description="Equivalant sand grain roughness height. Available only to `Fluid` zone boundaries.",
+        description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
-    wall_velocity_model: Optional[SlaterPorousBleed] = pd.Field(
-        None,
-        description="Specify a model to compute the local wall velocity. Currently only "
-        + " SlaterPorousBleed is supported.",
-    )
+
+    @pd.model_validator(mode="after")
+    def check_wall_function_conflict(self):
+        """Check no setting is conflicting with the usage of wall function"""
+        if self.use_wall_function is False:
+            return self
+        if is_instance_of_type_in_union(self.velocity, WallVelocityModelTypes):
+            raise ValueError(
+                f"Using `{type(self.velocity).__name__}` with wall function is not supported currently."
+            )
+        return self
 
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
