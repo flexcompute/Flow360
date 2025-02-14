@@ -5,16 +5,18 @@
 import json
 import os
 
+from numpy import sqrt
 from pydantic import validate_call
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
-from flow360.component.simulation.unit_system import LengthType, TimeType
+from flow360.component.simulation.unit_system import LengthType, AbsoluteTemperatureType
+from flow360.log import log
 
 
 def _parse_flow360_bet_disk_dict(
-    *, flow360_bet_disk_dict: dict, mesh_unit, time_unit, bet_disk_index: int = 0
+    *, flow360_bet_disk_dict: dict, mesh_unit, freestream_temperature, bet_disk_index: int = 0
 ):
     """
     Read in the provided Flow360 BETDisk config.
@@ -33,6 +35,11 @@ def _parse_flow360_bet_disk_dict(
         if len(flow360_bet_disk_dict["BETDisks"]) == 0:
             raise ValueError("Input file does not contain BETDisk setting.")
         flow360_bet_disk_dict = flow360_bet_disk_dict["BETDisks"][0]
+
+    specific_heat_ratio = 1.4
+    gas_constant = 287.0529 * u.m**2 / u.s**2 / u.K
+    speed_of_sound = sqrt(specific_heat_ratio * gas_constant * freestream_temperature.to("K"))
+    time_unit = mesh_unit / speed_of_sound
 
     key_mapping = {
         "rotationDirectionRule": "rotation_direction_rule",
@@ -104,6 +111,10 @@ def _parse_flow360_bet_disk_dict(
     updated_bet_dict["omega"] = (
         updated_bet_dict["omega"] * u.rad / time_unit  # pylint: disable = no-member
     )
+
+    log.info("Provided temperature was used to calculate the value of omega in rad/s.")
+    log.info("Omega can be manually changed to a desired value and unit.")
+
     updated_bet_dict["chord_ref"] = updated_bet_dict["chord_ref"] * mesh_unit
     updated_bet_dict["sectional_radiuses"] = updated_bet_dict["sectional_radiuses"] * mesh_unit
 
@@ -123,7 +134,7 @@ def _load_flow360_json(*, file_path: str) -> dict:
 def read_single_v1_BETDisk(
     file_path: str,
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
-    time_unit: TimeType.Positive,  # pylint: disable = no-member
+    freestream_temperature: AbsoluteTemperatureType
 ) -> BETDisk:
     """
     Constructs a single :class: `BETDisk` instance from a given V1 (legacy) Flow360 input.
@@ -157,7 +168,7 @@ def read_single_v1_BETDisk(
         bet_disk_dict, cylinder_dict = _parse_flow360_bet_disk_dict(
             flow360_bet_disk_dict=_load_flow360_json(file_path=file_path),
             mesh_unit=mesh_unit,
-            time_unit=time_unit,
+            freestream_temperature=freestream_temperature,
         )
 
         return BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict))
@@ -171,7 +182,7 @@ def read_single_v1_BETDisk(
 def read_all_v1_BETDisks(
     file_path: str,
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
-    time_unit: TimeType.Positive,  # pylint: disable = no-member
+    freestream_temperature: AbsoluteTemperatureType,
 ) -> list[BETDisk]:
     """
     Read in Legacy V1 Flow360.json and convert its BETDisks settings to a list of :class: `BETDisk` instances
@@ -211,7 +222,7 @@ def read_all_v1_BETDisks(
         bet_disk_dict, cylinder_dict = _parse_flow360_bet_disk_dict(
             flow360_bet_disk_dict=item,
             mesh_unit=mesh_unit,
-            time_unit=time_unit,
+            freestream_temperature=freestream_temperature,
         )
         bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
         bet_disk_index += 1
