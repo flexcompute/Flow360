@@ -1,31 +1,50 @@
-import flow360.v1 as fl
+import flow360 as fl
 from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh", tags=["tag"])
-volume_mesh = volume_mesh.submit()
-print(volume_mesh)
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename),
+    name="Forking cases from Python"
+)
+vm = project.volume_mesh
 
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=1.15315084119231,
+            moment_center=[0, 0, 0],
+            moment_length=[1.47602, 0.801672958512342, 1.47602]
+        ),
+        operating_condition=fl.AerospaceCondition(
+            velocity_magnitude=286,
+            alpha=3.06 * fl.u.deg
+        ),
+        time_stepping=fl.Steady(
+            max_steps=500
+        ),
+        models=[
+            fl.Wall(surfaces=vm["1"]),
+            fl.SlipWall(surfaces=vm["2"]),
+            fl.Freestream(surfaces=vm["3"])
+        ],
+        outputs=[
+            fl.SurfaceOutput(
+                output_fields=["primitiveVars", "Cp", "Cf"], surfaces=[vm["1"]]
+            ),
+            fl.VolumeOutput(output_fields=["primitiveVars", "Mach"]),
+        ]
+    )
 
-# submit case using json file
-params = fl.Flow360Params(OM6wing.case_json)
-case = fl.Case.create("OM6wing", params, volume_mesh.id)
-case = case.submit()
+case = project.run_case(params, "OM6Wing-default-0")
 
 # fork a case
-case_fork_1 = case.fork()
-case_fork_1.name = "OM6wing-fork-1"
-case_fork_1.params.time_stepping.max_pseudo_steps = 300
+case.params.time_stepping.max_steps = 300
+case_fork_1 = project.run_case(params, "OM6Wing-fork-1", fork_from=case)
 
 # create another fork
-case_fork_2 = case_fork_1.fork("OM6wing-fork-2")
-case_fork_2.params.time_stepping.max_pseudo_steps = 200
-
-case_fork_1 = case_fork_1.submit()
-case_fork_2 = case_fork_2.submit()
+case_fork_1.params.time_stepping.max_steps = 200
+case_fork_2 = project.run_case(params, "OM6Wing-fork-2", fork_from=case_fork_1)
 
 # create fork by providing parent case id:
-case_fork = fl.Case.create("case-fork", case.params, parent_id=case.id)
-case_fork.submit()
+case_fork = project.run_case(case.params, "OM6Wing-fork-0", fork_from=case)
