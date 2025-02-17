@@ -1,8 +1,6 @@
 """Logging for Flow360."""
 
-import io
 import os
-import sys
 from datetime import datetime
 from typing import Union
 
