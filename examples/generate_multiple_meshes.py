@@ -5,7 +5,7 @@ fl.Env.dev.active()
 
 project = fl.Project.from_file(
     files=fl.GeometryFiles(Airplane.geometry),
-    name="Python Project (Geometry, from file, multiple runs)"
+    name="Python Project (Geometry, from file, multiple runs)",
 )
 
 geometry = project.geometry
