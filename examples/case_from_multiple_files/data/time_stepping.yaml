@@ -1,0 +1,8 @@
+CFL:
+    convergence_limiting_factor: 0.25
+    max: 10000.0
+    max_relative_change: 1.0
+    min: 0.1
+    type: adaptive
+max_steps: 500
+type_name: Steady

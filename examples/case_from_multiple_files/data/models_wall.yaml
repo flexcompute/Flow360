@@ -1,0 +1,22 @@
+entities:
+    stored_entities:
+    -   name: '1'
+        private_attribute_entity_type_name: Surface
+        private_attribute_full_name: '1'
+        private_attribute_id: null
+        private_attribute_is_interface: false
+        private_attribute_registry_bucket_name: SurfaceEntityType
+        private_attribute_sub_components: []
+        private_attribute_tag_key: null
+heat_spec:
+    type_name: HeatFlux
+    value:
+        units: W/m**2
+        value: 0.0
+name: null
+roughness_height:
+    units: m
+    value: 0.0
+type: Wall
+use_wall_function: false
+velocity: null
