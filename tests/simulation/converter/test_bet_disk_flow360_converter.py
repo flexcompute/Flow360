@@ -19,16 +19,23 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_single_flow360_bet_convert():
+def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
     disk = read_single_v1_BETDisk(
         file_path="./data/single_flow360_bet_disk.json",
         mesh_unit=1 * u.cm,
-        time_unit=2 * u.s,
+        freestream_temperature=288.15 * u.K,
     )
     assert isinstance(disk, BETDisk)
+    disk = disk.model_dump_json()
+    disk = json.loads(disk)
+    del disk["entities"]["stored_entities"][0]["private_attribute_id"]
     with open("./ref/ref_single_bet_disk.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
-    compare_values(disk.model_dump(), ref_dict)
+    if debug:
+        print(">>> disk = ", disk)
+        print("=== disk ===\n", json.dumps(disk, indent=4, sort_keys=True))
+        print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
+    assert compare_values(ref_dict, disk, atol=atol, rtol=rtol)
 
     with pytest.raises(
         ValueError,
@@ -38,7 +45,7 @@ def test_single_flow360_bet_convert():
         disk = read_single_v1_BETDisk(
             file_path="./data/full_flow360.json",
             mesh_unit=1 * u.cm,
-            time_unit=2 * u.s,
+            freestream_temperature=288.15 * u.K,
         )
     with pytest.raises(
         ValueError,
@@ -54,9 +61,7 @@ def test_single_flow360_bet_convert():
 
         try:
             read_single_v1_BETDisk(
-                file_path=temp_file_name,
-                mesh_unit=1 * u.cm,
-                time_unit=2 * u.s,
+                file_path=temp_file_name, mesh_unit=1 * u.cm, freestream_temperature=288.15 * u.K
             )
         finally:
             os.remove(temp_file_name)
@@ -67,7 +72,7 @@ def test_full_flow360_bet_convert():
     list_of_disks = read_all_v1_BETDisks(
         file_path="./data/full_flow360.json",
         mesh_unit=1 * u.cm,
-        time_unit=2 * u.s,
+        freestream_temperature=288.15 * u.K,
     )
 
     assert isinstance(list_of_disks, list)
@@ -82,5 +87,5 @@ def test_full_flow360_bet_convert():
         read_all_v1_BETDisks(
             file_path="./data/single_flow360_bet_disk.json",
             mesh_unit=1 * u.cm,
-            time_unit=2 * u.s,
+            freestream_temperature=288.15 * u.K,
         )
