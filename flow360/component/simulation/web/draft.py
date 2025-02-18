@@ -48,6 +48,53 @@ class DraftPostRequest(pd.BaseModel):
         return values
 
 
+class ForceCreationConfig(pd.BaseModel):
+    """Data model for force creation configuration"""
+
+    start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
+        None, serialization_alias="startFrom"
+    )
+
+
+class DraftRunRequest(pd.BaseModel):
+    """Data model for draft run request"""
+
+    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(serialization_alias="upTo")
+    use_in_house: bool = pd.Field(serialization_alias="useInHouse")
+    force_creation_config: Optional[ForceCreationConfig] = pd.Field(
+        None, serialization_alias="forceCreationConfig"
+    )
+    source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
+        exclude=True
+    )
+
+    @pd.model_validator(mode="after")
+    def _validate_force_creation_config(self):
+        # pylint: disable=no-member
+        if self.force_creation_config is None:
+            return self
+        if (
+            self.source_item_type == "SurfaceMesh"
+            and self.force_creation_config.start_from not in ["VolumeMesh", "Case"]
+        ) or (
+            self.source_item_type in ["VolumeMesh", "Case"]
+            and self.force_creation_config.start_from != "Case"
+        ):
+            raise ValueError(
+                f"Cannot force create {self.force_creation_config.start_from} "
+                f"since the project starts from {self.source_item_type}."
+            )
+        if (
+            self.up_to == "SurfaceMesh"
+            and self.force_creation_config.start_from in ["VolumeMesh", "Case"]
+        ) or (self.up_to == "VolumeMesh" and self.force_creation_config.start_from == "Case"):
+            raise ValueError(
+                f"Cannot force create {self.force_creation_config.start_from} "
+                f"since the project only runs up to {self.up_to}."
+            )
+        return self
+
+
 class DraftDraft(ResourceDraft):
     """
     Draft Draft component
@@ -142,18 +189,37 @@ class Draft(Flow360Resource):
         response = self.get(method="simulation/file", params={"type": "simulation"})
         return json.loads(response["simulationJson"])
 
-    def run_up_to_target_asset(self, target_asset: type, use_beta_mesher: bool) -> str:
+    def run_up_to_target_asset(
+        self,
+        target_asset: type,
+        use_beta_mesher: bool,
+        source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
+        start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"],
+    ) -> str:
         """run the draft up to the target asset"""
 
         try:
             # pylint: disable=protected-access
             if use_beta_mesher is True:
                 log.info("Selecting beta/in-house mesher for possible meshing tasks.")
+            if start_from:
+                if start_from != target_asset._cloud_resource_type_name:
+                    log.info(
+                        f"Force creating new resouces from {start_from} until {target_asset._cloud_resource_type_name}"
+                    )
+                else:
+                    log.info(f"Force creating a new {target_asset._cloud_resource_type_name}.")
+            force_creation_config = (
+                ForceCreationConfig(start_from=start_from) if start_from else None
+            )
+            run_request = DraftRunRequest(
+                source_item_type=source_item_type,
+                up_to=target_asset._cloud_resource_type_name,
+                use_in_house=use_beta_mesher,
+                force_creation_config=force_creation_config,
+            )
             run_response = self.post(
-                json={
-                    "upTo": target_asset._cloud_resource_type_name,
-                    "useInHouse": use_beta_mesher,
-                },
+                run_request.model_dump(by_alias=True),
                 method="run",
             )
             destination_id = run_response["id"]

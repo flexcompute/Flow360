@@ -937,6 +937,7 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        **kwargs,
     ):
         """
         Runs a simulation for the project.
@@ -970,6 +971,7 @@ class Project(pd.BaseModel):
             params=params, root_asset=self._root_asset, length_unit=self.length_unit
         )
 
+
         params, errors = validate_params_with_context(
             params=params,
             root_item_type=self.metadata.root_item_type.value,
@@ -982,11 +984,15 @@ class Project(pd.BaseModel):
                 "\n>> Validation error found in the simulation params! Errors are: " + error_msg
             )
 
+        source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
+        start_from = kwargs.get("start_from", None)
+
+
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
             source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
-            source_item_type=(self.metadata.root_item_type.value if fork_from is None else "Case"),
+            source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
         ).submit()
@@ -994,7 +1000,12 @@ class Project(pd.BaseModel):
         draft.update_simulation_params(params)
 
         try:
-            destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
+            destination_id = draft.run_up_to_target_asset(
+                target,
+                source_item_type=source_item_type,
+                use_beta_mesher=use_beta_mesher,
+                start_from=start_from,
+            )
         except RuntimeError:
             return None
 
@@ -1036,6 +1047,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        **kwargs,
     ):
         """
         Runs the surface mesher for the project.
@@ -1069,6 +1081,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            **kwargs,
         )
         return surface_mesh
 
@@ -1080,6 +1093,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        **kwargs,
     ):
         """
         Runs the volume mesher for the project.
@@ -1116,6 +1130,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            **kwargs,
         )
         return volume_mesh
 
@@ -1128,6 +1143,7 @@ class Project(pd.BaseModel):
         fork_from: Case = None,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        **kwargs,
     ):
         """
         Runs a case for the project.
@@ -1154,5 +1170,6 @@ class Project(pd.BaseModel):
             fork_from=fork_from,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            **kwargs,
         )
         return case
