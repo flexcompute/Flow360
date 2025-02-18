@@ -1,3 +1,5 @@
+"""This module contains extra operating conditions."""
+
 from typing import Optional
 
 import pydantic as pd
@@ -16,7 +18,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.log import log
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, no-member, duplicate-code
 @pd.validate_call
 def operating_condition_from_mach_muref(
     mach: pd.NonNegativeFloat,
