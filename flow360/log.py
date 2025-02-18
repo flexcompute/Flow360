@@ -1,8 +1,6 @@
 """Logging for Flow360."""
 
-import io
 import os
-import sys
 from datetime import datetime
 from typing import Union
 
@@ -264,7 +262,6 @@ def set_logging_console(stderr: bool = False) -> None:
     stderr : bool
         If False, logs are directed to stdout, otherwise to stderr.
     """
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     if "console" in log.handlers:
         previous_level = log.handlers["console"].level
     else:
