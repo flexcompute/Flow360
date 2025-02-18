@@ -113,7 +113,7 @@ def _parse_flow360_bet_disk_dict(
     )
 
     log.info("Provided temperature was used to calculate the value of omega in rad/s.")
-    log.info("Omega can be manually changed to a desired value and unit.")
+    log.info("You can print and correct the value and unit of `Omega` afterwards if needed.")
 
     updated_bet_dict["chord_ref"] = updated_bet_dict["chord_ref"] * mesh_unit
     updated_bet_dict["sectional_radiuses"] = updated_bet_dict["sectional_radiuses"] * mesh_unit
