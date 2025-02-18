@@ -673,7 +673,7 @@ def test_surface_probe_output():
                 "SP-2": {
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
-                    "animationFrequencyTimeAverage": -1,
+                    "animationFrequencyTimeAverage": 1,
                     "animationFrequencyTimeAverageOffset": 0,
                     "startAverageIntegrationStep": -1,
                     "computeTimeAverages": True,

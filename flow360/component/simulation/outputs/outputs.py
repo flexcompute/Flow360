@@ -615,7 +615,7 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     # pylint: disable=abstract-method
     frequency: int = pd.Field(
-        default=-1,
+        default=1,
         ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
         + "-1 is at end of simulation.",
@@ -703,7 +703,7 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
 
     # pylint: disable=abstract-method
     frequency: int = pd.Field(
-        default=-1,
+        default=1,
         ge=-1,
         description="Frequency (in number of physical time steps) at which output is saved. "
         + "-1 is at end of simulation.",
