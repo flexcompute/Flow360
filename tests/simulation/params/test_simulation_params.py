@@ -4,7 +4,7 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
-from examples.migration_guide.extra_operating_condition import (
+from flow360.component.simulation.migration.extra_operating_condition import (
     operating_condition_from_mach_muref,
 )
 from flow360.component.simulation.meshing_param.params import (

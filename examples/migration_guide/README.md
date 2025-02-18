@@ -9,28 +9,21 @@ This folder contains useful tools to help migrating your old cases to use the la
 
 ## How to use BET Disk converter
 
-Import the `bet_disk_convert` function from `bet_disk_converter` file, which is located in migration_guide folder.
+Import `BETDisk` by using:
+`from flow360.component.simulation.migration import BETDisk`
 
-The function takes in the following inputs:
-- file
-- save
-- length_unit
-- angle_unit
-- omega_unit
+It contains the following functions:
+- `read_single_v1_BETDisk()`
+- `read_all_v1_BETDisks()`
 
-and returns a tuple of lists:
-- list of BET Disks
-- list of Cylinder entities used for BET Disks
+`read_single_v1_BETDisk()` is used to convert a single a V1 (legacy) Flow360 input file into a single instance of `BETDisk` class suitable for use in the current version of Flow360.
 
-In order to save the BET Disk and Cylinder files as jsons, be sure to set `save=True`.
-
-The files will appear in your current working directory.
-
-They can later be used to create BET Disk 3D model on WebUI.
+`read_all_v1_BETDisks()` is used for extracting all BETDisks contained within a V1 (legacy) Flow360 input file into a list of `BETDisk` class instances suitable for use in the current version of Flow360
 
 ## How to use Operating Condition from Mach number and muRef
 
-Import the `operating_condition_from_mach_muref` function from `extra_operating_condition` file, which is located in migration_guide folder
+Import the `operating_condition_from_mach_muref` function by using:
+`from flow360.component.simulation.migration.extra_operating_condition import operating_condition_from_mach_muref`
 
 The function takes in the following inputs:
 - mach
