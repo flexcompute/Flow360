@@ -32,11 +32,11 @@ case = project.run_case(params, "OM6Wing-default-0")
 
 # fork a case
 case.params.time_stepping.max_steps = 300
-case_fork_1 = project.run_case(params, "OM6Wing-fork-1", fork_from=case)
+case_fork_1 = project.run_case(case.params, "OM6Wing-fork-1", fork_from=case)
 
 # create another fork
 case_fork_1.params.time_stepping.max_steps = 200
-case_fork_2 = project.run_case(params, "OM6Wing-fork-2", fork_from=case_fork_1)
+case_fork_2 = project.run_case(case_fork_1.params, "OM6Wing-fork-2", fork_from=case_fork_1)
 
 # create fork by providing parent case id:
-case_fork = project.run_case(case.params, "OM6Wing-fork-0", fork_from=case)
+case_fork = project.run_case(params, "OM6Wing-fork-1-0", fork_from=case)

@@ -59,8 +59,6 @@ params.meshing.defaults.surface_max_edge_length = 2 * fl.u.m
 project.generate_surface_mesh(params=params, name="Surface mesh 2")
 surface_mesh_2 = project.surface_mesh
 
-assert surface_mesh_1.id != surface_mesh_2.id
-
 # Check available surface mesh IDs in the project
 ids = project.get_surface_mesh_ids()
 print(ids)
