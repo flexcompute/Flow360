@@ -27,6 +27,7 @@ from flow360.component.project_utils import (
     GeometryFiles,
     SurfaceMeshFile,
     VolumeMeshFile,
+    replace_ghost_surfaces,
     show_projects_with_keyword_filter,
 )
 from flow360.component.resource_base import Flow360Resource
@@ -1027,6 +1028,9 @@ class Project(pd.BaseModel):
 
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = entity_info
+        # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
+        # This has to be done after `project_entity_info` is properly set.
+        entity_info = replace_ghost_surfaces(params)
 
         draft.update_simulation_params(params)
 
