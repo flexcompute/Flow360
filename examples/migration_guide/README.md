@@ -18,7 +18,39 @@ It contains the following functions:
 
 `read_single_v1_BETDisk()` is used to convert a single a V1 (legacy) Flow360 input file into a single instance of `BETDisk` class suitable for use in the current version of Flow360.
 
-`read_all_v1_BETDisks()` is used for extracting all BETDisks contained within a V1 (legacy) Flow360 input file into a list of `BETDisk` class instances suitable for use in the current version of Flow360
+`read_all_v1_BETDisks()` is used for extracting all BETDisks contained within a V1 (legacy) Flow360 input file into a list of `BETDisk` class instances suitable for use in the current version of Flow360.
+
+Inputs can be in the form of either a single BETDisk instance json file using the following structure:
+```
+{
+    "axisOfRotation": [
+        ...
+    ],
+    "centerOfRotation": [
+        ...
+    ],
+    ...
+    "sectionalPolars": [
+        ...
+    ]
+}
+```
+Or an entire flow360 json file structured like this:
+```
+{
+    "geometry": {
+        ...
+    },
+    ...
+    "boundaries": {
+        ...
+    },
+    "BETDisks": [
+        ...
+    ]
+}
+```
+
 
 ## How to use Operating Condition from Mach number and muRef
 
