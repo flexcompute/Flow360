@@ -121,6 +121,19 @@ class _ParamModelBase(Flow360BaseModel):
 
         return kwargs
 
+    @classmethod
+    def _update_input(cls, model_dict):
+        version = model_dict.pop("version", None)
+        if version is None:
+            raise Flow360RuntimeError(
+                "Missing version info in file content, please check the input file."
+            )
+        if version != __version__:
+            model_dict = updater(
+                version_from=version, version_to=__version__, params_as_dict=model_dict
+            )
+        return model_dict
+
     def _init_no_context(self, filename, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
@@ -145,7 +158,7 @@ class _ParamModelBase(Flow360BaseModel):
                 super().__init__(**model_dict)
         else:
             raise Flow360RuntimeError(
-                "Missing version or unit system info in file content, please check the input file."
+                "Missing version info in file content, please check the input file."
             )
 
     def _init_with_context(self, **kwargs):

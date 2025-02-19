@@ -427,16 +427,8 @@ class GhostSurface(_SurfaceEntityBase):
     Represents a boundary surface that may or may not be generated therefore may or may not exist.
     It depends on the submitted geometry/Surface mesh. E.g. the symmetry plane in `AutomatedFarfield`.
 
-    For now we do not use metadata or any other information to validate (on the client side) whether the surface
-    actually exists. We will let workflow error out if the surface is not found.
-
-    - For meshing:
-       - we forbid using `GhostSurface` in any surface-related features which is not supported right now anyways.
-
-    - For boundary condition and post-processing:
-        - Allow usage of `GhostSurface` but no validation. Solver validation will error out when finding mismatch
-        between the boundary condition and the mesh meta.
-
+    This is a token/place-holder used only on the Python API side.
+    All `GhostSurface` entities will be replaced with exact entity instances before simulation.json submission.
     """
 
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
@@ -446,10 +438,13 @@ class GhostSurface(_SurfaceEntityBase):
 
 # pylint: disable=missing-class-docstring
 @final
-class GhostSphere(GhostSurface):
-    type_name: Literal["GhostSphere"] = pd.Field("GhostSphere", frozen=True)
-    center: List = pd.Field(alias="center")
-    max_radius: PositiveFloat = pd.Field(alias="maxRadius")
+class GhostSphere(_SurfaceEntityBase):
+    private_attribute_entity_type_name: Literal["GhostSphere"] = pd.Field(
+        "GhostSphere", frozen=True
+    )
+    # Note: Making following optional since front end will not carry these over to assigned entities.
+    center: Optional[List] = pd.Field(None, alias="center")
+    max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
 
 
 # pylint: disable=missing-class-docstring
@@ -458,9 +453,10 @@ class GhostCircularPlane(GhostSurface):
     private_attribute_entity_type_name: Literal["GhostCircularPlane"] = pd.Field(
         "GhostCircularPlane", frozen=True
     )
-    center: List = pd.Field(alias="center")
-    max_radius: PositiveFloat = pd.Field(alias="maxRadius")
-    normal_axis: List = pd.Field(alias="normalAxis")
+    # Note: Making following optional since front end will not carry these over to assigned entities.
+    center: Optional[List] = pd.Field(None, alias="center")
+    max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
+    normal_axis: Optional[List] = pd.Field(None, alias="normalAxis")
 
 
 class SurfacePair(Flow360BaseModel):

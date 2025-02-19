@@ -33,7 +33,7 @@ class UniformRefinement(Flow360BaseModel):
 
 
 class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
-    """Base class for all refinements that requires spacing in axia, radial and circumferential directions."""
+    """Base class for all refinements that requires spacing in axial, radial and circumferential directions."""
 
     # pylint: disable=no-member
     spacing_axial: LengthType.Positive = pd.Field(description="Spacing along the axial direction.")
@@ -163,7 +163,7 @@ class AutomatedFarfield(Flow360BaseModel):
 class UserDefinedFarfield(Flow360BaseModel):
     """
     Setting for user defined farfield zone generation.
-    This means the "farfield" boundaires are comming from the supplied geometry file
+    This means the "farfield" boundaries are coming from the supplied geometry file
     and meshing will take place inside this "geometry".
     """
 
