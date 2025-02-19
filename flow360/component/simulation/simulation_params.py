@@ -135,7 +135,7 @@ class _ParamModelBase(Flow360BaseModel):
         version = model_dict.pop("version", None)
         if version is None:
             raise Flow360RuntimeError(
-                "Missing version or unit system info in file content, please check the input file."
+                "Missing version info in file content, please check the input file."
             )
         if version != __version__:
             model_dict = updater(
