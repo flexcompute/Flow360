@@ -17,6 +17,8 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSphere,
     GhostSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
@@ -306,7 +308,7 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
             ]
 
         for entity in entities:
-            if isinstance(entity, GhostSurface):
+            if isinstance(entity, (GhostSurface, GhostSphere, GhostCircularPlane)):
                 continue
             used_boundaries.add(entity.name)
 

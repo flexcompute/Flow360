@@ -56,3 +56,21 @@ def test_updater_from_24_11_0_6_to_24_11_7():
             1
         ]["private_attribute_id"]
     )
+
+
+def test_updater_to_24_11_10():
+    with open("../data/simulation/simulation_pre_24_11_10.json", "r") as fp:
+        params = json.load(fp)
+
+    params_new = updater(
+        version_from=f"24.11.9",
+        version_to=f"24.11.10",
+        params_as_dict=params,
+    )
+    updated_ghost_sphere = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "ghost_entities"
+    ][0]
+    assert updated_ghost_sphere["private_attribute_entity_type_name"] == "GhostSphere"
+    assert "type_name" not in updated_ghost_sphere
+    assert updated_ghost_sphere["center"] == [5.0007498695, 0, 0]
+    assert updated_ghost_sphere["max_radius"] == 504.16453591327473

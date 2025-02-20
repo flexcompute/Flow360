@@ -8,6 +8,10 @@ TODO: remove duplication code with FLow360Params updater.
 
 import re
 
+from flow360.component.simulation.framework.updater_functions import (
+    fix_ghost_sphere_schema,
+)
+
 from ....exceptions import Flow360NotImplementedError, Flow360RuntimeError
 from .entity_base import generate_uuid
 from .updater_utils import compare_dicts
@@ -55,10 +59,17 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
     return params_as_dict
 
 
+def _24_11_9_to_24_11_10_update(params_as_dict):
+    fix_ghost_sphere_schema(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
 UPDATE_MAP = [
     ("24.11.([0-5])$", "24.11.6", _no_update),
     ("24.11.6", "24.11.7", _24_11_6_to_24_11_7_update),
-    ("24.11.7", "24.11.*", _no_update),
+    ("24.11.7", "24.11.9", _no_update),
+    ("24.11.9", "24.11.10", _24_11_9_to_24_11_10_update),
+    ("24.11.10", "24.11.*", _no_update),
 ]
 
 
