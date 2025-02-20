@@ -175,6 +175,27 @@ class Project(pd.BaseModel):
         return self.metadata.id
 
     @property
+    def length_unit(self) -> LengthType.Positive:
+        """
+        Returns the length unit of the project.
+
+        Returns
+        -------
+        LengthType.Positive
+            The length unit.
+        """
+
+        defaults = self._root_simulation_json
+
+        cache_key = "private_attribute_asset_cache"
+        length_key = "project_length_unit"
+
+        if cache_key not in defaults or length_key not in defaults[cache_key]:
+            raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
+
+        return LengthType.validate(defaults[cache_key][length_key])
+
+    @property
     def geometry(self) -> Geometry:
         """
         Returns the geometry asset of the project. There is always only one geometry asset per project.
@@ -599,21 +620,8 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
-        defaults = self._root_simulation_json
-
-        cache_key = "private_attribute_asset_cache"
-        length_key = "project_length_unit"
-
-        if cache_key not in defaults:
-            if length_key not in defaults[cache_key]:
-                raise Flow360ValueError("Simulation params do not contain default length unit info")
-
-        length_unit = defaults[cache_key][length_key]
-
-        with model_attribute_unlock(params.private_attribute_asset_cache, length_key):
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
-            )
+        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+            params.private_attribute_asset_cache.project_length_unit = self.length_unit
 
         root_asset = self._root_asset
 
