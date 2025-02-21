@@ -883,6 +883,7 @@ class CaseResultsModel(pd.BaseModel):
         has_function_map = {
             "actuator_disks": self.case.has_actuator_disks,
             "bet_forces": self.case.has_bet_disks,
+            "bet_forces_radial_distribution": self.case.has_bet_disks,
             "isosurfaces": self.case.has_isosurfaces,
             "monitors": self.case.has_monitors,
             "volumes": self.case.has_volume_output,
@@ -966,6 +967,7 @@ class CaseResultsModel(pd.BaseModel):
         surface_forces: bool = None,
         total_forces: bool = None,
         bet_forces: bool = None,
+        bet_forces_radial_distribution: bool = None,
         actuator_disks: bool = None,
         legacy_force_distribution: bool = None,
         x_slicing_force_distribution: bool = None,
@@ -1000,6 +1002,8 @@ class CaseResultsModel(pd.BaseModel):
             Download total forces file if True.
         bet_forces : bool, optional
             Download BET (Blade Element Theory) forces file if True.
+        bet_forces_radial_distribution : bool, optional
+            Download BET (Blade Element Theory) forces radial distribution file if True.
         actuator_disk_output : bool, optional
             Download actuator disk output file if True.
         all : bool, optional
@@ -1025,6 +1029,7 @@ class CaseResultsModel(pd.BaseModel):
         self.surface_forces.do_download = surface_forces
         self.total_forces.do_download = total_forces
         self.bet_forces.do_download = bet_forces
+        self.bet_forces_radial_distribution.do_download = bet_forces_radial_distribution
         self.actuator_disks.do_download = actuator_disks
         self.legacy_force_distribution.do_download = legacy_force_distribution
         self.x_slicing_force_distribution.do_download = x_slicing_force_distribution
