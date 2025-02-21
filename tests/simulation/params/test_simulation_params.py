@@ -4,14 +4,14 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
-from examples.migration_guide.extra_operating_condition import (
-    operating_condition_from_mach_muref,
-)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
+from flow360.component.simulation.migration.extra_operating_condition import (
+    operating_condition_from_mach_muref,
+)
 from flow360.component.simulation.models.material import SolidMaterial
 from flow360.component.simulation.models.surface_models import (
     HeatFlux,
