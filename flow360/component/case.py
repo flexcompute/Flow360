@@ -39,6 +39,7 @@ from .resource_base import (
 from .results.case_results import (
     ActuatorDiskResultCSVModel,
     AeroacousticsResultCSVModel,
+    BETForcesRadialDistributionResultCSVModel,
     BETForcesResultCSVModel,
     CaseDownloadable,
     CFLResultCSVModel,
@@ -810,6 +811,9 @@ class CaseResultsModel(pd.BaseModel):
     )
     bet_forces: BETForcesResultCSVModel = pd.Field(
         default_factory=lambda: BETForcesResultCSVModel()
+    )
+    bet_forces_radial_distribution: BETForcesRadialDistributionResultCSVModel = pd.Field(
+        default_factory=lambda: BETForcesRadialDistributionResultCSVModel()
     )
     legacy_force_distribution: LegacyForceDistributionResultCSVModel = pd.Field(
         default_factory=lambda: LegacyForceDistributionResultCSVModel()
