@@ -1,6 +1,8 @@
 import datetime
 
-from flow360.log import log
+from flow360.log import log, set_logging_level
+
+set_logging_level("DEBUG")
 
 N_LOGS = 100000
 
