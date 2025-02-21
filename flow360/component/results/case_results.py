@@ -155,6 +155,7 @@ class CaseDownloadable(Enum):
     SURFACE_FORCES = "surface_forces_v2.csv"
     TOTAL_FORCES = "total_forces_v2.csv"
     BET_FORCES = "bet_forces_v2.csv"
+    BET_FORCES_RADIAL_DISTRIBUTION = "bet_forces_radial_distribution_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
     LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
     Y_SLICING_FORCE_DISTRIBUTION = "Y_slicing_forceDistribution.csv"
@@ -1310,3 +1311,16 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
+
+
+class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):
+    """
+    Model for handling BET forces radial distribution CSV results.
+
+    Inherits from OptionallyDownloadableResultCSVModel.
+    """
+
+    remote_file_name: str = pd.Field(
+        CaseDownloadable.BET_FORCES_RADIAL_DISTRIBUTION.value, frozen=True
+    )
+    _err_msg = "Case does not have any BET disks."
