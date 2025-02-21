@@ -819,7 +819,6 @@ class ShutterBatchService:
         )
         return img_files
 
-
 class Shutter(Flow360BaseModel):
     """
     Model representing UVF shutter request data and configuration settings.
@@ -911,6 +910,14 @@ class Shutter(Flow360BaseModel):
 
         return img_files
 
+    async def sequential_screenshot_generator(self, screenshots: List[Tuple], process_function: Optional[Callable]):
+        img_files_generated = {}
+        for screenshot in screenshots:
+            img_files_generated_single_run = await process_function([screenshot])
+            img_files_generated.update(img_files_generated_single_run)
+        return img_files_generated
+
+
     # pylint: disable=too-many-branches
     def get_images(
         self, fig_name, data: List[ScenesData], regenerate_if_not_found: bool = True
@@ -969,8 +976,6 @@ class Shutter(Flow360BaseModel):
             if self.process_screenshot_in_parallel:
                 img_files_generated = asyncio.run(process_function(screenshots))
             else:
-                for screenshot in screenshots:
-                    img_files_generated_single_run = asyncio.run(process_function([screenshot]))
-                    img_files_generated.update(img_files_generated_single_run)
+                img_files_generated = asyncio.run(self.sequential_screenshot_generator(screenshots, process_function))
 
         return {**img_files_generated, **cached_files}
