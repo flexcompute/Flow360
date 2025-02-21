@@ -48,5 +48,5 @@ case = project.run_case(params, "OM6Wing-default-0")
 case = Case(case.id)
 
 # move case to folder_C
-case = case.move_to_folder(folder_C)  # TODO move entire project
+case = case.move_to_folder(folder_C)
 print(case.info)
