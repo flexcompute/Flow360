@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
-from typing import Annotated, Literal, Optional
+from typing import Literal
 
-import pydantic as pd
-
+from flow360.cloud.flow360_requests import (
+    DraftPostRequest,
+    DraftRunRequest,
+    ForceCreationConfig,
+    IDStringType,
+)
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import (
@@ -15,84 +18,9 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.utils import is_valid_uuid, validate_type
+from flow360.component.utils import validate_type
 from flow360.exceptions import Flow360WebError
 from flow360.log import log
-
-
-def _valid_id_validator(input_id: str):
-    is_valid_uuid(input_id)
-    return input_id
-
-
-IDStringType = Annotated[str, pd.AfterValidator(_valid_id_validator)]
-
-
-class DraftPostRequest(pd.BaseModel):
-    """Data model for draft post request"""
-
-    name: Optional[str] = pd.Field(None)
-    project_id: IDStringType = pd.Field(serialization_alias="projectId")
-    source_item_id: IDStringType = pd.Field(serialization_alias="sourceItemId")
-    source_item_type: Literal[
-        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
-    ] = pd.Field(serialization_alias="sourceItemType")
-    solver_version: str = pd.Field(serialization_alias="solverVersion")
-    fork_case: bool = pd.Field(serialization_alias="forkCase")
-
-    @pd.field_validator("name", mode="after")
-    @classmethod
-    def _generate_default_name(cls, values):
-        if values is None:
-            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
-        return values
-
-
-class ForceCreationConfig(pd.BaseModel):
-    """Data model for force creation configuration"""
-
-    start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
-        None, serialization_alias="startFrom"
-    )
-
-
-class DraftRunRequest(pd.BaseModel):
-    """Data model for draft run request"""
-
-    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(serialization_alias="upTo")
-    use_in_house: bool = pd.Field(serialization_alias="useInHouse")
-    force_creation_config: Optional[ForceCreationConfig] = pd.Field(
-        None, serialization_alias="forceCreationConfig"
-    )
-    source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
-        exclude=True
-    )
-
-    @pd.model_validator(mode="after")
-    def _validate_force_creation_config(self):
-        # pylint: disable=no-member
-        if self.force_creation_config is None:
-            return self
-        if (
-            self.source_item_type == "SurfaceMesh"
-            and self.force_creation_config.start_from not in ["VolumeMesh", "Case"]
-        ) or (
-            self.source_item_type in ["VolumeMesh", "Case"]
-            and self.force_creation_config.start_from != "Case"
-        ):
-            raise ValueError(
-                f"Cannot force create {self.force_creation_config.start_from} "
-                f"since the project starts from {self.source_item_type}."
-            )
-        if (
-            self.up_to == "SurfaceMesh"
-            and self.force_creation_config.start_from in ["VolumeMesh", "Case"]
-        ) or (self.up_to == "VolumeMesh" and self.force_creation_config.start_from == "Case"):
-            raise ValueError(
-                f"Cannot force create {self.force_creation_config.start_from} "
-                f"since the project only runs up to {self.up_to}."
-            )
-        return self
 
 
 class DraftDraft(ResourceDraft):

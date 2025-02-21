@@ -1,13 +1,24 @@
 """Requests module"""
 
-from typing import List, Optional, Union
+from datetime import datetime
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd_v2
 import pydantic.v1 as pd
 from pydantic.alias_generators import to_camel
 from typing_extensions import Literal
 
+from ..component.utils import is_valid_uuid
+
 LengthUnitType = Literal["m", "mm", "cm", "inch", "ft"]
+
+
+def _valid_id_validator(input_id: str):
+    is_valid_uuid(input_id)
+    return input_id
+
+
+IDStringType = Annotated[str, pd_v2.AfterValidator(_valid_id_validator)]
 
 
 ###==== V1 API Payload definition ===###
@@ -153,3 +164,73 @@ class NewReportRequest(Flow360RequestsV2):
     resources: List[_Resource]
     config_json: str
     solver_version: str
+
+
+class DraftPostRequest(Flow360RequestsV2):
+    """Data model for draft post request"""
+
+    name: Optional[str] = pd.Field(None)
+    project_id: IDStringType = pd.Field()
+    source_item_id: IDStringType = pd.Field()
+    source_item_type: Literal[
+        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
+    ] = pd.Field()
+    solver_version: str = pd.Field()
+    fork_case: bool = pd.Field()
+
+    @pd_v2.field_validator("name", mode="after")
+    @classmethod
+    def _generate_default_name(cls, values):
+        if values is None:
+            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
+        return values
+
+
+class ForceCreationConfig(Flow360RequestsV2):
+    """Data model for force creation configuration"""
+
+    start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+
+
+class DraftRunRequest(Flow360RequestsV2):
+    """Data model for draft run request"""
+
+    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+    use_in_house: bool = pd.Field()
+    force_creation_config: Optional[ForceCreationConfig] = pd.Field(
+        None,
+    )
+    source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
+        exclude=True
+    )
+
+    @pd_v2.model_validator(mode="after")
+    def _validate_force_creation_config(self):
+        # pylint: disable=no-member
+
+        order = {"Geometry": 0, "SurfaceMesh": 1, "VolumeMesh": 2, "Case": 3}
+        source_order = order[self.source_item_type]
+        up_to_order = order[self.up_to]
+
+        if up_to_order < source_order:
+            raise ValueError(
+                f"Invalid configuration: 'up_to' ({self.up_to}) cannot be earlier than "
+                f"'source_item_type' ({self.source_item_type})."
+            )
+
+        if self.force_creation_config is not None:
+            force_start_order = order[self.force_creation_config.start_from]
+            if force_start_order <= source_order < 3 or (
+                source_order == 3 and force_start_order != 3
+            ):
+                raise ValueError(
+                    f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "
+                    f"must be later than 'source_item_type' ({self.source_item_type})."
+                )
+
+            if force_start_order > up_to_order:
+                raise ValueError(
+                    f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "
+                    f"cannot be later than 'up_to' ({self.up_to})."
+                )
+        return self
