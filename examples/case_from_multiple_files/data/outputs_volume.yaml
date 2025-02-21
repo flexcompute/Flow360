@@ -1,0 +1,9 @@
+frequency: -1
+frequency_offset: 0
+name: Volume output
+output_fields:
+    items:
+    - primitiveVars
+    - Mach
+output_format: paraview
+output_type: VolumeOutput
