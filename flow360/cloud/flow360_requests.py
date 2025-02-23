@@ -212,12 +212,6 @@ class DraftRunRequest(Flow360RequestsV2):
         source_order = order[self.source_item_type]
         up_to_order = order[self.up_to]
 
-        if up_to_order < source_order:
-            raise ValueError(
-                f"Invalid configuration: 'up_to' ({self.up_to}) cannot be earlier than "
-                f"'source_item_type' ({self.source_item_type})."
-            )
-
         if self.force_creation_config is not None:
             force_start_order = order[self.force_creation_config.start_from]
             if force_start_order <= source_order < 3 or (
