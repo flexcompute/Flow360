@@ -31,7 +31,7 @@ from flow360.component.project_utils import (
     show_projects_with_keyword_filter,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.services import validate_params_with_path
+from flow360.component.simulation.services import validate_params_with_simulation_path
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -968,7 +968,7 @@ class Project(pd.BaseModel):
         params = set_up_params_for_draft(
             params=params, root_asset=self._root_asset, length_unit=self.length_unit
         )
-        params = validate_params_with_path(
+        params = validate_params_with_simulation_path(
             params_as_dict=params.model_dump(),
             root_item_type=self.metadata.root_item_type.value,
             up_to=target._cloud_resource_type_name,

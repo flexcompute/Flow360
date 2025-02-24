@@ -522,7 +522,7 @@ def _process_case(params: dict, mesh_unit: str, up_to: str) -> Optional[Dict[str
     return None
 
 
-def validate_params_with_path(
+def validate_params_with_simulation_path(
     params_as_dict,
     root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"],
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
@@ -584,7 +584,7 @@ def generate_process_json(
     params_as_dict = json.loads(simulation_json)
     mesh_unit = _get_mesh_unit(params_as_dict)
 
-    params = validate_params_with_path(
+    params = validate_params_with_simulation_path(
         params_as_dict=params_as_dict, root_item_type=root_item_type, up_to=up_to
     )
 
