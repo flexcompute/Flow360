@@ -43,8 +43,8 @@
     "rotation_direction_rule": "rightHand",
     "number_of_blades": 3,
     "omega": {
-        "value": 0.1417322834645669,
-        "units": "flow360_angular_velocity_unit"
+        "value": 460,
+        "units": "rpm"
     },
     "chord_ref": {
         "value": 0.3556,

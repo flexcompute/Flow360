@@ -136,6 +136,25 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response, data
     assert float(results.bet_forces.values["Disk0_Moment_x"][0].v) == 23068914203.12496
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
 
+    results.bet_forces_radial_distribution.load_from_local(
+        os.path.join(data_path, "results", "bet_forces_radial_distribution_v2.csv")
+    )
+
+    print(results.bet_forces_radial_distribution.as_dataframe())
+    assert isinstance(results.bet_forces_radial_distribution.as_dataframe(), pandas.DataFrame)
+    assert isinstance(results.bet_forces_radial_distribution.as_dict(), dict)
+    assert isinstance(results.bet_forces_radial_distribution.as_numpy(), np.ndarray)
+
+    assert (
+        results.bet_forces_radial_distribution.values["Disk0_Blade0_All_ThrustCoeff"][0]
+        == 0.015451537799664
+    )
+
+    assert (
+        results.bet_forces_radial_distribution.values["Disk0_Blade0_All_TorqueCoeff"][0]
+        == 0.0002627693012437
+    )
+
 
 def test_downloading(mock_id, mock_response, s3_download_override):
     case = fl.Case(id=mock_id)
@@ -162,6 +181,7 @@ def test_downloading(mock_id, mock_response, s3_download_override):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_downloader(mock_id, mock_response):
+    print(mock_id)
     case = fl.Case(id=mock_id)
     results = case.results
 

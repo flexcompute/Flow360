@@ -446,7 +446,6 @@
                 },
                 "private_attribute_entity_type_name": "Cylinder",
                 "private_attribute_full_name": null,
-                "private_attribute_id": "ace1caa3-4117-4f21-82bf-2aa8e1200b48",
                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
                 "private_attribute_zone_boundary_names": {
                     "items": []
@@ -463,7 +462,7 @@
     "number_of_blades": 3,
     "omega": {
         "units": "rad/s",
-        "value": 0.0023
+        "value": 156.5352426717779
     },
     "private_attribute_constructor": "default",
     "private_attribute_input_cache": {
@@ -4980,5 +4979,5 @@
         }
     ],
     "type": "BETDisk",
-    "type_name": "MultiConstructorBaseModel"
+    "type_name": "BETDisk"
 }

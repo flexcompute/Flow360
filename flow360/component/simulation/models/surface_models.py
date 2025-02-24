@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -23,6 +23,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
+    GhostSphere,
     GhostSurface,
     Surface,
     SurfacePair,
@@ -34,6 +35,7 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
+from flow360.component.simulation.utils import is_instance_of_type_in_union
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
@@ -44,7 +46,10 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     """Boundary base"""
 
     type: str = pd.Field()
-    entities: EntityList[Surface] = pd.Field(alias="surfaces")
+    entities: EntityList[Surface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries with boundary condition imposed.",
+    )
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -141,18 +146,16 @@ class Pressure(SingleAttributeModel):
 
 class SlaterPorousBleed(Flow360BaseModel):
     """
-    :class:`SlaterPorousBleed` class to specify the static pressure of the Slater porous
-    bleed model `Outflow` boundary condition via :py:attr:`Outflow.spec`. This model is
-    often used for supersonic porous bleed regions, and used a porosity and static
-    pressure ratio to control the flow out of a porous bleed region.
+    :class:`SlaterPorousBleed` is a no-slip wall model which prescribes a normal
+    velocity at the surface as a function of the surface pressure and density according
+    to the model of John Slater.
 
     Example
     -------
     - Specify a static pressure of 1.01e6 Pascals at the slater bleed boundary, and
       set the porosity of the surface to 0.4 (40%).
 
-    >>> fl.SlaterPorousBleed(static_pressure = 1.01e6 * fl.u.Pa,
-                             porosity = 0.4)
+    >>> fl.SlaterPorousBleed(static_pressure=1.01e6 * fl.u.Pa, porosity=0.4, activation_step=200)
 
     ====
     """
@@ -161,6 +164,9 @@ class SlaterPorousBleed(Flow360BaseModel):
     # pylint: disable=no-member
     static_pressure: PressureType.Positive = pd.Field(description="The static pressure value.")
     porosity: float = pd.Field(gt=0, le=1, description="The porosity of the bleed region.")
+    activation_step: Optional[pd.PositiveInt] = pd.Field(
+        None, description="Pseudo step at which to start applying the SlaterPorousBleedModel."
+    )
 
 
 class MassFlowRate(Flow360BaseModel):
@@ -232,6 +238,9 @@ class Rotational(Flow360BaseModel):
 ##########################################
 
 
+WallVelocityModelTypes = Annotated[Union[SlaterPorousBleed], pd.Field(discriminator="type_name")]
+
+
 class Wall(BoundaryBase):
     """
     :class:`Wall` class defines the wall boundary condition based on the inputs.
@@ -273,6 +282,16 @@ class Wall(BoundaryBase):
       ...     heat_spec=fl.HeatFlux(1.0 * fl.u.W/fl.u.m**2),
       ... )
 
+    - Define Slater no-slip bleed model on entities
+      with the naming pattern :code:`"fluid/SlaterBoundary-*"`:
+
+      >>> fl.Wall(
+      ...     entities=volume_mesh["fluid/SlaterBoundary-*"],
+      ...     velocity=fl.SlaterPorousBleed(
+      ...         static_pressure=1.01e6 * fl.u.Pa, porosity=0.4, activation_step=200
+      ...     ),
+      ... )
+
     ====
     """
 
@@ -283,8 +302,9 @@ class Wall(BoundaryBase):
         description="Specify if use wall functions to estimate the velocity field "
         + "close to the solid boundaries.",
     )
-    velocity: Optional[VelocityVectorType] = pd.Field(
-        None, description="Prescribe a tangential velocity on the wall."
+
+    velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
+        None, description="Prescribe a velocity or the velocity model on the wall."
     )
     # pylint: disable=no-member
     heat_spec: Union[HeatFlux, Temperature] = pd.Field(
@@ -294,8 +314,19 @@ class Wall(BoundaryBase):
     )
     roughness_height: LengthType.NonNegative = pd.Field(
         0 * u.m,
-        description="Equivalant sand grain roughness height. Available only to `Fluid` zone boundaries.",
+        description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
+
+    @pd.model_validator(mode="after")
+    def check_wall_function_conflict(self):
+        """Check no setting is conflicting with the usage of wall function"""
+        if self.use_wall_function is False:
+            return self
+        if is_instance_of_type_in_union(self.velocity, WallVelocityModelTypes):
+            raise ValueError(
+                f"Using `{type(self.velocity).__name__}` with wall function is not supported currently."
+            )
+        return self
 
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
@@ -305,18 +336,19 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     Example
     -------
 
-    - Define freestream boundary condition with velocity expression:
+    - Define freestream boundary condition with velocity expression and boundaries from the volume mesh:
 
       >>> fl.Freestream(
-      ...     surfaces=[volume_mesh["blk-1/zblocks"],
-      ...               volume_mesh["blk-1/xblocks"]],
+      ...     surfaces=[volume_mesh["blk-1/freestream-part1"],
+      ...               volume_mesh["blk-1/freestream-part2"]],
       ...     velocity = ["min(0.2, 0.2 + 0.2*y/0.5)", "0", "0.1*y/0.5"]
       ... )
 
-    - Define freestream boundary condition with turbulence quantities:
+    - Define freestream boundary condition with turbulence quantities and automated farfield:
 
-      >>> fl.Freestream(
-      ...     entities=[volume_mesh['freestream']],
+      >>> auto_farfield = fl.AutomatedFarfield()
+      ... fl.Freestream(
+      ...     entities=[auto_farfield.farfield],
       ...     turbulence_quantities= fl.TurbulenceQuantities(
       ...         modified_viscosity_ratio=10,
       ...     )
@@ -333,10 +365,9 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="A list of :class:`Surface` entities with "
-        + "the `Freestream` boundary condition imposed.",
+        description="List of boundaries with the `Freestream` boundary condition imposed.",
     )
 
 
@@ -367,23 +398,15 @@ class Outflow(BoundaryBase):
       ...     spec=fl.MassFlowRate(value = 123 * fl.u.lb / fl.u.s)
       ... )
 
-    - Define outflow boundary condition with Slater porous bleed model::
-
-      >>> fl.Outflow(
-      ...     surfaces=volume_mesh["fluid/bleed1"],
-      ...     spec=fl.SlaterPorousBleed(static_pressure = 0.99e6 * fl.u.Pa,
-      ...                               porosity = 0.4)
-      ... )
-
     ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `Outflow` boundary condition.")
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
-    spec: Union[Pressure, MassFlowRate, Mach, SlaterPorousBleed] = pd.Field(
+    spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(
         discriminator="type_name",
-        description="Specify the static pressure, mass flow rate, Mach number, or "
-        + "SlaterPorousBleed parameters at the `Outflow` boundary.",
+        description="Specify the static pressure, mass flow rate, or Mach number parameters at"
+        + " the `Outflow` boundary.",
     )
 
 
@@ -447,20 +470,29 @@ class SlipWall(BoundaryBase):
     Example
     -------
 
-    Define :code:`SlipWall` boundary condition for entities with the naming pattern
+    - Define :code:`SlipWall` boundary condition for entities with the naming pattern
     :code:`"*/slipWall"` in the volume mesh.
 
-    >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
+      >>> fl.SlipWall(entities=volume_mesh["*/slipWall"]
+
+    - Define :code:`SlipWall` boundary condition with automated farfield symmetry plane boundaries:
+
+      >>> auto_farfield = fl.AutomatedFarfield()
+      >>> fl.SlipWall(
+      ...     entities=[auto_farfield.symmetry_planes],
+      ...     turbulence_quantities= fl.TurbulenceQuantities(
+      ...         modified_viscosity_ratio=10,
+      ...     )
+      ... )
 
     ====
     """
 
     name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="A list of :class:`Surface` entities with "
-        + "the `SlipWall` boundary condition imposed.",
+        description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
     )
 
 
@@ -475,6 +507,13 @@ class SymmetryPlane(BoundaryBase):
 
     >>> fl.SymmetryPlane(entities=volume_mesh["fluid/symmetry"])
 
+    - Define `SymmetryPlane` boundary condition with automated farfield symmetry plane boundaries:
+
+      >>> auto_farfield = fl.AutomatedFarfield()
+      >>> fl.SymmetryPlane(
+      ...     entities=[auto_farfield.symmetry_planes],
+      ... )
+
     ====
     """
 
@@ -484,8 +523,7 @@ class SymmetryPlane(BoundaryBase):
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
-        description="A list of :class:`Surface` entities with "
-        + "the `SymmetryPlane` boundary condition imposed.",
+        description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )
 
 

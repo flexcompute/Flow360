@@ -27,6 +27,7 @@ from flow360.component.project_utils import (
     GeometryFiles,
     SurfaceMeshFile,
     VolumeMeshFile,
+    replace_ghost_surfaces,
     show_projects_with_keyword_filter,
 )
 from flow360.component.resource_base import Flow360Resource
@@ -447,6 +448,27 @@ class Project(pd.BaseModel):
             The project ID.
         """
         return self.metadata.id
+
+    @property
+    def length_unit(self) -> LengthType.Positive:
+        """
+        Returns the length unit of the project.
+
+        Returns
+        -------
+        LengthType.Positive
+            The length unit.
+        """
+
+        defaults = self._root_simulation_json
+
+        cache_key = "private_attribute_asset_cache"
+        length_key = "project_length_unit"
+
+        if cache_key not in defaults or length_key not in defaults[cache_key]:
+            raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
+
+        return LengthType.validate(defaults[cache_key][length_key])
 
     @property
     def geometry(self) -> Geometry:
@@ -995,21 +1017,8 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
-        defaults = self._root_simulation_json
-
-        cache_key = "private_attribute_asset_cache"
-        length_key = "project_length_unit"
-
-        if cache_key not in defaults:
-            if length_key not in defaults[cache_key]:
-                raise Flow360ValueError("Simulation params do not contain default length unit info")
-
-        length_unit = defaults[cache_key][length_key]
-
-        with model_attribute_unlock(params.private_attribute_asset_cache, length_key):
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
-            )
+        with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+            params.private_attribute_asset_cache.project_length_unit = self.length_unit
 
         root_asset = self._root_asset
 
@@ -1027,6 +1036,9 @@ class Project(pd.BaseModel):
 
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
             params.private_attribute_asset_cache.project_entity_info = entity_info
+        # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
+        # This has to be done after `project_entity_info` is properly set.
+        entity_info = replace_ghost_surfaces(params)
 
         draft.update_simulation_params(params)
 

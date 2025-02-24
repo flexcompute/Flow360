@@ -1,6 +1,7 @@
 """Utility functions for the simulation component."""
 
 from contextlib import contextmanager
+from typing import Annotated, Union, get_args, get_origin
 
 
 @contextmanager
@@ -56,3 +57,18 @@ def is_exact_instance(obj, cls):
         if isinstance(obj, subclass):
             return False
     return True
+
+
+def is_instance_of_type_in_union(obj, typ) -> bool:
+    """Check whether input `obj` is instance of the types specified in the `Union`(`typ`)"""
+    # If typ is an Annotated type, extract the underlying type.
+    if get_origin(typ) is Annotated:
+        typ = get_args(typ)[0]
+
+    # If the underlying type is a Union, extract its arguments (which are types).
+    if get_origin(typ) is Union:
+        types_tuple = get_args(typ)
+        return isinstance(obj, types_tuple)
+
+    # Otherwise, do a normal isinstance check.
+    return isinstance(obj, typ)

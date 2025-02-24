@@ -25,7 +25,12 @@ from flow360.component.simulation.outputs.output_fields import (
     SurfaceFieldNames,
     VolumeFieldNames,
 )
-from flow360.component.simulation.primitives import GhostSurface, Surface
+from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSphere,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.unit_system import LengthType
 
 
@@ -132,10 +137,9 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="List of output :class:`~flow360.Surface`/"
-        + ":class:`~flow360.GhostSurface` entities. ",
+        description="List of boundaries where output is generated.",
     )
     write_single_file: bool = pd.Field(
         default=False,
@@ -392,11 +396,9 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     """
 
     name: str = pd.Field(description="Name of integral.")
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="List of :class:`~flow360.component.simulation.primitives.Surface`/"
-        + ":class:`~flow360.component.simulation.primitives.GhostSurface` entities on which "
-        + "the surface integral will be calculated.",
+        description="List of boundaries where the surface integral will be calculated.",
     )
     output_fields: UniqueItemList[str] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
@@ -461,11 +463,6 @@ class ProbeOutput(Flow360BaseModel):
         " and :class:`UserDefinedField`."
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
-
-    @classmethod
-    def load_point_location_from_file(cls, file_path: str):
-        """Load probe point locations from a file. (Not implemented yet)"""
-        raise NotImplementedError("Not implemented yet.")
 
 
 class SurfaceProbeOutput(Flow360BaseModel):
@@ -618,7 +615,6 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
-    # pylint: disable=abstract-method
     frequency: int = pd.Field(default=1, ge=1)
     frequency_offset: int = pd.Field(default=0, ge=0)
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
@@ -772,7 +768,9 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "embedded in the volumetric domain as aeroacoustic solver "
         + "input.",
     )
-    permeable_surfaces: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
+    permeable_surfaces: Optional[
+        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
+    ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
