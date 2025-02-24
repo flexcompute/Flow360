@@ -9,13 +9,27 @@ import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
+from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
-from flow360.component.simulation.primitives import GhostSurface
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    Slice,
+)
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    Edge,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.utils import (
     SUPPORTED_GEOMETRY_FILE_PATTERNS,
     MeshFileFormat,
@@ -23,7 +37,7 @@ from flow360.component.utils import (
     match_file_pattern,
     parse_datetime,
 )
-from flow360.exceptions import Flow360ConfigurationError
+from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
 
 
@@ -203,7 +217,7 @@ def show_projects_with_keyword_filter(search_keyword: str):
     log.info("Total number of matching projects on the cloud: %d", resp["total"])
 
 
-def replace_ghost_surfaces(params: SimulationParams):
+def _replace_ghost_surfaces(params: SimulationParams):
     """
     When the `SimulationParam` is constructed with python script on the Python side, the ghost boundaries
     will be obtained by for example `automated_farfield.farfield` which returns :class:`GhostSurface`
@@ -253,5 +267,74 @@ def replace_ghost_surfaces(params: SimulationParams):
         params.private_attribute_asset_cache.project_entity_info.ghost_entities
     )
     _find_ghost_surfaces(model=params, ghost_entities_from_metadata=ghost_entities_from_metadata)
+
+    return params
+
+
+def _set_up_param_entity_info(entity_info, params: SimulationParams):
+    """
+    Setting up the entity info part of the params.
+    1. For non-persistent entities (AKA draft entities), add the ones used in params.
+    2. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    """
+
+    def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
+        group_tag = None
+        if not entity_registry.find_by_type(entity_type):
+            # Did not use any entity of this type, so we add default grouping tag
+            return "edgeId" if entity_type == Edge else "faceId"
+        for entity in entity_registry.find_by_type(entity_type):
+            if entity.private_attribute_tag_key is None:
+                raise Flow360ValueError(
+                    f"`{entity_type.__name__}` without tagging information is found."
+                    f" Please make sure all `{entity_type.__name__}` come from the geometry and is not created ad-hoc."
+                )
+            if entity.private_attribute_tag_key == "__standalone__":
+                # Does not provide information on what grouping user selected.
+                continue
+            if group_tag is not None and group_tag != entity.private_attribute_tag_key:
+                raise Flow360ValueError(
+                    f"Multiple `{entity_type.__name__}` group tags detected in"
+                    " the simulation parameters which is not supported."
+                )
+            group_tag = entity.private_attribute_tag_key
+        return group_tag
+
+    entity_registry = params.used_entity_registry
+    # Creating draft entities
+    for draft_type in [Box, Cylinder, Point, PointArray, Slice]:
+        draft_entities = entity_registry.find_by_type(draft_type)
+        for draft_entity in draft_entities:
+            if draft_entity not in entity_info.draft_entities:
+                entity_info.draft_entities.append(draft_entity)
+
+    if isinstance(entity_info, GeometryEntityInfo):
+        with model_attribute_unlock(entity_info, "face_group_tag"):
+            entity_info.face_group_tag = _get_tag(entity_registry, Surface)
+        with model_attribute_unlock(entity_info, "edge_group_tag"):
+            entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
+    return entity_info
+
+
+def set_up_params_for_draft(
+    root_asset,
+    length_unit: LengthType,
+    params: SimulationParams,
+):
+    """
+    Set up params before submitting the draft.
+    """
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+        params.private_attribute_asset_cache.project_length_unit = length_unit
+
+    # Check if there are any new draft entities that have been added in the params by the user
+    entity_info = _set_up_param_entity_info(root_asset.entity_info, params)
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+        params.private_attribute_asset_cache.project_entity_info = entity_info
+    # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
+    # This has to be done after `project_entity_info` is properly set.
+    entity_info = _replace_ghost_surfaces(params)
 
     return params
