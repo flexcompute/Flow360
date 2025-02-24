@@ -522,36 +522,6 @@ def _process_case(params: dict, mesh_unit: str, up_to: str) -> Optional[Dict[str
     return None
 
 
-def validate_params_with_simulation_path(
-    params_as_dict,
-    root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"],
-    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"],
-):
-    """
-    Validate the simulation params given the simulation path.
-    """
-
-    validation_level = _determine_validation_level(up_to, root_item_type)
-
-    # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
-    params, errors, _ = validate_model(
-        params_as_dict=params_as_dict,
-        root_item_type=root_item_type,
-        validation_level=validation_level,
-    )
-
-    if errors is not None:
-        error_msg = ""
-        for idx, error in enumerate(errors):
-            error_msg += f"\t({idx+1}) {error['ctx']['error']}\n"
-        raise ValueError(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: "
-            + "\n" +error_msg.rstrip('\n')
-        )
-
-    return params
-
-
 def generate_process_json(
     *,
     simulation_json: str,
@@ -586,10 +556,20 @@ def generate_process_json(
 
     params_as_dict = json.loads(simulation_json)
     mesh_unit = _get_mesh_unit(params_as_dict)
+    validation_level = _determine_validation_level(up_to, root_item_type)
 
-    params = validate_params_with_simulation_path(
-        params_as_dict=params_as_dict, root_item_type=root_item_type, up_to=up_to
+    # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
+    params, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        root_item_type=root_item_type,
+        validation_level=validation_level,
     )
+
+    if errors is not None:
+        raise ValueError(
+            "[Internal] Validation error occurred for supposedly validated param! Errors are: "
+            + str(errors)
+        )
 
     surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
     volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)
