@@ -29,9 +29,9 @@ from flow360.component.project_utils import (
     VolumeMeshFile,
     set_up_params_for_draft,
     show_projects_with_keyword_filter,
+    validate_params_for_draft_submission,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.services import validate_params_with_simulation_path
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -968,11 +968,26 @@ class Project(pd.BaseModel):
         params = set_up_params_for_draft(
             params=params, root_asset=self._root_asset, length_unit=self.length_unit
         )
-        params = validate_params_with_simulation_path(
-            params_as_dict=params.model_dump(),
+
+        params, errors = validate_params_for_draft_submission(
+            params=params,
             root_item_type=self.metadata.root_item_type.value,
             up_to=target._cloud_resource_type_name,
         )
+
+        if errors is not None:
+            error_msg = ""
+            for idx, error in enumerate(errors):
+                error_msg += f"\n\t({idx+1}) Message: {error['msg']}"
+                if error.get("loc") != ():
+                    location = ' -> '.join([str(loc) for loc in error['loc']])
+                    error_msg += f" | Location: {location}"
+                if error.get("ctx") and error["ctx"].get("relevant_for"):
+                    error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
+
+            raise ValueError(
+                "Validation error found in the simulation params! Errors are: " + error_msg
+            )
 
         draft = Draft.create(
             name=draft_name,

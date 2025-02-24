@@ -9,6 +9,7 @@ import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
+from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -338,3 +339,20 @@ def set_up_params_for_draft(
     entity_info = _replace_ghost_surfaces(params)
 
     return params
+
+
+def validate_params_for_draft_submission(params, root_item_type, up_to):
+    """Validate the simulation params with the simulation path."""
+
+    # pylint: disable=protected-access
+    validation_level = services._determine_validation_level(
+        root_item_type=root_item_type, up_to=up_to
+    )
+
+    params, errors, _ = services.validate_model(
+        params_as_dict=params.model_dump(),
+        root_item_type=root_item_type,
+        validation_level=validation_level,
+    )
+
+    return params, errors
