@@ -541,9 +541,12 @@ def validate_params_with_simulation_path(
     )
 
     if errors is not None:
+        error_msg = ""
+        for idx, error in enumerate(errors):
+            error_msg += f"\t({idx+1}) {error['ctx']['error']}\n"
         raise ValueError(
             "[Internal] Validation error occurred for supposedly validated param! Errors are: "
-            + str(errors)
+            + "\n" +error_msg.rstrip('\n')
         )
 
     return params
