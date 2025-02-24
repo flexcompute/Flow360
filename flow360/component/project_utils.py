@@ -272,11 +272,10 @@ def _replace_ghost_surfaces(params: SimulationParams):
     return params
 
 
-def _set_up_param_entity_info(entity_info, params: SimulationParams):
+def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams):
     """
-    Setting up the entity info part of the params.
-    1. For non-persistent entities (AKA draft entities), add the ones used in params.
-    2. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    Setting up the persistent entity info in params.
+    Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
     """
 
     def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
@@ -302,12 +301,6 @@ def _set_up_param_entity_info(entity_info, params: SimulationParams):
         return group_tag
 
     entity_registry = params.used_entity_registry
-    # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, PointArray, Slice]:
-        draft_entities = entity_registry.find_by_type(draft_type)
-        for draft_entity in draft_entities:
-            if draft_entity not in entity_info.draft_entities:
-                entity_info.draft_entities.append(draft_entity)
 
     if isinstance(entity_info, GeometryEntityInfo):
         with model_attribute_unlock(entity_info, "face_group_tag"):
@@ -317,7 +310,23 @@ def _set_up_param_entity_info(entity_info, params: SimulationParams):
     return entity_info
 
 
-def set_up_params_for_draft(
+def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationParams):
+    """
+    Setting up non-persistent entities (AKA draft entities) in params.
+    Add the ones used to the entity info.
+    """
+
+    entity_registry = params.used_entity_registry
+    # Creating draft entities
+    for draft_type in [Box, Cylinder, Point, PointArray, Slice]:
+        draft_entities = entity_registry.find_by_type(draft_type)
+        for draft_entity in draft_entities:
+            if draft_entity not in entity_info.draft_entities:
+                entity_info.draft_entities.append(draft_entity)
+    return entity_info
+
+
+def set_up_params_for_uploading(
     root_asset,
     length_unit: LengthType,
     params: SimulationParams,
@@ -329,8 +338,9 @@ def set_up_params_for_draft(
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
         params.private_attribute_asset_cache.project_length_unit = length_unit
 
+    entity_info = _set_up_params_persistent_entity_info(root_asset.entity_info, params)
     # Check if there are any new draft entities that have been added in the params by the user
-    entity_info = _set_up_param_entity_info(root_asset.entity_info, params)
+    entity_info = _set_up_params_non_persistent_entity_info(entity_info, params)
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
@@ -341,7 +351,7 @@ def set_up_params_for_draft(
     return params
 
 
-def validate_params_for_draft_submission(params, root_item_type, up_to):
+def validate_params_with_context(params, root_item_type, up_to):
     """Validate the simulation params with the simulation path."""
 
     # pylint: disable=protected-access
@@ -356,3 +366,27 @@ def validate_params_for_draft_submission(params, root_item_type, up_to):
     )
 
     return params, errors
+
+
+def formatting_validation_errors(errors):
+    """
+    Format the validation errors to a human readable string.
+
+    Example:
+    --------
+    Input: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'),
+            'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']},
+            'url': 'https://errors.pydantic.dev/2.7/v/missing'}]
+
+    Output: (1) Message: Field required | Location: meshing -> defaults -> boundary_layer_first_layer
+    _thickness | Relevant for: ['VolumeMesh']
+    """
+    error_msg = ""
+    for idx, error in enumerate(errors):
+        error_msg += f"\n\t({idx+1}) Message: {error['msg']}"
+        if error.get("loc") != ():
+            location = " -> ".join([str(loc) for loc in error["loc"]])
+            error_msg += f" | Location: {location}"
+        if error.get("ctx") and error["ctx"].get("relevant_for"):
+            error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
+    return error_msg
