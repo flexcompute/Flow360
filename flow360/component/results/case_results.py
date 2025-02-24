@@ -1035,7 +1035,6 @@ class _DimensionedCSVResultModel(pd.BaseModel):
         if isinstance(params, SimulationParams):
             flow360_conv_system = unit_converter_v2(
                 component.units.dimensions,
-                params.private_attribute_asset_cache.project_length_unit,
                 params=params,
                 required_by=[self._name, component_name],
             )

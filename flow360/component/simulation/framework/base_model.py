@@ -546,46 +546,12 @@ class Flow360BaseModel(pd.BaseModel):
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
-    def _convert_unit(
-        self,
-        *,
-        exclude: List[str] = None,
-        to_unit_system: Literal["flow360_v2", "SI", "Imperial", "CGS"] = "flow360_v2",
-    ) -> dict:
-        solver_values = {}
-        self_dict = self.__dict__
-
-        if exclude is None:
-            exclude = []
-
-        additional_fields = {}
-
-        for property_name, value in chain(self_dict.items(), additional_fields.items()):
-            if need_conversion(value) and property_name not in exclude:
-                log.debug(f"   -> need conversion for: {property_name} = {value}")
-                # pylint: disable=no-member
-                solver_values[property_name] = value.in_base(unit_system=to_unit_system)
-                log.debug(f"      converted to: {solver_values[property_name]}")
-            elif isinstance(value, list) and property_name not in exclude:
-                new_value = []
-                for item in value:
-                    if need_conversion(item):
-                        # pylint: disable=no-member
-                        new_value.append(item.in_base(unit_system=to_unit_system))
-                    else:
-                        new_value.append(item)
-                solver_values[property_name] = new_value
-            else:
-                solver_values[property_name] = value
-
-        return solver_values
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     def _nondimensionalization(
         self,
         *,
         params,
-        mesh_unit: LengthType.Positive = None,
         exclude: List[str] = None,
         required_by: List[str] = None,
     ) -> dict:
@@ -599,7 +565,6 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         additional_fields = {}
-        assert mesh_unit is not None
 
         for property_name, value in chain(self_dict.items(), additional_fields.items()):
             loc_name = property_name
@@ -607,33 +572,14 @@ class Flow360BaseModel(pd.BaseModel):
             if field is not None and field.alias is not None:
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
-                log.debug(f"   -> need conversion for: {property_name} = {value}")
                 flow360_conv_system = unit_converter(
                     value.units.dimensions,
-                    mesh_unit,
                     params=params,
                     required_by=[*required_by, loc_name],
                 )
                 # pylint: disable=no-member
                 value.units.registry = flow360_conv_system.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360_v2")
-                log.debug(f"      converted to: {solver_values[property_name]}")
-            elif isinstance(value, list) and property_name not in exclude:
-                new_value = []
-                for item in value:
-                    if need_conversion(item):
-                        flow360_conv_system = unit_converter(
-                            item.units.dimensions,
-                            mesh_unit,
-                            params=params,
-                            required_by=[*required_by, loc_name],
-                        )
-                        # pylint: disable=no-member
-                        item.units.registry = flow360_conv_system.registry
-                        new_value.append(item.in_base(unit_system="flow360_v2"))
-                    else:
-                        new_value.append(item)
-                solver_values[property_name] = new_value
             else:
                 solver_values[property_name] = value
 
@@ -643,7 +589,6 @@ class Flow360BaseModel(pd.BaseModel):
         self,
         *,
         params=None,
-        mesh_unit=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
     ) -> Flow360BaseModel:
@@ -680,7 +625,6 @@ class Flow360BaseModel(pd.BaseModel):
 
         solver_values = self._nondimensionalization(
             params=params,
-            mesh_unit=mesh_unit,
             exclude=exclude,
             required_by=required_by,
         )
@@ -694,7 +638,6 @@ class Flow360BaseModel(pd.BaseModel):
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.preprocess(
                     params=params,
-                    mesh_unit=mesh_unit,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
                 )
@@ -703,59 +646,8 @@ class Flow360BaseModel(pd.BaseModel):
                     if isinstance(item, Flow360BaseModel):
                         solver_values[property_name][i] = item.preprocess(
                             params=params,
-                            mesh_unit=mesh_unit,
                             required_by=[*required_by, loc_name, f"{i}"],
                             exclude=exclude,
-                        )
-
-        return self.__class__(**solver_values)
-
-    def convert_to_unit_system(
-        self,
-        *,
-        to_unit_system: Literal["SI", "Imperial", "CGS"],
-        exclude: List[str] = None,
-    ) -> Flow360BaseModel:
-        """
-        Loops through all fields and performs unit conversion to given unit system.
-        Separated from preprocess() to allow unit conversion only. preprocess may contain additonal processing.
-
-        Parameters
-        ----------
-        params : SimulationParams
-            Full config definition as Flow360Params.
-
-        exclude: List[str] (optional)
-            List of fields to not convert to solver dimensions.
-
-
-        Returns
-        -------
-        caller class
-            returns caller class with units all in flow360 base unit system
-        """
-
-        if exclude is None:
-            exclude = []
-
-        solver_values = self._convert_unit(
-            exclude=exclude,
-            to_unit_system=to_unit_system,
-        )
-        for property_name, value in self.__dict__.items():
-            if property_name in exclude:
-                continue
-            if isinstance(value, Flow360BaseModel):
-                solver_values[property_name] = value.convert_to_unit_system(
-                    exclude=exclude,
-                    to_unit_system=to_unit_system,
-                )
-            elif isinstance(value, list):
-                for i, item in enumerate(value):
-                    if isinstance(item, Flow360BaseModel):
-                        solver_values[property_name][i] = item.convert_to_unit_system(
-                            exclude=exclude,
-                            to_unit_system=to_unit_system,
                         )
 
         return self.__class__(**solver_values)

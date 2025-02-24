@@ -32,7 +32,7 @@ class TempParams(Flow360BaseModel):
     pseudo_field: BaseModelTestModel
 
     def preprocess(self, **kwargs):
-        return super().preprocess(mesh_unit=1 * u.cm, **kwargs)
+        return super().preprocess(**kwargs)
 
 
 class BaseModelWithConflictFields(Flow360BaseModel):
