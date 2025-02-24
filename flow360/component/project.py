@@ -980,7 +980,7 @@ class Project(pd.BaseModel):
             for idx, error in enumerate(errors):
                 error_msg += f"\n\t({idx+1}) Message: {error['msg']}"
                 if error.get("loc") != ():
-                    location = ' -> '.join([str(loc) for loc in error['loc']])
+                    location = " -> ".join([str(loc) for loc in error["loc"]])
                     error_msg += f" | Location: {location}"
                 if error.get("ctx") and error["ctx"].get("relevant_for"):
                     error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
