@@ -1,4 +1,4 @@
-"""Desearlizer for entity info retrieved from asset metadata pipeline."""
+"""Deserializer for entity info retrieved from asset metadata pipeline."""
 
 from abc import ABCMeta, abstractmethod
 from typing import Annotated, List, Literal, Optional, Union
@@ -167,7 +167,7 @@ class VolumeMeshEntityInfo(EntityInfoModel):
     @pd.field_validator("boundaries", mode="after")
     @classmethod
     def check_all_surface_has_interface_indicator(cls, value):
-        """private_attribute_is_interface should have been set comming from volume mesh."""
+        """private_attribute_is_interface should have been set coming from volume mesh."""
         for item in value:
             if item.private_attribute_is_interface is None:
                 raise ValueError(
