@@ -600,12 +600,7 @@ class Project(pd.BaseModel):
 
         draft.update_simulation_params(params)
 
-        params.to_file("simulation_quick_start.json")
-
-        try:
-            destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
-        except RuntimeError:
-            return None
+        destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
 
         self._project_webapi.patch(
             # pylint: disable=protected-access
