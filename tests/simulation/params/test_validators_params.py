@@ -7,7 +7,10 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.entity_info import VolumeMeshEntityInfo
+from flow360.component.simulation.entity_info import (
+    SurfaceMeshEntityInfo,
+    VolumeMeshEntityInfo,
+)
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -445,32 +448,83 @@ def test_transition_model_solver_settings_validator():
         assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
 
 
-def test_incomplete_BC():
+def test_incomplete_BC_volume_mesh():
     ##:: Construct a dummy asset cache
-
-    wall_1 = Surface(
-        name="wall_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
-    )
-    periodic_1 = Surface(
-        name="periodic_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
-    )
-    periodic_2 = Surface(
-        name="periodic_2", private_attribute_is_interface=False, private_attribute_tag_key="test"
-    )
-    i_exist = Surface(
-        name="i_exist", private_attribute_is_interface=False, private_attribute_tag_key="test"
-    )
-    no_bc = Surface(
-        name="no_bc", private_attribute_is_interface=False, private_attribute_tag_key="test"
-    )
-    some_interface = Surface(
-        name="some_interface", private_attribute_is_interface=True, private_attribute_tag_key="test"
-    )
+    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
+    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
+    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
+    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
+    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
+    some_interface = Surface(name="some_interface", private_attribute_is_interface=True)
 
     asset_cache = AssetCache(
         project_length_unit="inch",
         project_entity_info=VolumeMeshEntityInfo(
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
+        ),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
+        ),
+    ):
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
+                    models=[
+                        Fluid(),
+                        Wall(entities=wall_1),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
+        ),
+    ):
+        with ValidationLevelContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
+                    models=[
+                        Fluid(),
+                        Wall(entities=[wall_1]),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                        SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
+
+
+def test_incomplete_BC_surface_mesh():
+    ##:: Construct a dummy asset cache
+    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
+    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
+    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
+    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
+    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
+
+    asset_cache = AssetCache(
+        project_length_unit="inch",
+        project_entity_info=SurfaceMeshEntityInfo(
+            boundaries=[wall_1, periodic_1, periodic_2, i_exist, no_bc]
         ),
     )
     auto_farfield = AutomatedFarfield(name="my_farfield")

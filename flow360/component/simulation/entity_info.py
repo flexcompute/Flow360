@@ -49,10 +49,11 @@ class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
     ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
 
     @abstractmethod
-    def get_boundaries(self, attribute_name: str = None) -> list:
+    def get_boundaries(self, attribute_name: str = None) -> list[Surface]:
         """
         Helper function.
-        Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
+        Get the full list of boundary.
+        If it is geometry then use supplied attribute name to get the list.
         """
 
 
@@ -148,7 +149,7 @@ class GeometryEntityInfo(EntityInfoModel):
             f" in geometry metadata. Available: {entity_attribute_names}"
         )
 
-    def get_boundaries(self, attribute_name: str = None) -> list:
+    def get_boundaries(self, attribute_name: str = None) -> list[Surface]:
         """
         Get the full list of boundaries.
         If attribute_name is supplied then ignore stored face_group_tag and use supplied one.
@@ -177,7 +178,7 @@ class VolumeMeshEntityInfo(EntityInfoModel):
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:
         """
-        Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
+        Get the full list of boundary.
         """
         # pylint: disable=not-an-iterable
         return [item for item in self.boundaries if item.private_attribute_is_interface is False]
@@ -193,10 +194,10 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:
         """
-        Get the full list of boundary names.
+        Get the full list of boundary.
         """
         # pylint: disable=not-an-iterable
-        return [item.name for item in self.boundaries]
+        return self.boundaries
 
 
 EntityInfoUnion = Annotated[
