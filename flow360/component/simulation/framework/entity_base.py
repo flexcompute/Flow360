@@ -446,7 +446,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         Raises:
             TypeError: If an entity does not match the expected type.
         Returns:
-            Exapnded entities list.
+            Expanded entities list.
         """
 
         entities = getattr(self, "stored_entities", [])
@@ -455,14 +455,20 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             return None
 
         expanded_entities = []
+        not_merged_entity_types_name = ["Point"]
+        not_merged_entities = []
 
         # pylint: disable=not-an-iterable
         for entity in entities:
+            if entity.private_attribute_entity_type_name in not_merged_entity_types_name:
+                not_merged_entities.append(entity)
+                continue
             if entity not in expanded_entities:
                 # Direct entity references are simply appended if they are of a valid type
                 expanded_entities.append(entity)
 
         expanded_entities = _remove_duplicate_entities(expanded_entities)
+        expanded_entities += not_merged_entities
 
         if expanded_entities == []:
             raise ValueError(
