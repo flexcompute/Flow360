@@ -5,7 +5,6 @@ from pylab import show
 import flow360 as fl
 from flow360.examples import ActuatorDisk
 
-
 ActuatorDisk.get_files()
 
 project = fl.Project.from_file(

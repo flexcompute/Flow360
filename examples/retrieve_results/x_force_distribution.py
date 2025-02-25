@@ -3,7 +3,6 @@ from pylab import show
 import flow360 as fl
 from flow360.examples import Airplane
 
-
 project = fl.Project.from_file(
     files=fl.GeometryFiles(Airplane.geometry), name="Python Project (Geometry, from file)"
 )

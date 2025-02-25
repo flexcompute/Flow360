@@ -1,7 +1,6 @@
 import flow360 as fl
 from flow360.examples import OM6wing
 
-
 OM6wing.get_files()
 
 project = fl.Project.from_file(
