@@ -1,16 +1,63 @@
-import flow360.v1 as fl
-from flow360.examples import MonitorsAndSlices
+import flow360 as fl
+from flow360.examples import OM6wing
 
-MonitorsAndSlices.get_files()
+OM6wing.get_files()
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(MonitorsAndSlices.mesh_filename, name="Monitors-mesh")
-volume_mesh = volume_mesh.submit()
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Monitor results from Python"
+)
 
-# submit case using json file
-params = fl.Flow360Params(MonitorsAndSlices.case_json)
-case = volume_mesh.create_case("Monitors-example", params)
-case = case.submit()
+vm = project.volume_mesh
+
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=1.15315084119231,
+            moment_center=[0, 0, 0],
+            moment_length=[1.47602, 0.801672958512342, 1.47602],
+        ),
+        operating_condition=fl.operating_condition_from_mach_reynolds(
+            reynolds=14.6e+6,
+            mach=0.84,
+            alpha=3.06 * fl.u.deg,
+            project_length_unit=fl.u.m
+        ),
+        time_stepping=fl.Steady(
+            max_steps=500,
+            CFL=fl.RampCFL(
+                initial=5,
+                final=200,
+                ramp_steps=100
+            )
+        ),
+        models=[
+            fl.Fluid(
+                navier_stokes_solver=fl.NavierStokesSolver(
+                    absolute_tolerance=1e-10
+                ),
+                turbulence_model_solver=fl.SpalartAllmaras(
+                    absolute_tolerance=1e-8
+                )
+            ),
+            fl.Wall(surfaces=vm["1"]),
+            fl.SlipWall(surfaces=vm["2"]),
+            fl.Freestream(surfaces=vm["3"]),
+        ],
+        outputs=[
+            fl.ProbeOutput(
+                name="ProbeOutput",
+                output_fields=["primitiveVars", "vorticity", "T", "s", "Cp", "mut"],
+                probe_points=[
+                    fl.Point(name="Probe1", location=[0.12, 0.34, 0.262] * fl.u.m),
+                    fl.Point(name="Probe2", location=[2, 0.01, 0.03] * fl.u.m),
+                    fl.Point(name="Probe3", location=[3, 0.01, 0.04] * fl.u.m),
+                    fl.Point(name="Probe4", location=[4, 0.01, 0.04] * fl.u.m),
+                ]
+            )
+        ],
+    )
+
+case = project.run_case(params, "Monitor results case from Python")
 
 # wait until the case finishes execution
 case.wait()
@@ -19,14 +66,5 @@ results = case.results
 
 for name in results.monitors.monitor_names:
     monitor = results.monitors.get_monitor_by_name(name)
-    # >>>
-    # physical_step  pseudo_step  ...  Group1_Point4_mut  Group1_Point4_Cp
-    # 0               0            0  ...       1.210739e-08          0.000000
-    # 1               0           10  ...       1.210737e-08         -0.000005
-    # 2               0           20  ...       1.212245e-08         -0.000580
-    # 3               0           30  ...       1.250081e-08          0.000615
-    # 4               0           40  ...       1.366265e-08         -0.003011
-    # etc.
-    print(monitor)
-
+    print(monitor.as_dataframe())
     monitor.download(to_folder=case.name)

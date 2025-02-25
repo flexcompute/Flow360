@@ -1,17 +1,17 @@
 import os
 import json
+from pylab import show
 
 import flow360 as fl
 from flow360.examples import BETDisk
 
 BETDisk.get_files()
 
-# project = fl.Project.from_file(
-#     files=fl.VolumeMeshFile(BETDisk.mesh_filename),
-#     name="BET disk case from Python",
-#     length_unit="inch"
-# )
-project = fl.Project.from_cloud(project_id="prj-d71a1697-7a7c-4765-8131-7500c4a6432e")
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(BETDisk.mesh_filename),
+    name="BET disk case from Python",
+    length_unit="inch"
+)
 
 vm = project.volume_mesh
 
@@ -56,17 +56,6 @@ with fl.SI_unit_system:
                 name="Freestream",
                 surfaces=vm["fluid/farfield"]
             )
-        ],
-        outputs=[
-            fl.SurfaceOutput(
-                name="SurfaceOutput",
-                surfaces=vm["fluid/body"],
-                output_fields=["Cp", "Cf", "CfVec", "yPlus", "nodeForcesPerUnitArea"]
-            ),
-            fl.VolumeOutput(
-                name="VolumeOutput",
-                output_fields=["primitiveVars", "Mach"]
-            )
         ]
     )
 
@@ -91,11 +80,12 @@ print(results.bet_forces_radial_distribution)
 bet_forces_radial_distribution.plot(
     x="Disk0_All_Radius",
     y=["Disk0_Blade0_All_ThrustCoeff", "Disk0_Blade0_All_TorqueCoeff"],
-    xlim=(0, 200),
-    xlabel="Pseudo Step",
+    xlim=(0, 150),
+    xlabel="Radius",
     figsize=(10, 7),
-    title="Actuator Disk radial distribution"
+    title="BET Disk radial distribution"
 )
+show()
 
 # download resuts:
 results.set_destination(use_case_name=True)

@@ -74,17 +74,6 @@ with fl.SI_unit_system:
                 name="Freestream",
                 surfaces=vm["fluid/farfield"]
             )
-        ],
-        outputs=[
-            fl.SurfaceOutput(
-                name="SurfaceOutput",
-                surfaces=vm["fluid/body"],
-                output_fields=["Cp", "Cf", "CfVec", "yPlus", "nodeForcesPerUnitArea"]
-            ),
-            fl.VolumeOutput(
-                name="VolumeOutput",
-                output_fields=["primitiveVars", "Mach"]
-            )
         ]
     )
 

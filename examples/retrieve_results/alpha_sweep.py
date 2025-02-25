@@ -26,11 +26,7 @@ with fl.SI_unit_system:
             fl.Wall(surfaces=vm["1"]),
             fl.SlipWall(surfaces=vm["2"]),
             fl.Freestream(surfaces=vm["3"]),
-        ],
-        outputs=[
-            fl.SurfaceOutput(output_fields=["primitiveVars", "Cp", "Cf"], surfaces=[vm["1"]]),
-            fl.VolumeOutput(output_fields=["primitiveVars", "Mach"]),
-        ],
+        ]
     )
 
 # ": List[fl.Case]" is just for type hints
