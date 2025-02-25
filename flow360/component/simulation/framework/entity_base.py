@@ -510,9 +510,10 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         for attr, data in groups.items():
             group_values = data["values"]
             ref_unit = group_values[0].units
-            converted = [val.to(ref_unit).v for val in group_values]
-            nested_array = np.vstack(converted)
-            data["values"] = unyt.unyt_array(nested_array, ref_unit)
+            converted = np.empty((len(group_values), group_values[0].size))
+            for i, val in enumerate(group_values):
+                converted[i] = val.to(ref_unit).v
+            data["values"] = unyt.unyt_array(converted, ref_unit)
 
         params = kwargs.get("params")
         required_by = kwargs.get("required_by", [])
