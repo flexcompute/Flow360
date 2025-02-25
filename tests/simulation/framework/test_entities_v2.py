@@ -27,7 +27,8 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
 )
 from flow360.component.simulation.simulation_params import _ParamModelBase
-from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.unit_system import SI_unit_system, LengthType
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.log import set_logging_level
 from tests.simulation.conftest import AssetBase
 
@@ -217,8 +218,11 @@ class TempSimulationParam(_ParamModelBase):
         Supply self._supplementary_registry to the construction of
         TempFluidDynamics etc so that the class can perform proper validation
         """
+        with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
+            self.private_attribute_asset_cache.project_length_unit = LengthType.validate(1 * u.m)
+
         for model in self.models:
-            model.entities.preprocess(mesh_unit=1 * u.m)
+            model.entities.preprocess(params=self)
 
         return self
 
