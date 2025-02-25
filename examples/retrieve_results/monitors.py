@@ -1,6 +1,7 @@
 import flow360 as fl
 from flow360.examples import OM6wing
 
+
 OM6wing.get_files()
 
 project = fl.Project.from_file(
@@ -17,27 +18,15 @@ with fl.SI_unit_system:
             moment_length=[1.47602, 0.801672958512342, 1.47602],
         ),
         operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=14.6e+6,
-            mach=0.84,
-            alpha=3.06 * fl.u.deg,
-            project_length_unit=fl.u.m
+            reynolds=14.6e6, mach=0.84, alpha=3.06 * fl.u.deg, project_length_unit=fl.u.m
         ),
         time_stepping=fl.Steady(
-            max_steps=500,
-            CFL=fl.RampCFL(
-                initial=5,
-                final=200,
-                ramp_steps=100
-            )
+            max_steps=500, CFL=fl.RampCFL(initial=5, final=200, ramp_steps=100)
         ),
         models=[
             fl.Fluid(
-                navier_stokes_solver=fl.NavierStokesSolver(
-                    absolute_tolerance=1e-10
-                ),
-                turbulence_model_solver=fl.SpalartAllmaras(
-                    absolute_tolerance=1e-8
-                )
+                navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
+                turbulence_model_solver=fl.SpalartAllmaras(absolute_tolerance=1e-8),
             ),
             fl.Wall(surfaces=vm["1"]),
             fl.SlipWall(surfaces=vm["2"]),
@@ -52,12 +41,13 @@ with fl.SI_unit_system:
                     fl.Point(name="Probe2", location=[2, 0.01, 0.03] * fl.u.m),
                     fl.Point(name="Probe3", location=[3, 0.01, 0.04] * fl.u.m),
                     fl.Point(name="Probe4", location=[4, 0.01, 0.04] * fl.u.m),
-                ]
+                ],
             )
         ],
     )
 
 case = project.run_case(params, "Monitor results case from Python")
+
 
 # wait until the case finishes execution
 case.wait()

@@ -3,6 +3,7 @@ from pylab import show
 import flow360 as fl
 from flow360.examples import OM6wing
 
+
 OM6wing.get_files()
 
 project = fl.Project.from_file(
@@ -24,10 +25,11 @@ with fl.SI_unit_system:
             fl.Wall(surfaces=vm["1"]),
             fl.SlipWall(surfaces=vm["2"]),
             fl.Freestream(surfaces=vm["3"]),
-        ]
+        ],
     )
 
 case = project.run_case(params, "Force results case from Python")
+
 
 # wait until the case finishes execution
 case.wait()
@@ -43,13 +45,12 @@ total_forces.plot(
     xlabel="Pseudo Step",
     xlim=(0, None),
     figsize=(10, 7),
-    title="Total forces"
+    title="Total forces",
 )
+show()
 
 surface_forces = results.surface_forces.as_dataframe()
 print(surface_forces)
-
-show()
 
 results.set_destination(use_case_name=True)
 results.download(total_forces=True, surface_forces=True)

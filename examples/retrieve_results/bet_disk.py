@@ -1,16 +1,18 @@
-import os
 import json
+import os
+
 from pylab import show
 
 import flow360 as fl
 from flow360.examples import BETDisk
+
 
 BETDisk.get_files()
 
 project = fl.Project.from_file(
     files=fl.VolumeMeshFile(BETDisk.mesh_filename),
     name="BET disk case from Python",
-    length_unit="inch"
+    length_unit="inch",
 )
 
 vm = project.volume_mesh
@@ -22,48 +24,36 @@ with fl.SI_unit_system:
         reference_geometry=fl.ReferenceGeometry(
             area=16286.016316209487 * fl.u.inch**2,
             moment_center=[450, 0, 0] * fl.u.inch,
-            moment_length=[72, 1200, 1200] * fl.u.inch
+            moment_length=[72, 1200, 1200] * fl.u.inch,
         ),
         operating_condition=fl.AerospaceCondition.from_mach(mach=0.04),
         time_stepping=fl.Steady(
-            max_steps=200,
-            CFL=fl.RampCFL(
-                initial=1,
-                final=200,
-                ramp_steps=200
-            )
+            max_steps=200, CFL=fl.RampCFL(initial=1, final=200, ramp_steps=200)
         ),
         models=[
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
                     absolute_tolerance=1e-11,
                     linear_solver=fl.LinearSolver(max_iterations=35),
-                    kappa_MUSCL=0.33
+                    kappa_MUSCL=0.33,
                 ),
                 turbulence_model_solver=fl.SpalartAllmaras(
                     absolute_tolerance=1e-10,
                     linear_solver=fl.LinearSolver(max_iterations=25),
                     update_jacobian_frequency=2,
-                    equation_evaluation_frequency=1
-                )
+                    equation_evaluation_frequency=1,
+                ),
             ),
             fl.BETDisk(**bet),
-            fl.Wall(
-                name="NoSlipWall",
-                surfaces=vm["fluid/body"]
-            ),
-            fl.Freestream(
-                name="Freestream",
-                surfaces=vm["fluid/farfield"]
-            )
-        ]
+            fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
+            fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
+        ],
     )
 
 case = project.run_case(params, "BET case from Python")
 
 
 case.wait()
-
 
 results = case.results
 bet_forces_non_dim = results.bet_forces.as_dataframe()
@@ -83,7 +73,7 @@ bet_forces_radial_distribution.plot(
     xlim=(0, 150),
     xlabel="Radius",
     figsize=(10, 7),
-    title="BET Disk radial distribution"
+    title="BET Disk radial distribution",
 )
 show()
 

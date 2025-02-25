@@ -6,6 +6,7 @@ from pylab import plot, show, xlabel, ylabel
 import flow360 as fl
 from flow360.examples import OM6wing
 
+
 OM6wing.get_files()
 
 project = fl.Project.from_file(
@@ -26,8 +27,9 @@ with fl.SI_unit_system:
             fl.Wall(surfaces=vm["1"]),
             fl.SlipWall(surfaces=vm["2"]),
             fl.Freestream(surfaces=vm["3"]),
-        ]
+        ],
     )
+
 
 # ": List[fl.Case]" is just for type hints
 case_list: List[fl.Case] = []
