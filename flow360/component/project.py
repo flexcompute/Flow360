@@ -971,7 +971,6 @@ class Project(pd.BaseModel):
             params=params, root_asset=self._root_asset, length_unit=self.length_unit
         )
 
-
         params, errors = validate_params_with_context(
             params=params,
             root_item_type=self.metadata.root_item_type.value,
@@ -986,7 +985,6 @@ class Project(pd.BaseModel):
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
-
 
         draft = Draft.create(
             name=draft_name,
