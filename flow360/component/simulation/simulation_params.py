@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -260,7 +260,7 @@ class SimulationParams(_ParamModelBase):
 
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
-        self._private_set_length_unit(LengthType.validate(mesh_unit))
+        self._private_set_length_unit(LengthType.validate(mesh_unit))  # pylint: disable=no-member
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
@@ -269,8 +269,8 @@ class SimulationParams(_ParamModelBase):
 
     def _private_set_length_unit(self, validated_mesh_unit):
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
+            # pylint: disable=assigning-non-slot
             self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
-
 
     @pd.validate_call
     def convert_unit(
@@ -316,14 +316,13 @@ class SimulationParams(_ParamModelBase):
         """
 
         if length_unit is not None:
+            # pylint: disable=no-member
             self._private_set_length_unit(LengthType.validate(length_unit))
 
         flow360_conv_system = unit_converter(
             value.units.dimensions,
             params=self,
-            required_by=[
-                f"{self.__class__.__name__}.convert_unit(value=, target_system=)"
-            ],
+            required_by=[f"{self.__class__.__name__}.convert_unit(value=, target_system=)"],
         )
 
         if target_system == "flow360":

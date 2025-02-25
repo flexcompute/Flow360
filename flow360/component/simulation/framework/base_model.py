@@ -15,7 +15,6 @@ from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInf
 from pydantic_core import InitErrorDetails
 
 from flow360.component.simulation.conversion import need_conversion, unit_converter
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation import validation_context
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -545,7 +544,6 @@ class Flow360BaseModel(pd.BaseModel):
         json_string = json.dumps(model_dict, sort_keys=True)
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
-
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     def _nondimensionalization(

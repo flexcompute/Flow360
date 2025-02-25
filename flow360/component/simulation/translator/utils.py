@@ -15,7 +15,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import is_exact_instance, model_attribute_unlock
+from flow360.component.simulation.utils import is_exact_instance
 
 
 def preprocess_input(func):

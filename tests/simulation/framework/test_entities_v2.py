@@ -27,7 +27,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
 )
 from flow360.component.simulation.simulation_params import _ParamModelBase
-from flow360.component.simulation.unit_system import SI_unit_system, LengthType
+from flow360.component.simulation.unit_system import LengthType, SI_unit_system
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.log import set_logging_level
 from tests.simulation.conftest import AssetBase

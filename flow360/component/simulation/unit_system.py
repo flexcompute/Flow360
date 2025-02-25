@@ -86,7 +86,7 @@ def _encode_ndarray(x):
     encoder for ndarray
     """
     if x.size == 1:
-        return float(x)
+        return float(x.item())
     return tuple(x.tolist())
 
 

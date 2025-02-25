@@ -11,8 +11,8 @@ from typing import Annotated, List, Optional, Union, get_args, get_origin
 import numpy as np
 import pydantic as pd
 import unyt
-from flow360.component.simulation.conversion import need_conversion, unit_converter
 
+from flow360.component.simulation.conversion import need_conversion, unit_converter
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.utils import is_exact_instance
 
@@ -476,21 +476,21 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             return copy.deepcopy(expanded_entities)
         return expanded_entities
 
-
+    # pylint: disable=too-many-locals
     def _batch_preprocess(self, **kwargs):
         """
         Batch preprocesses properties for all child entities that need processing.
 
         Inspects each attribute of every stored entity. For attributes that need conversion
         (as determined by conversion.need_conversion), it groups values by attribute name.
-        
+
         - If the value's underlying array is not already 2D (i.e. not a true batched array),
         the value is grouped for batch processing.
         - If the value is already a 2D array, it is marked for direct (traditional) conversion.
-        
+
         For batch groups, the underlying data of each unyt_array is converted to a common unit,
         stacked into a single unyt_array, and then processed in one vectorized call.
-        
+
         For directly converted values, the conversion is applied individually.
         """
         stored_entities = self.stored_entities
@@ -512,10 +512,10 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             ref_unit = group_values[0].units
             converted = [val.to(ref_unit).v for val in group_values]
             nested_array = np.vstack(converted)
-            groups[attr]["values"] = unyt.unyt_array(nested_array, ref_unit)
+            data["values"] = unyt.unyt_array(nested_array, ref_unit)
 
-        params = kwargs.get('params')
-        required_by = kwargs.get('required_by', [])
+        params = kwargs.get("params")
+        required_by = kwargs.get("required_by", [])
 
         new_entities = [entity.__dict__.copy() for entity in stored_entities]
 
@@ -539,7 +539,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         solver_values = {"stored_entities": new_entities}
         return solver_values
 
-
     # pylint: disable=arguments-differ
     def preprocess(self, **kwargs):
         """
@@ -549,4 +548,3 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         # WARNING: this is very expensive all for long lists as it is quadratic
         self.stored_entities = self._get_expanded_entities(create_hard_copy=False)
         return self._batch_preprocess(**kwargs)
-
