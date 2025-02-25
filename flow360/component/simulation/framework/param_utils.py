@@ -35,7 +35,7 @@ class AssetCache(Flow360BaseModel):
     @property
     def boundaries(self):
         """
-        Get all boundaries from the cached entity info.
+        Get all boundaries (not just names) from the cached entity info.
         """
         if self.project_entity_info is None:
             return None
