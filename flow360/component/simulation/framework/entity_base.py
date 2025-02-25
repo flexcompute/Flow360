@@ -286,32 +286,31 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     """
     all_entities = {}
 
+    # pylint: disable=protected-access
     for entity in expanded_entities:
         if entity.name not in all_entities:
-            all_entities[entity.name] = []
-        all_entities[entity.name].append(entity)
+            all_entities[entity.name] = {"non_generic": None, "entities": []}
+        if entity._is_generic() is False and all_entities[entity.name]["non_generic"] is None:
+            all_entities[entity.name]["non_generic"] = entity
+        else:
+            all_entities[entity.name]["entities"].append(entity)
 
-    for name, entity_list in all_entities.items():
-        if len(entity_list) > 1:
-            # step 1: find one instance that is non-generic if any
-            base_index = 0
-            for base_index, entity in enumerate(entity_list):
-                # pylint: disable=protected-access
-                if entity._is_generic() is False:
-                    break
-            for index, entity in enumerate(entity_list):
-                if index == base_index:
-                    continue  # no merging into self
-                entity_list[base_index] = _merge_objects(entity_list[base_index], entity)
-                entity_list.remove(entity)
+    for name, data in all_entities.items():
+        entity_non_generic = data["non_generic"]
+        if entity_non_generic is not None:
+            for entity in data["entities"]:
+                entity_non_generic = _merge_objects(entity_non_generic, entity)
+            data["non_generic"] = entity_non_generic
+        else:
+            if len(data["entities"]) > 1:
+                error_message = f"Duplicate entities found for {name}."
+                for entity in data["entities"]:
+                    error_message += f"\n{entity}\n"
+                error_message += "Please remove duplicates."
+                raise ValueError(error_message)
+            data["non_generic"] = data["entities"][0]
 
-        if len(entity_list) != 1:
-            error_message = f"Duplicate entities found for {name}."
-            for entity in entity_list:
-                error_message += f"\n{entity}\n"
-            error_message += "Please remove duplicates."
-            raise ValueError(error_message)
-    return [entity_list[0] for entity_list in all_entities.values()]
+    return [data["non_generic"] for data in all_entities.values()]
 
 
 class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
