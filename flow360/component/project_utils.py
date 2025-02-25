@@ -231,8 +231,8 @@ def _replace_ghost_surfaces(params: SimulationParams):
             if item.name == ghost_surface.name:
                 return item
         raise Flow360ConfigurationError(
-            f"Unknown ghost surface with name `{ghost_surface.name}` found."
-            "Please double check the use of ghost surfaces."
+            f"Ghost surface `{ghost_surface.name}` is used but likely won't be generated."
+            " Please double check the use of ghost surfaces."
         )
 
     def _find_ghost_surfaces(*, model, ghost_entities_from_metadata):

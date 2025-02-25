@@ -979,7 +979,7 @@ class Project(pd.BaseModel):
         if errors is not None:
             error_msg = formatting_validation_errors(errors=errors)
             raise ValueError(
-                "Validation error found in the simulation params! Errors are: " + error_msg
+                "\n>> Validation error found in the simulation params! Errors are: " + error_msg
             )
 
         draft = Draft.create(
