@@ -389,7 +389,7 @@
     "unit_system": {
         "name": "SI"
     },
-    "version": "24.2.0",
+    "version": "24.11.0",
     "private_attribute_asset_cache": {
         "project_length_unit": "m",
         "project_entity_info": {

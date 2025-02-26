@@ -117,7 +117,7 @@ class AssetBase(metaclass=ABCMeta):
         simulation_json = asset._webapi.get(
             method="simulation/file", params={"type": "simulation"}
         )["simulationJson"]
-        return SimulationParams._update_input(json.loads(simulation_json))
+        return SimulationParams.update_input(json.loads(simulation_json))
 
     @property
     def info(self) -> AssetMetaBaseModel:

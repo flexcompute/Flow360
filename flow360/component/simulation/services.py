@@ -273,6 +273,7 @@ def validate_model(
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
+        params_as_dict = SimulationParams.update_input(params_as_dict)
         with unit_system:
             with ValidationLevelContext(validation_levels_to_use):
                 validated_param = SimulationParams(**params_as_dict)

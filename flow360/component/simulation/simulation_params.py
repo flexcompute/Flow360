@@ -122,7 +122,8 @@ class _ParamModelBase(Flow360BaseModel):
         return kwargs
 
     @classmethod
-    def _update_input(cls, model_dict):
+    def update_input(cls, model_dict):
+        """Run updater to update the input param dict to latest dict."""
         version = model_dict.pop("version", None)
         if version is None:
             raise Flow360RuntimeError(

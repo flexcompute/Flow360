@@ -95,6 +95,7 @@ def test_validate_service():
         "boundary_layer_first_layer_thickness": "1*m",
         "surface_max_edge_length": "1*m",
     }
+    params_data_from_geo["version"] = "24.11.0"
 
     _, errors, _ = services.validate_model(
         params_as_dict=params_data_from_geo, root_item_type="Geometry"
@@ -142,6 +143,7 @@ def test_validate_error():
         },
         "user_defined_dynamics": [],
         "unit_system": {"name": "SI"},
+        "version": "24.11.5",
     }
 
     _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
@@ -207,6 +209,7 @@ def test_validate_multiple_errors():
         },
         "user_defined_dynamics": [],
         "unit_system": {"name": "SI"},
+        "version": "24.11.5",
     }
 
     _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
@@ -455,7 +458,7 @@ def test_front_end_JSON_with_multi_constructor():
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.0",
         "private_attribute_asset_cache": {
             "project_length_unit": "m",
             "project_entity_info": {
@@ -557,7 +560,7 @@ def test_generate_process_json():
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.0",
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "private_attribute_constructor": "default",

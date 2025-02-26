@@ -91,7 +91,7 @@ def test_simulation_to_surface_meshing_json():
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.0",
         "private_attribute_asset_cache": {
             "project_entity_info": {
                 "type_name": "GeometryEntityInfo",
@@ -122,7 +122,7 @@ def test_simulation_to_surface_meshing_json():
     #         {
     #             "meshing": {"refinements": []},
     #             "unit_system": {"name": "SI"},
-    #             "version": "24.2.0",
+    #             "version": "24.11.0",
     #         },
     #         "SI",
     #         {"value": 100.0, "units": "cm"},
@@ -233,7 +233,7 @@ def test_simulation_to_volume_meshing_json():
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.0",
     }
 
     params, _, _ = validate_model(
@@ -478,7 +478,7 @@ def test_simulation_to_case_json():
             }
         ],
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.0",
         "meshing": {
             "refinement_factor": 1,
             "defaults": {
@@ -544,7 +544,8 @@ def test_simulation_to_case_json():
         },
     }
 
-    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
+    params, err, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
+    print("err = ", err)
     simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
@@ -604,7 +605,7 @@ def test_simulation_to_case_vm_workflow():
             "beta": {"value": 0, "units": "degree"},
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.0",
         "models": [
             {
                 "type": "Wall",
@@ -740,6 +741,7 @@ def test_simulation_to_all_translation_2():
                 ],
             },
         },
+        "version": "24.11.0",
     }
 
     params, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
