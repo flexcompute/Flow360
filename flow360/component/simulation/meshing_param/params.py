@@ -195,3 +195,12 @@ class MeshingParams(Flow360BaseModel):
                 ]:
                     cylinder_name_to_usage_map[cylinder.name] = refinement.refinement_type
         return self
+
+    @property
+    def automated_farfield_method(self):
+        """Returns the automated farfield method used."""
+        if self.volume_zones:
+            for zone in self.volume_zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, AutomatedFarfield):
+                    return zone.method
+        return None

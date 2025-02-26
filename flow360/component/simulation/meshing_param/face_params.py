@@ -8,6 +8,9 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+)
 
 
 class SurfaceRefinement(Flow360BaseModel):
@@ -22,6 +25,12 @@ class SurfaceRefinement(Flow360BaseModel):
     max_edge_length: LengthType.Positive = pd.Field(
         description="Maximum edge length of surface cells."
     )
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class PassiveSpacing(Flow360BaseModel):
@@ -43,6 +52,12 @@ class PassiveSpacing(Flow360BaseModel):
     refinement_type: Literal["PassiveSpacing"] = pd.Field("PassiveSpacing", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
+
 
 class BoundaryLayer(Flow360BaseModel):
     """
@@ -56,3 +71,9 @@ class BoundaryLayer(Flow360BaseModel):
     first_layer_thickness: LengthType.Positive = pd.Field(
         description="First layer thickness for volumetric anisotropic layers grown from given `Surface` (s)."
     )
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)

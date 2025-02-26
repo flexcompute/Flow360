@@ -111,7 +111,7 @@ class AssetBase(metaclass=ABCMeta):
         entity_info = asset_cache["project_entity_info"]
         # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
         # Note: Only the draft's and non-root item simulation.json will have it.
-        # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
+        # Note: But we still add this because it is not clear currently if Asset is always the root item.
         # Note: This should be addressed when we design the new project client interface.
         entity_info = remove_properties_by_name(entity_info, "_id")
         # pylint: disable=protected-access
@@ -134,7 +134,7 @@ class AssetBase(metaclass=ABCMeta):
             method="simulation/file", params={"type": "simulation"}
         )["simulationJson"]
 
-        return SimulationParams._update_input(json.loads(simulation_json))
+        return SimulationParams.update_input(json.loads(simulation_json))
 
     @property
     def info(self) -> AssetMetaBaseModelV2:

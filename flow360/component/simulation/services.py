@@ -56,7 +56,8 @@ from flow360.component.simulation.utils import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ALL,
-    ValidationLevelContext,
+    ParamsValidationInfo,
+    ValidationContext,
 )
 from flow360.component.utils import remove_properties_by_name
 from flow360.exceptions import Flow360TranslationError
@@ -265,14 +266,15 @@ def validate_model(
     validated_param = None
 
     params_as_dict = clean_params_dict(params_as_dict, root_item_type)
-
     # The final validation levels will be the intersection of the requested levels and the levels available
     # We always assume we want to run case so that we can expose as many errors as possible
     available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
-        with ValidationLevelContext(validation_levels_to_use):
+        updated_param_as_dict = SimulationParams.update_input(params_as_dict)
+        additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
+        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             validated_param = SimulationParams(file_content=params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
