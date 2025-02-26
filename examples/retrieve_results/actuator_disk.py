@@ -9,7 +9,7 @@ ActuatorDisk.get_files()
 
 project = fl.Project.from_file(
     files=fl.VolumeMeshFile(ActuatorDisk.mesh_filename),
-    name="Actuator disk case from Python",
+    name="Actuator disk results from Python",
     length_unit="inch",
 )
 

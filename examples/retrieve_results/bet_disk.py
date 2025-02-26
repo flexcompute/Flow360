@@ -4,13 +4,24 @@ import os
 from pylab import show
 
 import flow360 as fl
+from flow360 import u
 from flow360.examples import BETDisk
+from flow360.plugins.report.report import ReportTemplate
+from flow360.plugins.report.report_items import (
+    Camera,
+    Chart3D,
+    FrontCamera,
+    Inputs,
+    LeftCamera,
+    Settings,
+    Summary,
+)
 
 BETDisk.get_files()
 
 project = fl.Project.from_file(
     files=fl.VolumeMeshFile(BETDisk.mesh_filename),
-    name="BET disk case from Python",
+    name="BET Disk results from Python",
     length_unit="inch",
 )
 
@@ -47,9 +58,16 @@ with fl.SI_unit_system:
             fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
             fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
         ],
+        outputs=[
+            fl.SliceOutput(
+                name="SliceOutput",
+                slices=[fl.Slice(name="slice_x", normal=(1, 0, 0), origin=(0, 0, 0))],
+                output_fields=["betMetrics"],
+            )
+        ],
     )
 
-case = project.run_case(params, "BET case from Python")
+case = project.run_case(params, "BET Disk case from Python")
 
 
 case.wait()
@@ -82,3 +100,36 @@ results.download(bet_forces=True, bet_forces_radial_distribution=True, overwrite
 
 # save converted results to a new CSV file:
 results.bet_forces.to_file(os.path.join(case.name, "bet_forces_in_SI.csv"))
+
+SOLVER_VERSION = "release-25.2.0"
+
+cases = [fl.Case(id="case-ee7c1acd-883a-40ce-b920-d577f8470c91")]
+
+front_camera_slice = FrontCamera(dimension=350, dimension_dir="height")
+
+bet_slice_screenshot = Chart3D(
+    section_title="BET effective AoA",
+    items_in_row=2,
+    force_new_page=True,
+    show="slices",
+    include=["slice_x"],
+    field="betMetrics_AlphaDegrees",
+    limits=(-18 * u.rad, 0 * u.rad),
+    camera=front_camera_slice,
+    fig_name="slice_x",
+)
+
+report = ReportTemplate(
+    title="BET results screenshots",
+    items=[Summary(), Inputs(), bet_slice_screenshot],
+    settings=Settings(dpi=150),
+)
+
+report = report.create_in_cloud(
+    "CHT, dpi=default",
+    cases,
+    solver_version=SOLVER_VERSION,
+)
+
+report.wait()
+report.download("bet_report.pdf")

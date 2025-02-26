@@ -1,5 +1,5 @@
 import flow360 as fl
-from flow360 import log, u
+from flow360 import u
 from flow360.examples import TutorialCHTSolver
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
@@ -15,7 +15,7 @@ from flow360.plugins.report.report_items import (
 TutorialCHTSolver.get_files()
 
 project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(TutorialCHTSolver.mesh_filename), name="Tutorial CHT Solver from Python"
+    files=fl.VolumeMeshFile(TutorialCHTSolver.mesh_filename), name="CHT results from Python"
 )
 
 volume_mesh = project.volume_mesh
@@ -109,9 +109,14 @@ with fl.SI_unit_system:
         ],
     )
 
-case = project.run_case(params=params, name="Tutorial CHT Solver from Python")
+case = project.run_case(params=params, name="CHT case from Python")
 
 case.wait()
+
+results = case.results
+
+surface_heat_transfer = results.surface_heat_transfer.as_dataframe()
+print(surface_heat_transfer)
 
 cases = [case]
 
@@ -173,4 +178,4 @@ report = report.create_in_cloud(
 )
 
 report.wait()
-report.download("report.pdf")
+report.download("cht_report.pdf")

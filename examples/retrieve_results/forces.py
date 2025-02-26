@@ -6,7 +6,7 @@ from flow360.examples import OM6wing
 OM6wing.get_files()
 
 project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Force results from Python"
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Forces results from Python"
 )
 
 vm = project.volume_mesh
@@ -27,7 +27,7 @@ with fl.SI_unit_system:
         ],
     )
 
-case = project.run_case(params, "Force results case from Python")
+case = project.run_case(params, "Forces results case from Python")
 
 
 # wait until the case finishes execution

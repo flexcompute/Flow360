@@ -7,7 +7,7 @@ OM6wing.get_files()
 
 project = fl.Project.from_file(
     files=fl.VolumeMeshFile(OM6wing.mesh_filename),
-    name="Convergence of diverging results from Python",
+    name="Convergence results from Python",
 )
 
 vm = project.volume_mesh
@@ -40,7 +40,7 @@ with fl.SI_unit_system:
         ],
     )
 
-case = project.run_case(params, "Convergence of diverging results case from Python")
+case = project.run_case(params, "Convergence case from Python")
 
 
 # wait until the case finishes execution
