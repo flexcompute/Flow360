@@ -17,6 +17,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+)
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -118,6 +121,14 @@ class RotationCylinder(CylindricalRefinementBase):
                 )
         return values
 
+    @pd.field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        if value is None:
+            return value
+        return check_deleted_surface_in_entity_list(value)
+
 
 class AutomatedFarfield(Flow360BaseModel):
     """
@@ -125,7 +136,7 @@ class AutomatedFarfield(Flow360BaseModel):
     """
 
     type: Literal["AutomatedFarfield"] = pd.Field("AutomatedFarfield", frozen=True)
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Automated Farfield")  # Kept optional for backward compatibility
     method: Literal["auto", "quasi-3d"] = pd.Field(
         default="auto",
         frozen=True,

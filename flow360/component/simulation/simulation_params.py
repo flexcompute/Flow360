@@ -123,8 +123,11 @@ class _ParamModelBase(Flow360BaseModel):
 
     @classmethod
     def update_input(cls, model_dict):
-        """Run updater to update the input param dict to latest dict."""
-        version = model_dict.pop("version", None)
+        """
+        1. Find the version from the input dict.
+        2. Update the input dict to __version__.
+        """
+        version = model_dict.get("version", None)
         if version is None:
             raise Flow360RuntimeError(
                 "Missing version info in file content, please check the input file."
@@ -146,21 +149,13 @@ class _ParamModelBase(Flow360BaseModel):
             )
 
         model_dict = self._handle_file(filename=filename, **kwargs)
+        # When treating files/file like contents the updater will always be run.
+        model_dict = _ParamModelBase.update_input(model_dict)
 
-        version = model_dict.pop("version", None)
         unit_system = model_dict.get("unit_system")
-        if version is not None and unit_system is not None:
-            if version != __version__:
-                model_dict = updater(  # pylint: disable=R0801
-                    version_from=version, version_to=__version__, params_as_dict=model_dict
-                )
-            # pylint: disable=not-context-manager
-            with UnitSystem.from_dict(**unit_system):
-                super().__init__(**model_dict)
-        else:
-            raise Flow360RuntimeError(
-                "Missing version info in file content, please check the input file."
-            )
+
+        with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+            super().__init__(**model_dict)
 
     def _init_with_context(self, **kwargs):
         """

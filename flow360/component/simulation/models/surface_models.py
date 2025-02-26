@@ -34,6 +34,10 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
+from flow360.component.simulation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+    check_deleted_surface_pair,
+)
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
@@ -48,6 +52,12 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         alias="surfaces",
         description="List of boundaries with boundary condition imposed.",
     )
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -499,6 +509,14 @@ class Periodic(Flow360BaseModel):
         description="Define the type of periodic boundary condition (translational/rotational) "
         + "via :class:`Translational`/:class:`Rotational`.",
     )
+
+    @pd.field_validator("entity_pairs", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        for surface_pair in value.items:
+            check_deleted_surface_pair(surface_pair)
+        return value
 
 
 SurfaceModelTypes = Union[

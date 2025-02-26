@@ -32,6 +32,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+)
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -153,6 +156,12 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -404,6 +413,12 @@ class SurfaceIntegralOutput(Flow360BaseModel):
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class ProbeOutput(Flow360BaseModel):
