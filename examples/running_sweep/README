@@ -1,0 +1,11 @@
+The scripts in this directory allow you to run a sweep of cases in an automated fashion.
+
+The launch_sweep.py script will:
+	1- Create the appropriate directory structure and files to store the run data
+	2- Upload a mesh or CAD (whichever is required) and create a project or connect to an already existing project. If uploaded a CAD, it will launch the meshing of the CAD using the automated meshing tool chain.
+	3- Launch all the cases required for the sweep
+	4- Save the project and caseIds for that sweep
+
+the postprocess_sweep.py script will:
+	1- Read in the project and caseIds
+	2- Use the predefined report template to generate the sweep report pdf file for that sweep.
