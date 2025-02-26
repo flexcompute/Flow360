@@ -39,22 +39,27 @@ def _24_11_6_to_24_11_7_update(params_as_dict):
                     entity["private_attribute_id"] = new_uuid
                     point_array_list.append(entity)
 
-    if params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
-        for idx, draft_entity in enumerate(
-            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
-        ):
-            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
+    if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
+        return params_as_dict
+    if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
+        "draft_entities"
+    ):
+        return params_as_dict
+    for idx, draft_entity in enumerate(
+        params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+    ):
+        if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
+            continue
+        for point_array in point_array_list:
+            if compare_dicts(
+                dict1=draft_entity,
+                dict2=point_array,
+                ignore_keys=["private_attribute_id"],
+            ):
+                params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+                    "draft_entities"
+                ][idx] = point_array
                 continue
-            for point_array in point_array_list:
-                if compare_dicts(
-                    dict1=draft_entity,
-                    dict2=point_array,
-                    ignore_keys=["private_attribute_id"],
-                ):
-                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
-                        "draft_entities"
-                    ][idx] = point_array
-                    continue
 
     return params_as_dict
 
