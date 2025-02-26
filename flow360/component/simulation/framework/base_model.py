@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from itertools import chain
-from typing import Any, List, Literal, get_origin
+from typing import Any, List, Literal, get_origin, Set, Optional
 
 import pydantic as pd
 import rich
@@ -13,6 +13,7 @@ import yaml
 from pydantic import ConfigDict
 from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
 from pydantic_core import InitErrorDetails
+from unyt import unit_registry
 
 from flow360.component.simulation.conversion import need_conversion, unit_converter
 from flow360.component.simulation.validation import validation_context
@@ -64,6 +65,15 @@ class Conflicts(pd.BaseModel):
 
     field1: str
     field2: str
+
+
+class RegistryLookup:
+    """
+    Helper object to cache the conversion unit system registry
+    """
+
+    converted_fields: Set[str] = set()
+    registry: Optional[unit_registry] = None
 
 
 class Flow360BaseModel(pd.BaseModel):
@@ -552,6 +562,7 @@ class Flow360BaseModel(pd.BaseModel):
         params,
         exclude: List[str] = None,
         required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
@@ -570,13 +581,18 @@ class Flow360BaseModel(pd.BaseModel):
             if field is not None and field.alias is not None:
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
-                flow360_conv_system = unit_converter(
-                    value.units.dimensions,
-                    params=params,
-                    required_by=[*required_by, loc_name],
-                )
-                # pylint: disable=no-member
-                value.units.registry = flow360_conv_system.registry
+                dimension = value.units.dimensions
+                if dimension not in registry_lookup.converted_fields:
+                    flow360_conv_system = unit_converter(
+                        value.units.dimensions,
+                        params=params,
+                        required_by=[*required_by, loc_name],
+                    )
+                    # Calling unit_converter is always additive on the global conversion system
+                    # so we can only keep track of the most recent registry and use it
+                    registry_lookup.registry = flow360_conv_system.registry
+                    registry_lookup.converted_fields.add(dimension)
+                value.units.registry = registry_lookup.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360_v2")
             else:
                 solver_values[property_name] = value
@@ -589,6 +605,7 @@ class Flow360BaseModel(pd.BaseModel):
         params=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .preprocess() recusrively. For dimensioned value performs
@@ -609,11 +626,18 @@ class Flow360BaseModel(pd.BaseModel):
         required_by: List[str] (optional)
             Path to property which requires conversion.
 
+        registry_lookup: RegistryLookup (optional)
+            Lookup object that allows us to quickly perform conversions by
+            reducing redundant calls to the conversion system getter
+
         Returns
         -------
         caller class
             returns caller class with units all in flow360 base unit system
         """
+
+        if registry_lookup is None:
+            registry_lookup = RegistryLookup()
 
         if exclude is None:
             exclude = []
@@ -622,9 +646,7 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         solver_values = self._nondimensionalization(
-            params=params,
-            exclude=exclude,
-            required_by=required_by,
+            params=params, exclude=exclude, required_by=required_by, registry_lookup=registry_lookup
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:
@@ -638,6 +660,7 @@ class Flow360BaseModel(pd.BaseModel):
                     params=params,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
+                    registry_lookup=registry_lookup,
                 )
             elif isinstance(value, list):
                 for i, item in enumerate(value):
@@ -646,6 +669,7 @@ class Flow360BaseModel(pd.BaseModel):
                             params=params,
                             required_by=[*required_by, loc_name, f"{i}"],
                             exclude=exclude,
+                            registry_lookup=registry_lookup,
                         )
 
         return self.__class__(**solver_values)
