@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
-from typing import Annotated, Literal, Optional
+from typing import Literal, Union
 
-import pydantic as pd
-
+from flow360.cloud.flow360_requests import (
+    DraftCreateRequest,
+    DraftRunRequest,
+    ForceCreationConfig,
+    IDStringType,
+)
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import (
@@ -15,37 +18,9 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.utils import is_valid_uuid, validate_type
+from flow360.component.utils import validate_type
 from flow360.exceptions import Flow360WebError
 from flow360.log import log
-
-
-def _valid_id_validator(input_id: str):
-    is_valid_uuid(input_id)
-    return input_id
-
-
-IDStringType = Annotated[str, pd.AfterValidator(_valid_id_validator)]
-
-
-class DraftPostRequest(pd.BaseModel):
-    """Data model for draft post request"""
-
-    name: Optional[str] = pd.Field(None)
-    project_id: IDStringType = pd.Field(serialization_alias="projectId")
-    source_item_id: IDStringType = pd.Field(serialization_alias="sourceItemId")
-    source_item_type: Literal[
-        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
-    ] = pd.Field(serialization_alias="sourceItemType")
-    solver_version: str = pd.Field(serialization_alias="solverVersion")
-    fork_case: bool = pd.Field(serialization_alias="forkCase")
-
-    @pd.field_validator("name", mode="after")
-    @classmethod
-    def _generate_default_name(cls, values):
-        if values is None:
-            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
-        return values
 
 
 class DraftDraft(ResourceDraft):
@@ -65,7 +40,7 @@ class DraftDraft(ResourceDraft):
         solver_version: str,
         fork_case: bool,
     ):
-        self._request = DraftPostRequest(
+        self._request = DraftCreateRequest(
             name=name,
             project_id=project_id,
             source_item_id=source_item_id,
@@ -142,18 +117,38 @@ class Draft(Flow360Resource):
         response = self.get(method="simulation/file", params={"type": "simulation"})
         return json.loads(response["simulationJson"])
 
-    def run_up_to_target_asset(self, target_asset: type, use_beta_mesher: bool) -> str:
+    def run_up_to_target_asset(
+        self,
+        target_asset: type,
+        use_beta_mesher: bool,
+        source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
+        start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
+    ) -> str:
         """run the draft up to the target asset"""
 
         try:
             # pylint: disable=protected-access
             if use_beta_mesher is True:
                 log.info("Selecting beta/in-house mesher for possible meshing tasks.")
+            if start_from:
+                if start_from != target_asset._cloud_resource_type_name:
+                    log.info(
+                        f"Force creating new resource(s) from {start_from} "
+                        + f"until {target_asset._cloud_resource_type_name}"
+                    )
+                else:
+                    log.info(f"Force creating a new {target_asset._cloud_resource_type_name}.")
+            force_creation_config = (
+                ForceCreationConfig(start_from=start_from) if start_from else None
+            )
+            run_request = DraftRunRequest(
+                source_item_type=source_item_type,
+                up_to=target_asset._cloud_resource_type_name,
+                use_in_house=use_beta_mesher,
+                force_creation_config=force_creation_config,
+            )
             run_response = self.post(
-                json={
-                    "upTo": target_asset._cloud_resource_type_name,
-                    "useInHouse": use_beta_mesher,
-                },
+                run_request.model_dump(by_alias=True),
                 method="run",
             )
             destination_id = run_response["id"]
