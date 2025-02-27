@@ -543,6 +543,12 @@ class SurfaceProbeOutput(Flow360BaseModel):
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
+    @pd.field_validator("target_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
+
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     """
@@ -565,6 +571,12 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
+
+    @pd.field_validator("target_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class TimeAverageProbeOutput(ProbeOutput):
@@ -825,6 +837,14 @@ class AeroAcousticOutput(Flow360BaseModel):
             raise ValueError("`permeable_surfaces` cannot be empty when `patch_type` is permeable.")
 
         return self
+
+    @pd.field_validator("permeable_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        if value is None:
+            return value
+        return check_deleted_surface_in_entity_list(value)
 
 
 OutputTypes = Annotated[
