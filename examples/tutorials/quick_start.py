@@ -7,7 +7,6 @@ from flow360.examples import Airplane
 project = fl.Project.from_file(
     files=Airplane.geometry,
     name="Python Project (Geometry, from file)",
-    solver_version="release-24.11.25",
 )
 geo = project.geometry  # Access the geometry of the project
 
