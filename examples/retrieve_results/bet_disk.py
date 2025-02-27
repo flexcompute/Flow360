@@ -4,15 +4,12 @@ import os
 from pylab import show
 
 import flow360 as fl
-from flow360 import u
 from flow360.examples import BETDisk
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
-    Camera,
     Chart3D,
     FrontCamera,
     Inputs,
-    LeftCamera,
     Settings,
     Summary,
 )
@@ -103,7 +100,7 @@ results.bet_forces.to_file(os.path.join(case.name, "bet_forces_in_SI.csv"))
 
 SOLVER_VERSION = "release-25.2.0"
 
-cases = [fl.Case(id="case-ee7c1acd-883a-40ce-b920-d577f8470c91")]
+cases = [case]
 
 front_camera_slice = FrontCamera(dimension=350, dimension_dir="height")
 
@@ -112,9 +109,9 @@ bet_slice_screenshot = Chart3D(
     items_in_row=2,
     force_new_page=True,
     show="slices",
-    include=["slice_x"],
+    include=["slice_x_0"],
     field="betMetrics_AlphaDegrees",
-    limits=(-18 * u.rad, 0 * u.rad),
+    limits=(-18, 0),
     camera=front_camera_slice,
     fig_name="slice_x",
 )
@@ -126,10 +123,10 @@ report = ReportTemplate(
 )
 
 report = report.create_in_cloud(
-    "CHT, dpi=default",
+    "BET, dpi=default",
     cases,
     solver_version=SOLVER_VERSION,
 )
 
 report.wait()
-report.download("bet_report.pdf")
+report.download("report.pdf")

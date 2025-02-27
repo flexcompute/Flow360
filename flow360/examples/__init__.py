@@ -7,6 +7,7 @@ from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
+from .quadcopter import Quadcopter
 from .rotating_spheres import RotatingSpheres
 from .tutorial_2D_30p30n import Tutorial2D30p30n
 from .tutorial_2D_crm import Tutorial2DCRM
@@ -40,4 +41,5 @@ __all__ = [
     "TutorialDynamicDerivatives",
     "TutorialRANSXv15",
     "TutorialUDDForcesMoments",
+    "Quadcopter",
 ]
