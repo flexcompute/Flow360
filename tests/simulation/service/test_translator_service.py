@@ -605,7 +605,7 @@ def test_simulation_to_case_vm_workflow():
             "beta": {"value": 0, "units": "degree"},
         },
         "unit_system": {"name": "SI"},
-        "version": "24.11.0",
+        "version": "24.11.2",
         "models": [
             {
                 "type": "Wall",
