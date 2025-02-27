@@ -166,8 +166,8 @@ class NewReportRequest(Flow360RequestsV2):
     solver_version: str
 
 
-class DraftPostRequest(Flow360RequestsV2):
-    """Data model for draft post request"""
+class DraftCreateRequest(Flow360RequestsV2):
+    """Data model for draft create request"""
 
     name: Optional[str] = pd.Field(None)
     project_id: IDStringType = pd.Field()
@@ -214,8 +214,8 @@ class DraftRunRequest(Flow360RequestsV2):
 
         if self.force_creation_config is not None:
             force_start_order = order[self.force_creation_config.start_from]
-            if force_start_order <= source_order < 3 or (
-                source_order == 3 and force_start_order != 3
+            if (force_start_order <= source_order and self.source_item_type != "Case") or (
+                self.source_item_type == "Case" and self.force_creation_config.start_from != "Case"
             ):
                 raise ValueError(
                     f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "

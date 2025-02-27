@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from typing import Literal
+from typing import Literal, Union
 
 from flow360.cloud.flow360_requests import (
-    DraftPostRequest,
+    DraftCreateRequest,
     DraftRunRequest,
     ForceCreationConfig,
     IDStringType,
@@ -40,7 +40,7 @@ class DraftDraft(ResourceDraft):
         solver_version: str,
         fork_case: bool,
     ):
-        self._request = DraftPostRequest(
+        self._request = DraftCreateRequest(
             name=name,
             project_id=project_id,
             source_item_id=source_item_id,
@@ -122,7 +122,7 @@ class Draft(Flow360Resource):
         target_asset: type,
         use_beta_mesher: bool,
         source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
-        start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"],
+        start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
     ) -> str:
         """run the draft up to the target asset"""
 
