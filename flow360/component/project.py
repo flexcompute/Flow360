@@ -543,6 +543,7 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        **kwargs,
     ):
         """
         Runs a simulation for the project.
@@ -589,18 +590,29 @@ class Project(pd.BaseModel):
                 "Validation error found in the simulation params! Errors are: " + error_msg
             )
 
+        source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
+        start_from = kwargs.get("start_from", None)
+
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
             source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
-            source_item_type=(self.metadata.root_item_type.value if fork_from is None else "Case"),
+            source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
         ).submit()
 
         draft.update_simulation_params(params)
 
-        destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
+        try:
+            destination_id = draft.run_up_to_target_asset(
+                target,
+                source_item_type=source_item_type,
+                use_beta_mesher=use_beta_mesher,
+                start_from=start_from,
+            )
+        except RuntimeError:
+            return None
 
         self._project_webapi.patch(
             # pylint: disable=protected-access
@@ -632,6 +644,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        **kwargs,
     ):
         """
         Runs the surface mesher for the project.
@@ -657,6 +670,7 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Surface mesher can only be run by projects with a geometry root asset"
             )
+
         self._surface_mesh_cache.add_asset(
             self._run(
                 params=params,
@@ -666,6 +680,7 @@ class Project(pd.BaseModel):
                 fork_from=None,
                 solver_version=solver_version,
                 use_beta_mesher=use_beta_mesher,
+                **kwargs,
             )
         )
 
@@ -677,6 +692,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        **kwargs,
     ):
         """
         Runs the volume mesher for the project.
@@ -711,6 +727,7 @@ class Project(pd.BaseModel):
                 fork_from=None,
                 solver_version=solver_version,
                 use_beta_mesher=use_beta_mesher,
+                **kwargs,
             )
         )
 
@@ -723,6 +740,7 @@ class Project(pd.BaseModel):
         fork_from: Case = None,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        **kwargs,
     ):
         """
         Runs a case for the project.
@@ -741,6 +759,7 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         """
         self._check_initialized()
+
         self._case_cache.add_asset(
             self._run(
                 params=params,
@@ -750,5 +769,6 @@ class Project(pd.BaseModel):
                 fork_from=fork_from,
                 solver_version=solver_version,
                 use_beta_mesher=use_beta_mesher,
+                **kwargs,
             )
         )
