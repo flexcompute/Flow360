@@ -133,7 +133,8 @@ class Draft(Flow360Resource):
             if start_from:
                 if start_from != target_asset._cloud_resource_type_name:
                     log.info(
-                        f"Force creating new resouces from {start_from} until {target_asset._cloud_resource_type_name}"
+                        f"Force creating new resource(s) from {start_from} "
+                        + f"until {target_asset._cloud_resource_type_name}"
                     )
                 else:
                     log.info(f"Force creating a new {target_asset._cloud_resource_type_name}.")
