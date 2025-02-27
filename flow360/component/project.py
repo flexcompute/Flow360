@@ -352,6 +352,7 @@ class ProjectTree(pd.BaseModel):
         )
 
 
+# pylint: disable=too-many-public-methods
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
@@ -662,11 +663,10 @@ class Project(pd.BaseModel):
 
     # pylint: disable=too-many-arguments
     @classmethod
-    @pd.validate_call
-    def from_file(
+    def _create_project_from_files(
         cls,
         *,
-        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, str, list[str]],
+        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, str, List[str]],
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
@@ -677,8 +677,8 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file : str
-            Path to the file.
+        files : Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile]
+            Path to the files.
         name : str, optional
             Name of the project (default is None).
         solver_version : str, optional
@@ -746,6 +746,193 @@ class Project(pd.BaseModel):
         project._get_root_simulation_json()
         project._get_tree_from_cloud()
         return project
+
+    @classmethod
+    @pd.validate_call
+    def from_geometry_files(
+        cls,
+        *,
+        file: GeometryFiles,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from geometry files.
+
+        Parameters
+        ----------
+        file :GeometryFiles
+            Path to the geometry file.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the project cannot be initialized from the file.
+        """
+        return cls._create_project_from_files(
+            files=file,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+    @classmethod
+    @pd.validate_call
+    def from_surface_mesh_file(
+        cls,
+        *,
+        file: SurfaceMeshFile,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from a surface file.
+
+        Parameters
+        ----------
+        file :SurfaceMeshFile
+            Path to the surface mesh file.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the project cannot be initialized from the file.
+        """
+        return cls._create_project_from_files(
+            files=file,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+    @classmethod
+    @pd.validate_call
+    def from_volume_mesh_file(
+        cls,
+        *,
+        file: VolumeMeshFile,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from a surface file.
+
+        Parameters
+        ----------
+        file :VolumeMeshFile
+            Path to the volume mesh file.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the project cannot be initialized from the file.
+        """
+        return cls._create_project_from_files(
+            files=file,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+    @classmethod
+    @pd.validate_call
+    def from_file(
+        cls,
+        *,
+        file: Union[str, list[str]],
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from a file.
+
+        Parameters
+        ----------
+        file : str
+            Path to the file.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the project cannot be initialized from the file.
+        """
+
+        log.warning(
+            "DeprecationWarning: Creating project with `from_file` is deprecated. "
+            + "Please use `from_geometry_files`, `from_surface_mesh_file` "
+            + "or `from_volume_mesh_files` instead based on your input file type."
+        )
+
+        return cls._create_project_from_files(
+            files=file,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
 
     @classmethod
     @pd.validate_call
