@@ -131,7 +131,7 @@ class _ParamModelBase(Flow360BaseModel):
         return kwargs
 
     @classmethod
-    def update_input(cls, model_dict):
+    def _update_param_dict(cls, model_dict):
         """
         1. Find the version from the input dict.
         2. Update the input dict to __version__.
@@ -163,7 +163,7 @@ class _ParamModelBase(Flow360BaseModel):
             model_dict = self._handle_dict(**file_content)
 
         # When treating files/file like contents the updater will always be run.
-        model_dict = _ParamModelBase.update_input(model_dict)
+        model_dict = _ParamModelBase._update_param_dict(model_dict)
 
         unit_system = model_dict.get("unit_system")
 

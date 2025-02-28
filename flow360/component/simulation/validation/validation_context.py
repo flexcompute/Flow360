@@ -53,7 +53,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
         volume_zones = None
         try:
-            volume_zones = param_as_dict["meshing"]["volume_zones"]
+            if param_as_dict["meshing"]:
+                volume_zones = param_as_dict["meshing"]["volume_zones"]
         except KeyError:
             # No farfield/meshing info.
             return None
