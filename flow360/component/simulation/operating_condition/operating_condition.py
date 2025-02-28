@@ -13,7 +13,12 @@ from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import Air, FluidMaterialTypes
+from flow360.component.simulation.models.material import (
+    Air,
+    FluidMaterialTypes,
+    SeaWater,
+    Water,
+)
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -426,9 +431,32 @@ class AerospaceCondition(MultiConstructorBaseModel):
         ).value
 
 
+class LiquidOperatingCondition(Flow360BaseModel):
+    type_name: Literal["LiquidOperatingCondition"] = pd.Field(
+        "LiquidOperatingCondition", frozen=True
+    )
+    velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
+        context=CASE,
+        description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
+    )
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
+        None,
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
+        frozen=True,
+    )
+    material: Union[Water, SeaWater] = pd.Field(
+        Water(),
+        description="Type of liquid material used.",
+    )
+
+
 # pylint: disable=fixme
 # TODO: AutomotiveCondition
-OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
+OperatingConditionTypes = Union[
+    GenericReferenceCondition, AerospaceCondition, LiquidOperatingCondition
+]
 
 
 # pylint: disable=too-many-arguments

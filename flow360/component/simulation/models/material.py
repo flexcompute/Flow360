@@ -254,5 +254,45 @@ aluminum = SolidMaterial(
 )
 
 
+class Water(MaterialBase):
+    """Pure Water"""
+
+    type: Literal["water"] = pd.Field("water", frozen=True)
+    name: str = pd.Field(frozen=True, description="Name of the water with given property.")
+    density: Optional[DensityType.Positive] = pd.Field(
+        1 * u.kg / u.m**3, frozen=True, description="Density of the water."
+    )
+    dynamic_viscosity: ViscosityType.NonNegative = pd.Field(
+        0.001002 * u.kg / u.m / u.s, frozen=True, description="Dynamic viscosity of the water."
+    )
+
+    @classmethod
+    def from_temperature(cls, temperature: AbsoluteTemperatureType):
+        """
+        Return `Water` material with density and dynamic viscosity matching the given temperature.
+        """
+        ...
+        return Water()
+
+
+class SeaWater(MaterialBase):
+    type: Literal["sea_water"] = pd.Field("sea_water", frozen=True)
+    name: str = pd.Field(frozen=True, description="Name of the sea water with given property.")
+    density: Optional[DensityType.Positive] = pd.Field(
+        1.1 * u.kg / u.m**3, frozen=True, description="Density of the water."
+    )
+    dynamic_viscosity: ViscosityType.NonNegative = pd.Field(
+        0.0012 * u.kg / u.m / u.s, frozen=True, description="Dynamic viscosity of the water."
+    )
+
+    @classmethod
+    def from_salinity_and_temperature(cls, salinity: float, temperature: AbsoluteTemperatureType):
+        """
+        Return `SeaWater` with density and dynamic viscosity matching the given temperature.
+        """
+        ...
+        return SeaWater()
+
+
 SolidMaterialTypes = SolidMaterial
 FluidMaterialTypes = Air
