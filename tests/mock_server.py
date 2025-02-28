@@ -249,7 +249,6 @@ class MockResponseInfoNotFound(MockResponse):
         return {"data": None}
 
 
-# Introduced in 25.2
 class MockResponseProject(MockResponse):
     """response for Project.from_cloud(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s meta json"""
 
@@ -266,36 +265,6 @@ class MockResponseProjectFromVM(MockResponse):
     @staticmethod
     def json():
         with open(os.path.join(here, "data/mock_webapi/project_from_vm_meta_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseAllProjects(MockResponse):
-    """response of projects get"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/get_projects_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseProjectTree(MockResponse):
-    """response for Project.from_cloud(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s tree json"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/project_get_tree_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseProjectFromVMTree(MockResponse):
-    """response for Project.from_cloud(id="prj-99cc6f96-15d3-4170-973c-a0cced6bf36b")'s tree json"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/project_from_vm_get_tree_resp.json")) as fh:
             res = json.load(fh)
         return res
 
@@ -317,28 +286,6 @@ class MockResponseProjectGeometrySimConfig(MockResponse):
     def json():
         with open(
             os.path.join(here, "data/mock_webapi/project_geometry_simulation_json_resp.json")
-        ) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseProjectSurfaceMesh(MockResponse):
-    """response for SurfaceMesh.from_cloud(id="sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a")'s meta json"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/project_surface_mesh_meta_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseProjectSurfaceMeshSimConfig(MockResponse):
-    """response for SurfaceMesh.from_cloud(id="sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a")'s simualtion json"""
-
-    @staticmethod
-    def json():
-        with open(
-            os.path.join(here, "data/mock_webapi/project_surface_mesh_simulation_json_resp.json")
         ) as fh:
             res = json.load(fh)
         return res
@@ -392,16 +339,6 @@ class MockResponseProjectFromVMVolumeMeshSimConfig(MockResponse):
         return res
 
 
-class MockResponseProjectCase(MockResponse):
-    """response for Case.from_cloud(id="case-69b8c249-fce5-412a-9927-6a79049deebb")'s meta json"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/project_case_meta_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
 class MockResponseProjectFromVMCase(MockResponse):
     """response for Case.from_cloud(id="case-f7480884-4493-4453-9a27-dd5f8498c608")'s meta json"""
 
@@ -422,18 +359,6 @@ class MockResponseProjectCaseFork(MockResponse):
         return res
 
 
-class MockResponseProjectCaseSimConfig(MockResponse):
-    """response for Case.from_cloud(id="case-69b8c249-fce5-412a-9927-6a79049deebb")'s simulation json"""
-
-    @staticmethod
-    def json():
-        with open(
-            os.path.join(here, "data/mock_webapi/project_case_simulation_json_resp.json")
-        ) as fh:
-            res = json.load(fh)
-        return res
-
-
 class MockResponseProjectCaseForkSimConfig(MockResponse):
     """response for Case.from_cloud(id="case-84d4604e-f3cd-4c6b-8517-92a80a3346d3")'s simulation json"""
 
@@ -446,38 +371,6 @@ class MockResponseProjectCaseForkSimConfig(MockResponse):
         return res
 
 
-class MockResponseProjectRunCase(MockResponse):
-    """response for project.run_case(params = params)'s meta json"""
-
-    @staticmethod
-    def json():
-        with open(os.path.join(here, "data/mock_webapi/project_case_fork_meta_resp.json")) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseProjectPath(MockResponse):
-    """response for Project(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s path"""
-
-    def __init__(self, *args, params=None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._params = params
-
-    def json(self):
-        with open(os.path.join(here, "data/mock_webapi/project_path_to_case_fork_resp.json")) as fh:
-            # The json file contains all the assets along the path from geometry to the forked case.
-            # Thus, to get the path to the intermediate asset, the extra items are removed from the response.
-            res = json.load(fh)
-            if self._params["itemType"] == "VolumeMesh":
-                res["data"]["cases"] = []
-            if self._params["itemType"] == "SurfaceMesh":
-                res["data"]["volumeMesh"] = None
-                res["data"]["cases"] = []
-            if self._params["itemType"] == "case-69b8c249-fce5-412a-9927-6a79049deebb":
-                res["data"]["cases"] = []
-        return res
-
-
 class MockResponseDraftSubmit(MockResponse):
     """response for Project(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s path to Fork Case json"""
 
@@ -486,6 +379,7 @@ class MockResponseDraftSubmit(MockResponse):
         self._params = params
 
     def json(self):
+        print(self._params["name"])
         res = None
         if self._params["name"] == "VolumeMesh":
             with open(
@@ -500,32 +394,6 @@ class MockResponseDraftSubmit(MockResponse):
                 res = json.load(fh)
         return res
 
-
-class MockResponseDraftVolumeMeshRun(MockResponse):
-    """response for Project(id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")'s path to Fork Case json"""
-
-    @staticmethod
-    def json():
-        with open(
-            os.path.join(here, "data/mock_webapi/project_draft_run_to_volume_mesh.json")
-        ) as fh:
-            res = json.load(fh)
-        return res
-
-
-class MockResponseProjectPatchDraftSubmit(MockResponse):
-
-    def __init__(self, *args, params=None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._params = params
-
-    def json(self):
-        with open(os.path.join(here, "data/mock_webapi/project_meta_resp.json")) as fh:
-            res = json.load(fh)
-        res["data"]["lastOpenItemId"] = self._params["lastOpenItemId"]
-        res["data"]["lastOpenItemType"] = self._params["lastOpenItemType"]
-        return res
-# Introduced in 25.2
 
 GET_RESPONSE_MAP = {
     "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff": MockResponseVolumeMesh,
@@ -543,25 +411,14 @@ GET_RESPONSE_MAP = {
     "/account": MockResponseOrganizationAccounts,
     "/folders/items/folder-3834758b-3d39-4a4a-ad85-710b7652267c/metadata": MockResponseFolderRootMetadata,
     "/folders/items/folder-4da3cdd0-c5b6-4130-9ca1-196237322ab9/metadata": MockResponseFolderNestedMetadata,
-    # Introduced in 25.2
     "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e": MockResponseProject,
-    "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b": MockResponseProjectFromVM,
-    "/v2/projects/prj-41d2333b-85fd-4bed-ae13-15dcb6da519e/tree": MockResponseProjectTree,
-    "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b/tree": MockResponseProjectFromVMTree,
     "/v2/geometries/geo-2877e124-96ff-473d-864b-11eec8648d42": MockResponseProjectGeometry,
     "/v2/geometries/geo-2877e124-96ff-473d-864b-11eec8648d42/simulation/file": MockResponseProjectGeometrySimConfig,
-    "/v2/surface-meshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a": MockResponseProjectSurfaceMesh,
-    "/v2/surface-meshes/sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a/simulation/file": MockResponseProjectSurfaceMeshSimConfig,
-    "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3": MockResponseProjectVolumeMesh,
-    "/v2/volume-meshes/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
+    "/v2/projects/prj-99cc6f96-15d3-4170-973c-a0cced6bf36b": MockResponseProjectFromVM,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330": MockResponseProjectFromVMVolumeMeshMeta,
     "/v2/volume-meshes/vm-bff35714-41b1-4251-ac74-46a40b95a330/simulation/file": MockResponseProjectFromVMVolumeMeshSimConfig,
-    "/cases/case-69b8c249-fce5-412a-9927-6a79049deebb": MockResponseProjectCase,
-    "/v2/cases/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation/file": MockResponseProjectCaseSimConfig,
     "/cases/case-f7480884-4493-4453-9a27-dd5f8498c608": MockResponseProjectFromVMCase,
     "/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3": MockResponseProjectCaseFork,
-    "/v2/cases/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
-    "/v2/projects": MockResponseAllProjects,
 }
 
 PUT_RESPONSE_MAP = {
@@ -572,6 +429,10 @@ POST_RESPONSE_MAP = {
     "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff/case": MockResponseCaseSubmit,
     "/volumemeshes/00000000-0000-0000-0000-000000000000/case": MockResponseCaseSubmit,
     "/folders": MockResponseFolderSubmit,
+    "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/simulation/file": MockResponseProjectVolumeMeshSimConfig,
+    "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/run": MockResponseProjectVolumeMesh,
+    "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
+    "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/run": MockResponseProjectCaseFork,
 }
 
 
@@ -611,6 +472,9 @@ def mock_webapi(type, url, params):
     elif type == "post":
         if method == "/folders":
             return MockResponseFolderSubmit(params=params)
+
+        if method == "/v2/drafts":
+            return MockResponseDraftSubmit(params=params)
 
         if method in POST_RESPONSE_MAP.keys():
             return POST_RESPONSE_MAP[method]()

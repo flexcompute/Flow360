@@ -1,15 +1,22 @@
 {
     "data": {
         "userId": "AIDAXWCOWJGJJBXX543AQ",
-        "id": "prj-99cc6f96-15d3-4170-973c-a0cced6bf36b",
-        "name": "Tutorial CHT Solver from Python",
+        "id": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "name": "NEW Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
         "tags": [],
-        "parentFolderId": "folder-96c1461e-e3c4-4b44-9f0e-5b4ec3a23777",
+        "parentFolderId": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
         "deleted": false,
         "description": "",
-        "icon": null,
+        "icon": "{\"fontColor\":\"#0062FF\",\"bgColor\":\"#E6EFFF\",\"icon\":\"fc:flight-takeoff_outline\"}",
         "statistics": {
-            "Case": {
+            "Geometry": {
+                "count": 1,
+                "successCount": 1,
+                "runningCount": 0,
+                "divergedCount": 0,
+                "errorCount": 0
+            },
+            "SurfaceMesh": {
                 "count": 1,
                 "successCount": 1,
                 "runningCount": 0,
@@ -22,9 +29,15 @@
                 "runningCount": 0,
                 "divergedCount": 0,
                 "errorCount": 0
+            },
+            "Case": {
+                "count": 2,
+                "successCount": 2,
+                "runningCount": 0,
+                "divergedCount": 0,
+                "errorCount": 0
             }
         },
-        "solverVersion": "release-24.11.10",
         "parentFolders": [
             {
                 "type": "Folder",
@@ -40,31 +53,31 @@
             {
                 "type": "Folder",
                 "userId": "AIDAXWCOWJGJJBXX543AQ",
-                "name": "angran",
+                "name": "tutorials",
                 "tags": [],
-                "id": "folder-96c1461e-e3c4-4b44-9f0e-5b4ec3a23777",
+                "id": "folder-b711e4fc-1b29-488a-85f1-93feee0fcb0f",
                 "parentFolderId": "ROOT.FLOW360",
                 "parentFolders": null,
-                "createdAt": "2024-10-18T18:34:13.241543Z",
-                "updatedAt": "2024-10-18T18:34:13.241543Z"
+                "createdAt": "2024-10-15T08:42:46.036068Z",
+                "updatedAt": "2024-10-15T08:42:46.036068Z"
             }
         ],
         "viewed": true,
-        "lastOpenDraftId": "dft-42dcdc04-52f5-4b18-8c46-80fb74fb2cc2",
-        "lastOpenItemId": "case-f7480884-4493-4453-9a27-dd5f8498c608",
+        "lastOpenDraftId": "dft-84b20880-937d-4ef2-983b-7f75089f6dd6",
+        "lastOpenItemId": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
         "lastOpenItemType": "Case",
-        "latestItemId": "case-f7480884-4493-4453-9a27-dd5f8498c608",
+        "latestItemId": "case-84d4604e-f3cd-4c6b-8517-92a80a3346d3",
         "latestItemType": "Case",
-        "rootItemId": "vm-bff35714-41b1-4251-ac74-46a40b95a330",
-        "rootItemType": "VolumeMesh",
-        "createdAt": "2025-02-26T19:40:46.067988Z",
-        "updatedAt": "2025-02-27T16:52:56.984Z",
+        "rootItemId": "geo-2877e124-96ff-473d-864b-11eec8648d42",
+        "rootItemType": "Geometry",
+        "createdAt": "2024-12-05T12:26:30.250998Z",
+        "updatedAt": "2024-12-08T17:10:49.5Z",
         "createdBy": "AIDAXWCOWJGJJBXX543AQ",
         "updatedBy": "AIDAXWCOWJGJJBXX543AQ",
         "canOpen": true,
-        "rootItemStatus": "completed",
-        "rootItemUploadedAt": "2025-02-26T19:41:02.613Z",
-        "rootItemVisualizationStatus": "completed",
+        "rootItemStatus": "processed",
+        "rootItemUploadedAt": "2024-12-05T12:26:48.165Z",
+        "rootItemVisualizationStatus": null,
         "rootItemUploadStatus": "success",
         "copyStatus": "notCopy",
         "copyFromResourceCount": 0,

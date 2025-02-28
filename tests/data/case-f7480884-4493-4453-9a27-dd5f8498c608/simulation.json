@@ -59,7 +59,6 @@
                 "CFL_multiplier": 2.0,
                 "absolute_tolerance": 1e-08,
                 "equation_evaluation_frequency": 4,
-                "hybrid_model": null,
                 "linear_solver": {
                     "absolute_tolerance": null,
                     "max_iterations": 25,
@@ -166,10 +165,6 @@
                 }
             },
             "name": null,
-            "roughness_height": {
-                "units": "m",
-                "value": 0.0
-            },
             "type": "Wall",
             "use_wall_function": false,
             "velocity": null
@@ -217,10 +212,6 @@
                 }
             },
             "name": null,
-            "roughness_height": {
-                "units": "m",
-                "value": 0.0
-            },
             "type": "Wall",
             "use_wall_function": false,
             "velocity": null
@@ -546,5 +537,5 @@
     },
     "user_defined_dynamics": null,
     "user_defined_fields": [],
-    "version": "25.2.1"
+    "version": "24.11.10"
 }
