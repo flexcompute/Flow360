@@ -2,6 +2,7 @@
 Flow360 base Model
 """
 
+import json
 import os
 import re
 import shutil
@@ -11,7 +12,7 @@ from abc import ABCMeta
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import List, Optional, Union
 
 import pydantic as pd_v2
@@ -349,6 +350,22 @@ class Flow360Resource(RestApi):
             progress_callback=progress_callback,
             **kwargs,
         )
+
+    def _parse_json_from_cloud(self, filename) -> dict:
+        """
+        Return dictionary from cloud JSON file.
+        """
+        with NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp_file:
+            temp_path = tmp_file.name
+        try:
+            self._download_file(filename, to_file=temp_path, log_error=False, verbose=False)
+            with open(temp_path, "r", encoding="utf-8") as fh:
+                data_as_dict = json.load(fh)
+            return data_as_dict
+
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
     def _upload_file(self, remote_file_name: str, file_name: str, progress_callback=None):
         """

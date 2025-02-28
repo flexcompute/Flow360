@@ -25,7 +25,12 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_actuator_disk_results(mock_id, mock_response):
+@pytest.fixture()
+def data_path(mock_id):
+    return os.path.join("data", mock_id)
+
+
+def test_actuator_disk_results(mock_id, mock_response, data_path):
     case = fl.Case(id=mock_id)
 
     with fl.SI_unit_system:
@@ -39,7 +44,9 @@ def test_actuator_disk_results(mock_id, mock_response):
         )
 
     results = case.results
-    results.actuator_disks.load_from_local("data/results/actuatorDisk_output_v2.csv")
+    results.actuator_disks.load_from_local(
+        os.path.join(data_path, "results", "actuatorDisk_output_v2.csv")
+    )
 
     print(results.actuator_disks.as_dataframe())
     assert results.actuator_disks.values["Disk0_Power"][0] == 30.0625485898572
@@ -71,7 +78,7 @@ def test_actuator_disk_results(mock_id, mock_response):
     assert str(results.actuator_disks.values["Disk0_Power"][0].units) == "ft**2*lb/s**3"
 
 
-def test_bet_disk_results(mock_id, mock_response):
+def test_bet_disk_results(mock_id, mock_response, data_path):
     case = fl.Case(id=mock_id)
 
     with fl.SI_unit_system:
@@ -85,7 +92,7 @@ def test_bet_disk_results(mock_id, mock_response):
         )
 
     results = case.results
-    results.bet_forces.load_from_local("data/results/bet_forces_v2.csv")
+    results.bet_forces.load_from_local(os.path.join(data_path, "results", "bet_forces_v2.csv"))
 
     print(results.bet_forces.as_dataframe())
     assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
@@ -103,7 +110,7 @@ def test_bet_disk_results(mock_id, mock_response):
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
 
 
-def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
+def test_bet_disk_results_with_simulation_interface(mock_id, mock_response, data_path):
     case = fl.Case(id=mock_id)
 
     with u2.SI_unit_system:
@@ -112,7 +119,7 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
             params.private_attribute_asset_cache.project_length_unit = 1 * u2.m
 
     results = case.results
-    results.bet_forces.load_from_local("data/results/bet_forces_v2.csv")
+    results.bet_forces.load_from_local(os.path.join(data_path, "results", "bet_forces_v2.csv"))
 
     print(results.bet_forces.as_dataframe())
     assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895

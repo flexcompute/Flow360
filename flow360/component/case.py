@@ -418,28 +418,24 @@ class Case(CaseBase, Flow360Resource):
         """
         returns simulation params
         """
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-            try:
-                self._download_file("simulation.json", to_file=temp_file.name, log_error=False)
-            except CloudFileNotFoundError as err:
-                raise Flow360ValueError(
-                    "Simulation params not found for this case. It is likely it was created with old interface"
-                ) from err
 
-            # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
-            with open(temp_file.name, "r", encoding="utf-8") as fh:
-                params_as_dict: dict = json.load(fh)
+        try:
+            params_as_dict = self._parse_json_from_cloud("simulation.json")
+        except CloudFileNotFoundError as err:
+            raise Flow360ValueError(
+                "Simulation params not found for this case. It is likely it was created with old interface"
+            ) from err
 
-            param, errors, _ = services.validate_model(
-                params_as_dict=params_as_dict, root_item_type=None, validation_level=None
+        param, errors, _ = services.validate_model(
+            params_as_dict=params_as_dict, root_item_type=None, validation_level=None
+        )
+
+        if errors is not None:
+            raise Flow360ValidationError(
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
             )
 
-            if errors is not None:
-                raise Flow360ValidationError(
-                    f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
-                )
-
-            return param
+        return param
 
     @property
     def params(self) -> Union[Flow360Params, SimulationParams]:
