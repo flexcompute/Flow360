@@ -11,6 +11,7 @@ OM6wing.get_files()
 project = fl.Project.from_file(
     files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Alpha sweep results from Python"
 )
+
 vm = project.volume_mesh
 
 with fl.SI_unit_system:
@@ -38,6 +39,7 @@ for alpha in alpha_range:
     case = project.run_case(params, f"alpha-sweep-OM6wing-alpha={alpha}")
     case_list.append(case)
 
+project.print_project_tree()
 
 # wait for all cases to finish processing
 [case.wait() for case in case_list]
@@ -62,7 +64,6 @@ for case in case_list:
     average_CD = average_last_10_percent(total_forces.as_dataframe(), "CD")
     CD_list.append(average_CD)
 
-
 # download all data:
 results_folder = "alpha_sweep_example"
 for case in case_list:
@@ -72,7 +73,6 @@ for case in case_list:
         nonlinear_residuals=True,
         destination=os.path.join(results_folder, case.name),
     )
-
 
 # plot CL / CD
 plot(CD_list, CL_list)

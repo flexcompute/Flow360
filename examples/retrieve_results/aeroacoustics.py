@@ -117,21 +117,28 @@ case_fork_2 = project.run_case(case_fork_1.params, "Final run", fork_from=case_f
 case_fork_2.wait()
 
 results = case_fork_2.results
-results.set_destination(use_case_name=True)
 
 total_acoustics = results.aeroacoustics
 print(total_acoustics)
 
 # There are also surface specific aeroacoustic output files
-blade_1_acoustics = results.download_file_by_name("results/surface_zone_r1_blade1_acoustics_v3.csv")
+blade_1_acoustics = results.download_file_by_name(
+    "results/surface_zone_r1_blade1_acoustics_v3.csv", to_folder="aeroacoustic_results"
+)
 blade_1_acoustics = pd.read_csv(blade_1_acoustics)
 print(blade_1_acoustics)
-blade_2_acoustics = results.download_file_by_name("results/surface_zone_r2_blade2_acoustics_v3.csv")
+blade_2_acoustics = results.download_file_by_name(
+    "results/surface_zone_r2_blade2_acoustics_v3.csv", to_folder="aeroacoustic_results"
+)
 blade_2_acoustics = pd.read_csv(blade_2_acoustics)
 print(blade_2_acoustics)
-blade_3_acoustics = results.download_file_by_name("results/surface_zone_r3_blade3_acoustics_v3.csv")
+blade_3_acoustics = results.download_file_by_name(
+    "results/surface_zone_r3_blade3_acoustics_v3.csv", to_folder="aeroacoustic_results"
+)
 blade_3_acoustics = pd.read_csv(blade_3_acoustics)
 print(blade_3_acoustics)
-blade_4_acoustics = results.download_file_by_name("results/surface_zone_r4_blade4_acoustics_v3.csv")
+blade_4_acoustics = results.download_file_by_name(
+    "results/surface_zone_r4_blade4_acoustics_v3.csv", to_folder="aeroacoustic_results"
+)
 blade_4_acoustics = pd.read_csv(blade_4_acoustics)
 print(blade_4_acoustics)
