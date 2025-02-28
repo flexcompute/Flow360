@@ -560,7 +560,7 @@ def test_generate_process_json():
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.11.0",
+        "version": "24.11.5",
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "private_attribute_constructor": "default",

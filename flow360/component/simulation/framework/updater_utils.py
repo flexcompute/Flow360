@@ -1,5 +1,6 @@
 """Utiliy functions for updater"""
 
+import re
 from numbers import Number
 
 import numpy as np
@@ -54,3 +55,50 @@ def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
             return False
 
     return True
+
+
+class Flow360Version:
+    """
+    Parser for the Flow360 Python API version.
+    Expected pattern is `major.minor.patch` (integers).
+    """
+
+    __slots__ = ["major", "minor", "patch"]
+
+    def __init__(self, version: str):
+        """
+        Initialize the version by parsing a string like '23.1.2'.
+        Each of major, minor, patch should be numeric.
+        """
+        # Match three groups of digits separated by dots
+        match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$", version.strip())
+        if not match:
+            raise ValueError(f"Invalid version string: {version}")
+
+        self.major = int(match.group(1))
+        self.minor = int(match.group(2))
+        self.patch = int(match.group(3))
+
+    def __lt__(self, other):
+        return (self.major, self.minor, self.patch) < (other.major, other.minor, other.patch)
+
+    def __le__(self, other):
+        return (self.major, self.minor, self.patch) <= (other.major, other.minor, other.patch)
+
+    def __gt__(self, other):
+        return (self.major, self.minor, self.patch) > (other.major, other.minor, other.patch)
+
+    def __ge__(self, other):
+        return (self.major, self.minor, self.patch) >= (other.major, other.minor, other.patch)
+
+    def __eq__(self, other):
+        # Also check that 'other' is the same type or has the same attributes
+        if not isinstance(other, Flow360Version):
+            return NotImplemented
+        return (self.major, self.minor, self.patch) == (other.major, other.minor, other.patch)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return f"{self.major}.{self.minor}.{self.patch}"
