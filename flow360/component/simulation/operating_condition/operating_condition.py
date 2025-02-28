@@ -443,7 +443,8 @@ class LiquidOperatingCondition(Flow360BaseModel):
     )
     reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
         None,
-        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0.",
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0."
+        " Used as the velocity scale for nondimensionalization.",
         frozen=True,
     )
     material: Union[Water, SeaWater] = pd.Field(
