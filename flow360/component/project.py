@@ -608,65 +608,12 @@ class Project(pd.BaseModel):
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="Case")
 
-    @classmethod
-    def _detect_asset_type_from_file(
-        cls, files
-    ) -> Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, None]:
-        """
-        Detects the asset type of a file based on its name or pattern.
-
-        Parameters
-        ----------
-        file : str or list of str
-            The file name or path.
-
-        Returns
-        -------
-        RootType
-            The detected file type.
-
-        Raises
-        ------
-        Flow360FileError
-        """
-        validated_objects = []
-        errors = [None, None, None]
-
-        for model in [GeometryFiles, SurfaceMeshFile, VolumeMeshFile]:
-            try:
-                validated_objects.append(model(value=files))
-            except pd.ValidationError as e:
-                validated_objects.append(None)
-                errors.append(e)
-
-        if validated_objects == [None, None, None]:
-            raise Flow360FileError(
-                f"The given file/s: {files} cannot be recognized as"
-                "geometry or surface mesh or volume mesh file."
-                f"\nGeometry file error: {errors[0]}"
-                f"\nSurfaceMesh file error: {errors[1]}"
-                f"\nVolumeMesh file error: {errors[2]}"
-            )
-
-        # Checking if the file is both a volume mesh and a surface mesh file:
-        if validated_objects[1] and validated_objects[2]:
-            raise Flow360FileError(
-                f"The given file: {files} may be recognized as both volume mesh and surface mesh input."
-                f" Please use `SurfaceMeshFile('{files}')` or `VolumeMeshFile('{files}')` to be specific."
-            )
-        if sum(item is not None for item in validated_objects) > 1:
-            raise Flow360FileError(
-                f"[Internal error]: More than one file type recognized ({files})."
-            )
-
-        return next((item for item in validated_objects if item is not None), None)
-
     # pylint: disable=too-many-arguments
     @classmethod
     def _create_project_from_files(
         cls,
         *,
-        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, str, List[str]],
+        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile],
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
@@ -699,22 +646,19 @@ class Project(pd.BaseModel):
             If the project cannot be initialized from the file.
         """
         root_asset = None
-        if isinstance(files, (GeometryFiles, SurfaceMeshFile, VolumeMeshFile)):
-            validated_files = files
-        else:
-            validated_files = Project._detect_asset_type_from_file(files)
 
-        if isinstance(validated_files, GeometryFiles):
-            draft = Geometry.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        elif isinstance(validated_files, SurfaceMeshFile):
+        # pylint:disable = protected-access
+        files._check_files_existence()
+
+        if isinstance(files, GeometryFiles):
+            draft = Geometry.from_file(files.file_names, name, solver_version, length_unit, tags)
+        elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
+                files.file_names, name, solver_version, length_unit, tags
             )
-        elif isinstance(validated_files, VolumeMeshFile):
+        elif isinstance(files, VolumeMeshFile):
             draft = VolumeMeshV2.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
+                files.file_names, name, solver_version, length_unit, tags
             )
         else:
             raise Flow360FileError(
@@ -724,7 +668,7 @@ class Project(pd.BaseModel):
         root_asset = draft.submit()
 
         if not root_asset:
-            raise Flow360ValueError(f"Couldn't initialize asset from {validated_files.value}")
+            raise Flow360ValueError(f"Couldn't initialize asset from {files.file_names}")
         project_id = root_asset.project_id
         project_api = RestApi(ProjectInterface.endpoint, id=project_id)
         info = project_api.get()
@@ -736,11 +680,11 @@ class Project(pd.BaseModel):
             solver_version=root_asset.solver_version,
         )
         project._project_webapi = project_api
-        if isinstance(validated_files, GeometryFiles):
+        if isinstance(files, GeometryFiles):
             project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
-        elif isinstance(validated_files, SurfaceMeshFile):
+        elif isinstance(files, SurfaceMeshFile):
             project._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
-        elif isinstance(validated_files, VolumeMeshFile):
+        elif isinstance(files, VolumeMeshFile):
             project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
         project._root_asset = root_asset
         project._get_root_simulation_json()
@@ -752,7 +696,7 @@ class Project(pd.BaseModel):
     def from_geometry_files(
         cls,
         *,
-        file: GeometryFiles,
+        files: Union[str, list[str]],
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
@@ -763,8 +707,8 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file :GeometryFiles
-            Path to the geometry file.
+        files : Union[str, list[str]]
+            Geometry file paths.
         name : str, optional
             Name of the project (default is None).
         solver_version : str, optional
@@ -784,8 +728,14 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the project cannot be initialized from the file.
         """
+        try:
+            validated_files = GeometryFiles(file_names=files)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Geometry file error: {str(err)}")
+
         return cls._create_project_from_files(
-            files=file,
+            files=validated_files,
             name=name,
             solver_version=solver_version,
             length_unit=length_unit,
@@ -797,7 +747,7 @@ class Project(pd.BaseModel):
     def from_surface_mesh_file(
         cls,
         *,
-        file: SurfaceMeshFile,
+        file: str,
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
@@ -808,8 +758,9 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file :SurfaceMeshFile
-            Path to the surface mesh file.
+        file : str
+            Surface mesh file path. For UGRID file the mapbc
+            file needs to be renamed with the same prefix under same folder.
         name : str, optional
             Name of the project (default is None).
         solver_version : str, optional
@@ -829,8 +780,15 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the project cannot be initialized from the file.
         """
+
+        try:
+            validated_files = SurfaceMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Surface mesh file error: {str(err)}")
+
         return cls._create_project_from_files(
-            files=file,
+            files=validated_files,
             name=name,
             solver_version=solver_version,
             length_unit=length_unit,
@@ -842,7 +800,7 @@ class Project(pd.BaseModel):
     def from_volume_mesh_file(
         cls,
         *,
-        file: VolumeMeshFile,
+        file: str,
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
@@ -853,8 +811,9 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file :VolumeMeshFile
-            Path to the volume mesh file.
+        file : str
+            Volume mesh file path. For UGRID file the mapbc
+            file needs to be renamed with the same prefix under same folder.
         name : str, optional
             Name of the project (default is None).
         solver_version : str, optional
@@ -874,8 +833,15 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the project cannot be initialized from the file.
         """
+
+        try:
+            validated_files = VolumeMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Volume mesh file error: {str(err)}")
+
         return cls._create_project_from_files(
-            files=file,
+            files=validated_files,
             name=name,
             solver_version=solver_version,
             length_unit=length_unit,
@@ -886,7 +852,6 @@ class Project(pd.BaseModel):
     @pd.validate_call
     def from_file(
         cls,
-        *,
         file: Union[str, list[str]],
         name: str = None,
         solver_version: str = __solver_version__,
@@ -894,6 +859,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
     ):
         """
+        [Deprecated function]
         Initializes a project from a file.
 
         Parameters
@@ -922,12 +888,21 @@ class Project(pd.BaseModel):
 
         log.warning(
             "DeprecationWarning: Creating project with `from_file` is deprecated. "
-            + "Please use `from_geometry_files`, `from_surface_mesh_file` "
-            + "or `from_volume_mesh_files` instead based on your input file type."
+            + "Please use `from_geometry_files()`, `from_surface_mesh_file()` "
+            + "or `from_volume_mesh_files()` instead."
         )
 
+        def _detect_input_file_type(file: Union[str, list[str]]):
+            errors = []
+            for model in [GeometryFiles, VolumeMeshFile]:
+                try:
+                    return model(file_names=file)
+                except pd.ValidationError as e:
+                    errors.append(e)
+            raise Flow360FileError(f"Input file {file} cannot be recognized.\nErrors: {errors}")
+
         return cls._create_project_from_files(
-            files=file,
+            files=_detect_input_file_type(file=file),
             name=name,
             solver_version=solver_version,
             length_unit=length_unit,

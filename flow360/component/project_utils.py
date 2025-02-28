@@ -3,6 +3,7 @@ Support class and functions for project interface.
 """
 
 import datetime
+import os
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
@@ -13,9 +14,6 @@ from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.single_attribute_base import (
-    SingleAttributeModel,
-)
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -42,13 +40,32 @@ from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
 
 
-class GeometryFiles(SingleAttributeModel):
+class InputFileModel(Flow360BaseModel):
+    """Base model for input files creating projects"""
+
+    file_names: Union[List[str], str] = pd.Field()
+
+    def _check_files_existence(self) -> None:
+        """
+        Check if the file exists or not.
+        """
+        if isinstance(self.file_names, List):
+            # pylint: disable = not-an-iterable
+            for file_name in self.file_names:
+                if not os.path.isfile(file_name):
+                    raise ValueError(f"File {file_name} does not exist.")
+        else:
+            if not os.path.isfile(self.file_names):
+                raise ValueError(f"File {self.file_names} does not exist.")
+
+
+class GeometryFiles(InputFileModel):
     """Validation model to check if the given files are geometry files"""
 
     type_name: Literal["GeometryFile"] = pd.Field("GeometryFile", frozen=True)
-    value: Union[List[str], str] = pd.Field()
+    file_names: Union[List[str], str] = pd.Field()
 
-    @pd.field_validator("value", mode="after")
+    @pd.field_validator("file_names", mode="after")
     @classmethod
     def _validate_files(cls, value):
         if isinstance(value, str):
@@ -67,13 +84,13 @@ class GeometryFiles(SingleAttributeModel):
         return value
 
 
-class SurfaceMeshFile(SingleAttributeModel):
+class SurfaceMeshFile(InputFileModel):
     """Validation model to check if the given file is a surface mesh file"""
 
     type_name: Literal["SurfaceMeshFile"] = pd.Field("SurfaceMeshFile", frozen=True)
-    value: str = pd.Field()
+    file_names: str = pd.Field()
 
-    @pd.field_validator("value", mode="after")
+    @pd.field_validator("file_names", mode="after")
     @classmethod
     def _validate_files(cls, value):
         try:
@@ -89,14 +106,27 @@ class SurfaceMeshFile(SingleAttributeModel):
             f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}, {MeshFileFormat.STL.ext()}]."
         )
 
+    def _check_files_existence(self) -> None:
+        """
+        Check if the file exists or not. If it is ugrid file then check existence of mapbc file.
+        """
+        super()._check_files_existence()
+        parser = MeshNameParser(input_mesh_file=self.file_names)
+        if parser.is_ugrid():
+            mapbc_file_name = parser.get_associated_mapbc_filename()
+            if not os.path.isfile(mapbc_file_name):
+                log.warning(
+                    f"The mapbc file ({mapbc_file_name}) for {self.file_names} is not found"
+                )
 
-class VolumeMeshFile(SingleAttributeModel):
+
+class VolumeMeshFile(InputFileModel):
     """Validation model to check if the given file is a volume mesh file"""
 
     type_name: Literal["VolumeMeshFile"] = pd.Field("VolumeMeshFile", frozen=True)
-    value: str = pd.Field()
+    file_names: str = pd.Field()
 
-    @pd.field_validator("value", mode="after")
+    @pd.field_validator("file_names", mode="after")
     @classmethod
     def _validate_files(cls, value):
         try:
