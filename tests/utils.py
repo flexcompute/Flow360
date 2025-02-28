@@ -109,7 +109,6 @@ def s3_download_override(monkeypatch):
         **kwargs,
     ):
         full_remote_path = os.path.join("data", resource_id, remote_file_name)
-        print(f"DEBUG: looking for {remote_file_name=}")
         if not os.path.exists(full_remote_path):
             raise CloudFileNotFoundError(
                 error_response={"Error": {"Message": f"file not found: {remote_file_name}"}},
@@ -123,7 +122,6 @@ def s3_download_override(monkeypatch):
         if abs_src != to_file:
             kwargs.pop("verbose", None)
             shutil.copy(abs_src, to_file, **kwargs)
-            print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
     monkeypatch.setattr(S3TransferType.CASE, "download_file", s3_mock_download)
     monkeypatch.setattr(S3TransferType.GEOMETRY, "download_file", s3_mock_download)
