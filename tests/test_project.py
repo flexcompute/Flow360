@@ -99,3 +99,24 @@ def test_run(mock_response, capsys):
     captured_text = capsys.readouterr().out
     captured_text = " ".join(captured_text.split())
     assert warning_msg in captured_text
+
+    error_msg = r"Input should be 'SurfaceMesh', 'VolumeMesh' or 'Case'"
+    with pytest.raises(pd.ValidationError, match=error_msg):
+        project.generate_volume_mesh(params=params, start_from="Geometry")
+
+    error_msg = (
+        r"Invalid force creation configuration: 'start_from' \(Case\) "
+        r"cannot be later than 'up_to' \(VolumeMesh\)."
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        project.generate_volume_mesh(params=params, start_from="Case")
+
+    project_vm = fl.Project.from_cloud(project_id="prj-99cc6f96-15d3-4170-973c-a0cced6bf36b")
+    params = project_vm.case.params
+
+    error_msg = (
+        r"Invalid force creation configuration: 'start_from' \(SurfaceMesh\) "
+        r"must be later than 'source_item_type' \(VolumeMesh\)."
+    )
+    with pytest.raises(ValueError, match=error_msg):
+        project_vm.run_case(params=params, start_from="SurfaceMesh")
