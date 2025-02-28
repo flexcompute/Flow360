@@ -23,6 +23,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         clean: true
+
+    - name: Create local temp folder and override environment
+      run: |
+        mkdir temp
+        echo "TEMP=${{ github.workspace }}/temp" >> $GITHUB_ENV
+        echo "TMP=${{ github.workspace }}/temp" >> $GITHUB_ENV
+        
     - name: Install poetry
       run: pipx install poetry
     - name: Set up Python ${{ matrix.python-version }}
