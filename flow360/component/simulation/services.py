@@ -273,7 +273,8 @@ def validate_model(
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
-        updated_param_as_dict = SimulationParams.update_input(params_as_dict)
+        # pylint: disable=protected-access
+        updated_param_as_dict = SimulationParams._update_param_dict(params_as_dict)
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with unit_system:
             with ValidationContext(validation_levels_to_use, info=additional_info):
