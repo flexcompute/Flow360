@@ -212,7 +212,7 @@ def _find_update_path(
     ]
 
 
-def updater(version_from, version_to, params_as_dict):
+def updater(version_from, version_to, params_as_dict) -> dict:
     """
     Update parameters from version_from to version_to.
 
@@ -240,7 +240,7 @@ def updater(version_from, version_to, params_as_dict):
     This function iterates through the update map starting from version_from and
     updates the parameters based on the update path found.
     """
-    log.info(f"Input SimulationParam has version: {version_from}.")
+    log.debug(f"Input SimulationParam has version: {version_from}.")
     update_functions = _find_update_path(
         version_from=Flow360Version(version_from),
         version_to=Flow360Version(version_to),
@@ -248,7 +248,7 @@ def updater(version_from, version_to, params_as_dict):
     )
     for fun in update_functions:
         _to_version = re.search(r"_to_(\d+_\d+_\d+)", fun.__name__).group(1)
-        log.info(f"Updating input SimulationParam to {_to_version}...")
+        log.debug(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
     params_as_dict["version"] = str(version_to)
     return params_as_dict

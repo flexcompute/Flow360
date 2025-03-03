@@ -656,3 +656,19 @@ def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"
         target_unit_system=target_unit_system,
         delta_temperature_unit=delta_temperature_unit,
     )
+
+
+def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):
+    """
+    Run the SimulationParams.
+    """
+    errors = []
+    updated_params_as_dict: dict = None
+    try:
+        updated_params_as_dict = SimulationParams._update_param_dict(
+            params_as_dict, target_python_api_version
+        )
+    except (Flow360RuntimeError, ValueError, KeyError) as e:
+        # Expected exceptions
+        errors.append(str(e))
+    return updated_params_as_dict, errors
