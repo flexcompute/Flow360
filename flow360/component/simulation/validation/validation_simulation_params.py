@@ -308,6 +308,17 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
 
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
 
+    # Filter out the ones that will be deleted by mesher
+    automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
+
+    if automated_farfield_method:
+        # pylint:disable=protected-access
+        asset_boundary_entities = [
+            item
+            for item in asset_boundary_entities
+            if item._will_be_deleted_by_mesher(automated_farfield_method) is False
+        ]
+
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
 

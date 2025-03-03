@@ -27,17 +27,63 @@ CASE = "Case"
 ALL = "All"
 
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
+_validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
 
 
-class ValidationLevelContext:
+class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     """
-    Context manager for setting the validation level.
+    Model that provides the information for each individual validator that is out of their scope.
 
-    Allows setting a specific validation level within a context, which influences
+    This can be considered as a partially validated `SimulationParams`.
+
+    - Why this model?
+
+    -> Some validators needs information from other parts of the SimulationParams that is impossible to
+    get due to the information is out the scope of the validator. We can use a model validator on the
+    SimulationParams instead but then the validator implementation needs to represent the
+    structure of the SimulationParams and future feature change needs to be aware of this to make sure
+    the validation is performed.
+    E.g: All `Surface` entities needs to check if it will be deleted by the mesher depending
+    on mesher option (auto or quasi 3d).
+    """
+
+    __slots__ = ["auto_farfield_method"]
+
+    @classmethod
+    def _get_auto_farfield_method_(cls, param_as_dict: dict):
+        volume_zones = None
+        try:
+            if param_as_dict["meshing"]:
+                volume_zones = param_as_dict["meshing"]["volume_zones"]
+        except KeyError:
+            # No farfield/meshing info.
+            return None
+        if volume_zones:
+            for zone in volume_zones:
+                if zone["type"] == "AutomatedFarfield":
+                    return zone["method"]
+        return None
+
+    def __init__(self, param_as_dict: dict):
+        self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
+
+
+class ValidationContext:
+    """
+    Context manager for setting the validation level and additional background.
+
+    1. Allows setting a specific validation level within a context, which influences
     the conditional validation of fields based on the defined levels.
+
+    2. Allow associating additional information (usually info from the params) to serve as the
+    background for validators.
+
+    Note: We cannot use Pydantic validation context
+    (see https://docs.pydantic.dev/latest/concepts/validators/#validation-context) because explicitly
+    defining constructor blocks context from passing in.
     """
 
-    def __init__(self, levels: Union[str, List[str]]):
+    def __init__(self, levels: Union[str, List[str]], info: ParamsValidationInfo = None):
         valid_levels = {SURFACE_MESH, VOLUME_MESH, CASE, ALL}
         if isinstance(levels, str):
             levels = [levels]
@@ -47,16 +93,21 @@ class ValidationLevelContext:
             and all(lvl in valid_levels for lvl in levels)
         ):
             self.levels = levels
-            self.token = None
+            self.level_token = None
         else:
             raise ValueError(f"Invalid validation level: {levels}")
 
+        self.info = info
+        self.info_token = None
+
     def __enter__(self):
-        self.token = _validation_level_ctx.set(self.levels)
+        self.level_token = _validation_level_ctx.set(self.levels)
+        self.info_token = _validation_info_ctx.set(self.info)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        _validation_level_ctx.reset(self.token)
+        _validation_level_ctx.reset(self.level_token)
+        _validation_info_ctx.reset(self.info_token)
 
 
 def get_validation_levels() -> list:
@@ -67,6 +118,16 @@ def get_validation_levels() -> list:
         The current validation level, which can influence field validation behavior.
     """
     return _validation_level_ctx.get()
+
+
+def get_validation_info() -> ParamsValidationInfo:
+    """
+    Retrieves the current validation background knowledge from the context.
+
+    Returns:
+        The validation info, which can influence validation behavior.
+    """
+    return _validation_info_ctx.get()
 
 
 # pylint: disable=invalid-name
