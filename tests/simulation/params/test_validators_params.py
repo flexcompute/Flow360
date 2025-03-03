@@ -524,7 +524,7 @@ def test_incomplete_BC_surface_mesh():
     i_will_be_deleted = Surface(
         name="sym_boundary",
         private_attribute_is_interface=False,
-        private_attribute_issues=[_SurfaceIssueEnums.overlap_half_model_symmetric],
+        private_attribute_potential_issues=[_SurfaceIssueEnums.overlap_half_model_symmetric],
     )
 
     asset_cache = AssetCache(
