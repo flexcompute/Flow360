@@ -4,6 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
+from enum import Enum
 from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
@@ -397,6 +398,16 @@ class Cylinder(_VolumeEntityBase):
         return self
 
 
+class _SurfaceIssueEnums(str, Enum):
+    """
+    Enums for indicating that there is something wrong/special about the surface.
+    """
+
+    # pylint: disable=invalid-name
+    overlap_half_model_symmetric = "OverlapHalfModelSymmetric"
+    overlap_quasi_3d_symmetric = "OverlapQuasi3DSymmetric"
+
+
 @final
 class Surface(_SurfaceEntityBase):
     """
@@ -417,9 +428,42 @@ class Surface(_SurfaceEntityBase):
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
     )
+    private_attribute_potential_issues: List[_SurfaceIssueEnums] = pd.Field(
+        [],
+        description="Issues (not necessarily problems) found on this `Surface` after inspection by "
+        "surface mesh / geometry pipeline. Used for determining the usability of the `Surface` instance"
+        " under certain features and/or its existence.",
+    )
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
+
+    def _will_be_deleted_by_mesher(self, farfield_method: Literal["auto", "quasi-3d"]) -> bool:
+        """
+        Check against the automated farfield method and
+        determine if the current `Surface` will be deleted by the mesher.
+        """
+        if not self.private_attribute_potential_issues:
+            # If no special status reported or there is no auto farfield involved at all.
+            return False
+
+        if farfield_method == "auto":
+            # Single symmetry
+            # pylint: disable=unsupported-membership-test
+            return (
+                _SurfaceIssueEnums.overlap_half_model_symmetric
+                in self.private_attribute_potential_issues
+            )
+
+        if farfield_method == "quasi-3d":
+            # Two symmetry
+            # pylint: disable=unsupported-membership-test
+            return (
+                _SurfaceIssueEnums.overlap_quasi_3d_symmetric
+                in self.private_attribute_potential_issues
+            )
+
+        raise ValueError(f"Unknown auto farfield generation method: {farfield_method}.")
 
 
 class GhostSurface(_SurfaceEntityBase):

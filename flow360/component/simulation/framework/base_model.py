@@ -70,7 +70,7 @@ class Conflicts(pd.BaseModel):
 class Flow360BaseModel(pd.BaseModel):
     """Base pydantic (V2) model that all Flow360 components inherit from.
     Defines configuration for handling data structures
-    as well as methods for imporing, exporting, and hashing Flow360 objects.
+    as well as methods for importing, exporting, and hashing Flow360 objects.
     For more details on pydantic base models, see:
     `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`
     """
@@ -533,6 +533,11 @@ class Flow360BaseModel(pd.BaseModel):
 
     @classmethod
     def _handle_dict_with_hash(cls, model_dict):
+        """
+        Handle dictionary input for the model.
+        1. Pop the hash.
+        2. Check file manipulation.
+        """
         hash_from_input = model_dict.pop("hash", None)
         if hash_from_input is not None:
             if hash_from_input != cls._calculate_hash(model_dict):
