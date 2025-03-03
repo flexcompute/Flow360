@@ -6,7 +6,7 @@ This script will:
 1:
     Either:
         1.a- create a project and upload a volume mesh
-        1.b-create a project and upload a CAD. Mesh parameters will need to be given and mesh will cration will need to be launched
+        1.b-create a project and upload a CAD. Mesh parameters will need to be given and mesh will creation will need to be launched
         1.b- connect to an existing project and associate with a volume mesh from that project.
 
 2:
@@ -69,9 +69,7 @@ def make_run_params(mesh_object):
                 fl.VolumeOutput(output_format="tecplot", output_fields=vol_fields),
                 # This mesh_object['*'] will select all the boundaries in the mesh and export the surface results.
                 # Regular expressions can be used to filter for certain boundaries
-                fl.SurfaceOutput(
-                    surfaces=[mesh_object["*"]], output_fields=surf_fields, output_format="tecplot"
-                ),
+                fl.SurfaceOutput(surfaces=[mesh_object["*"]], output_fields=surf_fields, output_format="tecplot"),
             ],
         )
     return params
@@ -87,7 +85,7 @@ def launch_sweep(params, project, project_name, mesh_object, dir_path):
     csv_file = open(os.path.join(dir_path, 'sweep_saved_data.csv'),'w')
     csv_file.write(f' Sweep name:, {os.path.basename(dir_path)}\n')  # include the sweep name (aka directory name)
     csv_file.write(f' Project name:, {project_name}\n')  # include the project name
-    csv_file.write(f' Poject id:, {project.id}\n')  # include the project id
+    csv_file.write(f' Project id:, {project.id}\n')  # include the project id
     csv_file.write(f' volume mesh id:, {mesh_object.id}\n')  # include the volume mesh id
     csv_file.write(f' Velocity magnitude:, {VEL_MAG}\n')  # include flow speed ( as a unyt entity)
     csv_file.write('\n')  # Add an empty line separator
@@ -211,7 +209,7 @@ def main():
 
     # step3: launch the cases and save the relevant data
     params = make_run_params(vm)  # define the run params used to launch the run
-    launch_sweep(params, project, project_name, vm, dir_path)  # launch a sweep
+    case_ids = launch_sweep(params, project, project_name, vm, dir_path)  # launch a sweep
 
 
 ######################################################################################################################
