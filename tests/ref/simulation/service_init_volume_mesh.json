@@ -248,7 +248,7 @@
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
                         "private_attribute_sub_components": [],
-                        "private_attribute_issues": []
+                        "private_attribute_potential_issues": []
                     }
                 ]
             },

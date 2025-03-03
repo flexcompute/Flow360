@@ -101,7 +101,7 @@
                         "body0001_face0003",
                         "body0001_face0004"
                     ],
-                    "private_attribute_issues": []
+                    "private_attribute_potential_issues": []
                 }
             ],
             [
@@ -116,7 +116,7 @@
                     "private_attribute_sub_components": [
                         "body0001_face0001"
                     ],
-                    "private_attribute_issues": []
+                    "private_attribute_potential_issues": []
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -129,7 +129,7 @@
                     "private_attribute_sub_components": [
                         "body0001_face0002"
                     ],
-                    "private_attribute_issues": []
+                    "private_attribute_potential_issues": []
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -142,7 +142,7 @@
                     "private_attribute_sub_components": [
                         "body0001_face0003"
                     ],
-                    "private_attribute_issues": [
+                    "private_attribute_potential_issues": [
                         "OverlapQuasi3DSymmetric",
                         "OverlapHalfModelSymmetric"
                     ]
@@ -158,7 +158,7 @@
                     "private_attribute_sub_components": [
                         "body0001_face0004"
                     ],
-                    "private_attribute_issues": [
+                    "private_attribute_potential_issues": [
                         "OverlapQuasi3DSymmetric"
                     ]
                 }
