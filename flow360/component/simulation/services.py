@@ -569,10 +569,7 @@ def generate_process_json(
     )
 
     if errors is not None:
-        raise ValueError(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: "
-            + str(errors)
-        )
+        raise ValueError(str(errors))
 
     surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
     volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)
