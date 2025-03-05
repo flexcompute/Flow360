@@ -149,7 +149,7 @@ class _ParamModelBase(Flow360BaseModel):
         return model_dict
 
     @classmethod
-    def _clean_params_dict_from_service(cls, model_dict):
+    def _sanitize_params_dict(cls, model_dict):
         """
         Clean the redundant content in the params dict from WebUI
         """
@@ -171,7 +171,7 @@ class _ParamModelBase(Flow360BaseModel):
         else:
             model_dict = self._handle_dict(**file_content)
 
-        model_dict = _ParamModelBase._clean_params_dict_from_service(model_dict)
+        model_dict = _ParamModelBase._sanitize_params_dict(model_dict)
         # When treating files/file like contents the updater will always be run.
         model_dict = _ParamModelBase._update_param_dict(model_dict)
 
