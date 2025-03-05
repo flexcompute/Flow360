@@ -1009,9 +1009,9 @@ class Project(pd.BaseModel):
                 use_beta_mesher=use_beta_mesher,
                 start_from=start_from,
             )
-        except RuntimeError:
+        except RuntimeError as exception:
             if raise_on_error:
-                raise ValueError("Submission terminated due to validation error.")
+                raise ValueError("Submission terminated due to validation error.") from exception
             return None
 
         self._project_webapi.patch(
