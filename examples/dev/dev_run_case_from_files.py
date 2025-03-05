@@ -9,8 +9,8 @@ fl.Env.dev.active()  # Dev
 
 OM6wing.get_files()
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="OM6wing Quick Start from Python"
+project = fl.Project.from_local_volume_mesh(
+    OM6wing.mesh_filename, name="OM6wing Quick Start from Python"
 )
 
 vm = project.volume_mesh

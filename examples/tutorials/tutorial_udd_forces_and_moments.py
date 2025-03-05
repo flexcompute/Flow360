@@ -3,8 +3,8 @@ from flow360.examples import TutorialUDDForcesMoments
 
 TutorialUDDForcesMoments.get_files()
 
-project = fl.Project.from_file(
-    files=fl.GeometryFiles(TutorialUDDForcesMoments.geometry),
+project = fl.Project.from_local_geometry(
+    TutorialUDDForcesMoments.geometry,
     name="Tutorial UDD forces and moments from Python",
 )
 geometry = project.geometry

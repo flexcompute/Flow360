@@ -7,11 +7,6 @@ from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
-from flow360.component.project_utils import (
-    GeometryFiles,
-    SurfaceMeshFile,
-    VolumeMeshFile,
-)
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
@@ -256,9 +251,6 @@ __all__ = [
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
     "SurfaceSliceOutput",
-    "VolumeMeshFile",
-    "SurfaceMeshFile",
-    "GeometryFiles",
     "SlaterPorousBleed",
     "migration",
 ]

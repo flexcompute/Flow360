@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
+import typing_extensions
 from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
@@ -693,17 +694,17 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call
-    def from_geometry_files(
+    def from_local_geometry(
         cls,
-        *,
         files: Union[str, list[str]],
+        /,
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ):
         """
-        Initializes a project from geometry files.
+        Initializes a project from local geometry files.
 
         Parameters
         ----------
@@ -725,8 +726,19 @@ class Project(pd.BaseModel):
 
         Raises
         ------
-        Flow360ValueError
+        Flow360FileError
             If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_local_geometry(
+        ...     "/path/to/my/geometry/my_geometry.csm",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="cm"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
         """
         try:
             validated_files = GeometryFiles(file_names=files)
@@ -744,17 +756,17 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call
-    def from_surface_mesh_file(
+    def from_local_surface_mesh(
         cls,
-        *,
         file: str,
+        /,
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ):
         """
-        Initializes a project from a surface file.
+        Initializes a project from a local surface mesh file.
 
         Parameters
         ----------
@@ -777,8 +789,19 @@ class Project(pd.BaseModel):
 
         Raises
         ------
-        Flow360ValueError
+        Flow360FileError
             If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_local_surface_mesh(
+        ...     "/path/to/my/mesh/my_mesh.ugrid",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="inch"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
         """
 
         try:
@@ -797,9 +820,9 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call
-    def from_volume_mesh_file(
+    def from_local_volume_mesh(
         cls,
-        *,
+        /,
         file: str,
         name: str = None,
         solver_version: str = __solver_version__,
@@ -807,7 +830,7 @@ class Project(pd.BaseModel):
         tags: List[str] = None,
     ):
         """
-        Initializes a project from a surface file.
+        Initializes a project from a local volume mesh file.
 
         Parameters
         ----------
@@ -830,8 +853,19 @@ class Project(pd.BaseModel):
 
         Raises
         ------
-        Flow360ValueError
+        Flow360FileError
             If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_local_volume_mesh(
+        ...     "/path/to/my/mesh/my_mesh.cgns",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="inch"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
         """
 
         try:
@@ -849,6 +883,11 @@ class Project(pd.BaseModel):
         )
 
     @classmethod
+    @typing_extensions.deprecated(
+        "Creating project with `from_file` is deprecated. Please use `from_local_geometry()`, "
+        "`from_local_surface_mesh()` or `from_local_volume_mesh()` instead.",
+        category=None,
+    )
     @pd.validate_call
     def from_file(
         cls,
@@ -888,8 +927,8 @@ class Project(pd.BaseModel):
 
         log.warning(
             "DeprecationWarning: Creating project with `from_file` is deprecated. "
-            + "Please use `from_geometry_files()`, `from_surface_mesh_file()` "
-            + "or `from_volume_mesh_files()` instead."
+            + "Please use `from_local_geometry()`, `from_local_surface_mesh()` "
+            + "or `from_local_volume_mesh()` instead."
         )
 
         def _detect_input_file_type(file: Union[str, list[str]]):

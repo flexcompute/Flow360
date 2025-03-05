@@ -4,8 +4,8 @@ import flow360 as fl
 from flow360.examples import TutorialDynamicDerivatives
 
 TutorialDynamicDerivatives.get_files()
-project = fl.Project.from_file(
-    files=fl.GeometryFiles(TutorialDynamicDerivatives.geometry),
+project = fl.Project.from_local_geometry(
+    TutorialDynamicDerivatives.geometry,
     name="Tutorial Calculating Dynamic Derivatives using Sliding Interfaces from Python",
 )
 geometry = project.geometry
