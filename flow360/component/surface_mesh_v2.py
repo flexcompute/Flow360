@@ -147,7 +147,6 @@ class SurfaceMeshDraftV2(ResourceDraft):
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
 
-
         # The first geometry is assumed to be the main one.
         req = NewSurfaceMeshRequestV2(
             name=self.project_name,
