@@ -822,8 +822,8 @@ class Project(pd.BaseModel):
     @pd.validate_call
     def from_local_volume_mesh(
         cls,
-        /,
         file: str,
+        /,
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",

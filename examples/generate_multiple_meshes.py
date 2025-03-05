@@ -4,7 +4,7 @@ from flow360.examples import Airplane
 fl.Env.dev.active()
 
 project = fl.Project.from_local_geometry(
-    files=fl.GeometryFiles(Airplane.geometry),
+    Airplane.geometry,
     name="Python Project (Geometry, from file, multiple runs)",
 )
 
