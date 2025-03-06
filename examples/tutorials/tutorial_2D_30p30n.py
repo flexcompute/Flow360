@@ -3,9 +3,7 @@ from flow360.examples import Tutorial2D30p30n
 
 Tutorial2D30p30n.get_files()
 
-project = fl.Project.from_local_geometry(
-    Tutorial2D30p30n.geometry, name="Tutorial 2D 30p30n from Python"
-)
+project = fl.Project.from_geometry(Tutorial2D30p30n.geometry, name="Tutorial 2D 30p30n from Python")
 geometry = project.geometry
 
 # show face and edge groupings

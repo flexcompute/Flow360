@@ -694,7 +694,7 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call
-    def from_local_geometry(
+    def from_geometry(
         cls,
         files: Union[str, list[str]],
         /,
@@ -731,7 +731,7 @@ class Project(pd.BaseModel):
 
         Example
         -------
-        >>> my_project = fl.Project.from_local_geometry(
+        >>> my_project = fl.Project.from_geometry(
         ...     "/path/to/my/geometry/my_geometry.csm",
         ...     name="My_Project_name",
         ...     solver_version="release-Major.Minor"
@@ -756,7 +756,7 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call
-    def from_local_surface_mesh(
+    def from_surface_mesh(
         cls,
         file: str,
         /,
@@ -794,7 +794,7 @@ class Project(pd.BaseModel):
 
         Example
         -------
-        >>> my_project = fl.Project.from_local_surface_mesh(
+        >>> my_project = fl.Project.from_surface_mesh(
         ...     "/path/to/my/mesh/my_mesh.ugrid",
         ...     name="My_Project_name",
         ...     solver_version="release-Major.Minor"
@@ -820,7 +820,7 @@ class Project(pd.BaseModel):
 
     @classmethod
     @pd.validate_call
-    def from_local_volume_mesh(
+    def from_volume_mesh(
         cls,
         file: str,
         /,
@@ -858,7 +858,7 @@ class Project(pd.BaseModel):
 
         Example
         -------
-        >>> my_project = fl.Project.from_local_volume_mesh(
+        >>> my_project = fl.Project.from_volume_mesh(
         ...     "/path/to/my/mesh/my_mesh.cgns",
         ...     name="My_Project_name",
         ...     solver_version="release-Major.Minor"
@@ -884,8 +884,8 @@ class Project(pd.BaseModel):
 
     @classmethod
     @typing_extensions.deprecated(
-        "Creating project with `from_file` is deprecated. Please use `from_local_geometry()`, "
-        "`from_local_surface_mesh()` or `from_local_volume_mesh()` instead.",
+        "Creating project with `from_file` is deprecated. Please use `from_geometry()`, "
+        "`from_surface_mesh()` or `from_volume_mesh()` instead.",
         category=None,
     )
     @pd.validate_call
@@ -927,8 +927,8 @@ class Project(pd.BaseModel):
 
         log.warning(
             "DeprecationWarning: Creating project with `from_file` is deprecated. "
-            + "Please use `from_local_geometry()`, `from_local_surface_mesh()` "
-            + "or `from_local_volume_mesh()` instead."
+            + "Please use `from_geometry()`, `from_surface_mesh()` "
+            + "or `from_volume_mesh()` instead."
         )
 
         def _detect_input_file_type(file: Union[str, list[str]]):

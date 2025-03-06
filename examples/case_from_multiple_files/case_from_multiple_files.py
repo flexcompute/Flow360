@@ -19,7 +19,7 @@ class datafiles:
     time_stepping = os.path.join(here, "time_stepping.yaml")
 
 
-project = fl.Project.from_local_volume_mesh(OM6wing.mesh_filename, name="OM6Wing from Python")
+project = fl.Project.from_volume_mesh(OM6wing.mesh_filename, name="OM6Wing from Python")
 
 with fl.SI_unit_system:
     params = fl.SimulationParams(

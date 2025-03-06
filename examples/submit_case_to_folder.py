@@ -18,7 +18,7 @@ print(folder_C)
 
 OM6wing.get_files()
 
-project = fl.Project.from_local_volume_mesh(
+project = fl.Project.from_volume_mesh(
     OM6wing.mesh_filename, name="Move case to a folder from Python"
 )
 vm = project.volume_mesh

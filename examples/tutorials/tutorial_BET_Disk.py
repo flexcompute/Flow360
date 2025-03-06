@@ -5,9 +5,7 @@ from flow360.examples import TutorialBETDisk
 
 TutorialBETDisk.get_files()
 
-project = fl.Project.from_local_geometry(
-    TutorialBETDisk.geometry, name="Tutorial BETDisk from Python"
-)
+project = fl.Project.from_geometry(TutorialBETDisk.geometry, name="Tutorial BETDisk from Python")
 geometry = project.geometry
 
 # show face and edge groupings

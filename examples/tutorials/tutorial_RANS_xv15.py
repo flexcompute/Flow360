@@ -2,7 +2,7 @@ import flow360 as fl
 from flow360.examples import TutorialRANSXv15
 
 TutorialRANSXv15.get_files()
-project = fl.Project.from_local_volume_mesh(
+project = fl.Project.from_volume_mesh(
     TutorialRANSXv15.mesh_filename,
     name="Tutorial Time-accurate RANS CFD on XV-15 from Python",
 )

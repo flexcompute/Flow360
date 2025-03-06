@@ -10,7 +10,7 @@ fl.Accounts.choose_shared_account()
 OM6wing.get_files()
 
 # submit mesh
-project = fl.Project.from_local_volume_mesh(
+project = fl.Project.from_volume_mesh(
     OM6wing.mesh_filename,
     name="Account change mesh upload from Python",
 )

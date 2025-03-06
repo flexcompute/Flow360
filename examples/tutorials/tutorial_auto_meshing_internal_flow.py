@@ -2,7 +2,7 @@ import flow360 as fl
 from flow360.examples import TutorialAutoMeshingInternalFlow
 
 TutorialAutoMeshingInternalFlow.get_files()
-project = fl.Project.from_local_geometry(
+project = fl.Project.from_geometry(
     TutorialAutoMeshingInternalFlow.geometry,
     name="Tutorial Auto Meshing Internal Flow from Python",
 )
