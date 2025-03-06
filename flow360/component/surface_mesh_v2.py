@@ -147,7 +147,6 @@ class SurfaceMeshDraftV2(ResourceDraft):
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
 
-        mesh_parser = MeshNameParser(self._file_name)
         # The first geometry is assumed to be the main one.
         req = NewSurfaceMeshRequestV2(
             name=self.project_name,
@@ -165,19 +164,27 @@ class SurfaceMeshDraftV2(ResourceDraft):
         resp = RestApi(SurfaceMeshInterfaceV2.endpoint).post(req.dict())
         info = SurfaceMeshMetaV2(**resp)
 
-        ##:: upload geometry files
+        ##:: upload surface mesh file
         surface_mesh = SurfaceMeshV2(info.id)
-        heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
+        heartbeat_info = {"resourceId": info.id, "resourceType": "SurfaceMesh", "stop": False}
         # Keep posting the heartbeat to keep server patient about uploading.
         heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
 
+        surface_mesh._webapi._upload_file(
+            remote_file_name=info.file_name,
+            file_name=self._file_name,
+            progress_callback=progress_callback,
+        )
+
+        mesh_parser = MeshNameParser(self._file_name)
+        remote_mesh_parser = MeshNameParser(info.file_name)
         if mesh_parser.is_ugrid():
             # Upload the mapbc file too.
             expected_local_mapbc_file = mesh_parser.get_associated_mapbc_filename()
             if os.path.isfile(expected_local_mapbc_file):
                 surface_mesh._webapi._upload_file(
-                    remote_file_name=mesh_parser.get_associated_mapbc_filename(),
+                    remote_file_name=remote_mesh_parser.get_associated_mapbc_filename(),
                     file_name=mesh_parser.get_associated_mapbc_filename(),
                     progress_callback=progress_callback,
                 )
@@ -187,11 +194,6 @@ class SurfaceMeshDraftV2(ResourceDraft):
                     "user-specified boundary names doesn't exist."
                 )
 
-        surface_mesh._webapi._upload_file(
-            remote_file_name=info.file_name,
-            file_name=os.path.basename(self._file_name),
-            progress_callback=progress_callback,
-        )
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
         ##:: kick off pipeline
