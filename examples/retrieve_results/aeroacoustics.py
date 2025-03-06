@@ -96,7 +96,7 @@ case.params.models[0].navier_stokes_solver.linear_solver = fl.LinearSolver(max_i
 case.params.models[0].turbulence_model_solver.order_of_accuracy = 2
 case.params.models[0].turbulence_model_solver.linear_solver = fl.LinearSolver(max_iterations=25)
 
-deg_per_time_step_1 = 0, 404496 * fl.u.deg
+deg_per_time_step_1 = 0.404496 * fl.u.deg
 time_step_1 = deg_per_time_step_1 / omega.to("deg/s")
 
 revolution_time_1 = 360 * fl.u.deg / omega.to("deg/s")
