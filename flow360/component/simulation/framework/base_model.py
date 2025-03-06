@@ -404,29 +404,6 @@ class Flow360BaseModel(pd.BaseModel):
         raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
     @classmethod
-    def _from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
-        """Load a :class:`Flow360BaseModel` from .json file.
-
-        Parameters
-        ----------
-        filename : str
-            Full path to the .json file to load the :class:`Flow360BaseModel` from.
-
-        Returns
-        -------
-        :class:`Flow360BaseModel`
-            An instance of the component class calling `load`.
-        **parse_obj_kwargs
-            Keyword arguments passed to pydantic's ``parse_obj`` method.
-
-        Example
-        -------
-        >>> params = Flow360BaseModel._from_json(filename='folder/flow360.json') # doctest: +SKIP
-        """
-        model_dict = cls._dict_from_file(filename=filename)
-        return cls.model_validate(model_dict, **parse_obj_kwargs)
-
-    @classmethod
     def _dict_from_json(cls, filename: str) -> dict:
         """Load dictionary of the model from a .json file.
 
@@ -466,29 +443,6 @@ class Flow360BaseModel(pd.BaseModel):
             model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             json.dump(model_dict, file_handle, indent=4, sort_keys=True)
-
-    @classmethod
-    def _from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
-        """Loads :class:`Flow360BaseModel` from .yaml file.
-
-        Parameters
-        ----------
-        filename : str
-            Full path to the .yaml file to load the :class:`Flow360BaseModel` from.
-        **parse_obj_kwargs
-            Keyword arguments passed to pydantic's ``parse_obj`` method.
-
-        Returns
-        -------
-        :class:`Flow360BaseModel`
-            An instance of the component class calling `from_yaml`.
-
-        Example
-        -------
-        >>> params = Flow360BaseModel._from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
-        """
-        model_dict = cls._dict_from_file(filename=filename)
-        return cls.model_validate(model_dict, **parse_obj_kwargs)
 
     @classmethod
     def _dict_from_yaml(cls, filename: str) -> dict:

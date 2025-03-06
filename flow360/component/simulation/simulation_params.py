@@ -81,6 +81,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
 )
+from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -147,6 +148,14 @@ class _ParamModelBase(Flow360BaseModel):
             )
         return model_dict
 
+    @classmethod
+    def _sanitize_params_dict(cls, model_dict):
+        """
+        Clean the redundant content in the params dict from WebUI
+        """
+        model_dict = remove_properties_by_name(model_dict, "_id")
+        return model_dict
+
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
@@ -162,6 +171,7 @@ class _ParamModelBase(Flow360BaseModel):
         else:
             model_dict = self._handle_dict(**file_content)
 
+        model_dict = _ParamModelBase._sanitize_params_dict(model_dict)
         # When treating files/file like contents the updater will always be run.
         model_dict = _ParamModelBase._update_param_dict(model_dict)
 
