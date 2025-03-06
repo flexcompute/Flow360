@@ -139,7 +139,6 @@ class _ParamModelBase(Flow360BaseModel):
             )
         return model_dict
 
-
     @classmethod
     def _sanitize_params_dict(cls, model_dict):
         """
