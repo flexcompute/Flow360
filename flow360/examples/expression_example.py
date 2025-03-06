@@ -14,7 +14,7 @@ class ExampleModel(Flow360BaseModel):
 
 bar_value = ExampleModel(foo=22)
 
-bar_expr = ExampleModel(foo="2 + 4 * 5")
+bar_expr = ExampleModel(foo="2 * u.cm + 4 * 5 * u.m")
 
 print(bar_value.foo)
 print(bar_expr.foo.evaluate())

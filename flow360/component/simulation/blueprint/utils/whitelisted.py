@@ -31,6 +31,18 @@ def _import_tidy3d(name: str) -> Any:
     raise ValueError(f"Unknown tidy3d callable: {name}")
 
 
+def _import_flow360(name: str) -> Any:
+    import flow360 as fl
+
+    """Import and return a flow360 callable"""
+    if name == "fl":
+        return fl
+
+    if name == "u":
+        from flow360 import u
+        return u
+
+
 def _import_utilities(name: str) -> Callable[..., Any]:
     """Import and return a utility callable."""
     from rich import print
@@ -69,6 +81,10 @@ WHITELISTED_CALLABLES = {
         "prefix": "",
         "callables": ["print"],
     },
+    "flow360": {
+        "prefix": "u.",
+        "callables": ["m", "cm"]
+    }
 }
 
 # Define allowed modules
@@ -90,6 +106,7 @@ ALLOWED_CALLABLES = {
 
 # Generate import category mapping
 _IMPORT_FUNCTIONS = {
+    ("fl", "u"): _import_flow360,
     ("td", "td.", "ModeSolver", "C_0"): _import_tidy3d,
     ("print",): _import_utilities,
 }
