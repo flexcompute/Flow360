@@ -69,6 +69,7 @@ def preprocess_param(
 
     if param is not None:
         # pylint: disable=protected-access
+        param._private_set_length_unit(validated_mesh_unit)
         return param._preprocess(validated_mesh_unit, exclude=preprocess_exclude)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 

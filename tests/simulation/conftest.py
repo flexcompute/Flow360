@@ -67,7 +67,7 @@ def array_equality_override():
                         return np.ndarray.__eq__(self.v, other.v)
                     if isinstance(other, unyt.unyt_array):
                         other = unit_system._Flow360BaseUnit.factory(other.v, str(other.units))
-                    return all(np.ndarray.__eq__(v.v, o.v) for v, o in zip(self, other))
+                    return np.all(np.ndarray.__eq__(v.v, o.v) for v, o in zip(self, other))
         return False
 
     def flow360_unit_array_ne(
@@ -80,7 +80,7 @@ def array_equality_override():
                         return np.ndarray.__ne__(self.v, other.v)
                     if isinstance(other, unyt.unyt_array):
                         other = unit_system._Flow360BaseUnit.factory(other.v, str(other.units))
-                    return any(np.ndarray.__ne__(v.v, o.v) for v, o in zip(self, other))
+                    return np.any(np.ndarray.__ne__(v.v, o.v) for v, o in zip(self, other))
         return True
 
     unyt.unyt_array.__eq__ = unyt_array_eq

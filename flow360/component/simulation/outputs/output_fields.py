@@ -24,6 +24,7 @@ from typing import List, Literal, get_args, get_origin
 # Turbulence solution
 # Temperature
 # Vorticity
+# Vorticity Magnitude
 # Wall distance
 # NumericalDissipationFactor sensor
 # Heat equation residual
@@ -49,6 +50,7 @@ CommonFieldNames = Literal[
     "solutionTurbulence",
     "T",
     "vorticity",
+    "vorticityMagnitude",
     "wallDistance",
     "numericalDissipationFactor",
     "residualHeatSolver",

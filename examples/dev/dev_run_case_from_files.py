@@ -5,10 +5,7 @@ fl.Env.dev.active()
 
 OM6wing.get_files()
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh")
-volume_mesh = volume_mesh.submit()
-print(volume_mesh)
+project = fl.Project.from_volume_mesh(OM6wing.mesh_filename, name="OM6wing Quick Start from Python")
 
 # # submit case using json file
 params = fl.Flow360Params(OM6wing.case_json)

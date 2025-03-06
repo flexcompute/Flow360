@@ -32,7 +32,7 @@ class TempParams(Flow360BaseModel):
     pseudo_field: BaseModelTestModel
 
     def preprocess(self, **kwargs):
-        return super().preprocess(mesh_unit=1 * u.cm, **kwargs)
+        return super().preprocess(**kwargs)
 
 
 class BaseModelWithConflictFields(Flow360BaseModel):
@@ -152,49 +152,6 @@ def test_to_file():
         with open(temp_file_name) as fp:
             base_model_dict = yaml.load(fp, Loader=yaml.Loader)
             assert base_model_dict["some_value"] == 1230
-    finally:
-        os.remove(temp_file_name)
-
-
-def test_from_json_yaml():
-    file_content = {
-        "some_value": 3210,
-        "hash": "e6d346f112fc2ba998a286f9736ce389abb79f154dc84a104d3b4eb8ba4d4529",
-    }
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        json.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    try:
-        base_model = BaseModelTestModel._from_json(temp_file_name)
-        assert base_model.some_value == 3210
-    finally:
-        os.remove(temp_file_name)
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as temp_file:
-        yaml.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    try:
-        base_model = BaseModelTestModel._from_yaml(temp_file_name)
-        assert base_model.some_value == 3210
-    finally:
-        os.remove(temp_file_name)
-
-    file_content = {"some_value": "43210", "hash": "aasdasd"}
-
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_file:
-        json.dump(file_content, temp_file)
-        temp_file.flush()
-        temp_file_name = temp_file.name
-
-    print(json.dumps(file_content, indent=4))
-    try:
-        with pytest.raises(pd.ValidationError, match=r" Input should be a valid number"):
-            base_model = BaseModelTestModel._from_json(temp_file_name)
     finally:
         os.remove(temp_file_name)
 

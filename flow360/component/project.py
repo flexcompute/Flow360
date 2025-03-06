@@ -10,6 +10,7 @@ from enum import Enum
 from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
+import typing_extensions
 from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
@@ -352,6 +353,7 @@ class ProjectTree(pd.BaseModel):
         )
 
 
+# pylint: disable=too-many-public-methods
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
@@ -607,72 +609,296 @@ class Project(pd.BaseModel):
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="Case")
 
-    @classmethod
-    def _detect_asset_type_from_file(
-        cls, files
-    ) -> Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, None]:
-        """
-        Detects the asset type of a file based on its name or pattern.
-
-        Parameters
-        ----------
-        file : str or list of str
-            The file name or path.
-
-        Returns
-        -------
-        RootType
-            The detected file type.
-
-        Raises
-        ------
-        Flow360FileError
-        """
-        validated_objects = []
-        errors = [None, None, None]
-
-        for model in [GeometryFiles, SurfaceMeshFile, VolumeMeshFile]:
-            try:
-                validated_objects.append(model(value=files))
-            except pd.ValidationError as e:
-                validated_objects.append(None)
-                errors.append(e)
-
-        if validated_objects == [None, None, None]:
-            raise Flow360FileError(
-                f"The given file/s: {files} cannot be recognized as"
-                "geometry or surface mesh or volume mesh file."
-                f"\nGeometry file error: {errors[0]}"
-                f"\nSurfaceMesh file error: {errors[1]}"
-                f"\nVolumeMesh file error: {errors[2]}"
-            )
-
-        # Checking if the file is both a volume mesh and a surface mesh file:
-        if validated_objects[1] and validated_objects[2]:
-            raise Flow360FileError(
-                f"The given file: {files} may be recognized as both volume mesh and surface mesh input."
-                f" Please use `SurfaceMeshFile('{files}')` or `VolumeMeshFile('{files}')` to be specific."
-            )
-        if sum(item is not None for item in validated_objects) > 1:
-            raise Flow360FileError(
-                f"[Internal error]: More than one file type recognized ({files})."
-            )
-
-        return next((item for item in validated_objects if item is not None), None)
-
     # pylint: disable=too-many-arguments
     @classmethod
-    @pd.validate_call
-    def from_file(
+    def _create_project_from_files(
         cls,
         *,
-        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, str, list[str]],
+        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile],
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
     ):
         """
+        Initializes a project from a file.
+
+        Parameters
+        ----------
+        files : Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile]
+            Path to the files.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the project cannot be initialized from the file.
+        """
+        root_asset = None
+
+        # pylint:disable = protected-access
+        files._check_files_existence()
+
+        if isinstance(files, GeometryFiles):
+            draft = Geometry.from_file(files.file_names, name, solver_version, length_unit, tags)
+        elif isinstance(files, SurfaceMeshFile):
+            draft = SurfaceMeshV2.from_file(
+                files.file_names, name, solver_version, length_unit, tags
+            )
+        elif isinstance(files, VolumeMeshFile):
+            draft = VolumeMeshV2.from_file(
+                files.file_names, name, solver_version, length_unit, tags
+            )
+        else:
+            raise Flow360FileError(
+                "Cannot detect the intended project root with the given file(s)."
+            )
+
+        root_asset = draft.submit()
+
+        if not root_asset:
+            raise Flow360ValueError(f"Couldn't initialize asset from {files.file_names}")
+        project_id = root_asset.project_id
+        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
+        info = project_api.get()
+        if not info:
+            raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
+        project = Project(
+            metadata=ProjectMeta(**info),
+            project_tree=ProjectTree(),
+            solver_version=root_asset.solver_version,
+        )
+        project._project_webapi = project_api
+        if isinstance(files, GeometryFiles):
+            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
+        elif isinstance(files, SurfaceMeshFile):
+            project._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
+        elif isinstance(files, VolumeMeshFile):
+            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._root_asset = root_asset
+        project._get_root_simulation_json()
+        project._get_tree_from_cloud()
+        return project
+
+    @classmethod
+    @pd.validate_call
+    def from_geometry(
+        cls,
+        files: Union[str, list[str]],
+        /,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from local geometry files.
+
+        Parameters
+        ----------
+        files : Union[str, list[str]]
+            Geometry file paths.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360FileError
+            If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_geometry(
+        ...     "/path/to/my/geometry/my_geometry.csm",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="cm"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
+        """
+        try:
+            validated_files = GeometryFiles(file_names=files)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Geometry file error: {str(err)}")
+
+        return cls._create_project_from_files(
+            files=validated_files,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+    @classmethod
+    @pd.validate_call
+    def from_surface_mesh(
+        cls,
+        file: str,
+        /,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from a local surface mesh file.
+
+        Parameters
+        ----------
+        file : str
+            Surface mesh file path. For UGRID file the mapbc
+            file needs to be renamed with the same prefix under same folder.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360FileError
+            If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_surface_mesh(
+        ...     "/path/to/my/mesh/my_mesh.ugrid",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="inch"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
+        """
+
+        try:
+            validated_files = SurfaceMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Surface mesh file error: {str(err)}")
+
+        return cls._create_project_from_files(
+            files=validated_files,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+    @classmethod
+    @pd.validate_call
+    def from_volume_mesh(
+        cls,
+        file: str,
+        /,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        Initializes a project from a local volume mesh file.
+
+        Parameters
+        ----------
+        file : str
+            Volume mesh file path. For UGRID file the mapbc
+            file needs to be renamed with the same prefix under same folder.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360FileError
+            If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_volume_mesh(
+        ...     "/path/to/my/mesh/my_mesh.cgns",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="inch"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
+        """
+
+        try:
+            validated_files = VolumeMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Volume mesh file error: {str(err)}")
+
+        return cls._create_project_from_files(
+            files=validated_files,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
+
+    @classmethod
+    @typing_extensions.deprecated(
+        "Creating project with `from_file` is deprecated. Please use `from_geometry()`, "
+        "`from_surface_mesh()` or `from_volume_mesh()` instead.",
+        category=None,
+    )
+    @pd.validate_call
+    def from_file(
+        cls,
+        file: Union[str, list[str]],
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+    ):
+        """
+        [Deprecated function]
         Initializes a project from a file.
 
         Parameters
@@ -698,54 +924,29 @@ class Project(pd.BaseModel):
         Flow360ValueError
             If the project cannot be initialized from the file.
         """
-        root_asset = None
-        if isinstance(files, (GeometryFiles, SurfaceMeshFile, VolumeMeshFile)):
-            validated_files = files
-        else:
-            validated_files = Project._detect_asset_type_from_file(files)
 
-        if isinstance(validated_files, GeometryFiles):
-            draft = Geometry.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        elif isinstance(validated_files, SurfaceMeshFile):
-            draft = SurfaceMeshV2.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        elif isinstance(validated_files, VolumeMeshFile):
-            draft = VolumeMeshV2.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        else:
-            raise Flow360FileError(
-                "Cannot detect the intended project root with the given file(s)."
-            )
-
-        root_asset = draft.submit()
-
-        if not root_asset:
-            raise Flow360ValueError(f"Couldn't initialize asset from {validated_files.value}")
-        project_id = root_asset.project_id
-        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
-        info = project_api.get()
-        if not info:
-            raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
-        project = Project(
-            metadata=ProjectMeta(**info),
-            project_tree=ProjectTree(),
-            solver_version=root_asset.solver_version,
+        log.warning(
+            "DeprecationWarning: Creating project with `from_file` is deprecated. "
+            + "Please use `from_geometry()`, `from_surface_mesh()` "
+            + "or `from_volume_mesh()` instead."
         )
-        project._project_webapi = project_api
-        if isinstance(validated_files, GeometryFiles):
-            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
-        elif isinstance(validated_files, SurfaceMeshFile):
-            project._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
-        elif isinstance(validated_files, VolumeMeshFile):
-            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
-        project._root_asset = root_asset
-        project._get_root_simulation_json()
-        project._get_tree_from_cloud()
-        return project
+
+        def _detect_input_file_type(file: Union[str, list[str]]):
+            errors = []
+            for model in [GeometryFiles, VolumeMeshFile]:
+                try:
+                    return model(file_names=file)
+                except pd.ValidationError as e:
+                    errors.append(e)
+            raise Flow360FileError(f"Input file {file} cannot be recognized.\nErrors: {errors}")
+
+        return cls._create_project_from_files(
+            files=_detect_input_file_type(file=file),
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+        )
 
     @classmethod
     @pd.validate_call
@@ -937,6 +1138,7 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        raise_on_error: bool,
         **kwargs,
     ):
         """
@@ -954,6 +1156,8 @@ class Project(pd.BaseModel):
             Indicates if the simulation should fork the existing case (default is False).
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
 
         Returns
         -------
@@ -978,10 +1182,12 @@ class Project(pd.BaseModel):
         )
 
         if errors is not None:
-            error_msg = formatting_validation_errors(errors=errors)
-            raise ValueError(
-                "\n>> Validation error found in the simulation params! Errors are: " + error_msg
+            log.error(
+                f"Validation error found in the simulation params: {formatting_validation_errors(errors=errors)}"
             )
+            if raise_on_error:
+                raise ValueError("Submission terminated due to validation error.")
+            return None
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
@@ -1004,7 +1210,9 @@ class Project(pd.BaseModel):
                 use_beta_mesher=use_beta_mesher,
                 start_from=start_from,
             )
-        except RuntimeError:
+        except RuntimeError as exception:
+            if raise_on_error:
+                raise ValueError("Submission terminated due to validation error.") from exception
             return None
 
         self._project_webapi.patch(
@@ -1045,6 +1253,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        raise_on_error: bool = False,
         **kwargs,
     ):
         """
@@ -1060,6 +1269,8 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
 
         Raises
         ------
@@ -1079,6 +1290,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            raise_on_error=raise_on_error,
             **kwargs,
         )
         return surface_mesh
@@ -1091,6 +1303,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        raise_on_error: bool = False,
         **kwargs,
     ):
         """
@@ -1106,6 +1319,8 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
 
         Raises
         ------
@@ -1128,6 +1343,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            raise_on_error=raise_on_error,
             **kwargs,
         )
         return volume_mesh
@@ -1138,9 +1354,10 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "Case",
         run_async: bool = True,
-        fork_from: Case = None,
+        fork_from: Optional[Case] = None,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        raise_on_error: bool = False,
         **kwargs,
     ):
         """
@@ -1158,6 +1375,8 @@ class Project(pd.BaseModel):
             Which Case we should fork from (if fork).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
         """
         self._check_initialized()
         case = self._run(
@@ -1168,6 +1387,7 @@ class Project(pd.BaseModel):
             fork_from=fork_from,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            raise_on_error=raise_on_error,
             **kwargs,
         )
         return case

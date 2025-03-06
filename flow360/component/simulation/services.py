@@ -56,9 +56,9 @@ from flow360.component.simulation.utils import (
 )
 from flow360.component.simulation.validation.validation_context import (
     ALL,
-    ValidationLevelContext,
+    ParamsValidationInfo,
+    ValidationContext,
 )
-from flow360.component.utils import remove_properties_by_name
 from flow360.exceptions import Flow360TranslationError
 
 unit_system_map = {
@@ -264,7 +264,7 @@ def validate_model(
     validation_warnings = None
     validated_param = None
 
-    params_as_dict = clean_params_dict(params_as_dict, root_item_type)
+    params_as_dict = clean_unrelated_setting_from_params_dict(params_as_dict, root_item_type)
 
     # The final validation levels will be the intersection of the requested levels and the levels available
     # We always assume we want to run case so that we can expose as many errors as possible
@@ -272,7 +272,10 @@ def validate_model(
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
     try:
         params_as_dict = parse_model_dict(params_as_dict, globals())
-        with ValidationLevelContext(validation_levels_to_use):
+        # pylint: disable=protected-access
+        updated_param_as_dict = SimulationParams._update_param_dict(params_as_dict)
+        additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
+        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             validated_param = SimulationParams(file_content=params_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
@@ -285,9 +288,10 @@ def validate_model(
     return validated_param, validation_errors, validation_warnings
 
 
-def clean_params_dict(params: dict, root_item_type: str) -> dict:
+def clean_unrelated_setting_from_params_dict(params: dict, root_item_type: str) -> dict:
     """
-    Cleans the parameters dictionary by removing unwanted properties.
+    Cleans the parameters dictionary by removing properties if they do not affect the remaining workflow.
+
 
     Parameters
     ----------
@@ -301,8 +305,6 @@ def clean_params_dict(params: dict, root_item_type: str) -> dict:
     dict
         The cleaned parameters dictionary.
     """
-    params = remove_properties_by_name(params, "_id")
-    params = remove_properties_by_name(params, "hash")  # From client
 
     if root_item_type == "VolumeMesh":
         params.pop("meshing", None)
@@ -566,10 +568,7 @@ def generate_process_json(
     )
 
     if errors is not None:
-        raise ValueError(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: "
-            + str(errors)
-        )
+        raise ValueError(str(errors))
 
     surface_mesh_res = _process_surface_mesh(params, root_item_type, mesh_unit)
     volume_mesh_res = _process_volume_mesh(params, root_item_type, mesh_unit, up_to)
