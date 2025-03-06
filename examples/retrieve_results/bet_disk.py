@@ -1,4 +1,3 @@
-import json
 import os
 
 from pylab import show
@@ -13,6 +12,7 @@ from flow360.plugins.report.report_items import (
     Settings,
     Summary,
 )
+from flow360.version import __solver_version__
 
 BETExampleData.get_files()
 
@@ -49,7 +49,7 @@ with fl.SI_unit_system:
                     equation_evaluation_frequency=1,
                 ),
             ),
-            fl.BETDisk(bet),
+            bet,
             fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
             fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
         ],
@@ -118,10 +118,7 @@ report = ReportTemplate(
     settings=Settings(dpi=150),
 )
 
-report = report.create_in_cloud(
-    "BET, dpi=default",
-    cases,
-)
+report = report.create_in_cloud("BET, dpi=default", cases, solver_version=__solver_version__)
 
 report.wait()
 report.download("report.pdf")

@@ -29,9 +29,12 @@ with fl.SI_unit_system:
     rotation_zone_4.axis = [0, 0, -1]
 
     omega = 6000 * fl.u.rpm
+
+    # Time step size will be calculated based on predetermined degrees per time step (3 deg for this run)
     deg_per_time_step_0 = 3.0 * fl.u.deg
     time_step_0 = deg_per_time_step_0 / omega.to("deg/s")
 
+    # Amount of time steps will be adjusted to satisfy the required amount of revolutions (5 rev for this run)
     revolution_time_0 = 360 * fl.u.deg / omega.to("deg/s")
     steps_0 = int(5 * revolution_time_0 / time_step_0)
 
@@ -93,13 +96,16 @@ case.params.models[0].navier_stokes_solver.linear_solver = fl.LinearSolver(max_i
 case.params.models[0].turbulence_model_solver.order_of_accuracy = 2
 case.params.models[0].turbulence_model_solver.linear_solver = fl.LinearSolver(max_iterations=25)
 
+deg_per_time_step_1 = 0, 404496 * fl.u.deg
+time_step_1 = deg_per_time_step_1 / omega.to("deg/s")
+
+revolution_time_1 = 360 * fl.u.deg / omega.to("deg/s")
+steps_1 = int(5 * revolution_time_1 / time_step_1)
+
 case.params.time_stepping.step_size = 0.000011236 * fl.u.s
-case.params.time_stepping.steps = 4000
+case.params.time_stepping.steps = steps_1
 
 case_fork_1 = project.run_case(case.params, "Second order run", fork_from=case)
-
-
-case_fork_1.params.time_stepping.steps = 3000
 
 case_fork_1.params.outputs = [
     fl.AeroAcousticOutput(

@@ -11,6 +11,7 @@ from flow360.plugins.report.report_items import (
     Settings,
     Summary,
 )
+from flow360.version import __solver_version__
 
 TutorialCHTSolver.get_files()
 
@@ -122,8 +123,6 @@ cases = [case]
 
 exclude = ["fluid/farfield", "solid/interface_fluid", "solid/adiabatic"]
 
-SOLVER_VERSION = "release-25.2.1"
-
 front_camera_slice = FrontCamera(dimension=1, dimension_dir="width")
 side_camera_slice = LeftCamera(pan_target=(0.35, 0, 0), dimension=2, dimension_dir="width")
 front_right_top_camera = Camera(
@@ -174,7 +173,7 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     "CHT, dpi=default",
     cases,
-    solver_version=SOLVER_VERSION,
+    solver_version=__solver_version__,
 )
 
 report.wait()
