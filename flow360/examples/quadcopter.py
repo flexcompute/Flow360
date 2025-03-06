@@ -9,4 +9,4 @@ class Quadcopter(BaseTestCase):
     name = "quadcopter"
 
     class url:
-        mesh = "https://simcloud-public-1.s3.amazonaws.com/quadcopter/quadcopter.cgns"
+        mesh = "https://simcloud-public-1.s3.amazonaws.com/quadcopter/quadcopter.cgns.zst"

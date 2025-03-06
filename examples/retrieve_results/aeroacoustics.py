@@ -28,6 +28,13 @@ with fl.SI_unit_system:
     rotation_zone_4.center = [0.125, 0.125, 0.0055]
     rotation_zone_4.axis = [0, 0, -1]
 
+    omega = 6000 * fl.u.rpm
+    deg_per_time_step_0 = 3.0 * fl.u.deg
+    time_step_0 = deg_per_time_step_0 / omega.to("deg/s")
+
+    revolution_time_0 = 360 * fl.u.deg / omega.to("deg/s")
+    steps_0 = int(5 * revolution_time_0 / time_step_0)
+
     params = fl.SimulationParams(
         reference_geometry=fl.ReferenceGeometry(
             area=0.0447726728530549,
@@ -40,8 +47,8 @@ with fl.SI_unit_system:
             reference_mach=0.21868415800906676,
         ),
         time_stepping=fl.Unsteady(
-            step_size=0.000083333,
-            steps=600,
+            step_size=time_step_0,
+            steps=steps_0,
         ),
         models=[
             fl.Fluid(
@@ -72,7 +79,7 @@ with fl.SI_unit_system:
             fl.Rotation(
                 name="Rotation",
                 volumes=[rotation_zone_1, rotation_zone_2, rotation_zone_3, rotation_zone_4],
-                spec=fl.AngularVelocity(value=6000 * fl.u.rpm),
+                spec=fl.AngularVelocity(value=omega),
             ),
         ],
     )

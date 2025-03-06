@@ -38,6 +38,9 @@ with fl.SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(name="VolumeOutput", output_fields=["primitiveVars", "Mach"]),
+            fl.SurfaceOutput(
+                name="SurfaceOutput", surfaces=vm["1"], output_fields=["primitiveVars", "Cp", "Cf"]
+            ),
             fl.SliceOutput(
                 name="SliceOutput",
                 output_fields=["Cp"],

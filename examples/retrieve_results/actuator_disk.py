@@ -30,9 +30,7 @@ with fl.SI_unit_system:
             moment_length=[72, 1200, 1200] * fl.u.inch,
         ),
         operating_condition=fl.AerospaceCondition.from_mach(mach=0.04),
-        time_stepping=fl.Steady(
-            max_steps=200, CFL=fl.RampCFL(initial=1, final=200, ramp_steps=200)
-        ),
+        time_stepping=fl.Steady(),
         models=[
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(

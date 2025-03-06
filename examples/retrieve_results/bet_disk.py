@@ -4,7 +4,7 @@ import os
 from pylab import show
 
 import flow360 as fl
-from flow360.examples import BETDisk
+from flow360.examples import BETExampleData
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
     Chart3D,
@@ -14,17 +14,17 @@ from flow360.plugins.report.report_items import (
     Summary,
 )
 
-BETDisk.get_files()
+BETExampleData.get_files()
 
 project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(BETDisk.mesh_filename),
+    files=fl.VolumeMeshFile(BETExampleData.mesh_filename),
     name="BET Disk results from Python",
     length_unit="inch",
 )
 
 vm = project.volume_mesh
 
-bet = json.loads(open(BETDisk.extra["disk0"]).read())
+bet = fl.BETDisk.from_file(BETExampleData.extra["disk0"])
 
 with fl.SI_unit_system:
     params = fl.SimulationParams(
@@ -34,9 +34,7 @@ with fl.SI_unit_system:
             moment_length=[72, 1200, 1200] * fl.u.inch,
         ),
         operating_condition=fl.AerospaceCondition.from_mach(mach=0.04),
-        time_stepping=fl.Steady(
-            max_steps=200, CFL=fl.RampCFL(initial=1, final=200, ramp_steps=200)
-        ),
+        time_stepping=fl.Steady(),
         models=[
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
@@ -51,7 +49,7 @@ with fl.SI_unit_system:
                     equation_evaluation_frequency=1,
                 ),
             ),
-            fl.BETDisk(**bet),
+            fl.BETDisk(bet),
             fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
             fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
         ],
@@ -98,8 +96,6 @@ results.download(bet_forces=True, bet_forces_radial_distribution=True, overwrite
 # save converted results to a new CSV file:
 results.bet_forces.to_file(os.path.join(case.name, "bet_forces_in_SI.csv"))
 
-SOLVER_VERSION = "release-25.2.0"
-
 cases = [case]
 
 front_camera_slice = FrontCamera(dimension=350, dimension_dir="height")
@@ -125,7 +121,6 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     "BET, dpi=default",
     cases,
-    solver_version=SOLVER_VERSION,
 )
 
 report.wait()

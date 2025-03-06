@@ -1,6 +1,6 @@
 from .actuator_disk import ActuatorDisk
 from .airplane import Airplane
-from .bet_disk import BETDisk
+from .bet_example_data import BETExampleData
 from .bet_line import BETLine
 from .convergence import Convergence
 from .cylinder2D import Cylinder2D
@@ -23,7 +23,7 @@ from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 __all__ = [
     "ActuatorDisk",
     "Airplane",
-    "BETDisk",
+    "BETExampleData",
     "BETLine",
     "Convergence",
     "Cylinder2D",
