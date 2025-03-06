@@ -3,34 +3,43 @@ from typing import List
 
 from pylab import plot, show, xlabel, ylabel
 
-import flow360.v1 as fl
+import flow360 as fl
 from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
-# create a folder
-folder = fl.Folder.create("alpha-sweep-example").submit()
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Alpha sweep results from Python"
+)
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh")
-volume_mesh = volume_mesh.submit()
-print(volume_mesh)
+vm = project.volume_mesh
 
-# read case configuration from JSON file:
-params = fl.Flow360Params(OM6wing.case_json)
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=1.15315084119231,
+            moment_center=[0, 0, 0],
+            moment_length=[1.47602, 0.801672958512342, 1.47602],
+        ),
+        operating_condition=fl.AerospaceCondition(velocity_magnitude=286, alpha=3.06 * fl.u.deg),
+        time_stepping=fl.Steady(max_steps=500),
+        models=[
+            fl.Wall(surfaces=vm["1"]),
+            fl.SlipWall(surfaces=vm["2"]),
+            fl.Freestream(surfaces=vm["3"]),
+        ],
+    )
+
 
 # ": List[fl.Case]" is just for type hints
 case_list: List[fl.Case] = []
-
-
 alpha_range = range(-6, 15, 2)
 for alpha in alpha_range:
-    params.freestream.alpha = alpha
-    case = fl.Case.create(f"alpha-sweep-OM6wing-alpha={alpha}", params, volume_mesh.id)
-    case = case.submit()
-    case.move_to_folder(folder)
+    params.operating_condition.alpha = alpha * fl.u.deg
+    case = project.run_case(params, f"alpha-sweep-OM6wing-alpha={alpha}")
     case_list.append(case)
 
+project.print_project_tree()
 
 # wait for all cases to finish processing
 [case.wait() for case in case_list]
@@ -55,7 +64,6 @@ for case in case_list:
     average_CD = average_last_10_percent(total_forces.as_dataframe(), "CD")
     CD_list.append(average_CD)
 
-
 # download all data:
 results_folder = "alpha_sweep_example"
 for case in case_list:
@@ -65,7 +73,6 @@ for case in case_list:
         nonlinear_residuals=True,
         destination=os.path.join(results_folder, case.name),
     )
-
 
 # plot CL / CD
 plot(CD_list, CL_list)

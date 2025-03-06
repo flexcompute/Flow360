@@ -1,12 +1,12 @@
 """
-betDisk example
+bet example
 """
 
 from .base_test_case import BaseTestCase
 
 
-class BETDisk(BaseTestCase):
-    name = "betDisk"
+class BETExampleData(BaseTestCase):
+    name = "betExampleData"
 
     class url:
         mesh = (
@@ -15,4 +15,4 @@ class BETDisk(BaseTestCase):
         mesh_json = (
             "https://simcloud-public-1.s3.amazonaws.com/examples/actuatorDisk/flow360Mesh.json"
         )
-        case_json = "local://flow360.json"
+        extra = {"disk0": "disk0.json"}

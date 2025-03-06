@@ -1,61 +1,124 @@
 import os
 
-import flow360.component.v1.units as u
-import flow360.v1 as fl
-from flow360.examples import BETDisk
+from pylab import show
 
-BETDisk.get_files()
+import flow360 as fl
+from flow360.examples import BETExampleData
+from flow360.plugins.report.report import ReportTemplate
+from flow360.plugins.report.report_items import (
+    Chart3D,
+    FrontCamera,
+    Inputs,
+    Settings,
+    Summary,
+)
+from flow360.version import __solver_version__
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(BETDisk.mesh_filename, name="BETDisk-mesh")
-volume_mesh = volume_mesh.submit()
+BETExampleData.get_files()
 
-# # submit case using json file
-params = fl.Flow360Params(BETDisk.case_json)
-case = volume_mesh.create_case("BETDisk-example", params)
-case = case.submit()
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(BETExampleData.mesh_filename),
+    name="BET Disk results from Python",
+    length_unit="inch",
+)
+
+vm = project.volume_mesh
+
+bet = fl.BETDisk.from_file(BETExampleData.extra["disk0"])
+
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=16286.016316209487 * fl.u.inch**2,
+            moment_center=[450, 0, 0] * fl.u.inch,
+            moment_length=[72, 1200, 1200] * fl.u.inch,
+        ),
+        operating_condition=fl.AerospaceCondition.from_mach(mach=0.04),
+        time_stepping=fl.Steady(),
+        models=[
+            fl.Fluid(
+                navier_stokes_solver=fl.NavierStokesSolver(
+                    absolute_tolerance=1e-11,
+                    linear_solver=fl.LinearSolver(max_iterations=35),
+                    kappa_MUSCL=0.33,
+                ),
+                turbulence_model_solver=fl.SpalartAllmaras(
+                    absolute_tolerance=1e-10,
+                    linear_solver=fl.LinearSolver(max_iterations=25),
+                    update_jacobian_frequency=2,
+                    equation_evaluation_frequency=1,
+                ),
+            ),
+            bet,
+            fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
+            fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
+        ],
+        outputs=[
+            fl.SliceOutput(
+                name="SliceOutput",
+                slices=[fl.Slice(name="slice_x", normal=(1, 0, 0), origin=(0, 0, 0))],
+                output_fields=["betMetrics"],
+            )
+        ],
+    )
+
+case = project.run_case(params, "BET Disk case from Python")
 
 
 case.wait()
 
-
 results = case.results
-
-# set values needed for units conversion:
-case.params.geometry.mesh_unit = 1 * u.m
-case.params.fluid_properties = fl.air
-
+bet_forces_non_dim = results.bet_forces.as_dataframe()
 print(results.bet_forces)
-# >>>
-#     physical_step  pseudo_step  Disk0_Force_x  Disk0_Force_y  Disk0_Force_z  Disk0_Moment_x  ...
-# 0               0            0   -1397.096153       0.010873      -0.000516   162623.186588  ...
-# 1               0           10   -1310.554720       0.005608      -0.000557   159995.121031  ...
-# 2               0           20   -1214.661435       0.001554      -0.000484   156872.026442  ...
-# 3               0           30   -1152.224164      -0.001009      -0.000956   153785.239849  ...
-# 4               0           40   -1120.710025      -0.006711      -0.001384   150297.612151  ...
-# 5               0           50   -1070.491683      -0.033287      -0.005191   145265.442238  ...
-# 6               0           60    -954.888260      -0.051523      -0.012721   137884.126198  ...
-# 7               0           70    -764.398174      -0.016856       0.008907   130052.235155  ...
-
 
 # convert results to SI system:
 results.bet_forces.to_base("SI")
+bet_forces_si = results.bet_forces.as_dataframe()
 print(results.bet_forces)
-# >>>
-#     physical_step  pseudo_step  Disk0_Force_x  Disk0_Force_y  Disk0_Force_z  Disk0_Moment_x  ...  ForceUnits   MomentUnits
-# 0               0            0  -1.981851e+08    1542.442287     -73.192214    2.306891e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 1               0           10  -1.859088e+08     795.544663     -78.962361    2.269611e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 2               0           20  -1.723058e+08     220.437099     -68.694195    2.225308e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 3               0           30  -1.634488e+08    -143.185024    -135.674806    2.181521e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 4               0           40  -1.589783e+08    -951.938460    -196.264715    2.132047e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 5               0           50  -1.518546e+08   -4721.975263    -736.389482    2.060663e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 6               0           60  -1.354557e+08   -7308.840572   -1804.542546    1.955955e+10  ...   kg*m/s**2  kg*m**2/s**2
-# 7               0           70  -1.084337e+08   -2391.134119    1263.499262    1.844856e+10  ...   kg*m/s**2  kg*m**2/s**2
 
+bet_forces_radial_distribution = results.bet_forces_radial_distribution.as_dataframe()
+print(results.bet_forces_radial_distribution)
+
+bet_forces_radial_distribution.plot(
+    x="Disk0_All_Radius",
+    y=["Disk0_Blade0_All_ThrustCoeff", "Disk0_Blade0_All_TorqueCoeff"],
+    xlim=(0, 150),
+    xlabel="Radius",
+    figsize=(10, 7),
+    title="BET Disk radial distribution",
+)
+show()
 
 # download resuts:
 results.set_destination(use_case_name=True)
-results.download(bet_forces=True, overwrite=True)
+results.download(bet_forces=True, bet_forces_radial_distribution=True, overwrite=True)
 
 # save converted results to a new CSV file:
 results.bet_forces.to_file(os.path.join(case.name, "bet_forces_in_SI.csv"))
+
+cases = [case]
+
+front_camera_slice = FrontCamera(dimension=350, dimension_dir="height")
+
+bet_slice_screenshot = Chart3D(
+    section_title="BET effective AoA",
+    items_in_row=2,
+    force_new_page=True,
+    show="slices",
+    include=["slice_x_0"],
+    field="betMetrics_AlphaDegrees",
+    limits=(-18, 0),
+    camera=front_camera_slice,
+    fig_name="slice_x",
+)
+
+report = ReportTemplate(
+    title="BET results screenshots",
+    items=[Summary(), Inputs(), bet_slice_screenshot],
+    settings=Settings(dpi=150),
+)
+
+report = report.create_in_cloud("BET, dpi=default", cases, solver_version=__solver_version__)
+
+report.wait()
+report.download("report.pdf")
