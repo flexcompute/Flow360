@@ -84,12 +84,12 @@ def test_unit_conversions():
     assert float(converted.value) == pressure_flow360
     assert str(converted.units) == "flow360_pressure_unit"
 
-    converted = params.convert_unit(value=converted, target_system="SI", length_unit=1 * u.m)
+    converted = params.convert_unit(value=converted, target_system="SI")
     assert float(converted.value) == pressure
     assert str(converted.units) == "kg/(m*s**2)"
 
     converted = params.convert_unit(
-        value=pressure_flow360 * u.flow360_pressure_unit, target_system="SI", length_unit=1 * u.m
+        value=pressure_flow360 * u.flow360_pressure_unit, target_system="SI"
     )
     assert float(converted.value) == pressure
     assert str(converted.units) == "kg/(m*s**2)"
