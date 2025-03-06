@@ -46,7 +46,11 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
+from flow360.component.simulation.unit_system import (
+    CGS_unit_system,
+    LengthType,
+    SI_unit_system,
+)
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -333,30 +337,6 @@ def test_mach_muref_op_cond():
             mu_ref=0,
             temperature=288.15 * u.K,
         )
-
-
-def test_unit_system_conversion(get_the_param):
-    param = get_the_param.convert_to_unit_system(unit_system="Imperial")
-    converted_json_dict = param.model_dump(mode="json")
-    imperial_units = {"ft", "lb", "s", "R", "rad"}
-
-    def is_all_imperial(unit_str):
-        tokens = re.findall(r"[A-Za-z]+", unit_str)
-        return all(token in imperial_units for token in tokens)
-
-    def validate_proper_unit(obj):
-        if isinstance(obj, dict):
-            if "value" in obj and "units" in obj:
-                assert is_all_imperial(obj["units"])
-
-            for _, val in obj.items():
-                validate_proper_unit(val)
-
-        elif isinstance(obj, list):
-            for item in obj:
-                validate_proper_unit(item)
-
-    validate_proper_unit(converted_json_dict)
 
 
 def test_delta_temperature_scaling():

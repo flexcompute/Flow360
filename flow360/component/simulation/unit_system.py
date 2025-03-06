@@ -98,6 +98,19 @@ def _dimensioned_type_serializer(x):
     return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
 
 
+def _check_if_input_is_nested_collection(value, nest_level):
+    def get_nesting_level(value):
+        if isinstance(value, np.ndarray):
+            return value.ndim
+        if isinstance(value, _Flow360BaseUnit):
+            return value.value.ndim
+        if isinstance(value, (list, tuple)):
+            return 1 + max(get_nesting_level(item) for item in value)
+        return 0
+
+    return get_nesting_level(value) == nest_level
+
+
 def _check_if_input_has_delta_unit(quant):
     """
     Parse the input unit and see if it can be considered a delta unit. This only handles temperatures now.
@@ -166,7 +179,8 @@ def _is_unit_validator(value):
     return value
 
 
-def _unit_inference_validator(value, dim_name, is_array=False):
+# pylint: disable=too-many-return-statements
+def _unit_inference_validator(value, dim_name, is_array=False, is_matrix=False):
     """
     Uses current unit system to infer units for value
 
@@ -186,6 +200,12 @@ def _unit_inference_validator(value, dim_name, is_array=False):
 
     if unit_system_manager.current:
         unit = unit_system_manager.current[dim_name]
+        if is_matrix:
+            if all(all(isinstance(item, Number) for item in row) for row in value):
+                float64_tuple = tuple(tuple(np.float64(row)) for row in value)
+                if isinstance(unit, _Flow360BaseUnit):
+                    return float64_tuple * unit
+                return float64_tuple * unit.units
         if is_array:
             if all(isinstance(item, Number) for item in value):
                 float64_tuple = tuple(np.float64(item) for item in value)
@@ -216,7 +236,7 @@ def _unit_array_validator(value, dim, expect_delta_unit: bool):
     """
 
     if not _has_dimensions(value, dim, expect_delta_unit):
-        if any(_has_dimensions(item, dim, expect_delta_unit) for item in value):
+        if any(_has_dimensions(item, dim, expect_delta_unit) for item in np.nditer(value)):
             raise TypeError(
                 f"arg '{value}' has unit provided per component, "
                 "instead provide dimension for entire array."
@@ -476,9 +496,7 @@ class _DimensionedType(metaclass=ABCMeta):
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
                     value = _is_unit_validator(value)
 
-                    is_collection = isinstance(value, Collection) or (
-                        isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
-                    )
+                    is_collection = _check_if_input_is_nested_collection(value=value, nest_level=1)
 
                     if length is None:
                         if not is_collection:
@@ -529,6 +547,97 @@ class _DimensionedType(metaclass=ABCMeta):
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_component = allow_zero_component
             cls_obj.allow_negative_value = allow_negative_value
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
+                cls_obj, *args
+            )
+            cls_obj.__get_pydantic_json_schema__ = __get_pydantic_json_schema__
+
+            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
+
+    # pylint: disable=too-few-public-methods
+    class _MatrixType:
+        @classmethod
+        def get_class_object(
+            cls,
+            dim_type,
+            shape=(None, None),
+        ):
+            """Get a dynamically created metaclass representing the tensor"""
+
+            def __get_pydantic_json_schema__(
+                schema: pd.CoreSchema, handler: pd.GetJsonSchemaHandler
+            ):
+                schema = dim_type.__get_pydantic_json_schema__(schema, handler)
+                schema["properties"]["value"] = {
+                    "type": "array",
+                    "items": {"type": "array", "items": {"type": "number"}},
+                }
+                if shape[0] is not None:
+                    schema["properties"]["minItems"] = shape[0]
+                    schema["properties"]["maxItems"] = shape[0]
+                if shape[1] is not None:
+                    schema["properties"]["value"]["items"]["minItems"] = shape[1]
+                    schema["properties"]["value"]["items"]["maxItems"] = shape[1]
+
+                return schema
+
+            def validate(matrix_cls, value, *args, **kwargs):
+                """additional validator for value"""
+                try:
+                    value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _is_unit_validator(value)
+
+                    is_nested_collection = _check_if_input_is_nested_collection(
+                        value=value, nest_level=2
+                    )
+                    if not is_nested_collection:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a 2-dimensional collection of values."
+                        )
+
+                    if shape[0] and len(value) != shape[0]:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a 2-dimensional collection of values "
+                            + f"with the 1st dimension as {shape[0]}."
+                        )
+
+                    if shape[1] and any(
+                        len(item) != shape[1]
+                        for item in (
+                            value if not isinstance(value, _Flow360BaseUnit) else value.val
+                        )
+                    ):
+                        raise TypeError(
+                            f"arg '{value}' needs to be a 2-dimensional collection of values "
+                            + f"with the 2nd dimension as {shape[1]}."
+                        )
+
+                    if matrix_cls.type.has_defaults:
+                        value = _unit_inference_validator(
+                            value, matrix_cls.type.dim_name, is_matrix=True
+                        )
+                    value = _unit_array_validator(
+                        value, matrix_cls.type.dim, matrix_cls.type.expect_delta_unit
+                    )
+
+                    value = _has_dimensions_validator(
+                        value,
+                        matrix_cls.type.dim,
+                        matrix_cls.type.expect_delta_unit,
+                    )
+
+                    return value
+                except TypeError as err:
+                    details = InitErrorDetails(type="value_error", ctx={"error": err})
+                    raise pd.ValidationError.from_exception_data("validation error", [details])
+
+            def __get_pydantic_core_schema__(matrix_cls, *args, **kwargs) -> pd.CoreSchema:
+                return core_schema.no_info_plain_validator_function(
+                    lambda *val_args: validate(matrix_cls, *val_args)
+                )
+
+            cls_obj = type("_MatrixType", (), {})
+            cls_obj.type = dim_type
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
                 cls_obj, *args
             )
@@ -603,6 +712,20 @@ class _DimensionedType(metaclass=ABCMeta):
         return self._VectorType.get_class_object(
             self, allow_zero_norm=False, allow_zero_component=False
         )
+
+    @classproperty
+    def CoordinateGroupTranspose(self):
+        """
+        CoordinateGroup value which stores a group of 3D coordinates
+        """
+        return self._MatrixType.get_class_object(self, shape=(3, None))
+
+    @classproperty
+    def CoordinateGroup(self):
+        """
+        CoordinateGroup value which stores a group of 3D coordinates
+        """
+        return self._MatrixType.get_class_object(self, shape=(None, 3))
 
 
 # pylint: disable=too-few-public-methods

@@ -73,6 +73,11 @@ class DataWithUnitsConstrained(pd.BaseModel):
     omega: AngularVelocityType.NonNegative = pd.Field()
 
 
+class MatrixDataWithUnits(pd.BaseModel):
+    locations: LengthType.CoordinateGroup = pd.Field()
+    locationsT: LengthType.CoordinateGroupTranspose = pd.Field()
+
+
 class VectorDataWithUnits(pd.BaseModel):
     pt: Optional[LengthType.Point] = pd.Field(None)
     vec: Union[VelocityType.Direction, ForceType.Point] = pd.Field()
@@ -225,6 +230,21 @@ def test_flow360_unit_arithmetic():
 
     with pytest.raises(TypeError):
         data.l_arr_nonneg + [1, 1, 1, 1] * u.m
+
+    data = MatrixDataWithUnits(
+        locations=[[1, 1, 1], [2, 3, 4]] * u.flow360_length_unit,
+        locationsT=[[1, 2], [1, 3], [1, 4]] * u.flow360_length_unit,
+    )
+
+    with u.flow360_unit_system:
+        data_flow360 = MatrixDataWithUnits(
+            locations=[[1, 1, 1], [2, 3, 4]],
+            locationsT=[[1, 2], [1, 3], [1, 4]],
+        )
+    assert data == data_flow360
+
+    with pytest.raises(TypeError):
+        data.locations + [[1, 1, 1], [2, 2, 2]] * u.rad
 
 
 def _assert_exact_same_unyt(input, ref):
@@ -618,6 +638,56 @@ def test_unit_system():
 
         assert all(coord == -1 * u.rad for coord in data.l_arr)
         assert all(coord == 1 * u.m for coord in data.l_arr_nonneg)
+
+    # Matrix data
+    data = MatrixDataWithUnits(
+        locations=[[-1, -1, -1], [-1, -1, -1]] * u.inch, locationsT=[[1, 1], [1, 1], [1, 1]] * u.m
+    )
+
+    assert all(all(value == -1 * u.inch for value in coord) for coord in data.locations)
+    assert all(all(value == 1 * u.m for value in coord) for coord in data.locationsT)
+
+    with pytest.raises(
+        ValueError, match=r"arg '\[-1 -1 -1\] m' needs to be a 2-dimensional collection of values."
+    ):
+        data = MatrixDataWithUnits(
+            locations=[-1, -1, -1] * u.m,
+            locationsT=[[1, 1], [1, 1], [1, 1]] * u.m,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=r"setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions.",
+    ):
+        data = MatrixDataWithUnits(
+            locations=[[-1, -1, -1], [-1, -1, -1, -2]] * u.m,
+            locationsT=[[1, 1], [1, 1], [1, 1]] * u.m,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=r"arg '\[\[-1 -1\]\n \[-1 -1\]\] m' needs to be a 2-dimensional collection of values with the 2nd dimension as 3.",
+    ):
+        data = MatrixDataWithUnits(
+            locations=[[-1, -1], [-1, -1]] * u.m, locationsT=[[1, 1], [1, 1], [1, 1]] * u.m
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=r"arg '\[\[1 1\]\n \[1 1\]\n \[1 1\]\n \[1 1\]\] m' needs to be a 2-dimensional collection of values with the 1st dimension as 3.",
+    ):
+        data = MatrixDataWithUnits(
+            locations=[[-1, -1, -1], [-1, -1, -1]] * u.m,
+            locationsT=[[1, 1], [1, 1], [1, 1], [1, 1]] * u.m,
+        )
+
+    with u.SI_unit_system:
+        data = MatrixDataWithUnits(
+            locations=[[-1, -1, -1], [-1, -1, -1]], locationsT=[[1, 1], [1, 1], [1, 1]]
+        )
+
+        assert all(all(value == -1 * u.m for value in coord) for coord in data.locations)
+        assert all(all(value == 1 * u.m for value in coord) for coord in data.locationsT)
 
 
 def test_optionals_and_unions():
