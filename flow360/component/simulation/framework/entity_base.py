@@ -300,9 +300,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
         entities = getattr(self, "stored_entities", [])
 
-        # if entities is None:
-        #     return None
-
         expanded_entities = []
         # Note: Points need to skip deduplication bc:
         # 1. Performance of deduplication is slow when Point count is high.

@@ -585,12 +585,7 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
                 dimension = value.units.dimensions
-                print(
-                    "\n>>>> registry_lookup.converted_fields = ", registry_lookup.converted_fields
-                )
-                print(">>>> registry_lookup.registry = ", registry_lookup.registry)
                 if dimension not in registry_lookup.converted_fields:
-                    print(f">> {dimension} not found in converted_fields")
                     flow360_conv_system = unit_converter(
                         value.units.dimensions,
                         params=params,
