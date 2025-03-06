@@ -37,6 +37,7 @@ from flow360.component.utils import (
 )
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.log import log
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -543,6 +544,7 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        raise_on_error: bool,
         **kwargs,
     ):
         """
@@ -560,6 +562,8 @@ class Project(pd.BaseModel):
             Indicates if the simulation should fork the existing case (default is False).
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
 
         Returns
         -------
@@ -585,10 +589,12 @@ class Project(pd.BaseModel):
         )
 
         if errors is not None:
-            error_msg = formatting_validation_errors(errors=errors)
-            raise ValueError(
-                "Validation error found in the simulation params! Errors are: " + error_msg
+            log.error(
+                f"Validation error found in the simulation params: {formatting_validation_errors(errors=errors)}"
             )
+            if raise_on_error:
+                raise ValueError("Submission terminated due to validation error.")
+            return None
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
@@ -611,7 +617,9 @@ class Project(pd.BaseModel):
                 use_beta_mesher=use_beta_mesher,
                 start_from=start_from,
             )
-        except RuntimeError:
+        except RuntimeError as exception:
+            if raise_on_error:
+                raise ValueError("Submission terminated due to validation error.") from exception
             return None
 
         self._project_webapi.patch(
@@ -644,6 +652,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        raise_on_error: bool = False,
         **kwargs,
     ):
         """
@@ -659,6 +668,8 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
 
         Raises
         ------
@@ -680,6 +691,7 @@ class Project(pd.BaseModel):
                 fork_from=None,
                 solver_version=solver_version,
                 use_beta_mesher=use_beta_mesher,
+                raise_on_error=raise_on_error,
                 **kwargs,
             )
         )
@@ -692,6 +704,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        raise_on_error: bool = False,
         **kwargs,
     ):
         """
@@ -707,6 +720,8 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
 
         Raises
         ------
@@ -727,6 +742,7 @@ class Project(pd.BaseModel):
                 fork_from=None,
                 solver_version=solver_version,
                 use_beta_mesher=use_beta_mesher,
+                raise_on_error=raise_on_error,
                 **kwargs,
             )
         )
@@ -737,9 +753,10 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "Case",
         run_async: bool = True,
-        fork_from: Case = None,
+        fork_from: Optional[Case] = None,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        raise_on_error: bool = False,
         **kwargs,
     ):
         """
@@ -757,6 +774,8 @@ class Project(pd.BaseModel):
             Which Case we should fork from (if fork).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is False)
         """
         self._check_initialized()
 
@@ -769,6 +788,7 @@ class Project(pd.BaseModel):
                 fork_from=fork_from,
                 solver_version=solver_version,
                 use_beta_mesher=use_beta_mesher,
+                raise_on_error=raise_on_error,
                 **kwargs,
             )
         )
