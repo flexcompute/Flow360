@@ -401,6 +401,28 @@ class Cylinder(_VolumeEntityBase):
 class _SurfaceIssueEnums(str, Enum):
     """
     Enums for indicating that there is something wrong/special about the surface.
+
+    +--------------------+--------------------+-------------------+
+    | If my sub faces...| Issue should be    | Conflict with when |
+    |                   | predicted as       | using              |
+    +-------------------+--------------------+--------------------+
+    | All overlaps with | overlap_half_model_| Auto and Quasi     |
+    | the HalfModel Symm| symmetric          |                    |
+    +-------------------+--------------------+--------------------+
+    | All overlaps with | overlap_quasi_3d_  | Quasi              |
+    | the Non Half      | symmetric          |                    |
+    | Model (the other  |                    |                    |
+    | Q3D) Symm         |                    |                    |
+    +-------------------+--------------------+--------------------+
+    | Some on HalfModel | overlap_quasi_3d_  | Quasi              |
+    | Symm, Some on Non | symmetric          |                    |
+    | HalfModel Symm    |                    |                    |
+    +-------------------+--------------------+--------------------+
+    | Have some faces   | None               | None               |
+    | elsewhere         |                    |                    |
+    +-------------------+--------------------+--------------------+
+
+
     """
 
     # pylint: disable=invalid-name
@@ -460,6 +482,8 @@ class Surface(_SurfaceEntityBase):
             # pylint: disable=unsupported-membership-test
             return (
                 _SurfaceIssueEnums.overlap_quasi_3d_symmetric
+                in self.private_attribute_potential_issues
+                or _SurfaceIssueEnums.overlap_half_model_symmetric
                 in self.private_attribute_potential_issues
             )
 
