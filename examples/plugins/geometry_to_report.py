@@ -19,7 +19,7 @@ project_id = "prj-7096e7c1-2d6e-4e0a-803d-da1d61a99d96"
 if project_id is not None:
     project = fl.Project.from_cloud(project_id)
 else:
-    project = fl.Project.from_file(
+    project = fl.Project.from_geometry(
         Airplane.geometry, name="Python Project (Geometry, from file) - for Report"
     )
 

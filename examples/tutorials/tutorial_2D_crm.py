@@ -3,9 +3,7 @@ from flow360.examples import Tutorial2DCRM
 
 Tutorial2DCRM.get_files()
 
-project = fl.Project.from_file(
-    files=fl.GeometryFiles(Tutorial2DCRM.geometry), name="Tutorial 2D CRM from Python"
-)
+project = fl.Project.from_geometry(Tutorial2DCRM.geometry, name="Tutorial 2D CRM from Python")
 geometry = project.geometry
 
 # show face and edge groupings
