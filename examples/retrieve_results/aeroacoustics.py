@@ -102,7 +102,7 @@ time_step_1 = deg_per_time_step_1 / omega.to("deg/s")
 revolution_time_1 = 360 * fl.u.deg / omega.to("deg/s")
 steps_1 = int(5 * revolution_time_1 / time_step_1)
 
-case.params.time_stepping.step_size = 0.000011236 * fl.u.s
+case.params.time_stepping.step_size = time_step_1
 case.params.time_stepping.steps = steps_1
 
 case_fork_1 = project.run_case(case.params, "Second order run", fork_from=case)
