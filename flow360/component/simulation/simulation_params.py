@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -81,6 +81,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
 )
+from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -147,6 +148,14 @@ class _ParamModelBase(Flow360BaseModel):
             )
         return model_dict
 
+    @classmethod
+    def _sanitize_params_dict(cls, model_dict):
+        """
+        Clean the redundant content in the params dict from WebUI
+        """
+        model_dict = remove_properties_by_name(model_dict, "_id")
+        return model_dict
+
     def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
@@ -162,6 +171,7 @@ class _ParamModelBase(Flow360BaseModel):
         else:
             model_dict = self._handle_dict(**file_content)
 
+        model_dict = _ParamModelBase._sanitize_params_dict(model_dict)
         # When treating files/file like contents the updater will always be run.
         model_dict = _ParamModelBase._update_param_dict(model_dict)
 
@@ -264,40 +274,17 @@ class SimulationParams(_ParamModelBase):
 
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
+        self._private_set_length_unit(LengthType.validate(mesh_unit))  # pylint: disable=no-member
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
-        return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
+                return super().preprocess(params=self, exclude=exclude)
+        return super().preprocess(params=self, exclude=exclude)
 
-    def convert_to_unit_system(
-        self,
-        unit_system: Literal["SI", "Imperial", "CGS"],
-        exclude: list = None,
-    ) -> SimulationParams:
-        """Internal function for non-dimensionalizing the simulation parameters"""
-        if exclude is None:
-            exclude = []
-
-        if unit_system not in ["SI", "Imperial", "CGS"]:
-            raise Flow360ConfigurationError(
-                f"Invalid unit system: {unit_system}. Must be one of ['SI', 'Imperial', 'CGS']"
-            )
-        converted_param = None
-        if unit_system_manager.current is None:
-            # pylint: disable=not-context-manager
-            with self.unit_system:
-                converted_param = super().convert_to_unit_system(
-                    to_unit_system=unit_system, exclude=exclude
-                )
-        else:
-            converted_param = super().convert_to_unit_system(
-                to_unit_system=unit_system, exclude=exclude
-            )
-        # Change the recorded unit system
-        with model_attribute_unlock(converted_param, "unit_system"):
-            converted_param.unit_system = UnitSystem.from_dict(**{"name": unit_system})
-        return converted_param
+    def _private_set_length_unit(self, validated_mesh_unit):
+        with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
+            # pylint: disable=assigning-non-slot
+            self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
 
     @pd.validate_call
     def convert_unit(
@@ -342,17 +329,14 @@ class SimulationParams(_ParamModelBase):
         1.0 (flow360_length_unit)
         """
 
-        if length_unit is None:
+        if length_unit is not None:
             # pylint: disable=no-member
-            length_unit = self.private_attribute_asset_cache.project_length_unit
+            self._private_set_length_unit(LengthType.validate(length_unit))
 
         flow360_conv_system = unit_converter(
             value.units.dimensions,
-            length_unit,
             params=self,
-            required_by=[
-                f"{self.__class__.__name__}.convert_unit(value=, target_system=, length_unit=)"
-            ],
+            required_by=[f"{self.__class__.__name__}.convert_unit(value=, target_system=)"],
         )
 
         if target_system == "flow360":

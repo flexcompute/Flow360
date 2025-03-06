@@ -101,7 +101,7 @@ def require(required_parameter, required_by, params):
 
 
 # pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
-def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by: List[str] = None):
+def unit_converter(dimension, params, required_by: List[str] = None):
     """
 
     Returns a flow360 conversion unit system for a given dimension.
@@ -133,8 +133,8 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
         required_by = []
 
     def get_base_length():
-        require(["length_unit"], required_by, {"length_unit": length_unit})
-        base_length = length_unit.to("m").v.item()
+        require(["private_attribute_asset_cache", "project_length_unit"], required_by, params)
+        base_length = params.private_attribute_asset_cache.project_length_unit.to("m").v.item()
         return base_length
 
     def get_base_temperature():

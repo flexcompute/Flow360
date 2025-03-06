@@ -546,9 +546,9 @@ def probe_output_with_point_array():
                     "type": "lineProbe",
                 },
                 "prb mix": {
-                    "start": [[1e-2, 1.02e-2, 0.0003], [0.1, 0.2, 0.3]],
-                    "end": [[1e-2, 1.02e-2, 0.0003], [1.1, 1.2, 1.3]],
-                    "numberOfPoints": [1, 5],
+                    "start": [[0.1, 0.2, 0.3], [1e-2, 1.02e-2, 0.0003]],
+                    "end": [[1.1, 1.2, 1.3], [1e-2, 1.02e-2, 0.0003]],
+                    "numberOfPoints": [5, 1],
                     "outputFields": ["primitiveVars", "Cp"],
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,

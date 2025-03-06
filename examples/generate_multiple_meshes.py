@@ -3,8 +3,8 @@ from flow360.examples import Airplane
 
 fl.Env.dev.active()
 
-project = fl.Project.from_file(
-    files=fl.GeometryFiles(Airplane.geometry),
+project = fl.Project.from_geometry(
+    Airplane.geometry,
     name="Python Project (Geometry, from file, multiple runs)",
 )
 

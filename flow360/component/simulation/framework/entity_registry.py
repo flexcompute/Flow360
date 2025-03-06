@@ -5,13 +5,8 @@ from typing import Any, Dict, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import (
-    EntityBase,
-    MergeConflictError,
-    _merge_objects,
-)
+from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.utils import _naming_pattern_handler
-from flow360.log import log
 
 
 class EntityRegistryBucket:
@@ -63,18 +58,16 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         for existing_entity in self.internal_registry[entity.entity_bucket]:
             if existing_entity.name == entity.name:
-                # Same type and same name. Now we try to update existing entity with new values.
-                try:
-                    existing_entity = _merge_objects(existing_entity, entity)
-                    return
-                except MergeConflictError as e:
-                    raise MergeConflictError(
-                        f"Entity with name '{entity.name}' and type '{entity.entity_bucket}' "
-                        "already exists and have different definition."
-                    ) from e
-                except Exception as e:
-                    log.debug("Merge failed unexpectly: %s", e)
-                    raise
+                # pylint:disable=protected-access
+                if existing_entity._get_hash() != entity._get_hash():
+                    # Same type and same name but different definitions.
+                    raise ValueError(
+                        f"Multiple entities with name '{entity.name}' and type '{entity.entity_bucket}' "
+                        "already exists and have different definitions."
+                    )
+                # Identical entities. Just ignore
+                return
+
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
@@ -140,9 +133,9 @@ class EntityRegistry(Flow360BaseModel):
         result = "---- Content of the registry ----\n"
         # pylint: disable=no-member
         for entity_bucket, entities in self.internal_registry.items():
-            result += f"    Entities of type '{entity_bucket}':\n"
+            result += f"\n    Entities of type '{entity_bucket}':\n"
             for entity in entities:
-                result += f"    - [{index:03d}]\n{entity}\n"
+                result += f"    - [{index:05d}]\n{entity}\n"
                 index += 1
         result += "---- End of content ----"
         return result

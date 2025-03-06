@@ -21,7 +21,7 @@ project_id = None  # if running for the first time
 if project_id is not None:
     project = fl.Project.from_cloud(project_id)
 else:
-    project = fl.Project.from_file(
+    project = fl.Project.from_geometry(
         Airplane.geometry, name="Python Project (Geometry, from file) - for Report"
     )
 

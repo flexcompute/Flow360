@@ -105,7 +105,7 @@ class GeometryDraft(ResourceDraft):
             raise Flow360FileError("file_names field has to be a non-empty list.")
 
         try:
-            GeometryFiles(value=self.file_names)
+            GeometryFiles(file_names=self.file_names)
         except pd.ValidationError as e:
             raise Flow360FileError(str(e)) from e
 
