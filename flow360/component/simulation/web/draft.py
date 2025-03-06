@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 from typing import Literal, Union
 
@@ -13,6 +14,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
+from flow360.component.project_utils import formatting_validation_errors
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
@@ -158,7 +160,9 @@ class Draft(Flow360Resource):
             log.error(">>Submission failed.<<")
             try:
                 detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
-                log.error(f"Failure detail: {detailed_error}")
+                log.error(
+                    f"Failure detail: {formatting_validation_errors(ast.literal_eval(detailed_error))}"
+                )
             except json.decoder.JSONDecodeError:
                 # No detail given.
                 log.error("An unexpected error has occurred. Please contact customer support.")
