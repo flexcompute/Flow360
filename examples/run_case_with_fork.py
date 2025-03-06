@@ -3,10 +3,8 @@ from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(OM6wing.mesh_filename, name="OM6wing-mesh", tags=["tag"])
-volume_mesh = volume_mesh.submit()
-print(volume_mesh)
+project = fl.Project.from_volume_mesh(OM6wing.mesh_filename, name="Forking cases from Python")
+vm = project.volume_mesh
 
 
 # submit case using json file

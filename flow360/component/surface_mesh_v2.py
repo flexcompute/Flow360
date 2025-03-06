@@ -103,7 +103,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
     def _validate_surface_mesh(self):
         if self._file_name is not None:
             try:
-                SurfaceMeshFile(value=self._file_name)
+                SurfaceMeshFile(file_names=self._file_name)
             except pd.ValidationError as e:
                 raise Flow360FileError(str(e)) from e
 
