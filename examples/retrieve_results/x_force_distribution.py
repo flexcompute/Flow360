@@ -19,7 +19,7 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady
 from flow360.component.simulation.unit_system import SI_unit_system, u
 from flow360.examples import Airplane
 
-project = Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
+project = Project.from_geometry(Airplane.geometry, name="Python Project (Geometry, from file)")
 geo = project.geometry
 
 geo.show_available_groupings(verbose_mode=True)

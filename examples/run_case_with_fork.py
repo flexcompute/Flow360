@@ -3,9 +3,7 @@ from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(OM6wing.mesh_filename), name="Forking cases from Python"
-)
+project = fl.Project.from_volume_mesh(OM6wing.mesh_filename, name="Forking cases from Python")
 vm = project.volume_mesh
 
 with fl.SI_unit_system:
