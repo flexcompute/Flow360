@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from itertools import chain
-from typing import Any, List, Literal, get_origin, Set, Optional
+from typing import Any, List, Literal, Set, get_origin
 
 import pydantic as pd
 import rich
@@ -13,7 +13,7 @@ import yaml
 from pydantic import ConfigDict
 from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
 from pydantic_core import InitErrorDetails
-from unyt import unit_registry
+from unyt.unit_registry import UnitRegistry
 
 from flow360.component.simulation.conversion import need_conversion, unit_converter
 from flow360.component.simulation.validation import validation_context
@@ -67,13 +67,16 @@ class Conflicts(pd.BaseModel):
     field2: str
 
 
-class RegistryLookup:
+class RegistryLookup:  # pylint:disable=too-few-public-methods
     """
     Helper object to cache the conversion unit system registry
     """
 
-    converted_fields: Set[str] = set()
-    registry: Optional[unit_registry] = None
+    __slots__ = ["converted_fields", "registry"]
+
+    def __init__(self):
+        self.converted_fields: Set[str] = set()
+        self.registry: UnitRegistry = None
 
 
 class Flow360BaseModel(pd.BaseModel):
@@ -582,7 +585,12 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
                 dimension = value.units.dimensions
+                print(
+                    "\n>>>> registry_lookup.converted_fields = ", registry_lookup.converted_fields
+                )
+                print(">>>> registry_lookup.registry = ", registry_lookup.registry)
                 if dimension not in registry_lookup.converted_fields:
+                    print(f">> {dimension} not found in converted_fields")
                     flow360_conv_system = unit_converter(
                         value.units.dimensions,
                         params=params,
@@ -590,7 +598,9 @@ class Flow360BaseModel(pd.BaseModel):
                     )
                     # Calling unit_converter is always additive on the global conversion system
                     # so we can only keep track of the most recent registry and use it
-                    registry_lookup.registry = flow360_conv_system.registry
+                    registry_lookup.registry = (
+                        flow360_conv_system.registry  # pylint:disable=no-member
+                    )
                     registry_lookup.converted_fields.add(dimension)
                 value.units.registry = registry_lookup.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360_v2")
@@ -608,7 +618,7 @@ class Flow360BaseModel(pd.BaseModel):
         registry_lookup: RegistryLookup = None,
     ) -> Flow360BaseModel:
         """
-        Loops through all fields, for Flow360BaseModel runs .preprocess() recusrively. For dimensioned value performs
+        Loops through all fields, for Flow360BaseModel runs .preprocess() recursively. For dimensioned value performs
 
         unit conversion to flow360_base system.
 
