@@ -30,9 +30,7 @@ with fl.SI_unit_system:
         operating_condition=fl.operating_condition_from_mach_reynolds(
             reynolds=5, mach=0.1, project_length_unit=fl.u.m
         ),
-        time_stepping=fl.Steady(
-            max_steps=2000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=300)
-        ),
+        time_stepping=fl.Steady(),
         models=[
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(

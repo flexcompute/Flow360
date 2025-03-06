@@ -36,7 +36,6 @@ with fl.SI_unit_system:
             max_pseudo_steps=40,
             step_size=2,
             steps=20,
-            CFL=fl.RampCFL(initial=100, final=100, ramp_steps=5),
         ),
         outputs=[
             fl.SurfaceOutput(name="SurfaceOutput", output_fields=["Cp"], surfaces=[vm["*"]]),
