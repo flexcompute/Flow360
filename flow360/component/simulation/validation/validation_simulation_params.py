@@ -17,9 +17,6 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
-    GhostCircularPlane,
-    GhostSphere,
-    GhostSurface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -274,7 +271,9 @@ def _validate_cht_has_heat_transfer(params):
     return params
 
 
-def _check_complete_boundary_condition_and_unknown_surface(params):
+def _check_complete_boundary_condition_and_unknown_surface(
+    params,
+):  # pylint:disable=too-many-branches
     ## Step 1: Get all boundaries patches from asset cache
 
     current_lvls = get_validation_levels() if get_validation_levels() else []
@@ -293,6 +292,18 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(automated_farfield_method) is False
         ]
+        if automated_farfield_method == "auto":
+            asset_boundary_entities += [
+                item
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
+                if item.name not in ("symmetric-1", "symmetric-2")
+            ]
+        elif automated_farfield_method == "quasi-3d":
+            asset_boundary_entities += [
+                item
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
+                if item.name != "symmetric"
+            ]
 
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
@@ -319,8 +330,6 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
             ]
 
         for entity in entities:
-            if isinstance(entity, (GhostSurface, GhostSphere, GhostCircularPlane)):
-                continue
             used_boundaries.add(entity.name)
 
     ## Step 3: Use set operations to find missing and unknown boundaries
