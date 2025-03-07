@@ -83,7 +83,7 @@ def test_get_asset_with_id(mock_id, mock_response):
 def test_run(mock_response, capsys):
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
     parent_case = project.get_case("case-69b8c249")
-    case = project.case
+    case = project.case  # case-84d4604e-f
     params = case.params
 
     warning_msg = "The VolumeMesh that matches the input already exists in project. No new VolumeMesh will be generated."
