@@ -58,6 +58,7 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     GenericVolume,
+    GhostSphere,
     Surface,
     _SurfaceIssueEnums,
 )
@@ -396,27 +397,197 @@ def test_transition_model_solver_settings_validator():
         assert params.models[0].transition_model_solver.turbulence_intensity_percent is None
 
 
-def test_incomplete_BC():
-    ##:: Construct a dummy asset cache
+def test_BC_geometry():
+    """For a quasi 3D geometry test the check for the"""
+    # --------------------------------------------------------#
+    # >>>>>>> Group sides of airfoil as individual ones <<<<<<<
+    with open("./data/geometry_metadata_asset_cache_quasi3D.json") as fp:
+        data = json.load(fp)
+        data["private_attribute_asset_cache"]["project_entity_info"]["face_group_tag"] = "groupName"
+        asset_cache = AssetCache(**data["private_attribute_asset_cache"])
 
-    wall_1 = Surface(
-        name="wall_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    symmetry_boundary_1 = [item for item in asset_cache.boundaries if item.name == "symmetry11"][0]
+    symmetry_boundary_2 = [item for item in asset_cache.boundaries if item.name == "symmetry22"][0]
+    wall = [item for item in asset_cache.boundaries if item.name == "wall"][0]
+
+    ##### AUTO METHOD #####
+    auto_farfield = AutomatedFarfield(name="my_farfield")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall),
+                SlipWall(entities=auto_farfield.symmetry_planes),
+                SlipWall(entities=symmetry_boundary_1),
+                SlipWall(entities=symmetry_boundary_2),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="All",
     )
-    periodic_1 = Surface(
-        name="periodic_1", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("models", 3, "entities")
+    assert errors[0]["msg"] == (
+        "Value error, Boundary `symmetry11` will likely be deleted after mesh generation. "
+        "Therefore it cannot be used."
     )
-    periodic_2 = Surface(
-        name="periodic_2", private_attribute_is_interface=False, private_attribute_tag_key="test"
+
+    ##### Ghost entities not used #####
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall),
+                SlipWall(entities=symmetry_boundary_2),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="All",
     )
-    i_exist = Surface(
-        name="i_exist", private_attribute_is_interface=False, private_attribute_tag_key="test"
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: farfield, symmetric."
+        " Please add them to a boundary condition model in the `models` section."
     )
-    no_bc = Surface(
-        name="no_bc", private_attribute_is_interface=False, private_attribute_tag_key="test"
+
+    ##### QUASI 3D METHOD #####
+    auto_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall),
+                SlipWall(entities=auto_farfield.symmetry_planes),
+                SlipWall(entities=symmetry_boundary_1),
+                SlipWall(entities=symmetry_boundary_2),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="All",
     )
-    some_interface = Surface(
-        name="some_interface", private_attribute_is_interface=True, private_attribute_tag_key="test"
+    assert len(errors) == 2
+    assert errors[0]["loc"] == ("models", 3, "entities")
+    assert errors[0]["msg"] == (
+        "Value error, Boundary `symmetry11` will likely be deleted after mesh generation. "
+        "Therefore it cannot be used."
     )
+    assert errors[1]["loc"] == ("models", 4, "entities")
+    assert errors[1]["msg"] == (
+        "Value error, Boundary `symmetry22` will likely be deleted after mesh generation. "
+        "Therefore it cannot be used."
+    )
+    ##### Ghost entities not used #####
+    auto_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: farfield, "
+        "symmetric-1, symmetric-2. Please add them to a boundary condition model in the `models` section."
+    )
+
+    # --------------------------------------------------------#
+    # >>>>>>> Group sides of airfoil as SINGLE boundary <<<<<<<
+
+    with open("./data/geometry_metadata_asset_cache_quasi3D.json") as fp:
+        data = json.load(fp)
+        data["private_attribute_asset_cache"]["project_entity_info"]["face_group_tag"] = "faceName"
+        asset_cache = AssetCache(**data["private_attribute_asset_cache"])
+
+    symmetry_boundary = [item for item in asset_cache.boundaries if item.name == "symmetry"][0]
+    wall = [item for item in asset_cache.boundaries if item.name == "wall"][0]
+
+    auto_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall),
+                SlipWall(entities=auto_farfield.symmetry_planes),
+                SlipWall(entities=symmetry_boundary),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, Boundary `symmetry` will likely be deleted after mesh generation. Therefore it cannot be used."
+    )
+
+
+def test_incomplete_BC_volume_mesh():
+    ##:: Construct a dummy asset cache
+    wall_1 = Surface(name="wall_1", private_attribute_is_interface=False)
+    periodic_1 = Surface(name="periodic_1", private_attribute_is_interface=False)
+    periodic_2 = Surface(name="periodic_2", private_attribute_is_interface=False)
+    i_exist = Surface(name="i_exist", private_attribute_is_interface=False)
+    no_bc = Surface(name="no_bc", private_attribute_is_interface=False)
+    some_interface = Surface(name="some_interface", private_attribute_is_interface=True)
 
     asset_cache = AssetCache(
         project_length_unit="inch",
@@ -424,29 +595,6 @@ def test_incomplete_BC():
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, some_interface, no_bc]
         ),
     )
-    auto_farfield = AutomatedFarfield(name="my_farfield")
-
-    with ValidationContext(ALL):
-        # i_will_be_deleted won't trigger "no bc assigned" error
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    ),
-                    volume_zones=[auto_farfield],
-                ),
-                models=[
-                    Fluid(),
-                    Wall(entities=wall_1),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    SlipWall(entities=[no_bc]),
-                    Freestream(entities=auto_farfield.farfield),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
 
     with pytest.raises(
         ValueError,
@@ -461,15 +609,13 @@ def test_incomplete_BC():
                         defaults=MeshingDefaults(
                             boundary_layer_first_layer_thickness=1e-10,
                             surface_max_edge_length=1e-10,
-                        ),
-                        volume_zones=[auto_farfield],
+                        )
                     ),
                     models=[
                         Fluid(),
                         Wall(entities=wall_1),
                         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                         SlipWall(entities=[i_exist]),
-                        Freestream(entities=auto_farfield.farfield),
                     ],
                     private_attribute_asset_cache=asset_cache,
                 )
@@ -486,15 +632,13 @@ def test_incomplete_BC():
                         defaults=MeshingDefaults(
                             boundary_layer_first_layer_thickness=1e-10,
                             surface_max_edge_length=1e-10,
-                        ),
-                        volume_zones=[auto_farfield],
+                        )
                     ),
                     models=[
                         Fluid(),
                         Wall(entities=[wall_1]),
                         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
                         SlipWall(entities=[i_exist]),
-                        Freestream(entities=auto_farfield.farfield),
                         SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
                     ],
                     private_attribute_asset_cache=asset_cache,
