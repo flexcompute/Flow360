@@ -402,7 +402,7 @@ class _SurfaceIssueEnums(str, Enum):
     """
     Enums for indicating that there is something wrong/special about the surface.
 
-    +--------------------+--------------------+-------------------+
+    +-------------------+--------------------+--------------------+
     | If my sub faces...| Issue should be    | Conflict with when |
     |                   | predicted as       | using              |
     +-------------------+--------------------+--------------------+
@@ -412,7 +412,8 @@ class _SurfaceIssueEnums(str, Enum):
     | All overlaps with | overlap_quasi_3d_  | Quasi              |
     | the Non Half      | symmetric          |                    |
     | Model (the other  |                    |                    |
-    | Q3D) Symm         |                    |                    |
+    | Q3D) Symm. Or not |                    |                    |
+    | half model at all.|                    |                    |
     +-------------------+--------------------+--------------------+
     | Some on HalfModel | overlap_quasi_3d_  | Quasi              |
     | Symm, Some on Non | symmetric          |                    |
