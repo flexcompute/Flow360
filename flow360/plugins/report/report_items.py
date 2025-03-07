@@ -739,6 +739,22 @@ class PlotModel(BaseModel):
         return fig
 
 
+class ManualLimit(BaseModel):
+    lower: float
+    upper: float
+
+
+class SubsetLimit(BaseModel):
+    subset: Tuple[float, float]
+    offset: float
+
+
+class FixedRangeLimit(BaseModel):
+    fixed_range: float
+    center_strategy: Literal["last", "last_percent"]
+    center_fraction: Optional[float] = None
+
+
 class Chart2D(Chart):
     """
     Represents a 2D chart within a report, plotting x and y data.
@@ -780,6 +796,8 @@ class Chart2D(Chart):
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     focus_x: Optional[Tuple[float, float]] = None
+    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
+    ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit]] = None
 
     def get_requirements(self):
         """
@@ -865,6 +883,132 @@ class Chart2D(Chart):
                 y_data[i] = data.values[component]
 
         return x_data, y_data, x_label, y_label
+
+
+    def _handle_xlimits(self) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Make sure that xlim is always passed as a tuple of floats
+        to the plotting tool.
+        """
+        xlim = self.xlim
+        if xlim is None:
+            return None
+
+        if isinstance(xlim, ManualLimit):
+            return (xlim.lower, xlim.upper)
+        else:
+            return xlim
+        # Error handling for when lower < lowest x or upper > highest x?
+        # Do we also support percentage input here?
+
+
+    def _calculate_subset(
+        self, x_series_list, y_series_list, start_frac, end_frac
+    ):
+        all_subset_y = []
+
+        for xs, ys in zip(x_series_list, y_series_list):
+            xs_np = np.array(xs)
+            ys_np = np.array(ys) # Is numpy here because it's faster than searching for len of a list?
+
+            start_idx = int(len(xs_np) * start_frac)
+            end_idx = int(len(xs_np) * end_frac)
+
+            if end_idx > start_idx:
+                subset_y = ys_np[start_idx:end_idx]
+            else:
+                subset_y = ys_np
+
+            if len(subset_y) > 0:
+                all_subset_y.extend(subset_y.tolist())
+
+        return all_subset_y
+
+
+    def _calculate_y_min_max(
+        self, all_subset_y, type: Literal["offset", "center"]
+    ):
+        subset_y_min = float(min(all_subset_y))
+        subset_y_max = float(max(all_subset_y))
+
+        if type == "offset":
+            y_range = subset_y_max - subset_y_min
+            y_min = subset_y_min - self.ylim.offset * y_range
+            y_max = subset_y_max + self.ylim.offset * y_range
+
+        else:
+            y_center = (subset_y_max + subset_y_min) / 2
+            y_min = y_center - 0.5 * self.ylim.fixed_range
+            y_max = y_center + 0.5 * self.ylim.fixed_range
+
+        return (y_min, y_max)
+
+
+    def _calculate_ylimits(
+        self, x_series_list: List[List[float]], y_series_list: List[List[float]]
+    ) -> Tuple[Optional[float], Optional[float]]:
+        ylim = self.ylim
+
+        if ylim is None:
+            return None
+
+        if isinstance(ylim, ManualLimit):
+            return (ylim.lower, ylim.upper)
+
+        elif isinstance(ylim, SubsetLimit):
+            start_frac, end_frac = ylim.subset
+            type = "offset"
+
+            all_subset_y = self._calculate_subset(x_series_list, y_series_list, start_frac, end_frac)
+
+            if not all_subset_y:
+                return (None, None)
+
+            # subset_y_min = float(min(all_subset_y))
+            # subset_y_max = float(max(all_subset_y))
+            # y_range = subset_y_max - subset_y_min
+            # y_min = subset_y_min - offset * y_range
+            # y_max = subset_y_max + offset * y_range
+            # return (y_min, y_max)
+            return self._calculate_y_min_max(all_subset_y, type)
+
+        else:
+            fixed_range = ylim.fixed_range
+            type = "center"
+
+            if ylim.center_strategy == "last":
+                all_last_y = []
+                for ys in y_series_list:
+                    last_y = ys[-1]
+                    all_last_y.append(last_y)
+
+                if not all_last_y:
+                    return (None, None)
+
+                # last_y_min = float(min(all_last_y))
+                # last_y_max = float(max(all_last_y))
+                # last_y_center = (last_y_max + last_y_min) / 2
+                # y_min = last_y_center - 0.5 * fixed_range
+                # y_max = last_y_center + 0.5 * fixed_range
+                # return (y_min, y_max)
+                return self._calculate_y_min_max(all_last_y, type)
+            
+            else:
+                start_frac = 1 - ylim.center_fraction
+                end_frac = 1
+                all_last_percent_y = self._calculate_subset(x_series_list, y_series_list, start_frac, end_frac)
+
+                if not all_last_percent_y:
+                    return (None, None)
+
+                # last_percent_y_min = float(min(all_last_percent_y))
+                # last_percent_y_max = float(max(all_last_percent_y))
+                # last_percent_y_center = (last_percent_y_max + last_percent_y_min) / 2
+                # y_min = last_percent_y_center - 0.5 * fixed_range
+                # y_min = last_percent_y_center + 0.5 * fixed_range
+                # return (y_min, y_max)
+                return self._calculate_y_min_max(all_last_percent_y, type)
+
 
     # pylint: disable=too-many-locals
     def _calculate_focus_y_limits(
@@ -957,6 +1101,8 @@ class Chart2D(Chart):
             legend = [case.name for case in cases]
             style = "-"
 
+        xlim = self._handle_xlimits()
+        ylim = self._calculate_ylimits(x_data, y_data)
         ylim = self._calculate_focus_y_limits(x_data, y_data)
 
         return PlotModel(
@@ -968,7 +1114,7 @@ class Chart2D(Chart):
             style=style,
             is_log=self.is_log_plot(),
             backgroung_png=background_png,
-            xlim=None,
+            xlim=xlim,
             ylim=ylim,
         )
 
