@@ -871,7 +871,7 @@ class VolumeMeshDraftV2(ResourceDraft):
     def _validate_volume_mesh(self):
         if self.file_name is not None:
             try:
-                VolumeMeshFile(value=self.file_name)
+                VolumeMeshFile(file_names=self.file_name)
             except pd.ValidationError as e:
                 raise Flow360FileError(str(e)) from e
 
