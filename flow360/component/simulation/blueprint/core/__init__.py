@@ -26,7 +26,7 @@ from .statements import (
 )
 
 
-def _update_forward_refs() -> None:
+def _model_rebuild() -> None:
     """Update forward references in the correct order."""
     namespace = {
         # Expression types
@@ -52,27 +52,27 @@ def _update_forward_refs() -> None:
     }
 
     # First update expression classes that only depend on ExpressionType
-    BinOp.update_forward_refs(**namespace)
-    RangeCall.update_forward_refs(**namespace)
-    CallModel.update_forward_refs(**namespace)
-    Tuple.update_forward_refs(**namespace)
-    List.update_forward_refs(**namespace)
-    ListComp.update_forward_refs(**namespace)
+    BinOp.model_rebuild(_types_namespace=namespace)
+    RangeCall.model_rebuild(_types_namespace=namespace)
+    CallModel.model_rebuild(_types_namespace=namespace)
+    Tuple.model_rebuild(_types_namespace=namespace)
+    List.model_rebuild(_types_namespace=namespace)
+    ListComp.model_rebuild(_types_namespace=namespace)
 
     # Then update statement classes that depend on both types
-    Assign.update_forward_refs(**namespace)
-    AugAssign.update_forward_refs(**namespace)
-    IfElse.update_forward_refs(**namespace)
-    ForLoop.update_forward_refs(**namespace)
-    Return.update_forward_refs(**namespace)
-    TupleUnpack.update_forward_refs(**namespace)
+    Assign.model_rebuild(_types_namespace=namespace)
+    AugAssign.model_rebuild(_types_namespace=namespace)
+    IfElse.model_rebuild(_types_namespace=namespace)
+    ForLoop.model_rebuild(_types_namespace=namespace)
+    Return.model_rebuild(_types_namespace=namespace)
+    TupleUnpack.model_rebuild(_types_namespace=namespace)
 
     # Finally update Function class
-    Function.update_forward_refs(**namespace)
+    Function.model_rebuild(_types_namespace=namespace)
 
 
 # Update forward references
-_update_forward_refs()
+_model_rebuild()
 
 
 __all__ = [

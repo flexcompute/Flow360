@@ -1,6 +1,6 @@
 from typing import Annotated, Any, Literal, Union
 
-import pydantic.v1 as pd
+import pydantic as pd
 
 from ..utils.whitelisted import get_allowed_callable
 from .context import EvaluationContext

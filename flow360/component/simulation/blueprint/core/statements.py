@@ -1,6 +1,6 @@
 from typing import Annotated, Literal, Union
 
-import pydantic.v1 as pd
+import pydantic as pd
 
 from .context import EvaluationContext, ReturnValue
 from .expressions import ExpressionType

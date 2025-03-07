@@ -1,6 +1,6 @@
 from typing import Any
 
-import pydantic.v1 as pd
+import pydantic as pd
 
 from .context import EvaluationContext, ReturnValue
 from .statements import StatementType

@@ -9,8 +9,15 @@ from flow360.component.simulation.blueprint import expression_to_model
 import pydantic as pd
 
 
+class ExpressionVariable(Flow360BaseModel):
+    name: str = pd.Field(None)
+
+
+
 class ExpressionField(Flow360BaseModel):
     body: str = pd.Field("")
+
+    _ctx: EvaluationContext = pd.PrivateAttr(EvaluationContext())
 
     @pd.model_validator(mode="before")
     def _validate_expression(cls, value):
@@ -30,5 +37,5 @@ class ExpressionField(Flow360BaseModel):
 
     def evaluate(self) -> float:
         expr = expression_to_model(self.body)
-        result = expr.evaluate(EvaluationContext())
+        result = expr.evaluate(self._ctx)
         return result
