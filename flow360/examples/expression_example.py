@@ -4,17 +4,18 @@ from rich import print
 
 import pydantic as pd
 
-from flow360.component.simulation.expressions import ExpressionField
+from flow360.component.simulation.expressions import Flow360Expression, Flow360Variable
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 
 class ExampleModel(Flow360BaseModel):
-    foo: Union[float, ExpressionField] = pd.Field(None)
+    foo: Union[float, Flow360Expression] = pd.Field(None)
 
 
-bar_value = ExampleModel(foo=22)
+x = Flow360Variable(name="x", value=4)
+y = Flow360Variable(name="y", value=2)
 
-bar_expr = ExampleModel(foo="2 * u.cm + 4 * 5 * u.m")
+bar_expr = ExampleModel(foo=x + 2 - (x ** 2) / y)
 
-print(bar_value.foo)
+print(str(bar_expr.foo))
 print(bar_expr.foo.evaluate())
