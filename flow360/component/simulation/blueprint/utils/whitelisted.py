@@ -43,6 +43,18 @@ def _import_flow360(name: str) -> Any:
         return u
 
 
+def _unit_list():
+    import unyt
+
+    unit_symbols = set()
+
+    for key, value in unyt.unit_symbols.__dict__.items():
+        if isinstance(value, (unyt.unyt_quantity, unyt.Unit)):
+            unit_symbols.add(str(value))
+
+    return list(unit_symbols)
+
+
 def _import_utilities(name: str) -> Callable[..., Any]:
     """Import and return a utility callable."""
     from rich import print
@@ -83,7 +95,7 @@ WHITELISTED_CALLABLES = {
     },
     "flow360": {
         "prefix": "u.",
-        "callables": ["m", "cm"]
+        "callables": _unit_list()
     }
 }
 

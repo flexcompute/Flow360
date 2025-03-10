@@ -1,3 +1,6 @@
+from typing import Union
+import re
+
 from pydantic_core import InitErrorDetails
 
 from flow360.component.simulation.blueprint.core import EvaluationContext
@@ -6,12 +9,29 @@ from flow360.component.simulation.blueprint import expression_to_model
 
 import pydantic as pd
 from numbers import Number
+from unyt import Unit, unyt_quantity
 
 _global_ctx: EvaluationContext = EvaluationContext()
 
 
+def _is_number_string(s: str) -> bool:
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
+
+def _split_keep_delimiters(input: str, delimiters: list) -> list:
+    escaped_delimiters = [re.escape(d) for d in delimiters]
+    pattern = f"({'|'.join(escaped_delimiters)})"
+    result = re.split(pattern, input)
+    return [part for part in result if part != ""]
+
+
 def _convert_argument(other):
     parenthesize = False
+    unit_delimiters = ["+", "-", "*", "/", "(", ")"]
     if isinstance(other, Flow360Expression):
         arg = other.body
         parenthesize = True
@@ -19,13 +39,33 @@ def _convert_argument(other):
         arg = other.name
     elif isinstance(other, Number):
         arg = str(other)
+    elif isinstance(other, Unit):
+        unit = str(other)
+        tokens = _split_keep_delimiters(unit, unit_delimiters)
+        arg = ""
+        for token in tokens:
+            if token not in unit_delimiters and not _is_number_string(token):
+                token = f"u.{token}"
+                arg += token
+            else:
+                arg += token
+    elif isinstance(other, unyt_quantity):
+        unit = str(other.units)
+        tokens = _split_keep_delimiters(unit, unit_delimiters)
+        arg = f"{str(other.value)}"
+        for token in tokens:
+            if token not in unit_delimiters and not _is_number_string(token):
+                token = f"u.{token}"
+                arg += token
+            else:
+                arg += token
     else:
         raise ValueError(f"Incompatible argument of type {type(other)}")
     return arg, parenthesize
 
 
 class Flow360Variable:
-    def __init__(self, name: str, value: float):
+    def __init__(self, name: str, value: Union[float, unyt_quantity]):
         self.name = name
         self.value = value
         _global_ctx.set(name, value)
@@ -41,6 +81,7 @@ class Flow360Variable:
         return Flow360Expression(body=f"{self.name} - {str_arg}")
 
     def __mul__(self, other):
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Flow360Expression(body=f"{self.name} * {str_arg}")
