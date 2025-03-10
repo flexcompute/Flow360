@@ -255,7 +255,7 @@ class Fluid(PDEModelBase):
         + ":class:`TransitionModelSolver` documentation.",
     )
 
-    material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid.")
+    material: FluidMaterialTypes = pd.Field(Air(), description="The material property of fluid.")
 
     initial_condition: Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition] = (
         pd.Field(

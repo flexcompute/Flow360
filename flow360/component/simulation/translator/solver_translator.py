@@ -35,6 +35,9 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
+)
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -842,7 +845,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
 
 
 def get_navier_stokes_initial_condition(
-    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution]
+    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution],
 ):
     """Translate the initial condition for NavierStokes"""
     if is_exact_instance(initial_condition, NavierStokesInitialCondition):
@@ -1203,5 +1206,8 @@ def get_solver_json(
             if udd.output_target is not None:
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
+
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        translated["usingWaterAsMaterial"] = True
 
     return translated

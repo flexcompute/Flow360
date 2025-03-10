@@ -16,6 +16,8 @@ from flow360.component.simulation.unit_system import (
 
 from ...exceptions import Flow360ConfigurationError
 
+LIQUID_IMAGINARY_FREESTREAM_MACH = 0.2
+
 
 def get_from_dict_by_key_list(key_list, data_dict):
     """
@@ -138,11 +140,21 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         return base_length
 
     def get_base_temperature():
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            # Temperature in this condition has no effect because the thermal features will be disabled.
+            # Also the viscosity will be constant.
+            # pylint:disable = no-member
+            return 273 * u.K
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_temperature = params.operating_condition.thermal_state.temperature.to("K").v.item()
         return base_temperature
 
     def get_base_velocity():
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            # Provides an imaginary "speed of sound"
+            # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
+            # To ensure incompressible range.
+            return params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
         return base_velocity
@@ -160,6 +172,8 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         return base_angular_velocity
 
     def get_base_density():
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            return params.operating_condition.material.density
         require(["operating_condition", "thermal_state", "density"], required_by, params)
         base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
 
@@ -332,7 +346,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
     else:
         raise ValueError(
-            f"Unit converter: not recognised dimension: {dimension}. Conversion for this dimension is not implemented."
+            f"Unit converter: not recognized dimension: {dimension}. Conversion for this dimension is not implemented."
         )
 
     return flow360_conversion_unit_system.conversion_system
