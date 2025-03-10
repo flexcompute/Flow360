@@ -172,6 +172,7 @@ class _ParamModelBase(Flow360BaseModel):
         """
         Initializes the simulation parameters with the given unit context.
         """
+        kwargs = _ParamModelBase._sanitize_params_dict(kwargs)
         kwargs = self._handle_dict(**kwargs)
         kwargs = self._init_check_unit_system(**kwargs)
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
