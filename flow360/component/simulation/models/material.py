@@ -260,7 +260,7 @@ class Water(MaterialBase):
     type: Literal["water"] = pd.Field("water", frozen=True)
     name: str = pd.Field(frozen=True, description="Custom name of the water with given property.")
     density: Optional[DensityType.Positive] = pd.Field(
-        1 * u.kg / u.m**3, frozen=True, description="Density of the water."
+        1000 * u.kg / u.m**3, frozen=True, description="Density of the water."
     )
     dynamic_viscosity: ViscosityType.NonNegative = pd.Field(
         0.001002 * u.kg / u.m / u.s, frozen=True, description="Dynamic viscosity of the water."

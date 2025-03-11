@@ -154,7 +154,14 @@ def unit_converter(dimension, params, required_by: List[str] = None):
             # Provides an imaginary "speed of sound"
             # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
             # To ensure incompressible range.
-            return params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+            if params.operating_condition.velocity_magnitude.value != 0:
+                return (
+                    params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+                )
+            return (
+                params.operating_condition.reference_velocity_magnitude
+                / LIQUID_IMAGINARY_FREESTREAM_MACH
+            )
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
         return base_velocity
