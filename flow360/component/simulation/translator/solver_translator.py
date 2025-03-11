@@ -37,7 +37,6 @@ from flow360.component.simulation.models.volume_models import (
     Solid,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
-    AerospaceCondition,
     LiquidOperatingCondition,
 )
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
