@@ -1207,7 +1207,8 @@ def get_solver_json(
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
-    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
-        translated["usingWaterAsMaterial"] = True
+    translated["usingWaterAsMaterial"] = isinstance(
+        input_params.operating_condition, LiquidOperatingCondition
+    )
 
     return translated

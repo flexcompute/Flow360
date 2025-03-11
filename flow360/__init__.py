@@ -91,6 +91,7 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
+    LiquidOperatingCondition,
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
@@ -171,7 +172,7 @@ __all__ = [
     "GeometryEntityInfo",
     "AerospaceCondition",
     "ThermalState",
-    "Steady",
+    "LiquidOperatingCondition" "Steady",
     "Unsteady",
     "RampCFL",
     "AdaptiveCFL",
