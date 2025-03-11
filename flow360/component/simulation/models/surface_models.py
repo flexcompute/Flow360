@@ -36,6 +36,9 @@ from flow360.component.simulation.unit_system import (
     PressureType,
 )
 from flow360.component.simulation.utils import is_instance_of_type_in_union
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
@@ -337,6 +340,17 @@ class Wall(BoundaryBase):
                 f"Using `{type(self.velocity).__name__}` with wall function is not supported currently."
             )
         return self
+
+    @pd.field_validator("heat_spec", mode="after")
+    @classmethod
+    def _ensure_adiabatic_wall_for_liquid(cls, value):
+        """Only allow adiabatic wall when liquid operating condition is used"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+        if isinstance(value, HeatFlux) and value.value == 0 * u.W / u.m**2:
+            return value
+        raise ValueError("Only adiabatic wall is allowed when using liquid as simulation material.")
 
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):

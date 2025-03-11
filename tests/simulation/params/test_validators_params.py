@@ -24,6 +24,7 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    HeatFlux,
     Periodic,
     SlaterPorousBleed,
     SlipWall,
@@ -41,6 +42,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    LiquidOperatingCondition,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
@@ -1128,3 +1130,42 @@ def test_deleted_surfaces():
         " be deleted after mesh generation. Therefore it cannot be used."
     )
     assert errors[0]["loc"] == ("models", 2, "entity_pairs")
+
+
+def test_validate_liquid_operating_condition():
+    with open("./data/geometry_metadata_asset_cache.json") as fp:
+        asset_cache = AssetCache(**json.load(fp))
+    all_boundaries: list[Surface] = asset_cache.project_entity_info.get_boundaries()
+    with u.SI_unit_system:
+        porous_zone = GenericVolume(name="zone_with_no_axes")
+        porous_zone.axes = [[0, 1, 0], [0, 0, 1]]
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                PorousMedium(
+                    volumes=[porous_zone],
+                    darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
+                    forchheimer_coefficient=(0.1, 2, 1.0) / u.ft,
+                    volumetric_heat_source=123 * u.lb / u.s**3 / u.ft,
+                ),
+                Wall(heat_spec=HeatFlux(value=10 * u.W / u.m**2), surfaces=all_boundaries),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+    print(errors)
+
+    assert len(errors) == 2
+    assert (
+        errors[0]["msg"]
+        == "Value error, `volumetric_heat_source` cannot be setup under `PorousMedium` when using liquid as simulation material."
+    )
+    assert (
+        errors[1]["msg"]
+        == "Value error, Only adiabatic wall is allowed when using liquid as simulation material."
+    )

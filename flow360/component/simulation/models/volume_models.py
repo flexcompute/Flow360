@@ -58,6 +58,9 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
 )
@@ -1226,6 +1229,22 @@ class PorousMedium(Flow360BaseModel):
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."
                 )
+        return value
+
+    @pd.field_validator("volumetric_heat_source", mode="after")
+    @classmethod
+    def _validate_volumetric_heat_source_for_liquid(
+        cls, value: Optional[Union[StringExpression, HeatSourceType]]
+    ):
+        """Disable the volumetric_heat_source when liquid operating condition is used"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+        if value is not None:
+            raise ValueError(
+                "`volumetric_heat_source` cannot be setup under `PorousMedium` when using "
+                "liquid as simulation material."
+            )
         return value
 
 
