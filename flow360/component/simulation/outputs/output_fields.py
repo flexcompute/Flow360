@@ -127,6 +127,22 @@ IsoSurfaceFieldNames = Literal[
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
 
+InvalidOutputFieldsForLiquid = Literal[
+    "residualNavierStokes",
+    "residualTransition",
+    "residualTurbulence",
+    "solutionNavierStokes",
+    "T",
+    "linearResidualNavierStokes",
+    "linearResidualTurbulence",
+    "linearResidualTransition",
+    "SpalartAllmaras_DDES",
+    "kOmegaSST_DDES",
+    "heatFlux",
+    "heatTransferCoefficientStaticTemperature",
+    "heatTransferCoefficientTotalTemperature",
+]
+
 
 def _get_field_values(field_type, names):
     for arg in get_args(field_type):

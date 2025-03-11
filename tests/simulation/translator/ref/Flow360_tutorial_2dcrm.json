@@ -103,5 +103,6 @@
             "type": "Freestream"
         }
     },
-    "userDefinedFields": []
+    "userDefinedFields": [],
+    "usingWaterAsMaterial": false
 }

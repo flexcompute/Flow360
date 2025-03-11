@@ -115,5 +115,6 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "userDefinedFields": []
+    "userDefinedFields": [],
+    "usingWaterAsMaterial": false
 }

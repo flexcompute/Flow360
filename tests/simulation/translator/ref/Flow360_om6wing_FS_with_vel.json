@@ -184,5 +184,6 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[]
+    "userDefinedFields":[],
+    "usingWaterAsMaterial": false
 }

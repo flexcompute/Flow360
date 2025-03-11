@@ -94,5 +94,6 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
     },
-    "userDefinedFields":[]
+    "userDefinedFields":[],
+    "usingWaterAsMaterial": false
 }

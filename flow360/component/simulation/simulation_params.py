@@ -80,6 +80,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_parent_volume_is_rotating,
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
+    _check_valid_boundary_condition_for_liquid,
 )
 from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
@@ -366,6 +367,12 @@ class SimulationParams(_ParamModelBase):
     def check_parent_volume_is_rotating(cls, models):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
         return _check_parent_volume_is_rotating(models)
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_valid_boundary_condition_for_liquid(cls, models):
+        """Ensure that all the boundary conditions used are valid."""
+        return _check_valid_boundary_condition_for_liquid(models)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod

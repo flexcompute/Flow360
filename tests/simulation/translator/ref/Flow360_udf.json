@@ -86,5 +86,6 @@
             "name": "CpT",
             "expression": "C-p*T"
         }
-    ]
+    ],
+    "usingWaterAsMaterial": false
 }

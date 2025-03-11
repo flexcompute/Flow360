@@ -5,7 +5,7 @@ Caveats:
 2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -21,6 +21,7 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.output_fields import (
     CommonFieldNames,
+    InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
@@ -32,6 +33,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -78,7 +82,24 @@ class UserDefinedField(Flow360BaseModel):
     )
 
 
-class _AnimationSettings(Flow360BaseModel):
+class _OutputBase(Flow360BaseModel):
+    output_fields: UniqueItemList[str] = pd.Field()
+
+    @pd.field_validator("output_fields", mode="after")
+    @classmethod
+    def _validate_non_liquid_output_fields(cls, value: UniqueItemList):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+        for output_item in value.items:
+            if output_item in get_args(InvalidOutputFieldsForLiquid):
+                raise ValueError(
+                    f"Output field {output_item} cannot be selected when using liquid as simulation material. "
+                )
+        return value
+
+
+class _AnimationSettings(_OutputBase):
     """
     Controls how frequently the output files are generated.
     """
@@ -379,7 +400,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
-class SurfaceIntegralOutput(Flow360BaseModel):
+class SurfaceIntegralOutput(_OutputBase):
     """
 
     :class:`SurfaceIntegralOutput` class for surface integral output settings.
@@ -421,7 +442,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
 
-class ProbeOutput(Flow360BaseModel):
+class ProbeOutput(_OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points.
 
@@ -480,7 +501,7 @@ class ProbeOutput(Flow360BaseModel):
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
-class SurfaceProbeOutput(Flow360BaseModel):
+class SurfaceProbeOutput(_OutputBase):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`

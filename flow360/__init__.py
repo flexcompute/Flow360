@@ -33,7 +33,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
+from flow360.component.simulation.models.material import (
+    Air,
+    SolidMaterial,
+    Sutherland,
+    Water,
+)
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
     HeatEquationSolver,
@@ -255,4 +260,5 @@ __all__ = [
     "SurfaceSliceOutput",
     "SlaterPorousBleed",
     "migration",
+    "Water",
 ]
