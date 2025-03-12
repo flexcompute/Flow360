@@ -995,7 +995,7 @@ class Chart2D(Chart):
 
         return all_subset_y
 
-    def _calculate_y_min_max(self, all_subset_y, type: Literal["offset", "center"]):
+    def _calculate_y_min_max(self, all_subset_y, type: Literal["SubsetLimit", "FixedRangeLimit"]):
         """
         Given a subset of data and ylim type,
         calculate min and max y values.
@@ -1003,7 +1003,7 @@ class Chart2D(Chart):
         subset_y_min = float(min(all_subset_y))
         subset_y_max = float(max(all_subset_y))
 
-        if type == "offset":
+        if type == "SubsetLimit":
             y_range = subset_y_max - subset_y_min
             y_min = subset_y_min - self.ylim.offset * y_range
             y_max = subset_y_max + self.ylim.offset * y_range
@@ -1034,7 +1034,7 @@ class Chart2D(Chart):
 
         elif isinstance(ylim, SubsetLimit):
             start_frac, end_frac = ylim.subset
-            type = "offset"
+            type = ylim.type_name
 
             all_subset_y = self._calculate_subset(
                 x_series_list, y_series_list, start_frac, end_frac
@@ -1046,7 +1046,7 @@ class Chart2D(Chart):
             return self._calculate_y_min_max(all_subset_y, type)
 
         else:
-            type = "center"
+            type = ylim.type_name
 
             if ylim.center_strategy == "last":
                 all_last_y = []
