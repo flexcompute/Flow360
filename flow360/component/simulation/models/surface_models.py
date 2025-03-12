@@ -419,10 +419,15 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         if validation_info is None or validation_info.using_water_as_material is False:
             return value
 
-        if isinstance(
-            value, (StringExpression, Tuple[StringExpression, StringExpression, StringExpression])
-        ):
-            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        if isinstance(value, tuple):
+            if (
+                isinstance(value[0], str)
+                and isinstance(value[1], str)
+                and isinstance(value[2], str)
+            ):
+                raise ValueError(
+                    "Expression cannot be used when using liquid as simulation material."
+                )
         return value
 
 
