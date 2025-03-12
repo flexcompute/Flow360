@@ -429,13 +429,13 @@ def test_simulation_params_unit_conversion_with_liquid_condition(
     assertions.assertAlmostEqual(
         converted.models[2].spec.value.value,
         0.45 / fake_water_speed_of_sound.value,
-        # Note: We did not get original value from params like the others b.c
-        # for some unknown reason THIS value in params will also become in flow360 unit system...
+        # Note: We did not use original value from params like the others b.c
+        # for some unknown reason THIS value in params will also converted to flow360 unit system...
     )
     # ViscosityType
     assertions.assertAlmostEqual(
         converted.models[3].turbulence_quantities.modified_turbulent_viscosity.value,
         10 / (1000 * fake_water_speed_of_sound.value),
-        # Note: We did not get original value from params like the others b.c
-        # for some unknown reason THIS value in params will also become in flow360 unit system...
+        # Note: We did not use original value from params like the others b.c
+        # for some unknown reason THIS value in params will also converted to flow360 unit system...
     )

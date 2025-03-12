@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Tuple, Union
+from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
 
