@@ -135,7 +135,7 @@ class _ParamModelBase(Flow360BaseModel):
     def _update_param_dict(cls, model_dict, version_to=__version__):
         """
         1. Find the version from the input dict.
-        2. Update the input dict to `version_to` which by default update to current version.
+        2. Update the input dict to `version_to` which by default is the current version.
         """
         version = model_dict.get("version", None)
         if version is None:
