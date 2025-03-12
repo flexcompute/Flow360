@@ -660,7 +660,7 @@ def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"
 
 def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):
     """
-    Run the SimulationParams' updated to update to specified version.
+    Run the SimulationParams' updater to update to specified version.
     """
     errors = []
     updated_params_as_dict: dict = None
