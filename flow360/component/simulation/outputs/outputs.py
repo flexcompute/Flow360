@@ -94,7 +94,7 @@ class _OutputBase(Flow360BaseModel):
         for output_item in value.items:
             if output_item in get_args(InvalidOutputFieldsForLiquid):
                 raise ValueError(
-                    f"Output field {output_item} cannot be selected when using liquid as simulation material. "
+                    f"Output field {output_item} cannot be selected when using liquid as simulation material."
                 )
         return value
 

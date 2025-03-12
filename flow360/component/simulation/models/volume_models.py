@@ -132,7 +132,7 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
     """
-    :class:`ExpressionInitialCondition` class for specifying the intial conditions of
+    :class:`ExpressionInitialCondition` class for specifying the initial conditions of
     :py:attr:`Fluid.initial_condition`.
     """
 
@@ -175,6 +175,17 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     v: StringExpression = pd.Field("v", description="Y-direction velocity")
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
+
+    @pd.field_validator("rho", "u", "v", "w", "p", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+
+        if value != cls.model_fields[info.field_name].get_default():
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -1136,6 +1147,17 @@ class Rotation(Flow360BaseModel):
         + "to be used for the rotation model. Steady state simulation requires this flag "
         + "to be True for all rotation models.",
     )
+
+    @pd.field_validator("spec", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+
+        if isinstance(value, AngleExpression):
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
 
     @pd.field_validator("entities", mode="after")
     @classmethod

@@ -447,7 +447,7 @@ def _check_time_average_output(params):
     return params
 
 
-def _check_valid_boundary_condition_for_liquid(models):
+def _check_valid_models_for_liquid(models):
     if not models:
         return models
     validation_info = get_validation_info()

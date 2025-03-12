@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
@@ -352,6 +352,24 @@ class Wall(BoundaryBase):
             return value
         raise ValueError("Only adiabatic wall is allowed when using liquid as simulation material.")
 
+    @pd.field_validator("velocity", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+
+        if isinstance(value, tuple):
+            if (
+                isinstance(value[0], str)
+                and isinstance(value[1], str)
+                and isinstance(value[2], str)
+            ):
+                raise ValueError(
+                    "Expression cannot be used when using liquid as simulation material."
+                )
+        return value
+
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
     """
@@ -393,6 +411,19 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         alias="surfaces",
         description="List of boundaries with the `Freestream` boundary condition imposed.",
     )
+
+    @pd.field_validator("velocity", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+
+        if isinstance(
+            value, (StringExpression, Tuple[StringExpression, StringExpression, StringExpression])
+        ):
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
 
 
 class Outflow(BoundaryBase):

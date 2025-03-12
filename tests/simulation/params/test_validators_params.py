@@ -25,7 +25,9 @@ from flow360.component.simulation.models.solver_numerics import (
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     HeatFlux,
+    Outflow,
     Periodic,
+    Pressure,
     SlaterPorousBleed,
     SlipWall,
     Translational,
@@ -1142,14 +1144,25 @@ def test_validate_liquid_operating_condition():
         params = SimulationParams(
             operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
             models=[
+                Fluid(
+                    initial_condition=NavierStokesInitialCondition(
+                        rho="1;",
+                    )
+                ),
                 PorousMedium(
                     volumes=[porous_zone],
                     darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
                     forchheimer_coefficient=(0.1, 2, 1.0) / u.ft,
                     volumetric_heat_source=123 * u.lb / u.s**3 / u.ft,
                 ),
-                Wall(heat_spec=HeatFlux(value=10 * u.W / u.m**2), surfaces=all_boundaries),
+                Wall(
+                    heat_spec=HeatFlux(value=10 * u.W / u.m**2),
+                    surfaces=all_boundaries[0:-1],
+                    velocity=["1", "2", "2"],
+                ),
+                Outflow(entities=all_boundaries[-1], spec=Pressure(value=1.01e6 * u.Pa)),
             ],
+            outputs=[VolumeOutput(output_fields=["T"])],
             private_attribute_asset_cache=asset_cache,
         )
 
@@ -1160,12 +1173,26 @@ def test_validate_liquid_operating_condition():
     )
     print(errors)
 
-    assert len(errors) == 2
+    assert len(errors) == 5
     assert (
         errors[0]["msg"]
+        == "Value error, Expression cannot be used when using liquid as simulation material."
+    )
+    assert errors[0]["loc"] == ("models", 0, "initial_condition", "rho")
+    assert (
+        errors[1]["msg"]
         == "Value error, `volumetric_heat_source` cannot be setup under `PorousMedium` when using liquid as simulation material."
     )
     assert (
-        errors[1]["msg"]
+        errors[2]["msg"]
+        == "Value error, Expression cannot be used when using liquid as simulation material."
+    )
+    assert errors[2]["loc"] == ("models", 2, "velocity")
+    assert (
+        errors[3]["msg"]
         == "Value error, Only adiabatic wall is allowed when using liquid as simulation material."
+    )
+    assert (
+        errors[4]["msg"]
+        == "Value error, Output field T cannot be selected when using liquid as simulation material."
     )

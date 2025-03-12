@@ -80,7 +80,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_parent_volume_is_rotating,
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
-    _check_valid_boundary_condition_for_liquid,
+    _check_valid_models_for_liquid,
 )
 from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
@@ -97,6 +97,7 @@ from .validation.validation_context import (
     CaseField,
     ConditionalField,
     context_validator,
+    get_validation_info,
 )
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
@@ -370,9 +371,22 @@ class SimulationParams(_ParamModelBase):
 
     @pd.field_validator("models", mode="after")
     @classmethod
-    def check_valid_boundary_condition_for_liquid(cls, models):
+    def check_valid_models_for_liquid(cls, models):
         """Ensure that all the boundary conditions used are valid."""
-        return _check_valid_boundary_condition_for_liquid(models)
+        return _check_valid_models_for_liquid(models)
+
+    @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        """Ensure that string expressions are disabled for liquid simulation."""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_water_as_material is False:
+            return value
+        if value:
+            raise ValueError(
+                f"{info.field_name} cannot be used when using liquid as simulation material."
+            )
+        return value
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
