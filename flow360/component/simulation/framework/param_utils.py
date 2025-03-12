@@ -31,6 +31,13 @@ class AssetCache(Flow360BaseModel):
     project_entity_info: Optional[
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")
+    use_inhouse_mesher: bool = pd.Field(
+        False,
+        description="Flag whether user requested the use of inhouse surface and volume mesher.",
+    )
+    use_geometry_AI: bool = pd.Field(
+        False, description="Flag whether user requested the use of GAI."
+    )
 
     @property
     def boundaries(self):

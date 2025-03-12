@@ -296,6 +296,8 @@
   "project_length_unit": {
     "value": 1.0,
     "units": "m"
-  }
+  },
+  "use_inhouse_mesher": false,
+  "use_geometry_AI": false
 }
 }
