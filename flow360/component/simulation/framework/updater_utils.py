@@ -5,6 +5,8 @@ from numbers import Number
 
 import numpy as np
 
+PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
+
 
 def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     """Check two dictionaries are same or not"""
@@ -71,7 +73,7 @@ class Flow360Version:
         Each of major, minor, patch should be numeric.
         """
         # Match three groups of digits separated by dots
-        match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$", version.strip())
+        match = re.match(PYTHON_API_VERSION_REGEXP, version.strip())
         if not match:
             raise ValueError(f"Invalid version string: {version}")
 
