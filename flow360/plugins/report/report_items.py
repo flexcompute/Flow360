@@ -785,6 +785,7 @@ class SubsetLimit(BaseModel):
 
     @pd.model_validator(mode="after")
     def check_subset_values(self):
+        """Ensure that correct subset values are provided."""
         lower, upper = self.subset
         if not 0 <= lower < 1 or not 0 < upper <= 1:
             raise ValueError("Subset values need to be between 0 and 1 (inclusive).")
@@ -823,6 +824,7 @@ class FixedRangeLimit(BaseModel):
 
     @pd.model_validator(mode="after")
     def check_center_fraction(self):
+        """Ensure that correct center fraction value is provided."""
         if self.center_strategy == "last_percent" and not 0 < self.center_fraction < 1:
             raise ValueError("Center fraction value needs to be between 0 and 1 (exclusive).")
         return self
@@ -968,8 +970,8 @@ class Chart2D(Chart):
 
         if isinstance(xlim, ManualLimit):
             return (xlim.lower, xlim.upper)
-        else:
-            return xlim
+
+        return xlim
 
     def _calculate_subset(self, x_series_list, y_series_list, start_frac, end_frac):
         """
@@ -995,7 +997,9 @@ class Chart2D(Chart):
 
         return all_subset_y
 
-    def _calculate_y_min_max(self, all_subset_y, type: Literal["SubsetLimit", "FixedRangeLimit"]):
+    def _calculate_y_min_max(
+        self, all_subset_y, type_name: Literal["SubsetLimit", "FixedRangeLimit"]
+    ):
         """
         Given a subset of data and ylim type,
         calculate min and max y values.
@@ -1003,7 +1007,7 @@ class Chart2D(Chart):
         subset_y_min = float(min(all_subset_y))
         subset_y_max = float(max(all_subset_y))
 
-        if type == "SubsetLimit":
+        if type_name == "SubsetLimit":
             y_range = subset_y_max - subset_y_min
             y_min = subset_y_min - self.ylim.offset * y_range
             y_max = subset_y_max + self.ylim.offset * y_range
@@ -1015,6 +1019,7 @@ class Chart2D(Chart):
 
         return (y_min, y_max)
 
+    # pylint: disable=too-many-return-statements
     def _calculate_ylimits(
         self, x_series_list: List[List[float]], y_series_list: List[List[float]]
     ) -> Tuple[Optional[float], Optional[float]]:
@@ -1029,12 +1034,12 @@ class Chart2D(Chart):
         if isinstance(ylim, Tuple):
             return ylim
 
-        elif isinstance(ylim, ManualLimit):
+        if isinstance(ylim, ManualLimit):
             return (ylim.lower, ylim.upper)
 
-        elif isinstance(ylim, SubsetLimit):
+        if isinstance(ylim, SubsetLimit):
             start_frac, end_frac = ylim.subset
-            type = ylim.type_name
+            type_name = ylim.type_name
 
             all_subset_y = self._calculate_subset(
                 x_series_list, y_series_list, start_frac, end_frac
@@ -1045,31 +1050,29 @@ class Chart2D(Chart):
 
             return self._calculate_y_min_max(all_subset_y, type)
 
-        else:
-            type = ylim.type_name
+        type_name = ylim.type_name
 
-            if ylim.center_strategy == "last":
-                all_last_y = []
-                for ys in y_series_list:
-                    last_y = ys[-1]
-                    all_last_y.append(last_y)
+        if ylim.center_strategy == "last":
+            all_last_y = []
+            for ys in y_series_list:
+                last_y = ys[-1]
+                all_last_y.append(last_y)
 
-                if not all_last_y:
-                    return (None, None)
+            if not all_last_y:
+                return (None, None)
 
-                return self._calculate_y_min_max(all_last_y, type)
+            return self._calculate_y_min_max(all_last_y, type_name)
 
-            else:
-                start_frac = 1 - ylim.center_fraction
-                end_frac = 1
-                all_last_percent_y = self._calculate_subset(
-                    x_series_list, y_series_list, start_frac, end_frac
-                )
+        start_frac = 1 - ylim.center_fraction
+        end_frac = 1
+        all_last_percent_y = self._calculate_subset(
+            x_series_list, y_series_list, start_frac, end_frac
+        )
 
-                if not all_last_percent_y:
-                    return (None, None)
+        if not all_last_percent_y:
+            return (None, None)
 
-                return self._calculate_y_min_max(all_last_percent_y, type)
+        return self._calculate_y_min_max(all_last_percent_y, type_name)
 
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
