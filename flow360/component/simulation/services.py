@@ -59,7 +59,7 @@ from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
 )
-from flow360.exceptions import Flow360TranslationError
+from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -660,11 +660,12 @@ def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"
 
 def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):
     """
-    Run the SimulationParams.
+    Run the SimulationParams' updated to update to specified version.
     """
     errors = []
     updated_params_as_dict: dict = None
     try:
+        # pylint:disable = protected-access
         updated_params_as_dict = SimulationParams._update_param_dict(
             params_as_dict, target_python_api_version
         )
