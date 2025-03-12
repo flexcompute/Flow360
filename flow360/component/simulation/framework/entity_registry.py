@@ -193,6 +193,27 @@ class EntityRegistry(Flow360BaseModel):
 
         self.register(new_entity)
 
+    def find_by_asset_id(self, *, entity: EntityBase):
+        """
+        Find the entity with matching asset id and the same entity bucket as the input entity.
+        Return None if no such entity is found.
+        """
+        bucket = self.get_bucket(by_type=entity)
+        matched_entities = [
+            item
+            for item in bucket.entities
+            if item.private_attribute_id == entity.private_attribute_id
+        ]
+
+        if len(matched_entities) > 1:
+            raise ValueError(
+                f"[INTERNAL] Multiple entities with the same asset id ({entity.private_attribute_id}) found."
+                " Data is likely corrupted."
+            )
+        if len(matched_entities) == 0:
+            return None
+        return matched_entities[0]
+
     @property
     def is_empty(self):
         """Return True if the registry is empty, False otherwise."""
