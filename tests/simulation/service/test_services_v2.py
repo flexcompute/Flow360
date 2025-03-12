@@ -36,6 +36,7 @@ def test_validate_service():
                         "name": "automated_farfied_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
+                    "_id": "137854c4-dea1-47a4-b352-b545ffb0b85c",
                 }
             ],
         },
@@ -51,6 +52,7 @@ def test_validate_service():
         },
         "models": [
             {
+                "_id": "09435427-c2dd-4535-935c-b131ab7d1a5b",
                 "type": "Wall",
                 "entities": {
                     "stored_entities": [
@@ -60,6 +62,7 @@ def test_validate_service():
                             "name": "Mysurface",
                             "private_attribute_is_interface": False,
                             "private_attribute_sub_components": [],
+                            "_id": "Mysurface",
                         }
                     ]
                 },
@@ -83,6 +86,7 @@ def test_validate_service():
                         "private_attribute_is_interface": False,
                         "private_attribute_tag_key": None,
                         "private_attribute_sub_components": [],
+                        "_id": "Mysurface",
                     }
                 ],
             },
