@@ -741,7 +741,7 @@ def test_imperial_unit_system_conversion():
     # General comparison\
     with open("./ref/unit_system_converted_imperial.json", "r") as fp:
         ref_dict = json.load(fp)
-    compare_values(dict_to_convert, ref_dict)
+    assert compare_values(dict_to_convert, ref_dict)
 
 
 def test_CGS_unit_system_conversion():
@@ -769,7 +769,7 @@ def test_CGS_unit_system_conversion():
     # General comparison
     with open("./ref/unit_system_converted_CGS.json", "r") as fp:
         ref_dict = json.load(fp)
-    compare_values(dict_to_convert, ref_dict)
+    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
 
 
 def test_SI_unit_system_conversion():
@@ -797,4 +797,28 @@ def test_SI_unit_system_conversion():
     # General comparison
     with open("./ref/unit_system_converted_SI.json", "r") as fp:
         ref_dict = json.load(fp)
-    compare_values(dict_to_convert, ref_dict)
+    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
+
+
+def test_updater_service():
+    with open("data/updater_should_pass.json", "r") as fp:
+        dict_to_update = json.load(fp)
+    updated_params_as_dict, errors = services.update_simulation_json(
+        params_as_dict=dict_to_update, target_python_api_version="24.11.11"
+    )
+
+    with open("ref/updater_to_24_11_11.json", "r") as fp:
+        ref_dict = json.load(fp)
+    assert compare_values(updated_params_as_dict, ref_dict)
+    assert not errors
+
+    # ============#
+    dict_to_update["version"] = "999.999.999"
+    updated_params_as_dict, errors = services.update_simulation_json(
+        params_as_dict=dict_to_update, target_python_api_version="24.11.11"
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]
+        == "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
+    )
