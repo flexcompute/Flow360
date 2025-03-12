@@ -123,19 +123,17 @@ class _ParamModelBase(Flow360BaseModel):
         return kwargs
 
     @classmethod
-    def _update_param_dict(cls, model_dict):
+    def _update_param_dict(cls, model_dict, version_to=__version__):
         """
         1. Find the version from the input dict.
-        2. Update the input dict to __version__.
+        2. Update the input dict to `version_to` which by default is the current version.
         """
         version = model_dict.get("version", None)
         if version is None:
-            raise Flow360RuntimeError(
-                "Missing version info in file content, please check the input file."
-            )
-        if version != __version__:
+            raise Flow360RuntimeError("Failed to find SimulationParams version from the input.")
+        if version != version_to:
             model_dict = updater(
-                version_from=version, version_to=__version__, params_as_dict=model_dict
+                version_from=version, version_to=version_to, params_as_dict=model_dict
             )
         return model_dict
 
