@@ -1,5 +1,5 @@
 {
-    "version": "25.2.2",
+    "version": "24.11.11",
     "unit_system": {
         "name": "SI"
     },
@@ -140,6 +140,7 @@
                     "max_iterations": 20
                 },
                 "CFL_multiplier": 2,
+                "grid_size_for_LES": "maxEdgeLength",
                 "reconstruction_gradient_limiter": 0.5,
                 "modeling_constants": {
                     "C_DES": 0.72,
@@ -150,6 +151,7 @@
                 "type_name": "SpalartAllmaras",
                 "absolute_tolerance": 1e-08,
                 "relative_tolerance": 0,
+                "DDES": false,
                 "quadratic_constitutive_relation": false
             },
             "transition_model_solver": {
