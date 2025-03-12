@@ -769,7 +769,7 @@ def test_CGS_unit_system_conversion():
     # General comparison
     with open("./ref/unit_system_converted_CGS.json", "r") as fp:
         ref_dict = json.load(fp)
-    assert compare_values(dict_to_convert, ref_dict)
+    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
 
 
 def test_SI_unit_system_conversion():
@@ -797,7 +797,7 @@ def test_SI_unit_system_conversion():
     # General comparison
     with open("./ref/unit_system_converted_SI.json", "r") as fp:
         ref_dict = json.load(fp)
-    compare_values(dict_to_convert, ref_dict)
+    assert compare_values(dict_to_convert, ref_dict)
 
 
 def test_updater_service():
