@@ -750,8 +750,6 @@ class ManualLimit(BaseModel):
         Absolute value of the lower limit of an axis.
     upper : float
         Absolute value of the upper limit of an axis.
-    type_name : Literal["ManualLimit"], default="ManualLimit"
-        Specifies the type of report item as "ManualLimit"; this field is immutable.
     """
 
     lower: float
@@ -772,11 +770,9 @@ class SubsetLimit(BaseModel):
         of the subset of values that will be used to calculate the ylim.
     offset : float
         "Padding" that will be added to the top and bottom of the charts y_range.
-        It scales with with calculated rangeof y values.
+        It scales with with calculated range of y values.
         For example, if range of y value is 10, an offset=0.3 will "expand" the range
         by 0.3*10 on both sides, resulting in a final range of y values equal to 16.
-    type_name : Literal["SubsetLimit"], default="SubsetLimit"
-        Specifies the type of report item as "SubsetLimit"; this field is immutable.
     """
 
     subset: Tuple[pd.NonNegativeFloat, pd.NonNegativeFloat]
@@ -813,12 +809,10 @@ class FixedRangeLimit(BaseModel):
         Used alongside center_strategy="last_percent", describes values
         that will be taken into account for calculating ylim.
         For example, center_fraction=0.3 means that the last 30% of data will be used.
-    type_name : Literal["FixedRangeLimit"], default="FixedRangeLimit"
-        Specifies the type of report item as "FixedRangeLimit"; this field is immutable.
     """
 
     fixed_range: float
-    center_strategy: Literal["last", "last_percent"]
+    center_strategy: Literal["last", "last_percent"] = Field("last")
     center_fraction: Optional[pd.PositiveFloat] = None
     type_name: Literal["FixedRangeLimit"] = Field("FixedRangeLimit", frozen=True)
 
@@ -852,14 +846,11 @@ class Chart2D(Chart):
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
-    focus_x : Optional[Tuple[float, float]]
-        A tuple defining a fractional focus range along the x-axis for y-limit
-        adjustments. For example, `focus_x = (0.5, 1.0)` will consider the
-        subset of data corresponding to the top 50% to 100% range of x-values.
-        The y-limits of the chart will be determined based on this data subset:
-        the minimum and maximum y-values in this range will be found, then a
-        25% margin is added above and below. This adjusted y-limit helps to
-        highlight the specified portion of the chart.
+    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
+        Defines the range of x values that will be displayed on the chart.
+    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
+        Defines the range of y values that will be displayed on the chart.
+        This helps with highlighting a desired portion of the chart.
     """
 
     x: Union[str, Delta, DataItem]
@@ -870,7 +861,10 @@ class Chart2D(Chart):
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
-    focus_x: Optional[Tuple[float, float]] = None
+    focus_x: Optional[Tuple[float, float]] = Field(
+        None,
+        description="Deprecated field. Use ylim=SubsetLimit(subset=(float, float), offset=0.25) instead.",
+    )
     xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
 
@@ -894,6 +888,18 @@ class Chart2D(Chart):
         return root_path.startswith("nonlinear_residuals") or root_path.startswith(
             "linear_residuals"
         )
+
+    # pylint: disable=unpacking-non-sequence
+    @pd.model_validator(mode="after")
+    def _handle_deprecated_focus_x(self):
+        """Ensures that scripts containing deprecated focus_x will still work."""
+        if self.focus_x is not None:
+            if self.ylim is not None:
+                raise ValueError("Fields ylim and focus_x cannot be used together.")
+            lower, upper = self.focus_x
+            self.focus_x = None
+            self.ylim = SubsetLimit(subset=(lower, upper), offset=0.25)
+        return self
 
     def _check_dimensions_consistency(self, data):
         if any(isinstance(d, unyt.unyt_array) for d in data):
@@ -1012,12 +1018,12 @@ class Chart2D(Chart):
             y_min = subset_y_min - self.ylim.offset * y_range
             y_max = subset_y_max + self.ylim.offset * y_range
 
-        elif type_name == "FixedRangeLimit" :
+        elif type_name == "FixedRangeLimit":
             y_center = (subset_y_max + subset_y_min) / 2
             y_min = y_center - 0.5 * self.ylim.fixed_range
             y_max = y_center + 0.5 * self.ylim.fixed_range
         else:
-            raise ValueError(f'Unknown type_name: {type_name}.')
+            raise ValueError(f"Unknown type_name: {type_name}.")
 
         return (y_min, y_max)
 
@@ -1051,30 +1057,23 @@ class Chart2D(Chart):
             y_range = self._calculate_y_min_max(all_subset_y, ylim.type_name)
 
         else:
-            type_name = ylim.type_name
-
             if ylim.center_strategy == "last":
                 all_last_y = []
                 for ys in y_series_list:
                     last_y = ys[-1]
                     all_last_y.append(last_y)
 
-                if not all_last_y:
-                    return (None, None)
-
-                y_range = self._calculate_y_min_max(all_last_y, type_name)
-
             else:
                 start_frac = 1 - ylim.center_fraction
                 end_frac = 1
-                all_last_percent_y = self._calculate_subset(
+                all_last_y = self._calculate_subset(
                     x_series_list, y_series_list, start_frac, end_frac
                 )
 
-                if not all_last_percent_y:
-                    return (None, None)
+            if not all_last_y:
+                return (None, None)
 
-                y_range = self._calculate_y_min_max(all_last_percent_y, type_name)
+            y_range = self._calculate_y_min_max(all_last_y, ylim.type_name)
 
         return y_range
 
