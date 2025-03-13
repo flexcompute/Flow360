@@ -31,3 +31,29 @@ def fix_ghost_sphere_schema(*, params_as_dict: dict):
                 recursive_fix_ghost_surface(data=item)
 
     recursive_fix_ghost_surface(data=params_as_dict)
+
+
+def populate_entity_id_with_name(*, params_as_dict: dict):
+    """
+    Recursively populates the entity item's private_attribute_id with its name if
+    the private_attribute_id is none.
+    """
+
+    def recursive_populate_entity_id_with_name(*, data):
+        if isinstance(data, dict):
+            # Check if current dict is an Entity item
+            if data.get("name") and (
+                data.get("private_attribute_registry_bucket_name")
+                or data.get("private_attribute_entity_type_name")
+            ):
+                if "private_attribute_id" not in data or data["private_attribute_id"] is None:
+                    data["private_attribute_id"] = data["name"]
+
+            for value in data.values():
+                recursive_populate_entity_id_with_name(data=value)
+
+        elif isinstance(data, list):
+            for element in data:
+                recursive_populate_entity_id_with_name(data=element)
+
+    recursive_populate_entity_id_with_name(data=params_as_dict)

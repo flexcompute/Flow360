@@ -1,0 +1,582 @@
+{
+	"version": "25.2.1b1",
+	"unit_system": {
+		"name": "SI"
+	},
+	"meshing": null,
+	"reference_geometry": {
+		"moment_center": {
+			"value": [
+				0,
+				0,
+				0
+			],
+			"units": "m"
+		},
+		"moment_length": {
+			"value": [
+				150,
+				150,
+				150
+			],
+			"units": "m"
+		},
+		"area": {
+			"value": 70685.83470577035,
+			"units": "m**2"
+		}
+	},
+	"operating_condition": {
+		"type_name": "AerospaceCondition",
+		"private_attribute_constructor": "from_mach",
+		"private_attribute_input_cache": {
+			"mach": 0.182,
+			"alpha": {
+				"value": -90,
+				"units": "degree"
+			},
+			"beta": {
+				"value": 0,
+				"units": "degree"
+			},
+			"thermal_state": {
+				"type_name": "ThermalState",
+				"private_attribute_constructor": "default",
+				"private_attribute_input_cache": {
+					"altitude": null,
+					"temperature_offset": null
+				},
+				"temperature": {
+					"value": 288.15,
+					"units": "K"
+				},
+				"density": {
+					"value": 0.03129817420464114,
+					"units": "kg/m**3"
+				},
+				"material": {
+					"type": "air",
+					"name": "air",
+					"dynamic_viscosity": {
+						"reference_viscosity": {
+							"value": 0.00001716,
+							"units": "Pa*s"
+						},
+						"reference_temperature": {
+							"value": 273.15,
+							"units": "K"
+						},
+						"effective_temperature": {
+							"value": 110.4,
+							"units": "K"
+						}
+					}
+				}
+			},
+			"reference_mach": 0.54
+		},
+		"alpha": {
+			"value": -90,
+			"units": "degree"
+		},
+		"beta": {
+			"value": 0,
+			"units": "degree"
+		},
+		"velocity_magnitude": {
+			"value": 61.93350905709473,
+			"units": "m/s"
+		},
+		"thermal_state": {
+			"type_name": "ThermalState",
+			"private_attribute_constructor": "default",
+			"private_attribute_input_cache": {
+				"altitude": null,
+				"temperature_offset": null
+			},
+			"temperature": {
+				"value": 288.15,
+				"units": "K"
+			},
+			"density": {
+				"value": 0.03129817420464114,
+				"units": "kg/m**3"
+			},
+			"material": {
+				"type": "air",
+				"name": "air",
+				"dynamic_viscosity": {
+					"reference_viscosity": {
+						"value": 0.00001716,
+						"units": "Pa*s"
+					},
+					"reference_temperature": {
+						"value": 273.15,
+						"units": "K"
+					},
+					"effective_temperature": {
+						"value": 110.4,
+						"units": "K"
+					}
+				}
+			}
+		},
+		"reference_velocity_magnitude": {
+			"value": 183.75876313643494,
+			"units": "m/s"
+		}
+	},
+	"models": [
+		{
+			"material": {
+				"type": "air",
+				"name": "air",
+				"dynamic_viscosity": {
+					"reference_viscosity": {
+						"value": 0.00001716,
+						"units": "Pa*s"
+					},
+					"reference_temperature": {
+						"value": 273.15,
+						"units": "K"
+					},
+					"effective_temperature": {
+						"value": 110.4,
+						"units": "K"
+					}
+				}
+			},
+			"initial_condition": {
+				"type_name": "NavierStokesInitialCondition",
+				"constants": null,
+				"rho": "rho",
+				"u": "u",
+				"v": "v",
+				"w": "w",
+				"p": "p"
+			},
+			"type": "Fluid",
+			"navier_stokes_solver": {
+				"absolute_tolerance": 1e-9,
+				"relative_tolerance": 0,
+				"order_of_accuracy": 2,
+				"equation_evaluation_frequency": 1,
+				"linear_solver": {
+					"max_iterations": 35,
+					"absolute_tolerance": null,
+					"relative_tolerance": null
+				},
+				"private_attribute_dict": null,
+				"CFL_multiplier": 1,
+				"kappa_MUSCL": 0.33,
+				"numerical_dissipation_factor": 1,
+				"limit_velocity": false,
+				"limit_pressure_density": false,
+				"type_name": "Compressible",
+				"low_mach_preconditioner": false,
+				"low_mach_preconditioner_threshold": null,
+				"update_jacobian_frequency": 1,
+				"max_force_jac_update_physical_steps": 0
+			},
+			"turbulence_model_solver": {
+				"absolute_tolerance": 1e-8,
+				"relative_tolerance": 0,
+				"order_of_accuracy": 2,
+				"equation_evaluation_frequency": 1,
+				"linear_solver": {
+					"max_iterations": 35,
+					"absolute_tolerance": null,
+					"relative_tolerance": null
+				},
+				"private_attribute_dict": null,
+				"CFL_multiplier": 2,
+				"type_name": "SpalartAllmaras",
+				"reconstruction_gradient_limiter": 0.5,
+				"quadratic_constitutive_relation": false,
+				"modeling_constants": {
+					"type_name": "SpalartAllmarasConsts",
+					"C_DES": 0.72,
+					"C_d": 8,
+					"C_cb1": 0.1355,
+					"C_cb2": 0.622,
+					"C_sigma": 0.6666666666666666,
+					"C_v1": 7.1,
+					"C_vonKarman": 0.41,
+					"C_w2": 0.3,
+					"C_t3": 1.2,
+					"C_t4": 0.5,
+					"C_min_rd": 10
+				},
+				"update_jacobian_frequency": 1,
+				"max_force_jac_update_physical_steps": 0,
+				"hybrid_model": {
+					"shielding_function": "DDES",
+					"grid_size_for_LES": "maxEdgeLength"
+				},
+				"rotation_correction": true
+			},
+			"transition_model_solver": {
+				"type_name": "None"
+			}
+		},
+		{
+			"name": null,
+			"type": "Rotation",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_registry_bucket_name": "VolumetricEntityType",
+						"private_attribute_entity_type_name": "GenericVolume",
+						"private_attribute_id": null,
+						"name": "rotationField",
+						"private_attribute_zone_boundary_names": {
+							"items": [
+								"rotationField/blade",
+								"rotationField/blade_2",
+								"rotationField/blade_3",
+								"rotationField/rotBnd"
+							]
+						},
+						"private_attribute_full_name": "rotationField",
+						"axes": null,
+						"axis": [
+							0,
+							0,
+							-1
+						],
+						"center": {
+							"value": [
+								0,
+								0,
+								0
+							],
+							"units": "m"
+						}
+					}
+				]
+			},
+			"spec": {
+				"value": {
+					"value": 1.2253615128,
+					"units": "rad/s"
+				},
+				"type_name": "AngularVelocity"
+			},
+			"parent_volume": null,
+			"rotating_reference_frame_model": false
+		},
+		{
+			"type": "Wall",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/blade",
+						"private_attribute_full_name": "rotationField/blade",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/blade_3",
+						"private_attribute_full_name": "rotationField/blade_3",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/blade_2",
+						"private_attribute_full_name": "rotationField/blade_2",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					}
+				]
+			},
+			"name": null,
+			"use_wall_function": false,
+			"velocity": null,
+			"heat_spec": {
+				"value": {
+					"value": 0,
+					"units": "W/m**2"
+				},
+				"type_name": "HeatFlux"
+			},
+			"roughness_height": {
+				"value": 0,
+				"units": "m"
+			}
+		},
+		{
+			"type": "Freestream",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "stationaryField/farfield",
+						"private_attribute_full_name": "stationaryField/farfield",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					}
+				]
+			},
+			"turbulence_quantities": null,
+			"name": null,
+			"velocity": null
+		}
+	],
+	"time_stepping": {
+		"type_name": "Unsteady",
+		"max_pseudo_steps": 35,
+		"steps": 120,
+		"step_size": {
+			"value": 0.04274,
+			"units": "s"
+		},
+		"CFL": {
+			"type": "adaptive",
+			"min": 0.1,
+			"max": 1000000,
+			"max_relative_change": 50,
+			"convergence_limiting_factor": 1
+		},
+		"order_of_accuracy": 2
+	},
+	"user_defined_dynamics": null,
+	"user_defined_fields": [],
+	"outputs": [
+		{
+			"frequency": -1,
+			"frequency_offset": 0,
+			"output_format": "paraview",
+			"name": "Volume output",
+			"output_fields": {
+				"items": [
+					"primitiveVars",
+					"Mach",
+					"qcriterion"
+				]
+			},
+			"output_type": "VolumeOutput"
+		},
+		{
+			"frequency": -1,
+			"frequency_offset": 0,
+			"output_format": "both",
+			"name": "Surface output",
+			"entities": {
+				"stored_entities": [
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/blade",
+						"private_attribute_full_name": "rotationField/blade",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "stationaryField/rotationInterface_static",
+						"private_attribute_full_name": "stationaryField/rotationInterface_static",
+						"private_attribute_is_interface": true,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "stationaryField/farfield",
+						"private_attribute_full_name": "stationaryField/farfield",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/rotBnd",
+						"private_attribute_full_name": "rotationField/rotBnd",
+						"private_attribute_is_interface": true,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/blade_3",
+						"private_attribute_full_name": "rotationField/blade_3",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					},
+					{
+						"private_attribute_registry_bucket_name": "SurfaceEntityType",
+						"private_attribute_entity_type_name": "Surface",
+						"private_attribute_id": null,
+						"name": "rotationField/blade_2",
+						"private_attribute_full_name": "rotationField/blade_2",
+						"private_attribute_is_interface": false,
+						"private_attribute_tag_key": null,
+						"private_attribute_sub_components": [],
+						"private_attribute_potential_issues": []
+					}
+				]
+			},
+			"write_single_file": false,
+			"output_fields": {
+				"items": [
+					"primitiveVars",
+					"Cp",
+					"Cf",
+					"CfVec",
+					"yPlus",
+					"nodeForcesPerUnitArea"
+				]
+			},
+			"output_type": "SurfaceOutput"
+		}
+	],
+	"private_attribute_asset_cache": {
+		"project_length_unit": {
+			"value": 1,
+			"units": "m"
+		},
+		"project_entity_info": {
+			"draft_entities": [],
+			"ghost_entities": [],
+			"type_name": "VolumeMeshEntityInfo",
+			"zones": [
+				{
+					"private_attribute_registry_bucket_name": "VolumetricEntityType",
+					"private_attribute_entity_type_name": "GenericVolume",
+					"private_attribute_id": null,
+					"name": "rotationField",
+					"private_attribute_zone_boundary_names": {
+						"items": [
+							"rotationField/blade",
+							"rotationField/blade_2",
+							"rotationField/blade_3",
+							"rotationField/rotBnd"
+						]
+					},
+					"private_attribute_full_name": "rotationField",
+					"axes": null,
+					"axis": null,
+					"center": null
+				},
+				{
+					"private_attribute_registry_bucket_name": "VolumetricEntityType",
+					"private_attribute_entity_type_name": "GenericVolume",
+					"private_attribute_id": null,
+					"name": "stationaryField",
+					"private_attribute_zone_boundary_names": {
+						"items": [
+							"stationaryField/farfield",
+							"stationaryField/rotationInterface_static"
+						]
+					},
+					"private_attribute_full_name": "stationaryField",
+					"axes": null,
+					"axis": null,
+					"center": null
+				}
+			],
+			"boundaries": [
+				{
+					"private_attribute_registry_bucket_name": "SurfaceEntityType",
+					"private_attribute_entity_type_name": "Surface",
+					"private_attribute_id": null,
+					"name": "rotationField/blade",
+					"private_attribute_full_name": "rotationField/blade",
+					"private_attribute_is_interface": false,
+					"private_attribute_tag_key": null,
+					"private_attribute_sub_components": [],
+					"private_attribute_potential_issues": []
+				},
+				{
+					"private_attribute_registry_bucket_name": "SurfaceEntityType",
+					"private_attribute_entity_type_name": "Surface",
+					"private_attribute_id": null,
+					"name": "stationaryField/rotationInterface_static",
+					"private_attribute_full_name": "stationaryField/rotationInterface_static",
+					"private_attribute_is_interface": true,
+					"private_attribute_tag_key": null,
+					"private_attribute_sub_components": [],
+					"private_attribute_potential_issues": []
+				},
+				{
+					"private_attribute_registry_bucket_name": "SurfaceEntityType",
+					"private_attribute_entity_type_name": "Surface",
+					"private_attribute_id": null,
+					"name": "stationaryField/farfield",
+					"private_attribute_full_name": "stationaryField/farfield",
+					"private_attribute_is_interface": false,
+					"private_attribute_tag_key": null,
+					"private_attribute_sub_components": [],
+					"private_attribute_potential_issues": []
+				},
+				{
+					"private_attribute_registry_bucket_name": "SurfaceEntityType",
+					"private_attribute_entity_type_name": "Surface",
+					"private_attribute_id": null,
+					"name": "rotationField/rotBnd",
+					"private_attribute_full_name": "rotationField/rotBnd",
+					"private_attribute_is_interface": true,
+					"private_attribute_tag_key": null,
+					"private_attribute_sub_components": [],
+					"private_attribute_potential_issues": []
+				},
+				{
+					"private_attribute_registry_bucket_name": "SurfaceEntityType",
+					"private_attribute_entity_type_name": "Surface",
+					"private_attribute_id": null,
+					"name": "rotationField/blade_3",
+					"private_attribute_full_name": "rotationField/blade_3",
+					"private_attribute_is_interface": false,
+					"private_attribute_tag_key": null,
+					"private_attribute_sub_components": [],
+					"private_attribute_potential_issues": []
+				},
+				{
+					"private_attribute_registry_bucket_name": "SurfaceEntityType",
+					"private_attribute_entity_type_name": "Surface",
+					"private_attribute_id": null,
+					"name": "rotationField/blade_2",
+					"private_attribute_full_name": "rotationField/blade_2",
+					"private_attribute_is_interface": false,
+					"private_attribute_tag_key": null,
+					"private_attribute_sub_components": [],
+					"private_attribute_potential_issues": []
+				}
+			]
+		}
+	}
+}
