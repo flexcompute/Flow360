@@ -42,12 +42,9 @@ def update_entity_id_with_name(*, params_as_dict: dict):
     def recursive_update_entity_id_with_name(*, data):
         if isinstance(data, dict):
             # Check if current dict is an Entity item
-            if (
-                data.get("name")
-                and (
-                    data.get("private_attribute_registry_bucket_name")
-                    or data.get("private_attribute_entity_type_name")
-                )
+            if data.get("name") and (
+                data.get("private_attribute_registry_bucket_name")
+                or data.get("private_attribute_entity_type_name")
             ):
                 if "private_attribute_id" in data and data["private_attribute_id"] is None:
                     data["private_attribute_id"] = data["name"]
