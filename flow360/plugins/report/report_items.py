@@ -771,7 +771,7 @@ class SubsetLimit(BaseModel):
         Tuple of fractions between 0 and 1 describing the lower and upper range
         of the subset of values that will be used to calculate the ylim.
     offset : float
-        "Padding" that will be added to the top and bottom ofthe charts y_range.
+        "Padding" that will be added to the top and bottom of the charts y_range.
         It scales with with calculated rangeof y values.
         For example, if range of y value is 10, an offset=0.3 will "expand" the range
         by 0.3*10 on both sides, resulting in a final range of y values equal to 16.
