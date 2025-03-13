@@ -1012,10 +1012,12 @@ class Chart2D(Chart):
             y_min = subset_y_min - self.ylim.offset * y_range
             y_max = subset_y_max + self.ylim.offset * y_range
 
-        else:
+        elif type_name == "FixedRangeLimit" :
             y_center = (subset_y_max + subset_y_min) / 2
             y_min = y_center - 0.5 * self.ylim.fixed_range
             y_max = y_center + 0.5 * self.ylim.fixed_range
+        else:
+            raise ValueError(f'Unknown type_name: {type_name}.')
 
         return (y_min, y_max)
 
