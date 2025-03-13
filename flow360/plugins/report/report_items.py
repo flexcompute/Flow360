@@ -779,7 +779,7 @@ class SubsetLimit(BaseModel):
         Specifies the type of report item as "SubsetLimit"; this field is immutable.
     """
 
-    subset: Tuple[float, float]
+    subset: Tuple[pd.NonNegativeFloat, pd.NonNegativeFloat]
     offset: float
     type_name: Literal["SubsetLimit"] = Field("SubsetLimit", frozen=True)
 
@@ -787,7 +787,7 @@ class SubsetLimit(BaseModel):
     def check_subset_values(self):
         """Ensure that correct subset values are provided."""
         lower, upper = self.subset
-        if not 0 <= lower < 1 or not 0 < upper <= 1:
+        if not lower < 1 or not upper <= 1:
             raise ValueError("Subset values need to be between 0 and 1 (inclusive).")
         if not lower <= upper:
             raise ValueError("Lower fraction of the subset cannot be higher than upper fraction.")
@@ -819,13 +819,13 @@ class FixedRangeLimit(BaseModel):
 
     fixed_range: float
     center_strategy: Literal["last", "last_percent"]
-    center_fraction: Optional[float] = None
+    center_fraction: Optional[pd.PositiveFloat] = None
     type_name: Literal["FixedRangeLimit"] = Field("FixedRangeLimit", frozen=True)
 
     @pd.model_validator(mode="after")
     def check_center_fraction(self):
         """Ensure that correct center fraction value is provided."""
-        if self.center_strategy == "last_percent" and not 0 < self.center_fraction < 1:
+        if self.center_strategy == "last_percent" and not self.center_fraction < 1:
             raise ValueError("Center fraction value needs to be between 0 and 1 (exclusive).")
         return self
 
