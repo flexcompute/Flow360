@@ -1,7 +1,7 @@
 """
 Module containing updaters from version to version
 
-TODO: remove duplication code with FLow360Params updater. 
+TODO: remove duplication code with FLow360Params updater.
 """
 
 # pylint: disable=R0801
@@ -13,6 +13,7 @@ from typing import Any
 from flow360.component.simulation.framework.entity_base import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
+    populate_entity_id_with_name,
 )
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
@@ -151,12 +152,18 @@ def _to_25_2_1(params_as_dict):
     return params_as_dict
 
 
+def _to_25_2_4(params_as_dict):
+    populate_entity_id_with_name(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
     (Flow360Version("24.11.10"), _to_24_11_10),
     (Flow360Version("25.2.0"), _to_25_2_0),
     (Flow360Version("25.2.1"), _to_25_2_1),
+    (Flow360Version("25.2.4"), _to_25_2_4),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
