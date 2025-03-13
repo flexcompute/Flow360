@@ -24,6 +24,7 @@ from flow360.component.simulation.models.surface_models import (
     SlipWall,
     TotalPressure,
     Wall,
+    WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -549,6 +550,15 @@ def test_boundaries():
                         static_pressure=12.0 * u.psi, porosity=0.49, activation_step=20
                     ),
                 ),
+                Wall(
+                    surfaces=Surface(name="boundary_name_I"),
+                    velocity=WallRotation(
+                        axis=(0, 0, 1), center=(1, 2, 3) * u.m, angular_velocity=100 * u.rpm
+                    ),
+                ),
             ],
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_boundaries.json")
+
+
+# test_boundaries()
