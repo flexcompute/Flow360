@@ -559,6 +559,3 @@ def test_boundaries():
             ],
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_boundaries.json")
-
-
-# test_boundaries()
