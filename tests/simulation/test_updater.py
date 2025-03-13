@@ -320,13 +320,13 @@ def test_updater_to_25_2_1():
     assert updated_ghost_sphere["max_radius"] == 5.000000000000003
 
 
-def test_updater_to_25_2_4():
-    with open("../data/simulation/simulation_pre_25_2_4_geo.json", "r") as fp:
+def test_updater_to_25_2_3():
+    with open("../data/simulation/simulation_pre_25_2_3_geo.json", "r") as fp:
         params = json.load(fp)
 
     params_new = updater(
         version_from=f"25.2.2",
-        version_to=f"25.2.4",
+        version_to=f"25.2.3",
         params_as_dict=params,
     )
     updated_edge = params_new["private_attribute_asset_cache"]["project_entity_info"][
@@ -364,12 +364,12 @@ def test_updater_to_25_2_4():
     )
     assert updated_draft_entity["private_attribute_id"] != updated_draft_entity["name"]
 
-    with open("../data/simulation/simulation_pre_25_2_4_volume_zones.json", "r") as fp:
+    with open("../data/simulation/simulation_pre_25_2_3_volume_zones.json", "r") as fp:
         params = json.load(fp)
 
     params_new = updater(
         version_from=f"25.2.1",
-        version_to=f"25.2.4",
+        version_to=f"25.2.3",
         params_as_dict=params,
     )
 
