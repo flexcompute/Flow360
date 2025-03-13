@@ -1040,7 +1040,6 @@ class Chart2D(Chart):
 
         elif isinstance(ylim, SubsetLimit):
             start_frac, end_frac = ylim.subset
-            type_name = ylim.type_name
 
             all_subset_y = self._calculate_subset(
                 x_series_list, y_series_list, start_frac, end_frac
@@ -1049,7 +1048,7 @@ class Chart2D(Chart):
             if not all_subset_y:
                 return (None, None)
 
-            y_range = self._calculate_y_min_max(all_subset_y, type_name)
+            y_range = self._calculate_y_min_max(all_subset_y, ylim.type_name)
 
         else:
             type_name = ylim.type_name
