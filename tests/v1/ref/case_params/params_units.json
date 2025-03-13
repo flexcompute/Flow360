@@ -2,7 +2,7 @@
     "unitSystem": {
         "name": "SI"
     },
-    "version": "25.2.1b1",
+    "version": "25.2.3b1",
     "geometry": {
         "refArea": {
             "value": 1.0,
@@ -189,5 +189,5 @@
         "lowMachPreconditioner": false,
         "lowDissipationControlFactors": []
     },
-    "hash": "54f0b1939078ff4d6ccab66bea8c7992701b6379cd488ba98f84dce88dd095dd"
+    "hash": "e89f84db69ab2fd31a36a47a59d399620bb0610d698865c4cb57fc605f9cf426"
 }
