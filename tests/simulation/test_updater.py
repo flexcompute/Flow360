@@ -13,11 +13,19 @@ from flow360.component.simulation.framework.updater import (
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.services import validate_model
 from flow360.component.simulation.validation.validation_context import ALL
+from flow360.version import __version__
 
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+def test_version_greater_than_highest_updater_version():
+    current_python_version = Flow360Version(__version__)
+    assert (
+        current_python_version >= VERSION_MILESTONES[-1][0]
+    ), "Highest version updater can handle is higher than Python client version. This is not allowed."
 
 
 def test_milestone_ordering():
