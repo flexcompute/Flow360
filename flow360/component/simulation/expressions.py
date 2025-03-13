@@ -1,8 +1,11 @@
-from typing import Union
+from typing import get_origin, Generic, TypeVar, Self
 import re
 
-from pydantic_core import InitErrorDetails
+from pydantic import AfterValidator
+from pydantic.functional_validators import ModelWrapValidatorHandler
 
+from pydantic import TypeAdapter
+from flow360.component.simulation.unit_system import *
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.blueprint import expression_to_model
@@ -12,6 +15,13 @@ from numbers import Number
 from unyt import Unit, unyt_quantity
 
 _global_ctx: EvaluationContext = EvaluationContext()
+
+
+def _is_descendant_of(t, base):
+    if t is None:
+        return False
+    origin = get_origin(t) or t
+    return issubclass(origin, base)
 
 
 def _is_number_string(s: str) -> bool:
@@ -52,7 +62,7 @@ def _convert_argument(other):
     elif isinstance(other, unyt_quantity):
         unit = str(other.units)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(other.value)}"
+        arg = f"{str(other.value)} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
@@ -65,7 +75,7 @@ def _convert_argument(other):
 
 
 class Flow360Variable:
-    def __init__(self, name: str, value: Union[float, unyt_quantity]):
+    def __init__(self, name: str, value: Union[list[float], float, unyt_quantity]):
         self.name = name
         self.value = value
         _global_ctx.set(name, value)
@@ -81,7 +91,6 @@ class Flow360Variable:
         return Flow360Expression(body=f"{self.name} - {str_arg}")
 
     def __mul__(self, other):
-
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Flow360Expression(body=f"{self.name} * {str_arg}")
@@ -143,12 +152,12 @@ class Flow360Variable:
     def __rmod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} % {self.body}")
+        return Flow360Expression(body=f"{str_arg} % {self.name}")
 
     def __rpow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} ** {self.body}")
+        return Flow360Expression(body=f"{str_arg} ** {self.name}")
 
     def __str__(self):
         return self.name
@@ -157,14 +166,35 @@ class Flow360Variable:
         return f"Flow360Variable({self.name} = {self.value})"
 
 
+def _get_internal_validator(internal_type):
+    def _internal_validator(value: Flow360Expression):
+        result = value.evaluate()
+        TypeAdapter(internal_type).validate_python(result)
+        return value
+
+    return _internal_validator
+
+
 class Flow360Expression(Flow360BaseModel):
     body: str = pd.Field("")
 
+    @pd.model_validator(mode="wrap")
     @classmethod
-    @pd.field_validator("body", mode="after")
-    def _validate_expression(cls, value):
+    def _validate_expression(cls, value, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        if isinstance(value, str):
+            body = value
+        elif isinstance(value, dict) and "body" in value.keys():
+            body = value["body"]
+        elif isinstance(value, Flow360Expression):
+            body = value.body
+        elif isinstance(value, Flow360Variable):
+            body = str(value)
+        else:
+            details = InitErrorDetails(type="value_error", ctx={"error": f"Invalid type {type(value)}"})
+            raise pd.ValidationError.from_exception_data("expression type error", [details])
+
         try:
-            _ = expression_to_model(value)
+            _ = expression_to_model(body)
         except SyntaxError as s_err:
             details = InitErrorDetails(type="value_error", ctx={"error": s_err})
             raise pd.ValidationError.from_exception_data("expression syntax error", [details])
@@ -172,7 +202,7 @@ class Flow360Expression(Flow360BaseModel):
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
             raise pd.ValidationError.from_exception_data("expression value error", [details])
 
-        return value
+        return handler({"body": body})
 
     def evaluate(self) -> float:
         expr = expression_to_model(self.body)
@@ -263,3 +293,31 @@ class Flow360Expression(Flow360BaseModel):
 
     def __repr__(self):
         return f"Flow360Expression({self.body})"
+
+
+T = TypeVar("T")
+
+
+class Flow360ValueOrExpression(Flow360Expression, Generic[T]):
+
+    def __class_getitem__(cls, internal_type):
+        if internal_type is float:
+            def _non_dimensional_validator(value):
+                result = value.evaluate()
+                if isinstance(result, float):
+                    return value
+                msg = "The evaluated value needs to be a non-dimensional scalar"
+                details = InitErrorDetails(type="value_error", ctx={"error": msg})
+                raise pd.ValidationError.from_exception_data("expression value error", [details])
+
+            expr_type = Annotated[Flow360Expression, AfterValidator(_non_dimensional_validator)]
+        else:
+            expr_type = Annotated[Flow360Expression, AfterValidator(_get_internal_validator(internal_type))]
+
+        return Union[internal_type, expr_type]
+
+    @pd.model_validator(mode='wrap')
+    @classmethod
+    def _convert_to_dict(cls, value, handler: ModelWrapValidatorHandler[Self]) -> Self:
+        value = Flow360Expression.validate(value)
+        return handler({"body": value.body})
