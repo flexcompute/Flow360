@@ -380,7 +380,6 @@ def test_updater_to_25_2_4():
     ][0]
     updated_model_rotation_entity = params["models"][1]["entities"]["stored_entities"][0]
 
-
     assert updated_zone["private_attribute_id"] == updated_zone["name"] == "stationaryField"
     assert (
         updated_boundary["private_attribute_id"]
