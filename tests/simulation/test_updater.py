@@ -1,9 +1,9 @@
 import json
 from enum import Enum
 
-import flow360 as fl
 import pytest
 
+import flow360 as fl
 from flow360.component.simulation.framework.updater import (
     VERSION_MILESTONES,
     _find_update_path,
