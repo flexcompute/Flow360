@@ -13,7 +13,7 @@ from typing import Any
 from flow360.component.simulation.framework.entity_base import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
-    update_entity_id_with_name,
+    populate_entity_id_with_name,
 )
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
@@ -147,7 +147,7 @@ def _to_25_2_1(params_as_dict):
 
 
 def _to_25_2_4(params_as_dict):
-    update_entity_id_with_name(params_as_dict=params_as_dict)
+    populate_entity_id_with_name(params_as_dict=params_as_dict)
     return params_as_dict
 
 

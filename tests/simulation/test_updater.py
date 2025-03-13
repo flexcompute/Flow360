@@ -363,7 +363,6 @@ def test_updater_to_25_2_4():
         == "farfield"
     )
     assert updated_draft_entity["private_attribute_id"] != updated_draft_entity["name"]
-    # print(params_new)
 
     with open("../data/simulation/simulation_pre_25_2_4_volume_zones.json", "r") as fp:
         params = json.load(fp)
