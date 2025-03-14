@@ -32,7 +32,7 @@ from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
-from flow360.component.volume_mesh import VolumeMeshV2
+from flow360.component.volume_mesh import VolumeMeshBoundingBox, VolumeMeshV2
 from flow360.log import log
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -269,6 +269,7 @@ def data_from_path(
         """
         Case starts as a `Case` object but changes as it recurses through the path components
         """
+
         # Check if component is an attribute
         try:
             return getattr(case, component)
@@ -342,6 +343,44 @@ class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
         """
         evaluate operation
         """
+
+
+class GetAttribute(GenericOperation):
+    """
+    Retrieve an attribute from a data object.
+
+    This operation extracts the attribute specified by `attr_name` from the provided data object
+    using Python's built-in `getattr` function. If the attribute is not found, an `AttributeError`
+    is raised, providing a clear error message.
+
+    Attributes
+    ----------
+    attr_name : str
+        The name of the attribute to retrieve from the data object.
+
+    Methods
+    -------
+    calculate(data, case, cases, variables, new_variable_name)
+        Retrieves the attribute specified by `attr_name` from the given data object.
+        Returns a tuple containing the original data, the cases list, and the extracted attribute value.
+    """
+
+    attr_name: str
+    type_name: Literal["GetAttribute"] = pd.Field("GetAttribute", frozen=True)
+
+    def calculate(
+        self, data, case, cases, variables, new_variable_name
+    ):  # pylint: disable=too-many-arguments
+        """
+        Getting attribute on the provided data.
+        """
+
+        try:
+            result = getattr(data, self.attr_name)
+        except AttributeError as err:
+            raise AttributeError(f"Attibute {self.attr_name} not found in {type(data)=}") from err
+
+        return data, cases, result
 
 
 class Average(GenericOperation):
@@ -558,7 +597,9 @@ class Expression(GenericOperation):
         )
 
 
-OperationTypes = Annotated[Union[Average, Expression], pd.Field(discriminator="type_name")]
+OperationTypes = Annotated[
+    Union[Average, Expression, GetAttribute], pd.Field(discriminator="type_name")
+]
 
 
 class DataItem(Flow360BaseModel):
@@ -672,6 +713,14 @@ class DataItem(Flow360BaseModel):
                 return result[new_variable_name]
 
             return source
+
+        if isinstance(source, VolumeMeshBoundingBox):
+            if self.exclude is not None or self.include is not None:
+                source.filter(include=self.include, exclude=self.exclude)
+
+            for opr in self.operations:  # pylint: disable=not-an-iterable
+                source, cases, result = opr.calculate(source, case, cases, self.variables, None)
+                return result
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(source)=}"

@@ -6,6 +6,9 @@ from pylatex import Document
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
+from flow360.component.resource_base import local_metadata_builder
+from flow360.component.utils import LocalResourceCache
+from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_items import (
@@ -14,7 +17,13 @@ from flow360.plugins.report.report_items import (
     Table,
     human_readable_formatter,
 )
-from flow360.plugins.report.utils import Average, DataItem, Delta, Expression
+from flow360.plugins.report.utils import (
+    Average,
+    DataItem,
+    Delta,
+    Expression,
+    GetAttribute,
+)
 
 
 @pytest.fixture
@@ -28,6 +37,9 @@ def cases(here):
         "case-11111111-1111-1111-1111-111111111111",
         "case-2222222222-2222-2222-2222-2222222222",
     ]
+
+    cache = LocalResourceCache()
+
     cases = []
     for cid in case_ids:
         case_meta = CaseMeta(
@@ -40,6 +52,21 @@ def cases(here):
         )
         case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
         cases.append(case)
+
+    vm_id = "vm-11111111-1111-1111-1111-111111111111"
+    vm = VolumeMeshV2.from_local_storage(
+        mesh_id=vm_id,
+        local_storage_path=os.path.join(here, "..", "data", vm_id),
+        meta_data=VolumeMeshMetaV2(
+            **local_metadata_builder(
+                id=vm_id,
+                name="DrivAer mesh",
+                cloud_path_prefix="s3://flow360meshes-v1/users/user-id",
+            )
+        ),
+    )
+    cache.add(vm)
+
     return cases
 
 
@@ -358,7 +385,10 @@ def test_tables(cases):
         data_storage=".",
     )
 
+    freestream_surfaces = ["blk-1/WT_side1", "blk-1/WT_side2", "blk-1/WT_inlet", "blk-1/WT_outlet"]
+    slip_wall_surfaces = ["blk-1/WT_ceiling", "blk-1/WT_ground_front", "blk-1/WT_ground"]
     exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+    exclude += freestream_surfaces + slip_wall_surfaces
 
     avg = Average(fraction=0.1)
     CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
@@ -393,6 +423,26 @@ def test_tables(cases):
         operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
     )
 
+    OWL = DataItem(
+        data="volume_mesh/bounding_box",
+        exclude=exclude,
+        title="OWL",
+        operations=[GetAttribute(attr_name="length")],
+    )
+
+    OWW = DataItem(
+        data="volume_mesh/bounding_box",
+        exclude=exclude,
+        title="OWW",
+        operations=[GetAttribute(attr_name="width")],
+    )
+
+    OWH = DataItem(
+        data="volume_mesh/bounding_box",
+        exclude=exclude,
+        title="OWH",
+        operations=[GetAttribute(attr_name="height")],
+    )
     CFy = DataItem(data="surface_forces/totalCFy", exclude=exclude, title="CS", operations=avg)
 
     statistical_data = Table(
@@ -406,6 +456,11 @@ def test_tables(cases):
             CLf,
             CLr,
             CFy,
+            "volume_mesh/stats/n_nodes",
+            "params/time_stepping/max_steps",
+            OWL,
+            OWW,
+            OWH,
         ],
         section_title="Statistical data",
     )
@@ -427,6 +482,11 @@ def test_tables(cases):
         "CLf": [-0.050186, -0.157447],
         "CLr": [0.196011, 0.327003],
         "CS": [-0.002243102563079525, -0.0763879853938102],
+        "n_nodes": [5712930, 5712930],
+        "max_steps": [2000, 2000],
+        "OWL": [4.612806, 4.612806],
+        "OWW": [2.029983, 2.029983],
+        "OWH": [1.405979, 1.405979],
     }
     df_expected = pandas.DataFrame(expected_data)
     df_expected["Case No."] = df_expected["Case No."].astype("Int64")
