@@ -363,6 +363,7 @@ def set_up_params_for_uploading(
     root_asset,
     length_unit: LengthType,
     params: SimulationParams,
+    use_beta_mesher: bool,
 ):
     """
     Set up params before submitting the draft.
@@ -370,6 +371,12 @@ def set_up_params_for_uploading(
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
         params.private_attribute_asset_cache.project_length_unit = length_unit
+
+    if use_beta_mesher:
+        with model_attribute_unlock(
+            params.private_attribute_asset_cache, "project_use_beta_mesher"
+        ):
+            params.private_attribute_asset_cache.use_inhouse_mesher = use_beta_mesher
 
     entity_info = _set_up_params_persistent_entity_info(root_asset.entity_info, params)
     # Check if there are any new draft entities that have been added in the params by the user
