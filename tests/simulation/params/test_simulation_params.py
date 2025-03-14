@@ -361,7 +361,7 @@ def test_delta_temperature_scaling():
     )
 
 
-def test_entity_info_update_geometry():
+def test_persistent_entity_info_update_geometry():
     #### Geometry Entity Info ####
     with open("./data/geometry_metadata_asset_cache.json", "r") as fp:
         geometry_info_dict = json.load(fp)["project_entity_info"]
@@ -387,7 +387,7 @@ def test_entity_info_update_geometry():
     assert geometry_info._get_list_of_entities(entity_type_name="edge")[0].name == "new_edge_name"
 
 
-def test_entity_info_update_volume_mesh():
+def test_persistent_entity_info_update_volume_mesh():
     #### VolumeMesh Entity Info ####
     with open("./data/volume_mesh_metadata_asset_cache.json", "r") as fp:
         volume_mesh_info_dict = json.load(fp)
