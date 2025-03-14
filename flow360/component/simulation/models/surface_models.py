@@ -30,6 +30,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
+    AngularVelocityType,
     HeatFluxType,
     LengthType,
     MassFlowRateType,
@@ -243,12 +244,43 @@ class Rotational(Flow360BaseModel):
     axis_of_rotation: Optional[Axis] = pd.Field(None)
 
 
+class WallRotation(Flow360BaseModel):
+    """
+    :class:`WallRotation` class to specify the rotational velocity model for the `Wall` boundary condition.
+
+    The wall rotation model prescribes a rotational motion at the wall by defining a center of rotation,
+    an axis about which the wall rotates, and an angular velocity. This model can be used to simulate
+    rotating components or surfaces in a flow simulation.
+
+    Example
+    -------
+    >>> fl.Wall(
+    ...     entities=volume_mesh["fluid/wall"],
+    ...     velocity=fl.WallRotation(
+    ...         axis=(0, 0, 1),
+    ...         center=(1, 2, 3) * u.m,
+    ...         angular_velocity=100 * u.rpm
+    ...     ),
+    ...     use_wall_function=True,
+    ... )
+    ====
+    """
+
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field(description="The center of rotation")
+    axis: Axis = pd.Field(description="The axis of rotation.")
+    angular_velocity: AngularVelocityType = pd.Field("The value of the angular velocity.")
+    type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)
+
+
 ##########################################
 ############# Surface models #############
 ##########################################
 
 
-WallVelocityModelTypes = Annotated[Union[SlaterPorousBleed], pd.Field(discriminator="type_name")]
+WallVelocityModelTypes = Annotated[
+    Union[SlaterPorousBleed, WallRotation], pd.Field(discriminator="type_name")
+]
 
 
 class Wall(BoundaryBase):
@@ -268,10 +300,10 @@ class Wall(BoundaryBase):
 
       >>> fl.Wall(
       ...     entities=volume_mesh["8"],
-      ...     velocity = (
-      ...         f"{OMEGA[1]} * (z - {CENTER[2]}) - {OMEGA[2]} * (y - {CENTER[1]})",
-      ...         f"{OMEGA[2]} * (x - {CENTER[0]}) - {OMEGA[0]} * (z - {CENTER[2]})",
-      ...         f"{OMEGA[0]} * (y - {CENTER[1]}) - {OMEGA[1]} * (x - {CENTER[0]})",
+      ...     velocity=WallRotation(
+      ...       axis=(0, 0, 1),
+      ...       center=(1, 2, 3) * u.m,
+      ...       angular_velocity=100 * u.rpm
       ...     ),
       ...     use_wall_function=True,
       ... )
@@ -316,6 +348,7 @@ class Wall(BoundaryBase):
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
         None, description="Prescribe a velocity or the velocity model on the wall."
     )
+
     # pylint: disable=no-member
     heat_spec: Union[HeatFlux, Temperature] = pd.Field(
         HeatFlux(0 * u.W / u.m**2),

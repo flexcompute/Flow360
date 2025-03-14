@@ -739,6 +739,91 @@ class PlotModel(BaseModel):
         return fig
 
 
+class ManualLimit(BaseModel):
+    """
+    Class for setting up xlim and ylim in Chart2D by providing
+    a lower and upper value of the limits.
+
+    Parameters
+    ----------
+    lower : float
+        Absolute value of the lower limit of an axis.
+    upper : float
+        Absolute value of the upper limit of an axis.
+    """
+
+    lower: float
+    upper: float
+    type_name: Literal["ManualLimit"] = Field("ManualLimit", frozen=True)
+
+
+class SubsetLimit(BaseModel):
+    """
+    Class for setting up ylim in Chart2D by providing
+    a subset of values and an offset, which will be applied
+    to the range of y values.
+
+    Parameters
+    ----------
+    subset : Tuple[float, float]
+        Tuple of fractions between 0 and 1 describing the lower and upper range
+        of the subset of values that will be used to calculate the ylim.
+    offset : float
+        "Padding" that will be added to the top and bottom of the charts y_range.
+        It scales with with calculated range of y values.
+        For example, if range of y value is 10, an offset=0.3 will "expand" the range
+        by 0.3*10 on both sides, resulting in a final range of y values equal to 16.
+    """
+
+    subset: Tuple[pd.NonNegativeFloat, pd.NonNegativeFloat]
+    offset: float
+    type_name: Literal["SubsetLimit"] = Field("SubsetLimit", frozen=True)
+
+    @pd.model_validator(mode="after")
+    def check_subset_values(self):
+        """Ensure that correct subset values are provided."""
+        lower, upper = self.subset
+        if not lower < 1 or not upper <= 1:
+            raise ValueError("Subset values need to be between 0 and 1 (inclusive).")
+        if not lower <= upper:
+            raise ValueError("Lower fraction of the subset cannot be higher than upper fraction.")
+        return self
+
+
+class FixedRangeLimit(BaseModel):
+    """
+    Class for setting up ylim in Chart2D by providing
+    a fixed range of y values and strategy for centering.
+
+    Parameters
+    ----------
+    fixed_range : float
+        Range of absolute y values that will be visible on the chart.
+        For example, fixed_range=3 means that y_max - y_min = 3.
+    center_strategy : Literal["last", "last_percent"]
+        Describes which values will be considered for calculating ylim.
+        "last" means that the last value will be the center.
+        "last_percent" means that the middle point between max and min
+        y values in the specified center_fraction will be the center.
+    center_fraction : Optional[float]
+        Used alongside center_strategy="last_percent", describes values
+        that will be taken into account for calculating ylim.
+        For example, center_fraction=0.3 means that the last 30% of data will be used.
+    """
+
+    fixed_range: float
+    center_strategy: Literal["last", "last_percent"] = Field("last")
+    center_fraction: Optional[pd.PositiveFloat] = None
+    type_name: Literal["FixedRangeLimit"] = Field("FixedRangeLimit", frozen=True)
+
+    @pd.model_validator(mode="after")
+    def check_center_fraction(self):
+        """Ensure that correct center fraction value is provided."""
+        if self.center_strategy == "last_percent" and not self.center_fraction < 1:
+            raise ValueError("Center fraction value needs to be between 0 and 1 (exclusive).")
+        return self
+
+
 class Chart2D(Chart):
     """
     Represents a 2D chart within a report, plotting x and y data.
@@ -761,14 +846,11 @@ class Chart2D(Chart):
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
-    focus_x : Optional[Tuple[float, float]]
-        A tuple defining a fractional focus range along the x-axis for y-limit
-        adjustments. For example, `focus_x = (0.5, 1.0)` will consider the
-        subset of data corresponding to the top 50% to 100% range of x-values.
-        The y-limits of the chart will be determined based on this data subset:
-        the minimum and maximum y-values in this range will be found, then a
-        25% margin is added above and below. This adjusted y-limit helps to
-        highlight the specified portion of the chart.
+    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
+        Defines the range of x values that will be displayed on the chart.
+    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
+        Defines the range of y values that will be displayed on the chart.
+        This helps with highlighting a desired portion of the chart.
     """
 
     x: Union[str, Delta, DataItem]
@@ -779,7 +861,17 @@ class Chart2D(Chart):
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
-    focus_x: Optional[Tuple[float, float]] = None
+    focus_x: Optional[
+        Annotated[
+            Tuple[float, float],
+            Field(
+                deprecated="focus_x is deprecated, your input was converted to a corresponding SubsetLimit. "
+                + "Please use ylim=SubsetLimit instead in the future.",
+            ),
+        ]
+    ] = None
+    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
+    ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
 
     def get_requirements(self):
         """
@@ -801,6 +893,18 @@ class Chart2D(Chart):
         return root_path.startswith("nonlinear_residuals") or root_path.startswith(
             "linear_residuals"
         )
+
+    # pylint: disable=unpacking-non-sequence
+    @pd.model_validator(mode="after")
+    def _handle_deprecated_focus_x(self):
+        """Ensures that scripts containing deprecated focus_x will still work."""
+        if self.focus_x is not None:
+            if self.ylim is not None:
+                raise ValueError("Fields ylim and focus_x cannot be used together.")
+            lower, upper = self.focus_x
+            self.focus_x = None
+            self.ylim = SubsetLimit(subset=(lower, upper), offset=0.25)
+        return self
 
     def _check_dimensions_consistency(self, data):
         if any(isinstance(d, unyt.unyt_array) for d in data):
@@ -866,21 +970,26 @@ class Chart2D(Chart):
 
         return x_data, y_data, x_label, y_label
 
-    # pylint: disable=too-many-locals
-    def _calculate_focus_y_limits(
-        self, x_series_list: List[List[float]], y_series_list: List[List[float]]
-    ) -> Tuple[Optional[float], Optional[float]]:
+    def _handle_xlimits(self) -> Tuple[Optional[float], Optional[float]]:
         """
-        Calculate the y-limits based on the focus_x range.
-        The focus_x defines a fractional range along the dataset length.
-        We slice the y data accordingly and find min/max in this range,
-        then add a 25% margin above and below.
+        Make sure that xlim is always passed
+        as a tuple of floats to the plotting tool.
         """
-        if self.focus_x is None:
+        xlim = self.xlim
+        if xlim is None:
             return None
 
-        start_frac, end_frac = self.focus_x  # pylint: disable=unpacking-non-sequence
-        all_focused_y = []
+        if isinstance(xlim, ManualLimit):
+            return (xlim.lower, xlim.upper)
+
+        return xlim
+
+    def _calculate_subset(self, x_series_list, y_series_list, start_frac, end_frac):
+        """
+        Based on provided data series and fraction start and end,
+        calculate the corresponding subset of data.
+        """
+        all_subset_y = []
 
         for xs, ys in zip(x_series_list, y_series_list):
             xs_np = np.array(xs)
@@ -890,22 +999,88 @@ class Chart2D(Chart):
             end_idx = int(len(xs_np) * end_frac)
 
             if end_idx > start_idx:
-                focused_y = ys_np[start_idx:end_idx]
+                subset_y = ys_np[start_idx:end_idx]
             else:
-                focused_y = ys_np
+                subset_y = ys_np
 
-            if len(focused_y) > 0:
-                all_focused_y.extend(focused_y.tolist())
+            if len(subset_y) > 0:
+                all_subset_y.extend(subset_y.tolist())
 
-        if not all_focused_y:
-            return None, None
+        return all_subset_y
 
-        global_y_min = float(min(all_focused_y))
-        global_y_max = float(max(all_focused_y))
-        y_range = global_y_max - global_y_min
-        y_min = global_y_min - 0.25 * y_range
-        y_max = global_y_max + 0.25 * y_range
+    def _calculate_y_min_max(
+        self, all_subset_y, type_name: Literal["SubsetLimit", "FixedRangeLimit"]
+    ) -> Tuple[float, float]:
+        """
+        Given a subset of data and ylim type,
+        calculate min and max y values.
+        """
+        subset_y_min = float(min(all_subset_y))
+        subset_y_max = float(max(all_subset_y))
+
+        if type_name == "SubsetLimit":
+            y_range = subset_y_max - subset_y_min
+            y_min = subset_y_min - self.ylim.offset * y_range
+            y_max = subset_y_max + self.ylim.offset * y_range
+
+        elif type_name == "FixedRangeLimit":
+            y_center = (subset_y_max + subset_y_min) / 2
+            y_min = y_center - 0.5 * self.ylim.fixed_range
+            y_max = y_center + 0.5 * self.ylim.fixed_range
+        else:
+            raise ValueError(f"Unknown type_name: {type_name}.")
+
         return (y_min, y_max)
+
+    def _calculate_ylimits(
+        self, x_series_list: List[List[float]], y_series_list: List[List[float]]
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Calculate ylim based on provided input.
+        """
+        ylim = self.ylim
+
+        if ylim is None:
+            return None
+
+        if isinstance(ylim, Tuple):
+            return ylim
+
+        if isinstance(ylim, ManualLimit):
+            y_range = (ylim.lower, ylim.upper)
+
+        elif isinstance(ylim, SubsetLimit):
+            start_frac, end_frac = ylim.subset
+
+            all_subset_y = self._calculate_subset(
+                x_series_list, y_series_list, start_frac, end_frac
+            )
+
+            if not all_subset_y:
+                return (None, None)
+
+            y_range = self._calculate_y_min_max(all_subset_y, ylim.type_name)
+
+        else:
+            if ylim.center_strategy == "last":
+                all_last_y = []
+                for ys in y_series_list:
+                    last_y = ys[-1]
+                    all_last_y.append(last_y)
+
+            else:
+                start_frac = 1 - ylim.center_fraction
+                end_frac = 1
+                all_last_y = self._calculate_subset(
+                    x_series_list, y_series_list, start_frac, end_frac
+                )
+
+            if not all_last_y:
+                return (None, None)
+
+            y_range = self._calculate_y_min_max(all_last_y, ylim.type_name)
+
+        return y_range
 
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
@@ -957,7 +1132,8 @@ class Chart2D(Chart):
             legend = [case.name for case in cases]
             style = "-"
 
-        ylim = self._calculate_focus_y_limits(x_data, y_data)
+        xlim = self._handle_xlimits()
+        ylim = self._calculate_ylimits(x_data, y_data)
 
         return PlotModel(
             x_data=x_data,
@@ -968,7 +1144,7 @@ class Chart2D(Chart):
             style=style,
             is_log=self.is_log_plot(),
             backgroung_png=background_png,
-            xlim=None,
+            xlim=xlim,
             ylim=ylim,
         )
 

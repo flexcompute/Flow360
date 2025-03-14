@@ -10,7 +10,11 @@ from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_items import (
     Camera,
+    Chart2D,
     Chart3D,
+    FixedRangeLimit,
+    ManualLimit,
+    SubsetLimit,
     Table,
     human_readable_formatter,
 )
@@ -433,3 +437,63 @@ def test_tables(cases):
     print(df_expected)
 
     pandas.testing.assert_frame_equal(table_df, df_expected)
+
+
+def test_calculate_y_lim(cases, here):
+    chart = Chart2D(
+        x="total_forces/pseudo_step",
+        y="total_forces/CD",
+    )
+    case = cases[0]
+    case_data = pandas.read_csv(
+        os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv")
+    )
+    x_series_list = [case_data[" pseudo_step"].to_list()]
+    y_series_list = [case_data[" CD"].to_list()]
+
+    chart.ylim = (0.3, 0.4)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.3
+    assert ymax == 0.4
+
+    chart.ylim = ManualLimit(lower=0.3, upper=0.4)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.3
+    assert ymax == 0.4
+
+    chart.ylim = SubsetLimit(subset=(0.5, 0.9), offset=0.25)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.34713380202529676
+    assert ymax == 0.3558530166937262
+
+    chart.ylim = None
+    chart.focus_x = (0.5, 0.9)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.34713380202529676
+    assert ymax == 0.3558530166937262
+
+    chart.focus_x = None
+    chart.ylim = FixedRangeLimit(fixed_range=0.1)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.306161580155019
+    assert ymax == 0.40616158015501896
+
+    chart.ylim = FixedRangeLimit(
+        fixed_range=0.1, center_strategy="last_percent", center_fraction=0.7
+    )
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.3528853000874695
+    assert ymax == 0.45288530008746947
+
+    chart.ylim = None
+    assert (
+        chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list) == None
+    )
+
+    with pytest.raises(ValueError, match="Fields ylim and focus_x cannot be used together."):
+        chart.ylim = (0.5, 0.9)
+        chart.focus_x = (0.5, 0.9)
+        chart._calculate_ylimits(
+            x_series_list=x_series_list,
+            y_series_list=y_series_list,
+        )
