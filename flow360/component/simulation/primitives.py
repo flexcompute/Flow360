@@ -458,6 +458,17 @@ class Surface(_SurfaceEntityBase):
         " under certain features and/or its existence.",
     )
 
+    # Note: private_attribute_id should not be `Optional` anymore.
+    # B.C. Updater and geometry pipeline will populate it.
+
+    # pylint: disable=fixme
+    # TODO: With the amount of private_attribute prefixes we have
+    # TODO: here maybe it makes more sense to lump them together to save space?
+
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Front end storage for the color selected for this `Surface` entity."
+    )
+
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 

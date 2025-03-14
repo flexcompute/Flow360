@@ -71,7 +71,7 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
-    def get_bucket(self, by_type: EntityBase) -> EntityRegistryBucket:
+    def get_bucket(self, by_type: type[EntityBase]) -> EntityRegistryBucket:
         """Get the bucket of a certain type of entity."""
         return EntityRegistryBucket(
             self.internal_registry,
@@ -192,6 +192,25 @@ class EntityRegistry(Flow360BaseModel):
                 return
 
         self.register(new_entity)
+
+    def find_by_asset_id(self, *, entity_id: str, entity_class: type[EntityBase]):
+        """
+        Find the entity with matching asset id and the same entity bucket as the input entity.
+        Return None if no such entity is found.
+        """
+        bucket = self.get_bucket(by_type=entity_class)
+        matched_entities = [
+            item for item in bucket.entities if item.private_attribute_id == entity_id
+        ]
+
+        if len(matched_entities) > 1:
+            raise ValueError(
+                f"[INTERNAL] Multiple entities with the same asset id ({entity_id}) found."
+                " Data is likely corrupted."
+            )
+        if len(matched_entities) == 0:
+            return None
+        return matched_entities[0]
 
     @property
     def is_empty(self):

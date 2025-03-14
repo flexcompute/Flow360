@@ -114,6 +114,11 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         """hash generator to identify if two entities are the same"""
         return hash(self.model_dump_json())
 
+    @property
+    def id(self) -> str:
+        """Returns private_attribute_id of the entity."""
+        return self.private_attribute_id
+
 
 class _CombinedMeta(type(Flow360BaseModel), type):
     pass
