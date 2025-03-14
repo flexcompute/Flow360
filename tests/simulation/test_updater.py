@@ -254,3 +254,75 @@ def test_updater_to_24_11_10():
     assert "type_name" not in updated_ghost_sphere
     assert updated_ghost_sphere["center"] == [5.0007498695, 0, 0]
     assert updated_ghost_sphere["max_radius"] == 504.16453591327473
+
+
+def test_updater_to_24_11_12():
+    with open("../data/simulation/simulation_pre_24_11_12_geo.json", "r") as fp:
+        params = json.load(fp)
+
+    params_new = updater(
+        version_from=f"24.11.11",
+        version_to=f"24.11.12",
+        params_as_dict=params,
+    )
+    updated_edge = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "grouped_edges"
+    ][0][0]
+    updated_face = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "grouped_faces"
+    ][0][0]
+    updated_ghost_entity = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "ghost_entities"
+    ][1]
+    updated_draft_entity = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "draft_entities"
+    ][0]
+
+    updated_output_surface_entity = params_new["outputs"][1]["entities"]["stored_entities"][1]
+    updated_model_freestream_entity = params["models"][1]["entities"]["stored_entities"][0]
+
+    assert updated_edge["private_attribute_id"] == updated_edge["name"] == "wingtrailingEdge"
+    assert updated_face["private_attribute_id"] == updated_face["name"] == "wingTrailing"
+    assert (
+        updated_ghost_entity["private_attribute_id"]
+        == updated_ghost_entity["name"]
+        == "symmetric-1"
+    )
+    assert (
+        updated_output_surface_entity["private_attribute_id"]
+        == updated_output_surface_entity["name"]
+        == "wing"
+    )
+    assert (
+        updated_model_freestream_entity["private_attribute_id"]
+        == updated_model_freestream_entity["name"]
+        == "farfield"
+    )
+    assert updated_draft_entity["private_attribute_id"] != updated_draft_entity["name"]
+
+    with open("../data/simulation/simulation_pre_24_11_12_volume_zones.json", "r") as fp:
+        params = json.load(fp)
+
+    params_new = updater(
+        version_from=f"24.11.11",
+        version_to=f"24.11.12",
+        params_as_dict=params,
+    )
+
+    updated_zone = params_new["private_attribute_asset_cache"]["project_entity_info"]["zones"][-1]
+    updated_boundary = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "boundaries"
+    ][0]
+    updated_model_rotation_entity = params["models"][1]["entities"]["stored_entities"][0]
+
+    assert updated_zone["private_attribute_id"] == updated_zone["name"] == "stationaryField"
+    assert (
+        updated_boundary["private_attribute_id"]
+        == updated_boundary["name"]
+        == "rotationField/blade"
+    )
+    assert (
+        updated_model_rotation_entity["private_attribute_id"]
+        == updated_model_rotation_entity["name"]
+        == "rotationField"
+    )
