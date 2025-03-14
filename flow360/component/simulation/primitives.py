@@ -100,14 +100,14 @@ class Transformation(Flow360BaseModel):
     angle_of_rotation: AngleType = pd.Field(0 * u.deg)
 
     origin: LengthType.Point = pd.Field((0, 0, 0) * u.m)
-    scale: list[float] = pd.Field([0, 0, 0])  # TODO: Positive
+    scale: list[pd.PositiveFloat] = pd.Field([1, 1, 1])
 
     translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)
 
     private_attribute_matrix: Optional[list[float]] = pd.Field(None)
 
     def get_transformation_matrix(self):
-        """WIP"""
+        """WIP, need to check with front end"""
         return None
 
 
