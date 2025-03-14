@@ -1,4 +1,4 @@
-import re
+import json
 import unittest
 
 import pytest
@@ -7,6 +7,11 @@ import flow360.component.simulation.units as u
 from examples.migration_guide.extra_operating_condition import (
     operating_condition_from_mach_muref,
 )
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    VolumeMeshEntityInfo,
+)
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -40,17 +45,14 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
+    Edge,
     GenericVolume,
     ReferenceGeometry,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.unit_system import (
-    CGS_unit_system,
-    LengthType,
-    SI_unit_system,
-)
+from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -357,3 +359,51 @@ def test_delta_temperature_scaling():
         processed_param.operating_condition.thermal_state.temperature_offset.value
         == scaled_temperature_offset
     )
+
+
+def test_persistent_entity_info_update_geometry():
+    #### Geometry Entity Info ####
+    with open("./data/geometry_metadata_asset_cache.json", "r") as fp:
+        geometry_info_dict = json.load(fp)["project_entity_info"]
+        geometry_info = GeometryEntityInfo.model_validate(geometry_info_dict)
+    # modify a surface
+    selected_surface = geometry_info.get_boundaries()[0]
+    selected_surface_dict = selected_surface.model_dump(mode="json")
+    selected_surface_dict["name"] = "new_surface_name"
+    brand_new_surface = Surface.model_validate(selected_surface_dict)
+    # modify an edge
+    selected_edge = geometry_info._get_list_of_entities(entity_type_name="edge")[0]
+    selected_edge_dict = selected_edge.model_dump(mode="json")
+    selected_edge_dict["name"] = "new_edge_name"
+    brand_new_edge = Edge.model_validate(selected_edge_dict)
+
+    fake_param_entity_registry = EntityRegistry()
+    fake_param_entity_registry.register(brand_new_surface)
+    fake_param_entity_registry.register(brand_new_edge)
+
+    geometry_info.update_persistent_entities(param_entity_registry=fake_param_entity_registry)
+
+    assert geometry_info.get_boundaries()[0].name == "new_surface_name"
+    assert geometry_info._get_list_of_entities(entity_type_name="edge")[0].name == "new_edge_name"
+
+
+def test_persistent_entity_info_update_volume_mesh():
+    #### VolumeMesh Entity Info ####
+    with open("./data/volume_mesh_metadata_asset_cache.json", "r") as fp:
+        volume_mesh_info_dict = json.load(fp)
+        volume_mesh_info = VolumeMeshEntityInfo.model_validate(volume_mesh_info_dict)
+
+    # modify the axis and center of a zone
+    selected_zone = volume_mesh_info.zones[0]
+    selected_zone_dict = selected_zone.model_dump(mode="json")
+    selected_zone_dict["axes"] = [[1, 0, 0], [0, 0, 1]]
+    selected_zone_dict["center"] = {"units": "cm", "value": [1.2, 2.3, 3.4]}
+    brand_new_zone = GenericVolume.model_validate(selected_zone_dict)
+
+    fake_param_entity_registry = EntityRegistry()
+    fake_param_entity_registry.register(brand_new_zone)
+
+    volume_mesh_info.update_persistent_entities(param_entity_registry=fake_param_entity_registry)
+
+    assert volume_mesh_info.zones[0].axes == ((1, 0, 0), (0, 0, 1))
+    assert all(volume_mesh_info.zones[0].center == [1.2, 2.3, 3.4] * u.cm)
