@@ -25,17 +25,27 @@
             "type": "SubsonicOutflowMach",
             "MachNumber": 0.3
         },
-	"boundary_name_G" : {
-	    "type" : "NoSlipWall",
-	    "wallVelocityModel" : {
-		"type" : "SlaterPorousBleed",
-		"staticPressureRatio" :  0.8165514936615943,
-		"porosity" : 0.49,
-		"activationStep" : 20
-	    },
-	    "heatFlux" : 0.0,
-	    "roughnessHeight" : 0.0
-	}
+        "boundary_name_G" : {
+            "type" : "NoSlipWall",
+            "wallVelocityModel" : {
+            "type" : "SlaterPorousBleed",
+            "staticPressureRatio" :  0.8165514936615943,
+            "porosity" : 0.49,
+            "activationStep" : 20
+            },
+            "heatFlux" : 0.0,
+            "roughnessHeight" : 0.0
+        },
+        "boundary_name_I" : {
+            "type" : "NoSlipWall",
+            "velocity": [
+                "0.0 * (z - 3.0) - 0.030773317581937965 * (y - 2.0)", 
+                "0.030773317581937965 * (x - 1.0) - 0.0 * (z - 3.0)", 
+                "0.0 * (y - 2.0) - 0.0 * (x - 1.0)"
+            ],
+            "heatFlux": 0.0, 
+            "roughnessHeight": 0.0
+        }
     },
     "freestream": {
         "Mach": 0.8399999999999999,
