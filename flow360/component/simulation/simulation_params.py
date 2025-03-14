@@ -380,7 +380,7 @@ class SimulationParams(_ParamModelBase):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
 
-    def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
+    def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
         registry.clear()
@@ -422,7 +422,7 @@ class SimulationParams(_ParamModelBase):
         And also try to update the entities now that we have a global view of the simulation.
         """
         registry = EntityRegistry()
-        registry = self._move_registry_to_asset_cache(registry)
+        registry = self._register_assigned_entities(registry)
         registry = self._update_entity_private_attrs(registry)
         return registry
 

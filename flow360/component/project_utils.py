@@ -83,7 +83,8 @@ def _replace_ghost_surfaces(params: SimulationParams):
 def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams):
     """
     Setting up the persistent entity info in params.
-    Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    1. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    2. Reflect the changes to the existing persistent entities (like assigning tags or axis/centers).
     """
 
     def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
@@ -115,6 +116,8 @@ def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams)
             entity_info.face_group_tag = _get_tag(entity_registry, Surface)
         with model_attribute_unlock(entity_info, "edge_group_tag"):
             entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
+
+    entity_info.update_persistent_entities(param_entity_registry=entity_registry)
     return entity_info
 
 
