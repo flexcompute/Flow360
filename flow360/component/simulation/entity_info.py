@@ -171,7 +171,8 @@ class GeometryEntityInfo(EntityInfoModel):
             for i_group, _ in enumerate(grouped_entities):
                 for i_entity, _ in enumerate(grouped_entities[i_group]):
                     assigned_entity = entity_registry.find_by_asset_id(
-                        entity=grouped_entities[i_group][i_entity]
+                        entity_id=grouped_entities[i_group][i_entity].id,
+                        entity_class=grouped_entities[i_group][i_entity].__class__,
                     )
                     if assigned_entity is not None:
                         grouped_entities[i_group][i_entity] = assigned_entity
@@ -213,7 +214,9 @@ class VolumeMeshEntityInfo(EntityInfoModel):
 
         for i_zone, _ in enumerate(self.zones):
             # pylint:disable = unsubscriptable-object
-            assigned_zone = param_entity_registry.find_by_asset_id(entity=self.zones[i_zone])
+            assigned_zone = param_entity_registry.find_by_asset_id(
+                entity_id=self.zones[i_zone].id, entity_class=self.zones[i_zone].__class__
+            )
             if assigned_zone is not None:
                 # pylint:disable = unsupported-assignment-operation
                 self.zones[i_zone] = assigned_zone

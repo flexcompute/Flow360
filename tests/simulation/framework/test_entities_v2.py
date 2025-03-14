@@ -816,7 +816,12 @@ def test_entity_registry_find_by_id():
         ],
         [genericVolume_entity, surface_entity1, surface_entity2, edge_entity, box_entity],
     ):
-        assert registry.find_by_asset_id(entity=modified_item) == original_item
+        assert (
+            registry.find_by_asset_id(
+                entity_id=modified_item.id, entity_class=modified_item.__class__
+            )
+            == original_item
+        )
 
 
 ##:: ---------------- Entity specific validations ----------------
