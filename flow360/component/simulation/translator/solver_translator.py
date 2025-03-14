@@ -23,6 +23,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallRotation,
     WallVelocityModelTypes,
 )
 from flow360.component.simulation.models.volume_models import (
@@ -782,6 +783,15 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
                 boundary["wallVelocityModel"]["type"] = model.velocity.type_name
                 if model.velocity.activation_step is not None:
                     boundary["wallVelocityModel"]["activationStep"] = model.velocity.activation_step
+            elif isinstance(model.velocity, WallRotation):
+                omega = model.velocity.angular_velocity.value
+                axis = model.velocity.axis
+                center = model.velocity.center.value
+                boundary["velocity"] = [
+                    f"{omega * axis[1]} * (z - {center[2]}) - {omega * axis[2]} * (y - {center[1]})",
+                    f"{omega * axis[2]} * (x - {center[0]}) - {omega * axis[0]} * (z - {center[2]})",
+                    f"{omega * axis[0]} * (y - {center[1]}) - {omega * axis[1]} * (x - {center[0]})",
+                ]
             else:
                 raise Flow360TranslationError(
                     f"Unsupported wall velocity setting found with type: {type(model.velocity)}",
