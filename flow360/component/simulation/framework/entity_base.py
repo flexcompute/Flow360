@@ -124,6 +124,11 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     def _is_generic(self):
         return self.__class__.__name__.startswith("Generic")
 
+    @property
+    def id(self) -> str:
+        """Returns private_attribute_id of the entity."""
+        return self.private_attribute_id
+
 
 class _CombinedMeta(type(Flow360BaseModel), type):
     pass

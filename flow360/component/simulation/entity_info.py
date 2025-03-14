@@ -55,6 +55,12 @@ class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
         """
 
+    @abstractmethod
+    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+        """
+        Update self persistent entities with param ones by simple id/name matching.
+        """
+
 
 class GeometryEntityInfo(EntityInfoModel):
     """Data model for geometry entityInfo.json"""
@@ -155,6 +161,24 @@ class GeometryEntityInfo(EntityInfoModel):
         """
         return self._get_list_of_entities(attribute_name, "face")
 
+    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+        """
+        1. Changed `Surface`/`Edge` names? (TODO: Add support for bodyGroup too)
+        """
+
+        def _search_and_replace(grouped_entities, entity_registry: EntityRegistry):
+            for i_group, _ in enumerate(grouped_entities):
+                for i_entity, _ in enumerate(grouped_entities[i_group]):
+                    assigned_entity = entity_registry.find_by_asset_id(
+                        entity_id=grouped_entities[i_group][i_entity].id,
+                        entity_class=grouped_entities[i_group][i_entity].__class__,
+                    )
+                    if assigned_entity is not None:
+                        grouped_entities[i_group][i_entity] = assigned_entity
+
+        _search_and_replace(self.grouped_faces, param_entity_registry)
+        _search_and_replace(self.grouped_edges, param_entity_registry)
+
 
 class VolumeMeshEntityInfo(EntityInfoModel):
     """Data model for volume mesh entityInfo.json"""
@@ -182,6 +206,20 @@ class VolumeMeshEntityInfo(EntityInfoModel):
         # pylint: disable=not-an-iterable
         return [item for item in self.boundaries if item.private_attribute_is_interface is False]
 
+    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+        """
+        1. Changed GenericVolume axis and center etc
+        """
+
+        for i_zone, _ in enumerate(self.zones):
+            # pylint:disable = unsubscriptable-object
+            assigned_zone = param_entity_registry.find_by_asset_id(
+                entity_id=self.zones[i_zone].id, entity_class=self.zones[i_zone].__class__
+            )
+            if assigned_zone is not None:
+                # pylint:disable = unsupported-assignment-operation
+                self.zones[i_zone] = assigned_zone
+
 
 class SurfaceMeshEntityInfo(EntityInfoModel):
     """Data model for surface mesh entityInfo.json"""
@@ -192,5 +230,11 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
     def get_boundaries(self) -> list:
         """
         Get the full list of boundary names. If it is geometry then use supplied attribute name to get the list.
+        """
+        raise NotImplementedError("Not implemented yet.")
+
+    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+        """
+        Nothing related to SurfaceMeshEntityInfo for now.
         """
         raise NotImplementedError("Not implemented yet.")

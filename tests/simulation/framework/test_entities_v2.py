@@ -22,6 +22,7 @@ from flow360.component.simulation.framework.param_utils import (
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
+    Edge,
     GenericVolume,
     Surface,
     _SurfaceEntityBase,
@@ -951,7 +952,64 @@ def test_box_multi_constructor():
     assert np.isclose(box5.angle_of_rotation.value, 0)
 
 
-##:: ---------------- Entity specific validaitons ----------------
+def test_entity_registry_find_by_id():
+    registry = EntityRegistry()
+
+    genericVolume_entity = GenericVolume(name="123", private_attribute_id="original_zone_name")
+    surface_entity1 = Surface(name="123", private_attribute_id="original_surface_name")
+    surface_entity2 = Surface(name="1234", private_attribute_id="original_surface_name2")
+    edge_entity = Edge(name="123", private_attribute_id="original_edge_name")
+    with SI_unit_system:
+        box_entity = Box(
+            name="123bOx",
+            center=(0, 0, 0) * u.m,
+            size=(1, 1, 1) * u.m,
+            axis_of_rotation=(1, 1, 0),
+            angle_of_rotation=np.pi * u.rad,
+            private_attribute_id="original_box_name",
+        )
+
+    registry.register(genericVolume_entity)
+    registry.register(surface_entity1)
+    registry.register(surface_entity2)
+    registry.register(edge_entity)
+    registry.register(box_entity)
+
+    modified_genericVolume_entity = GenericVolume(
+        name="999", private_attribute_id="original_zone_name"
+    )
+    modified_surface_entity1 = Surface(name="999", private_attribute_id="original_surface_name")
+    modified_surface_entity2 = Surface(name="9992", private_attribute_id="original_surface_name2")
+    modified_edge_entity = Edge(name="999", private_attribute_id="original_edge_name")
+    with SI_unit_system:
+        modified_box_entity = Box(
+            name="999",
+            center=(0, 0, 0) * u.m,
+            size=(1, 1, 1) * u.m,
+            axis_of_rotation=(1, 1, 0),
+            angle_of_rotation=np.pi * u.rad,
+            private_attribute_id="original_box_name",
+        )
+
+    for modified_item, original_item in zip(
+        [
+            modified_genericVolume_entity,
+            modified_surface_entity1,
+            modified_surface_entity2,
+            modified_edge_entity,
+            modified_box_entity,
+        ],
+        [genericVolume_entity, surface_entity1, surface_entity2, edge_entity, box_entity],
+    ):
+        assert (
+            registry.find_by_asset_id(
+                entity_id=modified_item.id, entity_class=modified_item.__class__
+            )
+            == original_item
+        )
+
+
+##:: ---------------- Entity specific validations ----------------
 
 
 def test_box_validation():
