@@ -1227,8 +1227,15 @@ def get_solver_json(
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
-    translated["usingWaterAsMaterial"] = isinstance(
+    translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
     )
+    translated["velocityScale"] = 1.0
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        translated["velocityScale"] = (
+            1.0 / translated["freestream"]["MachRef"]
+            if "MachRef" in translated["freestream"].keys()
+            else 1.0 / translated["freestream"]["Mach"]
+        )
 
     return translated
