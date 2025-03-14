@@ -1329,7 +1329,8 @@ def test_beta_mesher_only_features():
                         growth_rate=1.1,
                     )
                 ],
-            )
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -1348,7 +1349,8 @@ def test_beta_mesher_only_features():
                     boundary_layer_first_layer_thickness=1e-4,
                     number_of_boundary_layers=10,
                 ),
-            )
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
@@ -1367,7 +1369,8 @@ def test_beta_mesher_only_features():
                     boundary_layer_first_layer_thickness=1e-4,
                     geometry_tolerance=1e-4,
                 ),
-            )
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),

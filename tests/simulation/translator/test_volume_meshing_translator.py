@@ -136,7 +136,9 @@ def get_test_param():
                     PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
                     PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
                     BoundaryLayer(
-                        entities=[Surface(name="boundary1")], first_layer_thickness=0.5 * u.m
+                        entities=[Surface(name="boundary1")],
+                        first_layer_thickness=0.5 * u.m,
+                        growth_rate=1.3,
                     ),
                 ],
                 volume_zones=[
@@ -207,7 +209,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             "numBoundaryLayers": -1,
         },
         "faces": {
-            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso"},
+            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso", "growthRate": 1.3},
             "passive1": {"type": "projectAnisoSpacing"},
             "passive2": {"type": "none"},
         },
