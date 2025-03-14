@@ -477,7 +477,6 @@ def test_calculate_y_lim(cases, here):
     ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
     assert ymin == 0.306161580155019
     assert ymax == 0.40616158015501896
-    print(ymin, ymax)
 
     chart.ylim = FixedRangeLimit(
         fixed_range=0.1, center_strategy="last_percent", center_fraction=0.7

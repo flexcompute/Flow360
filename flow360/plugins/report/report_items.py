@@ -861,10 +861,15 @@ class Chart2D(Chart):
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
-    focus_x: Optional[Tuple[float, float]] = Field(
-        None,
-        description="Deprecated field. Use ylim=SubsetLimit(subset=(float, float), offset=0.25) instead.",
-    )
+    focus_x: Optional[
+        Annotated[
+            Tuple[float, float],
+            Field(
+                deprecated="focus_x is deprecated, your input was converted to a corresponding SubsetLimit. "
+                + "Please use ylim=SubsetLimit instead in the future.",
+            ),
+        ]
+    ] = None
     xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
 
