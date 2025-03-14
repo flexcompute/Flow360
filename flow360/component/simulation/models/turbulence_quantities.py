@@ -209,7 +209,7 @@ def TurbulenceQuantities(
     at boundaries. The turbulence properties that can be
     specified are listed below. All values are dimensional.
     For valid specifications as well as the default values,
-    please refer to :ref:`knowledge base<knowledgeBaseTurbulenceQuantities>`.
+    please see the `Valid combinations` section below.
 
     Parameters
     ----------
@@ -250,6 +250,43 @@ def TurbulenceQuantities(
     -------
     ValueError
         If the TurbulenceQuantities inputs do not represent a valid specification.
+
+
+    Valid combinations
+    ------------------
+    default
+        The default turbulence depends on the turbulence model.
+        For SA model without transition model this is equivalent to set
+        modifiedTurbulentViscosityRatio = 3.0 (or effectively turbulentViscosityRatio = 0.210438).
+        For SA model with transition model, modifiedTurbulentViscosityRatio = 0.1
+        (or effectively turbulentViscosityRatio = 2.794e-7). For SST model the default turbulence is
+        turbulentViscosityRatio = 0.01 with default specificDissipationRate = reference_mach/l_box
+        where l_box is the bounding box dimension for wall boundaries.
+    viscosity_ratio alone
+        This applies to both SST and SA model. For SST model this is effectively
+        an override of the above default turbulentViscosityRatio value while keeping
+        the default specificDissipationRate. For SA model the turbulentViscosityRatio
+        will be converted to the modifiedTurbulentViscosityRatio.
+    turbulent_kinetic_energy or turbulent_intensity alone
+        For SST model only. specificDissipationRate will be set to the default value.
+    turbulent_length_scale
+        For SST model only. specificDissipationRate will be set to the default value.
+    modified_viscosity
+        For SA model only.
+    modified_viscosity_ratio
+        For SA model only.
+    turbulent_kinetic_energy or turbulent_intensity with specific_dissipation_rate
+        For SST model only.
+    turbulent_kinetic_energy or turbulent_intensity with viscosity_ratio
+        For SST model only.
+    turbulent_kinetic_energy or turbulent_intensity with turbulent_length_scale
+        For SST model only.
+    specific_dissipation_rate with viscosity_ratio
+        For SST model only.
+    specific_dissipation_rate with turbulent_length_scale
+        For SST model only.
+    viscosity_ratio with with turbulent_length_scale
+
 
     Example
     -------
