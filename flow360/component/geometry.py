@@ -27,7 +27,7 @@ from flow360.component.resource_base import (
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
-from flow360.component.simulation.primitives import Edge, Surface
+from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import shared_account_confirm_proceed
@@ -249,14 +249,12 @@ class Geometry(AssetBase):
             # This may happen if users submit the Geometry but did not do anything else.
             # Then they load back the geometry which will then have no info on grouping.
             log.warning(
-                "Could not find face grouping info in the draft's simulation settings. "
-                "Please remember to group them if relevant features are used."
+                "Face grouping setting not found. Please remember to group them if relevant features are used."
             )
 
         if asset_obj.edge_group_tag is None:
             log.warning(
-                "Could not find edge grouping info in the draft's simulation settings. "
-                "Please remember to group them if relevant features are used."
+                "Edge grouping setting not found. Please remember to group them if relevant features are used."
             )
 
         return asset_obj
@@ -286,6 +284,11 @@ class Geometry(AssetBase):
             ignored_attribute_tags=["__all__", "edgeId"],
             show_ids_in_each_group=verbose_mode,
         )
+        self._show_available_entity_groups(
+            "bodies",
+            ignored_attribute_tags=["__all__", "bodyId"],
+            show_ids_in_each_group=verbose_mode,
+        )
 
     @classmethod
     def from_local_storage(
@@ -312,7 +315,7 @@ class Geometry(AssetBase):
 
     def _show_available_entity_groups(
         self,
-        entity_type_name: Literal["faces", "edges"],
+        entity_type_name: Literal["faces", "edges", "bodies"],
         ignored_attribute_tags: list = None,
         show_ids_in_each_group: bool = False,
     ) -> None:
@@ -320,18 +323,22 @@ class Geometry(AssetBase):
         Display all the grouping info for the given entity type
         """
 
-        if entity_type_name not in ["faces", "edges"]:
+        if entity_type_name not in ["faces", "edges", "bodies"]:
             raise Flow360ValueError(
-                f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges']"
+                f"entity_type_name: {entity_type_name} is invalid. Valid options are: ['faces', 'edges', 'bodies']"
             )
 
         # pylint: disable=no-member
         if entity_type_name == "faces":
             attribute_names = self._entity_info.face_attribute_names
             grouped_items = self._entity_info.grouped_faces
-        else:
+        elif entity_type_name == "edges":
             attribute_names = self._entity_info.edge_attribute_names
             grouped_items = self._entity_info.grouped_edges
+        else:
+            attribute_names = self._entity_info.body_attribute_names
+            grouped_items = self._entity_info.grouped_bodies
+
         log.info(f" >> Available attribute tags for grouping **{entity_type_name}**:")
         for tag_index, attribute_tag in enumerate(attribute_names):
             if ignored_attribute_tags is not None and attribute_tag in ignored_attribute_tags:
@@ -340,21 +347,23 @@ class Geometry(AssetBase):
                 f"    >> Tag '{tag_index}': {attribute_tag}. Grouping with this tag results in:"
             )
             for index, entity in enumerate(grouped_items[tag_index]):
-                log.info(f"        >> Boundary {index}: {entity.name}")
+                log.info(f"        >> [{index}]: {entity.name}")
                 if show_ids_in_each_group is True:
                     log.info(f"           IDs: {entity.private_attribute_sub_components}")
 
     def _group_entity_by_tag(
-        self, entity_type_name: Literal["face", "edge"], tag_name: str
+        self, entity_type_name: Literal["face", "edge", "body"], tag_name: str
     ) -> None:
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
 
-        found_existing_grouping = (
-            self.face_group_tag is not None
-            if entity_type_name == "face"
-            else self.edge_group_tag is not None
-        )
+        if entity_type_name == "face":
+            found_existing_grouping = self.face_group_tag is not None
+        if entity_type_name == "edge":
+            found_existing_grouping = self.edge_group_tag is not None
+        if entity_type_name == "body":
+            found_existing_grouping = self.body_group_tag is not None
+
         if found_existing_grouping is True:
             log.warning(
                 f"Grouping already exists for {entity_type_name}. Resetting the grouping and regroup with {tag_name}."
@@ -366,8 +375,10 @@ class Geometry(AssetBase):
         )
         if entity_type_name == "face":
             self.face_group_tag = tag_name
-        else:
+        elif entity_type_name == "edge":
             self.edge_group_tag = tag_name
+        else:
+            self.body_group_tag = tag_name
 
     def group_faces_by_tag(self, tag_name: str) -> None:
         """
@@ -381,16 +392,22 @@ class Geometry(AssetBase):
         """
         self._group_entity_by_tag("edge", tag_name)
 
-    def _reset_grouping(self, entity_type_name: Literal["face", "edge"]) -> None:
+    def group_bodies_by_tag(self, tag_name: str) -> None:
+        """
+        Group bodies by tag name
+        """
+        self._group_entity_by_tag("body", tag_name)
+
+    def _reset_grouping(self, entity_type_name: Literal["face", "edge", "body"]) -> None:
         if entity_type_name == "face":
             self.internal_registry.clear(Surface)
-        else:
-            self.internal_registry.clear(Edge)
-
-        if entity_type_name == "face":
             self.face_group_tag = None
-        else:
+        elif entity_type_name == "edge":
+            self.internal_registry.clear(Edge)
             self.edge_group_tag = None
+        else:
+            self.internal_registry.clear(GeometryBodyGroup)
+            self.body_group_tag = None
 
     def reset_face_grouping(self) -> None:
         """Reset the face grouping"""
@@ -399,6 +416,10 @@ class Geometry(AssetBase):
     def reset_edge_grouping(self) -> None:
         """Reset the edge grouping"""
         self._reset_grouping("edge")
+
+    def reset_body_grouping(self) -> None:
+        """Reset the body grouping"""
+        self._reset_grouping("body")
 
     def __getitem__(self, key: str):
         """

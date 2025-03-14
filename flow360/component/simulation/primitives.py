@@ -93,10 +93,47 @@ class ReferenceGeometry(Flow360BaseModel):
 
 
 class Transformation(Flow360BaseModel):
-    """Used in preprocess()/translator to meshing param for volume meshing interface"""
+    """Transformation that will be applied to a body group."""
 
-    axis_of_rotation: Optional[Axis] = pd.Field()
-    angle_of_rotation: Optional[AngleType] = pd.Field()
+    type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
+    axis_of_rotation: Axis = pd.Field((1, 0, 0))
+    angle_of_rotation: AngleType = pd.Field(0 * u.deg)
+
+    origin: LengthType.Point = pd.Field((0, 0, 0) * u.m)
+    scale: list[float] = pd.Field([0, 0, 0])  # TODO: Positive
+
+    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)
+
+    private_attribute_matrix: Optional[list[float]] = pd.Field(None)
+
+    def get_transformation_matrix(self):
+        """WIP"""
+        return None
+
+
+class GeometryBodyGroup(EntityBase):
+    """
+    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
+    """
+
+    private_attribute_registry_bucket_name: Literal["GeometryBodyGroupEntityType"] = (
+        "GeometryBodyGroupEntityType"
+    )
+    private_attribute_tag_key: str = pd.Field(
+        description="The tag/attribute string used to group bodies.",
+    )
+    private_attribute_entity_type_name: Literal["GeometryBodyGroup"] = pd.Field(
+        "GeometryBodyGroup", frozen=True
+    )
+    private_attribute_sub_components: List[str] = pd.Field(
+        description="A list of body IDs which constitutes the current body group"
+    )
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Color used for visualization"
+    )
+    transformation: Transformation = pd.Field(
+        Transformation(), description="The transformation performed on the body group"
+    )
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
@@ -456,6 +493,9 @@ class Surface(_SurfaceEntityBase):
         description="Issues (not necessarily problems) found on this `Surface` after inspection by "
         "surface mesh / geometry pipeline. Used for determining the usability of the `Surface` instance"
         " under certain features and/or its existence.",
+    )
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Color used for visualization"
     )
 
     # pylint: disable=fixme

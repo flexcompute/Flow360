@@ -16,6 +16,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     Edge,
     GenericVolume,
+    GeometryBodyGroup,
     GhostCircularPlane,
     GhostSphere,
     Surface,
@@ -61,6 +62,25 @@ class GeometryEntityInfo(EntityInfoModel):
     """Data model for geometry entityInfo.json"""
 
     type_name: Literal["GeometryEntityInfo"] = pd.Field("GeometryEntityInfo", frozen=True)
+
+    body_ids: list[str] = pd.Field(
+        [],
+        description="A full list of body IDs that appear in the geometry.",
+        alias="bodyIDs",
+    )
+    body_attribute_names: List[str] = pd.Field(
+        [],
+        description="A full list of attribute names that the user can"
+        "select to achieve grouping of bodies. It has same length as `grouped_bodies`",
+        alias="bodyAttributeNames",
+    )
+    grouped_bodies: List[List[GeometryBodyGroup]] = pd.Field(
+        [[]],
+        description="The resulting list "
+        "of `GeometryBodyGroup` entities after grouping using the attribute name.",
+        alias="groupedBodies",
+    )
+
     face_ids: list[str] = pd.Field(
         [],
         description="A full list of faceIDs/model IDs that appear in the geometry.",
