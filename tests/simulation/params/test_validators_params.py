@@ -12,6 +12,7 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -1313,3 +1314,67 @@ def test_deleted_surfaces():
         " be deleted after mesh generation. Therefore it cannot be used."
     )
     assert errors[0]["loc"] == ("models", 2, "entity_pairs")
+
+
+def test_beta_mesher_only_features():
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4, surface_max_edge_length=1e-2
+                ),
+                refinements=[
+                    BoundaryLayer(
+                        faces=[Surface(name="face1"), Surface(name="face2")],
+                        growth_rate=1.1,
+                    )
+                ],
+            )
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, Growth rate per face is only supported by the beta mesher."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    number_of_boundary_layers=10,
+                ),
+            )
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, Number of boundary layers is only supported by the beta mesher."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_tolerance=1e-4,
+                ),
+            )
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, Geometry tolerance is only supported by the beta mesher."
+    )

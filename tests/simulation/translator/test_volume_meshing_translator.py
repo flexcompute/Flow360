@@ -203,6 +203,8 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
             "gapTreatmentStrength": 0.0,
+            "geometryTolerance": 1e-6,
+            "numBoundaryLayers": -1,
         },
         "faces": {
             "boundary1": {"firstLayerThickness": 0.5, "type": "aniso"},
@@ -324,7 +326,13 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
     reference = {
         "refinementFactor": 1.0,
         "farfield": {"type": "user-defined"},
-        "volume": {"firstLayerThickness": 100.0, "growthRate": 1.2, "gapTreatmentStrength": 0.0},
+        "volume": {
+            "firstLayerThickness": 100.0,
+            "growthRate": 1.2,
+            "gapTreatmentStrength": 0.0,
+            "geometryTolerance": 1e-6,
+            "numBoundaryLayers": -1,
+        },
         "faces": {},
     }
     assert sorted(translated.items()) == sorted(reference.items())
