@@ -252,8 +252,11 @@ def TurbulenceQuantities(
         If the TurbulenceQuantities inputs do not represent a valid specification.
 
 
-    Valid combinations
-    ------------------
+    Notes
+    -----
+
+    The valid combinations of multiple turbulence quantities is summarized as follows,
+
     default
         The default turbulence depends on the turbulence model.
         For SA model without transition model this is equivalent to set
