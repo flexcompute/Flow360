@@ -269,7 +269,7 @@ def TurbulenceQuantities(
         will be converted to the modifiedTurbulentViscosityRatio.
     turbulent_kinetic_energy or turbulent_intensity alone
         For SST model only. specificDissipationRate will be set to the default value.
-    turbulent_length_scale
+    turbulent_length_scale alone
         For SST model only. specificDissipationRate will be set to the default value.
     modified_viscosity
         For SA model only.
