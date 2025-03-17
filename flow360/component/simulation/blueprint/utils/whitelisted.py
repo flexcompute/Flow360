@@ -40,6 +40,7 @@ def _import_flow360(name: str) -> Any:
 
     if name == "u":
         from flow360 import u
+
         return u
 
 
@@ -93,10 +94,7 @@ WHITELISTED_CALLABLES = {
         "prefix": "",
         "callables": ["print"],
     },
-    "flow360": {
-        "prefix": "u.",
-        "callables": _unit_list()
-    }
+    "flow360": {"prefix": "u.", "callables": _unit_list()},
 }
 
 # Define allowed modules

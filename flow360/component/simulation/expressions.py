@@ -1,10 +1,6 @@
 from typing import get_origin, Generic, TypeVar, Self
 import re
 
-from pydantic import AfterValidator
-from pydantic.functional_validators import ModelWrapValidatorHandler
-
-from pydantic import TypeAdapter
 from flow360.component.simulation.unit_system import *
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -12,7 +8,7 @@ from flow360.component.simulation.blueprint import expression_to_model
 
 import pydantic as pd
 from numbers import Number
-from unyt import Unit, unyt_quantity
+from unyt import Unit, unyt_quantity, unyt_array
 
 _global_ctx: EvaluationContext = EvaluationContext()
 
@@ -42,10 +38,10 @@ def _split_keep_delimiters(input: str, delimiters: list) -> list:
 def _convert_argument(other):
     parenthesize = False
     unit_delimiters = ["+", "-", "*", "/", "(", ")"]
-    if isinstance(other, Flow360Expression):
+    if isinstance(other, Expression):
         arg = other.body
         parenthesize = True
-    elif isinstance(other, Flow360Variable):
+    elif isinstance(other, Variable):
         arg = other.name
     elif isinstance(other, Number):
         arg = str(other)
@@ -69,95 +65,110 @@ def _convert_argument(other):
                 arg += token
             else:
                 arg += token
+    elif isinstance(other, unyt_array):
+        unit = str(other.units)
+        tokens = _split_keep_delimiters(unit, unit_delimiters)
+        arg = f"{str(other.value)} * "
+        for token in tokens:
+            if token not in unit_delimiters and not _is_number_string(token):
+                token = f"u.{token}"
+                arg += token
+            else:
+                arg += token
     else:
         raise ValueError(f"Incompatible argument of type {type(other)}")
     return arg, parenthesize
 
 
-class Flow360Variable:
-    def __init__(self, name: str, value: Union[list[float], float, unyt_quantity]):
-        self.name = name
-        self.value = value
-        _global_ctx.set(name, value)
-    
+class Variable(Flow360BaseModel):
+    name: str = pd.Field()
+    value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
+
+    model_config = pd.ConfigDict(validate_assignment=True)
+
+    @pd.model_validator(mode="after")
+    @classmethod
+    def update_context(cls, value):
+        _global_ctx.set(value.name, value.value)
+
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} + {str_arg}")
+        return Expression(body=f"{self.name} + {str_arg}")
 
     def __sub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} - {str_arg}")
+        return Expression(body=f"{self.name} - {str_arg}")
 
     def __mul__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} * {str_arg}")
+        return Expression(body=f"{self.name} * {str_arg}")
 
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} / {str_arg}")
+        return Expression(body=f"{self.name} / {str_arg}")
 
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} // {str_arg}")
+        return Expression(body=f"{self.name} // {str_arg}")
 
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} % {str_arg}")
+        return Expression(body=f"{self.name} % {str_arg}")
 
     def __pow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.name} ** {str_arg}")
+        return Expression(body=f"{self.name} ** {str_arg}")
 
     def __neg__(self):
-        return Flow360Expression(body=f"-{self.name}")
+        return Expression(body=f"-{self.name}")
 
     def __pos__(self):
-        return Flow360Expression(body=f"+{self.name}")
+        return Expression(body=f"+{self.name}")
 
     def __abs__(self):
-        return Flow360Expression(body=f"abs({self.name})")
+        return Expression(body=f"abs({self.name})")
 
     def __radd__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} + {self.name}")
+        return Expression(body=f"{str_arg} + {self.name}")
 
     def __rsub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} - {self.name}")
+        return Expression(body=f"{str_arg} - {self.name}")
 
     def __rmul__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} * {self.name}")
+        return Expression(body=f"{str_arg} * {self.name}")
 
     def __rtruediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} / {self.name}")
+        return Expression(body=f"{str_arg} / {self.name}")
 
     def __rfloordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} // {self.name}")
+        return Expression(body=f"{str_arg} // {self.name}")
 
     def __rmod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} % {self.name}")
+        return Expression(body=f"{str_arg} % {self.name}")
 
     def __rpow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} ** {self.name}")
+        return Expression(body=f"{str_arg} ** {self.name}")
 
     def __str__(self):
         return self.name
@@ -167,30 +178,34 @@ class Flow360Variable:
 
 
 def _get_internal_validator(internal_type):
-    def _internal_validator(value: Flow360Expression):
+    def _internal_validator(value: Expression):
         result = value.evaluate()
-        TypeAdapter(internal_type).validate_python(result)
+        pd.TypeAdapter(internal_type).validate_python(result)
         return value
 
     return _internal_validator
 
 
-class Flow360Expression(Flow360BaseModel):
+class Expression(Flow360BaseModel):
     body: str = pd.Field("")
+
+    model_config = pd.ConfigDict(validate_assignment=True)
 
     @pd.model_validator(mode="wrap")
     @classmethod
-    def _validate_expression(cls, value, handler: ModelWrapValidatorHandler[Self]) -> Self:
+    def _validate_expression(cls, value, handler) -> Self:
         if isinstance(value, str):
             body = value
         elif isinstance(value, dict) and "body" in value.keys():
             body = value["body"]
-        elif isinstance(value, Flow360Expression):
+        elif isinstance(value, Expression):
             body = value.body
-        elif isinstance(value, Flow360Variable):
+        elif isinstance(value, Variable):
             body = str(value)
         else:
-            details = InitErrorDetails(type="value_error", ctx={"error": f"Invalid type {type(value)}"})
+            details = InitErrorDetails(
+                type="value_error", ctx={"error": f"Invalid type {type(value)}"}
+            )
             raise pd.ValidationError.from_exception_data("expression type error", [details])
 
         try:
@@ -212,81 +227,81 @@ class Flow360Expression(Flow360BaseModel):
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.body} + {str_arg}")
+        return Expression(body=f"{self.body} + {str_arg}")
 
     def __sub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{self.body} - {str_arg}")
+        return Expression(body=f"{self.body} - {str_arg}")
 
     def __mul__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"({self.body}) * {str_arg}")
+        return Expression(body=f"({self.body}) * {str_arg}")
 
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"({self.body}) / {str_arg}")
+        return Expression(body=f"({self.body}) / {str_arg}")
 
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"({self.body}) // {str_arg}")
+        return Expression(body=f"({self.body}) // {str_arg}")
 
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"({self.body}) % {str_arg}")
+        return Expression(body=f"({self.body}) % {str_arg}")
 
     def __pow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"({self.body}) ** {str_arg}")
+        return Expression(body=f"({self.body}) ** {str_arg}")
 
     def __neg__(self):
-        return Flow360Expression(body=f"-({self.body})")
+        return Expression(body=f"-({self.body})")
 
     def __pos__(self):
-        return Flow360Expression(body=f"+({self.body})")
+        return Expression(body=f"+({self.body})")
 
     def __abs__(self):
-        return Flow360Expression(body=f"abs({self.body})")
+        return Expression(body=f"abs({self.body})")
 
     def __radd__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} + {self.body}")
+        return Expression(body=f"{str_arg} + {self.body}")
 
     def __rsub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} - {self.body}")
+        return Expression(body=f"{str_arg} - {self.body}")
 
     def __rmul__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} * ({self.body})")
+        return Expression(body=f"{str_arg} * ({self.body})")
 
     def __rtruediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} / ({self.body})")
+        return Expression(body=f"{str_arg} / ({self.body})")
 
     def __rfloordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} // ({self.body})")
+        return Expression(body=f"{str_arg} // ({self.body})")
 
     def __rmod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} % ({self.body})")
+        return Expression(body=f"{str_arg} % ({self.body})")
 
     def __rpow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Flow360Expression(body=f"{str_arg} ** ({self.body})")
+        return Expression(body=f"{str_arg} ** ({self.body})")
 
     def __str__(self):
         return self.body
@@ -298,26 +313,29 @@ class Flow360Expression(Flow360BaseModel):
 T = TypeVar("T")
 
 
-class Flow360ValueOrExpression(Flow360Expression, Generic[T]):
+class ValueOrExpression(Expression, Generic[T]):
 
     def __class_getitem__(cls, internal_type):
-        if internal_type is float:
+        if isinstance(internal_type, Number):
+
             def _non_dimensional_validator(value):
                 result = value.evaluate()
-                if isinstance(result, float):
+                if isinstance(result, Number):
                     return value
                 msg = "The evaluated value needs to be a non-dimensional scalar"
                 details = InitErrorDetails(type="value_error", ctx={"error": msg})
                 raise pd.ValidationError.from_exception_data("expression value error", [details])
 
-            expr_type = Annotated[Flow360Expression, AfterValidator(_non_dimensional_validator)]
+            expr_type = Annotated[Expression, pd.AfterValidator(_non_dimensional_validator)]
         else:
-            expr_type = Annotated[Flow360Expression, AfterValidator(_get_internal_validator(internal_type))]
+            expr_type = Annotated[
+                Expression, pd.AfterValidator(_get_internal_validator(internal_type))
+            ]
 
         return Union[internal_type, expr_type]
 
-    @pd.model_validator(mode='wrap')
+    @pd.model_validator(mode="wrap")
     @classmethod
-    def _convert_to_dict(cls, value, handler: ModelWrapValidatorHandler[Self]) -> Self:
-        value = Flow360Expression.validate(value)
+    def _convert_to_dict(cls, value, handler) -> Self:
+        value = Expression.model_validate(value)
         return handler({"body": value.body})

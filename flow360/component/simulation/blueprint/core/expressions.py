@@ -45,6 +45,22 @@ class Constant(Expression):
         return self.value
 
 
+class UnaryOp(Expression):
+    type: Literal["UnaryOp"] = "UnaryOp"
+    op: str
+    operand: "ExpressionType"
+
+    def evaluate(self, context: EvaluationContext) -> Any:
+        from ..utils.operators import UNARY_OPERATORS
+
+        operand_val = self.operand.evaluate(context)
+
+        if self.op not in UNARY_OPERATORS:
+            raise ValueError(f"Unsupported operator: {self.op}")
+
+        return UNARY_OPERATORS[self.op](operand_val)
+
+
 class BinOp(Expression):
     """
     For simplicity, we use the operator's class name as a string
@@ -57,15 +73,15 @@ class BinOp(Expression):
     right: "ExpressionType"
 
     def evaluate(self, context: EvaluationContext) -> Any:
-        from ..utils.operators import OPERATORS
+        from ..utils.operators import BINARY_OPERATORS
 
         left_val = self.left.evaluate(context)
         right_val = self.right.evaluate(context)
 
-        if self.op not in OPERATORS:
+        if self.op not in BINARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
 
-        return OPERATORS[self.op](left_val, right_val)
+        return BINARY_OPERATORS[self.op](left_val, right_val)
 
 
 class RangeCall(Expression):

@@ -6,13 +6,14 @@ from typing import Any
 from ..core.context import EvaluationContext
 from ..core.expressions import (
     BinOp,
+    UnaryOp,
     CallModel,
     Constant,
     ListComp,
     Name,
     RangeCall,
     Tuple,
-    Expression
+    Expression,
 )
 from ..core.expressions import (
     List as ListExpr,
@@ -52,6 +53,9 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             return Name(id=".".join(reversed(parts)))
         else:
             raise ValueError(f"Unsupported attribute access: {ast.dump(node)}")
+
+    elif isinstance(node, ast.UnaryOp):
+        return UnaryOp(op=type(node.op).__name__, operand=parse_expr(node.operand, ctx))
 
     elif isinstance(node, ast.BinOp):
         return BinOp(
@@ -257,15 +261,9 @@ def expression_to_model(
     body = tree.body[0]
 
     # We expect a single line expression
-    if (
-        not isinstance(tree, ast.Module)
-        or len(tree.body) != 1
-        or not isinstance(body, ast.Expr)
-    ):
+    if not isinstance(tree, ast.Module) or len(tree.body) != 1 or not isinstance(body, ast.Expr):
         raise ValueError("Expected a single-line rvalue expression")
 
     expression = parse_expr(body.value, ctx)
 
     return expression
-
-

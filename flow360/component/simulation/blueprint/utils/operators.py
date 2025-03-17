@@ -1,12 +1,14 @@
 import operator
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Union
 
 
 class OpInfo:
     """Class to hold operator information."""
 
-    def __init__(self, func: Callable[[Any, Any], Any], symbol: str) -> None:
+    def __init__(
+        self, func: Union[Callable[[Any], Any], Callable[[Any, Any], Any]], symbol: str
+    ) -> None:
         self.func = func
         self.symbol = symbol
 
@@ -14,7 +16,12 @@ class OpInfo:
         return self.func(*args)
 
 
-OPERATORS = {
+UNARY_OPERATORS = {
+    "UAdd": OpInfo(operator.pos, "+"),
+    "USub": OpInfo(operator.neg, "-"),
+}
+
+BINARY_OPERATORS = {
     # Arithmetic operators
     "Add": OpInfo(operator.add, "+"),
     "Sub": OpInfo(operator.sub, "-"),

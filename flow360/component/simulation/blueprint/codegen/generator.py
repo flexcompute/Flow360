@@ -19,7 +19,7 @@ from ..core.statements import (
     Return,
     TupleUnpack,
 )
-from ..utils.operators import OPERATORS
+from ..utils.operators import BINARY_OPERATORS
 
 
 def _indent(code: str, level: int = 1) -> str:
@@ -42,7 +42,7 @@ def expr_to_code(expr: Any) -> str:
         return str(expr.value)
 
     elif isinstance(expr, BinOp):
-        op_info = OPERATORS[expr.op]
+        op_info = BINARY_OPERATORS[expr.op]
         return f"({expr_to_code(expr.left)} {op_info.symbol} {expr_to_code(expr.right)})"
 
     elif isinstance(expr, RangeCall):
