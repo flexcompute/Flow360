@@ -52,7 +52,7 @@ def test_geometry_rename_entity(mock_id, mock_response):
             "Please group them first before remaning the entities."
         ),
     ):
-        geometry.rename_entity(
+        geometry._rename_entity(
             entity_type_name=entity_type_name,
             current_name_pattern="wing",
             new_name_prefix="NewWing",
@@ -65,7 +65,7 @@ def test_geometry_rename_entity(mock_id, mock_response):
             "Renaming failed: No entity is found to match the input name pattern: trailingEdgeTypo."
         ),
     ):
-        geometry.rename_entity(
+        geometry._rename_entity(
             entity_type_name=entity_type_name,
             current_name_pattern="trailingEdgeTypo",
             new_name_prefix="NewTrailingEdge",
@@ -75,13 +75,13 @@ def test_geometry_rename_entity(mock_id, mock_response):
         ex.Flow360ValueError,
         match=("Renaming failed: An entity with the new name: leadingEdge already exists."),
     ):
-        geometry.rename_entity(
+        geometry._rename_entity(
             entity_type_name=entity_type_name,
             current_name_pattern="trailingEdge",
             new_name_prefix="leadingEdge",
         )
 
-    geometry.rename_entity(
+    geometry._rename_entity(
         entity_type_name=entity_type_name,
         current_name_pattern="trailingEdge",
         new_name_prefix="newTrailingEdge",
@@ -90,7 +90,7 @@ def test_geometry_rename_entity(mock_id, mock_response):
 
     geometry = copy.deepcopy(geometry_initial)
     geometry.group_edges_by_tag("edgeName")
-    geometry.rename_entity(
+    geometry._rename_entity(
         entity_type_name=entity_type_name,
         current_name_pattern="*Edge",
         new_name_prefix="newEdges",

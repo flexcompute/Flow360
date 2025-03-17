@@ -421,9 +421,9 @@ class Geometry(AssetBase):
         """Reset the body grouping"""
         self._reset_grouping("body")
 
-    def rename_entity(
+    def _rename_entity(
         self,
-        entity_type_name: Literal["face", "edge"],
+        entity_type_name: Literal["face", "edge", "body"],
         current_name_pattern: str,
         new_name_prefix: str,
     ):
@@ -432,7 +432,7 @@ class Geometry(AssetBase):
 
         Parameters
         ----------
-        entity_type_name : Literal["face", "edge"]
+        entity_type_name : Literal["face", "edge", "body"]
             The type of entity that needs renaming
 
         current_name_pattern:
@@ -443,8 +443,11 @@ class Geometry(AssetBase):
 
         """
 
-        if (entity_type_name == "face" and not self.face_group_tag) or (
-            entity_type_name == "edge" and not self.edge_group_tag
+        # pylint: disable=too-many-boolean-expressions
+        if (
+            (entity_type_name == "face" and not self.face_group_tag)
+            or (entity_type_name == "edge" and not self.edge_group_tag)
+            or (entity_type_name == "body" and not self.body_group_tag)
         ):
             raise Flow360ValueError(
                 f"Renaming failed: Could not find {entity_type_name} grouping info in the draft's simulation settings."
@@ -470,6 +473,30 @@ class Geometry(AssetBase):
                 )
             with model_attribute_unlock(entity, "name"):
                 entity.name = new_name
+
+    def rename_edge(self, current_name_pattern: str, new_name_prefix: str):
+        """Rename the edge entities"""
+        self._rename_entity(
+            entity_type_name="edge",
+            current_name_pattern=current_name_pattern,
+            new_name_prefix=new_name_prefix,
+        )
+
+    def rename_face(self, current_name_pattern: str, new_name_prefix: str):
+        """Rename the face entities"""
+        self._rename_entity(
+            entity_type_name="face",
+            current_name_pattern=current_name_pattern,
+            new_name_prefix=new_name_prefix,
+        )
+
+    def rename_body(self, current_name_pattern: str, new_name_prefix: str):
+        """Rename the body entities"""
+        self._rename_entity(
+            entity_type_name="body",
+            current_name_pattern=current_name_pattern,
+            new_name_prefix=new_name_prefix,
+        )
 
     def __getitem__(self, key: str):
         """
