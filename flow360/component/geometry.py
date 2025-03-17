@@ -421,6 +421,113 @@ class Geometry(AssetBase):
         """Reset the body grouping"""
         self._reset_grouping("body")
 
+    def _rename_entity(
+        self,
+        entity_type_name: Literal["face", "edge", "body"],
+        current_name_pattern: str,
+        new_name_prefix: str,
+    ):
+        """
+        Rename the entity
+
+        Parameters
+        ----------
+        entity_type_name : Literal["face", "edge", "body"]
+            The type of entity that needs renaming
+
+        current_name_pattern:
+            The current name of a single entity or the name pattern of the entities
+
+        new_name_prefix:
+            The new name of a single entity or the new name prefix of the entities
+
+        """
+
+        # pylint: disable=too-many-boolean-expressions
+        if (
+            (entity_type_name == "face" and not self.face_group_tag)
+            or (entity_type_name == "edge" and not self.edge_group_tag)
+            or (entity_type_name == "body" and not self.body_group_tag)
+        ):
+            raise Flow360ValueError(
+                f"Renaming failed: Could not find {entity_type_name} grouping info in the draft's simulation settings."
+                "Please group them first before remaning the entities."
+            )
+
+        matched_entities = sorted(
+            self.internal_registry.find_by_naming_pattern(pattern=current_name_pattern),
+            key=lambda x: x.name,
+        )
+        if len(matched_entities) == 0:
+            raise Flow360ValueError(
+                f"Renaming failed: No entity is found to match the input name pattern: {current_name_pattern}."
+            )
+
+        for idx, entity in enumerate(matched_entities):
+            new_name = (
+                f"{new_name_prefix}_{(idx+1):04d}" if len(matched_entities) > 1 else new_name_prefix
+            )
+            if self.internal_registry.find_by_naming_pattern(new_name):
+                raise Flow360ValueError(
+                    f"Renaming failed: An entity with the new name: {new_name} already exists."
+                )
+            with model_attribute_unlock(entity, "name"):
+                entity.name = new_name
+
+    def rename_edge(self, current_name_pattern: str, new_name_prefix: str):
+        """
+        Rename the edge in the current edge group
+
+        Parameters
+        ----------
+        current_name_pattern:
+            The current name of a single edge or the name pattern of the edges
+
+        new_name_prefix:
+            The new name of a single edge or the new name prefix of the edges
+        """
+        self._rename_entity(
+            entity_type_name="edge",
+            current_name_pattern=current_name_pattern,
+            new_name_prefix=new_name_prefix,
+        )
+
+    def rename_face(self, current_name_pattern: str, new_name_prefix: str):
+        """
+        Rename the face in the current face group
+
+        Parameters
+        ----------
+        current_name_pattern:
+            The current name of a single face or the name pattern of the faces
+
+        new_name_prefix:
+            The new name of a single face or the new name prefix of the faces
+        """
+        self._rename_entity(
+            entity_type_name="face",
+            current_name_pattern=current_name_pattern,
+            new_name_prefix=new_name_prefix,
+        )
+
+    def rename_body(self, current_name_pattern: str, new_name_prefix: str):
+        """
+        Rename the body in the current body group
+
+        Parameters
+        ----------
+        current_name_pattern:
+            The current name of a single body or the name pattern of the bodies
+
+        new_name_prefix:
+            The new name of a single body or the new name prefix of the bodies
+        """
+        self._rename_entity(
+            entity_type_name="body",
+            current_name_pattern=current_name_pattern,
+            new_name_prefix=new_name_prefix,
+        )
+
     def __getitem__(self, key: str):
         """
         Get the entity by name.
