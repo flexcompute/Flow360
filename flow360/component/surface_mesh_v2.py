@@ -15,7 +15,6 @@ from flow360.cloud.flow360_requests import LengthUnitType, NewSurfaceMeshRequest
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import SurfaceMeshInterfaceV2
-from flow360.component.project_utils import SurfaceMeshFile
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
@@ -24,7 +23,11 @@ from flow360.component.resource_base import (
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.utils import MeshNameParser, shared_account_confirm_proceed
+from flow360.component.utils import (
+    MeshNameParser,
+    SurfaceMeshFile,
+    shared_account_confirm_proceed,
+)
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 

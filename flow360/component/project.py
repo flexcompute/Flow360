@@ -25,9 +25,6 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
-    GeometryFiles,
-    SurfaceMeshFile,
-    VolumeMeshFile,
     formatting_validation_errors,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
@@ -41,6 +38,9 @@ from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
+    GeometryFiles,
+    SurfaceMeshFile,
+    VolumeMeshFile,
     get_short_asset_id,
     parse_datetime,
     wrapstring,

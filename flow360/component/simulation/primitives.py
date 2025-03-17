@@ -97,12 +97,12 @@ class Transformation(Flow360BaseModel):
 
     type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
-    angle_of_rotation: AngleType = pd.Field(0 * u.deg)
+    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
-    origin: LengthType.Point = pd.Field((0, 0, 0) * u.m)
+    origin: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
     scale: list[pd.PositiveFloat] = pd.Field([1, 1, 1])
 
-    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)
+    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
     private_attribute_matrix: Optional[list[float]] = pd.Field(None)
 

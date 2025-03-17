@@ -19,7 +19,6 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import GeometryInterface
-from flow360.component.project_utils import GeometryFiles
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
@@ -30,7 +29,7 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.utils import shared_account_confirm_proceed
+from flow360.component.utils import GeometryFiles, shared_account_confirm_proceed
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
@@ -238,6 +237,16 @@ class Geometry(AssetBase):
         with model_attribute_unlock(self._entity_info, "edge_group_tag"):
             self._entity_info.edge_group_tag = new_value
 
+    @property
+    def body_group_tag(self):
+        "getter for body_group_tag"
+        return self._entity_info.body_group_tag
+
+    @body_group_tag.setter
+    def body_group_tag(self, new_value: str):
+        with model_attribute_unlock(self._entity_info, "body_group_tag"):
+            self._entity_info.body_group_tag = new_value
+
     @classmethod
     # pylint: disable=redefined-builtin
     def from_cloud(cls, id: str, **kwargs):
@@ -255,6 +264,11 @@ class Geometry(AssetBase):
         if asset_obj.edge_group_tag is None:
             log.warning(
                 "Edge grouping setting not found. Please remember to group them if relevant features are used."
+            )
+
+        if asset_obj.body_group_tag is None:
+            log.warning(
+                "Body grouping setting not found. Please remember to group them if relevant features are used."
             )
 
         return asset_obj
@@ -363,6 +377,10 @@ class Geometry(AssetBase):
             found_existing_grouping = self.edge_group_tag is not None
         if entity_type_name == "body":
             found_existing_grouping = self.body_group_tag is not None
+        else:
+            raise ValueError(
+                f"Unknown entity type: `{entity_type_name}`, allowed entity: face, edge, body."
+            )
 
         if found_existing_grouping is True:
             log.warning(
@@ -451,7 +469,7 @@ class Geometry(AssetBase):
         ):
             raise Flow360ValueError(
                 f"Renaming failed: Could not find {entity_type_name} grouping info in the draft's simulation settings."
-                "Please group them first before remaning the entities."
+                "Please group them first before renaming the entities."
             )
 
         matched_entities = sorted(
@@ -538,7 +556,7 @@ class Geometry(AssetBase):
 
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             raise Flow360ValueError(
-                "The faces/edges in geometry are not grouped yet."
+                "The faces/edges/bodies in geometry are not grouped yet."
                 "Please use `group_faces_by_tag` or `group_edges_by_tag` function to group them first."
             )
             # Note: Or we assume group default by just FaceID and EdgeID? Not sure if this is actually useful.

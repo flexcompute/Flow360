@@ -3,7 +3,6 @@ Support class and functions for project interface.
 """
 
 import datetime
-import os
 from typing import List, Literal, Optional, Union
 
 import pydantic as pd
@@ -23,123 +22,16 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     Edge,
+    GeometryBodyGroup,
     GhostSurface,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.utils import (
-    SUPPORTED_GEOMETRY_FILE_PATTERNS,
-    MeshFileFormat,
-    MeshNameParser,
-    match_file_pattern,
-    parse_datetime,
-)
+from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
-
-
-class InputFileModel(Flow360BaseModel):
-    """Base model for input files creating projects"""
-
-    file_names: Union[List[str], str] = pd.Field()
-
-    def _check_files_existence(self) -> None:
-        """
-        Check if the file exists or not.
-        """
-        if isinstance(self.file_names, List):
-            # pylint: disable = not-an-iterable
-            for file_name in self.file_names:
-                if not os.path.isfile(file_name):
-                    raise ValueError(f"File {file_name} does not exist.")
-        else:
-            if not os.path.isfile(self.file_names):
-                raise ValueError(f"File {self.file_names} does not exist.")
-
-
-class GeometryFiles(InputFileModel):
-    """Validation model to check if the given files are geometry files"""
-
-    type_name: Literal["GeometryFile"] = pd.Field("GeometryFile", frozen=True)
-    file_names: Union[List[str], str] = pd.Field()
-
-    @pd.field_validator("file_names", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        if isinstance(value, str):
-            if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
-                raise ValueError(
-                    f"The given file: {value} is not a supported geometry file. "
-                    f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
-                )
-        else:  # list
-            for file in value:
-                if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, file):
-                    raise ValueError(
-                        f"The given file: {file} is not a supported geometry file. "
-                        f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
-                    )
-        return value
-
-
-class SurfaceMeshFile(InputFileModel):
-    """Validation model to check if the given file is a surface mesh file"""
-
-    type_name: Literal["SurfaceMeshFile"] = pd.Field("SurfaceMeshFile", frozen=True)
-    file_names: str = pd.Field()
-
-    @pd.field_validator("file_names", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        try:
-            parser = MeshNameParser(input_mesh_file=value)
-        except Exception as e:
-            raise ValueError(str(e)) from e
-        if parser.is_valid_surface_mesh() or parser.is_valid_volume_mesh():
-            # We support extracting surface mesh from volume mesh as well
-            return value
-        raise ValueError(
-            f"The given mesh file {value} is not a valid surface mesh file. "
-            f"Unsupported surface mesh file extensions: {parser.format.ext()}. "
-            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}, {MeshFileFormat.STL.ext()}]."
-        )
-
-    def _check_files_existence(self) -> None:
-        """
-        Check if the file exists or not. If it is ugrid file then check existence of mapbc file.
-        """
-        super()._check_files_existence()
-        parser = MeshNameParser(input_mesh_file=self.file_names)
-        if parser.is_ugrid():
-            mapbc_file_name = parser.get_associated_mapbc_filename()
-            if not os.path.isfile(mapbc_file_name):
-                log.warning(
-                    f"The mapbc file ({mapbc_file_name}) for {self.file_names} is not found"
-                )
-
-
-class VolumeMeshFile(InputFileModel):
-    """Validation model to check if the given file is a volume mesh file"""
-
-    type_name: Literal["VolumeMeshFile"] = pd.Field("VolumeMeshFile", frozen=True)
-    file_names: str = pd.Field()
-
-    @pd.field_validator("file_names", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        try:
-            parser = MeshNameParser(input_mesh_file=value)
-        except Exception as e:
-            raise ValueError(str(e)) from e
-        if parser.is_valid_volume_mesh():
-            return value
-        raise ValueError(
-            f"The given mesh file {value} is not a valid volume mesh file. ",
-            f"Unsupported volume mesh file extensions: {parser.format.ext()}. "
-            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}].",
-        )
 
 
 class AssetStatistics(pd.BaseModel):
@@ -309,7 +201,9 @@ def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams)
     2. Reflect the changes to the existing persistent entities (like assigning tags or axis/centers).
     """
 
-    def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
+    def _get_tag(
+        entity_registry, entity_type: Union[type[Surface], type[Edge], type[GeometryBodyGroup]]
+    ):
         group_tag = None
         if not entity_registry.find_by_type(entity_type):
             # Did not use any entity of this type, so we add default grouping tag
@@ -334,6 +228,8 @@ def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams)
     entity_registry = params.used_entity_registry
 
     if isinstance(entity_info, GeometryEntityInfo):
+        with model_attribute_unlock(entity_info, "body_group_tag"):
+            entity_info.body_group_tag = _get_tag(entity_registry, GeometryBodyGroup)
         with model_attribute_unlock(entity_info, "face_group_tag"):
             entity_info.face_group_tag = _get_tag(entity_registry, Surface)
         with model_attribute_unlock(entity_info, "edge_group_tag"):

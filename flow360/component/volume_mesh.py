@@ -28,7 +28,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.project_utils import VolumeMeshFile
+from flow360.component.utils import VolumeMeshFile
 from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
 from flow360.component.v1.meshing.params import VolumeMeshingParams
 from flow360.exceptions import (

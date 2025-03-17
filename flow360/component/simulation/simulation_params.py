@@ -457,7 +457,7 @@ class SimulationParams(_ParamModelBase):
 
     def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
-        Once the SimulationParams is set, extract and upate information
+        Once the SimulationParams is set, extract and update information
         into all used entities by parsing the params.
         """
 

@@ -21,6 +21,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     Surface,
 )
+from flow360.component.utils import GeometryFiles
 
 DraftEntityTypes = Annotated[
     Union[Box, Cylinder, Point, PointArray, Slice],
@@ -122,15 +123,17 @@ class GeometryEntityInfo(EntityInfoModel):
         "of `Edge` entities after grouping using the attribute name.",
         alias="groupedEdges",
     )
+
+    body_group_tag: Optional[str] = pd.Field(None, frozen=True)
     face_group_tag: Optional[str] = pd.Field(None, frozen=True)
     edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
 
     def group_in_registry(
         self,
-        entity_type_name: Literal["face", "edge"],
+        entity_type_name: Literal["face", "edge", "body"],
         attribute_name: str,
         registry: EntityRegistry,
-    ) -> List[Union[Surface, Edge]]:
+    ) -> EntityRegistry:
         """
         Group items with given attribute_name.
         """
@@ -142,36 +145,38 @@ class GeometryEntityInfo(EntityInfoModel):
     def _get_list_of_entities(
         self,
         attribute_name: Union[str, None] = None,
-        entity_type_name: Union[Literal["face", "edge"], None] = None,
-    ) -> list:
+        entity_type_name: Literal["face", "edge", "body"] = None,
+    ) -> Union[List[Surface], List[Edge], List[GeometryBodyGroup]]:
         # Validations
         if entity_type_name is None:
             raise ValueError("Entity type name is required.")
-        if entity_type_name not in ["face", "edge"]:
+        if entity_type_name not in ["face", "edge", "body"]:
             raise ValueError(
-                f"Invalid entity type name, expected 'face' or 'edge' but got {entity_type_name}."
+                f"Invalid entity type name, expected 'body, 'face' or 'edge' but got {entity_type_name}."
             )
         if entity_type_name == "face":
             entity_attribute_names = self.face_attribute_names
             entity_full_list = self.grouped_faces
-        else:
+            specified_attribute_name = self.face_group_tag
+        elif entity_type_name == "edge":
             entity_attribute_names = self.edge_attribute_names
             entity_full_list = self.grouped_edges
+            specified_attribute_name = self.edge_group_tag
+        else:
+            entity_attribute_names = self.body_attribute_names
+            entity_full_list = self.grouped_bodies
+            specified_attribute_name = self.body_group_tag
 
         # Use the supplied one if not None
         if attribute_name is not None:
             specified_attribute_name = attribute_name
-        else:
-            specified_attribute_name = (
-                self.face_group_tag if entity_type_name == "face" else self.edge_group_tag
-            )
 
-            # pylint: disable=unsupported-membership-test,unsubscriptable-object
         if specified_attribute_name in entity_attribute_names:
-            # pylint: disable=no-member
+            # pylint: disable=no-member, unsubscriptable-object
             return entity_full_list[entity_attribute_names.index(specified_attribute_name)]
+
         raise ValueError(
-            f"The given attribute_name {attribute_name} is not found"
+            f"The given attribute_name `{attribute_name}` is not found"
             f" in geometry metadata. Available: {entity_attribute_names}"
         )
 
@@ -184,7 +189,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
     def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
         """
-        1. Changed `Surface`/`Edge` names? (TODO: Add support for bodyGroup too)
+        Update the persistent entities stored inside `self` according to `param_entity_registry`
         """
 
         def _search_and_replace(grouped_entities, entity_registry: EntityRegistry):
@@ -199,6 +204,37 @@ class GeometryEntityInfo(EntityInfoModel):
 
         _search_and_replace(self.grouped_faces, param_entity_registry)
         _search_and_replace(self.grouped_edges, param_entity_registry)
+        _search_and_replace(self.grouped_bodies, param_entity_registry)
+
+    @classmethod
+    def _get_singleton_processed_geometry_file_prefix(cls) -> str:
+        return "geometry_from_all_cad"
+
+    def _get_processed_file_list(self) -> list[str]:
+        """
+        Return the list of files that are dumped by geometryConversionPipeline.
+
+        This function examines the files mentioned under `grouped_bodies->groupByFile`
+        and append folder prefix if necessary.
+        """
+        body_groups_grouped_by_file = self._get_list_of_entities("groupByFile", "body")
+        unprocessed_file_names = [item.private_attribute_id for item in body_groups_grouped_by_file]
+        processed_file_names = []
+        user_uploaded_geometry_file: bool = False
+        for unprocessed_file_name in unprocessed_file_names:
+            # All geometry source file gets lumped into a single file
+            try:
+                _ = GeometryFiles.model_validate(unprocessed_file_name)
+                # This is a geometry file
+                user_uploaded_geometry_file = True
+            except pd.ValidationError:
+                # Not a geometry file. Maybe a surface mesh file. No special treatment needed.
+                processed_file_names.append(unprocessed_file_name)
+        if user_uploaded_geometry_file:
+            processed_file_names.append(
+                f"results/{self._get_singleton_processed_geometry_file_prefix()}.egads"
+            )
+        return processed_file_names
 
 
 class VolumeMeshEntityInfo(EntityInfoModel):
