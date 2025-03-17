@@ -1,6 +1,7 @@
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -189,7 +190,8 @@ def get_test_param():
                         ],
                     ),
                 ],
-            )
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
         )
     return param
 
@@ -332,8 +334,6 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
             "firstLayerThickness": 100.0,
             "growthRate": 1.2,
             "gapTreatmentStrength": 0.0,
-            "geometryTolerance": 1e-6,
-            "numBoundaryLayers": -1,
         },
         "faces": {},
     }

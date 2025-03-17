@@ -184,9 +184,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ##::  Step 2:  Get farfield
     for zone in input_params.meshing.volume_zones:
         if isinstance(zone, UserDefinedFarfield):
-            translated["farfield"] = {
-                "type": "user-defined",
-            }
+            translated["farfield"] = {"type": "user-defined"}
             break
 
         if isinstance(zone, AutomatedFarfield):
@@ -221,12 +219,13 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
 
-    number_of_boundary_layers = meshing_params.defaults.number_of_boundary_layers
-    translated["volume"]["numBoundaryLayers"] = (
-        number_of_boundary_layers if number_of_boundary_layers is not None else -1
-    )
+    if input_params.private_attribute_asset_cache.use_inhouse_mesher:
+        number_of_boundary_layers = meshing_params.defaults.number_of_boundary_layers
+        translated["volume"]["numBoundaryLayers"] = (
+            number_of_boundary_layers if number_of_boundary_layers is not None else -1
+        )
 
-    translated["volume"]["geometryTolerance"] = meshing_params.defaults.geometry_tolerance
+        translated["volume"]["geometryTolerance"] = meshing_params.defaults.geometry_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(

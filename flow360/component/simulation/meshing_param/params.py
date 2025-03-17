@@ -113,8 +113,8 @@ class MeshingDefaults(Flow360BaseModel):
 
     @pd.field_validator("number_of_boundary_layers", mode="after")
     @classmethod
-    def invalid_number_of_boundary_layers_for_default_mesher(cls, value):
-        """Ensure number of boundary layers is not specified for the default mesher"""
+    def invalid_number_of_boundary_layers(cls, value):
+        """Ensure number of boundary layers is not specified"""
         validation_info = get_validation_info()
 
         if validation_info is None:
@@ -126,8 +126,8 @@ class MeshingDefaults(Flow360BaseModel):
 
     @pd.field_validator("geometry_tolerance", mode="after")
     @classmethod
-    def invalid_geometry_tolerance_for_default_mesher(cls, value):
-        """Ensure geometry tolerance is not specified for the default mesher"""
+    def invalid_geometry_tolerance(cls, value):
+        """Ensure geometry tolerance is not specified"""
         validation_info = get_validation_info()
 
         if validation_info is None:

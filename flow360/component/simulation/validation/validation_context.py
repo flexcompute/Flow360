@@ -65,15 +65,15 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         return None
 
     @classmethod
-    def _check_is_beta_mesher_(cls, param_as_dict: dict):
+    def _get_is_beta_mesher_(cls, param_as_dict: dict):
         try:
             return param_as_dict["private_attribute_asset_cache"]["use_inhouse_mesher"]
         except KeyError:
-            return True
+            return False
 
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
-        self.is_beta_mesher = self._check_is_beta_mesher_(param_as_dict=param_as_dict)
+        self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
 
 
 class ValidationContext:

@@ -91,8 +91,8 @@ class BoundaryLayer(Flow360BaseModel):
 
     @pd.field_validator("growth_rate", mode="after")
     @classmethod
-    def invalid_growth_rate_for_default_mesher(cls, value):
-        """Ensure growth rate per face is not specified for the default mesher"""
+    def invalid_growth_rate(cls, value):
+        """Ensure growth rate per face is not specified"""
         validation_info = get_validation_info()
 
         if validation_info is None:
@@ -100,4 +100,17 @@ class BoundaryLayer(Flow360BaseModel):
 
         if value is not None and not validation_info.is_beta_mesher:
             raise ValueError("Growth rate per face is only supported by the beta mesher.")
+        return value
+
+    @pd.field_validator("first_layer_thickness", mode="after")
+    @classmethod
+    def require_first_layer_thickness(cls, value):
+        """Verify first layer thickness is specified"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if value is not None and not validation_info.is_beta_mesher:
+            raise ValueError("First layer thickness is required.")
         return value
