@@ -373,9 +373,9 @@ class Geometry(AssetBase):
 
         if entity_type_name == "face":
             found_existing_grouping = self.face_group_tag is not None
-        if entity_type_name == "edge":
+        elif entity_type_name == "edge":
             found_existing_grouping = self.edge_group_tag is not None
-        if entity_type_name == "body":
+        elif entity_type_name == "body":
             found_existing_grouping = self.body_group_tag is not None
         else:
             raise ValueError(

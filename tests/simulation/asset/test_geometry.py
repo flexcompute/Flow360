@@ -49,7 +49,7 @@ def test_geometry_rename_entity(mock_id, mock_response):
         ex.Flow360ValueError,
         match=(
             f"Renaming failed: Could not find {entity_type_name} grouping info in the draft's simulation settings."
-            "Please group them first before remaning the entities."
+            "Please group them first before renaming the entities."
         ),
     ):
         geometry._rename_entity(
