@@ -87,5 +87,8 @@
             "expression": "C-p*T"
         }
     ],
-    "usingWaterAsMaterial": false
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }

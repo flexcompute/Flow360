@@ -116,5 +116,8 @@
         "updateJacobianFrequency": 4
     },
     "userDefinedFields": [],
-    "usingWaterAsMaterial": false
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }

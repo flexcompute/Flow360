@@ -182,5 +182,8 @@
         "w": "w"
     },
     "userDefinedFields":[],
-    "usingWaterAsMaterial": false
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }
