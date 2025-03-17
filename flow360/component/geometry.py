@@ -475,7 +475,17 @@ class Geometry(AssetBase):
                 entity.name = new_name
 
     def rename_edge(self, current_name_pattern: str, new_name_prefix: str):
-        """Rename the edge entities"""
+        """
+        Rename the edge in the current edge group
+
+        Parameters
+        ----------
+        current_name_pattern:
+            The current name of a single edge or the name pattern of the edges
+
+        new_name_prefix:
+            The new name of a single edge or the new name prefix of the edges
+        """
         self._rename_entity(
             entity_type_name="edge",
             current_name_pattern=current_name_pattern,
@@ -483,7 +493,17 @@ class Geometry(AssetBase):
         )
 
     def rename_face(self, current_name_pattern: str, new_name_prefix: str):
-        """Rename the face entities"""
+        """
+        Rename the face in the current face group
+
+        Parameters
+        ----------
+        current_name_pattern:
+            The current name of a single face or the name pattern of the faces
+
+        new_name_prefix:
+            The new name of a single face or the new name prefix of the faces
+        """
         self._rename_entity(
             entity_type_name="face",
             current_name_pattern=current_name_pattern,
@@ -491,7 +511,17 @@ class Geometry(AssetBase):
         )
 
     def rename_body(self, current_name_pattern: str, new_name_prefix: str):
-        """Rename the body entities"""
+        """
+        Rename the body in the current body group
+
+        Parameters
+        ----------
+        current_name_pattern:
+            The current name of a single body or the name pattern of the bodies
+
+        new_name_prefix:
+            The new name of a single body or the new name prefix of the bodies
+        """
         self._rename_entity(
             entity_type_name="body",
             current_name_pattern=current_name_pattern,
