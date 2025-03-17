@@ -305,7 +305,8 @@ def _replace_ghost_surfaces(params: SimulationParams):
 def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams):
     """
     Setting up the persistent entity info in params.
-    Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    1. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
+    2. Reflect the changes to the existing persistent entities (like assigning tags or axis/centers).
     """
 
     def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
@@ -337,6 +338,8 @@ def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams)
             entity_info.face_group_tag = _get_tag(entity_registry, Surface)
         with model_attribute_unlock(entity_info, "edge_group_tag"):
             entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
+
+    entity_info.update_persistent_entities(param_entity_registry=entity_registry)
     return entity_info
 
 
@@ -360,6 +363,7 @@ def set_up_params_for_uploading(
     root_asset,
     length_unit: LengthType,
     params: SimulationParams,
+    use_beta_mesher: bool,
 ):
     """
     Set up params before submitting the draft.
@@ -367,6 +371,11 @@ def set_up_params_for_uploading(
 
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
         params.private_attribute_asset_cache.project_length_unit = length_unit
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
+        params.private_attribute_asset_cache.use_inhouse_mesher = (
+            use_beta_mesher if use_beta_mesher else False
+        )
 
     entity_info = _set_up_params_persistent_entity_info(root_asset.entity_info, params)
     # Check if there are any new draft entities that have been added in the params by the user
