@@ -87,7 +87,7 @@ def test_unique_list():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input should be 'Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'vorticityMagnitude', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative' or 'lowMachPreconditionerSensor'"
+            "Input should be 'Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'velocity', 'velocity_magnitude', 'pressure', 'vorticity', 'vorticityMagnitude', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'velocity_m_per_s', 'velocity_magnitude_m_per_s', 'velocity_x_m_per_s', 'velocity_y_m_per_s', 'velocity_z_m_per_s', 'pressure_pa', 'wall_shear_stress_magnitude' or 'wall_shear_stress_magnitude_pa'"
         ),
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["wallDistance", 1234])
