@@ -295,7 +295,7 @@ def TurbulenceQuantities(
     Example
     -------
     Apply modified turbulent viscosity ratio for SA model.
-    
+
     >>> fl.TurbulenceQuantities(modified_viscosity_ratio=10)
 
     Apply turbulent kinetic energy and specific dissipation rate for SST model.
@@ -308,10 +308,12 @@ def TurbulenceQuantities(
     non_none_arg_count = sum(arg is not None for arg in locals().values())
     if non_none_arg_count == 0:
         return None
-    
+
     if non_none_arg_count > 2:
-        raise ValueError("Provided number of inputs exceeds the limit for any of the listed specifications. "
-        + "Please recheck TurbulenceQuantities inputs and make sure they represent a valid specification.")
+        raise ValueError(
+            "Provided number of inputs exceeds the limit for any of the listed specifications. "
+            + "Please recheck TurbulenceQuantities inputs and make sure they represent a valid specification."
+        )
 
     if viscosity_ratio is not None:
         if non_none_arg_count == 1:
