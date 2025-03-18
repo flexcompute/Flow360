@@ -404,6 +404,24 @@ class Table(ReportItem):
                 table.add_hline()
 
 
+class PatternCaption(BaseModel):
+    """
+    Class for setting up chart caption.
+
+    Parameters
+    ----------
+    pattern: Literal["[case.name]", "[case.id]"]
+        Sets up the caption to generate automatically.
+        "[case.name]" will result in the name of the case
+        corresponding to the chart.
+        "[case.id]" will result in the ID of the case
+        corresponding to the chart.
+    """
+
+    pattern: Literal["[case.name]", "[case.id]"] = Field("[case.name]")
+    type_name: Literal["PatternCaption"] = Field("PatternCaption", frozen=True)
+
+
 class Chart(ReportItem):
     """
     Represents a chart in a report, with options for layout and display properties.
@@ -433,7 +451,7 @@ class Chart(ReportItem):
     select_indices: Optional[List[NonNegativeInt]] = None
     separate_plots: Optional[bool] = None
     force_new_page: bool = False
-    caption: Optional[str] = ""
+    caption: Optional[Union[str, List[str], PatternCaption]] = ""
 
     @model_validator(mode="after")
     def _check_chart_args(self) -> None:
@@ -1211,6 +1229,30 @@ class Chart2D(Chart):
 
         return file_names, data.x_label, data.y_label
 
+    def _check_2d_caption_validity(self, cases):
+        """Checks the validity of caption input for a given Chart2D instance."""
+
+        if isinstance(self.caption, PatternCaption):
+            raise ValueError("PatternCaption is not supported for Chart2D.")
+
+        if isinstance(self.caption, List):
+            if self.separate_plots is not True:
+                raise ValueError(
+                    "List of captions is only supported for Chart2D when separate_plots is True."
+                )
+            if len(self.caption) != len(cases):
+                raise ValueError("Caption list is not the same length as the list of cases.")
+
+    def _handle_2d_caption(self, **kwargs):
+        """Handle captions for Chart2D."""
+
+        case_number = kwargs.get("case_number", None)
+
+        if isinstance(self.caption, List):
+            return self.caption[case_number]
+
+        return self.caption
+
     # pylint: disable=too-many-arguments,too-many-locals
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
@@ -1220,21 +1262,34 @@ class Chart2D(Chart):
         self._handle_grid_input(context.cases)
         self._handle_title(context.doc, context.section_func)
         cases = self._filter_input_cases(context.cases, context.case_by_case)
+        self._check_2d_caption_validity(cases)
 
         file_names, x_lab, y_lab = self._get_figures(cases, context)
 
-        caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
-
         if self.items_in_row is not None:
+            if self.caption != "":
+                caption = NoEscape(self._handle_2d_caption())
+            else:
+                caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
             self._add_row_figure(context.doc, file_names, caption)
         else:
             if self.separate_plots is True:
-                for case, file_name in zip(cases, file_names):
-                    caption = NoEscape(
-                        f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
-                    )
+                for case_number, case_and_file_name in enumerate(zip(cases, file_names)):
+                    case, file_name = case_and_file_name
+                    if self.caption != "":
+                        caption = NoEscape(self._handle_2d_caption(case_number=case_number))
+                    else:
+                        caption = NoEscape(
+                            f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+                        )
                     self._add_figure(context.doc, file_name, caption)
             else:
+                if self.caption != "":
+                    caption = self._handle_2d_caption()
+                else:
+                    caption = NoEscape(
+                        f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.'
+                    )
                 self._add_figure(context.doc, file_names[-1], caption)
 
         context.doc.append(NoEscape(r"\FloatBarrier"))
@@ -1614,6 +1669,43 @@ class Chart3D(Chart):
             return legend_filename
         return None
 
+    def _check_3d_caption_validity(self, cases):
+        """Checks the validity of caption input for a given Chart3D instance."""
+
+        if isinstance(self.caption, PatternCaption):
+            if self.items_in_row is not None:
+                raise ValueError(
+                    "PatternCaption is not supported Chart3D when items_in_row is not None."
+                )
+
+        if isinstance(self.caption, List):
+            if self.items_in_row is not None:
+                raise ValueError(
+                    "List of captions is not supported for Chart3D when items_in_row is not None."
+                )
+            if len(self.caption) != len(cases):
+                raise ValueError("Caption list is not the same length as the list of cases.")
+
+    def _handle_3d_caption(self, **kwargs):
+        """Handle captions for Chart3D."""
+
+        case = kwargs.get("case", None)
+        case_number = kwargs.get("case_number", None)
+
+        if isinstance(self.caption, List):
+            return self.caption[case_number]
+
+        if isinstance(self.caption, PatternCaption):
+            if self.caption.type_name == "[case.name]":
+                caption = NoEscape(f"Case: {case.name}")
+            elif self.caption.type_name == ["case.id"]:
+                caption = NoEscape(f"Case: {case.id}")
+            else:
+                raise ValueError(f"Unknown type_name: {self.caption.type_name}")
+            return caption
+
+        return self.caption
+
     # pylint: disable=too-many-arguments
     def get_doc_item(self, context: ReportContext, settings: Settings = None):
         """
@@ -1623,6 +1715,7 @@ class Chart3D(Chart):
         self._handle_grid_input(context.cases)
         self._handle_title(context.doc, context.section_func)
         cases = self._filter_input_cases(context.cases, context.case_by_case)
+        self._check_3d_caption_validity(cases)
 
         img_list = self._get_images(cases, context)
         legend_filename = self._get_legend(context)
@@ -1632,6 +1725,7 @@ class Chart3D(Chart):
             dpi = settings.dpi
 
         if self.items_in_row is not None:
+            caption = self._handle_3d_caption()
             self._add_row_figure(
                 context.doc,
                 img_list,
@@ -1641,9 +1735,11 @@ class Chart3D(Chart):
                 dpi=dpi,
             )
         else:
-            for filename in img_list:
+            for case_number, case_and_filename in enumerate(zip(cases, img_list)):
+                case, filename = case_and_filename
+                caption = self._handle_3d_caption(case=case, case_number=case_number)
                 self._add_figure(
-                    context.doc, filename, self.caption, legend_filename=legend_filename, dpi=dpi
+                    context.doc, filename, caption, legend_filename=legend_filename, dpi=dpi
                 )
 
         # Stops figures floating away from their sections

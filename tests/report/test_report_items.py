@@ -497,3 +497,84 @@ def test_calculate_y_lim(cases, here):
             x_series_list=x_series_list,
             y_series_list=y_series_list,
         )
+
+
+def test_2d_caption(cases):
+    chart = Chart2D(
+        x="total_forces/pseudo_step",
+        y="total_forces/CD",
+    )
+
+    chart.caption = "This is a caption."
+    chart._handle_2d_caption()
+
+
+def test_3d_caption(cases):
+
+    top_camera = Camera(
+        position=(0, 0, 1),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, 1, 0),
+        dimension=5,
+        dimension_dir="width",
+    )
+    side_camera = Camera(
+        position=(0, -1, 0),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, 0, 1),
+        dimension=5,
+        dimension_dir="width",
+    )
+    back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
+    bottom_camera = Camera(
+        position=(0, 0, -1),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, -1, 0),
+        dimension=5,
+        dimension_dir="width",
+    )
+    front_left_bottom_camera = Camera(
+        position=(-1, -1, -1),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, 0, 1),
+        dimension=5,
+        dimension_dir="width",
+    )
+    rear_right_bottom_camera = Camera(
+        position=(1, 1, -1),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, 0, 1),
+        dimension=5,
+        dimension_dir="width",
+    )
+
+    cameras_geo = [
+        top_camera,
+        side_camera,
+        back_camera,
+        bottom_camera,
+        front_left_bottom_camera,
+        rear_right_bottom_camera,
+    ]
+
+    exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+
+    geometry_screenshots = [
+        Chart3D(
+            section_title="Geometry",
+            items_in_row=2,
+            force_new_page=True,
+            show="boundaries",
+            camera=camera,
+            exclude=exclude,
+            fig_name=f"geo_{i}",
+        )
+        for i, camera in enumerate(cameras_geo)
+    ]
+
+    # work in progress
