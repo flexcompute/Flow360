@@ -89,6 +89,7 @@ def _to_24_11_7(params_as_dict):
                 ][idx] = point_array
                 continue
 
+    update_symmetric_ghost_entity_name_to_symmetry(params_as_dict=params_as_dict)
     return params_as_dict
 
 
