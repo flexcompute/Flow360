@@ -192,7 +192,7 @@ TurbulenceQuantitiesType = Annotated[
 ]
 
 
-# pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches, invalid-name, anomalous-backslash-in-string
+# pylint: disable=too-many-arguments, too-many-return-statements, too-many-branches, invalid-name
 # using class naming convetion here
 def TurbulenceQuantities(
     viscosity_ratio=None,
