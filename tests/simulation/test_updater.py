@@ -220,6 +220,23 @@ def test_updater_to_24_11_1():
 
     assert params_24_11_1["time_stepping"].get("order_of_accuracy") is None
 
+    with open("../data/simulation/simulation_pre_24_11_1_symmetry.json", "r") as fp:
+        params_pre_24_11_1_symmetry = json.load(fp)
+
+    params_pre_24_11_1_symmetry = updater(
+        version_from="24.11.0", version_to="24.11.1", params_as_dict=params_pre_24_11_1_symmetry
+    )
+
+    updated_surface_1 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][1]
+    updated_surface_2 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][2]
+
+    assert updated_surface_1["name"] == "symmetric-1"
+    assert updated_surface_2["name"] == "symmetric-2"
+
 
 def test_updater_to_24_11_7():
 
