@@ -14,6 +14,7 @@ from flow360.component.simulation.framework.entity_base import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
     populate_entity_id_with_name,
+    update_symmetric_ghost_entity_name_to_symmetry,
 )
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
@@ -44,6 +45,7 @@ def _to_24_11_1(params_as_dict):
     if "time_stepping" in params_as_dict:
         params_as_dict["time_stepping"].pop("order_of_accuracy", None)
 
+    update_symmetric_ghost_entity_name_to_symmetry(params_as_dict=params_as_dict)
     return params_as_dict
 
 
