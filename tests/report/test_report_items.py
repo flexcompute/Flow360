@@ -497,3 +497,58 @@ def test_calculate_y_lim(cases, here):
             x_series_list=x_series_list,
             y_series_list=y_series_list,
         )
+
+
+def test_dimentioned_limits(cases):
+
+    case = cases[0]
+
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0, 0.3),
+    )
+    assert chart.limits == (0, 0.3)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 0.3)
+
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
+    )
+    assert chart.limits == (0 * u.m / u.s, 100 * u.m / u.s)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 0.2938635365101296)
+
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
+    )
+    assert chart.limits == (0 * u.m / u.s, 100 * u.m / u.s)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 100)
+
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0 * u.km / u.hr, 72 * u.km / u.hr),
+    )
+    assert chart.limits == (0 * u.km / u.hr, 72 * u.km / u.hr)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 20)
+
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0, 10),
+    )
+    assert chart.limits == (0, 10)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 10)

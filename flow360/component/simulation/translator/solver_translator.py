@@ -37,6 +37,7 @@ from flow360.component.simulation.models.volume_models import (
     Solid,
 )
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
+from flow360.component.simulation.outputs.output_fields import generate_field_udf
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -53,6 +54,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Box, SurfacePair
@@ -491,6 +493,38 @@ def translate_acoustic_output(output_params: list):
                 ]
             return aeroacoustic_output
     return None
+
+
+def process_output_fields_for_udf(input_params):
+    """
+    Process all output fields from different output types and generate additional
+    UserDefinedFields for dimensioned fields.
+
+    Args:
+        input_params: SimulationParams object containing outputs configuration
+
+    Returns:
+        tuple: (all_field_names, generated_udfs) where:
+            - all_field_names is a set of all output field names
+            - generated_udfs is a list of UserDefinedField objects for dimensioned fields
+    """
+
+    # Collect all output field names from all output types
+    all_field_names = set()
+
+    if input_params.outputs:
+        for output in input_params.outputs:
+            if hasattr(output, "output_fields") and output.output_fields:
+                all_field_names.update(output.output_fields.items)
+
+    # Generate UDFs for dimensioned fields
+    generated_udfs = []
+    for field_name in all_field_names:
+        udf_expression = generate_field_udf(field_name, input_params)
+        if udf_expression:
+            generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
+
+    return generated_udfs
 
 
 def translate_output(input_params: SimulationParams, translated: dict):
@@ -1186,9 +1220,13 @@ def get_solver_json(
 
     translated = translate_output(input_params, translated)
 
-    ##:: Step 5: Get user defined fields
+    ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
-    for udf in input_params.user_defined_fields:
+    # Add auto-generated UDFs for dimensioned fields
+    generated_udfs = process_output_fields_for_udf(input_params)
+
+    # Add user-specified UDFs and auto-generated UDFs for dimensioned fields
+    for udf in [*input_params.user_defined_fields, *generated_udfs]:
         udf_dict = {}
         udf_dict["name"] = udf.name
         udf_dict["expression"] = udf.expression
