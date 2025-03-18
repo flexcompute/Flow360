@@ -47,7 +47,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
-    __slots__ = ["auto_farfield_method"]
+    __slots__ = ["auto_farfield_method", "is_beta_mesher"]
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -64,8 +64,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
                     return zone["method"]
         return None
 
+    @classmethod
+    def _get_is_beta_mesher_(cls, param_as_dict: dict):
+        try:
+            return param_as_dict["private_attribute_asset_cache"]["use_inhouse_mesher"]
+        except KeyError:
+            return False
+
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
+        self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
 
 
 class ValidationContext:
