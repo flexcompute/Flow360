@@ -407,3 +407,21 @@ def test_persistent_entity_info_update_volume_mesh():
 
     assert volume_mesh_info.zones[0].axes == ((1, 0, 0), (0, 0, 1))
     assert all(volume_mesh_info.zones[0].center == [1.2, 2.3, 3.4] * u.cm)
+
+
+def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
+
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    assert geometry_entity_info._get_processed_file_list() == [
+        "airplane_translate_in_z_-5.stl",
+        "farfield_only_sphere_volume_mesh.lb8.ugrid",
+        "results/geometry_from_all_cad.egads",
+    ]
+    assert geometry_entity_info._get_id_to_file_map(entity_type_name="body") == {
+        "body00001": "geometry_from_all_cad.egads",
+        "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
+        "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+    }

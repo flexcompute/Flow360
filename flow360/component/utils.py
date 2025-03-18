@@ -816,6 +816,15 @@ class GeometryFiles(InputFileModel):
                     )
         return value
 
+    @classmethod
+    def check_is_valid_geometry_file(cls, *, file_name: str):
+        """Check if the given file_name input is a proper geometry file."""
+        try:
+            cls(file_names=file_name)
+            return True
+        except pd.ValidationError:
+            return False
+
 
 class SurfaceMeshFile(InputFileModel):
     """Validation model to check if the given file is a surface mesh file"""

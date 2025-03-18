@@ -212,7 +212,9 @@ class GeometryEntityInfo(EntityInfoModel):
 
     def _get_processed_file_list(self) -> list[str]:
         """
-        Return the list of files that are dumped by geometryConversionPipeline.
+        Return the list of files that are uploaded by geometryConversionPipeline.
+
+        Includes "results/" S3 path prefix if necessary.
 
         This function examines the files mentioned under `grouped_bodies->groupByFile`
         and append folder prefix if necessary.
@@ -223,11 +225,10 @@ class GeometryEntityInfo(EntityInfoModel):
         user_uploaded_geometry_file: bool = False
         for unprocessed_file_name in unprocessed_file_names:
             # All geometry source file gets lumped into a single file
-            try:
-                _ = GeometryFiles.model_validate(unprocessed_file_name)
+            if GeometryFiles.check_is_valid_geometry_file(file_name=unprocessed_file_name):
                 # This is a geometry file
                 user_uploaded_geometry_file = True
-            except pd.ValidationError:
+            else:
                 # Not a geometry file. Maybe a surface mesh file. No special treatment needed.
                 processed_file_names.append(unprocessed_file_name)
         if user_uploaded_geometry_file:
@@ -235,6 +236,34 @@ class GeometryEntityInfo(EntityInfoModel):
                 f"results/{self._get_singleton_processed_geometry_file_prefix()}.egads"
             )
         return processed_file_names
+
+    def _get_id_to_file_map(
+        self, *, entity_type_name: Literal["face", "edge", "body"]
+    ) -> dict[str, str]:
+        """Returns faceId/edgeId/bodyId to file name mapping."""
+
+        if entity_type_name not in ("face", "edge", "body"):
+            raise ValueError(
+                f"Invalid entity_type_name given:{entity_type_name}. Valid options are 'face', 'edge', 'body'"
+            )
+
+        if entity_type_name in ("face", "edge"):
+            # No direct/consistent way of getting this info compared to bodies
+            # Also need to figure out what mesher team needs exactly.
+            raise NotImplementedError()
+
+        id_to_file_name = {}
+
+        body_groups_grouped_by_file = self._get_list_of_entities("groupByFile", "body")
+        for item in body_groups_grouped_by_file:
+            if GeometryFiles.check_is_valid_geometry_file(file_name=item.private_attribute_id):
+                file_name = f"{self._get_singleton_processed_geometry_file_prefix()}.egads"
+            else:
+                file_name = item.private_attribute_id
+            for sub_component_id in item.private_attribute_sub_components:
+                id_to_file_name[sub_component_id] = file_name
+
+        return id_to_file_name
 
 
 class VolumeMeshEntityInfo(EntityInfoModel):
