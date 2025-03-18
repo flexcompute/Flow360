@@ -266,30 +266,30 @@ def TurbulenceQuantities(
         :code:`viscosity_ratio = 0.01` with default :code:`specific_dissipation_rate` = :math:`MachRef/L_{box}`
         where :math:`L_{box} \triangleq exp\left(\displaystyle\sum_{i=1}^{3}log(x_{i,max}-x_{i,min}\right)`.
         :math:`x_{i,max},x_{i,min}` is the bounding box dimension for wall boundaries.
-    viscosity_ratio alone
+    :code:`viscosity_ratio` alone
         This applies to both SST and SA model. For SST model this is effectively
         an override of the above default :code:viscosity_ratio value while keeping
         the default specificDissipationRate. For SA model the :code:viscosity_ratio
         will be converted to the :code:modified_viscosity_ratio.
-    turbulent_kinetic_energy or turbulent_intensity alone
-        For SST model only. :code:specific_dissipation_rate will be set to the default value.
-    turbulent_length_scale alone
-        For SST model only. :code:specific_dissipation_rate will be set to the default value.
-    modified_viscosity
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` alone
+        For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
+    :code:`turbulent_length_scale` alone
+        For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
+    :code:`modified_viscosity`
         For SA model only.
-    modified_viscosity_ratio
+    :code:`modified_viscosity_ratio`
         For SA model only.
-    turbulent_kinetic_energy or turbulent_intensity with specific_dissipation_rate
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`specific_dissipation_rate`
         For SST model only.
-    turbulent_kinetic_energy or turbulent_intensity with viscosity_ratio
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`viscosity_ratio`
         For SST model only.
-    turbulent_kinetic_energy or turbulent_intensity with turbulent_length_scale
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`turbulent_length_scale`
         For SST model only.
-    specific_dissipation_rate with viscosity_ratio
+    :code:`specific_dissipation_rate` with :code:`viscosity_ratio`
         For SST model only.
-    specific_dissipation_rate with turbulent_length_scale
+    :code:`specific_dissipation_rate` with :code:`turbulent_length_scale`
         For SST model only.
-    viscosity_ratio with turbulent_length_scale
+    :code:`viscosity_ratio` with :code:`turbulent_length_scale`
         For SST model only.
 
     Example
@@ -299,9 +299,11 @@ def TurbulenceQuantities(
     >>> fl.TurbulenceQuantities(modified_viscosity_ratio=10)
 
     Apply turbulent kinetic energy and specific dissipation rate for SST model.
+
     >>> fl.TurbulenceQuantities(turbulent_kinetic_energy=0.2, specific_dissipation_rate=100)
 
     Apply specific dissipation rate and turbulent viscosity ratio for SST model.
+
     >>> fl.TurbulenceQuantities(specific_dissipation_rate=150, viscosity_ratio=1000)
 
     """
