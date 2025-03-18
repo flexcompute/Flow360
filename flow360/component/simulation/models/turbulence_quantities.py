@@ -203,7 +203,7 @@ def TurbulenceQuantities(
     turbulent_length_scale=None,
     turbulent_intensity=None,
 ) -> TurbulenceQuantitiesType:
-    """
+    r"""
 
     :func:`TurbulenceQuantities` function specifies turbulence conditions
     for the :class:`~flow360.Inflow` or :class:`~flow360.Freestream`
