@@ -22,11 +22,9 @@ Examples:
     - pressure_pa: Pressure in pascals
 """
 
-from typing import Dict, List, Literal, Optional, Tuple, Union, get_args, get_origin
+from typing import List, Literal, get_args, get_origin
 
-# pylint: disable=duplicate-code
-from ..framework.base_model import Flow360BaseModel
-from ..unit_system import VelocityType, flow360_velocity_unit, u
+from flow360.component.simulation.unit_system import u
 
 # Coefficient of pressure
 # Coefficient of total pressure
@@ -162,14 +160,7 @@ IsoSurfaceFieldNames = Literal[
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
 
-
-class VelocityField(Flow360BaseModel):
-    units: VelocityType = flow360_velocity_unit
-    component: Optional[
-        Union[Literal["x", "y", "z", "magnitude"], List[Literal["x", "y", "z", "magnitude"]]]
-    ] = None
-
-
+# pylint: disable=no-member
 _FIELD_UNIT_MAPPING = {
     # Standard non-dimensioned fields - (unit, unit_system)
     "*": (None, "flow360"),
@@ -302,8 +293,7 @@ def generate_field_udf(field_name, params):
 
     if field_type == FIELD_TYPE_VECTOR:
         return _apply_vector_conversion(base_expr, base_field, field_name, conversion_factor)
-    else:
-        return _apply_scalar_conversion(base_expr, base_field, field_name, conversion_factor)
+    return _apply_scalar_conversion(base_expr, base_field, field_name, conversion_factor)
 
 
 def _get_field_values(field_type, names):
