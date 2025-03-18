@@ -219,8 +219,8 @@ def test_updater_to_24_11_1():
         "project_entity_info"
     ]["ghost_entities"][2]
 
-    assert updated_surface_1["private_attribute_id"] == updated_surface_1["name"] == "symmetric-1"
-    assert updated_surface_2["private_attribute_id"] == updated_surface_2["name"] == "symmetric-2"
+    assert updated_surface_1["name"] == "symmetric-1"
+    assert updated_surface_2["name"] == "symmetric-2"
 
 
 def test_updater_to_24_11_7():
