@@ -1044,6 +1044,11 @@ def test_dimensioned_output_fields_translation():
                         "velocity_z_m_per_s",
                         "pressure",
                         "pressure_pa",
+                    ],
+                ),
+                SurfaceOutput(
+                    entities=[Surface(name="surface11")],
+                    output_fields=[
                         "wall_shear_stress_magnitude",
                         "wall_shear_stress_magnitude_pa",
                     ],
@@ -1063,7 +1068,7 @@ def test_dimensioned_output_fields_translation():
         )
 
     solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
-    expected_fields = [
+    expected_fields_v = [
         "velocity",
         "velocity_m_per_s",
         "velocity_magnitude",
@@ -1073,11 +1078,17 @@ def test_dimensioned_output_fields_translation():
         "velocity_z_m_per_s",
         "pressure",
         "pressure_pa",
+    ]
+
+    expected_fields_s = [
         "wall_shear_stress_magnitude",
         "wall_shear_stress_magnitude_pa",
     ]
 
-    assert set(solver_json["volumeOutput"]["outputFields"]) == set(expected_fields)
+    assert set(solver_json["volumeOutput"]["outputFields"]) == set(expected_fields_v)
+    assert set(solver_json["surfaceOutput"]["surfaces"]["surface11"]["outputFields"]) == set(
+        expected_fields_s
+    )
 
     ref = {
         "userDefinedFields": [

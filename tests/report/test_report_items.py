@@ -499,7 +499,7 @@ def test_calculate_y_lim(cases, here):
         )
 
 
-def test_dimentioned_limits(cases):
+def test_dimensioned_limits(cases):
 
     case = cases[0]
 
