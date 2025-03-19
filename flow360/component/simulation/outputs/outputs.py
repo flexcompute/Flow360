@@ -642,8 +642,19 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
-    frequency: int = pd.Field(default=1, ge=1)
-    frequency_offset: int = pd.Field(default=0, ge=0)
+    # pylint: disable=abstract-method
+    frequency: int = pd.Field(
+        default=1,
+        ge=-1,
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
@@ -720,8 +731,18 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     """
 
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(default=1, ge=1)
-    frequency_offset: int = pd.Field(default=0, ge=0)
+    frequency: int = pd.Field(
+        default=1,
+        ge=-1,
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
