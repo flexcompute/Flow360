@@ -892,7 +892,9 @@ class VolumeMeshDraftV2(ResourceDraft):
             raise Flow360ValueError("solver_version field is required.")
 
     # pylint: disable=protected-access, too-many-locals
-    def submit(self, description="", progress_callback=None, compress=True) -> VolumeMeshV2:
+    def submit(
+        self, description="", progress_callback=None, compress=True, run_async=False
+    ) -> VolumeMeshV2:
         """
         Submit volume mesh to cloud and create a new project
 
@@ -991,6 +993,9 @@ class VolumeMeshDraftV2(ResourceDraft):
 
         # Start processing pipeline
         volume_mesh._webapi._complete_upload()
+        if run_async:
+            return volume_mesh
+        self._id = info.id
         log.debug("Waiting for volume mesh to be processed.")
         volume_mesh._webapi.get_info()
         log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")

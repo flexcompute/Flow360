@@ -619,6 +619,7 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
     ):
         """
         Initializes a project from a file.
@@ -666,7 +667,13 @@ class Project(pd.BaseModel):
                 "Cannot detect the intended project root with the given file(s)."
             )
 
-        root_asset = draft.submit()
+        root_asset = draft.submit(run_async=run_async)
+        if run_async:
+            log.info(
+                f"The input file(s) has been successfully uploaded to Project: {root_asset.project_id} "
+                "and is being processed on cloud. Only the project ID string is returned."
+            )
+            return root_asset.project_id
 
         if not root_asset:
             raise Flow360ValueError(f"Couldn't initialize asset from {files.file_names}")
@@ -702,6 +709,7 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
     ):
         """
         Initializes a project from local geometry files.
@@ -752,6 +760,7 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            run_async=run_async,
         )
 
     @classmethod
@@ -764,6 +773,7 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
     ):
         """
         Initializes a project from a local surface mesh file.
@@ -816,6 +826,7 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            run_async=run_async,
         )
 
     @classmethod
@@ -828,6 +839,7 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
     ):
         """
         Initializes a project from a local volume mesh file.
@@ -880,6 +892,7 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            run_async=run_async,
         )
 
     @classmethod
@@ -896,6 +909,7 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
     ):
         """
         [Deprecated function]
@@ -946,6 +960,7 @@ class Project(pd.BaseModel):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            run_async=run_async,
         )
 
     @classmethod
