@@ -1249,7 +1249,11 @@ class Chart2D(Chart):
         case_number = kwargs.get("case_number", None)
 
         if isinstance(self.caption, List):
-            return self.caption[case_number]
+            if isinstance(case_number, int):
+                return self.caption[case_number]
+            raise ValueError(
+                "For list of captions, case number of type integer needs to be provided."
+            )
 
         return self.caption
 
@@ -1693,16 +1697,18 @@ class Chart3D(Chart):
         case_number = kwargs.get("case_number", None)
 
         if isinstance(self.caption, List):
-            return self.caption[case_number]
+            if isinstance(case_number, int):
+                return self.caption[case_number]
+            raise ValueError(
+                "For list of captions, case number of type integer needs to be provided."
+            )
 
         if isinstance(self.caption, PatternCaption):
-            if self.caption.type_name == "[case.name]":
-                caption = NoEscape(f"Case: {case.name}")
-            elif self.caption.type_name == ["case.id"]:
-                caption = NoEscape(f"Case: {case.id}")
-            else:
-                raise ValueError(f"Unknown type_name: {self.caption.type_name}")
-            return caption
+            if self.caption.pattern == "[case.name]":
+                return f"Case: {case.name}"
+            if self.caption.pattern == "[case.id]":
+                return f"Case: {case.id}"
+            raise ValueError("Invalid caption pattern.")
 
         return self.caption
 

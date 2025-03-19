@@ -14,6 +14,7 @@ from flow360.plugins.report.report_items import (
     Chart3D,
     FixedRangeLimit,
     ManualLimit,
+    PatternCaption,
     SubsetLimit,
     Table,
     human_readable_formatter,
@@ -499,18 +500,50 @@ def test_calculate_y_lim(cases, here):
         )
 
 
-def test_2d_caption(cases):
+def test_2d_caption_validity(cases):
+    chart = Chart2D(
+        x="total_forces/pseudo_step",
+        y="total_forces/CD",
+    )
+
+    with pytest.raises(ValueError, match="PatternCaption is not supported for Chart2D."):
+        chart.caption = PatternCaption()
+        chart._check_2d_caption_validity(cases)
+
+    with pytest.raises(
+        ValueError,
+        match="List of captions is only supported for Chart2D when separate_plots is True.",
+    ):
+        chart.caption = ["Caption 1", "Caption 2"]
+        chart._check_2d_caption_validity(cases)
+
+    with pytest.raises(
+        ValueError, match="Caption list is not the same length as the list of cases."
+    ):
+        chart.separate_plots = True
+        chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
+        chart._check_2d_caption_validity(cases)
+
+
+def test_2d_caption():
     chart = Chart2D(
         x="total_forces/pseudo_step",
         y="total_forces/CD",
     )
 
     chart.caption = "This is a caption."
-    chart._handle_2d_caption()
+    assert chart._handle_2d_caption() == "This is a caption."
+
+    chart.caption = ["Caption 1", "Caption 2"]
+    assert chart._handle_2d_caption(case_number=0) == "Caption 1"
+    assert chart._handle_2d_caption(case_number=1) == "Caption 2"
+    with pytest.raises(
+        ValueError, match="For list of captions, case number of type integer needs to be provided."
+    ):
+        chart._handle_2d_caption()
 
 
-def test_3d_caption(cases):
-
+def test_3d_caption_validity(cases):
     top_camera = Camera(
         position=(0, 0, 1),
         look_at=(0, 0, 0),
@@ -519,62 +552,87 @@ def test_3d_caption(cases):
         dimension=5,
         dimension_dir="width",
     )
-    side_camera = Camera(
-        position=(0, -1, 0),
-        look_at=(0, 0, 0),
-        pan_target=(1.5, 0, 0),
-        up=(0, 0, 1),
-        dimension=5,
-        dimension_dir="width",
+
+    chart = Chart3D(
+        section_title="Geometry",
+        items_in_row=2,
+        force_new_page=True,
+        show="boundaries",
+        camera=top_camera,
+        fig_name="geo",
     )
-    back_camera = Camera(position=(1, 0, 0), up=(0, 0, 1), dimension=2.5, dimension_dir="width")
-    bottom_camera = Camera(
-        position=(0, 0, -1),
+
+    with pytest.raises(
+        ValueError, match="PatternCaption is not supported Chart3D when items_in_row is not None."
+    ):
+        chart.items_in_row = 1
+        chart.caption = PatternCaption()
+        chart._check_3d_caption_validity(cases)
+
+    with pytest.raises(
+        ValueError,
+        match="List of captions is not supported for Chart3D when items_in_row is not None.",
+    ):
+        chart.items_in_row = 1
+        chart.caption = ["Caption 1", "Caption 2"]
+        chart._check_3d_caption_validity(cases)
+
+    with pytest.raises(
+        ValueError, match="Caption list is not the same length as the list of cases."
+    ):
+        chart.items_in_row = None
+        chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
+        chart._check_3d_caption_validity(cases)
+
+
+def test_3d_caption(cases):
+    top_camera = Camera(
+        position=(0, 0, 1),
         look_at=(0, 0, 0),
         pan_target=(1.5, 0, 0),
-        up=(0, -1, 0),
-        dimension=5,
-        dimension_dir="width",
-    )
-    front_left_bottom_camera = Camera(
-        position=(-1, -1, -1),
-        look_at=(0, 0, 0),
-        pan_target=(1.5, 0, 0),
-        up=(0, 0, 1),
-        dimension=5,
-        dimension_dir="width",
-    )
-    rear_right_bottom_camera = Camera(
-        position=(1, 1, -1),
-        look_at=(0, 0, 0),
-        pan_target=(1.5, 0, 0),
-        up=(0, 0, 1),
+        up=(0, 1, 0),
         dimension=5,
         dimension_dir="width",
     )
 
-    cameras_geo = [
-        top_camera,
-        side_camera,
-        back_camera,
-        bottom_camera,
-        front_left_bottom_camera,
-        rear_right_bottom_camera,
-    ]
+    chart = Chart3D(
+        section_title="Geometry",
+        items_in_row=2,
+        force_new_page=True,
+        show="boundaries",
+        camera=top_camera,
+        fig_name="geo",
+    )
 
-    exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+    chart.caption = "This is a caption."
+    assert chart._handle_3d_caption() == "This is a caption."
 
-    geometry_screenshots = [
-        Chart3D(
-            section_title="Geometry",
-            items_in_row=2,
-            force_new_page=True,
-            show="boundaries",
-            camera=camera,
-            exclude=exclude,
-            fig_name=f"geo_{i}",
-        )
-        for i, camera in enumerate(cameras_geo)
-    ]
+    chart.caption = ["Caption 1", "Caption 2"]
+    assert chart._handle_3d_caption(case_number=0) == "Caption 1"
+    assert chart._handle_3d_caption(case_number=1) == "Caption 2"
+    with pytest.raises(
+        ValueError, match="For list of captions, case number of type integer needs to be provided."
+    ):
+        chart._handle_3d_caption()
 
-    # work in progress
+    chart.caption = PatternCaption(pattern="[case.name]")
+    assert (
+        chart._handle_3d_caption(case=cases[0])
+        == "Case: case-11111111-1111-1111-1111-111111111111-name"
+    )
+    assert (
+        chart._handle_3d_caption(case=cases[1])
+        == "Case: case-2222222222-2222-2222-2222-2222222222-name"
+    )
+
+    chart.caption = PatternCaption(pattern="[case.id]")
+    assert (
+        chart._handle_3d_caption(case=cases[0]) == "Case: case-11111111-1111-1111-1111-111111111111"
+    )
+    assert (
+        chart._handle_3d_caption(case=cases[1]) == "Case: case-2222222222-2222-2222-2222-2222222222"
+    )
+
+    with pytest.raises(ValueError, match="Invalid caption pattern."):
+        chart.caption.pattern = "[case.data]"
+        chart._handle_3d_caption(case=cases[0])
