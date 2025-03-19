@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from itertools import chain
@@ -559,7 +560,7 @@ class Flow360BaseModel(pd.BaseModel):
                 value.units.registry = registry_lookup.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360_v2")
             else:
-                solver_values[property_name] = value
+                solver_values[property_name] = copy.deepcopy(value)
 
         return solver_values
 
