@@ -410,15 +410,23 @@ class PatternCaption(Flow360BaseModel):
 
     Parameters
     ----------
-    pattern: Literal["[case.name]", "[case.id]"]
+    pattern: str = Field(default="[case.name]", description="The caption pattern with placeholders.")
         Sets up the caption to generate automatically.
         "[case.name]" will result in the name of the case
         corresponding to the chart.
         "[case.id]" will result in the ID of the case
         corresponding to the chart.
+
+    Examples
+    --------
+    >>> PatternCaption(pattern="The case is [case.name] with ID [case.id]")
+
+    Will result in the following caption: "The case is ExampleCase with ID case-XXXXX"
     """
 
-    pattern: Literal["[case.name]", "[case.id]"] = Field("[case.name]")
+    pattern: str = Field(
+        default="[case.name]", description="The caption pattern with placeholders."
+    )
     type_name: Literal["PatternCaption"] = Field("PatternCaption", frozen=True)
 
 
@@ -468,7 +476,22 @@ class Chart(ReportItem):
                 )
             if self.separate_plots is None:
                 self.separate_plots = True
+            if isinstance(self.caption, List):
+                raise ValueError("List of captions and items_in_row cannot be used together.")
+            if isinstance(self.caption, PatternCaption):
+                raise ValueError("PatternCaption and items_in_row cannot be used together.")
         return self
+
+    def _check_caption_validity(self, cases):
+        if isinstance(self.caption, List):
+            if len(self.caption) != len(cases):
+                raise ValueError("Caption list is not the same length as the list of cases.")
+
+    # pylint: disable=no-member
+    def _handle_caption_pattern(self, case):
+        caption = self.caption.pattern.replace("[case.name]", case.name)
+        caption = caption.replace("[case.id]", str(case.id))
+        return caption
 
     def _handle_title(self, doc, section_func):
         if self.section_title is not None:
@@ -924,6 +947,19 @@ class Chart2D(Chart):
             self.ylim = SubsetLimit(subset=(lower, upper), offset=0.25)
         return self
 
+    @pd.model_validator(mode="after")
+    def _check_caption_separate_plots(self):
+        if self.separate_plots is not True:
+            if isinstance(self.caption, List):
+                raise ValueError(
+                    "List of captions is only supported for Chart2D when separate_plots is True."
+                )
+            if isinstance(self.caption, PatternCaption):
+                raise ValueError(
+                    "PatternCaption is only supported for Chart2D when separate_plots is True."
+                )
+        return self
+
     def _check_dimensions_consistency(self, data):
         if any(isinstance(d, unyt.unyt_array) for d in data):
             for d in data:
@@ -1229,33 +1265,27 @@ class Chart2D(Chart):
 
         return file_names, data.x_label, data.y_label
 
-    def _check_2d_caption_validity(self, cases):
-        """Checks the validity of caption input for a given Chart2D instance."""
-
-        if isinstance(self.caption, PatternCaption):
-            raise ValueError("PatternCaption is not supported for Chart2D.")
-
-        if isinstance(self.caption, List):
-            if self.separate_plots is not True:
-                raise ValueError(
-                    "List of captions is only supported for Chart2D when separate_plots is True."
-                )
-            if len(self.caption) != len(cases):
-                raise ValueError("Caption list is not the same length as the list of cases.")
-
-    def _handle_2d_caption(self, **kwargs):
+    def _handle_2d_caption(
+        self, case: Case = None, x_lab: str = None, y_lab: str = None, case_number: int = None
+    ):
         """Handle captions for Chart2D."""
 
-        case_number = kwargs.get("case_number", None)
-
-        if isinstance(self.caption, List):
-            if isinstance(case_number, int):
-                return self.caption[case_number]
-            raise ValueError(
-                "For list of captions, case number of type integer needs to be provided."
-            )
-
-        return self.caption
+        if self.caption != "":
+            if self.separate_plots is True:
+                if isinstance(self.caption, List):
+                    caption = self.caption[case_number]
+                elif isinstance(self.caption, PatternCaption):
+                    caption = self._handle_caption_pattern(case)
+                else:
+                    caption = self.caption
+            else:
+                caption = self.caption
+        else:
+            if self.separate_plots is True:
+                caption = f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+            else:
+                caption = f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
+        return caption
 
     # pylint: disable=too-many-arguments,too-many-locals
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
@@ -1266,34 +1296,24 @@ class Chart2D(Chart):
         self._handle_grid_input(context.cases)
         self._handle_title(context.doc, context.section_func)
         cases = self._filter_input_cases(context.cases, context.case_by_case)
-        self._check_2d_caption_validity(cases)
+        self._check_caption_validity(cases)
 
         file_names, x_lab, y_lab = self._get_figures(cases, context)
 
         if self.items_in_row is not None:
-            if self.caption != "":
-                caption = NoEscape(self._handle_2d_caption())
-            else:
-                caption = NoEscape(f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.')
+            caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
             self._add_row_figure(context.doc, file_names, caption)
         else:
             if self.separate_plots is True:
-                for case_number, case_and_file_name in enumerate(zip(cases, file_names)):
-                    case, file_name = case_and_file_name
-                    if self.caption != "":
-                        caption = NoEscape(self._handle_2d_caption(case_number=case_number))
-                    else:
-                        caption = NoEscape(
-                            f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+                for case_number, (case, file_name) in enumerate(zip(cases, file_names)):
+                    caption = NoEscape(
+                        self._handle_2d_caption(
+                            case=case, x_lab=x_lab, y_lab=y_lab, case_number=case_number
                         )
+                    )
                     self._add_figure(context.doc, file_name, caption)
             else:
-                if self.caption != "":
-                    caption = self._handle_2d_caption()
-                else:
-                    caption = NoEscape(
-                        f'{bold(y_lab)} against {bold(x_lab)} for {bold("all cases")}.'
-                    )
+                caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
                 self._add_figure(context.doc, file_names[-1], caption)
 
         context.doc.append(NoEscape(r"\FloatBarrier"))
@@ -1673,44 +1693,17 @@ class Chart3D(Chart):
             return legend_filename
         return None
 
-    def _check_3d_caption_validity(self, cases):
-        """Checks the validity of caption input for a given Chart3D instance."""
-
-        if isinstance(self.caption, PatternCaption):
-            if self.items_in_row is not None:
-                raise ValueError(
-                    "PatternCaption is not supported Chart3D when items_in_row is not None."
-                )
-
-        if isinstance(self.caption, List):
-            if self.items_in_row is not None:
-                raise ValueError(
-                    "List of captions is not supported for Chart3D when items_in_row is not None."
-                )
-            if len(self.caption) != len(cases):
-                raise ValueError("Caption list is not the same length as the list of cases.")
-
-    def _handle_3d_caption(self, **kwargs):
+    def _handle_3d_caption(self, case: Case = None, case_number: int = None):
         """Handle captions for Chart3D."""
 
-        case = kwargs.get("case", None)
-        case_number = kwargs.get("case_number", None)
-
         if isinstance(self.caption, List):
-            if isinstance(case_number, int):
-                return self.caption[case_number]
-            raise ValueError(
-                "For list of captions, case number of type integer needs to be provided."
-            )
+            caption = self.caption[case_number]
+        elif isinstance(self.caption, PatternCaption):
+            caption = self._handle_caption_pattern(case)
+        else:
+            caption = self.caption
 
-        if isinstance(self.caption, PatternCaption):
-            if self.caption.pattern == "[case.name]":
-                return f"Case: {case.name}"
-            if self.caption.pattern == "[case.id]":
-                return f"Case: {case.id}"
-            raise ValueError("Invalid caption pattern.")
-
-        return self.caption
+        return caption
 
     # pylint: disable=too-many-arguments
     def get_doc_item(self, context: ReportContext, settings: Settings = None):
@@ -1721,7 +1714,7 @@ class Chart3D(Chart):
         self._handle_grid_input(context.cases)
         self._handle_title(context.doc, context.section_func)
         cases = self._filter_input_cases(context.cases, context.case_by_case)
-        self._check_3d_caption_validity(cases)
+        self._check_caption_validity(cases)
 
         img_list = self._get_images(cases, context)
         legend_filename = self._get_legend(context)
@@ -1735,14 +1728,13 @@ class Chart3D(Chart):
             self._add_row_figure(
                 context.doc,
                 img_list,
-                self.caption,
+                caption,
                 sub_fig_captions=[case.name for case in cases],
                 legend_filename=legend_filename,
                 dpi=dpi,
             )
         else:
-            for case_number, case_and_filename in enumerate(zip(cases, img_list)):
-                case, filename = case_and_filename
+            for case_number, (case, filename) in enumerate(zip(cases, img_list)):
                 caption = self._handle_3d_caption(case=case, case_number=case_number)
                 self._add_figure(
                     context.doc, filename, caption, legend_filename=legend_filename, dpi=dpi

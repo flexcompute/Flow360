@@ -506,26 +506,53 @@ def test_2d_caption_validity(cases):
         y="total_forces/CD",
     )
 
-    with pytest.raises(ValueError, match="PatternCaption is not supported for Chart2D."):
-        chart.caption = PatternCaption()
-        chart._check_2d_caption_validity(cases)
+    with pytest.raises(
+        ValueError, match="List of captions and items_in_row cannot be used together."
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step",
+            y="total_forces/CD",
+            items_in_row=2,
+            caption=["Caption 1", "Caption 2"],
+        )
+
+    with pytest.raises(
+        ValueError, match="PatternCaption and items_in_row cannot be used together."
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step",
+            y="total_forces/CD",
+            items_in_row=2,
+            caption=PatternCaption(pattern="This is case: [case.name] with ID: [case.id]"),
+        )
 
     with pytest.raises(
         ValueError,
         match="List of captions is only supported for Chart2D when separate_plots is True.",
     ):
-        chart.caption = ["Caption 1", "Caption 2"]
-        chart._check_2d_caption_validity(cases)
+        Chart2D(
+            x="total_forces/pseudo_step", y="total_forces/CD", caption=["Caption 1", "Caption 2"]
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="PatternCaption is only supported for Chart2D when separate_plots is True.",
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step",
+            y="total_forces/CD",
+            caption=PatternCaption(pattern="This is case: [case.name] with ID: [case.id]"),
+        )
 
     with pytest.raises(
         ValueError, match="Caption list is not the same length as the list of cases."
     ):
         chart.separate_plots = True
         chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
-        chart._check_2d_caption_validity(cases)
+        chart._check_caption_validity(cases)
 
 
-def test_2d_caption():
+def test_2d_caption(cases):
     chart = Chart2D(
         x="total_forces/pseudo_step",
         y="total_forces/CD",
@@ -534,13 +561,20 @@ def test_2d_caption():
     chart.caption = "This is a caption."
     assert chart._handle_2d_caption() == "This is a caption."
 
+    chart.separate_plots = True
     chart.caption = ["Caption 1", "Caption 2"]
     assert chart._handle_2d_caption(case_number=0) == "Caption 1"
     assert chart._handle_2d_caption(case_number=1) == "Caption 2"
-    with pytest.raises(
-        ValueError, match="For list of captions, case number of type integer needs to be provided."
-    ):
-        chart._handle_2d_caption()
+
+    chart.caption = PatternCaption(pattern="This is case: [case.name] with ID: [case.id]")
+    assert (
+        chart._handle_2d_caption(case=cases[0])
+        == "This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111"
+    )
+    assert (
+        chart._handle_2d_caption(case=cases[1])
+        == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
+    )
 
 
 def test_3d_caption_validity(cases):
@@ -555,7 +589,6 @@ def test_3d_caption_validity(cases):
 
     chart = Chart3D(
         section_title="Geometry",
-        items_in_row=2,
         force_new_page=True,
         show="boundaries",
         camera=top_camera,
@@ -563,26 +596,36 @@ def test_3d_caption_validity(cases):
     )
 
     with pytest.raises(
-        ValueError, match="PatternCaption is not supported Chart3D when items_in_row is not None."
+        ValueError, match="List of captions and items_in_row cannot be used together."
     ):
-        chart.items_in_row = 1
-        chart.caption = PatternCaption()
-        chart._check_3d_caption_validity(cases)
+        Chart3D(
+            section_title="Geometry",
+            force_new_page=True,
+            show="boundaries",
+            camera=top_camera,
+            fig_name="geo",
+            items_in_row=2,
+            caption=["Caption 1", "Caption 2"],
+        )
 
     with pytest.raises(
-        ValueError,
-        match="List of captions is not supported for Chart3D when items_in_row is not None.",
+        ValueError, match="PatternCaption and items_in_row cannot be used together."
     ):
-        chart.items_in_row = 1
-        chart.caption = ["Caption 1", "Caption 2"]
-        chart._check_3d_caption_validity(cases)
+        Chart3D(
+            section_title="Geometry",
+            force_new_page=True,
+            show="boundaries",
+            camera=top_camera,
+            fig_name="geo",
+            items_in_row=2,
+            caption=PatternCaption(pattern="This is case: [case.name] with ID: [case.id]"),
+        )
 
     with pytest.raises(
         ValueError, match="Caption list is not the same length as the list of cases."
     ):
-        chart.items_in_row = None
         chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
-        chart._check_3d_caption_validity(cases)
+        chart._check_caption_validity(cases)
 
 
 def test_3d_caption(cases):
@@ -597,7 +640,6 @@ def test_3d_caption(cases):
 
     chart = Chart3D(
         section_title="Geometry",
-        items_in_row=2,
         force_new_page=True,
         show="boundaries",
         camera=top_camera,
@@ -610,29 +652,13 @@ def test_3d_caption(cases):
     chart.caption = ["Caption 1", "Caption 2"]
     assert chart._handle_3d_caption(case_number=0) == "Caption 1"
     assert chart._handle_3d_caption(case_number=1) == "Caption 2"
-    with pytest.raises(
-        ValueError, match="For list of captions, case number of type integer needs to be provided."
-    ):
-        chart._handle_3d_caption()
 
-    chart.caption = PatternCaption(pattern="[case.name]")
+    chart.caption = PatternCaption(pattern="This is case: [case.name] with ID: [case.id]")
     assert (
         chart._handle_3d_caption(case=cases[0])
-        == "Case: case-11111111-1111-1111-1111-111111111111-name"
+        == "This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111"
     )
     assert (
         chart._handle_3d_caption(case=cases[1])
-        == "Case: case-2222222222-2222-2222-2222-2222222222-name"
+        == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
     )
-
-    chart.caption = PatternCaption(pattern="[case.id]")
-    assert (
-        chart._handle_3d_caption(case=cases[0]) == "Case: case-11111111-1111-1111-1111-111111111111"
-    )
-    assert (
-        chart._handle_3d_caption(case=cases[1]) == "Case: case-2222222222-2222-2222-2222-2222222222"
-    )
-
-    with pytest.raises(ValueError, match="Invalid caption pattern."):
-        chart.caption.pattern = "[case.data]"
-        chart._handle_3d_caption(case=cases[0])
