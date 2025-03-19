@@ -167,9 +167,9 @@ class GeometryDraft(ResourceDraft):
             files=[
                 GeometryFileMeta(
                     name=os.path.basename(file_path),
-                    type="main" if item_index == 0 else "dependency",
+                    type="main",
                 )
-                for item_index, file_path in enumerate(self.file_names)
+                for file_path in self.file_names
             ],
             # pylint: disable=fixme
             # TODO: remove hardcoding
