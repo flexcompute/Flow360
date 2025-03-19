@@ -268,9 +268,9 @@ def TurbulenceQuantities(
         :math:`x_{i,max},x_{i,min}` is the bounding box dimension for wall boundaries.
     :code:`viscosity_ratio` alone
         This applies to both SST and SA model. For SST model this is effectively
-        an override of the above default :code:viscosity_ratio value while keeping
-        the default specificDissipationRate. For SA model the :code:viscosity_ratio
-        will be converted to the :code:modified_viscosity_ratio.
+        an override of the above default :code:`viscosity_ratio` value while keeping
+        the default specificDissipationRate. For SA model the :code:`viscosity_ratio`
+        will be converted to the :code:`modified_viscosity_ratio`.
     :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` alone
         For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
     :code:`turbulent_length_scale` alone
