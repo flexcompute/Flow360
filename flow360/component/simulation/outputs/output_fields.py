@@ -123,6 +123,7 @@ IsoSurfaceFieldNames = Literal[
     "Cpt",
     "mut",
     "nuHat",
+    "vorticityMagnitude",
 ]
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
