@@ -1172,7 +1172,10 @@ class Project(pd.BaseModel):
         """
 
         params = set_up_params_for_uploading(
-            params=params, root_asset=self._root_asset, length_unit=self.length_unit
+            params=params,
+            root_asset=self._root_asset,
+            length_unit=self.length_unit,
+            use_beta_mesher=use_beta_mesher,
         )
 
         params, errors = validate_params_with_context(

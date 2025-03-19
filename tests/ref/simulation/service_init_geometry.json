@@ -1,5 +1,5 @@
 {
-  "version": "25.2.3b1",
+  "version": "25.4.0b1",
   "unit_system": {
     "name": "SI"
   },
@@ -12,7 +12,8 @@
         "units": "degree",
         "value": 12.0
       },
-      "surface_edge_growth_rate": 1.2
+      "surface_edge_growth_rate": 1.2,
+      "geometry_tolerance": 1e-6
     },
   "refinements": [],
   "volume_zones": [
