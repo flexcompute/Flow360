@@ -560,7 +560,7 @@ class Flow360BaseModel(pd.BaseModel):
                 value.units.registry = registry_lookup.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360_v2")
             else:
-                solver_values[property_name] = copy.deepcopy(value)
+                solver_values[property_name] = copy.copy(value)
 
         return solver_values
 
