@@ -410,24 +410,42 @@ class PatternCaption(Flow360BaseModel):
 
     Parameters
     ----------
-    pattern: str = Field(default="[case.name]", description="The caption pattern with placeholders.")
-        Sets up the caption to generate automatically.
-        "[case.name]" will result in the name of the case
-        corresponding to the chart.
-        "[case.id]" will result in the ID of the case
-        corresponding to the chart.
-
-    Examples
-    --------
-    >>> PatternCaption(pattern="The case is [case.name] with ID [case.id]")
-
-    Will result in the following caption: "The case is ExampleCase with ID case-XXXXX"
+    pattern : str
+        The caption pattern containing placeholders like [case.name] and [case.id].
+        These placeholders will be replaced with the actual case name and ID when
+        resolving the caption. For example, "The case is [case.name] with ID [case.id]".
     """
 
     pattern: str = Field(
         default="[case.name]", description="The caption pattern with placeholders."
     )
     type_name: Literal["PatternCaption"] = Field("PatternCaption", frozen=True)
+
+    # pylint: disable=no-member
+    def resolve(self, case: "Case") -> str:
+        """
+        Resolves the pattern to the actual caption string using the provided case object.
+
+        Parameters
+        ----------
+        case : Case
+            The case object containing `name` and `id` attributes.
+
+        Returns
+        -------
+        str
+            The resolved caption string with placeholders replaced by actual values.
+
+        Examples
+        --------
+        >>> caption = PatternCaption(pattern="The case is [case.name] with ID [case.id]")
+        >>> case = Case(name="Example", id=123)
+        >>> caption.resolve(case)
+        'The case is Example with ID 123'
+        """
+        caption = self.pattern.replace("[case.name]", case.name)
+        caption = caption.replace("[case.id]", str(case.id))
+        return caption
 
 
 class Chart(ReportItem):
@@ -486,12 +504,6 @@ class Chart(ReportItem):
         if isinstance(self.caption, List):
             if len(self.caption) != len(cases):
                 raise ValueError("Caption list is not the same length as the list of cases.")
-
-    # pylint: disable=no-member
-    def _handle_caption_pattern(self, case):
-        caption = self.caption.pattern.replace("[case.name]", case.name)
-        caption = caption.replace("[case.id]", str(case.id))
-        return caption
 
     def _handle_title(self, doc, section_func):
         if self.section_title is not None:
@@ -1275,7 +1287,7 @@ class Chart2D(Chart):
                 if isinstance(self.caption, List):
                     caption = self.caption[case_number]
                 elif isinstance(self.caption, PatternCaption):
-                    caption = self._handle_caption_pattern(case)
+                    caption = self.caption.resolve(case)
                 else:
                     caption = self.caption
             else:
@@ -1699,7 +1711,7 @@ class Chart3D(Chart):
         if isinstance(self.caption, List):
             caption = self.caption[case_number]
         elif isinstance(self.caption, PatternCaption):
-            caption = self._handle_caption_pattern(case)
+            caption = self.caption.resolve(case)
         else:
             caption = self.caption
 
