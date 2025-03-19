@@ -71,6 +71,9 @@ CommonFieldNames = Literal[
     "solutionTurbulence",
     "T",
     "velocity",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
     "velocity_magnitude",
     "pressure",
     "vorticity",
@@ -87,8 +90,6 @@ CommonFieldNames = Literal[
     "velocity_y_m_per_s",
     "velocity_z_m_per_s",
     "pressure_pa",
-    "wall_shear_stress_magnitude",
-    "wall_shear_stress_magnitude_pa",
 ]
 
 # Skin friction coefficient vector
@@ -111,6 +112,8 @@ SurfaceFieldNames = Literal[
     "wallFunctionMetric",
     "heatTransferCoefficientStaticTemperature",
     "heatTransferCoefficientTotalTemperature",
+    "wall_shear_stress_magnitude",
+    "wall_shear_stress_magnitude_pa",
 ]
 
 # BET Metrics
@@ -197,12 +200,12 @@ def get_unit_for_field(field_name: str):
     return _FIELD_UNIT_MAPPING["*"]
 
 
-FIELD_TYPE_VECTOR = "vector"
+FIELD_TYPE_3DVECTOR = "3dvector"
 FIELD_TYPE_SCALAR = "scalar"
 
 _FIELD_TYPE_INFO = {
     "velocity": {
-        "type": FIELD_TYPE_VECTOR,
+        "type": FIELD_TYPE_3DVECTOR,
     },
     "velocity_magnitude": {
         "type": FIELD_TYPE_SCALAR,
@@ -239,25 +242,31 @@ PREDEFINED_UDF_EXPRESSIONS = {
 }
 
 
-def _apply_vector_conversion(base_expr, base_field, field_name, conversion_factor):
+def _apply_vector_conversion(
+    *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
+):
     """Apply conversion for vector fields"""
     factor = 1 / conversion_factor
     return (
         f"double {base_field}[3];"
-        f"{base_expr}"
+        f"{base_udf_expression}"
         f"{field_name}[0] = {base_field}[0] * {factor};"
         f"{field_name}[1] = {base_field}[1] * {factor};"
         f"{field_name}[2] = {base_field}[2] * {factor};"
     )
 
 
-def _apply_scalar_conversion(base_expr, base_field, field_name, conversion_factor):
+def _apply_scalar_conversion(
+    *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
+):
     """Apply conversion for scalar fields"""
     factor = 1 / conversion_factor
-    return f"double {base_field};" f"{base_expr}" f"{field_name} = {base_field} * {factor};"
+    return (
+        f"double {base_field};" f"{base_udf_expression}" f"{field_name} = {base_field} * {factor};"
+    )
 
 
-def generate_field_udf(field_name, params):
+def generate_predefined_udf(field_name, params):
     """
     Generate UserDefinedField expression for a dimensioned field.
 
@@ -273,6 +282,10 @@ def generate_field_udf(field_name, params):
     str or None
         The expression for the UserDefinedField, or None if no matching base expression is found.
     """
+    valid_field_names = get_field_values(AllFieldNames)
+    if field_name not in valid_field_names:
+        return None
+
     matching_keys = [key for key in PREDEFINED_UDF_EXPRESSIONS if field_name.startswith(key)]
     if not matching_keys:
         return None
@@ -291,9 +304,19 @@ def generate_field_udf(field_name, params):
     field_info = _FIELD_TYPE_INFO.get(base_field, {"type": FIELD_TYPE_SCALAR})
     field_type = field_info["type"]
 
-    if field_type == FIELD_TYPE_VECTOR:
-        return _apply_vector_conversion(base_expr, base_field, field_name, conversion_factor)
-    return _apply_scalar_conversion(base_expr, base_field, field_name, conversion_factor)
+    if field_type == FIELD_TYPE_3DVECTOR:
+        return _apply_vector_conversion(
+            base_udf_expression=base_expr,
+            base_field=base_field,
+            field_name=field_name,
+            conversion_factor=conversion_factor,
+        )
+    return _apply_scalar_conversion(
+        base_udf_expression=base_expr,
+        base_field=base_field,
+        field_name=field_name,
+        conversion_factor=conversion_factor,
+    )
 
 
 def _get_field_values(field_type, names):

@@ -37,7 +37,7 @@ from flow360.component.simulation.models.volume_models import (
     Solid,
 )
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
-from flow360.component.simulation.outputs.output_fields import generate_field_udf
+from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -520,7 +520,7 @@ def process_output_fields_for_udf(input_params):
     # Generate UDFs for dimensioned fields
     generated_udfs = []
     for field_name in all_field_names:
-        udf_expression = generate_field_udf(field_name, input_params)
+        udf_expression = generate_predefined_udf(field_name, input_params)
         if udf_expression:
             generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
 
