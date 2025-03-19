@@ -404,7 +404,7 @@ class Table(ReportItem):
                 table.add_hline()
 
 
-class PatternCaption(BaseModel):
+class PatternCaption(Flow360BaseModel):
     """
     Class for setting up chart caption.
 
@@ -757,7 +757,7 @@ class PlotModel(BaseModel):
         return fig
 
 
-class ManualLimit(BaseModel):
+class ManualLimit(Flow360BaseModel):
     """
     Class for setting up xlim and ylim in Chart2D by providing
     a lower and upper value of the limits.
@@ -775,7 +775,7 @@ class ManualLimit(BaseModel):
     type_name: Literal["ManualLimit"] = Field("ManualLimit", frozen=True)
 
 
-class SubsetLimit(BaseModel):
+class SubsetLimit(Flow360BaseModel):
     """
     Class for setting up ylim in Chart2D by providing
     a subset of values and an offset, which will be applied
@@ -808,7 +808,7 @@ class SubsetLimit(BaseModel):
         return self
 
 
-class FixedRangeLimit(BaseModel):
+class FixedRangeLimit(Flow360BaseModel):
     """
     Class for setting up ylim in Chart2D by providing
     a fixed range of y values and strategy for centering.
