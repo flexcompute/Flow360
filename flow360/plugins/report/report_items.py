@@ -1282,22 +1282,16 @@ class Chart2D(Chart):
     ):
         """Handle captions for Chart2D."""
 
-        if self.caption != "":
+        if self.caption == "":
             if self.separate_plots is True:
-                if isinstance(self.caption, List):
-                    caption = self.caption[case_number]
-                elif isinstance(self.caption, PatternCaption):
-                    caption = self.caption.resolve(case)
-                else:
-                    caption = self.caption
-            else:
-                caption = self.caption
-        else:
-            if self.separate_plots is True:
-                caption = f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
-            else:
-                caption = f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
-        return caption
+                return f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+            return f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
+        if self.separate_plots is True:
+            if isinstance(self.caption, List):
+                return self.caption[case_number]
+            if isinstance(self.caption, PatternCaption):
+                return self.caption.resolve(case)
+        return self.caption
 
     # pylint: disable=too-many-arguments,too-many-locals
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
