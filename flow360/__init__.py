@@ -98,6 +98,7 @@ from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
@@ -106,6 +107,7 @@ from flow360.component.simulation.outputs.outputs import (
     Observer,
     ProbeOutput,
     SliceOutput,
+    StreamtraceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,

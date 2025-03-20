@@ -36,8 +36,14 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
+
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
+
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -45,6 +51,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     Slice,
     SliceOutput,
+    StreamtraceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -219,6 +226,7 @@ def translate_output_fields(
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
         SurfaceSliceOutput,
+        StreamtraceOutput,
     ],
 ):
     """Get output fields"""
@@ -526,6 +534,36 @@ def process_output_fields_for_udf(input_params):
 
     return generated_udfs
 
+def translate_streamtrace_output(output_params: list):
+    """Translate streamtrace output settings."""
+    streamtrace_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    for output in output_params:
+        if isinstance(output, StreamtraceOutput):
+            for entity in output.entities.stored_entities:
+                if isinstance(entity, Point):
+                    point = {"name": entity.name, "location": entity.location.value.tolist()}
+                    streamtrace_output["Points"].append(point)
+                elif isinstance(entity, PointArray):
+                    line = {
+                        "name": entity.name,
+                        "start": entity.start.value.tolist(),
+                        "end": entity.end.value.tolist(),
+                        "number_of_points": entity.number_of_points,
+                    }
+                    streamtrace_output["PointArrays"].append(line)
+                elif isinstance(entity, PointArray2D):
+                    trapezoid = {
+                        "name": entity.name,
+                        "origin": entity.origin.value.tolist(),
+                        "u_axis_vector": entity.u_axis_vector.value.tolist(),
+                        "v_axis_vector": entity.v_axis_vector.value.tolist(),
+                        "u_number_of_points": entity.u_number_of_points,
+                        "v_number_of_points": entity.v_number_of_points,
+                    }
+                    streamtrace_output["PointArrays2D"].append(trapezoid)
+
+    return streamtrace_output
+
 
 def translate_output(input_params: SimulationParams, translated: dict):
     # pylint: disable=too-many-branches,too-many-statements
@@ -631,6 +669,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+
+    ##:: Step7: Get translated["streamtraceOutput"]
+    if has_instance_in_list(outputs, StreamtraceOutput):
+        translated["streamtraceOutput"] = translate_streamtrace_output(outputs)
 
     return translated
 
