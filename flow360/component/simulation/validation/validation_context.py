@@ -47,7 +47,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
-    __slots__ = ["auto_farfield_method", "is_beta_mesher"]
+    __slots__ = ["auto_farfield_method", "is_beta_mesher", "use_geometry_AI"]
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -71,9 +71,19 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return False
 
+    @classmethod
+    def _get_use_geometry_AI_(cls, param_as_dict: dict):  # pylint:disable=invalid-name
+        try:
+            return param_as_dict["private_attribute_asset_cache"]["use_geometry_AI"]
+        except KeyError:
+            return False
+
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
+        self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
+            param_as_dict=param_as_dict
+        )
 
 
 class ValidationContext:
@@ -161,7 +171,7 @@ def ContextField(
 
     Notes
     -----
-    Use this field for not required fields to profide context information during validation.
+    Use this field for not required fields to provide context information during validation.
     """
     return Field(
         default,
