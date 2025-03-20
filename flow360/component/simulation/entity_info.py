@@ -206,10 +206,6 @@ class GeometryEntityInfo(EntityInfoModel):
         _search_and_replace(self.grouped_edges, param_entity_registry)
         _search_and_replace(self.grouped_bodies, param_entity_registry)
 
-    @classmethod
-    def _get_singleton_processed_geometry_file_prefix(cls) -> str:
-        return "geometry_from_all_cad"
-
     def _get_processed_file_list(self) -> list[str]:
         """
         Return the list of files that are uploaded by geometryConversionPipeline.
@@ -222,19 +218,14 @@ class GeometryEntityInfo(EntityInfoModel):
         body_groups_grouped_by_file = self._get_list_of_entities("groupByFile", "body")
         unprocessed_file_names = [item.private_attribute_id for item in body_groups_grouped_by_file]
         processed_file_names = []
-        user_uploaded_geometry_file: bool = False
         for unprocessed_file_name in unprocessed_file_names:
             # All geometry source file gets lumped into a single file
             if GeometryFiles.check_is_valid_geometry_file(file_name=unprocessed_file_name):
                 # This is a geometry file
-                user_uploaded_geometry_file = True
+                processed_file_names.append(f"results/{unprocessed_file_name}.egads")
             else:
                 # Not a geometry file. Maybe a surface mesh file. No special treatment needed.
                 processed_file_names.append(unprocessed_file_name)
-        if user_uploaded_geometry_file:
-            processed_file_names.append(
-                f"results/{self._get_singleton_processed_geometry_file_prefix()}.egads"
-            )
         return processed_file_names
 
     def _get_id_to_file_map(
@@ -257,7 +248,7 @@ class GeometryEntityInfo(EntityInfoModel):
         body_groups_grouped_by_file = self._get_list_of_entities("groupByFile", "body")
         for item in body_groups_grouped_by_file:
             if GeometryFiles.check_is_valid_geometry_file(file_name=item.private_attribute_id):
-                file_name = f"{self._get_singleton_processed_geometry_file_prefix()}.egads"
+                file_name = f"{item.private_attribute_id}.egads"
             else:
                 file_name = item.private_attribute_id
             for sub_component_id in item.private_attribute_sub_components:

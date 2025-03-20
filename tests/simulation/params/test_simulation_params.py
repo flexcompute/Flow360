@@ -415,13 +415,19 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
         geometry_entity_info_dict = json.load(fp)
         geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
 
-    assert geometry_entity_info._get_processed_file_list() == [
-        "airplane_translate_in_z_-5.stl",
-        "farfield_only_sphere_volume_mesh.lb8.ugrid",
-        "results/geometry_from_all_cad.egads",
-    ]
-    assert geometry_entity_info._get_id_to_file_map(entity_type_name="body") == {
-        "body00001": "geometry_from_all_cad.egads",
-        "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
-        "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
-    }
+    assert sorted(geometry_entity_info._get_processed_file_list()) == sorted(
+        [
+            "airplane_translate_in_z_-5.stl",
+            "farfield_only_sphere_volume_mesh.lb8.ugrid",
+            "results/airplane_simple_obtained_from_csm_by_esp.step.egads",
+        ]
+    )
+    assert sorted(
+        geometry_entity_info._get_id_to_file_map(entity_type_name="body").items()
+    ) == sorted(
+        {
+            "body00001": "airplane_simple_obtained_from_csm_by_esp.step.egads",
+            "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
+            "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+        }.items()
+    )
