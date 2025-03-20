@@ -2,6 +2,7 @@ import os
 import tempfile
 from copy import deepcopy
 from itertools import product
+from typing import List
 
 import numpy as np
 import pandas
@@ -10,6 +11,8 @@ import pytest
 import flow360.component.v1.units as u1
 import flow360.v1 as fl
 from flow360 import log
+from flow360.component.results.base_results import _filter_headers_by_prefix
+from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -209,6 +212,181 @@ def test_downloader(mock_id, mock_response):
         assert len(files) == 1
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
+
+
+def test_include_filter_with_suffixes():
+    headers = [
+        "boundary_a_A",
+        "boundary_a_B",
+        "boundary_a_a_A",
+        "boundary_a_a_B",
+    ]
+    result = _filter_headers_by_prefix(headers, include=["boundary_a"], suffixes=["A", "B"])
+    assert sorted(result) == sorted(["boundary_a_A", "boundary_a_B"])
+
+    result = _filter_headers_by_prefix(headers, exclude=["boundary_a_a"], suffixes=["A", "B"])
+    assert sorted(result) == sorted(["boundary_a_A", "boundary_a_B"])
+
+
+def test_include_and_exclude_filter_with_suffixes():
+    headers = [
+        "prefix1_A",
+        "prefix2_A",
+        "prefix3_A",
+        "prefix1_B",
+        "prefix2_B",
+        "prefix3_B",
+    ]
+    result = _filter_headers_by_prefix(
+        headers, include=["prefix1", "prefix2"], exclude=["prefix2"], suffixes=["A", "B"]
+    )
+    assert sorted(result) == sorted(["prefix1_A", "prefix1_B"])
+
+
+def test_regex_suffix_provided_headers_with_underscore():
+    headers = [
+        "abc_def",
+        "xyz_123",
+        "nounderscore",
+        "abc_xyz",
+    ]
+    result = _filter_headers_by_prefix(headers, include=["abc"], suffixes=[".*"])
+    assert sorted(result) == sorted(["abc_def", "abc_xyz"])
+
+
+def test_no_suffixes_provided_headers_with_underscore():
+    headers = [
+        "abc_def",
+        "xyz_123",
+        "nounderscore",
+        "abc_xyz",
+    ]
+    result = _filter_headers_by_prefix(headers, include=["abc", "abc_def"])
+    assert sorted(result) == sorted(["abc_def"])
+
+
+def test_no_suffixes_provided_no_include_filter():
+    headers = [
+        "abc_def",
+        "xyz_123",
+        "nounderscore",
+        "abc_xyz",
+    ]
+    result = _filter_headers_by_prefix(headers)
+    assert sorted(result) == sorted(
+        [
+            "abc_def",
+            "xyz_123",
+            "nounderscore",
+            "abc_xyz",
+        ]
+    )
+
+
+test_no_suffixes_provided_no_include_filter()
+
+
+def test_empty_headers():
+    headers: List[str] = []
+    result = _filter_headers_by_prefix(headers, include=["anything"], suffixes=["A", "B"])
+    assert result == []
+
+
+def test_filter():
+
+    class TempPerEntityResultCSVModel(PerEntityResultCSVModel):
+        """ForceDistributionResultCSVModel"""
+
+        remote_file_name: str = "tempfile"
+        _variables: List[str] = ["A", "B"]
+        _x_columns: List[str] = ["X"]
+
+    data = TempPerEntityResultCSVModel()
+    data._raw_values = {
+        "X": [0, 1],
+        "boundary_a_A": [0, 1],
+        "boundary_a_B": [2, 3],
+        "boundary_a_a_A": [4, 5],
+        "boundary_a_a_B": [6, 7],
+        "boundary_aa_A": [8, 9],
+        "boundary_aa_B": [10, 11],
+    }
+
+    assert data.as_dataframe()["totalA"].to_list() == [12, 15]
+    assert data.as_dataframe()["totalB"].to_list() == [18, 21]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(include=["boundary_a"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [0, 1]
+    assert data.as_dataframe()["totalB"].to_list() == [2, 3]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(exclude=["boundary_a"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [12, 14]
+    assert data.as_dataframe()["totalB"].to_list() == [16, 18]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(exclude=["boundary_a*"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [0, 0]
+    assert data.as_dataframe()["totalB"].to_list() == [0, 0]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(include=["boundary_a*"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [12, 15]
+    assert data.as_dataframe()["totalB"].to_list() == [18, 21]
+    assert sorted(data.as_dict().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
 
 
 @pytest.mark.usefixtures("s3_download_override")
