@@ -1337,8 +1337,9 @@ def test_beta_mesher_only_features():
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 1
-    assert errors[0]["msg"] == (
+    assert len(errors) == 2
+    assert errors[0]["msg"] == ("Value error, First layer thickness is required.")
+    assert errors[1]["msg"] == (
         "Value error, Growth rate per face is only supported by the beta mesher."
     )
 
