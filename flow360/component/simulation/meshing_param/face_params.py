@@ -111,6 +111,6 @@ class BoundaryLayer(Flow360BaseModel):
         if validation_info is None:
             return value
 
-        if value is not None and not validation_info.is_beta_mesher:
+        if value is None and not validation_info.is_beta_mesher:
             raise ValueError("First layer thickness is required.")
         return value
