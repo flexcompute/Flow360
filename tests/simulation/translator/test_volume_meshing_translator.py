@@ -207,7 +207,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
             "gapTreatmentStrength": 0.0,
-            "geometryTolerance": 1e-6,
+            "planarFaceTolerance": 1e-6,
             "numBoundaryLayers": -1,
         },
         "faces": {
