@@ -41,6 +41,7 @@ class DraftDraft(ResourceDraft):
         ],
         solver_version: str,
         fork_case: bool,
+        tags: list[str],
     ):
         self._request = DraftCreateRequest(
             name=name,
@@ -49,6 +50,7 @@ class DraftDraft(ResourceDraft):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            tags=tags,
         )
         ResourceDraft.__init__(self)
 
@@ -57,6 +59,7 @@ class DraftDraft(ResourceDraft):
         Submit draft to cloud and under a given project
         """
         draft_meta = RestApi(DraftInterface.endpoint).post(self._request.model_dump(by_alias=True))
+        print(self._request.model_dump(by_alias=True))
         self._id = draft_meta["id"]
         return Draft.from_cloud(self._id)
 
@@ -90,6 +93,7 @@ class Draft(Flow360Resource):
         ] = None,
         solver_version: str = None,
         fork_case: bool = None,
+        tags: list[str] = None,
     ) -> DraftDraft:
         """Create a new instance of DraftDraft"""
         return DraftDraft(
@@ -99,6 +103,7 @@ class Draft(Flow360Resource):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            tags=tags,
         )
 
     @classmethod

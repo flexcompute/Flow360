@@ -429,3 +429,28 @@ def formatting_validation_errors(errors):
         if error.get("ctx") and error["ctx"].get("relevant_for"):
             error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
     return error_msg
+
+
+def create_pipeline_worker_tags(
+    source_item_type: str, targe_item_type: str, worker: str = None, use_beta_mesher: bool = False
+):
+    """Create draft tags to specify the worker for the pipeline."""
+    if not worker:
+        return None
+    tags = []
+
+    order = ["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
+    pipeline = (
+        ["surfaceMesherPipeline", "volumeMesherPipeline", "casePipeline"]
+        if not use_beta_mesher
+        else ["inhouseSurfaceMesherPipeline", "inhouseVolumeMesherPipeline", "casePipeline"]
+    )
+    source_order = order.index(source_item_type)
+    target_order = order.index(targe_item_type)
+
+    if source_order >= 2:
+        return [f"job:casePipeline:tags={worker}"]
+
+    for i in range(source_order, target_order):
+        tags.append(f"job:{pipeline[i]}:tags={worker}")
+    return tags

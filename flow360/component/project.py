@@ -28,6 +28,7 @@ from flow360.component.project_utils import (
     GeometryFiles,
     SurfaceMeshFile,
     VolumeMeshFile,
+    create_pipeline_worker_tags,
     formatting_validation_errors,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
@@ -1209,6 +1210,14 @@ class Project(pd.BaseModel):
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
+        worker = kwargs.get("worker", None)
+
+        tags = create_pipeline_worker_tags(
+            source_item_type=source_item_type,
+            targe_item_type=target._cloud_resource_type_name,
+            worker=worker,
+            use_beta_mesher=use_beta_mesher,
+        )
 
         draft = Draft.create(
             name=draft_name,
@@ -1217,6 +1226,7 @@ class Project(pd.BaseModel):
             source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
+            tags=tags,
         ).submit()
 
         draft.update_simulation_params(params)
