@@ -554,6 +554,7 @@ def test_dimensioned_limits(cases):
     converted_limits = chart._get_limits(case)
     assert converted_limits == (0, 10)
 
+
 def test_2d_caption_validity(cases):
     chart = Chart2D(
         x="total_forces/pseudo_step",
