@@ -1380,5 +1380,5 @@ def test_beta_mesher_only_features():
     )
     assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, Geometry tolerance is only supported by the beta mesher."
+        "Value error, Planar face tolerance is only supported by the beta mesher."
     )
