@@ -1367,7 +1367,7 @@ def test_beta_mesher_only_features():
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
-                    geometry_tolerance=1e-4,
+                    planar_face_tolerance=1e-4,
                 ),
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -1379,5 +1379,28 @@ def test_beta_mesher_only_features():
     )
     assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, Geometry tolerance is only supported by the beta mesher."
+        "Value error, Planar face tolerance is only supported by the beta mesher."
+    )
+
+
+def test_geometry_AI_only_features():
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4, geometry_relative_accuracy=1e-5
+                ),
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, use_geometry_AI=False
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, Geometry relative accuracy is only supported when geometry AI is used."
     )
