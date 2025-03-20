@@ -1,6 +1,7 @@
 import json
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
@@ -429,3 +430,14 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
             "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
         }.items()
     )
+
+    transformation_matrix = geometry_entity_info.grouped_bodies[0][
+        0
+    ].transformation.get_transformation_matrix(project_length_unit=2 * u.m)
+
+    assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
+    assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
+    assert np.isclose(
+        transformation_matrix @ np.array([8, 4.5, 4, 2]),
+        np.array([16.80178373, 106.60356745, 7.66369379]),
+    ).all()
