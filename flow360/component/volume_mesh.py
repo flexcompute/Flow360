@@ -51,6 +51,7 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
+from .results.base_results import PerEntityResultCSVModel
 from .simulation.entity_info import VolumeMeshEntityInfo
 from .simulation.framework.entity_registry import EntityRegistry
 from .simulation.primitives import GenericVolume, Surface
@@ -228,6 +229,7 @@ class VolumeMeshDownloadable(Enum):
     """
 
     CONFIG_JSON = "config.json"
+    BOUNDING_BOX = "meshBoundaryBoundingBox.json"
 
 
 # pylint: disable=E0213
@@ -843,6 +845,74 @@ class VolumeMeshStats(pd_v2.BaseModel):
     n_tet_wedge: int = pd_v2.Field(..., alias="nTetWedge")
 
 
+class VolumeMeshBoundingBox(PerEntityResultCSVModel):
+    """
+    VolumeMeshBoundingBox
+    """
+
+    remote_file_name: str = pd.Field(VolumeMeshDownloadable.BOUNDING_BOX.value, frozen=True)
+    _variables: Optional[List[str]] = None
+
+    @property
+    def entities(self):
+        """
+        Returns list of entities (boundary names) available for this result
+        """
+        return self.values.keys()
+
+    def _filtered_sum(self):
+        pass
+
+    def _get_range(self, df, min_key: str, max_key: str) -> float:
+        if min_key not in df.index or max_key not in df.index:
+            return 0.0
+        min_val = df.loc[min_key].min()
+        max_val = df.loc[max_key].max()
+        return max_val - min_val
+
+    @property
+    def length(self) -> float:
+        """
+        Compute and return the length of the bounding box.
+
+        The length is calculated as the difference between the maximum and minimum
+        x-coordinate values from the bounding box data.
+
+        Returns:
+            float: The computed length along the x-axis.
+        """
+        df = self.as_dataframe()
+        return self._get_range(df, "xmin", "xmax")
+
+    @property
+    def width(self) -> float:
+        """
+        Compute and return the width of the bounding box.
+
+        The width is calculated as the difference between the maximum and minimum
+        y-coordinate values from the bounding box data.
+
+        Returns:
+            float: The computed width along the y-axis.
+        """
+        df = self.as_dataframe()
+        return self._get_range(df, "ymin", "ymax")
+
+    @property
+    def height(self) -> float:
+        """
+        Compute and return the height of the bounding box.
+
+        The height is calculated as the difference between the maximum and minimum
+        z-coordinate values from the bounding box data.
+
+        Returns:
+            float: The computed height along the z-axis.
+        """
+        df = self.as_dataframe()
+        return self._get_range(df, "zmin", "zmax")
+
+
 class VolumeMeshDraftV2(ResourceDraft):
     """
     Volume mesh draft component
@@ -1136,6 +1206,22 @@ class VolumeMeshV2(AssetBase):
         # pylint: disable=protected-access
         data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
         return VolumeMeshStats(**data)
+
+    @cached_property
+    def bounding_box(self) -> VolumeMeshBoundingBox:
+        """
+        Get mesh bounding box
+
+        Returns
+        -------
+        VolumeMeshBoundingBox
+            return VolumeMeshBoundingBox object
+        """
+
+        # pylint: disable=protected-access
+        data = self._webapi._parse_json_from_cloud(VolumeMeshDownloadable.BOUNDING_BOX.value)
+        bbox = VolumeMeshBoundingBox.from_dict(data)
+        return bbox
 
     @property
     def boundary_names(self) -> List[str]:
