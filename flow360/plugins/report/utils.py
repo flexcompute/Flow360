@@ -378,7 +378,7 @@ class GetAttribute(GenericOperation):
         try:
             result = getattr(data, self.attr_name)
         except AttributeError as err:
-            raise AttributeError(f"Attibute {self.attr_name} not found in {type(data)=}") from err
+            raise AttributeError(f"Attribute {self.attr_name} not found in {type(data)=}") from err
 
         return data, cases, result
 
