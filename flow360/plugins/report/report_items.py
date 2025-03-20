@@ -36,6 +36,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
     IsoSurfaceFieldNames,
     SurfaceFieldNames,
+    get_unit_for_field,
 )
 from flow360.component.simulation.unit_system import (
     DimensionedTypes,
@@ -1118,8 +1119,12 @@ class Chart3D(Chart):
                 return (self.limits[0].value, self.limits[1].value)
 
             if isinstance(self.limits[0], unyt_quantity):
-                min_val = params.convert_unit(self.limits[0], target_system="flow360")
-                max_val = params.convert_unit(self.limits[1], target_system="flow360")
+                _, unit_system = get_unit_for_field(self.field)
+                target_system = "flow360"
+                if unit_system is not None:
+                    target_system = unit_system
+                min_val = params.convert_unit(self.limits[0], target_system=target_system)
+                max_val = params.convert_unit(self.limits[1], target_system=target_system)
                 return (float(min_val.value), float(max_val.value))
 
         return self.limits
