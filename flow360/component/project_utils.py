@@ -431,11 +431,14 @@ def formatting_validation_errors(errors):
     return error_msg
 
 
-def create_pipeline_worker_tags(
-    source_item_type: str, targe_item_type: str, worker: str = None, use_beta_mesher: bool = False
+def create_pipeline_worker_group_tags(
+    source_item_type: str,
+    targe_item_type: str,
+    worker_group: str = None,
+    use_beta_mesher: bool = False,
 ):
-    """Create draft tags to specify the worker for the pipeline."""
-    if not worker:
+    """Create draft tags to specify the worker group for the pipeline."""
+    if not worker_group:
         return None
     tags = []
 
@@ -449,8 +452,8 @@ def create_pipeline_worker_tags(
     target_order = order.index(targe_item_type)
 
     if source_order >= 2:
-        return [f"job:casePipeline:tags={worker}"]
+        return [f"job:casePipeline:tags=[{worker_group}]"]
 
     for i in range(source_order, target_order):
-        tags.append(f"job:{pipeline[i]}:tags={worker}")
+        tags.append(f"job:{pipeline[i]}:tags=[{worker_group}]")
     return tags

@@ -59,7 +59,6 @@ class DraftDraft(ResourceDraft):
         Submit draft to cloud and under a given project
         """
         draft_meta = RestApi(DraftInterface.endpoint).post(self._request.model_dump(by_alias=True))
-        print(self._request.model_dump(by_alias=True))
         self._id = draft_meta["id"]
         return Draft.from_cloud(self._id)
 
