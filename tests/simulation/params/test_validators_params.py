@@ -980,7 +980,7 @@ def test_output_fields_with_user_defined_fields():
                 ]
             )
 
-    msg = "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'mut', 'nuHat', 'Cpt', 'not_valid_field']"
+    msg = "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'Cpt', 'mut', 'nuHat', 'vorticityMagnitude', 'not_valid_field']"
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(

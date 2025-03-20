@@ -4,6 +4,7 @@ Turbulence quantities parameters
 
 # pylint: disable=unused-import
 from abc import ABCMeta
+from functools import wraps
 from typing import Annotated, Literal, Optional, Union
 
 import pydantic as pd
@@ -202,14 +203,14 @@ def TurbulenceQuantities(
     turbulent_length_scale=None,
     turbulent_intensity=None,
 ) -> TurbulenceQuantitiesType:
-    """
+    r"""
 
     :func:`TurbulenceQuantities` function specifies turbulence conditions
     for the :class:`~flow360.Inflow` or :class:`~flow360.Freestream`
     at boundaries. The turbulence properties that can be
     specified are listed below. All values are dimensional.
     For valid specifications as well as the default values,
-    please refer to :ref:`knowledge base<knowledgeBaseTurbulenceQuantities>`.
+    please see the `Notes` section below.
 
     Parameters
     ----------
@@ -251,15 +252,70 @@ def TurbulenceQuantities(
     ValueError
         If the TurbulenceQuantities inputs do not represent a valid specification.
 
+    Notes
+    -----
+
+    The valid combinations of multiple turbulence quantities is summarized as follows,
+
+    default
+        The default turbulence depends on the turbulence model.
+        For SA model *without transition model* this is equivalent to set
+        :code:`modified_viscosity_ratio = 3.0` (or effectively :code:`viscosity_ratio = 0.210438`).
+        For SA model *with transition model*, :code:`modified_viscosity_ratio = 0.1`
+        (or effectively :code:`viscosity_ratio = 2.794e-7`). For SST model the default turbulence is
+        :code:`viscosity_ratio = 0.01` with default :code:`specific_dissipation_rate` = :math:`MachRef/L_{box}`
+        where :math:`L_{box} \triangleq exp\left(\displaystyle\sum_{i=1}^{3}log(x_{i,max}-x_{i,min}\right)`.
+        :math:`x_{i,max},x_{i,min}` is the bounding box dimension for wall boundaries.
+    :code:`viscosity_ratio` alone
+        This applies to both SST and SA model. For SST model this is effectively
+        an override of the above default :code:`viscosity_ratio` value while keeping
+        the default specificDissipationRate. For SA model the :code:`viscosity_ratio`
+        will be converted to the :code:`modified_viscosity_ratio`.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` alone
+        For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
+    :code:`turbulent_length_scale` alone
+        For SST model only. :code:`specific_dissipation_rate` will be set to the default value.
+    :code:`modified_viscosity`
+        For SA model only.
+    :code:`modified_viscosity_ratio`
+        For SA model only.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`specific_dissipation_rate`
+        For SST model only.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`viscosity_ratio`
+        For SST model only.
+    :code:`turbulent_kinetic_energy` or :code:`turbulent_intensity` with :code:`turbulent_length_scale`
+        For SST model only.
+    :code:`specific_dissipation_rate` with :code:`viscosity_ratio`
+        For SST model only.
+    :code:`specific_dissipation_rate` with :code:`turbulent_length_scale`
+        For SST model only.
+    :code:`viscosity_ratio` with :code:`turbulent_length_scale`
+        For SST model only.
+
     Example
     -------
+    Apply modified turbulent viscosity ratio for SA model.
 
     >>> fl.TurbulenceQuantities(modified_viscosity_ratio=10)
+
+    Apply turbulent kinetic energy and specific dissipation rate for SST model.
+
+    >>> fl.TurbulenceQuantities(turbulent_kinetic_energy=0.2, specific_dissipation_rate=100)
+
+    Apply specific dissipation rate and turbulent viscosity ratio for SST model.
+
+    >>> fl.TurbulenceQuantities(specific_dissipation_rate=150, viscosity_ratio=1000)
 
     """
     non_none_arg_count = sum(arg is not None for arg in locals().values())
     if non_none_arg_count == 0:
         return None
+
+    if non_none_arg_count > 2:
+        raise ValueError(
+            "Provided number of inputs exceeds the limit for any of the listed specifications. "
+            + "Please recheck TurbulenceQuantities inputs and make sure they represent a valid specification."
+        )
 
     if viscosity_ratio is not None:
         if non_none_arg_count == 1:
@@ -332,5 +388,6 @@ def TurbulenceQuantities(
             )
 
     raise ValueError(
-        "Please recheck TurbulenceQuantities inputs and make sure they represents a valid specification."
+        "Provided inputs do not create a valid specification. "
+        + "Please recheck TurbulenceQuantities inputs and make sure they represent a valid specification."
     )
