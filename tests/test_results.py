@@ -314,27 +314,66 @@ def test_filter():
 
     assert data.as_dataframe()["totalA"].to_list() == [12, 15]
     assert data.as_dataframe()["totalB"].to_list() == [18, 21]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
 
     data.filter(include=["boundary_a"])
 
     assert data.as_dataframe()["totalA"].to_list() == [0, 1]
     assert data.as_dataframe()["totalB"].to_list() == [2, 3]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "totalA",
+            "totalB",
+        ]
+    )
 
     data.filter(exclude=["boundary_a"])
 
     assert data.as_dataframe()["totalA"].to_list() == [12, 14]
     assert data.as_dataframe()["totalB"].to_list() == [16, 18]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
 
     data.filter(exclude=["boundary_a*"])
 
     assert data.as_dataframe()["totalA"].to_list() == [0, 0]
     assert data.as_dataframe()["totalB"].to_list() == [0, 0]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "totalA",
+            "totalB",
+        ]
+    )
 
     data.filter(include=["boundary_a*"])
 
     assert data.as_dataframe()["totalA"].to_list() == [12, 15]
     assert data.as_dataframe()["totalB"].to_list() == [18, 21]
-
     assert sorted(data.as_dict().keys()) == sorted(
         [
             "X",

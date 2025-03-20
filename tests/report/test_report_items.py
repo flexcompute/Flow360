@@ -395,109 +395,116 @@ def test_tables(cases):
     exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
     exclude += freestream_surfaces + slip_wall_surfaces
 
-    avg = Average(fraction=0.1)
-    CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
+    include = ["blk-1/wheel_rim", "blk-1/BODY", "blk-1/wheel_tire"]
 
-    CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
+    filtering = [dict(include=include), dict(exclude=exclude)]
 
-    CLCompare = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CL_compare",
-        operations=[Expression(expr="totalCL - 1.5467"), avg],
-    )
+    for filter in filtering:
+        print(f"testing: {filter=}")
 
-    CDCompare = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CD_compare",
-        operations=[Expression(expr="totalCD - 0.02100"), avg],
-    )
+        avg = Average(fraction=0.1)
+        CD = DataItem(data="surface_forces/totalCD", title="CD", operations=avg, **filter)
 
-    CLf = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CLf",
-        operations=[Expression(expr="1/2*totalCL + totalCMy"), avg],
-    )
+        CL = DataItem(data="surface_forces/totalCL", title="CL", operations=avg, **filter)
 
-    CLr = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CLr",
-        operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
-    )
+        CLCompare = DataItem(
+            data="surface_forces",
+            title="CL_compare",
+            operations=[Expression(expr="totalCL - 1.5467"), avg],
+            **filter,
+        )
 
-    OWL = DataItem(
-        data="volume_mesh/bounding_box",
-        exclude=exclude,
-        title="OWL",
-        operations=[GetAttribute(attr_name="length")],
-    )
+        CDCompare = DataItem(
+            data="surface_forces",
+            title="CD_compare",
+            operations=[Expression(expr="totalCD - 0.02100"), avg],
+            **filter,
+        )
 
-    OWW = DataItem(
-        data="volume_mesh/bounding_box",
-        exclude=exclude,
-        title="OWW",
-        operations=[GetAttribute(attr_name="width")],
-    )
+        CLf = DataItem(
+            data="surface_forces",
+            title="CLf",
+            operations=[Expression(expr="1/2*totalCL + totalCMy"), avg],
+            **filter,
+        )
 
-    OWH = DataItem(
-        data="volume_mesh/bounding_box",
-        exclude=exclude,
-        title="OWH",
-        operations=[GetAttribute(attr_name="height")],
-    )
-    CFy = DataItem(data="surface_forces/totalCFy", exclude=exclude, title="CS", operations=avg)
+        CLr = DataItem(
+            data="surface_forces",
+            title="CLr",
+            operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
+            **filter,
+        )
 
-    statistical_data = Table(
-        data=[
-            "params/reference_geometry/area",
-            CD,
-            Delta(data=CD),
-            CL,
-            CLCompare,
-            CDCompare,
-            CLf,
-            CLr,
-            CFy,
-            "volume_mesh/stats/n_nodes",
-            "params/time_stepping/max_steps",
-            OWL,
-            OWW,
-            OWH,
-        ],
-        section_title="Statistical data",
-    )
+        OWL = DataItem(
+            data="volume_mesh/bounding_box",
+            title="OWL",
+            operations=[GetAttribute(attr_name="length")],
+            **filter,
+        )
 
-    table_df = statistical_data.to_dataframe(context)
-    table_df["Case No."] = table_df["Case No."].astype("Int64")
-    table_df["area"] = table_df["area"].astype(str)
+        OWW = DataItem(
+            data="volume_mesh/bounding_box",
+            title="OWW",
+            operations=[GetAttribute(attr_name="width")],
+            **filter,
+        )
 
-    print(table_df)
+        OWH = DataItem(
+            data="volume_mesh/bounding_box",
+            title="OWH",
+            operations=[GetAttribute(attr_name="height")],
+            **filter,
+        )
+        CFy = DataItem(data="surface_forces/totalCFy", title="CS", operations=avg, **filter)
 
-    expected_data = {
-        "Case No.": [1, 2],
-        "area": ["2.17 m**2", "2.17 m**2"],
-        "CD": [0.279249, 0.288997],
-        "Delta CD": [0.000000, 0.009748],
-        "CL": [0.145825, 0.169557],
-        "CL_compare": [-1.400875, -1.377143],
-        "CD_compare": [0.258249, 0.267997],
-        "CLf": [-0.050186, -0.157447],
-        "CLr": [0.196011, 0.327003],
-        "CS": [-0.002243102563079525, -0.0763879853938102],
-        "n_nodes": [5712930, 5712930],
-        "max_steps": [2000, 2000],
-        "OWL": [4.612806, 4.612806],
-        "OWW": [2.029983, 2.029983],
-        "OWH": [1.405979, 1.405979],
-    }
-    df_expected = pandas.DataFrame(expected_data)
-    df_expected["Case No."] = df_expected["Case No."].astype("Int64")
-    print(df_expected)
+        statistical_data = Table(
+            data=[
+                "params/reference_geometry/area",
+                CD,
+                Delta(data=CD),
+                CL,
+                CLCompare,
+                CDCompare,
+                CLf,
+                CLr,
+                CFy,
+                "volume_mesh/stats/n_nodes",
+                "params/time_stepping/max_steps",
+                OWL,
+                OWW,
+                OWH,
+            ],
+            section_title="Statistical data",
+        )
 
-    pandas.testing.assert_frame_equal(table_df, df_expected)
+        table_df = statistical_data.to_dataframe(context)
+        table_df["Case No."] = table_df["Case No."].astype("Int64")
+        table_df["area"] = table_df["area"].astype(str)
+
+        print(table_df)
+
+        expected_data = {
+            "Case No.": [1, 2],
+            "area": ["2.17 m**2", "2.17 m**2"],
+            "CD": [0.279249, 0.288997],
+            "Delta CD": [0.000000, 0.009748],
+            "CL": [0.145825, 0.169557],
+            "CL_compare": [-1.400875, -1.377143],
+            "CD_compare": [0.258249, 0.267997],
+            "CLf": [-0.050186, -0.157447],
+            "CLr": [0.196011, 0.327003],
+            "CS": [-0.002243102563079525, -0.0763879853938102],
+            "n_nodes": [5712930, 5712930],
+            "max_steps": [2000, 2000],
+            "OWL": [4.612806, 4.612806],
+            "OWW": [2.029983, 2.029983],
+            "OWH": [1.405979, 1.405979],
+        }
+        df_expected = pandas.DataFrame(expected_data)
+        df_expected["Case No."] = df_expected["Case No."].astype("Int64")
+        print(df_expected)
+
+        pandas.testing.assert_frame_equal(table_df, df_expected)
 
 
 def test_calculate_y_lim(cases, here):
