@@ -1210,12 +1210,14 @@ class Project(pd.BaseModel):
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
-        worker_group = kwargs.get("worker_group", None)
+        worker_group_cpu = kwargs.get("worker_group_cpu", None)
+        worker_group_gpu = kwargs.get("worker_group_gpu", None)
 
         tags = create_pipeline_worker_group_tags(
             source_item_type=source_item_type,
             targe_item_type=target._cloud_resource_type_name,
-            worker_group=worker_group,
+            worker_group_cpu=worker_group_cpu,
+            worker_group_gpu=worker_group_gpu,
             use_beta_mesher=use_beta_mesher,
         )
 
