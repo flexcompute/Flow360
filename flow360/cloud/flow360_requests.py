@@ -161,6 +161,7 @@ class DraftCreateRequest(Flow360RequestsV2):
     ] = pd.Field()
     solver_version: str = pd.Field()
     fork_case: bool = pd.Field()
+    tags: Optional[List[str]] = pd.Field(None)
 
     @pd_v2.field_validator("name", mode="after")
     @classmethod
