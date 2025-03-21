@@ -202,9 +202,9 @@ class GeometryDraft(ResourceDraft):
         geometry._webapi._complete_upload()
         log.info(f"Geometry successfully submitted: {geometry.short_description()}")
         # setting _id will disable "WARNING: You have not submitted..." warning message
+        self._id = info.id
         if run_async:
             return geometry
-        self._id = info.id
         log.info("Waiting for geometry to be processed.")
         # uses from_cloud to ensure all metadata is ready before yielding the object
         return Geometry.from_cloud(info.id)

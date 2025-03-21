@@ -202,9 +202,9 @@ class SurfaceMeshDraftV2(ResourceDraft):
         surface_mesh._webapi._complete_upload()
         log.info(f"Surface mesh successfully submitted: {surface_mesh.short_description()}")
         # setting _id will disable "WARNING: You have not submitted..." warning message
+        self._id = info.id
         if run_async:
             return surface_mesh
-        self._id = info.id
         log.info("Waiting for surface mesh to be processed.")
         surface_mesh._webapi.get_info()
         # uses from_cloud to ensure all metadata is ready before yielding the object

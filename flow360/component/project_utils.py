@@ -429,34 +429,3 @@ def formatting_validation_errors(errors):
         if error.get("ctx") and error["ctx"].get("relevant_for"):
             error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
     return error_msg
-
-
-def create_pipeline_worker_group_tags(
-    source_item_type: str,
-    targe_item_type: str,
-    worker_group_cpu: str,
-    worker_group_gpu: str,
-    use_beta_mesher: bool,
-):
-    """Create draft tags to specify the worker group for the pipeline."""
-    if not worker_group_cpu and not worker_group_gpu:
-        return None
-    tags = []
-
-    order = ["Geometry", "SurfaceMesh", "VolumeMesh", "Case"]
-    pipeline = (
-        ["surfaceMesherPipeline", "volumeMesherPipeline", "casePipeline"]
-        if not use_beta_mesher
-        else ["inhouseSurfaceMesherPipeline", "inhouseVolumeMesherPipeline", "casePipeline"]
-    )
-    worker_group_setting = [worker_group_cpu, worker_group_cpu, worker_group_gpu]
-    source_order = order.index(source_item_type)
-    target_order = order.index(targe_item_type)
-
-    if source_order >= 2 and worker_group_gpu:
-        return [f"job:casePipeline:tags=[{worker_group_gpu}]"]
-
-    for i in range(source_order, target_order):
-        if worker_group_setting[i]:
-            tags.append(f"job:{pipeline[i]}:tags=[{worker_group_setting[i]}]")
-    return tags

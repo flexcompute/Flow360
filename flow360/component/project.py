@@ -28,7 +28,6 @@ from flow360.component.project_utils import (
     GeometryFiles,
     SurfaceMeshFile,
     VolumeMeshFile,
-    create_pipeline_worker_group_tags,
     formatting_validation_errors,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
@@ -674,7 +673,8 @@ class Project(pd.BaseModel):
         if run_async:
             log.info(
                 f"The input file(s) has been successfully uploaded to Project: {root_asset.project_id} "
-                "and is being processed on cloud. Only the project ID string is returned."
+                "and is being processed on cloud. Only the project ID string is returned. "
+                "To retrieve this project, use 'Project.from_cloud(project_id)'. "
             )
             return root_asset.project_id
 
@@ -1220,16 +1220,7 @@ class Project(pd.BaseModel):
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
-        worker_group_cpu = kwargs.get("worker_group_cpu", None)
-        worker_group_gpu = kwargs.get("worker_group_gpu", None)
-
-        tags = create_pipeline_worker_group_tags(
-            source_item_type=source_item_type,
-            targe_item_type=target._cloud_resource_type_name,
-            worker_group_cpu=worker_group_cpu,
-            worker_group_gpu=worker_group_gpu,
-            use_beta_mesher=use_beta_mesher,
-        )
+        job_tags = kwargs.get("job_tags", None)
 
         draft = Draft.create(
             name=draft_name,
@@ -1238,7 +1229,7 @@ class Project(pd.BaseModel):
             source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
-            tags=tags,
+            tags=job_tags,
         ).submit()
 
         draft.update_simulation_params(params)
