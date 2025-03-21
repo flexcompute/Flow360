@@ -97,31 +97,31 @@ class Transformation(Flow360BaseModel):
 
     type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
 
-    # pylint:disable=no-member
-    origin: LengthType.Point = pd.Field(
-        (0, 0, 0) * u.m,
+    origin: LengthType.Point = pd.Field(  # pylint:disable=no-member
+        (0, 0, 0) * u.m,  # pylint:disable=no-member
         description="The origin for geometry transformation in the order of scale,"
         " rotation and translation.",
     )
 
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
-    angle_of_rotation: AngleType = pd.Field(0 * u.deg)
+    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
     scale: list[pd.PositiveFloat] = pd.Field([1, 1, 1])
 
-    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)
+    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
     private_attribute_matrix: Optional[list[float]] = pd.Field(None)
 
-    def get_transformation_matrix(
-        self,
-        project_length_unit: LengthType.Positive = pd.Field(
-            description="The Length unit of the project."
-        ),
-    ) -> np.ndarray:
-        """Find 3x4 transformation matrix and store as row major. Last column applies to project length unit"""
-        origin_in_length_unit = np.asarray(self.origin / project_length_unit)
-        translation_in_length_unit = np.asarray(self.translation / project_length_unit)
+    def get_transformation_matrix(self) -> np.ndarray:
+        """
+        Find 3x4 transformation matrix and store as row major.
+        Applies to vector of [x, y, z, 1] in project length unit.
+        """
+        # pylint:disable=no-member
+        assert str(self.origin.units) == "flow360_length_unit"
+        assert str(self.translation.units) == "flow360_length_unit"
+        origin_array = np.asarray(self.origin.value)
+        translation_array = np.asarray(self.translation.value)
 
         axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
         angle = self.angle_of_rotation.to("rad").v.item()
@@ -131,11 +131,7 @@ class Transformation(Flow360BaseModel):
         rotation_scale_matrix = rotation_matrix_from_axis_and_angle(axis, angle) * np.array(
             self.scale
         )
-        final_translation = (
-            -rotation_scale_matrix @ origin_in_length_unit
-            + origin_in_length_unit
-            + translation_in_length_unit
-        )
+        final_translation = -rotation_scale_matrix @ origin_array + origin_array + translation_array
 
         return np.hstack([rotation_scale_matrix, final_translation[:, np.newaxis]])
 

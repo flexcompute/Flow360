@@ -5,6 +5,7 @@ from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.outputs.output_entities import (
     Point,
@@ -34,18 +35,9 @@ GhostSurfaceTypes = Annotated[
 ]
 
 
-class EntityInfoModel(pd.BaseModel, metaclass=ABCMeta):
+class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
 
-    model_config = pd.ConfigDict(
-        ##:: Pydantic kwargs
-        extra="ignore",
-        frozen=False,
-        populate_by_name=True,
-        validate_assignment=True,
-        validate_default=True,
-    )
-    # Storing entities that appeared in the simulation JSON. (Otherwise when front end loads the JSON it will delete
     # entities that appear in simulation JSON but did not appear in EntityInfo)
     draft_entities: List[DraftEntityTypes] = pd.Field([])
     ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
