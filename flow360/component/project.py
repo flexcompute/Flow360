@@ -672,9 +672,9 @@ class Project(pd.BaseModel):
         root_asset = draft.submit(run_async=run_async)
         if run_async:
             log.info(
-                f"The input file(s) has been successfully uploaded to Project: {root_asset.project_id} "
+                f"The input file(s) has been successfully uploaded to project: {root_asset.project_id} "
                 "and is being processed on cloud. Only the project ID string is returned. "
-                "To retrieve this project, use 'Project.from_cloud(project_id)'. "
+                "To retrieve this project later, use 'Project.from_cloud(project_id)'. "
             )
             return root_asset.project_id
 
