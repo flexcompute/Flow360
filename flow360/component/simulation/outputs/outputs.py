@@ -20,10 +20,12 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.outputs.output_fields import (
+    AllFieldNames,
     CommonFieldNames,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    get_field_values,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
@@ -32,6 +34,11 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
+    get_validation_levels,
+)
 from flow360.component.simulation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -76,6 +83,20 @@ class UserDefinedField(Flow360BaseModel):
     expression: StringExpression = pd.Field(
         description="The mathematical expression for the field."
     )
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _check_redefined_user_defined_fields(cls, value):
+        current_levels = get_validation_levels() if get_validation_levels() else []
+        if all(level not in current_levels for level in (ALL, CASE)):
+            return value
+        defined_field_names = get_field_values(AllFieldNames)
+        if value in defined_field_names:
+            raise ValueError(
+                f"User defined field variable name: {value} conflicts with pre-defined field names."
+                " Please consider renaming this user defined field variable."
+            )
+        return value
 
 
 class _AnimationSettings(Flow360BaseModel):
