@@ -2,7 +2,6 @@ from typing import Annotated, Any, Literal, Union
 
 import pydantic as pd
 
-from ..utils.whitelisted import get_allowed_callable
 from .context import EvaluationContext
 
 ExpressionType = Annotated[
@@ -133,10 +132,10 @@ class CallModel(Expression):
 
             if len(parts) == 1:
                 # Direct function call
-                func = get_allowed_callable(parts[0], context)
+                func = context.resolve(parts[0])
             else:
                 # Method or nested attribute call
-                base = get_allowed_callable(parts[0], context)
+                base = context.resolve(parts[0])
 
                 # Traverse the attribute chain
                 for part in parts[1:-1]:

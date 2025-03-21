@@ -1,6 +1,7 @@
-from typing import get_origin, Generic, TypeVar, Self
+from typing import get_origin, Generic, TypeVar, Self, Optional
 import re
 
+from flow360.component.simulation.blueprint.flow360 import resolver
 from flow360.component.simulation.unit_system import *
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -10,7 +11,8 @@ import pydantic as pd
 from numbers import Number
 from unyt import Unit, unyt_quantity, unyt_array
 
-_global_ctx: EvaluationContext = EvaluationContext()
+
+_global_ctx: EvaluationContext = EvaluationContext(resolver)
 
 
 def _is_descendant_of(t, base):
@@ -82,7 +84,7 @@ def _convert_argument(other):
 
 class Variable(Flow360BaseModel):
     name: str = pd.Field()
-    value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
+    value: Optional[Union[list[float], float, unyt_quantity, unyt_array]] = pd.Field(float('NaN'))
 
     model_config = pd.ConfigDict(validate_assignment=True)
 
@@ -209,7 +211,7 @@ class Expression(Flow360BaseModel):
             raise pd.ValidationError.from_exception_data("expression type error", [details])
 
         try:
-            _ = expression_to_model(body)
+            _ = expression_to_model(body, _global_ctx)
         except SyntaxError as s_err:
             details = InitErrorDetails(type="value_error", ctx={"error": s_err})
             raise pd.ValidationError.from_exception_data("expression syntax error", [details])
@@ -220,7 +222,7 @@ class Expression(Flow360BaseModel):
         return handler({"body": body})
 
     def evaluate(self) -> float:
-        expr = expression_to_model(self.body)
+        expr = expression_to_model(self.body, _global_ctx)
         result = expr.evaluate(_global_ctx)
         return result
 

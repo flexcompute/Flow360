@@ -1,3 +1,5 @@
+from math import isnan
+
 import pytest
 
 from flow360.component.simulation.expressions import (
@@ -323,3 +325,40 @@ def test_vector_types():
 
     with pytest.raises(pd.ValidationError):
         model.moment = x * u.m
+
+
+def test_partial_evaluation_scalar():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[float] = pd.Field()
+
+    # Declare a variable without a value (NaN)
+    x = Variable(name="x")
+
+    model = TestModel(field=x + 2)
+    assert isinstance(model.field, Expression)
+    assert isnan(model.field.evaluate())
+    assert str(model.field) == "x + 2"
+
+    # Change variable value
+    x.value = 2
+
+    assert model.field.evaluate() == 4
+
+
+def test_partial_evaluation_dimensioned():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[LengthType] = pd.Field()
+
+    # Declare a variable without a value (NaN)
+    x = Variable(name="x")
+
+    model = TestModel(field=x * u.m)
+    print(model.field.evaluate())
+    assert isinstance(model.field, Expression)
+    assert isnan(model.field.evaluate())
+    assert str(model.field) == "x * u.m"
+
+    # Change variable value
+    x.value = 2
+
+    assert model.field.evaluate() == 2 * u.m
