@@ -906,7 +906,55 @@ def test_valid_reference_velocity():
 def test_output_fields_with_user_defined_fields():
     surface_1 = Surface(name="some_random_surface")
     # 1: No user defined fields
-    msg = "In `outputs`[0] SurfaceOutput:, not_valid_field is not a valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'velocity', 'velocity_x', 'velocity_y', 'velocity_z', 'velocity_magnitude', 'pressure', 'vorticity', 'vorticityMagnitude', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'velocity_m_per_s', 'velocity_magnitude_m_per_s', 'velocity_x_m_per_s', 'velocity_y_m_per_s', 'velocity_z_m_per_s', 'pressure_pa', 'CfVec', 'Cf', 'heatFlux', 'nodeNormals', 'nodeForcesPerUnitArea', 'yPlus', 'wallFunctionMetric', 'heatTransferCoefficientStaticTemperature', 'heatTransferCoefficientTotalTemperature', 'wall_shear_stress_magnitude', 'wall_shear_stress_magnitude_pa']."
+    msg = "In `outputs`[0] SurfaceOutput:, not_valid_field is not a valid output field name. Allowed fields are "
+    "['Cp', "
+    "'Cpt', "
+    "'gradW', "
+    "'kOmega', "
+    "'Mach', "
+    "'mut', "
+    "'mutRatio', "
+    "'nuHat', "
+    "'primitiveVars', "
+    "'qcriterion', "
+    "'residualNavierStokes', "
+    "'residualTransition', "
+    "'residualTurbulence', "
+    "'s', "
+    "'solutionNavierStokes', "
+    "'solutionTransition', "
+    "'solutionTurbulence', "
+    "'T', "
+    "'velocity', "
+    "'velocity_x', "
+    "'velocity_y', "
+    "'velocity_z', "
+    "'velocity_magnitude', "
+    "'pressure', "
+    "'vorticity', "
+    "'vorticityMagnitude', "
+    "'wallDistance', "
+    "'numericalDissipationFactor', "
+    "'residualHeatSolver', "
+    "'VelocityRelative', "
+    "'lowMachPreconditionerSensor', "
+    "'velocity_m_per_s', "
+    "'velocity_x_m_per_s', "
+    "'velocity_y_m_per_s', "
+    "'velocity_z_m_per_s', "
+    "'velocity_magnitude_m_per_s', "
+    "'pressure_pa', "
+    "'CfVec', "
+    "'Cf', "
+    "'heatFlux', "
+    "'nodeNormals', "
+    "'nodeForcesPerUnitArea', "
+    "'yPlus', "
+    "'wallFunctionMetric', "
+    "'heatTransferCoefficientStaticTemperature', "
+    "'heatTransferCoefficientTotalTemperature', "
+    "'wall_shear_stress_magnitude', "
+    "'wall_shear_stress_magnitude_pa']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -926,7 +974,53 @@ def test_output_fields_with_user_defined_fields():
             ],
         )
 
-    msg = "In `outputs`[1] SliceOutput:, not_valid_field_2 is not a valid output field name. Allowed fields are ['Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'velocity', 'velocity_x', 'velocity_y', 'velocity_z', 'velocity_magnitude', 'pressure', 'vorticity', 'vorticityMagnitude', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative', 'lowMachPreconditionerSensor', 'velocity_m_per_s', 'velocity_magnitude_m_per_s', 'velocity_x_m_per_s', 'velocity_y_m_per_s', 'velocity_z_m_per_s', 'pressure_pa', 'betMetrics', 'betMetricsPerDisk', 'linearResidualNavierStokes', 'linearResidualTurbulence', 'linearResidualTransition', 'SpalartAllmaras_hybridModel', 'kOmegaSST_hybridModel', 'localCFL', 'not_valid_field']."
+    msg = "In `outputs`[1] SliceOutput:, not_valid_field_2 is not a valid output field name. Allowed fields are "
+    "['Cp', "
+    "'Cpt', "
+    "'gradW', "
+    "'kOmega', "
+    "'Mach', "
+    "'mut', "
+    "'mutRatio', "
+    "'nuHat', "
+    "'primitiveVars', "
+    "'qcriterion', "
+    "'residualNavierStokes', "
+    "'residualTransition', "
+    "'residualTurbulence', "
+    "'s', "
+    "'solutionNavierStokes', "
+    "'solutionTransition', "
+    "'solutionTurbulence', "
+    "'T', "
+    "'velocity', "
+    "'velocity_x', "
+    "'velocity_y', "
+    "'velocity_z', "
+    "'velocity_magnitude', "
+    "'pressure', "
+    "'vorticity', "
+    "'vorticityMagnitude', "
+    "'wallDistance', "
+    "'numericalDissipationFactor', "
+    "'residualHeatSolver', "
+    "'VelocityRelative', "
+    "'lowMachPreconditionerSensor', "
+    "'velocity_m_per_s', "
+    "'velocity_x_m_per_s', "
+    "'velocity_y_m_per_s', "
+    "'velocity_z_m_per_s', "
+    "'velocity_magnitude_m_per_s', "
+    "'pressure_pa', "
+    "'betMetrics', "
+    "'betMetricsPerDisk', "
+    "'linearResidualNavierStokes', "
+    "'linearResidualTurbulence', "
+    "'linearResidualTransition', "
+    "'SpalartAllmaras_hybridModel', "
+    "'kOmegaSST_hybridModel', "
+    "'localCFL', "
+    "'not_valid_field']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -980,7 +1074,21 @@ def test_output_fields_with_user_defined_fields():
                 ]
             )
 
-    msg = "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are ['p', 'rho', 'Mach', 'qcriterion', 's', 'T', 'Cp', 'Cpt', 'mut', 'nuHat', 'vorticityMagnitude', 'not_valid_field']"
+    msg = (
+        "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are "
+    )
+    "['p', "
+    "'rho', "
+    "'Mach', "
+    "'qcriterion', "
+    "'s', "
+    "'T', "
+    "'Cp', "
+    "'Cpt', "
+    "'mut', "
+    "'nuHat', "
+    "'vorticityMagnitude', "
+    "'not_valid_field']."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -1402,6 +1510,41 @@ def test_geometry_AI_only_features():
         validation_level="VolumeMesh",
     )
     assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, Geometry relative accuracy is only supported when geometry AI is used."
+    )
+
+
+def test_redefined_user_defined_fields():
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100.0 * u.m / u.s,
+            ),
+            outputs=[
+                VolumeOutput(
+                    frequency=1,
+                    output_format="both",
+                    output_fields=["pressure"],
+                ),
+            ],
+            user_defined_fields=[
+                UserDefinedField(
+                    name="pressure",
+                    expression="2+2",
+                ),
+            ],
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+    assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, Geometry relative accuracy is only supported when geometry AI is used."
+        "Value error, User defined field variable name: pressure conflicts with pre-defined field names."
+        " Please consider renaming this user defined field variable."
     )

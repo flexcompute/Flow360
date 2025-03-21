@@ -128,7 +128,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
 
     # pylint: disable=protected-access
     # pylint: disable=duplicate-code
-    def submit(self, description="", progress_callback=None) -> SurfaceMeshV2:
+    def submit(self, description="", progress_callback=None, run_async=False) -> SurfaceMeshV2:
         """
         Submit surface mesh file to cloud and create a new project
 
@@ -138,6 +138,8 @@ class SurfaceMeshDraftV2(ResourceDraft):
             description of the project, by default ""
         progress_callback : callback, optional
             Use for custom progress bar, by default None
+        run_async : bool, optional
+            Whether to submit surface mesh asynchronously (default is False).
 
         Returns
         -------
@@ -204,6 +206,8 @@ class SurfaceMeshDraftV2(ResourceDraft):
         log.info(f"Surface mesh successfully submitted: {surface_mesh.short_description()}")
         # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
+        if run_async:
+            return surface_mesh
         log.info("Waiting for surface mesh to be processed.")
         surface_mesh._webapi.get_info()
         # uses from_cloud to ensure all metadata is ready before yielding the object
