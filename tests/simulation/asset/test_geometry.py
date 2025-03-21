@@ -20,7 +20,7 @@ def test_draft_geometry_from_file():
     with pytest.raises(
         ex.Flow360FileError,
         match=re.escape(
-            "The given file: file.unsupported is not a supported geometry file. Allowed file suffixes are: ['.csm', '.egads', '.sat', '.sab', '.asat', '.asab', '.iam', '.catpart', '.catproduct', '.gt', '.prt', '.prt.*', '.asm.*', '.par', '.asm', '.psm', '.sldprt', '.sldasm', '.stp', '.step', '.x_t', '.xmt_txt', '.x_b', '.xmt_bin', '.3dm', '.ipt', '.ugrid', '.cgns', '.stl']"
+            "The given file: file.unsupported is not a supported geometry or surface mesh file. Allowed file suffixes are: ['.csm', '.egads', '.sat', '.sab', '.asat', '.asab', '.iam', '.catpart', '.catproduct', '.gt', '.prt', '.prt.*', '.asm.*', '.par', '.asm', '.psm', '.sldprt', '.sldasm', '.stp', '.step', '.x_t', '.xmt_txt', '.x_b', '.xmt_bin', '.3dm', '.ipt', '.ugrid', '.cgns', '.stl']"
         ),
     ):
         sm = Geometry.from_file("file.unsupported")
