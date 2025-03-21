@@ -29,7 +29,10 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.translator.solver_translator import translate_output
+from flow360.component.simulation.translator.solver_translator import (
+    get_solver_json,
+    translate_output,
+)
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
@@ -1017,3 +1020,154 @@ def test_surface_slice_output():
     translated = translate_output(param, translated)
     print(json.dumps(translated, indent=4))
     assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
+
+
+def test_dimensioned_output_fields_translation():
+    """Test the translation of output fields from user-facing fields to solver fields."""
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100.0 * u.m / u.s,
+            ),
+            outputs=[
+                VolumeOutput(
+                    frequency=1,
+                    output_format="both",
+                    output_fields=[
+                        "velocity",
+                        "velocity_m_per_s",
+                        "velocity_magnitude",
+                        "velocity_magnitude_m_per_s",
+                        "velocity_x_m_per_s",
+                        "velocity_y_m_per_s",
+                        "velocity_z_m_per_s",
+                        "pressure",
+                        "pressure_pa",
+                    ],
+                ),
+                SurfaceOutput(
+                    entities=[Surface(name="surface11")],
+                    output_fields=[
+                        "wall_shear_stress_magnitude",
+                        "wall_shear_stress_magnitude_pa",
+                    ],
+                ),
+                SliceOutput(
+                    name="my_slice",
+                    entities=[Slice(name="my_slice", origin=[0, 0, 0], normal=(0, 1, 0))],
+                    output_fields=["my_field"],
+                ),
+            ],
+            user_defined_fields=[
+                UserDefinedField(
+                    name="my_field",
+                    expression="1+1",
+                ),
+            ],
+        )
+
+    solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
+    expected_fields_v = [
+        "velocity",
+        "velocity_m_per_s",
+        "velocity_magnitude",
+        "velocity_magnitude_m_per_s",
+        "velocity_x_m_per_s",
+        "velocity_y_m_per_s",
+        "velocity_z_m_per_s",
+        "pressure",
+        "pressure_pa",
+    ]
+
+    expected_fields_s = [
+        "wall_shear_stress_magnitude",
+        "wall_shear_stress_magnitude_pa",
+    ]
+
+    assert set(solver_json["volumeOutput"]["outputFields"]) == set(expected_fields_v)
+    assert set(solver_json["surfaceOutput"]["surfaces"]["surface11"]["outputFields"]) == set(
+        expected_fields_s
+    )
+
+    ref = {
+        "userDefinedFields": [
+            {"name": "pressure", "expression": "pressure = primitiveVars[4];"},
+            {
+                "name": "velocity_m_per_s",
+                "expression": "double velocity[3];"
+                "velocity[0] = primitiveVars[1];"
+                "velocity[1] = primitiveVars[2];"
+                "velocity[2] = primitiveVars[3];"
+                "velocity_m_per_s[0] = velocity[0] * 340.29400580821283;"
+                "velocity_m_per_s[1] = velocity[1] * 340.29400580821283;"
+                "velocity_m_per_s[2] = velocity[2] * 340.29400580821283;",
+            },
+            {
+                "name": "wall_shear_stress_magnitude",
+                "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress);",
+            },
+            {
+                "name": "velocity_magnitude",
+                "expression": "double velocity[3]"
+                "velocity[0] = primitiveVars[1]"
+                "velocity[1] = primitiveVars[2]"
+                "velocity[2] = primitiveVars[3]"
+                "velocity_magnitude = magnitude(velocity)",
+            },
+            {
+                "name": "velocity",
+                "expression": "velocity[0] = primitiveVars[1]"
+                "velocity[1] = primitiveVars[2]"
+                "velocity[2] = primitiveVars[3]",
+            },
+            {
+                "name": "wall_shear_stress_magnitude_pa",
+                "expression": "double wall_shear_stress_magnitude"
+                "wall_shear_stress_magnitude = magnitude(wallShearStress)"
+                "wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.012726525",
+            },
+            {
+                "name": "velocity_y_m_per_s",
+                "expression": "double velocity_y"
+                "velocity_y = primitiveVars[2]"
+                "velocity_y_m_per_s = velocity_y * 340.29400580821283",
+            },
+            {
+                "name": "velocity_x_m_per_s",
+                "expression": "double velocity_x"
+                "velocity_x = primitiveVars[1]"
+                "velocity_x_m_per_s = velocity_x * 340.29400580821283",
+            },
+            {
+                "name": "velocity_magnitude_m_per_s",
+                "expression": "double velocity_magnitude"
+                "double velocity[3]"
+                "velocity[0] = primitiveVars[1]"
+                "velocity[1] = primitiveVars[2]"
+                "velocity[2] = primitiveVars[3]"
+                "velocity_magnitude = magnitude(velocity)"
+                "velocity_magnitude_m_per_s = velocity_magnitude * 340.29400580821283",
+            },
+            {
+                "name": "pressure_pa",
+                "expression": "double pressure"
+                "pressure = primitiveVars[4]"
+                "pressure_pa = pressure * 141855.012726525",
+            },
+            {
+                "name": "velocity_z_m_per_s",
+                "expression": "double velocity_z"
+                "velocity_z = primitiveVars[3]"
+                "velocity_z_m_per_s = velocity_z * 340.29400580821283",
+            },
+            {
+                "name": "my_field",
+                "expression": "1+1",
+            },
+        ]
+    }
+
+    solver_user_defined_fields = {}
+    solver_user_defined_fields["userDefinedFields"] = solver_json["userDefinedFields"]
+    assert sorted(solver_user_defined_fields) == sorted(ref)
