@@ -434,13 +434,13 @@ class Project(pd.BaseModel):
             draft = VolumeMeshV2.from_file(file, name, solver_version, length_unit, tags)
             root_asset = draft.submit(run_async=run_async)
         if run_async:
-             log.info(
-                 f"The input file(s) has been successfully uploaded to project: {root_asset.project_id} "
-                 "and is being processed on cloud. Only the project ID string is returned. "
-                 "To retrieve this project later, use 'Project.from_cloud(project_id)'. "
-             )
-             return root_asset.project_id
-        
+            log.info(
+                f"The input file(s) has been successfully uploaded to project: {root_asset.project_id} "
+                "and is being processed on cloud. Only the project ID string is returned. "
+                "To retrieve this project later, use 'Project.from_cloud(project_id)'. "
+            )
+            return root_asset.project_id
+
         if not root_asset:
             raise Flow360ValueError(f"Couldn't initialize asset from {file}")
         project_id = root_asset.project_id
