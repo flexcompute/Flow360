@@ -1510,6 +1510,41 @@ def test_geometry_AI_only_features():
         validation_level="VolumeMesh",
     )
     assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, Geometry relative accuracy is only supported when geometry AI is used."
+    )
+
+
+def test_redefined_user_defined_fields():
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100.0 * u.m / u.s,
+            ),
+            outputs=[
+                VolumeOutput(
+                    frequency=1,
+                    output_format="both",
+                    output_fields=["pressure"],
+                ),
+            ],
+            user_defined_fields=[
+                UserDefinedField(
+                    name="pressure",
+                    expression="2+2",
+                ),
+            ],
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+    assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, Geometry relative accuracy is only supported when geometry AI is used."
+        "Value error, User defined field variable name: pressure conflicts with pre-defined field names."
+        " Please consider renaming this user defined field variable."
     )

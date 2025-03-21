@@ -96,10 +96,10 @@ def test_automated_farfield_surface_usage():
                         my_farfield.symmetry_planes,
                         Surface(name="surface2"),
                     ],
-                    output_fields=["Cpt"],
+                    output_fields=["Cpt_user_defined"],
                 ),
             ],
-            user_defined_fields=[UserDefinedField(name="Cpt", expression="Cp-123")],
+            user_defined_fields=[UserDefinedField(name="Cpt_user_defined", expression="Cp-123")],
         )
 
 
