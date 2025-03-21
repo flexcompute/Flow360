@@ -1368,7 +1368,7 @@ def test_beta_mesher_only_features():
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4,
-                    geometry_tolerance=1e-4,
+                    planar_face_tolerance=1e-4,
                 ),
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
@@ -1380,5 +1380,5 @@ def test_beta_mesher_only_features():
     )
     assert len(errors) == 1
     assert errors[0]["msg"] == (
-        "Value error, Geometry tolerance is only supported by the beta mesher."
+        "Value error, Planar face tolerance is only supported by the beta mesher."
     )
