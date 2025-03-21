@@ -135,6 +135,8 @@ class SurfaceMeshDraftV2(ResourceDraft):
             description of the project, by default ""
         progress_callback : callback, optional
             Use for custom progress bar, by default None
+        run_async : bool, optional
+            Whether to submit surface mesh asynchronously (default is False).
 
         Returns
         -------

@@ -908,6 +908,8 @@ class VolumeMeshDraftV2(ResourceDraft):
             Compress the volume mesh file when sending to S3, default is True
         fetch_entities : boolean, optional
             Whether to fetch and populate the entity info object after submitting, default is False
+        run_async : bool, optional
+            Whether to submit volume mesh asynchronously (default is False).
 
         Returns
         -------

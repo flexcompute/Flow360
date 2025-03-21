@@ -637,11 +637,13 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create the project asynchronously (default is False).
 
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------
@@ -727,11 +729,13 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
 
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------
@@ -792,11 +796,13 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
 
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------
@@ -858,6 +864,8 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
 
         Returns
         -------
@@ -867,7 +875,7 @@ class Project(pd.BaseModel):
         Raises
         ------
         Flow360FileError
-            If the project cannot be initialized from the file.
+            If the project cannot be initialized from the file. Or Project ID when run_async is True.
 
         Example
         -------
@@ -928,11 +936,13 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
 
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------

@@ -148,6 +148,8 @@ class GeometryDraft(ResourceDraft):
             description of the project, by default ""
         progress_callback : callback, optional
             Use for custom progress bar, by default None
+        run_async : bool, optional
+            Whether to submit Geometry asynchronously (default is False).
 
         Returns
         -------
