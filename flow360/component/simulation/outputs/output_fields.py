@@ -162,6 +162,7 @@ SliceFieldNames = VolumeFieldNames
 # Total pressure coefficient
 # Turbulent viscosity
 # Spalart-Almaras variable
+# Vorticity magnitude
 IsoSurfaceFieldNames = Literal[
     "p",
     "rho",
