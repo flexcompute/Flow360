@@ -395,6 +395,7 @@ class Project(pd.BaseModel):
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
     ):
         """
         Initializes a project from a file.
@@ -411,11 +412,13 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
 
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------
@@ -426,10 +429,18 @@ class Project(pd.BaseModel):
         root_type = cls._detect_asset_type_from_file(file)
         if root_type == RootType.GEOMETRY:
             draft = Geometry.from_file(file, name, solver_version, length_unit, tags)
-            root_asset = draft.submit()
+            root_asset = draft.submit(run_async=run_async)
         elif root_type == RootType.VOLUME_MESH:
             draft = VolumeMeshV2.from_file(file, name, solver_version, length_unit, tags)
-            root_asset = draft.submit()
+            root_asset = draft.submit(run_async=run_async)
+        if run_async:
+             log.info(
+                 f"The input file(s) has been successfully uploaded to project: {root_asset.project_id} "
+                 "and is being processed on cloud. Only the project ID string is returned. "
+                 "To retrieve this project later, use 'Project.from_cloud(project_id)'. "
+             )
+             return root_asset.project_id
+        
         if not root_asset:
             raise Flow360ValueError(f"Couldn't initialize asset from {file}")
         project_id = root_asset.project_id
@@ -598,6 +609,7 @@ class Project(pd.BaseModel):
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
         start_from = kwargs.get("start_from", None)
+        job_tags = kwargs.get("job_tags", None)
 
         draft = Draft.create(
             name=draft_name,
@@ -606,6 +618,7 @@ class Project(pd.BaseModel):
             source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
+            tags=job_tags,
         ).submit()
 
         draft.update_simulation_params(params)
