@@ -53,7 +53,7 @@ class MeshingDefaults(Flow360BaseModel):
     """
 
     geometry_relative_accuracy: float = pd.Field(
-        1e-6,
+        1e-3,
         gt=0,
         le=1,
         description="The non-dimensional relative scale distinguishable by the surface meshing process."
