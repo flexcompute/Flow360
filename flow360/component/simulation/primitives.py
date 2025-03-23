@@ -114,12 +114,13 @@ class Transformation(Flow360BaseModel):
 
     def get_transformation_matrix(self) -> np.ndarray:
         """
-        Find 3x4 transformation matrix and store as row major.
+        Find 3(row)x4(column) transformation matrix and store as row major.
         Applies to vector of [x, y, z, 1] in project length unit.
         """
         # pylint:disable=no-member
-        assert str(self.origin.units) == "flow360_length_unit"
-        assert str(self.translation.units) == "flow360_length_unit"
+        error_msg = "[Internal] `{}` is dimensioned. Use get_transformation_matrix() after non-dimensionalization!"
+        assert str(self.origin.units) == "flow360_length_unit", error_msg.format("origin")
+        assert str(self.translation.units) == "flow360_length_unit", error_msg.format("translation")
         origin_array = np.asarray(self.origin.value)
         translation_array = np.asarray(self.translation.value)
 
