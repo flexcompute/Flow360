@@ -247,6 +247,28 @@ class GeometryEntityInfo(EntityInfoModel):
 
         return id_to_file_name
 
+    def compute_transformation_matrices(self):
+        """
+        Computes the transformation matrices for the **selected** body group and store
+        matrices under `private_attribute_matrix`.
+        Won't compute for any `GeometryBodyGroup` that is not asked by the user to save expense.
+        """
+        assert self.body_group_tag is not None, "[Internal] no body grouping specified."
+        assert (
+            self.body_group_tag
+            in self.body_attribute_names  # pylint:disable=unsupported-membership-test
+        ), f"[Internal] invalid body grouping. {self.body_attribute_names} allowed but got {self.body_group_tag}."
+
+        i_body_group = self.body_attribute_names.index(  # pylint:disable=no-member
+            self.body_group_tag
+        )
+        for body_group in self.grouped_bodies[  # pylint:disable=unsubscriptable-object
+            i_body_group
+        ]:
+            body_group.transformation.private_attribute_matrix = (
+                body_group.transformation.get_transformation_matrix().flatten().tolist()
+            )
+
 
 class VolumeMeshEntityInfo(EntityInfoModel):
     """Data model for volume mesh entityInfo.json"""

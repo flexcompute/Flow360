@@ -58,6 +58,7 @@ from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_sy
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -429,6 +430,12 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
         }.items()
     )
 
+
+def test_transformation_matrix():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
     with SI_unit_system:
         params = SimulationParams(
             operating_condition=AerospaceCondition(),
@@ -449,3 +456,27 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
         transformation_matrix @ np.array([8, 4.5, 4, 2]),
         np.array([16.80178373, 106.60356745, 7.66369379]),
     ).all()
+
+    # Test compute_transformation_matrices
+    with model_attribute_unlock(
+        nondim_params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
+    ):
+        nondim_params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
+
+    nondim_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    assert nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+        0
+    ].transformation.private_attribute_matrix == [
+        0.07142857142857151,
+        -1.3178531657602606,
+        2.2464245943316894,
+        6.587498011451558,
+        0.9446408685944161,
+        0.5714285714285716,
+        0.48393055997701245,
+        47.269644845691296,
+        -0.3202367695391345,
+        1.3916653409677058,
+        1.9285714285714284,
+        -1.8755959009447176,
+    ]
