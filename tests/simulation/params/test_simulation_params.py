@@ -437,7 +437,6 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
             ),
         )
     nondim_params = params._preprocess(mesh_unit=2 * u.m)
-    nondim_params.to_file("temp.json")
     transformation_matrix = (
         nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
             0
