@@ -78,31 +78,31 @@
                     "type_name": "BodyGroupTransformation",
                     "axis_of_rotation": [
                         1.0,
-                        0.0,
-                        0.0
+                        2.0,
+                        3.0
                     ],
                     "angle_of_rotation": {
-                        "value": 0.0,
+                        "value": 90.0,
                         "units": "degree"
                     },
                     "origin": {
                         "value": [
-                            0,
-                            0,
-                            0
+                            6,
+                            5,
+                            4
                         ],
                         "units": "m"
                     },
                     "scale": [
                         1.0,
-                        1.0,
-                        1.0
+                        2.0,
+                        3.0
                     ],
                     "translation": {
                         "value": [
-                            0,
-                            0,
-                            0
+                            10,
+                            100,
+                            5
                         ],
                         "units": "m"
                     },

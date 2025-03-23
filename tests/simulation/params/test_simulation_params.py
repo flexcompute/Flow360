@@ -1,6 +1,7 @@
 import json
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
@@ -9,6 +10,7 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -295,7 +297,6 @@ def test_subsequent_param_with_different_unit_system():
 
 
 def test_mach_reynolds_op_cond():
-
     condition = operating_condition_from_mach_reynolds(
         mach=0.2,
         reynolds=5e6,
@@ -317,7 +318,6 @@ def test_mach_reynolds_op_cond():
 
 
 def test_mach_muref_op_cond():
-
     condition = operating_condition_from_mach_muref(
         mach=0.2,
         mu_ref=4e-8,
@@ -410,7 +410,6 @@ def test_persistent_entity_info_update_volume_mesh():
 
 
 def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
-
     with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
         geometry_entity_info_dict = json.load(fp)
         geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
@@ -429,3 +428,25 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
             "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
         }.items()
     )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=geometry_entity_info,
+            ),
+        )
+    nondim_params = params._preprocess(mesh_unit=2 * u.m)
+    nondim_params.to_file("temp.json")
+    transformation_matrix = (
+        nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+            0
+        ].transformation.get_transformation_matrix()
+    )
+
+    assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
+    assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
+    assert np.isclose(
+        transformation_matrix @ np.array([8, 4.5, 4, 2]),
+        np.array([16.80178373, 106.60356745, 7.66369379]),
+    ).all()
