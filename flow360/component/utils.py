@@ -859,11 +859,11 @@ class GeometryFiles(InputFileModel):
                     f"The given file: {value} is not a supported geometry or surface mesh file. "
                     f"Allowed file suffixes are: {supported_geometry_surfacemesh_file}"
                 ) from err
-
-        value = _detect_and_validate_mapbc_file(value)
+        
         if isinstance(value, str):
             _validate_single_file(value)
         else:  # list
+            value = _detect_and_validate_mapbc_file(value)
             for file in value:
                 _validate_single_file(value=file)
         return value
