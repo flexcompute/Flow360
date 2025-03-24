@@ -14,6 +14,7 @@ def _import_utilities(name: str) -> Callable[..., Any]:
     }
     return callables[name]
 
+
 def _import_tidy3d(name: str) -> Any:
     """Import and return a tidy3d callable."""
     import tidy3d as td
@@ -38,6 +39,7 @@ def _import_tidy3d(name: str) -> Any:
         return C_0
     raise ValueError(f"Unknown tidy3d callable: {name}")
 
+
 # Single source of truth for whitelisted callables
 WHITELISTED_CALLABLES = {
     "tidy3d.core": {
@@ -53,18 +55,22 @@ WHITELISTED_CALLABLES = {
             "ModeSpec",
             "inf",
         ],
+        "evaluate": True
     },
     "tidy3d.plugins": {
         "prefix": "",
         "callables": ["ModeSolver"],
+        "evaluate": True
     },
     "tidy3d.constants": {
         "prefix": "",
         "callables": ["C_0"],
+        "evaluate": True
     },
     "utilities": {
         "prefix": "",
         "callables": ["print"],
+        "evaluate": True
     },
 }
 
@@ -84,10 +90,18 @@ ALLOWED_CALLABLES = {
     },
 }
 
+EVALUATION_BLACKLIST = {
+    **{
+        f"{group['prefix']}{name}": None
+        for group in WHITELISTED_CALLABLES.values()
+        for name in group["callables"] if not group["evaluate"]
+    },
+}
+
 # Generate import category mapping
 IMPORT_FUNCTIONS = {
     ("td", "td.", "ModeSolver", "C_0"): _import_tidy3d,
     ("print",): _import_utilities,
 }
 
-resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS)
+resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST)

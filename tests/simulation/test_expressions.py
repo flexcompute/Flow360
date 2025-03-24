@@ -2,7 +2,7 @@ from math import isnan
 
 import pytest
 
-from flow360.component.simulation.expressions import (
+from flow360.component.simulation.user_code import (
     ValueOrExpression,
     Variable,
     Expression,
@@ -11,6 +11,8 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 import pydantic as pd
 from flow360 import u
+
+import flow360 as fl
 
 from flow360.component.simulation.unit_system import (
     LengthType,
@@ -327,38 +329,17 @@ def test_vector_types():
         model.moment = x * u.m
 
 
-def test_partial_evaluation_scalar():
+def test_solver_builtin():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[float] = pd.Field()
 
-    # Declare a variable without a value (NaN)
-    x = Variable(name="x")
+    x = Variable(name="x", value=4)
 
-    model = TestModel(field=x + 2)
-    assert isinstance(model.field, Expression)
-    assert isnan(model.field.evaluate())
-    assert str(model.field) == "x + 2"
+    model = TestModel(field=x * u.m + fl.example_solver_variable * u.cm)
 
-    # Change variable value
-    x.value = 2
+    assert str(model.field) == "x * u.m + (fl.example_solver_variable * u.cm)"
 
-    assert model.field.evaluate() == 4
+    # Raises when trying to evaluate with a message about this variable being blacklisted
+    with pytest.raises(ValueError):
+        model.field.evaluate()
 
-
-def test_partial_evaluation_dimensioned():
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[LengthType] = pd.Field()
-
-    # Declare a variable without a value (NaN)
-    x = Variable(name="x")
-
-    model = TestModel(field=x * u.m)
-    print(model.field.evaluate())
-    assert isinstance(model.field, Expression)
-    assert isnan(model.field.evaluate())
-    assert str(model.field) == "x * u.m"
-
-    # Change variable value
-    x.value = 2
-
-    assert model.field.evaluate() == 2 * u.m

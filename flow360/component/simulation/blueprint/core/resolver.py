@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+
 class CallableResolver:
     """Manages resolution and validation of callable objects.
 
@@ -12,10 +13,11 @@ class CallableResolver:
     attributes while enforcing whitelisting rules.
     """
 
-    def __init__(self, callables, modules, imports) -> None:
+    def __init__(self, callables, modules, imports, blacklist) -> None:
         self._import_builtins = imports
         self._callable_builtins = callables
         self._module_builtins = modules
+        self._evaluation_blacklist = blacklist
 
         self._allowed_callables: dict[str, Callable[..., Any]] = {}
         self._allowed_modules: dict[str, Any] = {}
@@ -39,6 +41,9 @@ class CallableResolver:
     def register_module(self, name: str, module: Any) -> None:
         """Register a module for attribute access."""
         self._allowed_modules[name] = module
+
+    def can_evaluate(self, qualname: str) -> bool:
+        return qualname not in self._evaluation_blacklist
 
     def get_callable(self, qualname: str) -> Callable[..., Any]:
         """Resolve a callable by its qualified name.
@@ -90,13 +95,13 @@ class CallableResolver:
         except ValueError as e:
             # Check if it's a whitelisted callable before trying to import
             if (
-                    qualname in self._callable_builtins
-                    or qualname in self._module_builtins
-                    or any(
-                qualname.startswith(f"{group['prefix']}{name}")
-                for group in self._callable_builtins.values()
-                for name in group["callables"]
-            )
+                qualname in self._callable_builtins
+                or qualname in self._module_builtins
+                or any(
+                    qualname.startswith(f"{group['prefix']}{name}")
+                    for group in self._callable_builtins.values()
+                    for name in group["callables"]
+                )
             ):
                 # If found in resolver, try importing on demand
                 for names, import_func in self._import_builtins.items():

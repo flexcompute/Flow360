@@ -19,7 +19,9 @@ class EvaluationContext:
     Manages variable scope and access during function evaluation.
     """
 
-    def __init__(self, resolver: CallableResolver, initial_values: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, resolver: CallableResolver, initial_values: dict[str, Any] | None = None
+    ) -> None:
         self._values = initial_values or {}
         self._resolver = resolver
 
@@ -39,6 +41,9 @@ class EvaluationContext:
 
     def resolve(self, name):
         return self._resolver.get_allowed_callable(name)
+
+    def can_evaluate(self, name) -> bool:
+        return self._resolver.can_evaluate(name)
 
     def copy(self) -> "EvaluationContext":
         """Create a copy of the current context."""

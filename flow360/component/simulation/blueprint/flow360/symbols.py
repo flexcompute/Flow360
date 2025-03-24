@@ -4,6 +4,7 @@ from typing import Any
 
 from ..core.resolver import CallableResolver
 
+
 def _unit_list():
     import unyt
 
@@ -14,6 +15,7 @@ def _unit_list():
             unit_symbols.add(str(value))
 
     return list(unit_symbols)
+
 
 def _import_flow360(name: str) -> Any:
     import flow360 as fl
@@ -27,15 +29,22 @@ def _import_flow360(name: str) -> Any:
 
         return u
 
+
 WHITELISTED_CALLABLES = {
-    "flow360": {"prefix": "u.", "callables": _unit_list()},
+    "flow360.units": {
+        "prefix": "u.",
+        "callables": _unit_list(),
+        "evaluate": True
+    },
+    "flow360.solver_builtins": {
+        "prefix": "fl.",
+        "callables": ["example_solver_variable"],
+        "evaluate": False
+    }
 }
 
 # Define allowed modules
-ALLOWED_MODULES = {
-    "flow360", # Flow360 module
-    "fl" # For the flow360 alias
-}
+ALLOWED_MODULES = {"flow360", "fl"}
 
 ALLOWED_CALLABLES = {
     "fl": None,
@@ -46,8 +55,16 @@ ALLOWED_CALLABLES = {
     },
 }
 
+EVALUATION_BLACKLIST = {
+    **{
+        f"{group['prefix']}{name}": None
+        for group in WHITELISTED_CALLABLES.values()
+        for name in group["callables"] if not group["evaluate"]
+    },
+}
+
 IMPORT_FUNCTIONS = {
     ("fl", "u"): _import_flow360,
 }
 
-resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS)
+resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST)

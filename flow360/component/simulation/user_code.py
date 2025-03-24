@@ -84,7 +84,7 @@ def _convert_argument(other):
 
 class Variable(Flow360BaseModel):
     name: str = pd.Field()
-    value: Optional[Union[list[float], float, unyt_quantity, unyt_array]] = pd.Field(float('NaN'))
+    value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
 
     model_config = pd.ConfigDict(validate_assignment=True)
 
@@ -181,7 +181,7 @@ class Variable(Flow360BaseModel):
 
 def _get_internal_validator(internal_type):
     def _internal_validator(value: Expression):
-        result = value.evaluate()
+        result = value.evaluate(strict=False)
         pd.TypeAdapter(internal_type).validate_python(result)
         return value
 
@@ -221,9 +221,9 @@ class Expression(Flow360BaseModel):
 
         return handler({"body": body})
 
-    def evaluate(self) -> float:
+    def evaluate(self, strict=True) -> float:
         expr = expression_to_model(self.body, _global_ctx)
-        result = expr.evaluate(_global_ctx)
+        result = expr.evaluate(_global_ctx, strict)
         return result
 
     def __add__(self, other):
@@ -321,8 +321,9 @@ class ValueOrExpression(Expression, Generic[T]):
         if isinstance(internal_type, Number):
 
             def _non_dimensional_validator(value):
-                result = value.evaluate()
+                result = value.evaluate(strict=False)
                 if isinstance(result, Number):
+
                     return value
                 msg = "The evaluated value needs to be a non-dimensional scalar"
                 details = InitErrorDetails(type="value_error", ctx={"error": msg})

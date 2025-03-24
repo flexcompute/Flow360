@@ -1,1 +1,1 @@
-from .resolver import resolver
+from .symbols import resolver
