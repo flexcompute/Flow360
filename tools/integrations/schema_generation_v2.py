@@ -1,8 +1,6 @@
 import json
 import os
-from typing import Annotated, List, Type, Union
-
-import pydantic as pd
+from typing import Type, Union
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -66,6 +64,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -279,7 +278,7 @@ with SI_unit_system:
             Inflow(
                 surfaces=[my_inflow1],
                 total_temperature=300 * u.K,
-                spec=TotalPressure(123 * u.Pa),
+                spec=TotalPressure(value=123 * u.Pa),
                 turbulence_quantities=TurbulenceQuantities(
                     turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
                 ),
@@ -287,7 +286,7 @@ with SI_unit_system:
             Inflow(
                 surfaces=[my_inflow2],
                 total_temperature=300 * u.K,
-                spec=MassFlowRate(123 * u.lb / u.s),
+                spec=MassFlowRate(value=123 * u.lb / u.s),
             ),
         ],
         time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
@@ -503,7 +502,7 @@ with imperial_unit_system:
 write_example(my_outflow_obj, "models", "outflow-Pressure")
 
 with imperial_unit_system:
-    my_outflow_obj = Outflow(entities=[my_outflow], spec=MassFlowRate(1))
+    my_outflow_obj = Outflow(entities=[my_outflow], spec=MassFlowRate(value=1))
 write_example(my_outflow_obj, "models", "outflow-MassFlowRate")
 
 my_outflow_obj = Outflow(entities=[my_outflow], spec=Mach(1))
@@ -515,7 +514,7 @@ with imperial_unit_system:
     my_inflow_surface_1 = Inflow(
         surfaces=[my_inflow1],
         total_temperature=300 * u.K,
-        spec=TotalPressure(123 * u.Pa),
+        spec=TotalPressure(value=123 * u.Pa),
         turbulence_quantities=TurbulenceQuantities(
             turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
         ),
@@ -526,7 +525,7 @@ with imperial_unit_system:
     my_inflow_surface_1 = Inflow(
         surfaces=[my_inflow1],
         total_temperature=300 * u.K,
-        spec=MassFlowRate(123),
+        spec=MassFlowRate(value=123),
         turbulence_quantities=TurbulenceQuantities(
             turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
         ),
@@ -664,7 +663,10 @@ write_schemas(AeroAcousticOutput, "outputs", file_suffix="AeroAcousticOutput")
 with imperial_unit_system:
     setting = AeroAcousticOutput(
         write_per_surface_output=True,
-        observers=[(1, 2, 3), (2, 4, 6)],
+        observers=[
+            Observer(position=(1, 2, 3), group_name="1"),
+            Observer(position=(2, 4, 6), group_name="1"),
+        ],
     )
 write_example(setting, "outputs", "AeroAcousticOutput")
 

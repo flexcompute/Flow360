@@ -225,7 +225,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["geometryTolerance"] = meshing_params.defaults.geometry_tolerance
+        translated["volume"]["planarFaceTolerance"] = meshing_params.defaults.planar_face_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(

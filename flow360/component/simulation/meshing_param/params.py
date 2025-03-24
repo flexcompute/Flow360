@@ -52,6 +52,15 @@ class MeshingDefaults(Flow360BaseModel):
     Default/global settings for meshing parameters.
     """
 
+    geometry_relative_accuracy: float = pd.Field(
+        1e-6,
+        gt=0,
+        le=1,
+        description="The non-dimensional relative scale distinguishable by the surface meshing process."
+        " This is relative to the whole bounding box of the input geometry/surface mesh and"
+        " is only valid when using geometry AI.",
+    )
+
     ##::   Default surface edge settings
     surface_edge_growth_rate: float = ContextField(
         1.2,
@@ -84,7 +93,7 @@ class MeshingDefaults(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    geometry_tolerance: pd.NonNegativeFloat = pd.Field(
+    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
         1e-6,
         description="Tolerance used for detecting planar faces in the input surface mesh"
         " that need to be remeshed, such as symmetry planes."
@@ -124,20 +133,38 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
         return value
 
-    @pd.field_validator("geometry_tolerance", mode="after")
+    @pd.field_validator("planar_face_tolerance", mode="after")
     @classmethod
-    def invalid_geometry_tolerance(cls, value):
-        """Ensure geometry tolerance is not specified"""
+    def invalid_planar_face_tolerance(cls, value):
+        """Ensure planar face tolerance is not specified"""
         validation_info = get_validation_info()
 
         if validation_info is None:
             return value
 
         if (
-            value != cls.model_fields["geometry_tolerance"].default
+            value != cls.model_fields["planar_face_tolerance"].default
             and not validation_info.is_beta_mesher
         ):
-            raise ValueError("Geometry tolerance is only supported by the beta mesher.")
+            raise ValueError("Planar face tolerance is only supported by the beta mesher.")
+        return value
+
+    @pd.field_validator("geometry_relative_accuracy", mode="after")
+    @classmethod
+    def invalid_geometry_relative_accuracy(cls, value):
+        """Ensure geometry accuracy is not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if (
+            value != cls.model_fields["geometry_relative_accuracy"].default
+            and not validation_info.use_geometry_AI
+        ):
+            raise ValueError(
+                "Geometry relative accuracy is only supported when geometry AI is used."
+            )
         return value
 
 

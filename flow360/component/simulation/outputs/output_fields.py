@@ -44,6 +44,12 @@ from flow360.component.simulation.unit_system import u
 # Transition solution
 # Turbulence solution
 # Temperature
+# Velocity (non-dimensional)
+# Velocity X component (non-dimensional)
+# Velocity Y component (non-dimensional)
+# Velocity Z component (non-dimensional)
+# Velocity Magnitude (non-dimensional)
+# Pressure (non-dimensional)
 # Vorticity
 # Vorticity Magnitude
 # Wall distance
@@ -51,6 +57,12 @@ from flow360.component.simulation.unit_system import u
 # Heat equation residual
 # Velocity with respect to non-inertial frame
 # Low-Mach preconditioner factor
+# Velocity (dimensioned, m/s)
+# Velocity X component (dimensioned, m/s)
+# Velocity Y component (dimensioned, m/s)
+# Velocity Z component (dimensioned, m/s)
+# Velocity Magnitude (dimensioned, m/s)
+# Pressure (dimensioned, Pa)
 CommonFieldNames = Literal[
     "Cp",
     "Cpt",
@@ -85,10 +97,10 @@ CommonFieldNames = Literal[
     "lowMachPreconditionerSensor",
     # Include dimensioned fields here too
     "velocity_m_per_s",
-    "velocity_magnitude_m_per_s",
     "velocity_x_m_per_s",
     "velocity_y_m_per_s",
     "velocity_z_m_per_s",
+    "velocity_magnitude_m_per_s",
     "pressure_pa",
 ]
 
@@ -101,6 +113,8 @@ CommonFieldNames = Literal[
 # Wall function metrics
 # Surface heat transfer coefficient (static temperature as reference)
 # Surface heat transfer coefficient (total temperature as reference)
+# Wall shear stress magnitude (non-dimensional)
+# Wall shear stress magnitude (dimensioned, Pa)
 SurfaceFieldNames = Literal[
     CommonFieldNames,
     "CfVec",
@@ -148,6 +162,7 @@ SliceFieldNames = VolumeFieldNames
 # Total pressure coefficient
 # Turbulent viscosity
 # Spalart-Almaras variable
+# Vorticity magnitude
 IsoSurfaceFieldNames = Literal[
     "p",
     "rho",
