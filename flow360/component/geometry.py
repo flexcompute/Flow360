@@ -29,7 +29,11 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.utils import GeometryFiles, shared_account_confirm_proceed
+from flow360.component.utils import (
+    GeometryFiles,
+    MeshNameParser,
+    shared_account_confirm_proceed,
+)
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
@@ -160,7 +164,17 @@ class GeometryDraft(ResourceDraft):
 
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
-        # The first geometry is assumed to be the main one.
+        mapbc_files = []
+        for file_path in self.file_names:
+            mesh_parser = MeshNameParser(file_path)
+            if mesh_parser.is_ugrid() and os.path.isfile(
+                mesh_parser.get_associated_mapbc_filename()
+            ):
+                file_name_mapbc = os.path.basename(mesh_parser.get_associated_mapbc_filename())
+                mapbc_files.append(file_name_mapbc)
+
+        # Files with 'main' type are treated as MASTER_FILES and are processed after uploading
+        # 'dependency' type files are uploaded only but not processed.
         req = NewGeometryRequest(
             name=self.project_name,
             solver_version=self.solver_version,
@@ -168,9 +182,9 @@ class GeometryDraft(ResourceDraft):
             files=[
                 GeometryFileMeta(
                     name=os.path.basename(file_path),
-                    type="main" if item_index == 0 else "dependency",
+                    type="main",
                 )
-                for item_index, file_path in enumerate(self.file_names)
+                for file_path in self.file_names + mapbc_files
             ],
             # pylint: disable=fixme
             # TODO: remove hardcoding
@@ -189,7 +203,7 @@ class GeometryDraft(ResourceDraft):
         # Keep posting the heartbeat to keep server patient about uploading.
         heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
-        for file_path in self.file_names:
+        for file_path in self.file_names + mapbc_files:
             geometry._webapi._upload_file(
                 remote_file_name=os.path.basename(file_path),
                 file_name=file_path,

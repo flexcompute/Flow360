@@ -211,7 +211,7 @@ class GeometryEntityInfo(EntityInfoModel):
         surface_mesh_file_names = []
         for unprocessed_file_name in unprocessed_file_names:
             # All geometry source file gets lumped into a single file
-            if GeometryFiles.check_is_valid_geometry_file(file_name=unprocessed_file_name):
+            if GeometryFiles.check_is_valid_geometry_file_format(file_name=unprocessed_file_name):
                 # This is a geometry file
                 processed_geometry_file_names.append(f"{unprocessed_file_name}.egads")
             else:
@@ -238,7 +238,9 @@ class GeometryEntityInfo(EntityInfoModel):
 
         body_groups_grouped_by_file = self._get_list_of_entities("groupByFile", "body")
         for item in body_groups_grouped_by_file:
-            if GeometryFiles.check_is_valid_geometry_file(file_name=item.private_attribute_id):
+            if GeometryFiles.check_is_valid_geometry_file_format(
+                file_name=item.private_attribute_id
+            ):
                 file_name = f"{item.private_attribute_id}.egads"
             else:
                 file_name = item.private_attribute_id
