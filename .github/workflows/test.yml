@@ -18,8 +18,8 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
-        # platform: [ubuntu-latest, macos-latest, windows-latest]
-        platform: [ubuntu-latest, windows-latest]
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -34,6 +34,7 @@ jobs:
     - name: Install poetry
       run: |
         pipx install poetry
+        # create local virtual environment 
         poetry config --local virtualenvs.in-project true
 
     - name: Set up Python ${{ matrix.python-version }}
@@ -41,18 +42,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
-
-    # - name: Clear Poetry cache on Ubuntu and macOS
-    #   if: runner.os != 'Windows'
-    #   run: |
-    #     poetry cache clear --all pypi
-    #     rm -rf /Users/runner/Library/Caches/pypoetry/virtualenvs
-
-    # - name: Clear Poetry cache on Windows
-    #   if: runner.os == 'Windows'
-    #   run: |
-    #     poetry cache clear --all pypi
-    #     Remove-Item -Recurse -Force $env:USERPROFILE\AppData\Local\pypoetry\Cache\virtualenvs
 
     - name: Install dependencies
       run: |
