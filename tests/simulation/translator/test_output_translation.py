@@ -1180,18 +1180,18 @@ def streamtrace_output_config():
         [
             StreamtraceOutput(
                 entities=[
-                    Point(name="point_streamtrace", location=(0.0, 1.0, 0.04)),
+                    Point(name="point_streamtrace", location=(0.0, 1.0, 0.04) * u.m),
                     PointArray(
                         name="pointarray_streamtrace",
-                        start=(0.0, 0.0, 0.2),
-                        end=(0.0, 1.0, 0.2),
+                        start=(0.0, 0.0, 0.2) * u.m,
+                        end=(0.0, 1.0, 0.2) * u.m,
                         number_of_points=20,
                     ),
                     PointArray2D(
                         name="pointarray2d_streamtrace",
-                        origin=(0.0, 0.0, -0.2),
-                        u_axis_vector=(0.0, 1.4, 0.0),
-                        v_axis_vector=(0.0, 0.0, 0.4),
+                        origin=(0.0, 0.0, -0.2) * u.m,
+                        u_axis_vector=(0.0, 1.4, 0.0) * u.m,
+                        v_axis_vector=(0.0, 0.0, 0.4) * u.m,
                         u_number_of_points=10,
                         v_number_of_points=10,
                     ),
