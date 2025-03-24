@@ -263,6 +263,7 @@ class WallRotation(Flow360BaseModel):
     ...     ),
     ...     use_wall_function=True,
     ... )
+
     ====
     """
 

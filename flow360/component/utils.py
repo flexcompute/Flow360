@@ -859,7 +859,7 @@ class GeometryFiles(InputFileModel):
                     f"The given file: {value} is not a supported geometry or surface mesh file. "
                     f"Allowed file suffixes are: {supported_geometry_surfacemesh_file}"
                 ) from err
-        
+
         if isinstance(value, str):
             _validate_single_file(value)
         else:  # list
