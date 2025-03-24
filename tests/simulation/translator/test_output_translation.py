@@ -6,7 +6,11 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.outputs.output_entities import Point, PointArray
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -1201,23 +1205,23 @@ def streamtrace_output_config():
         {
             "PointArrays": [
                 {
-                    "end": [0.0, 1.2408487405385284, 0.2481697481077057],
+                    "end": [0.0, 1.0, 0.2],
                     "name": "pointarray_streamtrace",
                     "numberOfPoints": 20,
-                    "start": [0.0, 0.0, 0.2481697481077057],
+                    "start": [0.0, 0.0, 0.2],
                 }
             ],
             "PointArrays2D": [
                 {
                     "name": "pointarray2d_streamtrace",
-                    "origin": [0.0, 0.0, -0.2481697481077057],
-                    "uAxisVector": [0.0, 1.7371882367539397, 0.0],
+                    "origin": [0.0, 0.0, -0.2],
+                    "uAxisVector": [0.0, 1.4, 0.0],
                     "uNumberOfPoints": 10,
-                    "vAxisVector": [0.0, 0.0, 0.4963394962154114],
+                    "vAxisVector": [0.0, 0.0, 0.4],
                     "vNumberOfPoints": 10,
                 }
             ],
-            "Points": [{"location": [0.0, 1.35, 0.05], "name": "point_streamtrace"}],
+            "Points": [{"location": [0.0, 1.0, 0.04], "name": "point_streamtrace"}],
         },
     )
 
@@ -1227,12 +1231,13 @@ def test_streamtrace_output(streamtrace_output_config):
         param = SimulationParams(
             operating_condition=AerospaceCondition(),
             outputs=streamtrace_output_config[0],
-            time_stepping=Steady(max_psedu_steps=100),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
         )
     translated = {"boundaries": {}}
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_config[1].items()) == sorted(
+    print(streamtrace_output_config[1].items())
+    assert sorted(streamtrace_output_config[1].items()) == sorted(
         translated["streamtraceOutput"].items()
     )
