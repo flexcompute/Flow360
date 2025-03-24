@@ -174,7 +174,7 @@ class PointArray2D(_PointEntityBase):
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
     origin: LengthType.Point = pd.Field(description="The origin of the trapezoid.")
-    u_axis_vector: LengthType.Point = pd.Field(description="The scaled u-axis of the trapezoid.")
-    v_axis_vector: LengthType.Point = pd.Field(description="The scaled v-axis of the trapezoid.")
+    u_axis_vector: LengthType.Axis = pd.Field(description="The scaled u-axis of the parallelogram.")
+    v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
     u_number_of_points: int = pd.Field(gt=2, description="The number of points along the u axis.")
     v_number_of_points: int = pd.Field(gt=2, description="The number of points along the v axis.")

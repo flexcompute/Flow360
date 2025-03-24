@@ -15,6 +15,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     Slice,
     SliceOutput,
+    StreamtraceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -1171,3 +1172,67 @@ def test_dimensioned_output_fields_translation():
     solver_user_defined_fields = {}
     solver_user_defined_fields["userDefinedFields"] = solver_json["userDefinedFields"]
     assert sorted(solver_user_defined_fields) == sorted(ref)
+
+
+@pytest.fixture()
+def streamtrace_output_config():
+    return (
+        [
+            StreamtraceOutput(
+                entities=[
+                    Point(name="point_streamtrace", location=(0.0, 1.0, 0.04)),
+                    PointArray(
+                        name="pointarray_streamtrace",
+                        start=(0.0, 0.0, 0.2),
+                        end=(0.0, 1.0, 0.2),
+                        number_of_points=20,
+                    ),
+                    PointArray2D(
+                        name="pointarray2d_streamtrace",
+                        origin=(0.0, 0.0, -0.2),
+                        u_axis_vector=(0.0, 1.4, 0.0),
+                        v_axis_vector=(0.0, 0.0, 0.4),
+                        u_number_of_points=10,
+                        v_number_of_points=10,
+                    ),
+                ]
+            )
+        ],
+        {
+            "PointArrays": [
+                {
+                    "end": [0.0, 1.2408487405385284, 0.2481697481077057],
+                    "name": "pointarray_streamtrace",
+                    "numberOfPoints": 20,
+                    "start": [0.0, 0.0, 0.2481697481077057],
+                }
+            ],
+            "PointArrays2D": [
+                {
+                    "name": "pointarray2d_streamtrace",
+                    "origin": [0.0, 0.0, -0.2481697481077057],
+                    "uAxisVector": [0.0, 1.7371882367539397, 0.0],
+                    "uNumberOfPoints": 10,
+                    "vAxisVector": [0.0, 0.0, 0.4963394962154114],
+                    "vNumberOfPoints": 10,
+                }
+            ],
+            "Points": [{"location": [0.0, 1.35, 0.05], "name": "point_streamtrace"}],
+        },
+    )
+
+
+def test_streamtrace_output(streamtrace_output_config):
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=streamtrace_output_config[0],
+            time_stepping=Steady(max_psedu_steps=100),
+        )
+    translated = {"boundaries": {}}
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+
+    assert sorted(aeroacoustic_output_config[1].items()) == sorted(
+        translated["streamtraceOutput"].items()
+    )

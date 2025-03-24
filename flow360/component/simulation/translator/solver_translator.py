@@ -36,14 +36,12 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
-
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
 )
-
+from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -534,6 +532,7 @@ def process_output_fields_for_udf(input_params):
 
     return generated_udfs
 
+
 def translate_streamtrace_output(output_params: list):
     """Translate streamtrace output settings."""
     streamtrace_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
@@ -548,17 +547,17 @@ def translate_streamtrace_output(output_params: list):
                         "name": entity.name,
                         "start": entity.start.value.tolist(),
                         "end": entity.end.value.tolist(),
-                        "number_of_points": entity.number_of_points,
+                        "numberOfPoints": entity.number_of_points,
                     }
                     streamtrace_output["PointArrays"].append(line)
                 elif isinstance(entity, PointArray2D):
                     trapezoid = {
                         "name": entity.name,
                         "origin": entity.origin.value.tolist(),
-                        "u_axis_vector": entity.u_axis_vector.value.tolist(),
-                        "v_axis_vector": entity.v_axis_vector.value.tolist(),
-                        "u_number_of_points": entity.u_number_of_points,
-                        "v_number_of_points": entity.v_number_of_points,
+                        "uAxisVector": entity.u_axis_vector.value.tolist(),
+                        "vAxisVector": entity.v_axis_vector.value.tolist(),
+                        "uNumberOfPoints": entity.u_number_of_points,
+                        "vNumberOfPoints": entity.v_number_of_points,
                     }
                     streamtrace_output["PointArrays2D"].append(trapezoid)
 

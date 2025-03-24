@@ -929,9 +929,6 @@ class StreamtraceOutput(Flow360BaseModel):
         + "is used to define streamtraces originating from a trapezoid.",
     )
     output_type: Literal["StreamtraceOutput"] = pd.Field("StreamtraceOutput", frozen=True)
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
-        [], description="Output fields not supported for streamtrace output.", frozen=True
-    )
 
 
 OutputTypes = Annotated[

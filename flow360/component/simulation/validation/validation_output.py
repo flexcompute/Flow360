@@ -43,7 +43,7 @@ def _check_output_fields(params):
     additional_fields = [item.name for item in params.user_defined_fields]
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type == "AeroAcousticOutput":
+        if output.output_type in ("AeroAcousticOutput", "StreamtraceOutput"):
             continue
         # Get allowed output fields items:
         natively_supported = extract_literal_values(
