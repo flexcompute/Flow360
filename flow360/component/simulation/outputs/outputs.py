@@ -894,18 +894,18 @@ class StreamtraceOutput(Flow360BaseModel):
     """
     :class:`StreamtraceOutput` class for configuring the input for calculating streamtraces.
     Stramtraces are computed upwind and downwind, and may originate from a single point,
-    from a line, or from a trapezoid.
+    from a line, or from a parallelogram.
 
     Example
     -------
 
     Define a :class:`StreamtraceOutput` with streaptraces originating from points, lines (PointArray), and
-    trapezoids (PointArray2D).
+    parallelograms (PointArray2D).
 
     - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
     - :code:`Line_streamtrace` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
       including both starting and end points.
-    - :code:`Trapezoid_streamtrace` is a trapezoid in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+    - :code:`Parallelogram_streamtrace` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
       orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
       with 20 points along the v direction.
 
@@ -926,7 +926,7 @@ class StreamtraceOutput(Flow360BaseModel):
     ...             number_of_points=11,
     ...         ),
     ...         fl.PointArray2D(
-    ...             name="Trapezoid_streamtrace",
+    ...             name="Parallelogram_streamtrace",
     ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
     ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
     ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
@@ -947,7 +947,7 @@ class StreamtraceOutput(Flow360BaseModel):
         + "streamtrace group. :class:`~flow360.PointArray` "
         + "is used to define streamtraces originating along a line."
         + ":class:`~flow360.PointArray2D` "
-        + "is used to define streamtraces originating from a trapezoid.",
+        + "is used to define streamtraces originating from a parallelogram.",
     )
     output_type: Literal["StreamtraceOutput"] = pd.Field("StreamtraceOutput", frozen=True)
 

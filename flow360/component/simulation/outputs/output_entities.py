@@ -144,20 +144,20 @@ class PointArray(_PointEntityBase):
 class PointArray2D(_PointEntityBase):
     """
     :class:`PointArray2D` class for defining multiple equally spaced points along the u and
-    v axes of a trapezoid.
+    v axes of a parallelogram.
 
 
     Example
     -------
-    Define :class:`PointArray2D` with points equally distributed on a trapezoid with
-    origin (1.0, 0.0, 0.0) * fl.u.m. There are 7 equally spaced points along the trapezoid's u-axis
+    Define :class:`PointArray2D` with points equally distributed on a parallelogram with
+    origin (1.0, 0.0, 0.0) * fl.u.m. There are 7 equally spaced points along the parallelogram's u-axis
     of (0.5, 1.0, 0.2) * fl.u.m and 10 equally spaced points along the its v-axis of
     (0.1, 0, 1) * fl.u.m.
 
     Both the starting and end points are included in the :class:`PointArray`.
 
     >>> fl.PointArray(
-    ...     name="Trapezoid_1",
+    ...     name="Parallelogram_1",
     ...     origin=(1.0, 0.0, 0.0) * fl.u.m,
     ...     u_axis_vector=(0.5, 1.0, 0.2) * fl.u.m,
     ...     v_axis_vector=(0.1, 0, 1) * fl.u.m,
@@ -173,7 +173,7 @@ class PointArray2D(_PointEntityBase):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
-    origin: LengthType.Point = pd.Field(description="The origin of the trapezoid.")
+    origin: LengthType.Point = pd.Field(description="The corner of the paralleogram.")
     u_axis_vector: LengthType.Axis = pd.Field(description="The scaled u-axis of the parallelogram.")
     v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
     u_number_of_points: int = pd.Field(gt=2, description="The number of points along the u axis.")

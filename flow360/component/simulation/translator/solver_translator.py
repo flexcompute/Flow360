@@ -551,7 +551,7 @@ def translate_streamtrace_output(output_params: list):
                     }
                     streamtrace_output["PointArrays"].append(line)
                 elif isinstance(entity, PointArray2D):
-                    trapezoid = {
+                    parallelogram = {
                         "name": entity.name,
                         "origin": entity.origin.value.tolist(),
                         "uAxisVector": entity.u_axis_vector.value.tolist(),
@@ -559,7 +559,7 @@ def translate_streamtrace_output(output_params: list):
                         "uNumberOfPoints": entity.u_number_of_points,
                         "vNumberOfPoints": entity.v_number_of_points,
                     }
-                    streamtrace_output["PointArrays2D"].append(trapezoid)
+                    streamtrace_output["PointArrays2D"].append(parallelogram)
 
     return streamtrace_output
 
