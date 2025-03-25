@@ -261,6 +261,7 @@ def set_up_params_for_uploading(
     length_unit: LengthType,
     params: SimulationParams,
     use_beta_mesher: bool,
+    use_geometry_AI: bool,  # pylint: disable=invalid-name
 ):
     """
     Set up params before submitting the draft.
@@ -272,6 +273,11 @@ def set_up_params_for_uploading(
     with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
         params.private_attribute_asset_cache.use_inhouse_mesher = (
             use_beta_mesher if use_beta_mesher else False
+        )
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "use_geometry_AI"):
+        params.private_attribute_asset_cache.use_geometry_AI = (
+            use_geometry_AI if use_geometry_AI else False
         )
 
     entity_info = _set_up_params_persistent_entity_info(root_asset.entity_info, params)

@@ -1164,6 +1164,7 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        use_geometry_AI: bool,
         raise_on_error: bool,
         **kwargs,
     ):
@@ -1197,11 +1198,15 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
+        if use_geometry_AI and not use_beta_mesher:
+            raise Flow360ValueError("Enabling Geometry AI requires beta mesher.")
+
         params = set_up_params_for_uploading(
             params=params,
             root_asset=self._root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
         )
 
         params, errors = validate_params_with_context(
@@ -1239,6 +1244,7 @@ class Project(pd.BaseModel):
                 target,
                 source_item_type=source_item_type,
                 use_beta_mesher=use_beta_mesher,
+                use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
             )
         except RuntimeError as exception:
@@ -1284,6 +1290,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1321,6 +1328,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
@@ -1334,6 +1342,7 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1374,6 +1383,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
@@ -1388,6 +1398,7 @@ class Project(pd.BaseModel):
         fork_from: Optional[Case] = None,
         solver_version: str = None,
         use_beta_mesher: bool = False,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1418,6 +1429,7 @@ class Project(pd.BaseModel):
             fork_from=fork_from,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
