@@ -8,6 +8,8 @@ import time
 from abc import ABCMeta
 from typing import List, Union
 
+import requests
+
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
@@ -27,7 +29,7 @@ from flow360.component.utils import (
     remove_properties_by_name,
     validate_type,
 )
-from flow360.exceptions import Flow360ValidationError
+from flow360.exceptions import Flow360ValidationError, Flow360WebError
 from flow360.log import log
 
 
@@ -132,9 +134,14 @@ class AssetBase(metaclass=ABCMeta):
             asset.wait()
 
         # pylint: disable=protected-access
-        simulation_json = asset._webapi.get(
-            method="simulation/file", params={"type": "simulation"}
-        )["simulationJson"]
+        try:
+            simulation_json = asset._webapi.get(
+                method="simulation/file", params={"type": "simulation"}
+            )["simulationJson"]
+        except requests.exceptions.HTTPError as error:
+            raise Flow360WebError(
+                f"Failed to get simulation json for {asset._cloud_resource_type_name}."
+            ) from error
 
         return SimulationParams._update_param_dict(json.loads(simulation_json))
 
@@ -153,6 +160,7 @@ class AssetBase(metaclass=ABCMeta):
         """Return the simulation parameters associated with the asset"""
         params_as_dict = self._get_simulation_json(self)
 
+        # pylint: disable=duplicate-code
         param, errors, _ = services.validate_model(
             params_as_dict=params_as_dict,
             root_item_type=None,
