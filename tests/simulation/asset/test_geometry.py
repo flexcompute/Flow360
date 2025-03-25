@@ -46,7 +46,7 @@ def test_draft_geometry_from_file():
     assert sm.length_unit == "cm"
 
 
-def test_geometry_rename_edge():
+def test_geometry_rename_edges():
 
     geometry = Geometry.from_local_storage(
         geometry_id=geo_meta["id"],
@@ -69,7 +69,7 @@ def test_geometry_rename_edge():
             "Please group them first before renaming the entities."
         ),
     ):
-        geometry.rename_edge(
+        geometry.rename_edges(
             current_name_pattern="body00001_edge00001",
             new_name_prefix="body00001_edge00001_rename",
         )
@@ -82,7 +82,7 @@ def test_geometry_rename_edge():
             "Renaming failed: No entity is found to match the input name pattern: body00001_edge00001_typo."
         ),
     ):
-        geometry.rename_edge(
+        geometry.rename_edges(
             current_name_pattern="body00001_edge00001_typo",
             new_name_prefix="body00001_edge00001_rename",
         )
@@ -91,12 +91,12 @@ def test_geometry_rename_edge():
         ex.Flow360ValueError,
         match=("Renaming failed: An entity with the new name: body00001_edge00002 already exists."),
     ):
-        geometry.rename_edge(
+        geometry.rename_edges(
             current_name_pattern="body00001_edge00001",
             new_name_prefix="body00001_edge00002",
         )
 
-    geometry.rename_edge(current_name_pattern="body00001_edge0003*", new_name_prefix="newEdge")
+    geometry.rename_edges(current_name_pattern="body00001_edge0003*", new_name_prefix="newEdge")
     for i in range(4):
         assert geometry[f"newEdge_000{i+1}"].private_attribute_id == f"body00001_edge0003{i}"
 
@@ -109,7 +109,7 @@ def test_geometry_rename_edge():
             "Please group them first before renaming the entities."
         ),
     ):
-        geometry.rename_edge(
+        geometry.rename_edges(
             current_name_pattern="newEdge_0002",
             new_name_prefix="newEdge_0012",
         )
@@ -120,7 +120,7 @@ def test_geometry_rename_edge():
         assert geometry["newEdge_0001"]
 
 
-def test_geometry_rename_face():
+def test_geometry_rename_surfaces():
 
     geometry = Geometry.from_local_storage(
         geometry_id=geo_meta["id"],
@@ -143,7 +143,7 @@ def test_geometry_rename_face():
             "Please group them first before renaming the entities."
         ),
     ):
-        geometry.rename_face(
+        geometry.rename_surfaces(
             current_name_pattern="body00001_face00001",
             new_name_prefix="body00001_face00001_rename",
         )
@@ -156,7 +156,7 @@ def test_geometry_rename_face():
             "Renaming failed: No entity is found to match the input name pattern: body00001_face00001_typo."
         ),
     ):
-        geometry.rename_face(
+        geometry.rename_surfaces(
             current_name_pattern="body00001_face00001_typo",
             new_name_prefix="body00001_face00001_rename",
         )
@@ -165,12 +165,12 @@ def test_geometry_rename_face():
         ex.Flow360ValueError,
         match=("Renaming failed: An entity with the new name: body00001_face00002 already exists."),
     ):
-        geometry.rename_face(
+        geometry.rename_surfaces(
             current_name_pattern="body00001_face00001",
             new_name_prefix="body00001_face00002",
         )
 
-    geometry.rename_face(current_name_pattern="farfield_*", new_name_prefix="newFarfield")
+    geometry.rename_surfaces(current_name_pattern="farfield_*", new_name_prefix="newFarfield")
 
     assert (
         geometry["newFarfield_0001"].private_attribute_id
@@ -190,7 +190,7 @@ def test_geometry_rename_face():
             "Please group them first before renaming the entities."
         ),
     ):
-        geometry.rename_face(
+        geometry.rename_surfaces(
             current_name_pattern="newFarfield_0002",
             new_name_prefix="newFarfield_0003",
         )
@@ -202,7 +202,7 @@ def test_geometry_rename_face():
         assert geometry["newFarfield_0001"]
 
 
-def test_geometry_rename_body():
+def test_geometry_rename_body_groups():
 
     geometry = Geometry.from_local_storage(
         geometry_id=geo_meta["id"],
@@ -223,7 +223,7 @@ def test_geometry_rename_body():
             "Please group them first before renaming the entities."
         ),
     ):
-        geometry.rename_body(
+        geometry.rename_body_groups(
             current_name_pattern="airplane_simple_obtained_from_csm_by_esp.step",
             new_name_prefix="step_body",
         )
@@ -237,7 +237,7 @@ def test_geometry_rename_body():
             "airplane_simple_obtained_from_csm_by_esp.step_typo."
         ),
     ):
-        geometry.rename_body(
+        geometry.rename_body_groups(
             current_name_pattern="airplane_simple_obtained_from_csm_by_esp.step_typo",
             new_name_prefix="airplane_mesh",
         )
@@ -249,12 +249,12 @@ def test_geometry_rename_body():
             "farfield_only_sphere_volume_mesh.lb8.ugrid already exists."
         ),
     ):
-        geometry.rename_body(
+        geometry.rename_body_groups(
             current_name_pattern="airplane_simple_obtained_from_csm_by_esp.step",
             new_name_prefix="farfield_only_sphere_volume_mesh.lb8.ugrid",
         )
 
-    geometry.rename_body(
+    geometry.rename_body_groups(
         current_name_pattern="airplane_simple_obtained_from_csm_by_esp.step",
         new_name_prefix="airplane_mesh",
     )
@@ -265,7 +265,7 @@ def test_geometry_rename_body():
 
     geometry.group_bodies_by_tag("FCsource")
     assert geometry.body_group_tag == "FCsource"
-    geometry.rename_body("airplane*", "newAirplane")
+    geometry.rename_body_groups("airplane*", "newAirplane")
 
     assert (
         geometry["newAirplane_0001"].private_attribute_id
@@ -282,7 +282,7 @@ def test_geometry_rename_body():
             "Please group them first before renaming the entities."
         ),
     ):
-        geometry.rename_body(
+        geometry.rename_body_groups(
             current_name_pattern="newAirplane_0002",
             new_name_prefix="newAirplane_0003",
         )
