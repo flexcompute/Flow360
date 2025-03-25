@@ -16,6 +16,7 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import (
     EntityInfoModel,
     parse_entity_info_model,
@@ -26,6 +27,7 @@ from flow360.component.utils import (
     remove_properties_by_name,
     validate_type,
 )
+from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 
 
@@ -145,6 +147,24 @@ class AssetBase(metaclass=ABCMeta):
     def entity_info(self):
         """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
         return self._entity_info_class.model_validate(self._entity_info.model_dump())
+
+    @property
+    def params(self):
+        """Return the simulation parameters associated with the asset"""
+        params_as_dict = self._get_simulation_json(self)
+
+        param, errors, _ = services.validate_model(
+            params_as_dict=params_as_dict,
+            root_item_type=None,
+            validation_level=None,
+        )
+
+        if errors is not None:
+            raise Flow360ValidationError(
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
+            )
+
+        return param
 
     @classmethod
     def _interface(cls):
