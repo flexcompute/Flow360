@@ -138,7 +138,8 @@ class AssetBase(metaclass=ABCMeta):
             simulation_json = asset._webapi.get(
                 method="simulation/file", params={"type": "simulation"}
             )["simulationJson"]
-        except requests.exceptions.HTTPError as error:
+        except requests.exceptions.HTTPError:
+            # pylint:disable = raise-missing-from
             raise Flow360WebError(
                 f"Failed to get simulation json for {asset._cloud_resource_type_name}."
             )
