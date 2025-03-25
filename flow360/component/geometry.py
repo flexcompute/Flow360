@@ -490,8 +490,22 @@ class Geometry(AssetBase):
                 "Please group them first before renaming the entities."
             )
 
+        matched_entities = self.internal_registry.find_by_naming_pattern(
+            pattern=current_name_pattern
+        )
+        if entity_type_name == "body":
+            matched_entities = [
+                entity for entity in matched_entities if isinstance(entity, GeometryBodyGroup)
+            ]
+        if entity_type_name == "face":
+            matched_entities = [
+                entity for entity in matched_entities if isinstance(entity, Surface)
+            ]
+        if entity_type_name == "edge":
+            matched_entities = [entity for entity in matched_entities if isinstance(entity, Edge)]
+
         matched_entities = sorted(
-            self.internal_registry.find_by_naming_pattern(pattern=current_name_pattern),
+            matched_entities,
             key=lambda x: x.name,
         )
         if len(matched_entities) == 0:
@@ -510,7 +524,7 @@ class Geometry(AssetBase):
             with model_attribute_unlock(entity, "name"):
                 entity.name = new_name
 
-    def rename_edge(self, current_name_pattern: str, new_name_prefix: str):
+    def rename_edges(self, current_name_pattern: str, new_name_prefix: str):
         """
         Rename the edge in the current edge group
 
@@ -528,7 +542,7 @@ class Geometry(AssetBase):
             new_name_prefix=new_name_prefix,
         )
 
-    def rename_face(self, current_name_pattern: str, new_name_prefix: str):
+    def rename_surfaces(self, current_name_pattern: str, new_name_prefix: str):
         """
         Rename the face in the current face group
 
@@ -546,7 +560,7 @@ class Geometry(AssetBase):
             new_name_prefix=new_name_prefix,
         )
 
-    def rename_body(self, current_name_pattern: str, new_name_prefix: str):
+    def rename_body_groups(self, current_name_pattern: str, new_name_prefix: str):
         """
         Rename the body in the current body group
 
