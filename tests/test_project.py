@@ -1,9 +1,13 @@
+import json
+
 import pydantic as pd
 import pytest
 
 import flow360 as fl
 from flow360 import log
 from flow360.exceptions import Flow360ValueError
+
+from .utils import compare_dict_to_ref
 
 log.set_logging_level("DEBUG")
 
@@ -32,6 +36,10 @@ def test_from_cloud(mock_id, mock_response):
     assert project.surface_mesh.id == current_surface_mesh_id
     assert project.volume_mesh.id == current_volume_mesh_id
     assert project.case.id == current_case_id
+
+    assert project.geometry.params
+    assert project.surface_mesh.params
+    assert project.volume_mesh.params
 
     for case_id in project.get_case_ids():
         project.project_tree.remove_node(node_id=case_id)
