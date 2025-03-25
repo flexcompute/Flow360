@@ -93,7 +93,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
             break
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type == "AeroAcousticOutput":
+        if output.output_type in ("AeroAcousticOutput", "StreamtraceOutput"):
             continue
         for item in output.output_fields.items:
             if item in invalid_output_fields[turbulence_model]:
