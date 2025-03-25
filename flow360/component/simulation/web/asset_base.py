@@ -141,7 +141,7 @@ class AssetBase(metaclass=ABCMeta):
         except requests.exceptions.HTTPError as error:
             raise Flow360WebError(
                 f"Failed to get simulation json for {asset._cloud_resource_type_name}."
-            ) from error
+            )
 
         return SimulationParams._update_param_dict(json.loads(simulation_json))
 
