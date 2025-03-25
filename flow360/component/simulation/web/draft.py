@@ -138,7 +138,7 @@ class Draft(Flow360Resource):
             if use_beta_mesher is True:
                 log.info("Selecting beta/in-house mesher for possible meshing tasks.")
             if use_geometry_AI is True:
-                log.info("Geometry ai")
+                log.info("Using the Geometry AI surface mesher.")
             if start_from:
                 if start_from != target_asset._cloud_resource_type_name:
                     log.info(
