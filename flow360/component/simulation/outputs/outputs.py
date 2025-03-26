@@ -939,6 +939,9 @@ class StreamlineOutput(Flow360BaseModel):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Streamline output", description="Name of the `StreamlineOutput`."
+    )
     entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
         alias="streamline_points",
         description="List of monitored :class:`~flow360.Point`/"
