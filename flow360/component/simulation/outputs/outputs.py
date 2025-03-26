@@ -890,26 +890,26 @@ class AeroAcousticOutput(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
 
-class StreamtraceOutput(Flow360BaseModel):
+class StreamlineOutput(Flow360BaseModel):
     """
-    :class:`StreamtraceOutput` class for calculating streamtraces.
+    :class:`StreamlineOutput` class for calculating streamlines.
     Stramtraces are computed upwind and downwind, and may originate from a single point,
     from a line, or from points evenly distributed across a parallelogram.
 
     Example
     -------
 
-    Define a :class:`StreamtraceOutput` with streaptraces originating from points, lines (PointArray), and
+    Define a :class:`StreamlineOutput` with streaptraces originating from points, lines (PointArray), and
     parallelograms (PointArray2D).
 
-    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamtraces.
-    - :code:`Line_streamtrace` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
       including both starting and end points.
-    - :code:`Parallelogram_streamtrace` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
       orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
       with 20 points along the v direction.
 
-    >>> fl.StreamtraceOutput(
+    >>> fl.StreamlineOutput(
     ...     entities=[
     ...         fl.Point(
     ...             name="Point_1",
@@ -920,13 +920,13 @@ class StreamtraceOutput(Flow360BaseModel):
     ...             location=(0.0, -1.5, 0.0) * fl.u.m,
     ...         ),
     ...         fl.PointArray(
-    ...             name="Line_streamtrace",
+    ...             name="Line_streamline",
     ...             start=(1.0, 0.0, 0.0) * fl.u.m,
     ...             end=(1.0, 0.0, -10.0) * fl.u.m,
     ...             number_of_points=11,
     ...         ),
     ...         fl.PointArray2D(
-    ...             name="Parallelogram_streamtrace",
+    ...             name="Parallelogram_streamline",
     ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
     ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
     ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
@@ -940,16 +940,16 @@ class StreamtraceOutput(Flow360BaseModel):
     """
 
     entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
-        alias="streamtrace_points",
+        alias="streamline_points",
         description="List of monitored :class:`~flow360.Point`/"
         + ":class:`~flow360.PointArray`/:class:`~flow360.Point`"
         + "entities belonging to this "
-        + "streamtrace group. :class:`~flow360.PointArray` "
-        + "is used to define streamtraces originating along a line."
+        + "streamline group. :class:`~flow360.PointArray` "
+        + "is used to define streamline originating along a line."
         + ":class:`~flow360.PointArray2D` "
-        + "is used to define streamtraces originating from a parallelogram.",
+        + "is used to define streamline originating from a parallelogram.",
     )
-    output_type: Literal["StreamtraceOutput"] = pd.Field("StreamtraceOutput", frozen=True)
+    output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
 
 
 OutputTypes = Annotated[
@@ -968,7 +968,7 @@ OutputTypes = Annotated[
         TimeAverageProbeOutput,
         TimeAverageSurfaceProbeOutput,
         AeroAcousticOutput,
-        StreamtraceOutput,
+        StreamlineOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
