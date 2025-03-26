@@ -107,7 +107,7 @@ from flow360.component.simulation.outputs.outputs import (
     Observer,
     ProbeOutput,
     SliceOutput,
-    StreamtraceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -256,5 +256,5 @@ __all__ = [
     "SlaterPorousBleed",
     "migration",
     "PointArray2D",
-    "StreamtraceOutput",
+    "StreamlineOutput",
 ]
