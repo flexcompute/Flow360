@@ -1,63 +1,93 @@
 # Import necessary modules from the Flow360 library
 import flow360 as fl
-from flow360.examples import Airplane
+from flow360.examples import eVTOL
+from flow360.log import log
 
-# Step 1: Create a new project from a predefined geometry file in the Airplane example
-# This initializes a project with the specified geometry and assigns it a name.
-project = fl.Project.from_file(Airplane.geometry, name="Python Project (Geometry, from file)")
-geo = project.geometry  # Access the geometry of the project
+solver_version = "release-24.11"
 
-# Step 2: Display available groupings in the geometry (helpful for identifying group names)
-geo.show_available_groupings(verbose_mode=True)
+# Create a project and upload the geometry
+project = fl.Project.from_file(
+    eVTOL.geometry,
+    name="EVTOL_quickstart_from_API",
+    length_unit="m",
+    solver_version=solver_version,
+)
 
-# Step 3: Group faces by a specific tag for easier reference in defining `Surface` objects
-geo.group_faces_by_tag("groupName")
+log.info(f"The project id is {project.id}")
 
-# Step 4: Define simulation parameters within a specific unit system
+# Group faces and edges by their specific tags for easier assignment of simulation parameters.
+# The tag names were assigned in the .csm script.
+geometry = project.geometry
+geometry.group_faces_by_tag("faceName")
+geometry.group_edges_by_tag("edgeName")
+
+# Create the farfield object.
+farfield_zone = fl.AutomatedFarfield()
+
+# Create a simulation params object using the SI unit system as default dimensions.
 with fl.SI_unit_system:
-    # Define an automated far-field boundary condition for the simulation
-    far_field_zone = fl.AutomatedFarfield()
-
-    # Set up the main simulation parameters
     params = fl.SimulationParams(
-        # Meshing parameters, including boundary layer and maximum edge length
+        # Set the meshing parameters.
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
-                boundary_layer_first_layer_thickness=0.001,  # Boundary layer thickness
-                surface_max_edge_length=1,  # Maximum edge length on surfaces
+                boundary_layer_first_layer_thickness=1e-5, surface_max_edge_length=1
             ),
-            volume_zones=[far_field_zone],  # Apply the automated far-field boundary condition
+            volume_zones=[farfield_zone],
+            # Set the refinement parameters for the leading edges.
+            refinements=[
+                fl.SurfaceEdgeRefinement(
+                    name="leading_edges",
+                    edges=[geometry["leadingEdge"]],
+                    method=fl.AngleBasedRefinement(value=2 * fl.u.deg),
+                )
+            ],
         ),
-        # Reference geometry parameters for the simulation (e.g., center of pressure)
+        # Set the reference geometry.
         reference_geometry=fl.ReferenceGeometry(),
-        # Operating conditions: setting speed and angle of attack for the simulation
+        # Set the operating condition.
         operating_condition=fl.AerospaceCondition(
-            velocity_magnitude=100,  # Velocity of 100 m/s
-            alpha=5 * fl.u.deg,  # Angle of attack of 5 degrees
+            velocity_magnitude=50 * fl.u.m / fl.u.s, alpha=0 * fl.u.deg
         ),
-        # Time-stepping configuration: specifying steady-state with a maximum step limit
-        time_stepping=fl.Steady(max_steps=1000),
-        # Define models for the simulation, such as walls and freestream conditions
+        # Set the time stepping parameters.
+        time_stepping=fl.Steady(max_steps=3000),
+        # Set the physics models.
         models=[
-            fl.Wall(
-                surfaces=[geo["*"]],  # Apply wall boundary conditions to all surfaces in geometry
-                name="Wall",
-            ),
-            fl.Freestream(
-                surfaces=[
-                    far_field_zone.farfield
-                ],  # Apply freestream boundary to the far-field zone
-                name="Freestream",
-            ),
+            # Assign each generated mesh patch as defined in the .csm file to their matching airplane subcomponents.
+            fl.Wall(surfaces=geometry["fuselage"], name="fuselage"),
+            # Notice below how we use the * operator to assign both left and right pylon to the pylons subcomponent
+            fl.Wall(surfaces=geometry["*_pylon"], name="pylons"),
+            fl.Wall(surfaces=geometry["left_wing"], name="left_wing"),
+            fl.Wall(surfaces=geometry["right_wing"], name="right_wing"),
+            fl.Wall(surfaces=geometry["h_tail"], name="h_tail"),
+            fl.Wall(surfaces=geometry["v_tail"], name="v_tail"),
+            fl.Freestream(surfaces=[farfield_zone.farfield], name="Freestream"),
         ],
-        # Define output parameters for the simulation
+        # Output format could be 'paraview' or 'tecplot' or 'both'.
         outputs=[
             fl.SurfaceOutput(
-                surfaces=geo["*"],  # Select all surfaces for output
-                output_fields=["Cp", "Cf", "yPlus", "CfVec"],  # Output fields for post-processing
+                surfaces=geometry["*"],
+                output_fields=["Cp", "Cf", "yPlus", "CfVec"],
+                output_format="both",
             )
         ],
     )
+# Run the case.
+project.run_case(
+    params=params,
+    solver_version=solver_version,
+    name=f"EVTOL_quickstart_alpha{params.operating_condition.alpha}",
+)
+log.info(f"The case ID is: {project.case.id} with alpha = {params.operating_condition.alpha} ")
 
-# Step 5: Run the simulation case with the specified parameters
-project.run_case(params=params, name="Case of Simple Airplane from Python", use_beta_mesher=False)
+# This line below is a simple example to show how to fork a child case from a parent case.
+project.run_case(params=params, fork_from=project.case, name="forked_case")
+
+# As a simple example of how easy it is to run multiple cases,
+# let's do some more alpha angles to create a small alpha sweep.
+alpha_list = [2, 4]
+for alpha_angle in alpha_list:
+    params.operating_condition.alpha = alpha_angle * fl.u.deg
+    project.run_case(
+        params=params, name=f"EVTOL_quickstart_alpha{params.operating_condition.alpha}"
+    )
+    log.info(f"The case ID is: {project.case.id} with alpha = {params.operating_condition.alpha} ")

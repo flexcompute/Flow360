@@ -5,6 +5,7 @@ from .bet_line import BETLine
 from .convergence import Convergence
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
+from .eVTOL import eVTOL
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .rotating_spheres import RotatingSpheres
@@ -27,6 +28,7 @@ __all__ = [
     "Convergence",
     "Cylinder2D",
     "Cylinder3D",
+    "eVTOL",
     "MonitorsAndSlices",
     "OM6wing",
     "RotatingSpheres",
