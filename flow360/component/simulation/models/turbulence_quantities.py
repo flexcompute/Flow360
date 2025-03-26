@@ -300,7 +300,9 @@ def TurbulenceQuantities(
 
     Apply turbulent kinetic energy and specific dissipation rate for SST model.
 
-    >>> fl.TurbulenceQuantities(turbulent_kinetic_energy=0.2 * fl.u.m**2 / fl.u.s**2, specific_dissipation_rate=100 / fl.u.s)
+    >>> fl.TurbulenceQuantities(
+        turbulent_kinetic_energy=0.2 * fl.u.m**2 / fl.u.s**2,
+        specific_dissipation_rate=100 / fl.u.s)
 
     Apply specific dissipation rate and turbulent viscosity ratio for SST model.
 
