@@ -19,7 +19,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     Slice,
     SliceOutput,
-    StreamtraceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -1179,20 +1179,20 @@ def test_dimensioned_output_fields_translation():
 
 
 @pytest.fixture()
-def streamtrace_output_config():
+def streamline_output_config():
     return (
         [
-            StreamtraceOutput(
+            StreamlineOutput(
                 entities=[
-                    Point(name="point_streamtrace", location=(0.0, 1.0, 0.04) * u.m),
+                    Point(name="point_streamline", location=(0.0, 1.0, 0.04) * u.m),
                     PointArray(
-                        name="pointarray_streamtrace",
+                        name="pointarray_streamline",
                         start=(0.0, 0.0, 0.2) * u.m,
                         end=(0.0, 1.0, 0.2) * u.m,
                         number_of_points=20,
                     ),
                     PointArray2D(
-                        name="pointarray2d_streamtrace",
+                        name="pointarray2d_streamline",
                         origin=(0.0, 0.0, -0.2) * u.m,
                         u_axis_vector=(0.0, 1.4, 0.0) * u.m,
                         v_axis_vector=(0.0, 0.0, 0.4) * u.m,
@@ -1206,14 +1206,14 @@ def streamtrace_output_config():
             "PointArrays": [
                 {
                     "end": [0.0, 1.0, 0.2],
-                    "name": "pointarray_streamtrace",
+                    "name": "pointarray_streamline",
                     "numberOfPoints": 20,
                     "start": [0.0, 0.0, 0.2],
                 }
             ],
             "PointArrays2D": [
                 {
-                    "name": "pointarray2d_streamtrace",
+                    "name": "pointarray2d_streamline",
                     "origin": [0.0, 0.0, -0.2],
                     "uAxisVector": [0.0, 1.4, 0.0],
                     "uNumberOfPoints": 10,
@@ -1221,23 +1221,22 @@ def streamtrace_output_config():
                     "vNumberOfPoints": 10,
                 }
             ],
-            "Points": [{"location": [0.0, 1.0, 0.04], "name": "point_streamtrace"}],
+            "Points": [{"location": [0.0, 1.0, 0.04], "name": "point_streamline"}],
         },
     )
 
 
-def test_streamtrace_output(streamtrace_output_config):
+def test_streamline_output(streamline_output_config):
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=AerospaceCondition(),
-            outputs=streamtrace_output_config[0],
+            outputs=streamline_output_config[0],
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
         )
     translated = {"boundaries": {}}
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    print(streamtrace_output_config[1].items())
-    assert sorted(streamtrace_output_config[1].items()) == sorted(
-        translated["streamtraceOutput"].items()
+    assert sorted(streamline_output_config[1].items()) == sorted(
+        translated["streamlineOutput"].items()
     )

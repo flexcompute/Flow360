@@ -43,7 +43,7 @@ def _check_output_fields(params):
     additional_fields = [item.name for item in params.user_defined_fields]
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type in ("AeroAcousticOutput", "StreamtraceOutput"):
+        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
             continue
         # Get allowed output fields items:
         natively_supported = extract_literal_values(
@@ -93,7 +93,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
             break
 
     for output_index, output in enumerate(params.outputs):
-        if output.output_type in ("AeroAcousticOutput", "StreamtraceOutput"):
+        if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
             continue
         for item in output.output_fields.items:
             if item in invalid_output_fields[turbulence_model]:
