@@ -503,6 +503,7 @@ class SimulationParams(_ParamModelBase):
         """
         # pylint:disable=no-member
         used_entity_registry = self.used_entity_registry
+        # Below includes the Ghost entities.
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
