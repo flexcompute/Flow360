@@ -892,9 +892,9 @@ class AeroAcousticOutput(Flow360BaseModel):
 
 class StreamtraceOutput(Flow360BaseModel):
     """
-    :class:`StreamtraceOutput` class for configuring the input for calculating streamtraces.
+    :class:`StreamtraceOutput` class for calculating streamtraces.
     Stramtraces are computed upwind and downwind, and may originate from a single point,
-    from a line, or from a parallelogram.
+    from a line, or from points evenly distributed across a parallelogram.
 
     Example
     -------
@@ -902,8 +902,8 @@ class StreamtraceOutput(Flow360BaseModel):
     Define a :class:`StreamtraceOutput` with streaptraces originating from points, lines (PointArray), and
     parallelograms (PointArray2D).
 
-    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
-    - :code:`Line_streamtrace` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamtraces.
+    - :code:`Line_streamtrace` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
       including both starting and end points.
     - :code:`Parallelogram_streamtrace` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
       orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)

@@ -255,4 +255,6 @@ __all__ = [
     "SurfaceSliceOutput",
     "SlaterPorousBleed",
     "migration",
+    "PointArray2D",
+    "StreamtraceOutput",
 ]

@@ -94,7 +94,7 @@ class Isosurface(_OutputItemBase):
 
 class Point(_PointEntityBase):
     """
-    :class:`Point` class for defining a single point.
+    :class:`Point` class for defining a single point used in various outputs.
 
     Example
     -------
@@ -115,7 +115,7 @@ class Point(_PointEntityBase):
 
 class PointArray(_PointEntityBase):
     """
-    :class:`PointArray` class for defining multiple equally spaced monitor points along a line.
+    :class:`PointArray` class for defining multiple equally spaced monitor points along a line used in various outputs.
 
     Example
     -------
@@ -173,7 +173,7 @@ class PointArray2D(_PointEntityBase):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     # pylint: disable=no-member
-    origin: LengthType.Point = pd.Field(description="The corner of the paralleogram.")
+    origin: LengthType.Point = pd.Field(description="The corner of the parallelogram.")
     u_axis_vector: LengthType.Axis = pd.Field(description="The scaled u-axis of the parallelogram.")
     v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
     u_number_of_points: int = pd.Field(gt=2, description="The number of points along the u axis.")
