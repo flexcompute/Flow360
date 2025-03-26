@@ -208,7 +208,11 @@ def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams)
         group_tag = None
         if not entity_registry.find_by_type(entity_type):
             # Did not use any entity of this type, so we add default grouping tag
-            return "edgeId" if entity_type == Edge else "faceId"
+            if entity_type == Surface:
+                return "faceId"
+            if entity_type == Edge:
+                return "edgeId"
+            return "bodyId"
         for entity in entity_registry.find_by_type(entity_type):
             if entity.private_attribute_tag_key is None:
                 raise Flow360ValueError(
