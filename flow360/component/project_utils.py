@@ -208,7 +208,11 @@ def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams)
         group_tag = None
         if not entity_registry.find_by_type(entity_type):
             # Did not use any entity of this type, so we add default grouping tag
-            return "edgeId" if entity_type == Edge else "faceId"
+            if entity_type == Surface:
+                return "faceId"
+            if entity_type == Edge:
+                return "edgeId"
+            return "bodyId"
         for entity in entity_registry.find_by_type(entity_type):
             if entity.private_attribute_tag_key is None:
                 raise Flow360ValueError(
@@ -261,6 +265,7 @@ def set_up_params_for_uploading(
     length_unit: LengthType,
     params: SimulationParams,
     use_beta_mesher: bool,
+    use_geometry_AI: bool,  # pylint: disable=invalid-name
 ):
     """
     Set up params before submitting the draft.
@@ -272,6 +277,11 @@ def set_up_params_for_uploading(
     with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
         params.private_attribute_asset_cache.use_inhouse_mesher = (
             use_beta_mesher if use_beta_mesher else False
+        )
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "use_geometry_AI"):
+        params.private_attribute_asset_cache.use_geometry_AI = (
+            use_geometry_AI if use_geometry_AI else False
         )
 
     entity_info = _set_up_params_persistent_entity_info(root_asset.entity_info, params)

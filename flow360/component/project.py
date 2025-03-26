@@ -1164,6 +1164,7 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        use_geometry_AI: bool,
         raise_on_error: bool,
         **kwargs,
     ):
@@ -1178,10 +1179,14 @@ class Project(pd.BaseModel):
             The target asset or resource to run the simulation against.
         draft_name : str, optional
             The name of the draft to create for the simulation run (default is None).
-        fork : bool, optional
-            Indicates if the simulation should fork the existing case (default is False).
+        fork_from : Case, optional
+            The parent case to fork from if fork (default is None).
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
 
@@ -1197,11 +1202,22 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
+        if use_beta_mesher is None:
+            if use_geometry_AI is True:
+                log.info("Beta mesher is enabled to use Geometry AI.")
+                use_beta_mesher = True
+            else:
+                use_beta_mesher = False
+
+        if use_geometry_AI is True and use_beta_mesher is False:
+            raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
+
         params = set_up_params_for_uploading(
             params=params,
             root_asset=self._root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
         )
 
         params, errors = validate_params_with_context(
@@ -1239,6 +1255,7 @@ class Project(pd.BaseModel):
                 target,
                 source_item_type=source_item_type,
                 use_beta_mesher=use_beta_mesher,
+                use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
             )
         except RuntimeError as exception:
@@ -1283,7 +1300,8 @@ class Project(pd.BaseModel):
         name: str = "SurfaceMesh",
         run_async: bool = True,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1300,6 +1318,10 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
 
@@ -1321,6 +1343,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
@@ -1333,7 +1356,8 @@ class Project(pd.BaseModel):
         name: str = "VolumeMesh",
         run_async: bool = True,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1350,6 +1374,10 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
 
@@ -1374,6 +1402,7 @@ class Project(pd.BaseModel):
             fork_from=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
@@ -1387,7 +1416,8 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         fork_from: Optional[Case] = None,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1406,6 +1436,10 @@ class Project(pd.BaseModel):
             Which Case we should fork from (if fork).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
         """
@@ -1418,6 +1452,7 @@ class Project(pd.BaseModel):
             fork_from=fork_from,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
