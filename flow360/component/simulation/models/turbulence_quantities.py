@@ -20,7 +20,7 @@ from flow360.component.simulation.unit_system import (
 
 class TurbulentKineticEnergy(Flow360BaseModel):
     """
-    turbulentKineticEnergy : non-dimensional [`C_inf^2`]
+    turbulentKineticEnergy : SpecificEnergyType [energy / mass]
         Turbulent kinetic energy. Applicable only when using SST model.
     """
 
@@ -44,7 +44,7 @@ class TurbulentIntensity(Flow360BaseModel):
 
 class _SpecificDissipationRate(Flow360BaseModel, metaclass=ABCMeta):
     """
-    specificDissipationRate : non-dimensional [`C_inf/L_gridUnit`]
+    specificDissipationRate : FrequencyType  [1 / time]
         Turbulent specific dissipation rate. Applicable only when using SST model.
     """
 
@@ -65,7 +65,7 @@ class TurbulentViscosityRatio(Flow360BaseModel):
 
 class TurbulentLengthScale(Flow360BaseModel, metaclass=ABCMeta):
     """
-    turbulentLengthScale : non-dimensional [`L_gridUnit`]
+    turbulentLengthScale : LengthType [length]
         The turbulent length scale is an estimation of the size of the eddies that are modeled/not resolved.
         Applicable only when using SST model. This is related to the turbulent kinetic energy and turbulent
         specific dissipation rate as: `L_T = sqrt(k)/(pow(beta_0^*, 0.25)*w)` where `L_T` is turbulent length scale,
@@ -93,7 +93,7 @@ class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
 
 class ModifiedTurbulentViscosity(Flow360BaseModel):
     """
-    modifiedTurbulentViscosity : non-dimensional [`C_inf*L_gridUnit`]
+    modifiedTurbulentViscosity : ViscosityType [pressure * time]
         The modified turbulent eddy viscosity (SA). Applicable only when using SA model.
     """
 
@@ -300,11 +300,11 @@ def TurbulenceQuantities(
 
     Apply turbulent kinetic energy and specific dissipation rate for SST model.
 
-    >>> fl.TurbulenceQuantities(turbulent_kinetic_energy=0.2, specific_dissipation_rate=100)
+    >>> fl.TurbulenceQuantities(turbulent_kinetic_energy=0.2 * fl.u.m**2 / fl.u.s**2, specific_dissipation_rate=100 / fl.u.s)
 
     Apply specific dissipation rate and turbulent viscosity ratio for SST model.
 
-    >>> fl.TurbulenceQuantities(specific_dissipation_rate=150, viscosity_ratio=1000)
+    >>> fl.TurbulenceQuantities(specific_dissipation_rate=150 / fl.u.s, viscosity_ratio=1000)
 
     """
     non_none_arg_count = sum(arg is not None for arg in locals().values())
