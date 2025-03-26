@@ -1237,7 +1237,6 @@ def test_streamline_output(streamline_output_config):
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    print(streamline_output_config[1].items())
     assert sorted(streamline_output_config[1].items()) == sorted(
         translated["streamlineOutput"].items()
     )
