@@ -65,7 +65,9 @@ with fl.SI_unit_system:
         # Output format could be 'paraview' or 'tecplot' or 'both'.
         outputs=[
             fl.SurfaceOutput(
+                # Select all surfaces for output
                 surfaces=geometry["*"],
+                # Output fields for post-processing
                 output_fields=["Cp", "Cf", "yPlus", "CfVec"],
                 output_format="both",
             )
