@@ -3,14 +3,13 @@ Support class and functions for project interface.
 """
 
 import datetime
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional
 
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
-from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.outputs.output_entities import (
@@ -19,20 +18,13 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
-    Edge,
-    GeometryBodyGroup,
-    GhostSurface,
-    Surface,
-)
+from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
-from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
+from flow360.exceptions import Flow360ConfigurationError
 from flow360.log import log
 
 
@@ -196,55 +188,6 @@ def _replace_ghost_surfaces(params: SimulationParams):
     return params
 
 
-def _set_up_params_persistent_entity_info(entity_info, params: SimulationParams):
-    """
-    Setting up the persistent entity info in params.
-    1. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
-    2. Reflect the changes to the existing persistent entities (like assigning tags or axis/centers).
-    """
-
-    def _get_tag(
-        entity_registry, entity_type: Union[type[Surface], type[Edge], type[GeometryBodyGroup]]
-    ):
-        group_tag = None
-        if not entity_registry.find_by_type(entity_type):
-            # Did not use any entity of this type, so we add default grouping tag
-            if entity_type == Surface:
-                return "faceId"
-            if entity_type == Edge:
-                return "edgeId"
-            return "bodyId"
-        for entity in entity_registry.find_by_type(entity_type):
-            if entity.private_attribute_tag_key is None:
-                raise Flow360ValueError(
-                    f"`{entity_type.__name__}` without tagging information is found."
-                    f" Please make sure all `{entity_type.__name__}` come from the geometry and is not created ad-hoc."
-                )
-            if entity.private_attribute_tag_key == "__standalone__":
-                # Does not provide information on what grouping user selected.
-                continue
-            if group_tag is not None and group_tag != entity.private_attribute_tag_key:
-                raise Flow360ValueError(
-                    f"Multiple `{entity_type.__name__}` group tags detected in"
-                    " the simulation parameters which is not supported."
-                )
-            group_tag = entity.private_attribute_tag_key
-        return group_tag
-
-    entity_registry = params.used_entity_registry
-
-    if isinstance(entity_info, GeometryEntityInfo):
-        with model_attribute_unlock(entity_info, "body_group_tag"):
-            entity_info.body_group_tag = _get_tag(entity_registry, GeometryBodyGroup)
-        with model_attribute_unlock(entity_info, "face_group_tag"):
-            entity_info.face_group_tag = _get_tag(entity_registry, Surface)
-        with model_attribute_unlock(entity_info, "edge_group_tag"):
-            entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
-
-    entity_info.update_persistent_entities(param_entity_registry=entity_registry)
-    return entity_info
-
-
 def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationParams):
     """
     Setting up non-persistent entities (AKA draft entities) in params.
@@ -279,7 +222,7 @@ def _set_up_default_geometry_accuracy(
 
 
 def set_up_params_for_uploading(
-    root_asset,
+    root_asset: AssetBase,
     length_unit: LengthType,
     params: SimulationParams,
     use_beta_mesher: bool,
@@ -302,10 +245,15 @@ def set_up_params_for_uploading(
             use_geometry_AI if use_geometry_AI else False
         )
 
-    entity_info = _set_up_params_persistent_entity_info(root_asset.entity_info, params)
-    # Check if there are any new draft entities that have been added in the params by the user
-    entity_info = _set_up_params_non_persistent_entity_info(entity_info, params)
+    # User may have made modifications to the entities which is recorded in asset's entity registry
+    # We need to reflect these changes.
 
+    root_asset.entity_info.update_persistent_entities(
+        asset_entity_registry=root_asset.internal_registry
+    )
+
+    # Check if there are any new draft entities that have been added in the params by the user
+    entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.

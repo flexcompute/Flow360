@@ -52,7 +52,7 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
         Update self persistent entities with param ones by simple id/name matching.
         """
@@ -180,9 +180,9 @@ class GeometryEntityInfo(EntityInfoModel):
         """
         return self._get_list_of_entities(attribute_name, "face")
 
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
-        Update the persistent entities stored inside `self` according to `param_entity_registry`
+        Update the persistent entities stored inside `self` according to `asset_entity_registry`
         """
 
         def _search_and_replace(grouped_entities, entity_registry: EntityRegistry):
@@ -195,9 +195,9 @@ class GeometryEntityInfo(EntityInfoModel):
                     if assigned_entity is not None:
                         grouped_entities[i_group][i_entity] = assigned_entity
 
-        _search_and_replace(self.grouped_faces, param_entity_registry)
-        _search_and_replace(self.grouped_edges, param_entity_registry)
-        _search_and_replace(self.grouped_bodies, param_entity_registry)
+        _search_and_replace(self.grouped_faces, asset_entity_registry)  # May changed entity name
+        _search_and_replace(self.grouped_edges, asset_entity_registry)
+        _search_and_replace(self.grouped_bodies, asset_entity_registry)  # May changed entity name
 
     def _get_processed_file_list(self):
         """
@@ -299,14 +299,14 @@ class VolumeMeshEntityInfo(EntityInfoModel):
         # pylint: disable=not-an-iterable
         return [item for item in self.boundaries if item.private_attribute_is_interface is False]
 
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
         1. Changed GenericVolume axis and center etc
         """
 
         for i_zone, _ in enumerate(self.zones):
             # pylint:disable = unsubscriptable-object
-            assigned_zone = param_entity_registry.find_by_asset_id(
+            assigned_zone = asset_entity_registry.find_by_asset_id(
                 entity_id=self.zones[i_zone].id, entity_class=self.zones[i_zone].__class__
             )
             if assigned_zone is not None:
@@ -329,7 +329,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         # pylint: disable=not-an-iterable
         return self.boundaries
 
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
         Nothing related to SurfaceMeshEntityInfo for now.
         """

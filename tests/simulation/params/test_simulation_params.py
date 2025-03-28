@@ -461,11 +461,11 @@ def test_persistent_entity_info_update_geometry():
     selected_edge_dict["name"] = "new_edge_name"
     brand_new_edge = Edge.model_validate(selected_edge_dict)
 
-    fake_param_entity_registry = EntityRegistry()
-    fake_param_entity_registry.register(brand_new_surface)
-    fake_param_entity_registry.register(brand_new_edge)
+    fake_asset_entity_registry = EntityRegistry()
+    fake_asset_entity_registry.register(brand_new_surface)
+    fake_asset_entity_registry.register(brand_new_edge)
 
-    geometry_info.update_persistent_entities(param_entity_registry=fake_param_entity_registry)
+    geometry_info.update_persistent_entities(asset_entity_registry=fake_asset_entity_registry)
 
     assert geometry_info.get_boundaries()[0].name == "new_surface_name"
     assert geometry_info._get_list_of_entities(entity_type_name="edge")[0].name == "new_edge_name"
@@ -484,10 +484,10 @@ def test_persistent_entity_info_update_volume_mesh():
     selected_zone_dict["center"] = {"units": "cm", "value": [1.2, 2.3, 3.4]}
     brand_new_zone = GenericVolume.model_validate(selected_zone_dict)
 
-    fake_param_entity_registry = EntityRegistry()
-    fake_param_entity_registry.register(brand_new_zone)
+    fake_asset_entity_registry = EntityRegistry()
+    fake_asset_entity_registry.register(brand_new_zone)
 
-    volume_mesh_info.update_persistent_entities(param_entity_registry=fake_param_entity_registry)
+    volume_mesh_info.update_persistent_entities(asset_entity_registry=fake_asset_entity_registry)
 
     assert volume_mesh_info.zones[0].axes == ((1, 0, 0), (0, 0, 1))
     assert all(volume_mesh_info.zones[0].center == [1.2, 2.3, 3.4] * u.cm)
