@@ -120,7 +120,12 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    ReferenceGeometry,
+    Transformation,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -257,4 +262,5 @@ __all__ = [
     "migration",
     "PointArray2D",
     "StreamlineOutput",
+    "Transformation",
 ]
