@@ -326,7 +326,7 @@ class SurfaceMeshV2(AssetBase):
         for boundary in self._entity_info.boundaries:
             self.internal_registry.register(boundary)
 
-    def _check_registry(self):
+    def _check_registry(self, **kwargs):
         if not hasattr(self, "internal_registry") or self.internal_registry is None:
             if hasattr(self, "_entity_info") and self._entity_info is not None:
                 self._populate_registry()

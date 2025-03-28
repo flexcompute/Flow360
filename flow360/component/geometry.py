@@ -617,3 +617,17 @@ class Geometry(AssetBase):
 
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
+
+    def _check_registry(self, **kwargs):
+        if not hasattr(self, "internal_registry") or self.internal_registry is None:
+            if self.face_group_tag is None:
+                raise ValueError("No grouping specified for faces in geometry.")
+            self.group_faces_by_tag(self.face_group_tag)
+
+            if self.edge_group_tag is None:
+                raise ValueError("No grouping specified for edges in geometry. Using 'edgeId' as default grouping")
+            self.group_edges_by_tag('edgeId')
+
+            if self.entity_info.body_group_tag:
+                # Post-25.4 geometry asset.
+                self.group_bodies_by_tag("bodyId")

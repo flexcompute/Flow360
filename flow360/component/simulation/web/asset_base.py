@@ -294,3 +294,15 @@ class AssetBase(metaclass=ABCMeta):
                     )
 
                 time.sleep(update_every_seconds)
+        while self._webapi.status.is_final() is False:
+            if time.time() - start_time > timeout_minutes * 60:
+                raise TimeoutError(
+                    "Timeout: Process did not finish within the specified timeout period"
+                )
+            time.sleep(2)
+
+    @abstractmethod
+    def _check_registry(self, **kwargs):
+        """
+        Ensure that `internal_registry` exists and if not, initialize `internal_registry`.
+        """

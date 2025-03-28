@@ -1188,7 +1188,7 @@ class VolumeMeshV2(AssetBase):
         for zone in self._entity_info.zones:
             self.internal_registry.register(zone)
 
-    def _check_registry(self):
+    def _check_registry(self, **kwargs):
         if not hasattr(self, "internal_registry") or self.internal_registry is None:
             if hasattr(self, "_entity_info") and self._entity_info is not None:
                 self._populate_registry()

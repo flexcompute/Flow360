@@ -247,7 +247,7 @@ def set_up_params_for_uploading(
 
     # User may have made modifications to the entities which is recorded in asset's entity registry
     # We need to reflect these changes.
-
+    root_asset._check_registry()
     root_asset.entity_info.update_persistent_entities(
         asset_entity_registry=root_asset.internal_registry
     )

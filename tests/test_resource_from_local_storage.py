@@ -58,7 +58,7 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_pre_upload_change_reflection_vm(volume_mesh: VolumeMeshV2):
+def pre_upload_change_reflection_vm(volume_mesh: VolumeMeshV2):
     # Test Volume Mesh
 
     with SI_unit_system:
@@ -94,7 +94,7 @@ def test_pre_upload_change_reflection_vm(volume_mesh: VolumeMeshV2):
     assert my_box in new_param.private_attribute_asset_cache.project_entity_info.draft_entities
 
 
-def test_pre_upload_change_reflection_geo(geometry: Geometry):
+def pre_upload_change_reflection_geo(geometry: Geometry):
     # Test Volume Mesh
     geometry.group_bodies_by_tag("groupByFile")
     geometry.group_faces_by_tag("faceName")
@@ -276,7 +276,7 @@ def test_resources_from_local_storage_geo():
             ),
         )
         cache.add(vm)
-        test_pre_upload_change_reflection_vm(volume_mesh=vm)
+        pre_upload_change_reflection_vm(volume_mesh=vm)
 
         sm_meta = case_meta.path.surface_mesh
         if sm_meta is not None:
@@ -306,7 +306,7 @@ def test_resources_from_local_storage_geo():
                     )
                 ),
             )
-            test_pre_upload_change_reflection_geo(geometry=geo)
+            pre_upload_change_reflection_geo(geometry=geo)
             cache.add(geo)
 
     cases = [cache[case.id] for case in resource_data.cases]
