@@ -100,6 +100,10 @@ def test_geometry_rename_edges():
     for i in range(4):
         assert geometry[f"newEdge_000{i+1}"].private_attribute_id == f"body00001_edge0003{i}"
 
+    geometry.rename_edges(current_name_pattern="newEdge_*", new_name_prefix="newEdgeV2")
+    for i in range(4):
+        assert geometry[f"newEdgeV2_000{i+1}"].private_attribute_id == f"body00001_edge0003{i}"
+
     geometry.reset_edge_grouping()
     assert geometry.edge_group_tag == None
     with pytest.raises(

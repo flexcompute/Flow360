@@ -8,7 +8,7 @@ import time
 from abc import ABCMeta
 from typing import List, Union
 
-import requests
+from requests.exceptions import HTTPError
 
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
@@ -138,7 +138,7 @@ class AssetBase(metaclass=ABCMeta):
             simulation_json = asset._webapi.get(
                 method="simulation/file", params={"type": "simulation"}
             )["simulationJson"]
-        except requests.exceptions.HTTPError:
+        except HTTPError:
             # pylint:disable = raise-missing-from
             raise Flow360WebError(
                 f"Failed to get simulation json for {asset._cloud_resource_type_name}."
