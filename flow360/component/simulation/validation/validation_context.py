@@ -47,7 +47,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
-    __slots__ = ["auto_farfield_method", "using_water_as_material"]
+    __slots__ = ["auto_farfield_method", "using_liquid_as_material"]
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -65,7 +65,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         return None
 
     @classmethod
-    def _get_using_water_as_material_(cls, param_as_dict: dict):
+    def _get_using_liquid_as_material_(cls, param_as_dict: dict):
         try:
             if param_as_dict["operating_condition"]:
                 return (
@@ -78,7 +78,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
 
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
-        self.using_water_as_material = self._get_using_water_as_material_(
+        self.using_liquid_as_material = self._get_using_liquid_as_material_(
             param_as_dict=param_as_dict
         )
 

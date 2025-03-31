@@ -89,7 +89,7 @@ class _OutputBase(Flow360BaseModel):
     @classmethod
     def _validate_non_liquid_output_fields(cls, value: UniqueItemList):
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
         for output_item in value.items:
             if output_item in get_args(InvalidOutputFieldsForLiquid):

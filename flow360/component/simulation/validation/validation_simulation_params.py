@@ -460,7 +460,7 @@ def _check_valid_models_for_liquid(models):
     if not models:
         return models
     validation_info = get_validation_info()
-    if validation_info is None or validation_info.using_water_as_material is False:
+    if validation_info is None or validation_info.using_liquid_as_material is False:
         return models
     for model in models:
         if isinstance(model, (Inflow, Outflow, Solid)):

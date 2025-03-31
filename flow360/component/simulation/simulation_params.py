@@ -380,7 +380,7 @@ class SimulationParams(_ParamModelBase):
     def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
         """Ensure that string expressions are disabled for liquid simulation."""
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
         if value:
             raise ValueError(

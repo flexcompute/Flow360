@@ -180,7 +180,7 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     @classmethod
     def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
 
         if value != cls.model_fields[info.field_name].get_default():
@@ -1152,7 +1152,7 @@ class Rotation(Flow360BaseModel):
     @classmethod
     def _disable_expression_for_liquid(cls, value):
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, AngleExpression):
@@ -1260,7 +1260,7 @@ class PorousMedium(Flow360BaseModel):
     ):
         """Disable the volumetric_heat_source when liquid operating condition is used"""
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
         if value is not None:
             raise ValueError(

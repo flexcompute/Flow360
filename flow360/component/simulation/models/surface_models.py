@@ -346,7 +346,7 @@ class Wall(BoundaryBase):
     def _ensure_adiabatic_wall_for_liquid(cls, value):
         """Only allow adiabatic wall when liquid operating condition is used"""
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
         if isinstance(value, HeatFlux) and value.value == 0 * u.W / u.m**2:
             return value
@@ -356,7 +356,7 @@ class Wall(BoundaryBase):
     @classmethod
     def _disable_expression_for_liquid(cls, value):
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, tuple):
@@ -416,7 +416,7 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     @classmethod
     def _disable_expression_for_liquid(cls, value):
         validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_water_as_material is False:
+        if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
 
         if isinstance(value, tuple):
