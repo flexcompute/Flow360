@@ -5,6 +5,7 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.models.material import Water
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -187,6 +188,7 @@ def translate_and_compare(
     param, mesh_unit, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=False
 ):
     translated = get_solver_json(param, mesh_unit=mesh_unit)
+    print(translated)
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     if debug:
@@ -567,6 +569,9 @@ def test_liquid_simulation_translation():
         param = SimulationParams(
             operating_condition=LiquidOperatingCondition(
                 velocity_magnitude=10 * u.m / u.s,
+                alpha=5 * u.deg,
+                beta=2 * u.deg,
+                material=Water(name="my_water", density=1.1 * 10**3 * u.kg / u.m**3),
             ),
             models=[
                 Wall(entities=Surface(name="fluid/body")),

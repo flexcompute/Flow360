@@ -1,10 +1,10 @@
 {
     "freestream": {
-        "alphaAngle": 0,
-        "betaAngle": 0,
+        "alphaAngle": 5.0,
+        "betaAngle": 2.0,
         "Mach": 0.2,
         "Temperature": -1,
-        "muRef": 2.0040000000000003e-08
+        "muRef": 1.821818181818182e-08
     },
     "timeStepping": {
         "CFL": {

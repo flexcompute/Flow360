@@ -432,6 +432,8 @@ class LiquidOperatingCondition(Flow360BaseModel):
     type_name: Literal["LiquidOperatingCondition"] = pd.Field(
         "LiquidOperatingCondition", frozen=True
     )
+    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
+    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
     velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
         context=CASE,
         description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
