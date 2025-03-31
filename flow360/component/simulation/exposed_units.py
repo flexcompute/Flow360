@@ -13,6 +13,7 @@ extra_units = {
     "length": [u.mm, u.inch],
     "time": [],
     "temperature": [],
+    "delta_temperature": [],
     "velocity": [],
     "area": [],
     "force": [],

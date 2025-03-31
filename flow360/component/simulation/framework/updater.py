@@ -1,7 +1,7 @@
 """
 Module containing updaters from version to version
 
-TODO: remove duplication code with FLow360Params updater. 
+TODO: remove duplication code with FLow360Params updater.
 """
 
 # pylint: disable=R0801
@@ -13,6 +13,8 @@ from typing import Any
 from flow360.component.simulation.framework.entity_base import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
+    populate_entity_id_with_name,
+    update_symmetry_ghost_entity_name_to_symmetric,
 )
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
@@ -43,6 +45,7 @@ def _to_24_11_1(params_as_dict):
     if "time_stepping" in params_as_dict:
         params_as_dict["time_stepping"].pop("order_of_accuracy", None)
 
+    update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
     return params_as_dict
 
 
@@ -86,6 +89,7 @@ def _to_24_11_7(params_as_dict):
                 ][idx] = point_array
                 continue
 
+    update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
     return params_as_dict
 
 
@@ -151,12 +155,18 @@ def _to_25_2_1(params_as_dict):
     return params_as_dict
 
 
+def _to_25_2_3(params_as_dict):
+    populate_entity_id_with_name(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
     (Flow360Version("24.11.10"), _to_24_11_10),
     (Flow360Version("25.2.0"), _to_25_2_0),
     (Flow360Version("25.2.1"), _to_25_2_1),
+    (Flow360Version("25.2.3"), _to_25_2_3),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
@@ -212,7 +222,7 @@ def _find_update_path(
     ]
 
 
-def updater(version_from, version_to, params_as_dict):
+def updater(version_from, version_to, params_as_dict) -> dict:
     """
     Update parameters from version_from to version_to.
 
@@ -240,7 +250,7 @@ def updater(version_from, version_to, params_as_dict):
     This function iterates through the update map starting from version_from and
     updates the parameters based on the update path found.
     """
-    log.info(f"Input SimulationParam has version: {version_from}.")
+    log.debug(f"Input SimulationParam has version: {version_from}.")
     update_functions = _find_update_path(
         version_from=Flow360Version(version_from),
         version_to=Flow360Version(version_to),
@@ -248,7 +258,7 @@ def updater(version_from, version_to, params_as_dict):
     )
     for fun in update_functions:
         _to_version = re.search(r"_to_(\d+_\d+_\d+)", fun.__name__).group(1)
-        log.info(f"Updating input SimulationParam to {_to_version}...")
+        log.debug(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
     params_as_dict["version"] = str(version_to)
     return params_as_dict

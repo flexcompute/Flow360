@@ -5,6 +5,7 @@ Caveats:
 2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
+# pylint: disable=too-many-lines
 from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
@@ -17,14 +18,17 @@ from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.output_fields import (
+    AllFieldNames,
     CommonFieldNames,
     InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    get_field_values,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
@@ -34,7 +38,10 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
     get_validation_info,
+    get_validation_levels,
 )
 from flow360.component.simulation.validation_utils import (
     check_deleted_surface_in_entity_list,
@@ -80,6 +87,20 @@ class UserDefinedField(Flow360BaseModel):
     expression: StringExpression = pd.Field(
         description="The mathematical expression for the field."
     )
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _check_redefined_user_defined_fields(cls, value):
+        current_levels = get_validation_levels() if get_validation_levels() else []
+        if all(level not in current_levels for level in (ALL, CASE)):
+            return value
+        defined_field_names = get_field_values(AllFieldNames)
+        if value in defined_field_names:
+            raise ValueError(
+                f"User defined field variable name: {value} conflicts with pre-defined field names."
+                " Please consider renaming this user defined field variable."
+            )
+        return value
 
 
 class _OutputBase(Flow360BaseModel):
@@ -501,7 +522,7 @@ class ProbeOutput(_OutputBase):
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
-class SurfaceProbeOutput(_OutputBase):
+class SurfaceProbeOutput(Flow360BaseModel):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
@@ -663,8 +684,19 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
-    frequency: int = pd.Field(default=1, ge=1)
-    frequency_offset: int = pd.Field(default=0, ge=0)
+    # pylint: disable=abstract-method
+    frequency: int = pd.Field(
+        default=1,
+        ge=-1,
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
@@ -741,8 +773,18 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     """
 
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(default=1, ge=1)
-    frequency_offset: int = pd.Field(default=0, ge=0)
+    frequency: int = pd.Field(
+        default=1,
+        ge=-1,
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
@@ -868,6 +910,71 @@ class AeroAcousticOutput(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
 
+class StreamlineOutput(Flow360BaseModel):
+    """
+    :class:`StreamlineOutput` class for calculating streamlines.
+    Stramtraces are computed upwind and downwind, and may originate from a single point,
+    from a line, or from points evenly distributed across a parallelogram.
+
+    Example
+    -------
+
+    Define a :class:`StreamlineOutput` with streaptraces originating from points, lines (PointArray), and
+    parallelograms (PointArray2D).
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+      including both starting and end points.
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+      orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
+      with 20 points along the v direction.
+
+    >>> fl.StreamlineOutput(
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_streamline",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...         fl.PointArray2D(
+    ...             name="Parallelogram_streamline",
+    ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
+    ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
+    ...             u_number_of_points=11,
+    ...             v_number_of_points=20
+    ...         )
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Streamline output", description="Name of the `StreamlineOutput`."
+    )
+    entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
+        alias="streamline_points",
+        description="List of monitored :class:`~flow360.Point`/"
+        + ":class:`~flow360.PointArray`/:class:`~flow360.Point`"
+        + "entities belonging to this "
+        + "streamline group. :class:`~flow360.PointArray` "
+        + "is used to define streamline originating along a line."
+        + ":class:`~flow360.PointArray2D` "
+        + "is used to define streamline originating from a parallelogram.",
+    )
+    output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+
+
 OutputTypes = Annotated[
     Union[
         SurfaceOutput,
@@ -884,6 +991,7 @@ OutputTypes = Annotated[
         TimeAverageProbeOutput,
         TimeAverageSurfaceProbeOutput,
         AeroAcousticOutput,
+        StreamlineOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]

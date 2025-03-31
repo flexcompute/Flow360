@@ -1,6 +1,7 @@
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -136,7 +137,9 @@ def get_test_param():
                     PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
                     PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
                     BoundaryLayer(
-                        entities=[Surface(name="boundary1")], first_layer_thickness=0.5 * u.m
+                        entities=[Surface(name="boundary1")],
+                        first_layer_thickness=0.5 * u.m,
+                        growth_rate=1.3,
                     ),
                 ],
                 volume_zones=[
@@ -187,7 +190,8 @@ def get_test_param():
                         ],
                     ),
                 ],
-            )
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
         )
     return param
 
@@ -203,9 +207,11 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
             "gapTreatmentStrength": 0.0,
+            "planarFaceTolerance": 1e-6,
+            "numBoundaryLayers": -1,
         },
         "faces": {
-            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso"},
+            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso", "growthRate": 1.3},
             "passive1": {"type": "projectAnisoSpacing"},
             "passive2": {"type": "none"},
         },
@@ -324,7 +330,11 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
     reference = {
         "refinementFactor": 1.0,
         "farfield": {"type": "user-defined"},
-        "volume": {"firstLayerThickness": 100.0, "growthRate": 1.2, "gapTreatmentStrength": 0.0},
+        "volume": {
+            "firstLayerThickness": 100.0,
+            "growthRate": 1.2,
+            "gapTreatmentStrength": 0.0,
+        },
         "faces": {},
     }
     assert sorted(translated.items()) == sorted(reference.items())

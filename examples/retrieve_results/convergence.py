@@ -1,16 +1,47 @@
-import flow360.v1 as fl
-from flow360.examples import Convergence
+from pylab import show
 
-Convergence.get_files()
+import flow360 as fl
+from flow360.examples import OM6wing
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(Convergence.mesh_filename, name="Diverging-mesh")
-volume_mesh = volume_mesh.submit()
+OM6wing.get_files()
 
-# submit case using json file
-params = fl.Flow360Params(Convergence.case_json)
-case = volume_mesh.create_case("Diverging-example", params)
-case = case.submit()
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename),
+    name="Convergence results from Python",
+)
+
+vm = project.volume_mesh
+
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=1.15315, moment_center=[0, 0, 0], moment_length=[1.47602, 0.801672, 1.47602]
+        ),
+        operating_condition=fl.AerospaceCondition(velocity_magnitude=286, alpha=3.06 * fl.u.deg),
+        time_stepping=fl.Steady(
+            max_steps=5000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)
+        ),
+        models=[
+            fl.Fluid(
+                navier_stokes_solver=fl.NavierStokesSolver(
+                    absolute_tolerance=1e-9, linear_solver=fl.LinearSolver(max_iterations=35)
+                ),
+                turbulence_model_solver=fl.SpalartAllmaras(
+                    absolute_tolerance=1e-8, linear_solver=fl.LinearSolver(max_iterations=25)
+                ),
+            ),
+            fl.Wall(name="NoSlipWall", surfaces=vm["2"]),
+            fl.SlipWall(name="SlipWall", surfaces=vm["1"]),
+            fl.Freestream(name="Freestream", surfaces=vm["3"]),
+        ],
+        outputs=[
+            fl.SurfaceOutput(name="SurfaceOutput", surfaces=vm["1"], output_fields=["Cp", "CfVec"]),
+            fl.VolumeOutput(name="VolumeOutput", output_fields=["Cp", "Mach", "qcriterion"]),
+        ],
+    )
+
+case = project.run_case(params, "Convergence case from Python")
+
 
 # wait until the case finishes execution
 case.wait()
@@ -18,36 +49,53 @@ case.wait()
 results = case.results
 
 # nonlinear residuals contain convergence information
-print(results.nonlinear_residuals)
-# >>>
-#     physical_step  pseudo_step    0_cont  ...    3_momz   4_energ   5_nuHat
-# 0               0            0  0.003167  ...  0.003540  0.009037  0.002040
-# 1               0           10  0.001826  ...  0.001106  0.005233  0.000549
-# 2               0           20  0.001690  ...  0.001118  0.004845  0.000369
-# 3               0           30  0.001623  ...  0.001118  0.004662  0.000298
-# 4               0           40  0.001538  ...  0.001077  0.004445  0.000265
-# ..            ...          ...       ...  ...       ...       ...       ...
-# 69              0          690  0.000034  ...  0.000020  0.000099  0.000700
-# 70              0          700  0.000043  ...  0.000025  0.000121  0.000740
-# 71              0          710  0.000042  ...  0.000021  0.000117  0.000712
-# 72              0          720  0.000030  ...  0.000018  0.000084  0.000718
-# 73              0          725       NaN  ...       NaN       NaN  0.002658
+nonlinear_residuals = results.nonlinear_residuals.as_dataframe()
+print(nonlinear_residuals)
 
+nonlinear_residuals.plot(
+    x="pseudo_step",
+    y=["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"],
+    xlim=(0, None),
+    xlabel="Pseudo Step",
+    secondary_y=["5_nuHat"],
+    figsize=(10, 7),
+    title="Nonlinear residuals",
+)
 
-print(results.max_residual_location)
-# >>>
-#     physical_step  pseudo_step  max_cont_res  max_cont_res_x  ...  max_nuHat_res_y  max_nuHat_res_z
-# 0               0            0      0.727260        0.000000  ...         0.150167        -0.000000
-# 1               0           10     -0.213963        1.042187  ...         0.150167        -0.000000
-# 2               0           20      0.107278        0.731466  ...         1.463070        -0.000000
-# 3               0           30      0.104267        0.746431  ...         1.469878        -0.000000
-# 4               0           40      0.098128        0.835319  ...         1.469878        -0.000000
-# ..            ...          ...           ...             ...  ...              ...              ...
-# 68              0          680      0.055444      -86.102540  ...         0.407801        -0.003249
-# 69              0          690     -0.090389      -98.644486  ...         0.285621        -0.003383
-# 70              0          700      0.064039      -98.644486  ...         0.285621        -0.003383
-# 71              0          710     -0.593876      -96.092583  ...         3.093866       -10.179407
-# 72              0          713           NaN       -7.039405  ...         4.598506         9.537323
+max_residual_location = results.max_residual_location.as_dataframe()
+print(max_residual_location)
+
+max_residual_location.plot(
+    x="pseudo_step",
+    y=[
+        "max_cont_res",
+        "max_momx_res",
+        "max_momy_res",
+        "max_momz_res",
+        "max_energ_res",
+        "max_nuHat_res",
+    ],
+    xlabel="Pseudo Step",
+    xlim=(0, None),
+    ylim=(-25, None),
+    secondary_y=["max_nuHat_res"],
+    figsize=(10, 7),
+    title="Max residual location",
+)
+show()
+
+cfl = results.cfl.as_dataframe()
+print(cfl)
+
+cfl.plot(
+    x="pseudo_step",
+    y=["0_NavierStokes_cfl", "1_SpalartAllmaras_cfl"],
+    xlim=(0, None),
+    xlabel="Pseudo Step",
+    figsize=(10, 7),
+    title="CFL",
+)
+show()
 
 results.set_destination(use_case_name=True)
 results.download(

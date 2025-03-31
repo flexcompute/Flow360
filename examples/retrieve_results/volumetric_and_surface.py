@@ -2,21 +2,58 @@ import os
 import tarfile
 import tempfile
 
-import flow360.v1 as fl
-from flow360.examples import MonitorsAndSlices
+import flow360 as fl
+from flow360.examples import OM6wing
 
-MonitorsAndSlices.get_files()
+OM6wing.get_files()
 
-# submit mesh
-volume_mesh = fl.VolumeMesh.from_file(
-    MonitorsAndSlices.mesh_filename, name="Volume-and-surface-mesh"
+project = fl.Project.from_file(
+    files=fl.VolumeMeshFile(OM6wing.mesh_filename),
+    name="Volumetric and surface results from Python",
 )
-volume_mesh = volume_mesh.submit()
 
-# submit case using json file
-params = fl.Flow360Params(MonitorsAndSlices.case_json)
-case = volume_mesh.create_case("Volume-and-surface-example", params)
-case = case.submit()
+vm = project.volume_mesh
+
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=1.15315084119231,
+            moment_center=[0, 0, 0],
+            moment_length=[1.47602, 0.801672958512342, 1.47602],
+        ),
+        operating_condition=fl.operating_condition_from_mach_reynolds(
+            reynolds=14.6e6, mach=0.84, alpha=3.06 * fl.u.deg, project_length_unit=fl.u.m
+        ),
+        time_stepping=fl.Steady(
+            max_steps=500, CFL=fl.RampCFL(initial=5, final=200, ramp_steps=100)
+        ),
+        models=[
+            fl.Fluid(
+                navier_stokes_solver=fl.NavierStokesSolver(absolute_tolerance=1e-10),
+                turbulence_model_solver=fl.SpalartAllmaras(absolute_tolerance=1e-8),
+            ),
+            fl.Wall(surfaces=vm["1"]),
+            fl.SlipWall(surfaces=vm["2"]),
+            fl.Freestream(surfaces=vm["3"]),
+        ],
+        outputs=[
+            fl.VolumeOutput(name="VolumeOutput", output_fields=["primitiveVars", "Mach"]),
+            fl.SurfaceOutput(
+                name="SurfaceOutput", surfaces=vm["1"], output_fields=["primitiveVars", "Cp", "Cf"]
+            ),
+            fl.SliceOutput(
+                name="SliceOutput",
+                output_fields=["Cp"],
+                slices=[
+                    fl.Slice(name="x0", normal=[1, 0, 0], origin=[0, 0, 0]),
+                    fl.Slice(name="y1", normal=[0, 1, 0], origin=[2, 1, 0]),
+                ],
+            ),
+        ],
+    )
+
+case = project.run_case(params, "Volumetric and surface results case from Python")
+
 
 # wait until the case finishes execution
 case.wait()

@@ -8,6 +8,9 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -68,8 +71,16 @@ class BoundaryLayer(Flow360BaseModel):
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
-    first_layer_thickness: LengthType.Positive = pd.Field(
-        description="First layer thickness for volumetric anisotropic layers grown from given `Surface` (s)."
+    first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="First layer thickness for volumetric anisotropic layers grown from given `Surface` (s).",
+    )
+
+    growth_rate: Optional[float] = pd.Field(
+        None,
+        ge=1,
+        description="Growth rate for volume prism layers for given `Surface` (s)."
+        " Supported only by the beta mesher.",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -77,3 +88,29 @@ class BoundaryLayer(Flow360BaseModel):
     def ensure_surface_existence(cls, value):
         """Ensure all boundaries will be present after mesher"""
         return check_deleted_surface_in_entity_list(value)
+
+    @pd.field_validator("growth_rate", mode="after")
+    @classmethod
+    def invalid_growth_rate(cls, value):
+        """Ensure growth rate per face is not specified"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if value is not None and not validation_info.is_beta_mesher:
+            raise ValueError("Growth rate per face is only supported by the beta mesher.")
+        return value
+
+    @pd.field_validator("first_layer_thickness", mode="after")
+    @classmethod
+    def require_first_layer_thickness(cls, value):
+        """Verify first layer thickness is specified"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if value is None and not validation_info.is_beta_mesher:
+            raise ValueError("First layer thickness is required.")
+        return value

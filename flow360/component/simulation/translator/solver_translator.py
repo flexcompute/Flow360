@@ -24,6 +24,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallRotation,
     WallVelocityModelTypes,
 )
 from flow360.component.simulation.models.volume_models import (
@@ -39,7 +40,12 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     LiquidOperatingCondition,
 )
-from flow360.component.simulation.outputs.output_entities import Point, PointArray
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
+from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -47,6 +53,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     Slice,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -56,6 +63,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Box, SurfacePair
@@ -220,6 +228,7 @@ def translate_output_fields(
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
         SurfaceSliceOutput,
+        StreamlineOutput,
     ],
 ):
     """Get output fields"""
@@ -496,6 +505,69 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
+def process_output_fields_for_udf(input_params):
+    """
+    Process all output fields from different output types and generate additional
+    UserDefinedFields for dimensioned fields.
+
+    Args:
+        input_params: SimulationParams object containing outputs configuration
+
+    Returns:
+        tuple: (all_field_names, generated_udfs) where:
+            - all_field_names is a set of all output field names
+            - generated_udfs is a list of UserDefinedField objects for dimensioned fields
+    """
+
+    # Collect all output field names from all output types
+    all_field_names = set()
+
+    if input_params.outputs:
+        for output in input_params.outputs:
+            if hasattr(output, "output_fields") and output.output_fields:
+                all_field_names.update(output.output_fields.items)
+
+    # Generate UDFs for dimensioned fields
+    generated_udfs = []
+    for field_name in all_field_names:
+        udf_expression = generate_predefined_udf(field_name, input_params)
+        if udf_expression:
+            generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
+
+    return generated_udfs
+
+
+def translate_streamline_output(output_params: list):
+    """Translate streamline output settings."""
+    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    for output in output_params:
+        if isinstance(output, StreamlineOutput):
+            for entity in output.entities.stored_entities:
+                if isinstance(entity, Point):
+                    point = {"name": entity.name, "location": entity.location.value.tolist()}
+                    streamline_output["Points"].append(point)
+                elif isinstance(entity, PointArray):
+                    line = {
+                        "name": entity.name,
+                        "start": entity.start.value.tolist(),
+                        "end": entity.end.value.tolist(),
+                        "numberOfPoints": entity.number_of_points,
+                    }
+                    streamline_output["PointArrays"].append(line)
+                elif isinstance(entity, PointArray2D):
+                    parallelogram = {
+                        "name": entity.name,
+                        "origin": entity.origin.value.tolist(),
+                        "uAxisVector": entity.u_axis_vector.value.tolist(),
+                        "vAxisVector": entity.v_axis_vector.value.tolist(),
+                        "uNumberOfPoints": entity.u_number_of_points,
+                        "vNumberOfPoints": entity.v_number_of_points,
+                    }
+                    streamline_output["PointArrays2D"].append(parallelogram)
+
+    return streamline_output
+
+
 def translate_output(input_params: SimulationParams, translated: dict):
     # pylint: disable=too-many-branches,too-many-statements
     """Translate output settings."""
@@ -600,6 +672,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+
+    ##:: Step7: Get translated["streamlineOutput"]
+    if has_instance_in_list(outputs, StreamlineOutput):
+        translated["streamlineOutput"] = translate_streamline_output(outputs)
 
     return translated
 
@@ -786,6 +862,15 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
                 boundary["wallVelocityModel"]["type"] = model.velocity.type_name
                 if model.velocity.activation_step is not None:
                     boundary["wallVelocityModel"]["activationStep"] = model.velocity.activation_step
+            elif isinstance(model.velocity, WallRotation):
+                omega = model.velocity.angular_velocity.value
+                axis = model.velocity.axis
+                center = model.velocity.center.value
+                boundary["velocity"] = [
+                    f"{omega * axis[1]} * (z - {center[2]}) - {omega * axis[2]} * (y - {center[1]})",
+                    f"{omega * axis[2]} * (x - {center[0]}) - {omega * axis[0]} * (z - {center[2]})",
+                    f"{omega * axis[0]} * (y - {center[1]}) - {omega * axis[1]} * (x - {center[0]})",
+                ]
             else:
                 raise Flow360TranslationError(
                     f"Unsupported wall velocity setting found with type: {type(model.velocity)}",
@@ -922,14 +1007,8 @@ def get_solver_json(
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
     op_acoustic_to_static_pressure_ratio = (
-        (
-            op.thermal_state.density
-            * op.thermal_state.speed_of_sound**2
-            / op.thermal_state.pressure
-        ).value
-        if not isinstance(op, LiquidOperatingCondition)
-        else 1.0
-    )
+        op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
+    ).value
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
@@ -1199,9 +1278,13 @@ def get_solver_json(
 
     translated = translate_output(input_params, translated)
 
-    ##:: Step 5: Get user defined fields
+    ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
-    for udf in input_params.user_defined_fields:
+    # Add auto-generated UDFs for dimensioned fields
+    generated_udfs = process_output_fields_for_udf(input_params)
+
+    # Add user-specified UDFs and auto-generated UDFs for dimensioned fields
+    for udf in [*input_params.user_defined_fields, *generated_udfs]:
         udf_dict = {}
         udf_dict["name"] = udf.name
         udf_dict["expression"] = udf.expression

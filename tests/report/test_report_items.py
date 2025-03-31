@@ -6,15 +6,29 @@ from pylatex import Document
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
+from flow360.component.resource_base import local_metadata_builder
+from flow360.component.utils import LocalResourceCache
+from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_items import (
     Camera,
+    Chart2D,
     Chart3D,
+    FixedRangeLimit,
+    ManualLimit,
+    PatternCaption,
+    SubsetLimit,
     Table,
     human_readable_formatter,
 )
-from flow360.plugins.report.utils import Average, DataItem, Delta, Expression
+from flow360.plugins.report.utils import (
+    Average,
+    DataItem,
+    Delta,
+    Expression,
+    GetAttribute,
+)
 
 
 @pytest.fixture
@@ -28,6 +42,9 @@ def cases(here):
         "case-11111111-1111-1111-1111-111111111111",
         "case-2222222222-2222-2222-2222-2222222222",
     ]
+
+    cache = LocalResourceCache()
+
     cases = []
     for cid in case_ids:
         case_meta = CaseMeta(
@@ -40,6 +57,21 @@ def cases(here):
         )
         case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
         cases.append(case)
+
+    vm_id = "vm-11111111-1111-1111-1111-111111111111"
+    vm = VolumeMeshV2.from_local_storage(
+        mesh_id=vm_id,
+        local_storage_path=os.path.join(here, "..", "data", vm_id),
+        meta_data=VolumeMeshMetaV2(
+            **local_metadata_builder(
+                id=vm_id,
+                name="DrivAer mesh",
+                cloud_path_prefix="s3://flow360meshes-v1/users/user-id",
+            )
+        ),
+    )
+    cache.add(vm)
+
     return cases
 
 
@@ -358,78 +390,397 @@ def test_tables(cases):
         data_storage=".",
     )
 
+    freestream_surfaces = ["blk-1/WT_side1", "blk-1/WT_side2", "blk-1/WT_inlet", "blk-1/WT_outlet"]
+    slip_wall_surfaces = ["blk-1/WT_ceiling", "blk-1/WT_ground_front", "blk-1/WT_ground"]
     exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+    exclude += freestream_surfaces + slip_wall_surfaces
 
-    avg = Average(fraction=0.1)
-    CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
+    include = ["blk-1/wheel_rim", "blk-1/BODY", "blk-1/wheel_tire"]
 
-    CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
+    filtering = [dict(include=include), dict(exclude=exclude)]
 
-    CLCompare = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CL_compare",
-        operations=[Expression(expr="totalCL - 1.5467"), avg],
+    for filter in filtering:
+        print(f"testing: {filter=}")
+
+        avg = Average(fraction=0.1)
+        CD = DataItem(data="surface_forces/totalCD", title="CD", operations=avg, **filter)
+
+        CL = DataItem(data="surface_forces/totalCL", title="CL", operations=avg, **filter)
+
+        CLCompare = DataItem(
+            data="surface_forces",
+            title="CL_compare",
+            operations=[Expression(expr="totalCL - 1.5467"), avg],
+            **filter,
+        )
+
+        CDCompare = DataItem(
+            data="surface_forces",
+            title="CD_compare",
+            operations=[Expression(expr="totalCD - 0.02100"), avg],
+            **filter,
+        )
+
+        CLf = DataItem(
+            data="surface_forces",
+            title="CLf",
+            operations=[Expression(expr="1/2*totalCL + totalCMy"), avg],
+            **filter,
+        )
+
+        CLr = DataItem(
+            data="surface_forces",
+            title="CLr",
+            operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
+            **filter,
+        )
+
+        OWL = DataItem(
+            data="volume_mesh/bounding_box",
+            title="OWL",
+            operations=[GetAttribute(attr_name="length")],
+            **filter,
+        )
+
+        OWW = DataItem(
+            data="volume_mesh/bounding_box",
+            title="OWW",
+            operations=[GetAttribute(attr_name="width")],
+            **filter,
+        )
+
+        OWH = DataItem(
+            data="volume_mesh/bounding_box",
+            title="OWH",
+            operations=[GetAttribute(attr_name="height")],
+            **filter,
+        )
+        CFy = DataItem(data="surface_forces/totalCFy", title="CS", operations=avg, **filter)
+
+        statistical_data = Table(
+            data=[
+                "params/reference_geometry/area",
+                CD,
+                Delta(data=CD),
+                CL,
+                CLCompare,
+                CDCompare,
+                CLf,
+                CLr,
+                CFy,
+                "volume_mesh/stats/n_nodes",
+                "params/time_stepping/max_steps",
+                OWL,
+                OWW,
+                OWH,
+            ],
+            section_title="Statistical data",
+        )
+
+        table_df = statistical_data.to_dataframe(context)
+        table_df["Case No."] = table_df["Case No."].astype("Int64")
+        table_df["area"] = table_df["area"].astype(str)
+
+        print(table_df)
+
+        expected_data = {
+            "Case No.": [1, 2],
+            "area": ["2.17 m**2", "2.17 m**2"],
+            "CD": [0.279249, 0.288997],
+            "Delta CD": [0.000000, 0.009748],
+            "CL": [0.145825, 0.169557],
+            "CL_compare": [-1.400875, -1.377143],
+            "CD_compare": [0.258249, 0.267997],
+            "CLf": [-0.050186, -0.157447],
+            "CLr": [0.196011, 0.327003],
+            "CS": [-0.002243102563079525, -0.0763879853938102],
+            "n_nodes": [5712930, 5712930],
+            "max_steps": [2000, 2000],
+            "OWL": [4.612806, 4.612806],
+            "OWW": [2.029983, 2.029983],
+            "OWH": [1.405979, 1.405979],
+        }
+        df_expected = pandas.DataFrame(expected_data)
+        df_expected["Case No."] = df_expected["Case No."].astype("Int64")
+        print(df_expected)
+
+        pandas.testing.assert_frame_equal(table_df, df_expected)
+
+
+def test_calculate_y_lim(cases, here):
+    chart = Chart2D(
+        x="total_forces/pseudo_step",
+        y="total_forces/CD",
+    )
+    case = cases[0]
+    case_data = pandas.read_csv(
+        os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv")
+    )
+    x_series_list = [case_data[" pseudo_step"].to_list()]
+    y_series_list = [case_data[" CD"].to_list()]
+
+    chart.ylim = (0.3, 0.4)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.3
+    assert ymax == 0.4
+
+    chart.ylim = ManualLimit(lower=0.3, upper=0.4)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.3
+    assert ymax == 0.4
+
+    chart.ylim = SubsetLimit(subset=(0.5, 0.9), offset=0.25)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.34713380202529676
+    assert ymax == 0.3558530166937262
+
+    chart.ylim = None
+    chart.focus_x = (0.5, 0.9)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.34713380202529676
+    assert ymax == 0.3558530166937262
+
+    chart.focus_x = None
+    chart.ylim = FixedRangeLimit(fixed_range=0.1)
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.306161580155019
+    assert ymax == 0.40616158015501896
+
+    chart.ylim = FixedRangeLimit(
+        fixed_range=0.1, center_strategy="last_percent", center_fraction=0.7
+    )
+    ymin, ymax = chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list)
+    assert ymin == 0.3528853000874695
+    assert ymax == 0.45288530008746947
+
+    chart.ylim = None
+    assert (
+        chart._calculate_ylimits(x_series_list=x_series_list, y_series_list=y_series_list) == None
     )
 
-    CDCompare = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CD_compare",
-        operations=[Expression(expr="totalCD - 0.02100"), avg],
+    with pytest.raises(ValueError, match="Fields ylim and focus_x cannot be used together."):
+        chart.ylim = (0.5, 0.9)
+        chart.focus_x = (0.5, 0.9)
+        chart._calculate_ylimits(
+            x_series_list=x_series_list,
+            y_series_list=y_series_list,
+        )
+
+
+def test_dimensioned_limits(cases):
+
+    case = cases[0]
+
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0, 0.3),
+    )
+    assert chart.limits == (0, 0.3)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 0.3)
+
+    chart = Chart3D(
+        field="velocity",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
+    )
+    assert chart.limits == (0 * u.m / u.s, 100 * u.m / u.s)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 0.2938635365101296)
+
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0 * u.m / u.s, 100 * u.m / u.s),
+    )
+    assert chart.limits == (0 * u.m / u.s, 100 * u.m / u.s)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 100)
+
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0 * u.km / u.hr, 72 * u.km / u.hr),
+    )
+    assert chart.limits == (0 * u.km / u.hr, 72 * u.km / u.hr)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 20)
+
+    chart = Chart3D(
+        field="velocity_m_per_s",
+        show="boundaries",
+        limits=(0, 10),
+    )
+    assert chart.limits == (0, 10)
+
+    converted_limits = chart._get_limits(case)
+    assert converted_limits == (0, 10)
+
+
+def test_2d_caption_validity(cases):
+    chart = Chart2D(
+        x="total_forces/pseudo_step",
+        y="total_forces/CD",
     )
 
-    CLf = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CLf",
-        operations=[Expression(expr="1/2*totalCL + totalCMy"), avg],
+    with pytest.raises(
+        ValueError, match="List of captions and items_in_row cannot be used together."
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step",
+            y="total_forces/CD",
+            items_in_row=2,
+            caption=["Caption 1", "Caption 2"],
+        )
+
+    with pytest.raises(
+        ValueError, match="PatternCaption and items_in_row cannot be used together."
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step",
+            y="total_forces/CD",
+            items_in_row=2,
+            caption=PatternCaption(pattern="This is case: [case.name] with ID: [case.id]"),
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="List of captions is only supported for Chart2D when separate_plots is True.",
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step", y="total_forces/CD", caption=["Caption 1", "Caption 2"]
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="PatternCaption is only supported for Chart2D when separate_plots is True.",
+    ):
+        Chart2D(
+            x="total_forces/pseudo_step",
+            y="total_forces/CD",
+            caption=PatternCaption(pattern="This is case: [case.name] with ID: [case.id]"),
+        )
+
+    with pytest.raises(
+        ValueError, match="Caption list is not the same length as the list of cases."
+    ):
+        chart.separate_plots = True
+        chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
+        chart._check_caption_validity(cases)
+
+
+def test_2d_caption(cases):
+    chart = Chart2D(
+        x="total_forces/pseudo_step",
+        y="total_forces/CD",
     )
 
-    CLr = DataItem(
-        data="surface_forces",
-        exclude=exclude,
-        title="CLr",
-        operations=[Expression(expr="1/2*totalCL - totalCMy"), avg],
+    chart.caption = "This is a caption."
+    assert chart._handle_2d_caption() == "This is a caption."
+
+    chart.separate_plots = True
+    chart.caption = ["Caption 1", "Caption 2"]
+    assert chart._handle_2d_caption(case_number=0) == "Caption 1"
+    assert chart._handle_2d_caption(case_number=1) == "Caption 2"
+
+    chart.caption = PatternCaption(pattern="This is case: [case.name] with ID: [case.id]")
+    assert (
+        chart._handle_2d_caption(case=cases[0])
+        == "This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111"
+    )
+    assert (
+        chart._handle_2d_caption(case=cases[1])
+        == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
     )
 
-    CFy = DataItem(data="surface_forces/totalCFy", exclude=exclude, title="CS", operations=avg)
 
-    statistical_data = Table(
-        data=[
-            "params/reference_geometry/area",
-            CD,
-            Delta(data=CD),
-            CL,
-            CLCompare,
-            CDCompare,
-            CLf,
-            CLr,
-            CFy,
-        ],
-        section_title="Statistical data",
+def test_3d_caption_validity(cases):
+    top_camera = Camera(
+        position=(0, 0, 1),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, 1, 0),
+        dimension=5,
+        dimension_dir="width",
     )
 
-    table_df = statistical_data.to_dataframe(context)
-    table_df["Case No."] = table_df["Case No."].astype("Int64")
-    table_df["area"] = table_df["area"].astype(str)
+    chart = Chart3D(
+        section_title="Geometry",
+        force_new_page=True,
+        show="boundaries",
+        camera=top_camera,
+        fig_name="geo",
+    )
 
-    print(table_df)
+    with pytest.raises(
+        ValueError, match="List of captions and items_in_row cannot be used together."
+    ):
+        Chart3D(
+            section_title="Geometry",
+            force_new_page=True,
+            show="boundaries",
+            camera=top_camera,
+            fig_name="geo",
+            items_in_row=2,
+            caption=["Caption 1", "Caption 2"],
+        )
 
-    expected_data = {
-        "Case No.": [1, 2],
-        "area": ["2.17 m**2", "2.17 m**2"],
-        "CD": [0.279249, 0.288997],
-        "Delta CD": [0.000000, 0.009748],
-        "CL": [0.145825, 0.169557],
-        "CL_compare": [-1.400875, -1.377143],
-        "CD_compare": [0.258249, 0.267997],
-        "CLf": [-0.050186, -0.157447],
-        "CLr": [0.196011, 0.327003],
-        "CS": [-0.002243102563079525, -0.0763879853938102],
-    }
-    df_expected = pandas.DataFrame(expected_data)
-    df_expected["Case No."] = df_expected["Case No."].astype("Int64")
-    print(df_expected)
+    with pytest.raises(
+        ValueError, match="PatternCaption and items_in_row cannot be used together."
+    ):
+        Chart3D(
+            section_title="Geometry",
+            force_new_page=True,
+            show="boundaries",
+            camera=top_camera,
+            fig_name="geo",
+            items_in_row=2,
+            caption=PatternCaption(pattern="This is case: [case.name] with ID: [case.id]"),
+        )
 
-    pandas.testing.assert_frame_equal(table_df, df_expected)
+    with pytest.raises(
+        ValueError, match="Caption list is not the same length as the list of cases."
+    ):
+        chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
+        chart._check_caption_validity(cases)
+
+
+def test_3d_caption(cases):
+    top_camera = Camera(
+        position=(0, 0, 1),
+        look_at=(0, 0, 0),
+        pan_target=(1.5, 0, 0),
+        up=(0, 1, 0),
+        dimension=5,
+        dimension_dir="width",
+    )
+
+    chart = Chart3D(
+        section_title="Geometry",
+        force_new_page=True,
+        show="boundaries",
+        camera=top_camera,
+        fig_name="geo",
+    )
+
+    chart.caption = "This is a caption."
+    assert chart._handle_3d_caption() == "This is a caption."
+
+    chart.caption = ["Caption 1", "Caption 2"]
+    assert chart._handle_3d_caption(case_number=0) == "Caption 1"
+    assert chart._handle_3d_caption(case_number=1) == "Caption 2"
+
+    chart.caption = PatternCaption(pattern="This is case: [case.name] with ID: [case.id]")
+    assert (
+        chart._handle_3d_caption(case=cases[0])
+        == "This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111"
+    )
+    assert (
+        chart._handle_3d_caption(case=cases[1])
+        == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
+    )

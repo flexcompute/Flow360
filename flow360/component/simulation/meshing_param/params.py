@@ -27,6 +27,7 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     ConditionalField,
     ContextField,
+    get_validation_info,
 )
 
 RefinementTypes = Annotated[
@@ -51,6 +52,15 @@ class MeshingDefaults(Flow360BaseModel):
     Default/global settings for meshing parameters.
     """
 
+    geometry_relative_accuracy: float = pd.Field(
+        1e-6,
+        gt=0,
+        le=1,
+        description="The non-dimensional relative scale distinguishable by the surface meshing process."
+        " This is relative to the whole bounding box of the input geometry/surface mesh and"
+        " is only valid when using geometry AI.",
+    )
+
     ##::   Default surface edge settings
     surface_edge_growth_rate: float = ContextField(
         1.2,
@@ -63,8 +73,7 @@ class MeshingDefaults(Flow360BaseModel):
     ##::    Default boundary layer settings
     boundary_layer_growth_rate: float = ContextField(
         1.2,
-        description="Default growth rate for volume prism layers."
-        " This can not be overridden per face.",
+        description="Default growth rate for volume prism layers.",
         ge=1,
         context=VOLUME_MESH,
     )
@@ -75,6 +84,23 @@ class MeshingDefaults(Flow360BaseModel):
         " This can be overridden with :class:`~flow360.BoundaryLayer`.",
         context=VOLUME_MESH,
     )  # Truly optional if all BL faces already have first_layer_thickness
+
+    number_of_boundary_layers: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="Default number of volumetric anisotropic layers."
+        " The volume mesher will automatically calculate the required"
+        " no. of layers to grow the boundary layer elements to isotropic size if not specified."
+        " This is only supported by the beta mesher and can not be overridden per face.",
+    )
+
+    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
+        1e-6,
+        description="Tolerance used for detecting planar faces in the input surface mesh"
+        " that need to be remeshed, such as symmetry planes."
+        " This tolerance is non-dimensional, and represents a distance"
+        " relative to the largest dimension of the bounding box of the input surface mesh."
+        " This is only supported by the beta mesher and can not be overridden per face.",
+    )
 
     ##::    Default surface layer settings
     surface_max_edge_length: Optional[LengthType.Positive] = ConditionalField(
@@ -93,6 +119,53 @@ class MeshingDefaults(Flow360BaseModel):
         ),
         context=SURFACE_MESH,
     )
+
+    @pd.field_validator("number_of_boundary_layers", mode="after")
+    @classmethod
+    def invalid_number_of_boundary_layers(cls, value):
+        """Ensure number of boundary layers is not specified"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if value is not None and not validation_info.is_beta_mesher:
+            raise ValueError("Number of boundary layers is only supported by the beta mesher.")
+        return value
+
+    @pd.field_validator("planar_face_tolerance", mode="after")
+    @classmethod
+    def invalid_planar_face_tolerance(cls, value):
+        """Ensure planar face tolerance is not specified"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if (
+            value != cls.model_fields["planar_face_tolerance"].default
+            and not validation_info.is_beta_mesher
+        ):
+            raise ValueError("Planar face tolerance is only supported by the beta mesher.")
+        return value
+
+    @pd.field_validator("geometry_relative_accuracy", mode="after")
+    @classmethod
+    def invalid_geometry_relative_accuracy(cls, value):
+        """Ensure geometry accuracy is not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if (
+            value != cls.model_fields["geometry_relative_accuracy"].default
+            and not validation_info.use_geometry_AI
+        ):
+            raise ValueError(
+                "Geometry relative accuracy is only supported when geometry AI is used."
+            )
+        return value
 
 
 class MeshingParams(Flow360BaseModel):

@@ -1,0 +1,15 @@
+area:
+    units: m**2
+    value: 1.15315084119231
+moment_center:
+    units: m
+    value:
+    - 0.0
+    - 0.0
+    - 0.0
+moment_length:
+    units: m
+    value:
+    - 1.47602
+    - 0.801672958512342
+    - 1.47602

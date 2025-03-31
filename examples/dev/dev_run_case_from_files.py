@@ -1,20 +1,39 @@
-import flow360.v1 as fl
+import flow360 as fl
 from flow360.examples import OM6wing
 
-fl.Env.dev.active()
+# Select the environment to which you want to submit your project
+fl.Env.dev.active()  # Dev
+# fl.Env.preprod.active() # Preprod
+# fl.Env.uat.active() # UAT
+# fl.Env.prod.active() # Prod (it is also the default environment)
 
 OM6wing.get_files()
 
 project = fl.Project.from_volume_mesh(OM6wing.mesh_filename, name="OM6wing Quick Start from Python")
 
-# # submit case using json file
-params = fl.Flow360Params(OM6wing.case_json)
-case = fl.Case.create("OM6wing", params, volume_mesh.id, solver_version="release-23.1.1.0")
-case = case.submit()
-print(case)
+vm = project.volume_mesh
 
-case2 = case.retry(name="OM6wing-adaptive-CFL", solver_version="release-23.2.1.0")
-case2.params.time_stepping.CFL = fl.AdaptiveCFL()
-case2.params.time_stepping.max_pseudo_steps = 1000
-case2 = case2.submit()
-print(case2)
+with fl.SI_unit_system:
+    params = fl.SimulationParams(
+        reference_geometry=fl.ReferenceGeometry(
+            area=1.15315084119231,
+            moment_center=[0.0, 0.0, 0.0],
+            moment_length=[1.47602, 0.801672958512342, 1.47602],
+        ),
+        operating_condition=fl.operating_condition_from_mach_reynolds(
+            reynolds=14.6e6, mach=0.84, project_length_unit=fl.u.m, alpha=3.06 * fl.u.deg
+        ),
+        time_stepping=fl.Steady(max_steps=500, CFL=fl.RampCFL(initial=5, final=200, ramp_steps=40)),
+        models=[
+            fl.Fluid(),
+            fl.Wall(name="Wall", surfaces=[vm["1"]]),
+            fl.SlipWall(name="SlipWall", surfaces=[vm["2"]]),
+            fl.Freestream(name="Freestream", surfaces=[vm["3"]]),
+        ],
+        outputs=[
+            fl.SurfaceOutput(output_fields=["primitiveVars", "Cp", "Cf"], surfaces=[vm["1"]]),
+            fl.VolumeOutput(output_fields=["primitiveVars", "Mach"]),
+        ],
+    )
+
+project.run_case(params, name="Case of OM6Wing Quick Start")

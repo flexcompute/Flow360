@@ -134,19 +134,17 @@ class _ParamModelBase(Flow360BaseModel):
         return kwargs
 
     @classmethod
-    def _update_param_dict(cls, model_dict):
+    def _update_param_dict(cls, model_dict, version_to=__version__):
         """
         1. Find the version from the input dict.
-        2. Update the input dict to __version__.
+        2. Update the input dict to `version_to` which by default is the current version.
         """
         version = model_dict.get("version", None)
         if version is None:
-            raise Flow360RuntimeError(
-                "Missing version info in file content, please check the input file."
-            )
-        if version != __version__:
+            raise Flow360RuntimeError("Failed to find SimulationParams version from the input.")
+        if version != version_to:
             model_dict = updater(
-                version_from=version, version_to=__version__, params_as_dict=model_dict
+                version_from=version, version_to=version_to, params_as_dict=model_dict
             )
         return model_dict
 
@@ -471,7 +469,7 @@ class SimulationParams(_ParamModelBase):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
 
-    def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
+    def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
         registry.clear()
@@ -513,7 +511,7 @@ class SimulationParams(_ParamModelBase):
         And also try to update the entities now that we have a global view of the simulation.
         """
         registry = EntityRegistry()
-        registry = self._move_registry_to_asset_cache(registry)
+        registry = self._register_assigned_entities(registry)
         registry = self._update_entity_private_attrs(registry)
         return registry
 

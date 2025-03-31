@@ -4,7 +4,6 @@ from enum import Enum
 
 import pytest
 
-import flow360 as fl
 from flow360.component.simulation.framework.updater import (
     VERSION_MILESTONES,
     _find_update_path,
@@ -13,11 +12,19 @@ from flow360.component.simulation.framework.updater import (
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.services import validate_model
 from flow360.component.simulation.validation.validation_context import ALL
+from flow360.version import __version__
 
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+def test_version_greater_than_highest_updater_version():
+    current_python_version = Flow360Version(__version__)
+    assert (
+        current_python_version >= VERSION_MILESTONES[-1][0]
+    ), "Highest version updater can handle is higher than Python client version. This is not allowed."
 
 
 def test_milestone_ordering():
@@ -213,6 +220,23 @@ def test_updater_to_24_11_1():
 
     assert params_24_11_1["time_stepping"].get("order_of_accuracy") is None
 
+    with open("../data/simulation/simulation_pre_24_11_1_symmetry.json", "r") as fp:
+        params_pre_24_11_1_symmetry = json.load(fp)
+
+    params_pre_24_11_1_symmetry = updater(
+        version_from="24.11.0", version_to="24.11.1", params_as_dict=params_pre_24_11_1_symmetry
+    )
+
+    updated_surface_1 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][1]
+    updated_surface_2 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][2]
+
+    assert updated_surface_1["name"] == "symmetric-1"
+    assert updated_surface_2["name"] == "symmetric-2"
+
 
 def test_updater_to_24_11_7():
 
@@ -337,6 +361,78 @@ def test_updater_to_25_2_1():
     assert "type_name" not in updated_ghost_sphere
     assert updated_ghost_sphere["center"] == [0, 0, 0]
     assert updated_ghost_sphere["max_radius"] == 5.000000000000003
+
+
+def test_updater_to_25_2_3():
+    with open("../data/simulation/simulation_pre_25_2_3_geo.json", "r") as fp:
+        params = json.load(fp)
+
+    params_new = updater(
+        version_from=f"25.2.2",
+        version_to=f"25.2.3",
+        params_as_dict=params,
+    )
+    updated_edge = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "grouped_edges"
+    ][0][0]
+    updated_face = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "grouped_faces"
+    ][0][0]
+    updated_ghost_entity = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "ghost_entities"
+    ][1]
+    updated_draft_entity = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "draft_entities"
+    ][0]
+
+    updated_output_surface_entity = params_new["outputs"][1]["entities"]["stored_entities"][1]
+    updated_model_freestream_entity = params["models"][1]["entities"]["stored_entities"][0]
+
+    assert updated_edge["private_attribute_id"] == updated_edge["name"] == "wingtrailingEdge"
+    assert updated_face["private_attribute_id"] == updated_face["name"] == "wingTrailing"
+    assert (
+        updated_ghost_entity["private_attribute_id"]
+        == updated_ghost_entity["name"]
+        == "symmetric-1"
+    )
+    assert (
+        updated_output_surface_entity["private_attribute_id"]
+        == updated_output_surface_entity["name"]
+        == "wing"
+    )
+    assert (
+        updated_model_freestream_entity["private_attribute_id"]
+        == updated_model_freestream_entity["name"]
+        == "farfield"
+    )
+    assert updated_draft_entity["private_attribute_id"] != updated_draft_entity["name"]
+
+    with open("../data/simulation/simulation_pre_25_2_3_volume_zones.json", "r") as fp:
+        params = json.load(fp)
+
+    params_new = updater(
+        version_from=f"25.2.1",
+        version_to=f"25.2.3",
+        params_as_dict=params,
+    )
+
+    updated_zone = params_new["private_attribute_asset_cache"]["project_entity_info"]["zones"][-1]
+    updated_boundary = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "boundaries"
+    ][0]
+    updated_model_rotation_entity = params["models"][1]["entities"]["stored_entities"][0]
+
+    assert updated_zone["private_attribute_id"] == updated_zone["name"] == "stationaryField"
+    assert (
+        updated_boundary["private_attribute_id"]
+        == updated_boundary["name"]
+        == "rotationField/blade"
+    )
+    assert (
+        updated_model_rotation_entity["private_attribute_id"]
+        == updated_model_rotation_entity["name"]
+        == "rotationField"
+    )
 
 
 def test_deserialization_with_updater():

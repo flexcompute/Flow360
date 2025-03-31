@@ -47,10 +47,12 @@ def boundary_layer_translator(obj: BoundaryLayer):
     Translate BoundaryLayer.
 
     """
-    return {
-        "firstLayerThickness": obj.first_layer_thickness.value.item(),
-        "type": "aniso",
-    }
+    face = {"type": "aniso"}
+    if obj.first_layer_thickness is not None:
+        face["firstLayerThickness"] = obj.first_layer_thickness.value.item()
+    if obj.growth_rate is not None:
+        face["growthRate"] = obj.growth_rate
+    return face
 
 
 def passive_spacing_translator(obj: PassiveSpacing):
@@ -213,15 +215,17 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
 
     # growthRate can only be global
-    if meshing_params.defaults.boundary_layer_growth_rate is None:
-        raise Flow360TranslationError(
-            "`boundary_layer_growth_rate` is not set.",
-            None,
-            ["meshing", "defaults"],
-        )
     translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
 
     translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
+
+    if input_params.private_attribute_asset_cache.use_inhouse_mesher:
+        number_of_boundary_layers = meshing_params.defaults.number_of_boundary_layers
+        translated["volume"]["numBoundaryLayers"] = (
+            number_of_boundary_layers if number_of_boundary_layers is not None else -1
+        )
+
+        translated["volume"]["planarFaceTolerance"] = meshing_params.defaults.planar_face_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
