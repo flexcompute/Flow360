@@ -36,6 +36,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    LiquidOperatingCondition,
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import Slice
@@ -561,5 +562,15 @@ def test_boundaries():
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_boundaries.json")
 
 
-# def test_liquid_simulation_translation():
-#     # Note: Maybe having this as one of the local test input?
+def test_liquid_simulation_translation():
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=10 * u.m / u.s,
+            ),
+            models=[
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+        )
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid.json")

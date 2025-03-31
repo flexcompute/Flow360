@@ -1007,8 +1007,14 @@ def get_solver_json(
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
     op_acoustic_to_static_pressure_ratio = (
-        op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
-    ).value
+        (
+            op.thermal_state.density
+            * op.thermal_state.speed_of_sound**2
+            / op.thermal_state.pressure
+        ).value
+        if not isinstance(op, LiquidOperatingCondition)
+        else 1.0
+    )
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
