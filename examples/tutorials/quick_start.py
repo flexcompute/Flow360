@@ -1,4 +1,6 @@
 # Import necessary modules from the Flow360 library
+from matplotlib.pyplot import show
+
 import flow360 as fl
 from flow360.examples import Airplane
 
@@ -63,4 +65,12 @@ with fl.SI_unit_system:
     )
 
 # Step 5: Run the simulation case with the specified parameters
-project.run_case(params=params, name="Case of Simple Airplane from Python", use_beta_mesher=False)
+project.run_case(params=params, name="Case of Simple Airplane from Python")
+
+# Step 6: wait for results and plot CL, CD when available
+case = project.case
+case.wait()
+
+total_forces = case.results.total_forces.as_dataframe()
+total_forces.plot("pseudo_step", ["CL", "CD"])
+show()
