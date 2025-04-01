@@ -230,12 +230,29 @@ class AssetBase(metaclass=ABCMeta):
         return asset_obj
 
     def wait(self, timeout_minutes=60):
-        """Wait until the Asset finishes processing, refresh periodically"""
+        """
+        Wait until the Resource finishes processing.
 
+        While waiting, an animated dot sequence is displayed using the current non-final status value.
+        The status is dynamically updated every few seconds with an increasing number of dots:
+        ⠇ running..............................
+        This implementation leverages Rich's `status()` method via our custom logger (log.status) to perform in-place
+        status updates. If the process does not finish within the specified timeout, a TimeoutError is raised.
+        """
+        max_dots = 30
+        update_every_seconds = 2
         start_time = time.time()
-        while self._webapi.status.is_final() is False:
-            if time.time() - start_time > timeout_minutes * 60:
-                raise TimeoutError(
-                    "Timeout: Process did not finish within the specified timeout period"
-                )
-            time.sleep(2)
+
+        with log.status() as status_logger:
+            while not self._webapi.status.is_final():
+
+                elapsed = time.time() - start_time
+                dot_count = int((elapsed // update_every_seconds) % max_dots)
+                status_logger.update(f"{self._webapi.status.value}{'.' * dot_count}")
+
+                if time.time() - start_time > timeout_minutes * 60:
+                    raise TimeoutError(
+                        "Timeout: Process did not finish within the specified timeout period"
+                    )
+
+                time.sleep(update_every_seconds)

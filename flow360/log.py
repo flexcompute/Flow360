@@ -238,6 +238,10 @@ class Logger:
         message = f"[white]{message}[/white]"
         self._log(_level_value["CRITICAL"], "CRITICAL", message)
 
+    def status(self, status: str = ""):
+        """Returns status context to show spinner"""
+        return log.handlers["console"].console.status(status)
+
 
 # Initialize FLow360's logger
 log = Logger()
