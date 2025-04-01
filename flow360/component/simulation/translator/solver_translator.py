@@ -1319,8 +1319,7 @@ def get_solver_json(
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
     )
-    translated["outputRescale"] = {}
-    translated["outputRescale"]["velocityScale"] = 1.0
+    translated["outputRescale"] = {"velocityScale": 1.0}
     if isinstance(input_params.operating_condition, LiquidOperatingCondition):
         translated["outputRescale"]["velocityScale"] = (
             1.0 / translated["freestream"]["MachRef"]

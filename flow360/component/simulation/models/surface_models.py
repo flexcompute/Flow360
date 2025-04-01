@@ -377,7 +377,7 @@ class Wall(BoundaryBase):
     @pd.field_validator("heat_spec", mode="after")
     @classmethod
     def _ensure_adiabatic_wall_for_liquid(cls, value):
-        """Only allow adiabatic wall when liquid operating condition is used"""
+        """Allow only adiabatic wall when liquid operating condition is used"""
         validation_info = get_validation_info()
         if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
