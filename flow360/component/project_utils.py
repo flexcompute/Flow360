@@ -8,7 +8,6 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
-from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import GeometryEntityInfo
@@ -31,6 +30,7 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 from flow360.log import log
