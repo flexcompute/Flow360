@@ -27,6 +27,7 @@ from flow360.component.resource_base import (
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
@@ -264,6 +265,24 @@ class Geometry(AssetBase):
     def body_group_tag(self, new_value: str):
         with model_attribute_unlock(self._entity_info, "body_group_tag"):
             self._entity_info.body_group_tag = new_value
+
+    def get_default_settings(self, simulation_dict: dict):
+        """Get the default geometry settings from the simulation dict"""
+
+        def _get_default_geometry_accuracy(simulation_dict: dict) -> LengthType.Positive:
+            """Get the default geometry accuracy from the simulation json"""
+            if simulation_dict.get("meshing") is None:
+                return None
+            if simulation_dict["meshing"].get("defaults") is None:
+                return None
+            if simulation_dict["meshing"]["defaults"].get("geometry_accuracy") is None:
+                return None
+            # pylint: disable=no-member
+            return LengthType.validate(simulation_dict["meshing"]["defaults"]["geometry_accuracy"])
+
+        self.default_settings["geometry_accuracy"] = _get_default_geometry_accuracy(
+            simulation_dict=simulation_dict
+        )
 
     @classmethod
     # pylint: disable=redefined-builtin

@@ -8,6 +8,7 @@ from typing import List, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
+from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import GeometryEntityInfo
@@ -260,6 +261,25 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     return entity_info
 
 
+def _set_up_default_geometry_accuracy(
+    root_asset: AssetBase,
+    params: SimulationParams,
+    use_geometry_AI: bool,  # pylint: disable=invalid-name
+):
+    """
+    Set up the default geometry accuracy in params if not set by the user.
+    """
+    if not use_geometry_AI:
+        return params
+    if not isinstance(root_asset, GeometryEntityInfo):
+        return params
+    if root_asset.default_settings.get("geometry_accuracy") is None:
+        return params
+    if not params.meshing.defaults.geometry_accuracy:
+        params.meshing.defaults.geometry_accuracy = root_asset.default_settings["geometry_accuracy"]
+    return params
+
+
 def set_up_params_for_uploading(
     root_asset,
     length_unit: LengthType,
@@ -292,7 +312,8 @@ def set_up_params_for_uploading(
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
-    entity_info = _replace_ghost_surfaces(params)
+    params = _replace_ghost_surfaces(params)
+    params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     return params
 
