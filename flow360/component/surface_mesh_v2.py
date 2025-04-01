@@ -338,6 +338,11 @@ class SurfaceMeshV2(AssetBase):
                 "an asset from the cloud using the from_cloud method "
             )
 
+    # pylint: disable=useless-parent-delegation
+    def get_default_settings(self, simulation_dict: dict):
+        """Get the default surface mesh settings from the simulation dict"""
+        return super().get_default_settings(simulation_dict)
+
     @property
     def boundary_names(self) -> List[str]:
         """

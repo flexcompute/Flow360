@@ -1200,6 +1200,11 @@ class VolumeMeshV2(AssetBase):
                 "an asset from the cloud using the from_cloud method "
             )
 
+    # pylint: disable=useless-parent-delegation
+    def get_default_settings(self, simulation_dict: dict):
+        """Get the default volume mesh settings from the simulation dict"""
+        return super().get_default_settings(simulation_dict)
+
     @cached_property
     def stats(self) -> VolumeMeshStats:
         """
