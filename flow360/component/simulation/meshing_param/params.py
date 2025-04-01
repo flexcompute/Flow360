@@ -52,13 +52,11 @@ class MeshingDefaults(Flow360BaseModel):
     Default/global settings for meshing parameters.
     """
 
-    geometry_relative_accuracy: float = pd.Field(
-        1e-6,
-        gt=0,
-        le=1,
-        description="The non-dimensional relative scale distinguishable by the surface meshing process."
-        " This is relative to the whole bounding box of the input geometry/surface mesh and"
-        " is only valid when using geometry AI.",
+    # pylint: disable=no-member
+    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="The smallest length scale that will be resolved accurately by the surface meshing process. "
+        "This parameter is only valid when using geometry AI.",
     )
 
     ##::   Default surface edge settings
@@ -149,9 +147,9 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Planar face tolerance is only supported by the beta mesher.")
         return value
 
-    @pd.field_validator("geometry_relative_accuracy", mode="after")
+    @pd.field_validator("geometry_accuracy", mode="after")
     @classmethod
-    def invalid_geometry_relative_accuracy(cls, value):
+    def invalid_geometry_accuracy(cls, value):
         """Ensure geometry accuracy is not specified when GAI is not used"""
         validation_info = get_validation_info()
 
@@ -159,12 +157,10 @@ class MeshingDefaults(Flow360BaseModel):
             return value
 
         if (
-            value != cls.model_fields["geometry_relative_accuracy"].default
+            value != cls.model_fields["geometry_accuracy"].default
             and not validation_info.use_geometry_AI
         ):
-            raise ValueError(
-                "Geometry relative accuracy is only supported when geometry AI is used."
-            )
+            raise ValueError("Geometry accuracy is only supported when geometry AI is used.")
         return value
 
 
