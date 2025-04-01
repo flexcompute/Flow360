@@ -6,7 +6,12 @@ from typing import get_args
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.models.solver_numerics import NoneSolver
-from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
+from flow360.component.simulation.models.surface_models import (
+    Inflow,
+    Outflow,
+    SurfaceModelTypes,
+    Wall,
+)
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
@@ -24,6 +29,7 @@ from flow360.component.simulation.time_stepping.time_stepping import Steady, Uns
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    get_validation_info,
     get_validation_levels,
 )
 
@@ -448,3 +454,17 @@ def _check_time_average_output(params):
         output_type_list.strip(",")
         raise ValueError(f"{output_type_list} can only be used in unsteady simulations.")
     return params
+
+
+def _check_valid_models_for_liquid(models):
+    if not models:
+        return models
+    validation_info = get_validation_info()
+    if validation_info is None or validation_info.using_liquid_as_material is False:
+        return models
+    for model in models:
+        if isinstance(model, (Inflow, Outflow, Solid)):
+            raise ValueError(
+                f"`{model.type}` type model cannot be used when using liquid as simulation material."
+            )
+    return models

@@ -4,6 +4,7 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     VolumeMeshEntityInfo,
@@ -17,8 +18,9 @@ from flow360.component.simulation.meshing_param.volume_params import UniformRefi
 from flow360.component.simulation.migration.extra_operating_condition import (
     operating_condition_from_mach_muref,
 )
-from flow360.component.simulation.models.material import SolidMaterial
+from flow360.component.simulation.models.material import SolidMaterial, Water
 from flow360.component.simulation.models.surface_models import (
+    Freestream,
     HeatFlux,
     Inflow,
     MassFlowRate,
@@ -39,6 +41,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    LiquidOperatingCondition,
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
@@ -157,6 +160,49 @@ def get_the_param():
                     update_law=["fake"],
                 )
             ],
+        )
+        return param
+
+
+@pytest.fixture()
+def get_param_with_liquid_operating_condition():
+    with SI_unit_system:
+        water = Water(
+            name="h2o", density=1000 * u.kg / u.m**3, dynamic_viscosity=0.001 * u.kg / u.m / u.s
+        )
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=50,
+                reference_velocity_magnitude=100,
+                material=water,
+            ),
+            models=[
+                Fluid(material=water),
+                Wall(
+                    entities=[Surface(name="wall1")],
+                    velocity=(1.0, 1.2, 2.4),
+                ),
+                Rotation(
+                    volumes=[
+                        Cylinder(
+                            name="cyl-1",
+                            axis=(5, 0, 0),
+                            center=(1.2, 2.3, 3.4),
+                            height=3.0,
+                            inner_radius=3.0,
+                            outer_radius=5.0,
+                        )
+                    ],
+                    spec=AngularVelocity(0.45 * u.rad / u.s),
+                ),
+                Freestream(
+                    entities=Surface(name="my_fs"),
+                    turbulence_quantities=TurbulenceQuantities(
+                        modified_viscosity=10,
+                    ),
+                ),
+            ],
+            time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
         )
         return param
 
@@ -358,6 +404,43 @@ def test_delta_temperature_scaling():
     assert (
         processed_param.operating_condition.thermal_state.temperature_offset.value
         == scaled_temperature_offset
+    )
+
+
+def test_simulation_params_unit_conversion_with_liquid_condition(
+    get_param_with_liquid_operating_condition,
+):
+    params: SimulationParams = get_param_with_liquid_operating_condition
+    converted = params._preprocess(mesh_unit=1 * u.m)
+
+    fake_water_speed_of_sound = (
+        params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+    )
+    # TimeType
+    assertions.assertAlmostEqual(
+        converted.time_stepping.step_size.value,
+        params.time_stepping.step_size / (1.0 / fake_water_speed_of_sound),
+    )
+
+    # VelocityType
+    assertions.assertAlmostEqual(
+        converted.models[1].velocity.value[0],
+        1.0 / fake_water_speed_of_sound,
+    )
+
+    # AngularVelocityType
+    assertions.assertAlmostEqual(
+        converted.models[2].spec.value.value,
+        0.45 / fake_water_speed_of_sound.value,
+        # Note: We did not use original value from params like the others b.c
+        # for some unknown reason THIS value in params will also converted to flow360 unit system...
+    )
+    # ViscosityType
+    assertions.assertAlmostEqual(
+        converted.models[3].turbulence_quantities.modified_turbulent_viscosity.value,
+        10 / (1000 * fake_water_speed_of_sound.value),
+        # Note: We did not use original value from params like the others b.c
+        # for some unknown reason THIS value in params will also converted to flow360 unit system...
     )
 
 
