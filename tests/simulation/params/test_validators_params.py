@@ -1,7 +1,6 @@
 import json
 import re
 import unittest
-from typing import Literal
 
 import pydantic as pd
 import pytest
