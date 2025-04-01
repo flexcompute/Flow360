@@ -417,6 +417,25 @@ def test_updater_to_25_2_3():
     )
 
 
+def test_updater_to_25_4_1():
+    with open("../data/simulation/simulation_pre_25_4_1.json", "r") as fp:
+        params = json.load(fp)
+
+    geometry_relative_accuracy = params["meshing"]["defaults"]["geometry_relative_accuracy"]
+
+    params_new = updater(
+        version_from=f"25.4.0",
+        version_to=f"25.4.1",
+        params_as_dict=params,
+    )
+
+    assert (
+        params_new["meshing"]["defaults"]["geometry_accuracy"]["value"]
+        == geometry_relative_accuracy
+    )
+    assert params_new["meshing"]["defaults"]["geometry_accuracy"]["units"] == "m"
+
+
 def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0
     with open("../data/simulation/simulation_24_11_0.json", "r") as fp:
