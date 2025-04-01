@@ -975,8 +975,44 @@ class Project(pd.BaseModel):
         )
 
     @classmethod
-    @pd.validate_call
-    def from_cloud(cls, project_id: str):
+    def _get_user_requested_entity_info(
+        cls,
+        *,
+        current_project_id: str,
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+    ):
+        """
+        Get the entity info requested by the users when they specify `new_run_from` when calling
+        Project.from_cloud()
+        """
+        if new_run_from.project_id is None:
+            # Can only happen to case created using V1 interface.
+            raise ValueError(
+                "The supplied case resource for `new_run_from` was created using old interface and "
+                "cannot be used as the starting point of a new run."
+            )
+        else:
+            if current_project_id != new_run_from.project_id:
+                raise ValueError(
+                    "The supplied cloud resource for `new_run_from` does not belong to the project."
+                )
+
+        if isinstance(new_run_from, Case):
+            return new_run_from.get_simulation_params()
+        elif isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
+            return new_run_from.params
+        return None
+
+    @classmethod
+    @pd.validate_call(
+        config={"arbitrary_types_allowed": True}  # Geometry etc do not have validate() defined
+    ) 
+    def from_cloud(
+        cls,
+        project_id: str,
+        *,
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+    ):
         """
         Loads a project from the cloud.
 
@@ -984,6 +1020,14 @@ class Project(pd.BaseModel):
         ----------
         project_id : str
             ID of the project.
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]]
+            The cloud resource that the current run should be based on.
+            The root asset will use entity settings (grouping, transformation etc) from this resource.
+            This results in the same behavior when user clicks New run on webUI.
+            By default this will be the root asset (what user uploaded) of the project.
+
+            TODO: We can add 'last' as one option to automatically start
+            from the latest created asset within the project.
 
         Returns
         -------
@@ -1010,12 +1054,30 @@ class Project(pd.BaseModel):
         meta = ProjectMeta(**info)
         root_asset = None
         root_type = meta.root_item_type
+
+        if (
+            isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, Case)) == False
+            and new_run_from is not None
+        ):
+            # Should have been caught by the validate_call?
+            raise ValueError(
+                "The supplied `new_run_from` is not valid. Please check the function description for more details."
+            )
+
+        entity_info_param = cls._get_user_requested_entity_info(
+            current_project_id=project_info.asset_id, new_run_from=new_run_from
+        )
+
         if root_type == RootType.GEOMETRY:
-            root_asset = Geometry.from_cloud(meta.root_item_id)
+            root_asset = Geometry.from_cloud(meta.root_item_id, entity_info_param=entity_info_param)
         elif root_type == RootType.SURFACE_MESH:
-            root_asset = SurfaceMeshV2.from_cloud(meta.root_item_id)
+            root_asset = SurfaceMeshV2.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param
+            )
         elif root_type == RootType.VOLUME_MESH:
-            root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
+            root_asset = VolumeMeshV2.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param
+            )
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_info.asset_id}")
         project = Project(

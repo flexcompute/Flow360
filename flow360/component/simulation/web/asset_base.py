@@ -6,7 +6,7 @@ import json
 import os
 import time
 from abc import ABCMeta, abstractmethod
-from typing import List, Union
+from typing import List, Optional, Union
 
 from requests.exceptions import HTTPError
 
@@ -102,7 +102,7 @@ class AssetBase(metaclass=ABCMeta):
     def _from_supplied_entity_info(
         cls,
         simulation_dict: dict,
-        asset_obj,
+        asset_obj: AssetBase,
     ):
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
@@ -114,14 +114,10 @@ class AssetBase(metaclass=ABCMeta):
             raise KeyError(
                 "[Internal] Could not find project_entity_info in the asset's simulation settings."
             )
-        entity_info = asset_cache["project_entity_info"]
-        # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
-        # Note: Only the draft's and non-root item simulation.json will have it.
-        # Note: But we still add this because it is not clear currently if Asset is always the root item.
-        # Note: This should be addressed when we design the new project client interface.
-        entity_info = remove_properties_by_name(entity_info, "_id")
+        entity_info_dict = asset_cache["project_entity_info"]
+        entity_info_dict = remove_properties_by_name(entity_info_dict, "_id")
         # pylint: disable=protected-access
-        asset_obj._entity_info = parse_entity_info_model(entity_info)
+        asset_obj._entity_info = parse_entity_info_model(entity_info_dict)
         return asset_obj
 
     @classmethod
@@ -198,9 +194,14 @@ class AssetBase(metaclass=ABCMeta):
     @abstractmethod
     def get_default_settings(self, simulation_dict):
         """Get the default settings of the asset from the non-entity part of root asset's simulation dict"""
+        
+    def _check_registry(self, **kwargs):
+        """
+        Ensure that `internal_registry` exists and if not, initialize `internal_registry`.
+        """
 
     @classmethod
-    def from_cloud(cls, id: str, **_):
+    def from_cloud(cls, id: str, **kwargs):
         """
         Create asset with the given ID.
 
@@ -208,11 +209,22 @@ class AssetBase(metaclass=ABCMeta):
         is not the project root asset and should store the given entity info type instead
         """
         asset_obj = cls(id)
-        simulation_dict = cls._get_simulation_json(asset_obj)
+        entity_info_param: Optional[SimulationParams] = kwargs.pop("entity_info_param", None)
+        if entity_info_param:
+            # Use user requested json.
+            simulation_dict = entity_info_param.model_dump(mode="json")
+        else:
+            # Get the json from bucket, same as before.
+            simulation_dict = cls._get_simulation_json(asset_obj)
+
         asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
         # The default_settings will only make a difference when the asset is project root asset,
         # but we try to get it regardless to save the logic differentiating whether it is root or not.
         asset_obj.get_default_settings(simulation_dict)
+
+        # Attempting constructing entity registry.
+        # This ensure that once from_cloud() returns, the entity_registry will be available.
+        asset_obj._check_registry()
         return asset_obj
 
     @classmethod
@@ -300,9 +312,3 @@ class AssetBase(metaclass=ABCMeta):
                     "Timeout: Process did not finish within the specified timeout period"
                 )
             time.sleep(2)
-
-    @abstractmethod
-    def _check_registry(self, **kwargs):
-        """
-        Ensure that `internal_registry` exists and if not, initialize `internal_registry`.
-        """

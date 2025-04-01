@@ -289,24 +289,6 @@ class Geometry(AssetBase):
     def from_cloud(cls, id: str, **kwargs):
         """Create asset with the given ID"""
         asset_obj = super().from_cloud(id, **kwargs)
-        # get the face tag and edge tag used.
-        # pylint: disable=no-member
-        if asset_obj.face_group_tag is None:
-            # This may happen if users submit the Geometry but did not do anything else.
-            # Then they load back the geometry which will then have no info on grouping.
-            log.warning(
-                "Face grouping setting not found. Please remember to group them if relevant features are used."
-            )
-
-        if asset_obj.edge_group_tag is None:
-            log.warning(
-                "Edge grouping setting not found. Please remember to group them if relevant features are used."
-            )
-
-        if asset_obj.body_group_tag is None:
-            log.warning(
-                "Body grouping setting not found. Please remember to group them if relevant features are used."
-            )
 
         return asset_obj
 
@@ -408,22 +390,28 @@ class Geometry(AssetBase):
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
 
-        if entity_type_name == "face":
-            found_existing_grouping = self.face_group_tag is not None
-        elif entity_type_name == "edge":
-            found_existing_grouping = self.edge_group_tag is not None
-        elif entity_type_name == "body":
-            found_existing_grouping = self.body_group_tag is not None
+        if entity_type_name == "face" and self.face_group_tag is not None:
+            log.info(
+                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{self.face_group_tag}`)."
+            )
+            self._reset_grouping(entity_type_name)
+
+        elif entity_type_name == "edge" and self.edge_group_tag is not None:
+            log.info(
+                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{self.edge_group_tag}`)."
+            )
+            self._reset_grouping(entity_type_name)
+
+        elif entity_type_name == "body" and self.body_group_tag is not None:
+            log.info(
+                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{self.body_group_tag}`)."
+            )
+            self._reset_grouping(entity_type_name)
+
         else:
             raise ValueError(
                 f"Unknown entity type: `{entity_type_name}`, allowed entity: face, edge, body."
             )
-
-        if found_existing_grouping is True:
-            log.warning(
-                f"Grouping already exists for {entity_type_name}. Resetting the grouping and regroup with {tag_name}."
-            )
-            self._reset_grouping(entity_type_name)
 
         self.internal_registry = self._entity_info.group_in_registry(
             entity_type_name, attribute_name=tag_name, registry=self.internal_registry
@@ -618,16 +606,58 @@ class Geometry(AssetBase):
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
 
+    def _get_default_grouping_tag(self, entity_type_name: Literal["face", "edge", "body"]) -> str:
+        """
+        Returns the default grouping tag for the given entity type.
+        The selection logic is intended to mimic the webUI behavior.
+        """
+
+        def _get_the_first_non_id_tag(
+            attribute_names: list[str], entity_type_name: Literal["face", "edge", "body"]
+        ):
+            if not attribute_names:
+                raise ValueError(
+                    f"[Internal] No valid tag available for grouping {entity_type_name}."
+                )
+            id_tag = f"{entity_type_name}Id"
+            for item in attribute_names:
+                if item != id_tag:
+                    return item
+            return id_tag
+
+        if entity_type_name == "body":
+            return _get_the_first_non_id_tag(
+                self.entity_info.body_attribute_names, entity_type_name
+            )
+
+        if entity_type_name == "face":
+            return _get_the_first_non_id_tag(
+                self.entity_info.face_attribute_names, entity_type_name
+            )
+
+        if entity_type_name == "edge":
+            return _get_the_first_non_id_tag(
+                self.entity_info.edge_attribute_names, entity_type_name
+            )
+
+        raise ValueError(f"[Internal] Invalid entity type name: {entity_type_name}.")
+
     def _check_registry(self, **kwargs):
+
         if not hasattr(self, "internal_registry") or self.internal_registry is None:
             if self.face_group_tag is None:
-                raise ValueError("No grouping specified for faces in geometry.")
+                self.face_group_tag = self._get_default_grouping_tag("face")
+                log.info(f"Using `{self.face_group_tag}` as default grouping for faces.")
             self.group_faces_by_tag(self.face_group_tag)
 
             if self.edge_group_tag is None:
-                raise ValueError("No grouping specified for edges in geometry. Using 'edgeId' as default grouping")
-            self.group_edges_by_tag('edgeId')
+                self.edge_group_tag = self._get_default_grouping_tag("edge")
+                log.info(f"Using `{self.edge_group_tag}` as default grouping for edges.")
+            self.group_edges_by_tag(self.edge_group_tag)
 
-            if self.entity_info.body_group_tag:
-                # Post-25.4 geometry asset.
-                self.group_bodies_by_tag("bodyId")
+            if self.body_group_tag is None:
+                if self.entity_info.body_attribute_names:
+                    # Post-25.4 geometry asset. For Pre 25.4 we just skip body grouping.
+                    self.body_group_tag = self._get_default_grouping_tag("body")
+                    log.info(f"Using `{self.body_group_tag}` as default grouping for bodies.")
+                    self.group_bodies_by_tag(self.body_group_tag)
