@@ -204,9 +204,6 @@ class AssetBase(metaclass=ABCMeta):
     def from_cloud(cls, id: str, **kwargs):
         """
         Create asset with the given ID.
-
-        if root_item_entity_info_type is not None then the current asset
-        is not the project root asset and should store the given entity info type instead
         """
         asset_obj = cls(id)
         entity_info_param: Optional[SimulationParams] = kwargs.pop("entity_info_param", None)

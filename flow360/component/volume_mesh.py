@@ -1096,8 +1096,6 @@ class VolumeMeshV2(AssetBase):
         ----------
         id : str
             ID of the volume mesh resource in the cloud
-        root_item_entity_info_type :
-        override the default entity info type
 
         Returns
         -------

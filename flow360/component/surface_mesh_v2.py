@@ -237,8 +237,6 @@ class SurfaceMeshV2(AssetBase):
         ----------
         id : str
             ID of the surface mesh resource in the cloud
-        root_item_entity_info_type :
-        override the default entity info type
 
         Returns
         -------
