@@ -32,7 +32,11 @@ from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
-from flow360.component.volume_mesh import VolumeMeshBoundingBox, VolumeMeshV2
+from flow360.component.volume_mesh import (
+    VolumeMeshBoundingBox,
+    VolumeMeshDownloadable,
+    VolumeMeshV2,
+)
 from flow360.log import log
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -74,6 +78,9 @@ _requirements_mapping = {
     "volume_mesh": RequirementItem(resource_type="volume_mesh", filename="simulation.json"),
     "volume_mesh/stats": RequirementItem(
         resource_type="volume_mesh", filename=VolumeMeshV2._mesh_stats_file
+    ),
+    "volume_mesh/bounding_box": RequirementItem(
+        resource_type="volume_mesh", filename=VolumeMeshDownloadable.BOUNDING_BOX.value
     ),
     "surface_mesh": RequirementItem(resource_type="surface_mesh", filename="simulation.json"),
     "geometry": RequirementItem(resource_type="geometry", filename="simulation.json"),
