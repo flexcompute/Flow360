@@ -781,14 +781,6 @@ def _check_mapbc_existence(value):
             log.warning(f"The mapbc file ({mapbc_file_name}) for {value} is not found")
 
 
-def _check_mapbc_existence(value):
-    parser = MeshNameParser(input_mesh_file=value)
-    if parser.is_ugrid():
-        mapbc_file_name = parser.get_associated_mapbc_filename()
-        if not os.path.isfile(mapbc_file_name):
-            log.warning(f"The mapbc file ({mapbc_file_name}) for {value} is not found")
-
-
 class InputFileModel(Flow360BaseModel):
     """Base model for input files creating projects"""
 

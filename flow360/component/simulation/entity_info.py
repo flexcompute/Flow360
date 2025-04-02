@@ -23,7 +23,9 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     Surface,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.utils import GeometryFiles
+from flow360.log import log
 
 DraftEntityTypes = Annotated[
     Union[Box, Cylinder, Point, PointArray, PointArray2D, Slice],
@@ -52,9 +54,15 @@ class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
         Update self persistent entities with param ones by simple id/name matching.
+        """
+
+    @abstractmethod
+    def get_registry(self, internal_registry, **kwargs):
+        """
+        Ensure that `internal_registry` exists and if not, initialize `internal_registry`.
         """
 
 
@@ -180,9 +188,9 @@ class GeometryEntityInfo(EntityInfoModel):
         """
         return self._get_list_of_entities(attribute_name, "face")
 
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
-        Update the persistent entities stored inside `self` according to `param_entity_registry`
+        Update the persistent entities stored inside `self` according to `asset_entity_registry`
         """
 
         def _search_and_replace(grouped_entities, entity_registry: EntityRegistry):
@@ -195,9 +203,9 @@ class GeometryEntityInfo(EntityInfoModel):
                     if assigned_entity is not None:
                         grouped_entities[i_group][i_entity] = assigned_entity
 
-        _search_and_replace(self.grouped_faces, param_entity_registry)
-        _search_and_replace(self.grouped_edges, param_entity_registry)
-        _search_and_replace(self.grouped_bodies, param_entity_registry)
+        _search_and_replace(self.grouped_faces, asset_entity_registry)  # May changed entity name
+        _search_and_replace(self.grouped_edges, asset_entity_registry)
+        _search_and_replace(self.grouped_bodies, asset_entity_registry)  # May changed entity name
 
     def _get_processed_file_list(self):
         """
@@ -250,6 +258,129 @@ class GeometryEntityInfo(EntityInfoModel):
 
         return id_to_file_name
 
+    def _get_default_grouping_tag(self, entity_type_name: Literal["face", "edge", "body"]) -> str:
+        """
+        Returns the default grouping tag for the given entity type.
+        The selection logic is intended to mimic the webUI behavior.
+        """
+
+        def _get_the_first_non_id_tag(
+            attribute_names: list[str], entity_type_name: Literal["face", "edge", "body"]
+        ):
+            if not attribute_names:
+                raise ValueError(
+                    f"[Internal] No valid tag available for grouping {entity_type_name}."
+                )
+            id_tag = f"{entity_type_name}Id"
+            for item in attribute_names:
+                if item != id_tag:
+                    return item
+            return id_tag
+
+        if entity_type_name == "body":
+            return _get_the_first_non_id_tag(self.body_attribute_names, entity_type_name)
+
+        if entity_type_name == "face":
+            return _get_the_first_non_id_tag(self.face_attribute_names, entity_type_name)
+
+        if entity_type_name == "edge":
+            return _get_the_first_non_id_tag(self.edge_attribute_names, entity_type_name)
+
+        raise ValueError(f"[Internal] Invalid entity type name: {entity_type_name}.")
+
+    def _group_entity_by_tag(
+        self,
+        entity_type_name: Literal["face", "edge", "body"],
+        tag_name: str,
+        registry: EntityRegistry = None,
+    ) -> EntityRegistry:
+
+        if entity_type_name not in ["face", "edge", "body"]:
+            raise ValueError(
+                f"[Internal] Unknown entity type: `{entity_type_name}`, allowed entity: 'face', 'edge', 'body'."
+            )
+
+        if registry is None:
+            registry = EntityRegistry()
+
+        existing_tag = None
+        if entity_type_name == "face" and self.face_group_tag is not None:
+            existing_tag = self.face_group_tag
+
+        elif entity_type_name == "edge" and self.edge_group_tag is not None:
+            existing_tag = self.edge_group_tag
+
+        elif entity_type_name == "body" and self.body_group_tag is not None:
+            existing_tag = self.body_group_tag
+
+        if existing_tag:
+            log.info(
+                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{existing_tag}`)."
+            )
+            registry = self._reset_grouping(entity_type_name=entity_type_name, registry=registry)
+
+        registry = self.group_in_registry(
+            entity_type_name, attribute_name=tag_name, registry=registry
+        )
+        if entity_type_name == "face":
+            with model_attribute_unlock(self, "face_group_tag"):
+                self.face_group_tag = tag_name
+        elif entity_type_name == "edge":
+            with model_attribute_unlock(self, "edge_group_tag"):
+                self.edge_group_tag = tag_name
+        else:
+            with model_attribute_unlock(self, "body_group_tag"):
+                self.body_group_tag = tag_name
+
+        return registry
+
+    def _reset_grouping(
+        self, entity_type_name: Literal["face", "edge", "body"], registry: EntityRegistry
+    ) -> EntityRegistry:
+        if entity_type_name == "face":
+            registry.clear(Surface)
+            with model_attribute_unlock(self, "face_group_tag"):
+                self.face_group_tag = None
+        elif entity_type_name == "edge":
+            registry.clear(Edge)
+            with model_attribute_unlock(self, "edge_group_tag"):
+                self.edge_group_tag = None
+        else:
+            registry.clear(GeometryBodyGroup)
+            with model_attribute_unlock(self, "body_group_tag"):
+                self.body_group_tag = None
+        return registry
+
+    def get_registry(self, internal_registry, **_) -> EntityRegistry:
+        if internal_registry is None:
+            internal_registry = EntityRegistry()
+            if self.face_group_tag is None:
+                with model_attribute_unlock(self, "face_group_tag"):
+                    self.face_group_tag = self._get_default_grouping_tag("face")
+                log.info(f"Using `{self.face_group_tag}` as default grouping for faces.")
+            internal_registry = self._group_entity_by_tag(
+                "face", self.face_group_tag, registry=internal_registry
+            )
+
+            if self.edge_group_tag is None:
+                with model_attribute_unlock(self, "edge_group_tag"):
+                    self.edge_group_tag = self._get_default_grouping_tag("edge")
+                log.info(f"Using `{self.edge_group_tag}` as default grouping for edges.")
+            internal_registry = self._group_entity_by_tag(
+                "edge", self.edge_group_tag, registry=internal_registry
+            )
+
+            if self.body_group_tag is None:
+                if self.body_attribute_names:
+                    # Post-25.4 geometry asset. For Pre 25.4 we just skip body grouping.
+                    with model_attribute_unlock(self, "body_group_tag"):
+                        self.body_group_tag = self._get_default_grouping_tag("body")
+                    log.info(f"Using `{self.body_group_tag}` as default grouping for bodies.")
+                    internal_registry = self._group_entity_by_tag(
+                        "body", self.body_group_tag, registry=internal_registry
+                    )
+        return internal_registry
+
     def compute_transformation_matrices(self):
         """
         Computes the transformation matrices for the **selected** body group and store
@@ -299,19 +430,36 @@ class VolumeMeshEntityInfo(EntityInfoModel):
         # pylint: disable=not-an-iterable
         return [item for item in self.boundaries if item.private_attribute_is_interface is False]
 
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
         1. Changed GenericVolume axis and center etc
         """
 
         for i_zone, _ in enumerate(self.zones):
             # pylint:disable = unsubscriptable-object
-            assigned_zone = param_entity_registry.find_by_asset_id(
+            assigned_zone = asset_entity_registry.find_by_asset_id(
                 entity_id=self.zones[i_zone].id, entity_class=self.zones[i_zone].__class__
             )
             if assigned_zone is not None:
                 # pylint:disable = unsupported-assignment-operation
                 self.zones[i_zone] = assigned_zone
+
+    def get_registry(self, internal_registry, **_) -> EntityRegistry:
+        if internal_registry is None:
+            # Initialize the local registry
+            internal_registry = EntityRegistry()
+
+            # Populate boundaries
+            # pylint: disable=not-an-iterable
+            for boundary in self.boundaries:
+                internal_registry.register(boundary)
+
+            # Populate zones
+            # pylint: disable=not-an-iterable
+            for zone in self.zones:
+                internal_registry.register(zone)
+
+        return internal_registry
 
 
 class SurfaceMeshEntityInfo(EntityInfoModel):
@@ -326,14 +474,24 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         """
         Get the full list of boundary.
         """
-        # pylint: disable=not-an-iterable
         return self.boundaries
 
-    def update_persistent_entities(self, *, param_entity_registry: EntityRegistry) -> None:
+    def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
         """
         Nothing related to SurfaceMeshEntityInfo for now.
         """
         return
+
+    def get_registry(self, internal_registry, **_) -> EntityRegistry:
+        if internal_registry is None:
+            # Initialize the local registry
+            internal_registry = EntityRegistry()
+            # Populate boundaries
+            # pylint: disable=not-an-iterable
+            for boundary in self.boundaries:
+                internal_registry.register(boundary)
+            return internal_registry
+        return internal_registry
 
 
 EntityInfoUnion = Annotated[
