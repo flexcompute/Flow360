@@ -93,7 +93,7 @@ class ModifiedTurbulentViscosityRatio(Flow360BaseModel):
 
 class ModifiedTurbulentViscosity(Flow360BaseModel):
     """
-    modifiedTurbulentViscosity : ViscosityType [pressure * time]
+    modifiedTurbulentViscosity : KinematicViscosityType [length**2 / time]
         The modified turbulent eddy viscosity (SA). Applicable only when using SA model.
     """
 
