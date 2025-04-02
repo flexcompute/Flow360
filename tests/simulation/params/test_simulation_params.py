@@ -438,7 +438,7 @@ def test_simulation_params_unit_conversion_with_liquid_condition(
     # ViscosityType
     assertions.assertAlmostEqual(
         converted.models[3].turbulence_quantities.modified_turbulent_viscosity.value,
-        10 / (1000 * fake_water_speed_of_sound.value),
+        10 / (1 * fake_water_speed_of_sound.value),
         # Note: We did not use original value from params like the others b.c
         # for some unknown reason THIS value in params will also converted to flow360 unit system...
     )
