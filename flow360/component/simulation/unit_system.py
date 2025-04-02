@@ -29,6 +29,7 @@ from flow360.log import log
 from flow360.utils import classproperty
 
 udim.viscosity = udim.pressure * udim.time
+udim.kinematic_viscosity = udim.length * udim.length / udim.time
 udim.angular_velocity = udim.angle / udim.time
 udim.heat_flux = udim.mass / udim.time**3
 udim.moment = udim.force * udim.length
@@ -879,6 +880,18 @@ class _ViscosityType(_DimensionedType):
 ViscosityType = Annotated[_ViscosityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+class _KinematicViscosityType(_DimensionedType):
+    """:class: KinematicViscosityType"""
+
+    dim = udim.kinematic_viscosity
+    dim_name = "kinematic_viscosity"
+
+
+KinematicViscosityType = Annotated[
+    _KinematicViscosityType, PlainSerializer(_dimensioned_type_serializer)
+]
+
+
 class _PowerType(_DimensionedType):
     """:class: PowerType"""
 
@@ -1016,6 +1029,7 @@ DimensionedTypes = Union[
     PressureType,
     DensityType,
     ViscosityType,
+    KinematicViscosityType,
     PowerType,
     MomentType,
     AngularVelocityType,
@@ -1312,6 +1326,13 @@ class Flow360ViscosityUnit(_Flow360BaseUnit):
     unit_name = "flow360_viscosity_unit"
 
 
+class Flow360KinematicViscosityUnit(_Flow360BaseUnit):
+    """:class: Flow360KinematicViscosityUnit"""
+
+    dimension_type = KinematicViscosityType
+    unit_name = "flow360_kinematic_viscosity_unit"
+
+
 class Flow360PowerUnit(_Flow360BaseUnit):
     """:class: Flow360PowerUnit"""
 
@@ -1444,6 +1465,7 @@ _dim_names = [
     "pressure",
     "density",
     "viscosity",
+    "kinematic_viscosity",
     "power",
     "moment",
     "angular_velocity",
@@ -1476,6 +1498,7 @@ class UnitSystem(pd.BaseModel):
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
+    kinematic_viscosity: KinematicViscosityType = pd.Field()
     power: PowerType = pd.Field()
     moment: MomentType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
@@ -1561,8 +1584,8 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3',
-        'specific_heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
+        'viscosity': 'Pa*s', kinematic_viscosity': 'm**2/s', 'power': 'W', 'angular_velocity': 'rad/s', 
+        'heat_flux': 'kg/s**3', 'specific_heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
         'inverse_area': '1/m**2', 'inverse_length': '1/m', 'heat_source': 'kg/(m*s**3)'}
         """
 
@@ -1611,6 +1634,7 @@ flow360_force_unit = Flow360ForceUnit()
 flow360_pressure_unit = Flow360PressureUnit()
 flow360_density_unit = Flow360DensityUnit()
 flow360_viscosity_unit = Flow360ViscosityUnit()
+flow360_kinematic_viscosity_unit = Flow360KinematicViscosityUnit()
 flow360_power_unit = Flow360PowerUnit()
 flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
@@ -1637,6 +1661,7 @@ dimensions = [
     flow360_pressure_unit,
     flow360_density_unit,
     flow360_viscosity_unit,
+    flow360_kinematic_viscosity_unit,
     flow360_power_unit,
     flow360_moment_unit,
     flow360_angular_velocity_unit,
@@ -1682,6 +1707,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     )
     base_viscosity: float = pd.Field(
         np.inf, json_schema_extra={"target_dimension": Flow360ViscosityUnit}
+    )
+    base_kinematic_viscosity: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360KinematicViscosityUnit}
     )
     base_power: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360PowerUnit})
     base_moment: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360MomentUnit})
@@ -1753,6 +1781,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["density"] = "flow360_density_unit"
         conversion_system["pressure"] = "flow360_pressure_unit"
         conversion_system["viscosity"] = "flow360_viscosity_unit"
+        conversion_system["kinematic_viscosity"] = "flow360_kinematic_viscosity_unit"
         conversion_system["power"] = "flow360_power_unit"
         conversion_system["moment"] = "flow360_moment_unit"
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
@@ -1801,6 +1830,7 @@ class _PredefinedUnitSystem(UnitSystem):
     pressure: PressureType = pd.Field(exclude=True)
     density: DensityType = pd.Field(exclude=True)
     viscosity: ViscosityType = pd.Field(exclude=True)
+    kinematic_viscosity: KinematicViscosityType = pd.Field(exclude=True)
     power: PowerType = pd.Field(exclude=True)
     moment: MomentType = pd.Field(exclude=True)
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)

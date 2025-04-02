@@ -12,9 +12,9 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     FrequencyType,
+    KinematicViscosityType,
     LengthType,
     SpecificEnergyType,
-    ViscosityType,
 )
 
 
@@ -101,7 +101,7 @@ class ModifiedTurbulentViscosity(Flow360BaseModel):
         "ModifiedTurbulentViscosity", frozen=True
     )
     # pylint: disable=no-member
-    modified_turbulent_viscosity: Optional[ViscosityType.Positive] = pd.Field()
+    modified_turbulent_viscosity: Optional[KinematicViscosityType.Positive] = pd.Field()
 
 
 # pylint: disable=missing-class-docstring
