@@ -3,6 +3,7 @@
 # pylint: disable=too-many-lines
 from typing import Type, Union
 
+from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
@@ -35,6 +36,9 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+)
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Point,
@@ -927,7 +931,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
 
 
 def get_navier_stokes_initial_condition(
-    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution]
+    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution],
 ):
     """Translate the initial condition for NavierStokes"""
     if is_exact_instance(initial_condition, NavierStokesInitialCondition):
@@ -990,16 +994,27 @@ def get_solver_json(
         "Mach": op.velocity_magnitude.v.item(),
         "Temperature": (
             op.thermal_state.temperature.to("K").v.item()
-            if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
+            if not isinstance(op, LiquidOperatingCondition)
+            and isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
             else -1
         ),
-        "muRef": op.thermal_state.dynamic_viscosity.v.item(),
+        "muRef": (
+            op.thermal_state.dynamic_viscosity.v.item()
+            if not isinstance(op, LiquidOperatingCondition)
+            else op.material.dynamic_viscosity.v.item()
+        ),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
     op_acoustic_to_static_pressure_ratio = (
-        op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
-    ).value
+        (
+            op.thermal_state.density
+            * op.thermal_state.speed_of_sound**2
+            / op.thermal_state.pressure
+        ).value
+        if not isinstance(op, LiquidOperatingCondition)
+        else 1.0
+    )
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
@@ -1030,6 +1045,14 @@ def get_solver_json(
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+            if translated["navierStokesSolver"]["lowMachPreconditioner"] is False and isinstance(
+                op, LiquidOperatingCondition
+            ):
+                translated["navierStokesSolver"]["lowMachPreconditioner"] = True
+                translated["navierStokesSolver"][
+                    "lowMachPreconditionerThreshold"
+                ] = LIQUID_IMAGINARY_FREESTREAM_MACH
+
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
@@ -1292,5 +1315,16 @@ def get_solver_json(
             if udd.output_target is not None:
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
+
+    translated["usingLiquidAsMaterial"] = isinstance(
+        input_params.operating_condition, LiquidOperatingCondition
+    )
+    translated["outputRescale"] = {"velocityScale": 1.0}
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        translated["outputRescale"]["velocityScale"] = (
+            1.0 / translated["freestream"]["MachRef"]
+            if "MachRef" in translated["freestream"].keys()
+            else 1.0 / translated["freestream"]["Mach"]
+        )
 
     return translated

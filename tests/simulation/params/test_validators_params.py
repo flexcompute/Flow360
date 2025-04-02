@@ -1,7 +1,6 @@
 import json
 import re
 import unittest
-from typing import Literal
 
 import pydantic as pd
 import pytest
@@ -25,9 +24,14 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    HeatFlux,
+    Inflow,
+    Outflow,
     Periodic,
+    Pressure,
     SlaterPorousBleed,
     SlipWall,
+    TotalPressure,
     Translational,
     Wall,
 )
@@ -42,6 +46,7 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    LiquidOperatingCondition,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
@@ -72,6 +77,9 @@ from flow360.component.simulation.services import validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamic,
+)
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -1422,6 +1430,202 @@ def test_deleted_surfaces():
         " be deleted after mesh generation. Therefore it cannot be used."
     )
     assert errors[0]["loc"] == ("models", 2, "entity_pairs")
+
+
+def test_validate_liquid_operating_condition():
+    with open("./data/geometry_metadata_asset_cache.json") as fp:
+        asset_cache = AssetCache(**json.load(fp))
+    all_boundaries: list[Surface] = asset_cache.project_entity_info.get_boundaries()
+    with u.SI_unit_system:
+        porous_zone = GenericVolume(name="zone_with_no_axes")
+        porous_zone.axes = [[0, 1, 0], [0, 0, 1]]
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Fluid(
+                    initial_condition=NavierStokesInitialCondition(
+                        rho="1;",
+                    )
+                ),
+                PorousMedium(
+                    volumes=[porous_zone],
+                    darcy_coefficient=(0.1, 2, 1.0) / u.cm / u.m,
+                    forchheimer_coefficient=(0.1, 2, 1.0) / u.ft,
+                    volumetric_heat_source=123 * u.lb / u.s**3 / u.ft,
+                ),
+                Wall(
+                    heat_spec=HeatFlux(value=10 * u.W / u.m**2),
+                    surfaces=all_boundaries[0:-1],
+                    velocity=["1", "2", "2"],
+                ),
+                Outflow(entities=all_boundaries[-1], spec=Pressure(value=1.01e6 * u.Pa)),
+                Rotation(
+                    volumes=[
+                        Cylinder(
+                            name="Cylinder",
+                            outer_radius=1 * u.cm,
+                            height=1 * u.cm,
+                            center=(0, 0, 0) * u.cm,
+                            axis=(0, 0, 1),
+                            private_attribute_id="1",
+                        )
+                    ],
+                    name="rotation",
+                    spec=AngleExpression("sin(t)"),
+                ),
+            ],
+            outputs=[VolumeOutput(output_fields=["T"])],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 6
+    assert (
+        errors[0]["msg"]
+        == "Value error, Expression cannot be used when using liquid as simulation material."
+    )
+    assert errors[0]["loc"] == ("models", 0, "initial_condition", "rho")
+    assert (
+        errors[1]["msg"]
+        == "Value error, `volumetric_heat_source` cannot be setup under `PorousMedium` when using liquid as simulation material."
+    )
+    assert errors[1]["loc"] == ("models", 1, "volumetric_heat_source")
+
+    assert (
+        errors[2]["msg"]
+        == "Value error, Expression cannot be used when using liquid as simulation material."
+    )
+    assert errors[2]["loc"] == ("models", 2, "velocity")
+    assert (
+        errors[3]["msg"]
+        == "Value error, Only adiabatic wall is allowed when using liquid as simulation material."
+    )
+    assert errors[3]["loc"] == ("models", 2, "heat_spec")
+    assert (
+        errors[4]["msg"]
+        == "Value error, Expression cannot be used when using liquid as simulation material."
+    )
+    assert errors[4]["loc"] == ("models", 4, "spec")
+    assert (
+        errors[5]["msg"]
+        == "Value error, Output field T cannot be selected when using liquid as simulation material."
+    )
+    assert errors[5]["loc"] == ("outputs", 0, "output_fields")
+
+    with u.SI_unit_system:
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Outflow(entities=all_boundaries[-1], spec=Pressure(value=1.01e6 * u.Pa)),
+            ],
+            user_defined_dynamics=[
+                UserDefinedDynamic(
+                    name="alphaController",
+                    input_vars=["CL"],
+                    constants={"CLTarget": 0.4, "Kp": 0.2, "Ki": 0.002},
+                    output_vars={"alphaAngle": "if (pseudoStep > 500) state[0]; else alphaAngle;"},
+                    state_vars_initial_value=["alphaAngle", "0.0"],
+                    update_law=[
+                        "if (pseudoStep > 500) state[0] + Kp * (CLTarget - CL) + Ki * state[1]; else state[0];",
+                        "if (pseudoStep > 500) state[1] + (CLTarget - CL); else state[1];",
+                    ],
+                    input_boundary_patches=[Surface(name="UDDPatch")],
+                )
+            ],
+            outputs=[
+                VolumeOutput(
+                    frequency=1,
+                    output_format="both",
+                    output_fields=["four"],
+                ),
+            ],
+            user_defined_fields=[
+                UserDefinedField(
+                    name="four",
+                    expression="2+2",
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 3
+    assert (
+        errors[0]["msg"]
+        == "Value error, `Outflow` type model cannot be used when using liquid as simulation material."
+    )
+    assert errors[0]["loc"] == ("models",)
+    assert (
+        errors[1]["msg"]
+        == "Value error, user_defined_dynamics cannot be used when using liquid as simulation material."
+    )
+    assert errors[1]["loc"] == ("user_defined_dynamics",)
+    assert (
+        errors[2]["msg"]
+        == "Value error, user_defined_fields cannot be used when using liquid as simulation material."
+    )
+    assert errors[2]["loc"] == ("user_defined_fields",)
+
+    with u.SI_unit_system:
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Inflow(
+                    entities=[all_boundaries[-1]],
+                    total_temperature=300 * u.K,
+                    spec=TotalPressure(
+                        value=1.028e6 * u.Pa,
+                        velocity_direction=(1, 0, 0),
+                    ),
+                )
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, `Inflow` type model cannot be used when using liquid as simulation material."
+    )
+    assert errors[0]["loc"] == ("models",)
+
+    with u.SI_unit_system:
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Solid(
+                    volumes=[GenericVolume(name="CHTSolid")],
+                    material=aluminum,
+                    volumetric_heat_source="0",
+                    initial_condition=HeatEquationInitialCondition(temperature="10"),
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, `Solid` type model cannot be used when using liquid as simulation material."
+    )
+    assert errors[0]["loc"] == ("models",)
 
 
 def test_beta_mesher_only_features():

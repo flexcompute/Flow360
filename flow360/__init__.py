@@ -33,7 +33,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
+from flow360.component.simulation.models.material import (
+    Air,
+    SolidMaterial,
+    Sutherland,
+    Water,
+)
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
     HeatEquationSolver,
@@ -91,6 +96,7 @@ from flow360.component.simulation.models.volume_models import (
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
+    LiquidOperatingCondition,
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
@@ -173,6 +179,7 @@ __all__ = [
     "GeometryEntityInfo",
     "AerospaceCondition",
     "ThermalState",
+    "LiquidOperatingCondition",
     "Steady",
     "Unsteady",
     "RampCFL",
@@ -255,6 +262,7 @@ __all__ = [
     "SurfaceSliceOutput",
     "SlaterPorousBleed",
     "migration",
+    "Water",
     "PointArray2D",
     "StreamlineOutput",
 ]

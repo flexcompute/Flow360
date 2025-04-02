@@ -1280,6 +1280,8 @@ class Project(pd.BaseModel):
         else:
             destination_obj = target.from_cloud(destination_id)
 
+        log.info(f"Successfully submitted: {destination_obj.short_description()}")
+
         if not run_async:
             destination_obj.wait()
 

@@ -17,6 +17,7 @@ from flow360.component.simulation.unit_system import (
     DensityType,
     ForceType,
     FrequencyType,
+    KinematicViscosityType,
     LengthType,
     MassFlowRateType,
     MassType,
@@ -40,6 +41,7 @@ class DataWithUnits(pd.BaseModel):
     p: PressureType = pd.Field()
     r: DensityType = pd.Field()
     mu: ViscosityType = pd.Field()
+    nu: KinematicViscosityType = pd.Field()
     m_dot: MassFlowRateType = pd.Field()
     v_sq: SpecificEnergyType = pd.Field()
     fqc: FrequencyType = pd.Field()
@@ -67,6 +69,7 @@ class DataWithUnitsConstrained(pd.BaseModel):
     )
     r: DensityType = pd.Field()
     mu: ViscosityType.Constrained(ge=2) = pd.Field()
+    nu: KinematicViscosityType.Constrained(ge=2) = pd.Field()
     m_dot: MassFlowRateType.Constrained(ge=3) = pd.Field()
     v_sq: SpecificEnergyType.Constrained(le=2) = pd.Field()
     fqc: FrequencyType.Constrained(gt=22) = pd.Field()
@@ -269,6 +272,7 @@ def test_unit_system():
         p=5 * u.Pa,
         r=2 * u.kg / u.m**3,
         mu=3 * u.Pa * u.s,
+        nu=4 * u.m**2 / u.s,
         omega=5 * u.rad / u.s,
         m_dot=12 * u.kg / u.s,
         v_sq=4 * u.m**2 / u.s**2,
@@ -303,6 +307,7 @@ def test_unit_system():
         "p": 5,
         "r": 2,
         "mu": 3,
+        "nu": 4,
         "m_dot": 11,
         "v_sq": 123,
         "fqc": 1111,
@@ -321,6 +326,7 @@ def test_unit_system():
         _assert_exact_same_unyt(data.p, 5 * u.Pa)
         _assert_exact_same_unyt(data.r, 2 * u.kg / u.m**3)
         _assert_exact_same_unyt(data.mu, 3 * u.kg / (u.m * u.s))
+        _assert_exact_same_unyt(data.nu, 4 * u.m**2 / u.s)
         _assert_exact_same_unyt(data.m_dot, 11 * u.kg / u.s)
         _assert_exact_same_unyt(data.v_sq, 123 * u.J / u.kg)
         _assert_exact_same_unyt(data.fqc, 1111 * u.Hz)
@@ -339,6 +345,7 @@ def test_unit_system():
         _assert_exact_same_unyt(data.p, 5 * u.dyne / u.cm**2)
         _assert_exact_same_unyt(data.r, 2 * u.g / u.cm**3)
         _assert_exact_same_unyt(data.mu, 3 * u.g / u.s / u.cm)
+        _assert_exact_same_unyt(data.nu, 4 * u.cm**2 / u.s)
         _assert_exact_same_unyt(data.m_dot, 11 * u.g / u.s)
         _assert_exact_same_unyt(data.v_sq, 123 * u.erg / u.g)
         _assert_exact_same_unyt(data.fqc, 1111 / u.s)
@@ -356,6 +363,7 @@ def test_unit_system():
         _assert_exact_same_unyt(data.p, 5 * u.lbf / u.ft**2)
         _assert_exact_same_unyt(data.r, 2 * u.lb / u.ft**3)
         _assert_exact_same_unyt(data.mu, 3 * u.lb / (u.ft * u.s))
+        _assert_exact_same_unyt(data.nu, 4 * u.ft**2 / u.s)
         _assert_exact_same_unyt(data.m_dot, 11 * u.lb / u.s)
         _assert_exact_same_unyt(data.v_sq, 123 * u.ft**2 / u.s**2)
         _assert_exact_same_unyt(data.fqc, 1111 / u.s)
@@ -376,6 +384,7 @@ def test_unit_system():
         assert data.p == 5 * u.flow360_pressure_unit
         assert data.r == 2 * u.flow360_density_unit
         assert data.mu == 3 * u.flow360_viscosity_unit
+        assert data.nu == 4 * u.flow360_kinematic_viscosity_unit
         assert data.m_dot == 11 * u.flow360_mass_flow_rate_unit
         assert data.v_sq == 123 * u.flow360_specific_energy_unit
         assert data.fqc == 1111 * u.flow360_frequency_unit
@@ -392,6 +401,7 @@ def test_unit_system():
         "p": 5,
         "r": 2,
         "mu": 3,
+        "nu": 4,
         "omega": 1 * u.radian / u.s,
         "m_dot": 10,
         "v_sq": 0.2,
@@ -428,6 +438,9 @@ def test_unit_system():
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "mu": 1.9})
+
+        with pytest.raises(ValueError):
+            data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "nu": 1.9})
 
         with pytest.raises(ValueError):
             data = DataWithUnitsConstrained(**{**deepcopy(correct_input), "m_dot": 1})
@@ -775,6 +788,7 @@ def test_unit_system_init():
         "pressure": {"value": 1.0, "units": "Pa"},
         "density": {"value": 1.0, "units": "kg/m**3"},
         "viscosity": {"value": 1.0, "units": "Pa*s"},
+        "kinematic_viscosity": {"value": 1.0, "units": "m**2/s"},
         "power": {"value": 1.0, "units": "W"},
         "moment": {"value": 1.0, "units": "N*m"},
         "angular_velocity": {"value": 1.0, "units": "rad/s"},

@@ -58,6 +58,9 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation_utils import (
     _validator_append_instance_name,
 )
@@ -129,7 +132,7 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
     """
-    :class:`ExpressionInitialCondition` class for specifying the intial conditions of
+    :class:`ExpressionInitialCondition` class for specifying the initial conditions of
     :py:attr:`Fluid.initial_condition`.
     """
 
@@ -172,6 +175,17 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     v: StringExpression = pd.Field("v", description="Y-direction velocity")
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
+
+    @pd.field_validator("rho", "u", "v", "w", "p", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+
+        if value != cls.model_fields[info.field_name].get_default():
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -255,7 +269,7 @@ class Fluid(PDEModelBase):
         + ":class:`TransitionModelSolver` documentation.",
     )
 
-    material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid.")
+    material: FluidMaterialTypes = pd.Field(Air(), description="The material property of fluid.")
 
     initial_condition: Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition] = (
         pd.Field(
@@ -1134,6 +1148,17 @@ class Rotation(Flow360BaseModel):
         + "to be True for all rotation models.",
     )
 
+    @pd.field_validator("spec", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+
+        if isinstance(value, AngleExpression):
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
+
     @pd.field_validator("entities", mode="after")
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
@@ -1226,6 +1251,22 @@ class PorousMedium(Flow360BaseModel):
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."
                 )
+        return value
+
+    @pd.field_validator("volumetric_heat_source", mode="after")
+    @classmethod
+    def _validate_volumetric_heat_source_for_liquid(
+        cls, value: Optional[Union[StringExpression, HeatSourceType]]
+    ):
+        """Disable the volumetric_heat_source when liquid operating condition is used"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        if value is not None:
+            raise ValueError(
+                "`volumetric_heat_source` cannot be setup under `PorousMedium` when using "
+                "liquid as simulation material."
+            )
         return value
 
 
