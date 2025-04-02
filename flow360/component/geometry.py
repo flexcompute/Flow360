@@ -242,8 +242,7 @@ class Geometry(AssetBase):
 
     @face_group_tag.setter
     def face_group_tag(self, new_value: str):
-        with model_attribute_unlock(self._entity_info, "face_group_tag"):
-            self._entity_info.face_group_tag = new_value
+        raise SyntaxError("Cannot set face_group_tag, use group_faces_by_tag() instead.")
 
     @property
     def edge_group_tag(self):
@@ -252,8 +251,7 @@ class Geometry(AssetBase):
 
     @edge_group_tag.setter
     def edge_group_tag(self, new_value: str):
-        with model_attribute_unlock(self._entity_info, "edge_group_tag"):
-            self._entity_info.edge_group_tag = new_value
+        raise SyntaxError("Cannot set edge_group_tag, use group_edges_by_tag() instead.")
 
     @property
     def body_group_tag(self):
@@ -262,8 +260,7 @@ class Geometry(AssetBase):
 
     @body_group_tag.setter
     def body_group_tag(self, new_value: str):
-        with model_attribute_unlock(self._entity_info, "body_group_tag"):
-            self._entity_info.body_group_tag = new_value
+        raise SyntaxError("Cannot set body_group_tag, use group_bodies_by_tag() instead.")
 
     def get_default_settings(self, simulation_dict: dict):
         """Get the default geometry settings from the simulation dict"""
@@ -285,7 +282,7 @@ class Geometry(AssetBase):
 
     @classmethod
     # pylint: disable=redefined-builtin
-    def from_cloud(cls, id: str, **kwargs):
+    def from_cloud(cls, id: str, **kwargs) -> Geometry:
         """Create asset with the given ID"""
         asset_obj = super().from_cloud(id, **kwargs)
         return asset_obj

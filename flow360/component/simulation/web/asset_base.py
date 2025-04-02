@@ -201,18 +201,21 @@ class AssetBase(metaclass=ABCMeta):
         Create asset with the given ID.
         """
         asset_obj = cls(id)
+        entity_info_supplier_dict = None
         entity_info_param: Optional[SimulationParams] = kwargs.pop("entity_info_param", None)
         if entity_info_param:
             # Use user requested json.
-            simulation_dict = entity_info_param.model_dump(mode="json")
-        else:
-            # Get the json from bucket, same as before.
-            simulation_dict = cls._get_simulation_json(asset_obj)
+            entity_info_supplier_dict = entity_info_param.model_dump(mode="json")
+        # Get the json from bucket, same as before.
+        asset_simulation_dict = cls._get_simulation_json(asset_obj)
 
-        asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
+        asset_obj = cls._from_supplied_entity_info(
+            entity_info_supplier_dict if entity_info_supplier_dict else asset_simulation_dict,
+            asset_obj,
+        )
         # The default_settings will only make a difference when the asset is project root asset,
         # but we try to get it regardless to save the logic differentiating whether it is root or not.
-        asset_obj.get_default_settings(simulation_dict)
+        asset_obj.get_default_settings(asset_simulation_dict)
 
         # Attempting constructing entity registry.
         # This ensure that once from_cloud() returns, the entity_registry will be available.
@@ -300,9 +303,3 @@ class AssetBase(metaclass=ABCMeta):
                     )
 
                 time.sleep(update_every_seconds)
-        while self._webapi.status.is_final() is False:
-            if time.time() - start_time > timeout_minutes * 60:
-                raise TimeoutError(
-                    "Timeout: Process did not finish within the specified timeout period"
-                )
-            time.sleep(2)
