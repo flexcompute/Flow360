@@ -9,6 +9,7 @@ from flow360.component.simulation.framework.entity_registry import EntityRegistr
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.primitives import (
@@ -22,7 +23,7 @@ from flow360.component.simulation.primitives import (
 )
 
 DraftEntityTypes = Annotated[
-    Union[Box, Cylinder, Point, PointArray, Slice],
+    Union[Box, Cylinder, Point, PointArray, PointArray2D, Slice],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 

@@ -47,7 +47,12 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
-    __slots__ = ["auto_farfield_method", "is_beta_mesher", "use_geometry_AI"]
+    __slots__ = [
+        "auto_farfield_method",
+        "is_beta_mesher",
+        "use_geometry_AI",
+        "using_liquid_as_material",
+    ]
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -63,6 +68,18 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
         return None
+
+    @classmethod
+    def _get_using_liquid_as_material_(cls, param_as_dict: dict):
+        try:
+            if param_as_dict["operating_condition"]:
+                return (
+                    param_as_dict["operating_condition"]["type_name"] == "LiquidOperatingCondition"
+                )
+        except KeyError:
+            # No liquid operating condition info.
+            return False
+        return False
 
     @classmethod
     def _get_is_beta_mesher_(cls, param_as_dict: dict):
@@ -82,6 +99,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
+            param_as_dict=param_as_dict
+        )
+        self.using_liquid_as_material = self._get_using_liquid_as_material_(
             param_as_dict=param_as_dict
         )
 

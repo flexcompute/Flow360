@@ -13,7 +13,7 @@ from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import Air, FluidMaterialTypes
+from flow360.component.simulation.models.material import Air, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
@@ -74,9 +74,7 @@ class ThermalState(MultiConstructorBaseModel):
     density: DensityType.Positive = pd.Field(
         1.225 * u.kg / u.m**3, frozen=True, description="The density of the fluid."
     )
-    material: FluidMaterialTypes = pd.Field(
-        Air(), frozen=True, description="The material of the fluid."
-    )
+    material: Air = pd.Field(Air(), frozen=True, description="The material of the fluid.")
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
     private_attribute_constructor: Literal["from_standard_atmosphere", "default"] = pd.Field(
         default="default", frozen=True
@@ -426,9 +424,53 @@ class AerospaceCondition(MultiConstructorBaseModel):
         ).value
 
 
+class LiquidOperatingCondition(Flow360BaseModel):
+    """
+    Operating condition for simulation of water as the only material.
+    """
+
+    type_name: Literal["LiquidOperatingCondition"] = pd.Field(
+        "LiquidOperatingCondition", frozen=True
+    )
+    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
+    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
+    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
+        context=CASE,
+        description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
+    )
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
+        None,
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0."
+        " Used as the velocity scale for nondimensionalization.",
+        frozen=True,
+    )
+    material: Water = pd.Field(
+        Water(name="Water"),
+        description="Type of liquid material used.",
+    )
+
+    @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
+    def check_valid_reference_velocity(self) -> Self:
+        """Ensure reference velocity is provided when inflow velocity is 0."""
+        if (
+            self.velocity_magnitude is not None
+            and self.velocity_magnitude.value == 0
+            and self.reference_velocity_magnitude is None
+        ):
+            raise ValueError(
+                "Reference velocity magnitude must be provided when inflow velocity magnitude is 0."
+            )
+        return self
+
+
 # pylint: disable=fixme
 # TODO: AutomotiveCondition
-OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
+OperatingConditionTypes = Union[
+    GenericReferenceCondition, AerospaceCondition, LiquidOperatingCondition
+]
 
 
 # pylint: disable=too-many-arguments

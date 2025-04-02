@@ -179,6 +179,21 @@ IsoSurfaceFieldNames = Literal[
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
 
+InvalidOutputFieldsForLiquid = Literal[
+    "residualNavierStokes",
+    "residualTransition",
+    "residualTurbulence",
+    "solutionNavierStokes",
+    "T",
+    "linearResidualNavierStokes",
+    "linearResidualTurbulence",
+    "linearResidualTransition",
+    "SpalartAllmaras_DDES",
+    "kOmegaSST_DDES",
+    "heatFlux",
+    "heatTransferCoefficientStaticTemperature",
+    "heatTransferCoefficientTotalTemperature",
+]
 # pylint: disable=no-member
 _FIELD_UNIT_MAPPING = {
     # Standard non-dimensioned fields - (unit, unit_system)

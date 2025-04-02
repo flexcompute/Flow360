@@ -3,6 +3,7 @@
 # pylint: disable=too-many-lines
 from typing import Type, Union
 
+from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
@@ -36,7 +37,14 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_entities import Point, PointArray
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
+)
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
 from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -45,6 +53,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     Slice,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -219,6 +228,7 @@ def translate_output_fields(
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
         SurfaceSliceOutput,
+        StreamlineOutput,
     ],
 ):
     """Get output fields"""
@@ -527,6 +537,37 @@ def process_output_fields_for_udf(input_params):
     return generated_udfs
 
 
+def translate_streamline_output(output_params: list):
+    """Translate streamline output settings."""
+    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    for output in output_params:
+        if isinstance(output, StreamlineOutput):
+            for entity in output.entities.stored_entities:
+                if isinstance(entity, Point):
+                    point = {"name": entity.name, "location": entity.location.value.tolist()}
+                    streamline_output["Points"].append(point)
+                elif isinstance(entity, PointArray):
+                    line = {
+                        "name": entity.name,
+                        "start": entity.start.value.tolist(),
+                        "end": entity.end.value.tolist(),
+                        "numberOfPoints": entity.number_of_points,
+                    }
+                    streamline_output["PointArrays"].append(line)
+                elif isinstance(entity, PointArray2D):
+                    parallelogram = {
+                        "name": entity.name,
+                        "origin": entity.origin.value.tolist(),
+                        "uAxisVector": entity.u_axis_vector.value.tolist(),
+                        "vAxisVector": entity.v_axis_vector.value.tolist(),
+                        "uNumberOfPoints": entity.u_number_of_points,
+                        "vNumberOfPoints": entity.v_number_of_points,
+                    }
+                    streamline_output["PointArrays2D"].append(parallelogram)
+
+    return streamline_output
+
+
 def translate_output(input_params: SimulationParams, translated: dict):
     # pylint: disable=too-many-branches,too-many-statements
     """Translate output settings."""
@@ -631,6 +672,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+
+    ##:: Step7: Get translated["streamlineOutput"]
+    if has_instance_in_list(outputs, StreamlineOutput):
+        translated["streamlineOutput"] = translate_streamline_output(outputs)
 
     return translated
 
@@ -886,7 +931,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
 
 
 def get_navier_stokes_initial_condition(
-    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution]
+    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution],
 ):
     """Translate the initial condition for NavierStokes"""
     if is_exact_instance(initial_condition, NavierStokesInitialCondition):
@@ -949,16 +994,27 @@ def get_solver_json(
         "Mach": op.velocity_magnitude.v.item(),
         "Temperature": (
             op.thermal_state.temperature.to("K").v.item()
-            if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
+            if not isinstance(op, LiquidOperatingCondition)
+            and isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
             else -1
         ),
-        "muRef": op.thermal_state.dynamic_viscosity.v.item(),
+        "muRef": (
+            op.thermal_state.dynamic_viscosity.v.item()
+            if not isinstance(op, LiquidOperatingCondition)
+            else op.material.dynamic_viscosity.v.item()
+        ),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
     op_acoustic_to_static_pressure_ratio = (
-        op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
-    ).value
+        (
+            op.thermal_state.density
+            * op.thermal_state.speed_of_sound**2
+            / op.thermal_state.pressure
+        ).value
+        if not isinstance(op, LiquidOperatingCondition)
+        else 1.0
+    )
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
@@ -989,6 +1045,14 @@ def get_solver_json(
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+            if translated["navierStokesSolver"]["lowMachPreconditioner"] is False and isinstance(
+                op, LiquidOperatingCondition
+            ):
+                translated["navierStokesSolver"]["lowMachPreconditioner"] = True
+                translated["navierStokesSolver"][
+                    "lowMachPreconditionerThreshold"
+                ] = LIQUID_IMAGINARY_FREESTREAM_MACH
+
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
@@ -1251,5 +1315,16 @@ def get_solver_json(
             if udd.output_target is not None:
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
+
+    translated["usingLiquidAsMaterial"] = isinstance(
+        input_params.operating_condition, LiquidOperatingCondition
+    )
+    translated["outputRescale"] = {"velocityScale": 1.0}
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        translated["outputRescale"]["velocityScale"] = (
+            1.0 / translated["freestream"]["MachRef"]
+            if "MachRef" in translated["freestream"].keys()
+            else 1.0 / translated["freestream"]["Mach"]
+        )
 
     return translated
