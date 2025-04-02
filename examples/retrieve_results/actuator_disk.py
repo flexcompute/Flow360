@@ -7,8 +7,8 @@ from flow360.examples import ActuatorDisk
 
 ActuatorDisk.get_files()
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(ActuatorDisk.mesh_filename),
+project = fl.Project.from_volume_mesh(
+    ActuatorDisk.mesh_filename,
     name="Actuator disk results from Python",
     length_unit="inch",
 )

@@ -4,8 +4,8 @@ from flow360.examples import Cylinder2D
 Cylinder2D.get_files()
 
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(Cylinder2D.mesh_filename), name="Unsteady 2D Cylinder from Python"
+project = fl.Project.from_volume_mesh(
+    Cylinder2D.mesh_filename, name="Unsteady 2D Cylinder from Python"
 )
 
 vm = project.volume_mesh

@@ -16,8 +16,8 @@ from flow360.version import __solver_version__
 
 BETExampleData.get_files()
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(BETExampleData.mesh_filename),
+project = fl.Project.from_volume_mesh(
+    BETExampleData.mesh_filename,
     name="BET Disk results from Python",
     length_unit="inch",
 )

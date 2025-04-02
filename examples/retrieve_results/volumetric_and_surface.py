@@ -7,8 +7,8 @@ from flow360.examples import OM6wing
 
 OM6wing.get_files()
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(OM6wing.mesh_filename),
+project = fl.Project.from_volume_mesh(
+    OM6wing.mesh_filename,
     name="Volumetric and surface results from Python",
 )
 

@@ -3,9 +3,7 @@ from flow360.examples import Cylinder3D
 
 Cylinder3D.get_files()
 
-project = fl.Project.from_file(
-    files=fl.GeometryFiles(Cylinder3D.geometry), name="Steady 3D Cylinder from Python"
-)
+project = fl.Project.from_geometry(Cylinder3D.geometry, name="Steady 3D Cylinder from Python")
 
 geo = project.geometry
 

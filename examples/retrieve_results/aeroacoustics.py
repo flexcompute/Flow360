@@ -5,8 +5,8 @@ from flow360.examples import Quadcopter
 
 Quadcopter.get_files()
 
-project = fl.Project.from_file(
-    files=fl.VolumeMeshFile(Quadcopter.mesh_filename), name="Aeroacoustic results from Python"
+project = fl.Project.from_volume_mesh(
+    Quadcopter.mesh_filename, name="Aeroacoustic results from Python"
 )
 
 vm = project.volume_mesh

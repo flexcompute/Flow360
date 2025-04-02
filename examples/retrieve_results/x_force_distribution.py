@@ -3,9 +3,7 @@ from pylab import show
 import flow360 as fl
 from flow360.examples import Airplane
 
-project = fl.Project.from_file(
-    files=fl.GeometryFiles(Airplane.geometry), name="X force distribution from Python"
-)
+project = fl.Project.from_geometry(Airplane.geometry, name="X force distribution from Python")
 geo = project.geometry
 
 geo.show_available_groupings(verbose_mode=True)
