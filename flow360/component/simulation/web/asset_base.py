@@ -194,11 +194,6 @@ class AssetBase(metaclass=ABCMeta):
     @abstractmethod
     def get_default_settings(self, simulation_dict):
         """Get the default settings of the asset from the non-entity part of root asset's simulation dict"""
-        
-    def _check_registry(self, **kwargs):
-        """
-        Ensure that `internal_registry` exists and if not, initialize `internal_registry`.
-        """
 
     @classmethod
     def from_cloud(cls, id: str, **kwargs):
@@ -221,7 +216,9 @@ class AssetBase(metaclass=ABCMeta):
 
         # Attempting constructing entity registry.
         # This ensure that once from_cloud() returns, the entity_registry will be available.
-        asset_obj._check_registry()
+        asset_obj.internal_registry = asset_obj._entity_info.get_registry(
+            asset_obj.internal_registry
+        )
         return asset_obj
 
     @classmethod

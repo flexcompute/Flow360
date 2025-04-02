@@ -985,8 +985,10 @@ class Project(pd.BaseModel):
         Get the entity info requested by the users when they specify `new_run_from` when calling
         Project.from_cloud()
         """
+
+        user_requested_entity_info = None
         if new_run_from is None:
-            return None
+            return user_requested_entity_info
 
         if new_run_from.project_id is None:
             # Can only happen to case created using V1 interface.
@@ -1000,9 +1002,11 @@ class Project(pd.BaseModel):
             )
 
         if isinstance(new_run_from, Case):
-            return new_run_from.get_simulation_params()
+            user_requested_entity_info = new_run_from.get_simulation_params()
         if isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
-            return new_run_from.params
+            user_requested_entity_info = new_run_from.params
+
+        return user_requested_entity_info
 
     @classmethod
     @pd.validate_call(
