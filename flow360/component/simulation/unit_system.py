@@ -1584,7 +1584,7 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', kinematic_viscosity': 'm**2/s', 'power': 'W', 'angular_velocity': 'rad/s', 
+        'viscosity': 'Pa*s', kinematic_viscosity': 'm**2/s', 'power': 'W', 'angular_velocity': 'rad/s',
         'heat_flux': 'kg/s**3', 'specific_heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
         'inverse_area': '1/m**2', 'inverse_length': '1/m', 'heat_source': 'kg/(m*s**3)'}
         """

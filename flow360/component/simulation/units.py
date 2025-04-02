@@ -16,6 +16,7 @@ from flow360.component.simulation.unit_system import (
     flow360_density_unit,
     flow360_force_unit,
     flow360_frequency_unit,
+    flow360_kinematic_viscosity_unit,
     flow360_length_unit,
     flow360_mass_flow_rate_unit,
     flow360_mass_unit,
@@ -26,7 +27,6 @@ from flow360.component.simulation.unit_system import (
     flow360_unit_system,
     flow360_velocity_unit,
     flow360_viscosity_unit,
-    flow360_kinematic_viscosity_unit,
     imperial_unit_system,
 )
 

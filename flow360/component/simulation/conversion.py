@@ -273,7 +273,7 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         flow360_conversion_unit_system.base_viscosity = base_viscosity
 
     elif dimension == u.dimensions.kinematic_viscosity:
-        base_kinematic_viscosity= get_base_kinematic_viscosity()
+        base_kinematic_viscosity = get_base_kinematic_viscosity()
         flow360_conversion_unit_system.base_kinematic_viscosity = base_kinematic_viscosity
 
     elif dimension == u.dimensions.force:

@@ -17,6 +17,7 @@ from flow360.component.simulation.unit_system import (
     DensityType,
     ForceType,
     FrequencyType,
+    KinematicViscosityType,
     LengthType,
     MassFlowRateType,
     MassType,
@@ -25,7 +26,6 @@ from flow360.component.simulation.unit_system import (
     TimeType,
     VelocityType,
     ViscosityType,
-    KinematicViscosityType
 )
 
 
