@@ -985,28 +985,29 @@ class Project(pd.BaseModel):
         Get the entity info requested by the users when they specify `new_run_from` when calling
         Project.from_cloud()
         """
+        if new_run_from is None:
+            return None
+
         if new_run_from.project_id is None:
             # Can only happen to case created using V1 interface.
             raise ValueError(
                 "The supplied case resource for `new_run_from` was created using old interface and "
                 "cannot be used as the starting point of a new run."
             )
-        else:
-            if current_project_id != new_run_from.project_id:
-                raise ValueError(
-                    "The supplied cloud resource for `new_run_from` does not belong to the project."
-                )
+        if current_project_id != new_run_from.project_id:
+            raise ValueError(
+                "The supplied cloud resource for `new_run_from` does not belong to the project."
+            )
 
         if isinstance(new_run_from, Case):
             return new_run_from.get_simulation_params()
-        elif isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
+        if isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
             return new_run_from.params
-        return None
 
     @classmethod
     @pd.validate_call(
         config={"arbitrary_types_allowed": True}  # Geometry etc do not have validate() defined
-    ) 
+    )
     def from_cloud(
         cls,
         project_id: str,
@@ -1056,8 +1057,8 @@ class Project(pd.BaseModel):
         root_type = meta.root_item_type
 
         if (
-            isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, Case)) == False
-            and new_run_from is not None
+            new_run_from is not None
+            and isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, Case)) is False
         ):
             # Should have been caught by the validate_call?
             raise ValueError(
@@ -1333,14 +1334,7 @@ class Project(pd.BaseModel):
             }
         )
 
-        if target is SurfaceMeshV2 or target is VolumeMeshV2:
-            # Intermediate asset and we should enforce it to contain the entity info from root item.
-            # pylint: disable=protected-access
-            destination_obj = target.from_cloud(
-                destination_id, root_item_entity_info_type=self._root_asset._entity_info_class
-            )
-        else:
-            destination_obj = target.from_cloud(destination_id)
+        destination_obj = target.from_cloud(destination_id)
 
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
 

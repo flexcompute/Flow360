@@ -387,31 +387,30 @@ class Geometry(AssetBase):
     def _group_entity_by_tag(
         self, entity_type_name: Literal["face", "edge", "body"], tag_name: str
     ) -> None:
+
+        if entity_type_name not in ["face", "edge", "body"]:
+            raise ValueError(
+                f"[Internal] Unknown entity type: `{entity_type_name}`, allowed entity: 'face', 'edge', 'body'."
+            )
+
         if hasattr(self, "internal_registry") is False or self.internal_registry is None:
             self.internal_registry = EntityRegistry()
 
+        existing_tag = None
         if entity_type_name == "face" and self.face_group_tag is not None:
-            log.info(
-                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{self.face_group_tag}`)."
-            )
-            self._reset_grouping(entity_type_name)
+            existing_tag = self.face_group_tag
 
         elif entity_type_name == "edge" and self.edge_group_tag is not None:
-            log.info(
-                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{self.edge_group_tag}`)."
-            )
-            self._reset_grouping(entity_type_name)
+            existing_tag = self.edge_group_tag
 
         elif entity_type_name == "body" and self.body_group_tag is not None:
+            existing_tag = self.body_group_tag
+
+        if existing_tag:
             log.info(
-                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{self.body_group_tag}`)."
+                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{existing_tag}`)."
             )
             self._reset_grouping(entity_type_name)
-
-        else:
-            raise ValueError(
-                f"Unknown entity type: `{entity_type_name}`, allowed entity: face, edge, body."
-            )
 
         self.internal_registry = self._entity_info.group_in_registry(
             entity_type_name, attribute_name=tag_name, registry=self.internal_registry
@@ -642,7 +641,7 @@ class Geometry(AssetBase):
 
         raise ValueError(f"[Internal] Invalid entity type name: {entity_type_name}.")
 
-    def _check_registry(self, **kwargs):
+    def _check_registry(self, **_):
 
         if not hasattr(self, "internal_registry") or self.internal_registry is None:
             if self.face_group_tag is None:

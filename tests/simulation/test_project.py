@@ -7,8 +7,6 @@ import flow360 as fl
 from flow360 import log
 from flow360.exceptions import Flow360ValueError
 
-from .utils import compare_dict_to_ref
-
 log.set_logging_level("DEBUG")
 
 

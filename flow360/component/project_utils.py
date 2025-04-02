@@ -247,7 +247,6 @@ def set_up_params_for_uploading(
 
     # User may have made modifications to the entities which is recorded in asset's entity registry
     # We need to reflect these changes.
-    root_asset._check_registry()
     root_asset.entity_info.update_persistent_entities(
         asset_entity_registry=root_asset.internal_registry
     )
@@ -256,6 +255,7 @@ def set_up_params_for_uploading(
     entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
+
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)
