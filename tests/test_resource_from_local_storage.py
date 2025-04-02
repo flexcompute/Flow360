@@ -140,7 +140,7 @@ def pre_upload_change_reflection_geo(geometry: Geometry):
     )
     assert new_param.private_attribute_asset_cache.project_entity_info.grouped_bodies[1][
         0
-    ].transformation.scale == [1, 2, 3]
+    ].transformation.scale == (1, 2, 3)
 
 
 def test_resources_from_local_storage_geo():
