@@ -50,6 +50,7 @@ class AssetBase(metaclass=ABCMeta):
         # pylint: disable=not-callable
         self.id = id
         self.internal_registry = None
+        # The default_settings will only be used when the current instance is project's root
         self.default_settings = {}
         if id is None:
             return
@@ -196,7 +197,7 @@ class AssetBase(metaclass=ABCMeta):
 
     @abstractmethod
     def get_default_settings(self, simulation_dict):
-        """Get the default settings of the asset from the simulation dict"""
+        """Get the default settings of the asset from the non-entity part of root asset's simulation dict"""
 
     @classmethod
     def from_cloud(cls, id: str, **_):

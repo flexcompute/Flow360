@@ -271,8 +271,6 @@ def _set_up_default_geometry_accuracy(
     """
     if not use_geometry_AI:
         return params
-    if not isinstance(root_asset, GeometryEntityInfo):
-        return params
     if root_asset.default_settings.get("geometry_accuracy") is None:
         return params
     if not params.meshing.defaults.geometry_accuracy:
