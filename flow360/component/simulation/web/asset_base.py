@@ -210,6 +210,8 @@ class AssetBase(metaclass=ABCMeta):
         asset_obj = cls(id)
         simulation_dict = cls._get_simulation_json(asset_obj)
         asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
+        # The default_settings will only make a difference when the asset is project root asset,
+        # but we try to get it regardless to save the logic differentiating whether it is root or not.
         asset_obj.get_default_settings(simulation_dict)
         return asset_obj
 
