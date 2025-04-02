@@ -106,7 +106,7 @@ class Transformation(Flow360BaseModel):
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
     angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
-    scale: list[pd.PositiveFloat] = pd.Field([1, 1, 1])
+    scale: Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat] = pd.Field((1, 1, 1))
 
     translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
