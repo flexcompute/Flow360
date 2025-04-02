@@ -154,12 +154,23 @@ def _to_25_2_3(params_as_dict):
     return params_as_dict
 
 
+def _to_25_4_1(params_as_dict):
+    if params_as_dict.get("meshing") is None:
+        return params_as_dict
+    meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+    if meshing_defaults.get("geometry_relative_accuracy"):
+        geometry_relative_accuracy = meshing_defaults.pop("geometry_relative_accuracy")
+        meshing_defaults["geometry_accuracy"] = {"value": geometry_relative_accuracy, "units": "m"}
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
     (Flow360Version("25.2.0"), _to_25_2_0),
     (Flow360Version("25.2.1"), _to_25_2_1),
     (Flow360Version("25.2.3"), _to_25_2_3),
+    (Flow360Version("25.4.1"), _to_25_4_1),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from typing import List, Union
 
 import requests
@@ -50,6 +50,8 @@ class AssetBase(metaclass=ABCMeta):
         # pylint: disable=not-callable
         self.id = id
         self.internal_registry = None
+        # The default_settings will only be used when the current instance is project's root
+        self.default_settings = {}
         if id is None:
             return
         self._webapi = self.__class__._web_api_class(
@@ -193,6 +195,10 @@ class AssetBase(metaclass=ABCMeta):
         """
         return self._webapi.get_download_file_list()
 
+    @abstractmethod
+    def get_default_settings(self, simulation_dict):
+        """Get the default settings of the asset from the non-entity part of root asset's simulation dict"""
+
     @classmethod
     def from_cloud(cls, id: str, **_):
         """
@@ -204,6 +210,9 @@ class AssetBase(metaclass=ABCMeta):
         asset_obj = cls(id)
         simulation_dict = cls._get_simulation_json(asset_obj)
         asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
+        # The default_settings will only make a difference when the asset is project root asset,
+        # but we try to get it regardless to save the logic differentiating whether it is root or not.
+        asset_obj.get_default_settings(simulation_dict)
         return asset_obj
 
     @classmethod
