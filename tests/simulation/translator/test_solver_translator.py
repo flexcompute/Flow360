@@ -109,6 +109,9 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 assertions = unittest.TestCase("__init__")
 
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.models.volume_models import AngleExpression, Rotation
+from flow360.component.simulation.primitives import GenericVolume
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 
 
 @pytest.fixture()
@@ -578,3 +581,34 @@ def test_liquid_simulation_translation():
             ],
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid.json")
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                alpha=5 * u.deg,
+                beta=2 * u.deg,
+                material=Water(name="my_water", density=1.1 * 10**3 * u.kg / u.m**3),
+            ),
+            models=[
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+                Rotation(
+                    volumes=[
+                        GenericVolume(name="zone_zone_1", axis=[3, 4, 0], center=(1, 1, 1) * u.cm)
+                    ],
+                    spec=AngleExpression(
+                        "-180/pi * atan(2 * 3.00 * 20.00 * 2.00/180*pi * "
+                        "cos(2.00/180*pi * sin(0.05877271 * t_seconds)) * cos(0.05877271 * t_seconds) / 50.00) +"
+                        " 2 * 2.00 * sin(0.05877271 * t_seconds) - 2.00 * sin(0.05877271 * t_seconds)"
+                    ),
+                    rotating_reference_frame_model=False,
+                ),
+            ],
+            time_stepping=Unsteady(steps=100, step_size=0.4),
+        )
+        # Derivation:
+        # Solver speed of sound = 10m/s / 0.2 = 50m/s
+        # Flow360 time to seconds = 1m/(50m/s) = 0.02 s
+        # t_seconds = (0.02 s * t)
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
