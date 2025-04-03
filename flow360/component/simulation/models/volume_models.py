@@ -9,7 +9,6 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 import pydantic as pd
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.conversion import unit_converter
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import (
@@ -104,7 +103,9 @@ class AngleExpression(SingleAttributeModel):
     def preprocess(self, **kwargs):
         # locate t_seconds and convert it to (t*flow360_time_to_seconds)
         params = kwargs.get("params")
-        one_sec_to_flow360_time = params.convert_unit(value=1 * u.s, target_system="flow360_v2")
+        one_sec_to_flow360_time = params.convert_unit(
+            value=1 * u.s, target_system="flow360_v2"  # pylint:disable=no-member
+        )
         flow360_time_to_seconds_expression = f"({1.0/one_sec_to_flow360_time.value} * t)"
         self.value = re.sub(r"\bt_seconds\b", flow360_time_to_seconds_expression, self.value)
 

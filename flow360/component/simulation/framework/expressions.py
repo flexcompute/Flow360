@@ -40,7 +40,15 @@ def validate_angle_expression_of_t_seconds(expr: str):
 
     Returns a list of error messages (empty if valid).
     """
-    ALLOWED_NAMES = {"t_seconds", "t", "pi", "sin", "cos", "tan", "atan"}
+    ALLOWED_NAMES = {  # pylint:disable=invalid-name
+        "t_seconds",
+        "t",
+        "pi",
+        "sin",
+        "cos",
+        "tan",
+        "atan",
+    }
 
     errors = []
 
