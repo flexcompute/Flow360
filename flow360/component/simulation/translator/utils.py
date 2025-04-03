@@ -301,9 +301,9 @@ def translate_setting_and_apply_to_all_entities(
         if class_type and is_exact_instance(obj, class_type):
 
             list_of_entities = []
-            if "entities" in obj.model_fields:
+            if "entities" in obj.__class__.model_fields:
                 if obj.entities is None or (
-                    "stored_entities" in obj.entities.model_fields
+                    "stored_entities" in obj.entities.__class__.model_fields
                     and obj.entities.stored_entities is None
                 ):  # unique item list does not allow None "items" for now.
                     continue
@@ -317,7 +317,7 @@ def translate_setting_and_apply_to_all_entities(
                     list_of_entities = (
                         obj.entities.items if lump_list_of_entities is False else [obj.entities]
                     )
-            elif "entity_pairs" in obj.model_fields:
+            elif "entity_pairs" in obj.__class__.model_fields:
                 # Note: This is only used in Periodic BC and lump_list_of_entities is not relavant
                 if lump_list_of_entities:
                     raise NotImplementedError(
