@@ -48,6 +48,16 @@ def validate_angle_expression_of_t_seconds(expr: str):
         "cos",
         "tan",
         "atan",
+        "min",
+        "max",
+        "pow",
+        "powf",
+        "log",
+        "exp",
+        "sqrt",
+        "abs",
+        "ceil",
+        "floor",
     }
 
     errors = []
