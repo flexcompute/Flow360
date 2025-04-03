@@ -849,7 +849,7 @@ def test_duplicate_entities_in_models():
     rotation_model2 = Rotation(
         volumes=[entity_cylinder],
         name="outerRotation",
-        spec=AngleExpression("sin(2t)"),
+        spec=AngleExpression("sin(2*t)"),
     )
     porous_medium_model1 = PorousMedium(
         volumes=entity_box,
@@ -1482,7 +1482,7 @@ def test_validate_liquid_operating_condition():
         root_item_type="VolumeMesh",
         validation_level="All",
     )
-    assert len(errors) == 6
+    assert len(errors) == 5
     assert (
         errors[0]["msg"]
         == "Value error, Expression cannot be used when using liquid as simulation material."
@@ -1506,14 +1506,9 @@ def test_validate_liquid_operating_condition():
     assert errors[3]["loc"] == ("models", 2, "heat_spec")
     assert (
         errors[4]["msg"]
-        == "Value error, Expression cannot be used when using liquid as simulation material."
-    )
-    assert errors[4]["loc"] == ("models", 4, "spec")
-    assert (
-        errors[5]["msg"]
         == "Value error, Output field T cannot be selected when using liquid as simulation material."
     )
-    assert errors[5]["loc"] == ("outputs", 0, "output_fields")
+    assert errors[4]["loc"] == ("outputs", 0, "output_fields")
 
     with u.SI_unit_system:
         params = SimulationParams(

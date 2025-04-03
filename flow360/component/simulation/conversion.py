@@ -103,7 +103,7 @@ def require(required_parameter, required_by, params):
 
 
 # pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
-def unit_converter(dimension, params, required_by: List[str] = None):
+def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSystem:
     """
 
     Returns a flow360 conversion unit system for a given dimension.

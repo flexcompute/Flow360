@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-lines
 import os
+import re
 from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
@@ -10,7 +11,10 @@ import pydantic as pd
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.expressions import (
+    StringExpression,
+    validate_angle_expression_of_t_seconds,
+)
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -87,6 +91,25 @@ class AngleExpression(SingleAttributeModel):
     value: StringExpression = pd.Field(
         description="The expression defining the rotation angle as a function of time."
     )
+
+    @pd.field_validator("value", mode="after")
+    @classmethod
+    def _validate_angle_expression(cls, value):
+        errors = validate_angle_expression_of_t_seconds(value)
+        if errors:
+            raise ValueError(" | ".join(errors))
+        return value
+
+    def preprocess(self, **kwargs):
+        # locate t_seconds and convert it to (t*flow360_time_to_seconds)
+        params = kwargs.get("params")
+        one_sec_to_flow360_time = params.convert_unit(
+            value=1 * u.s, target_system="flow360_v2"  # pylint:disable=no-member
+        )
+        flow360_time_to_seconds_expression = f"({1.0/one_sec_to_flow360_time.value} * t)"
+        self.value = re.sub(r"\bt_seconds\b", flow360_time_to_seconds_expression, self.value)
+
+        return super().preprocess(**kwargs)
 
 
 class AngularVelocity(SingleAttributeModel):
@@ -1147,17 +1170,6 @@ class Rotation(Flow360BaseModel):
         + "to be used for the rotation model. Steady state simulation requires this flag "
         + "to be True for all rotation models.",
     )
-
-    @pd.field_validator("spec", mode="after")
-    @classmethod
-    def _disable_expression_for_liquid(cls, value):
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.using_liquid_as_material is False:
-            return value
-
-        if isinstance(value, AngleExpression):
-            raise ValueError("Expression cannot be used when using liquid as simulation material.")
-        return value
 
     @pd.field_validator("entities", mode="after")
     @classmethod

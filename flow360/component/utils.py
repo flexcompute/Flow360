@@ -308,7 +308,7 @@ def _process_string_expression(expression: str):
 
 def process_expressions(input_expressions):
     """
-    All in one funciton to precess expressions in form of tuple or single string
+    All in one function to precess expressions in form of tuple or single string
     """
     if isinstance(input_expressions, (str, float, int)):
         return _process_string_expression(str(input_expressions))
