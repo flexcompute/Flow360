@@ -314,22 +314,22 @@ def read_in_c81_polar_csv(polar_file_content):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-def read_in_xfoil_polars(bet_disk, xfoil_polar_files, angle_unit):
+def read_in_xfoil_polars(bet_disk, polar_file_content_list, angle_unit):
     """
     Read in the XFOIL polars and assigns the resulting values correctly into the BETDisk dictionary.
 
     Parameters
     ----------
     bet_disk: dictionary, contains required betdisk data
-    xfoil_polar_files: list of XFOIL polar files
+    polar_file_content_list: list of XFOIL polar file contents
 
     Attributes
     ----------
     return: dictionary
     """
-    if len(xfoil_polar_files) != len(bet_disk["sectional_radiuses"]):
+    if len(polar_file_content_list) != len(bet_disk["sectional_radiuses"]):
         raise Flow360ValueError(
-            f"Error: There is an error in the number of polar files ({len(xfoil_polar_files)}) "
+            f"Error: There is an error in the number of polar files ({len(polar_file_content_list)}) "
             + f'vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
@@ -343,10 +343,10 @@ def read_in_xfoil_polars(bet_disk, xfoil_polar_files, angle_unit):
         secpol["lift_coeffs"] = []
         secpol["drag_coeffs"] = []
 
-        polar_files = xfoil_polar_files[sec_idx]
+        polar_file_contents = polar_file_content_list[sec_idx]
         mach_numbers_for_section = []
-        for polar_file in polar_files:
-            alpha_list, mach_num, cl_values, cd_values = parse_in_xfoil_polar(polar_file.content)
+        for polar_file_content in polar_file_contents:
+            alpha_list, mach_num, cl_values, cd_values = parse_in_xfoil_polar(polar_file_content)
             mach_numbers_for_section.append(float(mach_num))
             secpol["lift_coeffs"].append([cl_values])
             secpol["drag_coeffs"].append([cd_values])
@@ -366,34 +366,35 @@ def read_in_xfoil_polars(bet_disk, xfoil_polar_files, angle_unit):
 
 
 # pylint: disable=too-many-lines
-def read_in_c81_polars(bet_disk, c81_polar_files, angle_unit):
+def read_in_c81_polars(bet_disk, c81_polar_file_contents, c81_polar_file_formats, angle_unit):
     """
     Read in the C81 polars and assigns the resulting values correctly into the BETDisk dictionary.
 
     Parameters
     ----------
     bet_disk: dictionary, contains required betdisk data
-    c81_polar_files: list of C81 polar files
+    c81_polar_file_contents: list of C81 polar file contents
+    c81_polar_file_formats: list of C81 polar file contents
 
     Attributes
     ----------
     return: dictionary
     """
-    if len(c81_polar_files) != len(bet_disk["sectional_radiuses"]):
+    if len(c81_polar_file_contents) != len(bet_disk["sectional_radiuses"]):
         raise Flow360ValueError(
-            f"Error: There is an error in the number of polar files ({len(c81_polar_files)}) "
+            f"Error: There is an error in the number of polar files ({len(c81_polar_file_contents)}) "
             + f'vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
     bet_disk["sectional_polars"] = []
     for sec_idx, _ in enumerate(bet_disk["sectional_radiuses"]):
-        polar_file = c81_polar_files[sec_idx][0]
+        polar_file_content = c81_polar_file_contents[sec_idx][0]
 
-        if "csv" in polar_file.file_path:
-            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file.content)
+        if "csv" == c81_polar_file_formats[sec_idx]:
+            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file_content)
         else:
             alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(
-                polar_file.content
+                polar_file_content
             )
         if "mach_numbers" in bet_disk.keys() and bet_disk["mach_numbers"] != mach_list:
             raise Flow360ValueError(
@@ -449,9 +450,12 @@ def generate_xfoil_bet_json(
     return: dictionary with BETDisk parameters
     """
 
+    xfoil_polar_file_contents_list = [
+        [polar_file.content for polar_file in polar_files] for polar_files in xfoil_polar_file_list
+    ]
     bet_disk = translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content,
-        polar_file_list=xfoil_polar_file_list,
+        polar_file_contents_list=xfoil_polar_file_contents_list,
         length_unit=length_unit,
         angle_unit=angle_unit,
         file_type="xfoil",
@@ -586,10 +590,11 @@ def parse_c81_xfoil_geometry_file(geometry_file_content: str, length_unit, angle
 
 def translate_xfoil_c81_to_bet_dict(
     geometry_file_content,
-    polar_file_list,
+    polar_file_contents_list,
     length_unit,
     angle_unit,
     file_type: Literal["xfoil", "c81"],
+    polar_file_formats=None,
 ) -> dict:
     """
     Take in a geometry input file of xfoil or c81 format and create a flow360 BET input dictionary.
@@ -598,6 +603,7 @@ def translate_xfoil_c81_to_bet_dict(
     Attributes
     ----------
     geometry_file_content: string, content of the config file.
+    polar_file_contents_list: list[str], list of polar files' content
     bet_disk: dictionary, contains required BETDisk data
     return: dictionary with BETDisk parameters
     """
@@ -605,9 +611,11 @@ def translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
     )
     if file_type == "xfoil":
-        bet_disk = read_in_xfoil_polars(bet_disk, polar_file_list, angle_unit)
+        bet_disk = read_in_xfoil_polars(bet_disk, polar_file_contents_list, angle_unit)
     else:
-        bet_disk = read_in_c81_polars(bet_disk, polar_file_list, angle_unit)
+        bet_disk = read_in_c81_polars(
+            bet_disk, polar_file_contents_list, polar_file_formats, angle_unit
+        )
     return bet_disk
 
 
@@ -638,12 +646,19 @@ def generate_c81_bet_json(
     return: dictionary with BETDisk parameters
     """
 
+    c81_polar_file_contents_list = [
+        [polar_file.content for polar_file in polar_files] for polar_files in c81_polar_file_list
+    ]
+    c81_polar_file_formats = [
+        "csv" if "csv" in polar_files[0].file_path else "c81" for polar_files in c81_polar_file_list
+    ]
     bet_disk = translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content,
-        polar_file_list=c81_polar_file_list,
+        polar_file_contents_list=c81_polar_file_contents_list,
         length_unit=length_unit,
         angle_unit=angle_unit,
         file_type="c81",
+        polar_file_formats=c81_polar_file_formats,
     )
 
     bet_disk["entities"] = entities.stored_entities
