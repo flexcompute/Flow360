@@ -6,7 +6,7 @@ import math
 import os
 import urllib
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 import boto3
@@ -15,6 +15,8 @@ from boto3.s3.transfer import TransferConfig
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
 from pydantic.v1 import BaseModel, Field
+
+from flow360.environment import Env
 
 from ..environment import Env
 from ..exceptions import Flow360ValueError
@@ -139,13 +141,17 @@ class _S3STSToken(BaseModel):
         :return:
         """
         # pylint: disable=no-member
-        return boto3.client(
-            "s3",
-            region_name=Env.current.aws_region,
-            aws_access_key_id=self.user_credential.access_key_id,
-            aws_secret_access_key=self.user_credential.secret_access_key,
-            aws_session_token=self.user_credential.session_token,
-        )
+        kwargs = {
+            "region_name": Env.current.aws_region,
+            "aws_access_key_id": self.user_credential.access_key_id,
+            "aws_secret_access_key": self.user_credential.secret_access_key,
+            "aws_session_token": self.user_credential.session_token,
+        }
+
+        if Env.current.s3_endpoint_url is not None:
+            kwargs["endpoint_url"] = Env.current.s3_endpoint_url
+
+        return boto3.client("s3", **kwargs)
 
     def is_expired(self):
         """
@@ -393,12 +399,44 @@ class S3TransferType(Enum):
             log.info(f"Saved to {to_file}")
         return to_file
 
+    @classmethod
+    def get_S3_token_from_mock_config(
+        cls, resource_id: str, file_name: str
+    ):  # pylint: disable=invalid-name
+        """
+        If user prescribed mock S3 STS config for on prem deployment, use it to get token.
+        """
+        expiration_time = datetime.now(timezone.utc) + timedelta(days=1)
+        mock_STS_config = Env.current.mock_S3_STS_config  # pylint: disable=invalid-name
+
+        return _S3STSToken(
+            cloudpathPrefix=os.path.join(
+                mock_STS_config.cloud_path_prefix, mock_STS_config.user_name, resource_id
+            ),
+            cloudpath=os.path.join(
+                mock_STS_config.cloud_path_prefix,
+                mock_STS_config.user_name,
+                resource_id,
+                f"{file_name}?uploads",
+            ),
+            userCredentials=_UserCredential(
+                accessKeyId=mock_STS_config.access_key_id,
+                expiration=expiration_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                secretAccessKey=mock_STS_config.secret_access_key,
+                sessionToken="",
+            ),
+        )
+
     def _get_s3_sts_token(self, resource_id: str, file_name: str) -> _S3STSToken:
         session_key = f"{resource_id}:{self.value}"
         if session_key not in _s3_sts_tokens or _s3_sts_tokens[session_key].is_expired():
-            path = self._get_grant_url(resource_id, file_name)
-            resp = http.get(path)
-            token = _S3STSToken.parse_obj(resp)
+            if Env.current.mock_S3_STS_config is None:
+                path = self._get_grant_url(resource_id, file_name)
+                resp = http.get(path)
+                token = _S3STSToken.parse_obj(resp)
+            else:
+                # On prem mock
+                token = self.get_S3_token_from_mock_config(resource_id, file_name)
             _s3_sts_tokens[session_key] = token
             return token
         token = _s3_sts_tokens[session_key]
@@ -407,4 +445,4 @@ class S3TransferType(Enum):
         )
 
 
-_s3_sts_tokens: [str, _S3STSToken] = {}
+_s3_sts_tokens: dict[str, _S3STSToken] = {}
