@@ -15,9 +15,10 @@ from flow360.version import __solver_version__
 
 TutorialCHTSolver.get_files()
 
-project = fl.Project.from_volume_mesh(
-    TutorialCHTSolver.mesh_filename, name="CHT results from Python"
-)
+# project = fl.Project.from_volume_mesh(
+#     TutorialCHTSolver.mesh_filename, name="CHT results from Python"
+# )
+project = fl.Project.from_cloud(project_id="prj-50e64e40-f653-4625-8b74-173bc9975062")
 
 volume_mesh = project.volume_mesh
 
@@ -177,4 +178,4 @@ report = report.create_in_cloud(
 )
 
 report.wait()
-report.download("cht_report.pdf")
+report.download("report.pdf")
