@@ -96,12 +96,12 @@ CommonFieldNames = Literal[
     "VelocityRelative",
     "lowMachPreconditionerSensor",
     # Include dimensioned fields here too
-    "velocity_m_per_s",
-    "velocity_x_m_per_s",
-    "velocity_y_m_per_s",
-    "velocity_z_m_per_s",
-    "velocity_magnitude_m_per_s",
-    "pressure_pa",
+    "velocity [m/s]",
+    "velocity x [m/s]",
+    "velocity y [m/s]",
+    "velocity z [m/s]",
+    "velocity magnitude [m/s]",
+    "pressure [Pa]",
 ]
 
 # Skin friction coefficient vector
@@ -126,8 +126,8 @@ SurfaceFieldNames = Literal[
     "wallFunctionMetric",
     "heatTransferCoefficientStaticTemperature",
     "heatTransferCoefficientTotalTemperature",
-    "wall_shear_stress_magnitude",
-    "wall_shear_stress_magnitude_pa",
+    "wss magnitude",
+    "wss magnitude [Pa]",
 ]
 
 # BET Metrics
@@ -184,13 +184,13 @@ _FIELD_UNIT_MAPPING = {
     # Standard non-dimensioned fields - (unit, unit_system)
     "*": (None, "flow360"),
     # Dimensioned fields - (unit quantity, unit_system)
-    "velocity_m_per_s": (u.m / u.s, "SI"),
-    "velocity_magnitude_m_per_s": (u.m / u.s, "SI"),
-    "velocity_x_m_per_s": (u.m / u.s, "SI"),
-    "velocity_y_m_per_s": (u.m / u.s, "SI"),
-    "velocity_z_m_per_s": (u.m / u.s, "SI"),
-    "pressure_pa": (u.Pa, "SI"),
-    "wall_shear_stress_magnitude_pa": (u.Pa, "SI"),
+    "velocity [m/s]": (u.m / u.s, "SI"),
+    "velocity_magnitude [m/s]": (u.m / u.s, "SI"),
+    "velocity x [m/s]": (u.m / u.s, "SI"),
+    "velocity y [m/s]": (u.m / u.s, "SI"),
+    "velocity z [m/s]": (u.m / u.s, "SI"),
+    "pressure [Pa]": (u.Pa, "SI"),
+    "wss magnitude [Pa]": (u.Pa, "SI"),
 }
 
 
