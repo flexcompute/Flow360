@@ -127,6 +127,7 @@ class Draft(Flow360Resource):
         self,
         target_asset: type,
         use_beta_mesher: bool,
+        use_geometry_AI: bool,  # pylint: disable=invalid-name
         source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
         start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
     ) -> str:
@@ -136,6 +137,8 @@ class Draft(Flow360Resource):
             # pylint: disable=protected-access
             if use_beta_mesher is True:
                 log.info("Selecting beta/in-house mesher for possible meshing tasks.")
+            if use_geometry_AI is True:
+                log.info("Using the Geometry AI surface mesher.")
             if start_from:
                 if start_from != target_asset._cloud_resource_type_name:
                     log.info(
@@ -151,6 +154,7 @@ class Draft(Flow360Resource):
                 source_item_type=source_item_type,
                 up_to=target_asset._cloud_resource_type_name,
                 use_in_house=use_beta_mesher,
+                use_gai=use_geometry_AI,
                 force_creation_config=force_creation_config,
             )
             run_response = self.post(

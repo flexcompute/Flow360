@@ -156,7 +156,7 @@ class PointArray2D(_PointEntityBase):
 
     Both the starting and end points are included in the :class:`PointArray`.
 
-    >>> fl.PointArray(
+    >>> fl.PointArray2D(
     ...     name="Parallelogram_1",
     ...     origin=(1.0, 0.0, 0.0) * fl.u.m,
     ...     u_axis_vector=(0.5, 1.0, 0.2) * fl.u.m,

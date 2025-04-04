@@ -198,6 +198,7 @@ class DraftRunRequest(Flow360RequestsV2):
 
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
     use_in_house: bool = pd.Field()
+    use_gai: bool = pd.Field()
     force_creation_config: Optional[ForceCreationConfig] = pd.Field(
         None,
     )

@@ -91,7 +91,6 @@ def _update_entity_full_name(
 ):
     """
     Update Surface/Boundary with zone name from volume mesh metadata.
-    TODO: Maybe no need to recursively looping the param and just manipulating the registry may suffice?
     """
     for field in model.__dict__.values():
         if isinstance(field, target_entity_type):
