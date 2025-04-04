@@ -1,5 +1,6 @@
 import flow360 as fl
 from flow360 import u
+from flow360.examples import DrivAer
 from flow360.log import log
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
@@ -20,7 +21,6 @@ from flow360.plugins.report.report_items import (
     TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
-from flow360.examples import DrivAer
 from flow360.version import __solver_version__
 
 DrivAer.get_files()
