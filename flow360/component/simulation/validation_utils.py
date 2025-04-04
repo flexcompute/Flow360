@@ -63,7 +63,11 @@ def check_deleted_surface_in_entity_list(value):
     value--> EntityList
     """
     validation_info = get_validation_info()
-    if validation_info is None or validation_info.auto_farfield_method is None:
+    if (
+        validation_info is None
+        or validation_info.auto_farfield_method is None
+        or validation_info.is_beta_mesher is True
+    ):
         # validation not necessary now.
         return value
 

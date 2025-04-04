@@ -15,16 +15,18 @@ from flow360.cloud.flow360_requests import LengthUnitType, NewSurfaceMeshRequest
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import SurfaceMeshInterfaceV2
-from flow360.component.project_utils import SurfaceMeshFile
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.utils import MeshNameParser, shared_account_confirm_proceed
+from flow360.component.utils import (
+    MeshNameParser,
+    SurfaceMeshFile,
+    shared_account_confirm_proceed,
+)
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
@@ -234,8 +236,6 @@ class SurfaceMeshV2(AssetBase):
         ----------
         id : str
             ID of the surface mesh resource in the cloud
-        root_item_entity_info_type :
-        override the default entity info type
 
         Returns
         -------
@@ -306,34 +306,10 @@ class SurfaceMeshV2(AssetBase):
             tags=tags,
         )
 
-    def _populate_registry(self):
-        if hasattr(self, "_entity_info") is False or self._entity_info is None:
-            raise Flow360ValueError("The entity info object does not exist")
-
-        if not isinstance(self._entity_info, SurfaceMeshEntityInfo):
-            raise Flow360ValueError(
-                "Entity info is of invalid type for a "
-                f"surface mesh object {type(self._entity_info)}"
-            )
-
-        # Initialize the local registry
-        self.internal_registry = EntityRegistry()
-
-        # Populate boundaries
-        for boundary in self._entity_info.boundaries:
-            self.internal_registry.register(boundary)
-
-    def _check_registry(self):
-        if not hasattr(self, "internal_registry") or self.internal_registry is None:
-            if hasattr(self, "_entity_info") and self._entity_info is not None:
-                self._populate_registry()
-                return
-
-            raise Flow360ValueError(
-                "The entity info registry has not been populated. "
-                "Currently entity info is populated only when loading "
-                "an asset from the cloud using the from_cloud method "
-            )
+    # pylint: disable=useless-parent-delegation
+    def get_default_settings(self, simulation_dict: dict):
+        """Get the default surface mesh settings from the simulation dict"""
+        return super().get_default_settings(simulation_dict)
 
     @property
     def boundary_names(self) -> List[str]:
@@ -345,7 +321,7 @@ class SurfaceMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the surface mesh
         """
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(self.internal_registry)
 
         return [
             surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
@@ -366,7 +342,7 @@ class SurfaceMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(self.internal_registry)
 
         return self.internal_registry.find_by_naming_pattern(
             key, enforce_output_as_list=False, error_when_no_match=True
