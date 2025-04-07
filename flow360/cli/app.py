@@ -42,6 +42,9 @@ def flow360():
     "--uat", prompt=False, type=bool, is_flag=True, help="Only use this apikey in UAT environment."
 )
 @click.option(
+    "--env", prompt=False, default = None, help="Only use this apikey in this environment."
+)
+@click.option(
     "--suppress-submit-warning",
     type=bool,
     help='Whether to suppress warnings for "submit()" when creating new Case, new VolumeMesh etc.',
@@ -52,7 +55,7 @@ def flow360():
     help="Toggle beta features support",
 )
 # pylint: disable=too-many-arguments
-def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features):
+def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_features):
     """
     Configure flow360.
     """
@@ -70,7 +73,14 @@ def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features)
             entry = {profile: {"dev": {"apikey": apikey}}}
         elif uat is True:
             entry = {profile: {"uat": {"apikey": apikey}}}
+        elif env:
+            if env == "dev":
+                raise ValueError("dev is not a valid environment, please use --dev instead.")
+            elif env == "uat":
+                raise ValueError("uat is not a valid environment, please use --uat instead.")
+            entry = {profile: {env: {"apikey": apikey}}}
         else:
+
             entry = {profile: {"apikey": apikey}}
         dict_utils.merge_overwrite(config, entry)
         changed = True

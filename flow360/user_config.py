@@ -8,6 +8,7 @@ import toml
 
 from .file_path import flow360_dir
 from .log import log
+from .environment import prod
 
 config_file = os.path.join(flow360_dir, "config.toml")
 DEFAULT_PROFILE = "default"
@@ -77,10 +78,13 @@ class BasicUserConfig:
             return self._apikey
         # Check if environment-specific apikey exists
         key = self.config.get(self.profile, {})
-        if key and env.name == "dev":
-            key = key.get("dev")
-        elif key and env.name == "uat":
-            key = key.get("uat")
+
+        if env.name != prod.name:
+            # By default the production environment is used.
+            # If other environment is used, check if the key exists
+            key = key.get(env.name, None)
+        if key is None:
+            log.warning(f"Cannot find api key associated with environment '{env.name}'.")
         return None if key is None else key.get("apikey", "")
 
     def suppress_submit_warning(self):
