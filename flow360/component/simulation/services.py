@@ -702,6 +702,7 @@ def translate_flow360_bet_disk(
     Run the BET Disk translator for the BET config stored in the Flow360.json.
     Returns the dict of BETDisk and the cylinder entity used.
     """
+    # pylint: disable=no-member
     length_unit = LengthType.validate(length_unit)
     freestream_temperature = AbsoluteTemperatureType.validate(freestream_temperature)
     bet_disk_list = _parse_all_flow360_bet_disk_dicts(
