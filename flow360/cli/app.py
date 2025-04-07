@@ -41,9 +41,7 @@ def flow360():
 @click.option(
     "--uat", prompt=False, type=bool, is_flag=True, help="Only use this apikey in UAT environment."
 )
-@click.option(
-    "--env", prompt=False, default = None, help="Only use this apikey in this environment."
-)
+@click.option("--env", prompt=False, default=None, help="Only use this apikey in this environment.")
 @click.option(
     "--suppress-submit-warning",
     type=bool,
@@ -76,11 +74,10 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
         elif env:
             if env == "dev":
                 raise ValueError("dev is not a valid environment, please use --dev instead.")
-            elif env == "uat":
+            if env == "uat":
                 raise ValueError("uat is not a valid environment, please use --uat instead.")
             entry = {profile: {env: {"apikey": apikey}}}
         else:
-
             entry = {profile: {"apikey": apikey}}
         dict_utils.merge_overwrite(config, entry)
         changed = True

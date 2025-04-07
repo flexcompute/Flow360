@@ -6,9 +6,9 @@ import os
 
 import toml
 
+from .environment import prod
 from .file_path import flow360_dir
 from .log import log
-from .environment import prod
 
 config_file = os.path.join(flow360_dir, "config.toml")
 DEFAULT_PROFILE = "default"
