@@ -1,18 +1,10 @@
 import flow360 as fl
 from flow360.examples import OM6wing
-from flow360.log import set_logging_level
-
-set_logging_level("DEBUG")
-fl.Env.load("on_premises").active()
-# fl.Env.dev.active()
 
 OM6wing.get_files()
+
 project = fl.Project.from_volume_mesh(
-    OM6wing.mesh_filename,
-    name="Test from python client-2",
-    # solver_version="bodyGrouping-25.4.0",
-    solver_version="release-25.4.0",
-    # solver_version="release-24.11",
+    OM6wing.mesh_filename, name="Tutorial UDD alpha controller from Python"
 )
 
 volume_mesh = project.volume_mesh

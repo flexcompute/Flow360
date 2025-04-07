@@ -52,7 +52,7 @@ def flow360():
     type=bool,
     help="Toggle beta features support",
 )
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-branches
 def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_features):
     """
     Configure flow360.
@@ -73,9 +73,13 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
             entry = {profile: {"uat": {"apikey": apikey}}}
         elif env:
             if env == "dev":
-                raise ValueError("dev is not a valid environment, please use --dev instead.")
+                raise ValueError("Cannot set dev environment with --env, please use --dev instead.")
             if env == "uat":
-                raise ValueError("uat is not a valid environment, please use --uat instead.")
+                raise ValueError("Cannot set uat environment with --env, please use --uat instead.")
+            if env == "prod":
+                raise ValueError(
+                    "Cannot set prod environment with --env, please remove --env and its argument."
+                )
             entry = {profile: {env: {"apikey": apikey}}}
         else:
             entry = {profile: {"apikey": apikey}}
