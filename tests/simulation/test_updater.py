@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 from enum import Enum
 
 import pytest
@@ -151,7 +152,10 @@ def test_updater_completeness():
     # 12) from >99.11.3, to >99.11.3 => ValueError => []
     with pytest.raises(
         ValueError,
-        match=r"Input `SimulationParams` have higher version than all known versions and thus cannot be handled.",
+        match=re.escape(
+            r"Input `SimulationParams` have higher version (99.11.4) than all"
+            + r" known versions and thus cannot be handled."
+        ),
     ):
         _find_update_path(
             version_from=Flow360Version("99.11.4"),
@@ -162,7 +166,10 @@ def test_updater_completeness():
     # 13) to < from => ValueError
     with pytest.raises(
         ValueError,
-        match=r"Input `SimulationParams` have higher version than the target version and thus cannot be handled.",
+        match=re.escape(
+            r"Input `SimulationParams` have higher version (99.11.3) than"
+            r" the target version (99.11.2) and thus cannot be handled."
+        ),
     ):
         _find_update_path(
             version_from=Flow360Version("99.11.3"),

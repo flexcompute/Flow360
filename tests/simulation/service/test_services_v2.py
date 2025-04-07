@@ -820,5 +820,6 @@ def test_updater_service():
     assert len(errors) == 1
     assert (
         errors[0]
-        == "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
+        == "Input `SimulationParams` have higher version (999.999.999) than the target version (25.2.2) "
+        "and thus cannot be handled."
     )
