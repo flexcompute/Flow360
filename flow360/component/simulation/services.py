@@ -12,6 +12,11 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.migration.BETDisk import _parse_flow360_bet_disk_dict
+from flow360.component.simulation.models.bet.bet_translator_interface import (
+    translate_xfoil_c81_to_bet_dict,
+    translate_xrotor_dfdc_to_bet_dict,
+)
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
 # pylint: disable=unused-import
@@ -28,7 +33,11 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box, Surface  # For parse_model_dict
+from flow360.component.simulation.primitives import (  # For parse_model_dict
+    Box,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -118,7 +127,9 @@ def _store_project_length_unit(length_unit, params: SimulationParams):
 
 
 def get_default_params(
-    unit_system_name, length_unit, root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
+    unit_system_name,
+    length_unit,
+    root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"],
 ) -> SimulationParams:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
@@ -673,3 +684,94 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
+
+
+def translate_flow360_bet_disk(
+    *,
+    flow360_bet_disk_dict: dict,
+    length_unit,
+    freestream_temperature,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for the BET config stored in the Flow360.json.
+    Returns the dict of BETDisk and the cylinder entity used.
+    """
+    if "BETDisks" not in flow360_bet_disk_dict.keys():
+        raise ValueError("Cannot find 'BETDisk' key in the supplied JSON file.")
+
+    if not flow360_bet_disk_dict.get("BETDisks", None):
+        raise ValueError("'BETDisk'in the supplied JSON file contains no info.")
+
+    bet_dict_list = []
+    for item in flow360_bet_disk_dict.get("BETDisks"):
+        bet_disk_dict, cylinder_dict = _parse_flow360_bet_disk_dict(
+            flow360_bet_disk_dict=item,
+            mesh_unit=length_unit,
+            freestream_temperature=freestream_temperature,
+        )
+        bet_dict_list.append(
+            BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)).model_dump()
+        )
+    return bet_dict_list
+
+
+def translate_dfdc_xrotor_bet_disk(
+    *,
+    geometry_file_content: str,
+    length_unit,
+    angle_unit,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for an XROTOR or DFDC input file.
+    Returns the dict of BETDisk.
+    """
+    bet_dict = translate_xrotor_dfdc_to_bet_dict(
+        geometry_file_content=geometry_file_content,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+    )
+    return [bet_dict]
+
+
+def translate_xfoil_bet_disk(
+    *,
+    geometry_file_content: str,
+    polar_file_contents_list,
+    length_unit,
+    angle_unit,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for an Xfoil input file.
+    Returns the dict of BETDisk.
+    """
+    bet_dict = translate_xfoil_c81_to_bet_dict(
+        geometry_file_content=geometry_file_content,
+        polar_file_contents_list=polar_file_contents_list,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+        file_type="xfoil",
+    )
+    return [bet_dict]
+
+
+def translate_c81_bet_disk(
+    *,
+    geometry_file_content: str,
+    polar_file_contents_list,
+    length_unit,
+    angle_unit,
+    polar_file_formats,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for a C81 input file.
+    Returns the dict of BETDisk.
+    """
+    bet_dict = translate_xfoil_c81_to_bet_dict(
+        geometry_file_content=geometry_file_content,
+        polar_file_contents_list=polar_file_contents_list,
+        polar_file_formats=polar_file_formats,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+        file_type="c81",
+    )
+    return [bet_dict]

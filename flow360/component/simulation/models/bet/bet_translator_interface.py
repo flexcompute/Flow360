@@ -655,10 +655,10 @@ def generate_c81_bet_json(
     bet_disk = translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content,
         polar_file_contents_list=c81_polar_file_contents_list,
+        polar_file_formats=c81_polar_file_formats,
         length_unit=length_unit,
         angle_unit=angle_unit,
         file_type="c81",
-        polar_file_formats=c81_polar_file_formats,
     )
 
     bet_disk["entities"] = entities.stored_entities
