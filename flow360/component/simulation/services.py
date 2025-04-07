@@ -12,7 +12,9 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.migration.BETDisk import _parse_flow360_bet_disk_dict
+from flow360.component.simulation.migration.BETDisk import (
+    _parse_all_flow360_bet_disk_dicts,
+)
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     translate_xfoil_c81_to_bet_dict,
     translate_xrotor_dfdc_to_bet_dict,
@@ -50,10 +52,14 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
+    AngleType,
     CGS_unit_system,
+    DimensionedTypes,
     LengthType,
     SI_unit_system,
     UnitSystem,
+    _dimensioned_type_serializer,
     flow360_unit_system,
     imperial_unit_system,
     u,
@@ -688,85 +694,115 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
 
 def translate_flow360_bet_disk(
     *,
-    flow360_bet_disk_dict: dict,
-    length_unit,
-    freestream_temperature,
+    flow360_json_dict: dict,
+    length_unit: str,
+    freestream_temperature: dict,
 ) -> list[dict]:
     """
     Run the BET Disk translator for the BET config stored in the Flow360.json.
     Returns the dict of BETDisk and the cylinder entity used.
     """
-    if "BETDisks" not in flow360_bet_disk_dict.keys():
-        raise ValueError("Cannot find 'BETDisk' key in the supplied JSON file.")
+    length_unit = LengthType.validate(length_unit)
+    freestream_temperature = AbsoluteTemperatureType.validate(freestream_temperature)
+    bet_disk_list = _parse_all_flow360_bet_disk_dicts(
+        data_dict=flow360_json_dict,
+        mesh_unit=length_unit,
+        freestream_temperature=freestream_temperature,
+    )
+    return [bet_disk_obj.model_dump(mode="json") for bet_disk_obj in bet_disk_list]
 
-    if not flow360_bet_disk_dict.get("BETDisks", None):
-        raise ValueError("'BETDisk'in the supplied JSON file contains no info.")
 
-    bet_dict_list = []
-    for item in flow360_bet_disk_dict.get("BETDisks"):
-        bet_disk_dict, cylinder_dict = _parse_flow360_bet_disk_dict(
-            flow360_bet_disk_dict=item,
-            mesh_unit=length_unit,
-            freestream_temperature=freestream_temperature,
-        )
-        bet_dict_list.append(
-            BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)).model_dump()
-        )
-    return bet_dict_list
+def _serialize_unit_in_dict(data):
+    """
+    Recursively serialize unit type data in a dictionary or list.
+
+    For unyt_quantity objects, converts them to {"value": item.value, "units": item.units.expr}
+    Handles nested dictionaries, lists, and other basic types.
+
+    Parameters:
+    -----------
+    data : any
+        The data to serialize, can be a dictionary, list, unyt_quantity or other basic types
+
+    Returns:
+    --------
+    any
+        The serialized data with unyt_quantity objects converted to dictionaries
+    """
+
+    if isinstance(data, (u.unyt_quantity, u.unyt_array)):
+        return _dimensioned_type_serializer(data)
+
+    if isinstance(data, dict):
+        return {key: _serialize_unit_in_dict(value) for key, value in data.items()}
+
+    if isinstance(data, list):
+        return [_serialize_unit_in_dict(item) for item in data]
+
+    return data
 
 
 def translate_dfdc_xrotor_bet_disk(
     *,
     geometry_file_content: str,
-    length_unit,
-    angle_unit,
+    length_unit: str,
+    angle_unit: str,
 ) -> list[dict]:
     """
     Run the BET Disk translator for an XROTOR or DFDC input file.
     Returns the dict of BETDisk.
     """
-    bet_dict = translate_xrotor_dfdc_to_bet_dict(
+    # pylint: disable=no-member
+    length_unit = LengthType.validate(length_unit)
+    angle_unit = AngleType.validate(angle_unit)
+    bet_disk_dict = translate_xrotor_dfdc_to_bet_dict(
         geometry_file_content=geometry_file_content,
         length_unit=length_unit,
         angle_unit=angle_unit,
     )
-    return [bet_dict]
+    return [_serialize_unit_in_dict(bet_disk_dict)]
 
 
 def translate_xfoil_bet_disk(
     *,
     geometry_file_content: str,
     polar_file_contents_list,
-    length_unit,
-    angle_unit,
+    length_unit: str,
+    angle_unit: str,
 ) -> list[dict]:
     """
     Run the BET Disk translator for an Xfoil input file.
     Returns the dict of BETDisk.
     """
-    bet_dict = translate_xfoil_c81_to_bet_dict(
+    # pylint: disable=no-member
+    length_unit = LengthType.validate(length_unit)
+    angle_unit = AngleType.validate(angle_unit)
+    bet_disk_dict = translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content,
         polar_file_contents_list=polar_file_contents_list,
         length_unit=length_unit,
         angle_unit=angle_unit,
         file_type="xfoil",
     )
-    return [bet_dict]
+    return [_serialize_unit_in_dict([bet_disk_dict])]
 
 
 def translate_c81_bet_disk(
     *,
     geometry_file_content: str,
     polar_file_contents_list,
-    length_unit,
-    angle_unit,
+    length_unit: str,
+    angle_unit: str,
     polar_file_formats,
 ) -> list[dict]:
     """
     Run the BET Disk translator for a C81 input file.
     Returns the dict of BETDisk.
     """
-    bet_dict = translate_xfoil_c81_to_bet_dict(
+    # pylint: disable=no-member
+    length_unit = LengthType.validate(length_unit)
+    angle_unit = AngleType.validate(angle_unit)
+    bet_disk_dict = translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content,
         polar_file_contents_list=polar_file_contents_list,
         polar_file_formats=polar_file_formats,
@@ -774,4 +810,4 @@ def translate_c81_bet_disk(
         angle_unit=angle_unit,
         file_type="c81",
     )
-    return [bet_dict]
+    return [_serialize_unit_in_dict([bet_disk_dict])]

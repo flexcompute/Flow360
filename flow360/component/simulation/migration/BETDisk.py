@@ -123,6 +123,44 @@ def _parse_flow360_bet_disk_dict(
     return updated_bet_dict, cylinder_dict
 
 
+def _parse_all_flow360_bet_disk_dicts(
+    data_dict: dict,
+    mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
+    freestream_temperature: AbsoluteTemperatureType,
+) -> list[BETDisk]:
+    """
+    Read in the dict of Legacy V1 Flow360.json and
+    convert its all BETDisks settings to a list of :class: `BETDisk` instances
+
+    Parameters
+    ----------
+    file_path: str
+        Path to the Flow360.json file.
+    mesh_unit: LengthType.NonNegative
+        Length unit used for LengthType BETDisk parameters.
+    time_unit: TimeType.Positive
+        Time unit used for non-dimensionalization.
+
+    """
+    if "BETDisks" not in data_dict.keys():
+        raise ValueError("Cannot find 'BETDisk' key in the supplied JSON file.")
+
+    if not data_dict.get("BETDisks", None):
+        raise ValueError("'BETDisk'in the supplied JSON file contains no info.")
+
+    bet_list = []
+    bet_disk_index = 0
+    for item in data_dict.get("BETDisks"):
+        bet_disk_dict, cylinder_dict = _parse_flow360_bet_disk_dict(
+            flow360_bet_disk_dict=item,
+            mesh_unit=mesh_unit,
+            freestream_temperature=freestream_temperature,
+        )
+        bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
+        bet_disk_index += 1
+    return bet_list
+
+
 def _load_flow360_json(*, file_path: str) -> dict:
     if os.path.isfile(file_path) is False:
         raise FileNotFoundError(f"Supplied file: {file_path} cannot be found.")
@@ -206,24 +244,7 @@ def read_all_v1_BETDisks(
     ...     time_unit=param.time_unit,
     ... )
     """
-
-    bet_list = []
-
     data_dict = _load_flow360_json(file_path=file_path)
-
-    if "BETDisks" not in data_dict.keys():
-        raise ValueError("Cannot find 'BETDisk' key in the supplied JSON file.")
-
-    if not data_dict.get("BETDisks", None):
-        raise ValueError("'BETDisk'in the supplied JSON file contains no info.")
-
-    bet_disk_index = 0
-    for item in data_dict.get("BETDisks"):
-        bet_disk_dict, cylinder_dict = _parse_flow360_bet_disk_dict(
-            flow360_bet_disk_dict=item,
-            mesh_unit=mesh_unit,
-            freestream_temperature=freestream_temperature,
-        )
-        bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
-        bet_disk_index += 1
-    return bet_list
+    return _parse_all_flow360_bet_disk_dicts(
+        data_dict=data_dict, mesh_unit=mesh_unit, freestream_temperature=freestream_temperature
+    )
