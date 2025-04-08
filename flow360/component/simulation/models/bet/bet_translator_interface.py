@@ -9,6 +9,7 @@ from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
 from flow360.exceptions import Flow360ValueError
+from flow360.log import log
 
 
 def get_file_content(file_path: str):
@@ -366,7 +367,7 @@ def read_in_xfoil_polars(bet_disk, polar_file_content_list, angle_unit):
 
 
 # pylint: disable=too-many-lines
-def read_in_c81_polars(bet_disk, c81_polar_file_contents, c81_polar_file_formats, angle_unit):
+def read_in_c81_polars(bet_disk, c81_polar_file_contents, c81_polar_file_extensions, angle_unit):
     """
     Read in the C81 polars and assigns the resulting values correctly into the BETDisk dictionary.
 
@@ -374,7 +375,7 @@ def read_in_c81_polars(bet_disk, c81_polar_file_contents, c81_polar_file_formats
     ----------
     bet_disk: dictionary, contains required betdisk data
     c81_polar_file_contents: list of C81 polar file contents
-    c81_polar_file_formats: list of C81 polar file contents
+    c81_polar_file_extensions: list of C81 polar file contents
 
     Attributes
     ----------
@@ -390,7 +391,7 @@ def read_in_c81_polars(bet_disk, c81_polar_file_contents, c81_polar_file_formats
     for sec_idx, _ in enumerate(bet_disk["sectional_radiuses"]):
         polar_file_content = c81_polar_file_contents[sec_idx][0]
 
-        if "csv" == c81_polar_file_formats[sec_idx]:
+        if ".csv" == c81_polar_file_extensions[sec_idx].lower():
             alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file_content)
         else:
             alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(
@@ -493,7 +494,6 @@ def generate_polar_file_name_list(geometry_file_content: str) -> list[list[str]]
         try:
             split_line = line.split(",")
             polar_files.append([file.strip() for file in split_line[1:] if file.strip()])
-            print("> polar_files = ", polar_files)
             line = next(line_iter).strip("\n")
         except Exception as error:
             raise Flow360ValueError(
@@ -594,7 +594,7 @@ def translate_xfoil_c81_to_bet_dict(
     length_unit,
     angle_unit,
     file_type: Literal["xfoil", "c81"],
-    polar_file_formats=None,
+    polar_file_extensions=None,
 ) -> dict:
     """
     Take in a geometry input file of xfoil or c81 format and create a flow360 BET input dictionary.
@@ -614,7 +614,7 @@ def translate_xfoil_c81_to_bet_dict(
         bet_disk = read_in_xfoil_polars(bet_disk, polar_file_contents_list, angle_unit)
     else:
         bet_disk = read_in_c81_polars(
-            bet_disk, polar_file_contents_list, polar_file_formats, angle_unit
+            bet_disk, polar_file_contents_list, polar_file_extensions, angle_unit
         )
     return bet_disk
 
@@ -649,13 +649,14 @@ def generate_c81_bet_json(
     c81_polar_file_contents_list = [
         [polar_file.content for polar_file in polar_files] for polar_files in c81_polar_file_list
     ]
-    c81_polar_file_formats = [
-        "csv" if "csv" in polar_files[0].file_path else "c81" for polar_files in c81_polar_file_list
+    c81_polar_file_extensions = [
+        ".csv" if ".csv" in polar_files[0].file_path else ".c81"
+        for polar_files in c81_polar_file_list
     ]
     bet_disk = translate_xfoil_c81_to_bet_dict(
         geometry_file_content=geometry_file_content,
         polar_file_contents_list=c81_polar_file_contents_list,
-        polar_file_formats=c81_polar_file_formats,
+        polar_file_extensions=c81_polar_file_extensions,
         length_unit=length_unit,
         angle_unit=angle_unit,
         file_type="c81",
@@ -1353,7 +1354,7 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     msq = mach_num**2
 
     if msq > 1.0:
-        print("CLFUNC: Local Mach^2 number limited to 0.99, was ", msq)
+        log.warning("CLFUNC: Local Mach^2 number limited to 0.99, was ", msq)
         msq = 0.99
 
     pg = 1.0 / sqrt(1.0 - msq)
