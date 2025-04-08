@@ -762,6 +762,7 @@ def translate_dfdc_xrotor_bet_disk(
     geometry_file_content: str,
     length_unit: str,
     angle_unit: str,
+    file_format: str,
 ) -> list[dict]:
     """
     Run the BET Disk translator for an XROTOR or DFDC input file.
@@ -777,6 +778,7 @@ def translate_dfdc_xrotor_bet_disk(
             geometry_file_content=geometry_file_content,
             length_unit=length_unit,
             angle_unit=angle_unit,
+            file_format=file_format,
         )
         bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
     except (pd.ValidationError, Flow360ValueError, ValueError) as e:
@@ -791,10 +793,10 @@ def translate_xfoil_c81_bet_disk(
     polar_file_contents_dict: dict,
     length_unit: str,
     angle_unit: str,
-    file_type: str,
+    file_format: str,
 ) -> list[dict]:
     """
-    Run the BET Disk translator for an Xfoil or c81 input file.
+    Run the BET Disk translator for an XFOIL or C81 input file.
     Returns the dict of BETDisk.
     """
     # pylint: disable=no-member
@@ -813,7 +815,7 @@ def translate_xfoil_c81_bet_disk(
             for file_name in file_name_list:
                 if file_name not in polar_file_contents_dict.keys():
                     raise ValueError(
-                        f"The {file_type} polar file: {file_name} is missing. Please check the uploaded polar files."
+                        f"The {file_format} polar file: {file_name} is missing. Please check the uploaded polar files."
                     )
                 file_contents_list.append(polar_file_contents_dict.get(file_name))
             polar_file_contents_list.append(file_contents_list)
@@ -824,7 +826,7 @@ def translate_xfoil_c81_bet_disk(
             polar_file_extensions=polar_file_extensions,
             length_unit=length_unit,
             angle_unit=angle_unit,
-            file_type=file_type,
+            file_format=file_format,
         )
         bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
     except (pd.ValidationError, Flow360ValueError, ValueError) as e:
