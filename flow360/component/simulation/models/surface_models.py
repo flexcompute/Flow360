@@ -348,6 +348,7 @@ class Wall(BoundaryBase):
         description="Specify if use wall functions to estimate the velocity field "
         + "close to the solid boundaries.",
     )
+    wall_model_type: Literal["BoundaryLayer", "Implicit"] = pd.Field("BoundaryLayer")
 
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
         None, description="Prescribe a velocity or the velocity model on the wall."
