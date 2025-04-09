@@ -1,8 +1,11 @@
 import copy
 import json
+import os
+import re
 from enum import Enum
 
 import pytest
+import toml
 
 from flow360.component.simulation.framework.updater import (
     VERSION_MILESTONES,
@@ -18,6 +21,24 @@ from flow360.version import __version__
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+def test_version_consistency():
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    pyproject_path = os.path.join(project_root, "pyproject.toml")
+
+    # Load the pyproject.toml file
+    with open(pyproject_path, "r") as f:
+        config = toml.load(f)
+
+    # Extract the version value from the pyproject.toml under [tool.poetry]
+    pyproject_version = config["tool"]["poetry"]["version"]
+
+    # Assert the version in pyproject.toml matches the internal __version__
+    assert pyproject_version == "v" + __version__, (
+        f"Version mismatch: pyproject.toml version is {pyproject_version}, "
+        f"but __version__ is {__version__}"
+    )
 
 
 def test_version_greater_than_highest_updater_version():
@@ -151,7 +172,10 @@ def test_updater_completeness():
     # 12) from >99.11.3, to >99.11.3 => ValueError => []
     with pytest.raises(
         ValueError,
-        match=r"Input `SimulationParams` have higher version than all known versions and thus cannot be handled.",
+        match=re.escape(
+            r"Input `SimulationParams` have higher version (99.11.4) than all"
+            + r" known versions and thus cannot be handled."
+        ),
     ):
         _find_update_path(
             version_from=Flow360Version("99.11.4"),
@@ -162,7 +186,10 @@ def test_updater_completeness():
     # 13) to < from => ValueError
     with pytest.raises(
         ValueError,
-        match=r"Input `SimulationParams` have higher version than the target version and thus cannot be handled.",
+        match=re.escape(
+            r"Input `SimulationParams` have higher version (99.11.3) than"
+            r" the target version (99.11.2) and thus cannot be handled."
+        ),
     ):
         _find_update_path(
             version_from=Flow360Version("99.11.3"),

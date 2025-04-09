@@ -194,12 +194,14 @@ def _find_update_path(
 
     if version_from > version_to:
         raise ValueError(
-            "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
+            f"Input `SimulationParams` have higher version ({version_from}) than "
+            f"the target version ({version_to}) and thus cannot be handled."
         )
 
     if version_from > version_milestones[-1][0]:
         raise ValueError(
-            "Input `SimulationParams` have higher version than all known versions and thus cannot be handled."
+            f"Input `SimulationParams` have higher version ({version_from}) "
+            "than all known versions and thus cannot be handled."
         )
 
     if version_from == version_milestones[-1][0]:
