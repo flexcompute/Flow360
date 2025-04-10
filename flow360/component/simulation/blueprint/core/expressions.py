@@ -2,7 +2,6 @@ from typing import Annotated, Any, Literal, Union
 
 import pydantic as pd
 
-from ..utils.whitelisted import get_allowed_callable
 from .context import EvaluationContext
 
 ExpressionType = Annotated[
@@ -25,7 +24,7 @@ class Expression(pd.BaseModel):
     Base class for expressions (like x > 3, range(n), etc.).
     """
 
-    def evaluate(self, context: EvaluationContext) -> Any:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         raise NotImplementedError
 
 
@@ -33,7 +32,9 @@ class Name(Expression):
     type: Literal["Name"] = "Name"
     id: str
 
-    def evaluate(self, context: EvaluationContext) -> Any:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
+        if strict and not context.can_evaluate(self.id):
+            raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
         return context.get(self.id)
 
 
@@ -41,7 +42,7 @@ class Constant(Expression):
     type: Literal["Constant"] = "Constant"
     value: Any
 
-    def evaluate(self, context: EvaluationContext) -> Any:  # noqa: ARG002
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:  # noqa: ARG002
         return self.value
 
 
@@ -50,10 +51,10 @@ class UnaryOp(Expression):
     op: str
     operand: "ExpressionType"
 
-    def evaluate(self, context: EvaluationContext) -> Any:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         from ..utils.operators import UNARY_OPERATORS
 
-        operand_val = self.operand.evaluate(context)
+        operand_val = self.operand.evaluate(context, strict)
 
         if self.op not in UNARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
@@ -72,11 +73,11 @@ class BinOp(Expression):
     op: str
     right: "ExpressionType"
 
-    def evaluate(self, context: EvaluationContext) -> Any:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         from ..utils.operators import BINARY_OPERATORS
 
-        left_val = self.left.evaluate(context)
-        right_val = self.right.evaluate(context)
+        left_val = self.left.evaluate(context, strict)
+        right_val = self.right.evaluate(context, strict)
 
         if self.op not in BINARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
@@ -92,8 +93,8 @@ class RangeCall(Expression):
     type: Literal["RangeCall"] = "RangeCall"
     arg: "ExpressionType"
 
-    def evaluate(self, context: EvaluationContext) -> range:
-        return range(self.arg.evaluate(context))
+    def evaluate(self, context: EvaluationContext, strict: bool) -> range:
+        return range(self.arg.evaluate(context, strict))
 
 
 class CallModel(Expression):
@@ -111,7 +112,7 @@ class CallModel(Expression):
     args: list["ExpressionType"] = []
     kwargs: dict[str, "ExpressionType"] = {}
 
-    def evaluate(self, context: EvaluationContext) -> Any:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         """Evaluate the function call in the given context.
 
         Handles both direct function calls and method calls by properly resolving
@@ -133,10 +134,10 @@ class CallModel(Expression):
 
             if len(parts) == 1:
                 # Direct function call
-                func = get_allowed_callable(parts[0], context)
+                func = context.resolve(parts[0])
             else:
                 # Method or nested attribute call
-                base = get_allowed_callable(parts[0], context)
+                base = context.resolve(parts[0])
 
                 # Traverse the attribute chain
                 for part in parts[1:-1]:
@@ -146,8 +147,8 @@ class CallModel(Expression):
                 func = getattr(base, parts[-1])
 
             # Evaluate arguments
-            args = [arg.evaluate(context) for arg in self.args]
-            kwargs = {k: v.evaluate(context) for k, v in self.kwargs.items()}
+            args = [arg.evaluate(context, strict) for arg in self.args]
+            kwargs = {k: v.evaluate(context, strict) for k, v in self.kwargs.items()}
 
             return func(*args, **kwargs)
 
@@ -165,8 +166,8 @@ class Tuple(Expression):
     type: Literal["Tuple"] = "Tuple"
     elements: list["ExpressionType"]
 
-    def evaluate(self, context: EvaluationContext) -> tuple:
-        return tuple(elem.evaluate(context) for elem in self.elements)
+    def evaluate(self, context: EvaluationContext, strict: bool) -> tuple:
+        return tuple(elem.evaluate(context, strict) for elem in self.elements)
 
 
 class List(Expression):
@@ -175,8 +176,8 @@ class List(Expression):
     type: Literal["List"] = "List"
     elements: list["ExpressionType"]
 
-    def evaluate(self, context: EvaluationContext) -> list:
-        return [elem.evaluate(context) for elem in self.elements]
+    def evaluate(self, context: EvaluationContext, strict: bool) -> list:
+        return [elem.evaluate(context, strict) for elem in self.elements]
 
 
 class ListComp(Expression):
@@ -187,12 +188,12 @@ class ListComp(Expression):
     target: str  # The loop variable name
     iter: "ExpressionType"  # The iterable expression
 
-    def evaluate(self, context: EvaluationContext) -> list:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> list:
         result = []
-        iterable = self.iter.evaluate(context)
+        iterable = self.iter.evaluate(context, strict)
         for item in iterable:
             # Create a new context for each iteration with the target variable
             iter_context = context.copy()
             iter_context.set(self.target, item)
-            result.append(self.element.evaluate(iter_context))
+            result.append(self.element.evaluate(iter_context, strict))
         return result

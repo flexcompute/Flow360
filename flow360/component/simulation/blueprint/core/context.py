@@ -1,6 +1,6 @@
 from typing import Any
 
-from ..utils.whitelisted import get_allowed_callable
+from .resolver import CallableResolver
 
 
 class ReturnValue(Exception):
@@ -19,14 +19,17 @@ class EvaluationContext:
     Manages variable scope and access during function evaluation.
     """
 
-    def __init__(self, initial_values: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self, resolver: CallableResolver, initial_values: dict[str, Any] | None = None
+    ) -> None:
         self._values = initial_values or {}
+        self._resolver = resolver
 
     def get(self, name: str) -> Any:
         if name not in self._values:
-            # Try loading from whitelisted callables/constants if possible
+            # Try loading from builtin callables/constants if possible
             try:
-                val = get_allowed_callable(name)
+                val = self.resolve(name)
                 # If successful, store it so we don't need to import again
                 self._values[name] = val
             except ValueError as err:
@@ -36,6 +39,12 @@ class EvaluationContext:
     def set(self, name: str, value: Any) -> None:
         self._values[name] = value
 
+    def resolve(self, name):
+        return self._resolver.get_allowed_callable(name)
+
+    def can_evaluate(self, name) -> bool:
+        return self._resolver.can_evaluate(name)
+
     def copy(self) -> "EvaluationContext":
         """Create a copy of the current context."""
-        return EvaluationContext(dict(self._values))
+        return EvaluationContext(self._resolver, dict(self._values))

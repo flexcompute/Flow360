@@ -244,7 +244,7 @@ def function_to_model(
 
 def expression_to_model(
     source: str,
-    ctx: EvaluationContext | None = None,
+    ctx: EvaluationContext,
 ) -> Expression:
     """Parse a Python rvalue expression
 
@@ -252,8 +252,6 @@ def expression_to_model(
         source: a string containing the source
         ctx: Optional evaluation context
     """
-    if ctx is None:
-        ctx = EvaluationContext()
 
     # Parse the source code into an AST
     tree = ast.parse(source)

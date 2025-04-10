@@ -1,6 +1,8 @@
+from math import isnan
+
 import pytest
 
-from flow360.component.simulation.expressions import (
+from flow360.component.simulation.user_code import (
     ValueOrExpression,
     Variable,
     Expression,
@@ -9,6 +11,8 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 import pydantic as pd
 from flow360 import u
+
+import flow360 as fl
 
 from flow360.component.simulation.unit_system import (
     LengthType,
@@ -323,3 +327,19 @@ def test_vector_types():
 
     with pytest.raises(pd.ValidationError):
         model.moment = x * u.m
+
+
+def test_solver_builtin():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[float] = pd.Field()
+
+    x = Variable(name="x", value=4)
+
+    model = TestModel(field=x * u.m + fl.example_solver_variable * u.cm)
+
+    assert str(model.field) == "x * u.m + (fl.example_solver_variable * u.cm)"
+
+    # Raises when trying to evaluate with a message about this variable being blacklisted
+    with pytest.raises(ValueError):
+        model.field.evaluate()
+
