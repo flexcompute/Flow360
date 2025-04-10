@@ -1,5 +1,6 @@
 import os
 import re
+import ntpath
 
 import pytest
 
@@ -138,6 +139,7 @@ def test_reporttemplate_no_items():
 
 @pytest.mark.usefixtures("mock_detect_latex_compiler")
 def test_filepaths_format():
+    os.path = ntpath
     report_doc = ReportDoc(title="test_doc")
     tex = report_doc.doc.dumps()
     lines = tex.split("\n")
