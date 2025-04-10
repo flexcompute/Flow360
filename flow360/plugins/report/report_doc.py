@@ -192,7 +192,7 @@ class ReportDoc:
                         image_options="height=25pt",
                         filename=posixpath.join(
                             os.path.dirname(__file__), "img", "cover_logo.pdf"
-                            ).replace("\\", "/"),
+                        ).replace("\\", "/"),
                     )
                 )
         doc.preamble.append(page_style)

@@ -1,14 +1,14 @@
+import ntpath
 import os
 import re
-import ntpath
 
 import pytest
 
 from flow360 import Case
 from flow360.component.case import CaseMeta
 from flow360.plugins.report.report import Report, ReportDraft, ReportTemplate
-from flow360.plugins.report.report_items import Chart2D, Inputs, Summary, Table
 from flow360.plugins.report.report_doc import ReportDoc
+from flow360.plugins.report.report_items import Chart2D, Inputs, Summary, Table
 from flow360.plugins.report.utils import _requirements_mapping
 
 
@@ -136,6 +136,7 @@ def test_reporttemplate_no_items():
     expected_keys = ["volume_mesh", "surface_mesh", "geometry"]
     expected_reqs = {_requirements_mapping[k] for k in expected_keys}
     assert set(reqs) == expected_reqs
+
 
 @pytest.mark.usefixtures("mock_detect_latex_compiler")
 def test_filepaths_format():
