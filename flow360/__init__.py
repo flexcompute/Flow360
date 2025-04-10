@@ -147,6 +147,9 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.solver_builtins import (
+    example_solver_variable
+)
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
