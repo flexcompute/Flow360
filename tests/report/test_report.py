@@ -147,7 +147,7 @@ def test_filepaths_format():
         if line.startswith(r"\includegraphics"):
             path_match = re.search(r"\{(.*?)\}", line)
             if path_match:
-                path: str = path_match.group(1)
+                path = path_match.group(1)
                 assert "\\" not in path
         if line.startswith("Path"):
             assert "\\" not in line
