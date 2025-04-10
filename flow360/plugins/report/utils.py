@@ -893,7 +893,7 @@ def generate_colorbar_from_image(
     plt.close(fig)
 
 
-font_path = posixpath.join(here, "fonts/")
+font_path = posixpath.join(here, "fonts/").replace("\\", "/")
 font_definition = (
     r"""
 \setmainfont{TWKEverett}[

@@ -150,3 +150,5 @@ def test_filepaths_format():
             if path_match:
                 path: str = path_match.group(1)
                 assert "\\" not in path
+        if line.startswith("Path"):
+            assert "\\" not in line
