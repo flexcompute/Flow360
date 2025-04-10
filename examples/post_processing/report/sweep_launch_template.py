@@ -36,7 +36,7 @@ VEL_MAG = 100 * fl.u.m / fl.u.s  # flow velocity magnitude
 
 
 ######################################################################################################################
-def make_run_params(mesh_object):
+def make_run_params(mesh_object, models):
     """
     Create the params object that contains all the run parameters.
     Needs the mesh_object to get the list of surfaces.
@@ -52,19 +52,7 @@ def make_run_params(mesh_object):
             ),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
-                fl.Wall(
-                    name="NoSlipWall",
-                    surfaces=[
-                        mesh_object["fluid/fuselage"],
-                        # *_pylon will select all boundaries ending with _pylon
-                        mesh_object["fluid/*_pylon"],
-                        mesh_object["fluid/left_wing"],
-                        mesh_object["fluid/right_wing"],
-                        mesh_object["fluid/h_tail"],
-                        mesh_object["fluid/v_tail"],
-                    ],
-                ),
-                fl.Freestream(surfaces=mesh_object["fluid/farfield"], name="farfield"),
+                *models,
                 # Define what sort of physical model of a fluid we will use
                 fl.Fluid(
                     navier_stokes_solver=fl.NavierStokesSolver(),
@@ -81,6 +69,10 @@ def make_run_params(mesh_object):
                 ),
             ],
         )
+
+    # Add meshing params in case the project starts from geometry
+    params.meshing = mesh_object.params.meshing
+
     return params
 
 
@@ -202,21 +194,42 @@ def create_mesh_params(project):
 
 
 def assign_wall(project):
-    models = [
-        fl.Wall(
-            name="NoSlipWall",
-            surfaces=[
-                mesh_object["fluid/fuselage"],
-                # *_pylon will select all boundaries ending with _pylon
-                mesh_object["fluid/*_pylon"],
-                mesh_object["fluid/left_wing"],
-                mesh_object["fluid/right_wing"],
-                mesh_object["fluid/h_tail"],
-                mesh_object["fluid/v_tail"],
-            ],
-        ),
-        fl.Freestream(surfaces=mesh_object["fluid/farfield"], name="farfield"),
-    ]
+    if project.project_tree.root.asset_type == "Geometry":
+        geo = project.geometry
+        geo.group_faces_by_tag("faceName")
+        models = [
+            fl.Wall(
+                name="NoSlipWall",
+                surfaces=[
+                    geo["fuselage"],
+                    # *_pylon will select all boundaries ending with _pylon
+                    geo["*_pylon"],
+                    geo["left_wing"],
+                    geo["right_wing"],
+                    geo["h_tail"],
+                    geo["v_tail"],
+                ],
+            ),
+            fl.Freestream(surfaces=fl.AutomatedFarfield().farfield, name="farfield"),
+        ]
+    else:
+        vm = project.volume_mesh
+        models = [
+            fl.Wall(
+                name="NoSlipWall",
+                surfaces=[
+                    vm["fluid/fuselage"],
+                    # *_pylon will select all boundaries ending with _pylon
+                    vm["fluid/*_pylon"],
+                    vm["fluid/left_wing"],
+                    vm["fluid/right_wing"],
+                    vm["fluid/h_tail"],
+                    vm["fluid/v_tail"],
+                ],
+            ),
+            fl.Freestream(surfaces=vm["fluid/farfield"], name="farfield"),
+        ]
+    return models
 
 
 def project_from_volume_mesh():
@@ -251,10 +264,10 @@ def main():
     # Chose one of the three options below
 
     # Option 1a: if you want to upload a new mesh and create a new project.
-    # project = project_from_volume_mesh()
+    project = project_from_volume_mesh()
 
     # Option 1b: if you want to upload a CAD geometry and create a new project.
-    project = project_from_geometry()
+    # project = project_from_geometry()
 
     # Option 1c: if you want to run from an existing project.
     # project = fl.Project.from_cloud(
@@ -275,7 +288,8 @@ def main():
     dir_path = create_directory(dir_name)
 
     # step3: launch the cases and save the relevant data
-    params = make_run_params(vm)  # define the run params used to launch the run
+    models = assign_wall(project)
+    params = make_run_params(vm, models)  # define the run params used to launch the run
     cases = launch_sweep(params, project, project_name, vm, dir_path)  # launch a sweep
 
     generate_report(
