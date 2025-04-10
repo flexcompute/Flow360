@@ -1,7 +1,7 @@
 import ast
 import inspect
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Union, Optional
 
 from ..core.context import EvaluationContext
 from ..core.expressions import (
@@ -193,8 +193,8 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
 
 
 def function_to_model(
-    source: str | Callable[..., Any],
-    ctx: EvaluationContext | None = None,
+    source: Union[str, Callable[..., Any]],
+    ctx: Optional[EvaluationContext] = None,
 ) -> Function:
     """Parse a Python function definition into our intermediate representation.
 
