@@ -150,6 +150,13 @@ def generate_report(
         items.append(Summary())
         items.append(Inputs())
 
+    if include_forces_moments_table:
+        table = Table(
+            data=table_data,
+            section_title="Quantities of interest",
+        )
+        items.append(table)
+
     if include_residuals:
         residual_charts = [
             Chart2D(
@@ -175,13 +182,6 @@ def generate_report(
             for cfl in cfl_list
         ]
         items.extend(cfl_charts)
-
-    if include_forces_moments_table:
-        table = Table(
-            data=table_data,
-            section_title="Quantities of interest",
-        )
-        items.append(table)
 
     if include_forces_moments_charts:
         force_charts = [
