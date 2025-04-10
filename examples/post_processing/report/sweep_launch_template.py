@@ -26,7 +26,8 @@ import flow360 as fl
 from flow360.examples import EVTOL
 from flow360.log import log
 
-# Variables we want to export in our volume solution files. Many more are available
+# Variables we want to export in our volume and surface solution files. Many more are available
+
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
 
 # Variables we want to export in our surface solution files. Many more are available
