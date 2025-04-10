@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from .resolver import CallableResolver
 
@@ -20,7 +20,7 @@ class EvaluationContext:
     """
 
     def __init__(
-        self, resolver: CallableResolver, initial_values: dict[str, Any] | None = None
+        self, resolver: CallableResolver, initial_values: Optional[dict[str, Any]] = None
     ) -> None:
         self._values = initial_values or {}
         self._resolver = resolver

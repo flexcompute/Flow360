@@ -1,4 +1,5 @@
-from typing import get_origin, Generic, TypeVar, Self, Optional
+from typing import get_origin, Generic, TypeVar
+from typing_extensions import Self
 import re
 
 from flow360.component.simulation.blueprint.flow360 import resolver
@@ -335,7 +336,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 Expression, pd.AfterValidator(_get_internal_validator(internal_type))
             ]
 
-        return Union[internal_type, expr_type]
+        return Union[expr_type, internal_type]
 
     @pd.model_validator(mode="wrap")
     @classmethod
