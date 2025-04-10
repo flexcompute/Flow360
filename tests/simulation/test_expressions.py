@@ -335,9 +335,9 @@ def test_solver_builtin():
 
     x = Variable(name="x", value=4)
 
-    model = TestModel(field=x * u.m + fl.example_solver_variable * u.cm)
+    model = TestModel(field=x * u.m + fl.kOmega * u.cm)
 
-    assert str(model.field) == "x * u.m + (fl.example_solver_variable * u.cm)"
+    assert str(model.field) == "x * u.m + (fl.kOmega * u.cm)"
 
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
