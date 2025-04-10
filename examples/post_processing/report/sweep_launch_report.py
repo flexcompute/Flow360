@@ -150,27 +150,6 @@ def generate_report(
         items.append(Summary())
         items.append(Inputs())
 
-    if include_forces_moments_table:
-        table = Table(
-            data=table_data,
-            section_title="Quantities of interest",
-        )
-        items.append(table)
-
-    if include_forces_moments_charts:
-        force_charts = [
-            Chart2D(
-                x=f"surface_forces/{step_type}",
-                y=f"surface_forces/{force}",
-                force_new_page=True,
-                section_title="Forces/Moments",
-                fig_name=f"{force}_fig",
-                exclude=exclude,
-            )
-            for force in force_list
-        ]
-        items.extend(force_charts)
-
     if include_residuals:
         residual_charts = [
             Chart2D(
@@ -196,6 +175,27 @@ def generate_report(
             for cfl in cfl_list
         ]
         items.extend(cfl_charts)
+
+    if include_forces_moments_table:
+        table = Table(
+            data=table_data,
+            section_title="Quantities of interest",
+        )
+        items.append(table)
+
+    if include_forces_moments_charts:
+        force_charts = [
+            Chart2D(
+                x=f"surface_forces/{step_type}",
+                y=f"surface_forces/{force}",
+                force_new_page=True,
+                section_title="Forces/Moments",
+                fig_name=f"{force}_fig",
+                exclude=exclude,
+            )
+            for force in force_list
+        ]
+        items.extend(force_charts)
 
     if include_yplus:
         y_plus_screenshots = [
