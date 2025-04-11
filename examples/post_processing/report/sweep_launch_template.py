@@ -243,8 +243,7 @@ def main():
     # Chose one of the three options below
 
     # Option 1a: if you want to upload a new mesh and create a new project.
-    # project = project_from_volume_mesh()
-    project = fl.Project.from_cloud(project_id="prj-e10ba786-0e74-46b8-a39a-079caa26f5a2")
+    project = project_from_volume_mesh()
 
     # Option 1b: if you want to upload a CAD geometry and create a new project.
     # project = project_from_geometry()
