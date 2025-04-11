@@ -603,12 +603,8 @@ class Chart(ReportItem):
         Using Doc manually here may be unnecessary - but it does allow for more control
         """
 
-
         # Smaller than 1 to avoid overflowing
         minipage_size = 0.86 / self.items_in_row if self.items_in_row != 1 else 0.8
-
-
-        
 
         if sub_fig_captions is None:
             sub_fig_captions = range(1, len(img_list) + 1)
