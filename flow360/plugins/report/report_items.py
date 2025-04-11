@@ -603,9 +603,12 @@ class Chart(ReportItem):
         Using Doc manually here may be unnecessary - but it does allow for more control
         """
 
+
         # Smaller than 1 to avoid overflowing
         minipage_size = 0.86 / self.items_in_row if self.items_in_row != 1 else 0.8
-        doc.append(NoEscape(r"\begin{figure}[h!]"))
+
+
+        
 
         if sub_fig_captions is None:
             sub_fig_captions = range(1, len(img_list) + 1)
@@ -641,12 +644,14 @@ class Chart(ReportItem):
         ]
 
         for row_idx in idx_list:
+            doc.append(NoEscape(r"\begin{figure}[h!]"))
             for idx in row_idx:
                 doc.append(figures[idx])
                 doc.append(NoEscape(r"\hfill"))
             doc.append(NoEscape(r"\\"))
-        doc.append(NoEscape(r"\caption{" + escape_latex(fig_caption) + "}"))
-        doc.append(NoEscape(r"\end{figure}"))
+            if row_idx == idx_list[-1]:
+                doc.append(NoEscape(r"\caption{" + escape_latex(fig_caption) + "}"))
+            doc.append(NoEscape(r"\end{figure}"))
 
 
 class PlotModel(BaseModel):
