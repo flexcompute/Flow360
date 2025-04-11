@@ -178,7 +178,8 @@ def create_mesh_params(project):
     return params
 
 
-def assign_wall(project):
+def assign_boundary_conditions(project):
+
     if project.project_tree.root.asset_type == "Geometry":
         geo = project.geometry
         geo.group_faces_by_tag("faceName")
