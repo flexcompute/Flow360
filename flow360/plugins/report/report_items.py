@@ -835,7 +835,9 @@ class SubsetLimit(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def check_subset_values(self):
-        """Ensure that correct subset values are provided."""
+        """
+        Ensure that correct subset values are provided.
+        """
         lower, upper = self.subset
         if not lower < 1 or not upper <= 1:
             raise ValueError("Subset values need to be between 0 and 1 (inclusive).")
@@ -929,7 +931,7 @@ class Chart2D(Chart):
 
     def get_requirements(self):
         """
-        Returns requirements for this item
+        Returns requirements for this item.
         """
         return get_requirements_from_data_path([self.x, self.y])
 
@@ -951,7 +953,9 @@ class Chart2D(Chart):
     # pylint: disable=unpacking-non-sequence
     @pd.model_validator(mode="after")
     def _handle_deprecated_focus_x(self):
-        """Ensures that scripts containing deprecated focus_x will still work."""
+        """
+        Ensures that scripts containing deprecated focus_x will still work.
+        """
         if self.focus_x is not None:
             if self.ylim is not None:
                 raise ValueError("Fields ylim and focus_x cannot be used together.")
@@ -1249,7 +1253,7 @@ class Chart2D(Chart):
 
     def get_background_chart3d(self, cases) -> Tuple[Chart3D, Case]:
         """
-        returns Chart3D for background
+        Returns Chart3D for background.
         """
         x_data, _, _, _ = self._load_data(cases)
         reference_case = cases[0]
@@ -1278,17 +1282,20 @@ class Chart2D(Chart):
 
         return file_names, data.x_label, data.y_label
 
+    # pylint: disable=too-many-return-statements
     def _handle_2d_caption(
         self, case: Case = None, x_lab: str = None, y_lab: str = None, case_number: int = None
     ):
-        """Handle captions for Chart2D."""
+        """
+        Handle captions for Chart2D.
+        """
 
         if self.caption == "":
             if self.items_in_row is not None:
                 return f"{bold(y_lab)} against {bold(x_lab)}."
-            elif self.separate_plots is True:
+            if self.separate_plots is True:
                 return f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
-            elif self.select_indices is not None:
+            if self.select_indices is not None:
                 return f"{bold(y_lab)} against {bold(x_lab)} for {bold('selected cases')}."
             return f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
         if self.separate_plots is True:
@@ -1301,7 +1308,7 @@ class Chart2D(Chart):
     # pylint: disable=too-many-arguments,too-many-locals
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
-        returns doc item for chart
+        Returns doc item for chart.
         """
         self._handle_new_page(context.doc)
         self._handle_grid_input(context.cases)
