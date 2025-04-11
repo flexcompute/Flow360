@@ -100,7 +100,9 @@ class ReportDoc:
                 r"labelsep=none, justification=raggedright, singlelinecheck=false}"
             )
         )
-        doc.preamble.append(NoEscape(r"\captionsetup[subfigure]{labelformat=empty}"))
+        doc.preamble.append(
+            NoEscape(r"\captionsetup[subfigure]{labelformat=empty, justification=centering}")
+        )
 
         if self.use_xelatex:
             doc.preamble.append(NoEscape(font_definition))
