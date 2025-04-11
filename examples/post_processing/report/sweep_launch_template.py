@@ -19,21 +19,18 @@ This script will:
 
 import os
 
-import click
 from sweep_launch_report import generate_report
 
 import flow360 as fl
+import pandas as pd
+from flow360 import u
 from flow360.examples import EVTOL
-from flow360.log import log
 
 # Variables we want to export in our volume and surface solution files. Many more are available
-
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
-
-# Variables we want to export in our surface solution files. Many more are available
 surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 
-VEL_MAG = 100 * fl.u.m / fl.u.s  # flow velocity magnitude
+vel_mag = 100 * u.m / u.s  # flow velocity magnitude
 
 
 ######################################################################################################################
@@ -46,10 +43,10 @@ def make_run_params(mesh_object, models):
         params = fl.SimulationParams(
             # Dimensions can  be either in inches, m, mm or many other units
             reference_geometry=fl.ReferenceGeometry(
-                moment_center=(0, 0, 0) * fl.u.m, moment_length=1 * fl.u.m, area=1 * fl.u.m * fl.u.m
+                moment_center=(0, 0, 0) * u.m, moment_length=1 * u.m, area=1 * u.m * u.m
             ),
             operating_condition=fl.AerospaceCondition(
-                velocity_magnitude=VEL_MAG, alpha=0 * fl.u.deg
+                velocity_magnitude=vel_mag, alpha=0 * u.deg
             ),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
@@ -78,83 +75,68 @@ def make_run_params(mesh_object, models):
 
 
 ######################################################################################################################
-def launch_sweep(params, project, project_name, mesh_object, dir_path):
+def launch_sweep(params, project, mesh_object, dir_path):
     """
     Launch a sweep of cases.
     """
 
     case_list = []
-    cases_params = []
 
     # create the csv file where we will store all relevant sweep data
+    os.makedirs(dir_path, exist_ok=True)
     csv_path = os.path.join(dir_path, "sweep_saved_data.csv")
-    with open(csv_path, "w") as csv_file:
-        csv_file.write(
-            f" Sweep name:, {os.path.basename(dir_path)}\n"
-        )  # include the sweep name (directory name)
-        csv_file.write(f" Project name:, {project_name}\n")
-        csv_file.write(f" Project id:, {project.id}\n")
-        csv_file.write(f" volume mesh id:, {mesh_object.id}\n")
-        csv_file.write(f" Velocity magnitude:, {VEL_MAG}\n")
-        csv_file.write("\n")
-        csv_file.write(
-            "case_id, alpha(deg), beta(deg), CL(avg), CD(avg), CFx(avg), CFy(avg), CFz(avg), CMx(avg), CMy(avg), CMz(avg)\n"
-        )
+    general_info = {
+        "Sweep name": os.path.basename(dir_path),
+        "Project name": project.metadata.name,
+        "Project ID": project.id,
+        "Volume mesh ID": mesh_object.id,
+        "Velocity magnitude": vel_mag
+    }
+    df = pd.DataFrame.from_dict([general_info])
+    df.to_csv(csv_path, index=False)
 
-        # for example let's vary alpha:
-        alphas = [-10, 12]
+    # for example let's vary alpha:
+    alphas = [-10, 12] * u.deg
 
-        for alpha_angle in alphas:
-            # modify the alpha
-            params.operating_condition.alpha = alpha_angle * fl.u.deg
+    cases_params = []
+    for i, alpha_angle in enumerate(alphas):
+        # modify the alpha
+        params.operating_condition.alpha = alpha_angle
 
-            # launch the case
-            case = project.run_case(params=params, name=f"{alpha_angle}_case ")
-            case_params = f"{case.id}, {params.operating_condition.alpha.value}, {params.operating_condition.beta.value}, "
-            log.info(f"The case ID is: {case.id} with {alpha_angle=} ")
-            case_list.append(case)
-            cases_params.append(case_params)
+        # launch the case
+        case = project.run_case(params=params, name=f"{alpha_angle}_case ")
+        data={"case_id": case.id, "alpha(deg)": params.operating_condition.alpha.value, "beta(deg)": params.operating_condition.beta.value,}
+        
+        print(f"The case ID is: {case.id} with {alpha_angle=} ")
+        case_list.append(case)
+        cases_params.append(data)
 
-        # fraction used for averaging over the last % of iterations, 0.1 -> last 10%
-        fraction = 0.1
+    # fraction used for averaging over the last % of iterations, 0.1 -> last 10%
+    fraction = 0.1
 
-        for case, case_params in zip(case_list, cases_params):
-            case.wait()
-            results = case.results
-            avg_total_forces = results.total_forces.get_averages(fraction).to_dict()
-            csv_file.write(
-                case_params
-                + f'{avg_total_forces["CL"]}, {avg_total_forces["CD"]}, {avg_total_forces["CFx"]}, {avg_total_forces["CFy"]}, {avg_total_forces["CFz"]}, {avg_total_forces["CMx"]}, {avg_total_forces["CMy"]}, {avg_total_forces["CMz"]}\n'
-            )
+    cases_forces = []
+    for i, case in enumerate(case_list):
+        case.wait()
+        results = case.results
+        avg_total_forces = results.total_forces.get_averages(fraction).to_dict()
+        forces={
+            "CL(avg)": avg_total_forces["CL"],
+            "CD(avg)": avg_total_forces["CD"],
+            "CFx(avg)": avg_total_forces["CFx"],
+            "CFy(avg)": avg_total_forces["CFy"],
+            "CFz(avg)": avg_total_forces["CFz"],
+            "CMx(avg)": avg_total_forces["CMx"],
+            "CMy(avg)": avg_total_forces["CMy"],
+            "CMz(avg)": avg_total_forces["CMz"]
+        }
+        cases_forces.append(forces)
+
+    df_data = pd.DataFrame.from_dict(cases_params)
+    df_forces = pd.DataFrame.from_dict(cases_forces)
+    df = df_data.join(df_forces)
+    df.to_csv(csv_path, index=False, mode="a")
 
     return case_list
-
-
-######################################################################################################################
-def create_directory(dir_name):
-    """
-
-    Create on the local machine the required directories if not already created
-
-    Parameters
-    ----------
-    dir_name
-
-    Returns
-    -------
-
-    """
-
-    dir_path = os.path.join(os.getcwd(), dir_name)
-    if os.path.isdir(dir_path):  # if directory already exists.
-        overwrite_bool = click.confirm(
-            f"Directory '{dir_path}' already exists, continuing might overwrite some of its content, do you want to continue?",
-            default=True,
-            abort=True,
-        )
-    else:
-        os.makedirs(dir_path)
-    return dir_path
 
 
 ######################################################################################################################
@@ -186,7 +168,7 @@ def create_mesh_params(project):
                     fl.SurfaceEdgeRefinement(
                         name="leading_edges",
                         edges=[geometry["leadingEdge"]],
-                        method=fl.AngleBasedRefinement(value=2 * fl.u.deg),
+                        method=fl.AngleBasedRefinement(value=2 * u.deg),
                     )
                 ],
             )
@@ -200,15 +182,9 @@ def assign_wall(project):
         geo.group_faces_by_tag("faceName")
         models = [
             fl.Wall(
-                name="NoSlipWall",
                 surfaces=[
-                    geo["fuselage"],
-                    # *_pylon will select all boundaries ending with _pylon
-                    geo["*_pylon"],
-                    geo["left_wing"],
-                    geo["right_wing"],
-                    geo["h_tail"],
-                    geo["v_tail"],
+                    # * will select all geometry boundaries
+                    geo["*"],
                 ],
             ),
             fl.Freestream(surfaces=fl.AutomatedFarfield().farfield, name="farfield"),
@@ -265,33 +241,27 @@ def main():
     # Chose one of the three options below
 
     # Option 1a: if you want to upload a new mesh and create a new project.
-    project = project_from_volume_mesh()
+    # project = project_from_volume_mesh()
+    project = fl.Project.from_cloud(project_id="prj-e10ba786-0e74-46b8-a39a-079caa26f5a2")
 
     # Option 1b: if you want to upload a CAD geometry and create a new project.
     # project = project_from_geometry()
-
-    # Option 1c: if you want to run from an existing project.
-    # project = fl.Project.from_cloud(
-    #     'prj-XXXXXXXXXX')  # where prj-XXXXXXXXXX is an ID that can be saved from a previously created project or read off the WEBUI
-
-    project_name = project.metadata.name
 
     vm = project.volume_mesh  # get the volume mesh entity associated with that project.
     # if the project has more then one mesh then use this line below instead.
     # vm = project.get_volume_mesh(asset_id='vm-XXXXXXXXXXXXXXX')  # get the specific volume mesh entity in that project we want to use.
 
-    log.info(f"The project id is {project.id}")
-    log.info(f"The volume mesh contains the following boundaries:{vm.boundary_names}")
-    log.info(f"The volume mesh ID is: {vm.id}")
+    print(f"The project id is {project.id}")
+    print(f"The volume mesh contains the following boundaries:{vm.boundary_names}")
+    print(f"The volume mesh ID is: {vm.id}")
 
     # step 2: create the directories to locally store relevant data
     dir_name = "evtol_alpha_sweep"
-    dir_path = create_directory(dir_name)
 
     # step3: launch the cases and save the relevant data
     models = assign_wall(project)
     params = make_run_params(vm, models)  # define the run params used to launch the run
-    cases = launch_sweep(params, project, project_name, vm, dir_path)  # launch a sweep
+    cases = launch_sweep(params, project, vm, dir_name)  # launch a sweep
 
     generate_report(
         cases,
