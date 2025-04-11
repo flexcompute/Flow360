@@ -1284,8 +1284,12 @@ class Chart2D(Chart):
         """Handle captions for Chart2D."""
 
         if self.caption == "":
-            if self.separate_plots is True:
+            if (self.items_in_row is not None):
+                return f"{bold(y_lab)} against {bold(x_lab)}."
+            elif self.separate_plots is True:
                 return f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+            elif self.select_indices is not None:
+                return f"{bold(y_lab)} against {bold(x_lab)} for {bold('selected cases')}." 
             return f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
         if self.separate_plots is True:
             if isinstance(self.caption, List):
@@ -1309,7 +1313,10 @@ class Chart2D(Chart):
 
         if self.items_in_row is not None:
             caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
-            self._add_row_figure(context.doc, file_names, caption)
+            self._add_row_figure(context.doc, 
+                                 file_names, 
+                                 caption,
+                                 [case.name for case in cases])
         else:
             if self.separate_plots is True:
                 for case_number, (case, file_name) in enumerate(zip(cases, file_names)):
