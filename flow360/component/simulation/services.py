@@ -140,9 +140,12 @@ def get_default_params(
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
+    length_unit_obj = LengthType.validate(length_unit)
     with unit_system:
         reference_geometry = ReferenceGeometry(
-            area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
+            area=1 * length_unit_obj**2,
+            moment_center=(0, 0, 0) * length_unit_obj,
+            moment_length=(1, 1, 1) * length_unit_obj,
         )
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
         surface_output = SurfaceOutput(
