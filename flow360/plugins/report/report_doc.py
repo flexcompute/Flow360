@@ -168,9 +168,9 @@ class ReportDoc:
                     logo1.append(
                         StandAloneGraphic(
                             image_options="height=18pt",
-                            filename=os.path.join(
+                            filename=posixpath.join(
                                 os.path.dirname(__file__), "img", "flow360_logo_grey.pdf"
-                            ),
+                            ).replace("\\", "/"),
                         )
                     )
 
@@ -190,7 +190,9 @@ class ReportDoc:
                 footer_content.append(
                     StandAloneGraphic(
                         image_options="height=25pt",
-                        filename=os.path.join(os.path.dirname(__file__), "img", "cover_logo.pdf"),
+                        filename=posixpath.join(
+                            os.path.dirname(__file__), "img", "cover_logo.pdf"
+                        ).replace("\\", "/"),
                     )
                 )
         doc.preamble.append(page_style)
