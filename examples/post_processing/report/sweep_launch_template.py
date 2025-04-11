@@ -30,7 +30,7 @@ from flow360.examples import EVTOL
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
 surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 
-vel_mag = 100 * u.m / u.s  # flow velocity magnitude
+vel_mag = 100 * u.m / u.s
 
 
 ######################################################################################################################
