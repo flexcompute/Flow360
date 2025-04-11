@@ -19,10 +19,10 @@ This script will:
 
 import os
 
+import pandas as pd
 from sweep_launch_report import generate_report
 
 import flow360 as fl
-import pandas as pd
 from flow360 import u
 from flow360.examples import EVTOL
 
@@ -45,9 +45,7 @@ def make_run_params(mesh_object, models):
             reference_geometry=fl.ReferenceGeometry(
                 moment_center=(0, 0, 0) * u.m, moment_length=1 * u.m, area=1 * u.m * u.m
             ),
-            operating_condition=fl.AerospaceCondition(
-                velocity_magnitude=vel_mag, alpha=0 * u.deg
-            ),
+            operating_condition=fl.AerospaceCondition(velocity_magnitude=vel_mag, alpha=0 * u.deg),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 *models,
@@ -90,7 +88,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
         "Project name": project.metadata.name,
         "Project ID": project.id,
         "Volume mesh ID": mesh_object.id,
-        "Velocity magnitude": vel_mag
+        "Velocity magnitude": vel_mag,
     }
     df = pd.DataFrame.from_dict([general_info])
     df.to_csv(csv_path, index=False)
@@ -105,8 +103,12 @@ def launch_sweep(params, project, mesh_object, dir_path):
 
         # launch the case
         case = project.run_case(params=params, name=f"{alpha_angle}_case ")
-        data={"case_id": case.id, "alpha(deg)": params.operating_condition.alpha.value, "beta(deg)": params.operating_condition.beta.value,}
-        
+        data = {
+            "case_id": case.id,
+            "alpha(deg)": params.operating_condition.alpha.value,
+            "beta(deg)": params.operating_condition.beta.value,
+        }
+
         print(f"The case ID is: {case.id} with {alpha_angle=} ")
         case_list.append(case)
         cases_params.append(data)
@@ -119,7 +121,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
         case.wait()
         results = case.results
         avg_total_forces = results.total_forces.get_averages(fraction).to_dict()
-        forces={
+        forces = {
             "CL(avg)": avg_total_forces["CL"],
             "CD(avg)": avg_total_forces["CD"],
             "CFx(avg)": avg_total_forces["CFx"],
@@ -127,7 +129,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
             "CFz(avg)": avg_total_forces["CFz"],
             "CMx(avg)": avg_total_forces["CMx"],
             "CMy(avg)": avg_total_forces["CMy"],
-            "CMz(avg)": avg_total_forces["CMz"]
+            "CMz(avg)": avg_total_forces["CMz"],
         }
         cases_forces.append(forces)
 
