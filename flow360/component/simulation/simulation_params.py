@@ -389,8 +389,8 @@ class SimulationParams(_ParamModelBase):
 
     @pd.field_validator("outputs", mode="after")
     @classmethod
-    def check_duplicate_output_entites_names(cls, outputs):
-        """Cehck if we have isosurfaces, slices or monitors with a duplicate name"""
+    def check_duplicate_isosurface_names(cls, outputs):
+        """Check if we have isosurfaces with a duplicate name"""
         return _check_duplicate_isosurface_names(outputs)
 
     @pd.field_validator("user_defined_fields", mode="after")
