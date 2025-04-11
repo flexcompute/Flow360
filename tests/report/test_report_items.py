@@ -11,8 +11,8 @@ from flow360.component.resource_base import local_metadata_builder
 from flow360.component.utils import LocalResourceCache
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 from flow360.plugins.report.report import ReportTemplate
-from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_context import ReportContext
+from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_items import (
     Camera,
     Chart2D,
@@ -804,17 +804,18 @@ def test_3d_caption(cases):
         == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
     )
 
+
 def test_subfigure_row_splitting():
     report_doc = ReportDoc("tester")
 
     chart = Chart2D(
-            x="nonlinear_residuals/pseudo_step",
-            y="nonlinear_residuals/0_cont",
-            section_title="Continuity convergence",
-            fig_name="convergence_cont",
-            items_in_row=2,
-        )
-    
+        x="nonlinear_residuals/pseudo_step",
+        y="nonlinear_residuals/0_cont",
+        section_title="Continuity convergence",
+        fig_name="convergence_cont",
+        items_in_row=2,
+    )
+
     chart._add_row_figure(doc=report_doc.doc, img_list=["." for _ in range(6)], fig_caption="test")
 
     tex = report_doc.doc.dumps()
@@ -832,7 +833,7 @@ def test_subfigure_row_splitting():
 
     for line in lines:
         line = line.lstrip()
-        if (line.startswith(r"\caption") and in_figure and (not in_subfigure)):
+        if line.startswith(r"\caption") and in_figure and (not in_subfigure):
             caption_in_figure = True
         if line.startswith(r"\begin{subfigure}[t]"):
             in_subfigure = True
@@ -851,4 +852,3 @@ def test_subfigure_row_splitting():
                 assert not caption_in_figure
             caption_in_figure = False
             in_figure = False
-            
