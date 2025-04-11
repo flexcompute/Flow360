@@ -262,7 +262,7 @@ def main():
     dir_name = "evtol_alpha_sweep"
 
     # step3: launch the cases and save the relevant data
-    models = assign_wall(project)
+    models = assign_boundary_conditions(project)
     params = make_run_params(vm, models)  # define the run params used to launch the run
     cases = launch_sweep(params, project, vm, dir_name)  # launch a sweep
 
