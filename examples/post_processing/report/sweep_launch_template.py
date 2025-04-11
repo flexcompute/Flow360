@@ -30,7 +30,7 @@ from flow360.examples import EVTOL
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
 surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 
-vel_mag = 100 * u.m / u.s
+velocity_magnitude = 100 * u.m / u.s
 
 
 ######################################################################################################################
@@ -45,7 +45,7 @@ def make_run_params(mesh_object, models):
             reference_geometry=fl.ReferenceGeometry(
                 moment_center=(0, 0, 0) * u.m, moment_length=1 * u.m, area=1 * u.m * u.m
             ),
-            operating_condition=fl.AerospaceCondition(velocity_magnitude=vel_mag, alpha=0 * u.deg),
+            operating_condition=fl.AerospaceCondition(velocity_magnitude=velocity_magnitude, alpha=0 * u.deg),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 *models,
@@ -88,7 +88,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
         "Project name": project.metadata.name,
         "Project ID": project.id,
         "Volume mesh ID": mesh_object.id,
-        "Velocity magnitude": vel_mag,
+        "Velocity magnitude": velocity_magnitude,
     }
     df = pd.DataFrame.from_dict([general_info])
     df.to_csv(csv_path, index=False)
