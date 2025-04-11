@@ -805,6 +805,7 @@ def test_3d_caption(cases):
     )
 
 
+@pytest.mark.usefixtures("mock_detect_latex_compiler")
 def test_subfigure_row_splitting():
     report_doc = ReportDoc("tester")
 
