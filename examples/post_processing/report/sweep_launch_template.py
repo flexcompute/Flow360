@@ -184,6 +184,7 @@ def assign_wall(project):
         geo.group_faces_by_tag("faceName")
         models = [
             fl.Wall(
+                name="NoSlipWall",
                 surfaces=[
                     # * will select all geometry boundaries
                     geo["*"],
