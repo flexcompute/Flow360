@@ -26,7 +26,7 @@ import flow360 as fl
 from flow360 import u
 from flow360.examples import EVTOL
 
-# Variables we want to export in our volume and surface solution files. Many more are available
+# Variables we want to export in our volume and surface solution files. Many more are available.
 vol_fields = ["Mach", "Cp", "mut", "mutRatio", "primitiveVars", "qcriterion"]
 surf_fields = ["Cp", "yPlus", "Cf", "CfVec", "primitiveVars", "wallDistance"]
 
@@ -45,28 +45,28 @@ def make_run_params(mesh_object, models):
             reference_geometry=fl.ReferenceGeometry(
                 moment_center=(0, 0, 0) * u.m, moment_length=1 * u.m, area=1 * u.m * u.m
             ),
-            operating_condition=fl.AerospaceCondition(velocity_magnitude=velocity_magnitude, alpha=0 * u.deg),
+            operating_condition=fl.AerospaceCondition(
+                velocity_magnitude=velocity_magnitude, alpha=0 * u.deg
+            ),
             time_stepping=fl.Steady(max_steps=5000, CFL=fl.AdaptiveCFL()),
             models=[
                 *models,
-                # Define what sort of physical model of a fluid we will use
                 fl.Fluid(
                     navier_stokes_solver=fl.NavierStokesSolver(),
                     turbulence_model_solver=fl.SpalartAllmaras(),
                 ),
             ],
             outputs=[
-                # output format could be 'paraview' or 'tecplot' or 'both'
                 fl.VolumeOutput(output_format="tecplot", output_fields=vol_fields),
                 # mesh_object['*'] will select all the boundaries in the mesh and export the surface results.
-                # Regular expressions can be used to filter for certain boundaries
+                # Regular expressions can be used to filter for certain boundaries.
                 fl.SurfaceOutput(
                     surfaces=[mesh_object["*"]], output_fields=surf_fields, output_format="tecplot"
                 ),
             ],
         )
 
-    # Add meshing params in case the project starts from geometry
+    # Add meshing params in case the project starts from geometry.
     params.meshing = mesh_object.params.meshing
 
     return params
@@ -80,7 +80,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
 
     case_list = []
 
-    # create the csv file where we will store all relevant sweep data
+    # Create the csv file where we will store all relevant sweep data.
     os.makedirs(dir_path, exist_ok=True)
     csv_path = os.path.join(dir_path, "sweep_saved_data.csv")
     general_info = {
@@ -93,7 +93,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
     df = pd.DataFrame.from_dict([general_info])
     df.to_csv(csv_path, index=False)
 
-    # for example let's vary alpha:
+    # For example let's vary alpha:
     alphas = [-10, 12] * u.deg
 
     cases_params = []
@@ -101,7 +101,6 @@ def launch_sweep(params, project, mesh_object, dir_path):
         # modify the alpha
         params.operating_condition.alpha = alpha_angle
 
-        # launch the case
         case = project.run_case(params=params, name=f"{alpha_angle}_case ")
         data = {
             "case_id": case.id,
@@ -187,7 +186,7 @@ def assign_boundary_conditions(project):
             fl.Wall(
                 name="NoSlipWall",
                 surfaces=[
-                    # * will select all geometry boundaries
+                    # "*" will select all geometry boundaries
                     geo["*"],
                 ],
             ),
@@ -217,7 +216,7 @@ def project_from_volume_mesh():
     EVTOL.get_files()
     project_name = "sweep_evtol_from_mesh"
     project = fl.Project.from_volume_mesh(
-        EVTOL.mesh_filename,  # mesh could also be ugrid format
+        EVTOL.mesh_filename,  # mesh could also be in ugrid format
         name=project_name,
         length_unit="m",  # length_unit should be 'm', 'mm', 'cm', 'inch' or 'ft'
     )
@@ -230,7 +229,7 @@ def project_from_geometry():
     project_name = "sweep_evtol_from_geometry"
     project = fl.Project.from_geometry(EVTOL.geometry, name=project_name)
     mesh_params = create_mesh_params(project)
-    project.generate_volume_mesh(params=mesh_params, name="mesh_name")  # generate the volume mesh
+    project.generate_volume_mesh(params=mesh_params, name="mesh_name")
 
     return project
 
@@ -242,29 +241,29 @@ def main():
     """
 
     # Step1: Connect to an existing project and volume mesh.
-    # Chose one of the three options below
+    # Chose one of two options below
 
-    # Option 1a: if you want to upload a new mesh and create a new project.
+    # Option 1a: If you want to upload a new mesh and create a new project.
     project = project_from_volume_mesh()
 
-    # Option 1b: if you want to upload a CAD geometry and create a new project.
+    # Option 1b: If you want to upload a CAD geometry and create a new project.
     # project = project_from_geometry()
 
-    vm = project.volume_mesh  # get the volume mesh entity associated with that project.
-    # if the project has more then one mesh then use this line below instead.
-    # vm = project.get_volume_mesh(asset_id='vm-XXXXXXXXXXXXXXX')  # get the specific volume mesh entity in that project we want to use.
+    vm = project.volume_mesh
+    # If the project has more then one mesh then use hte line below to choose a specific mesh instead.
+    # vm = project.get_volume_mesh(asset_id='vm-XXXXXXXXXXXXXXX')
 
     print(f"The project id is {project.id}")
     print(f"The volume mesh contains the following boundaries:{vm.boundary_names}")
     print(f"The volume mesh ID is: {vm.id}")
 
-    # step 2: create the directories to locally store relevant data
+    # Step 2: Create the directories to locally store relevant data.
     dir_name = "evtol_alpha_sweep"
 
-    # step3: launch the cases and save the relevant data
+    # Step3: Launch the cases and save the relevant data.
     models = assign_boundary_conditions(project)
-    params = make_run_params(vm, models)  # define the run params used to launch the run
-    cases = launch_sweep(params, project, vm, dir_name)  # launch a sweep
+    params = make_run_params(vm, models)
+    cases = launch_sweep(params, project, vm, dir_name)
 
     generate_report(
         cases,
