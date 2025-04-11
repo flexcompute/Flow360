@@ -4,7 +4,7 @@ import pytest
 
 from flow360.component.simulation.user_code import (
     ValueOrExpression,
-    Variable,
+    UserVariable,
     Expression,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -46,7 +46,7 @@ def test_expression_init():
         field: ValueOrExpression[float] = pd.Field()
 
     # Declare a variable
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     # Initialize with value
     model_1 = TestModel(field=1)
@@ -78,7 +78,7 @@ def test_variable_reassignment():
         field: ValueOrExpression[float] = pd.Field()
 
     # Declare a variable
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model = TestModel(field=x)
     assert isinstance(model.field, Expression)
@@ -96,8 +96,8 @@ def test_expression_operators():
         field: ValueOrExpression[float] = pd.Field()
 
     # Declare two variables
-    x = Variable(name="x", value=3)
-    y = Variable(name="y", value=2)
+    x = UserVariable(name="x", value=3)
+    y = UserVariable(name="y", value=2)
 
     model = TestModel(field=x + y)
 
@@ -216,7 +216,7 @@ def test_dimensioned_expressions():
 
     assert model_legacy
 
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model_expression = TestModel(
         length=x * u.m,
@@ -251,7 +251,7 @@ def test_constrained_scalar_type():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[pd.confloat(ge=0)] = pd.Field()
 
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model = TestModel(field=x)
 
@@ -267,7 +267,7 @@ def test_constrained_dimensioned_type():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[LengthType.Positive] = pd.Field()
 
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model = TestModel(field=x * u.m)
 
@@ -287,10 +287,10 @@ def test_vector_types():
         direction: ValueOrExpression[LengthType.Direction] = pd.Field()
         moment: ValueOrExpression[LengthType.Moment] = pd.Field()
 
-    x = Variable(name="x", value=[1, 0, 0])
-    y = Variable(name="y", value=[0, 0, 0])
-    z = Variable(name="z", value=[1, 0, 0, 0])
-    w = Variable(name="w", value=[1, 1, 1])
+    x = UserVariable(name="x", value=[1, 0, 0])
+    y = UserVariable(name="y", value=[0, 0, 0])
+    z = UserVariable(name="z", value=[1, 0, 0, 0])
+    w = UserVariable(name="w", value=[1, 1, 1])
 
     model = TestModel(
         vector=y * u.m, axis=x * u.m, array=z * u.m, direction=x * u.m, moment=w * u.m
@@ -333,7 +333,7 @@ def test_solver_builtin():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[float] = pd.Field()
 
-    x = Variable(name="x", value=4)
+    x = UserVariable(name="x", value=4)
 
     model = TestModel(field=x * u.m + fl.kOmega * u.cm)
 
@@ -342,4 +342,6 @@ def test_solver_builtin():
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
         model.field.evaluate()
+
+
 

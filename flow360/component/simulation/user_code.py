@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import get_origin, Generic, TypeVar
 from typing_extensions import Self
 import re
@@ -14,6 +15,7 @@ from unyt import Unit, unyt_quantity, unyt_array
 
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
+_user_variables: set[str] = set()
 
 
 def _is_descendant_of(t, base):
@@ -88,11 +90,6 @@ class Variable(Flow360BaseModel):
     value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
 
     model_config = pd.ConfigDict(validate_assignment=True)
-
-    @pd.model_validator(mode="after")
-    @classmethod
-    def update_context(cls, value):
-        _global_ctx.set(value.name, value.value)
 
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -177,7 +174,22 @@ class Variable(Flow360BaseModel):
         return self.name
 
     def __repr__(self):
-        return f"Flow360Variable({self.name} = {self.value})"
+        return f"Variable({self.name} = {self.value})"
+
+
+class UserVariable(Variable):
+    @pd.model_validator(mode="after")
+    @classmethod
+    def update_context(cls, value):
+        _global_ctx.set(value.name, value.value)
+        _user_variables.add(value.name)
+
+
+class SolverVariable(Variable):
+    @pd.model_validator(mode="after")
+    @classmethod
+    def update_context(cls, value):
+        _global_ctx.set(value.name, value.value)
 
 
 def _get_internal_validator(internal_type):
@@ -226,6 +238,17 @@ class Expression(Flow360BaseModel):
         expr = expression_to_model(self.body, _global_ctx)
         result = expr.evaluate(_global_ctx, strict)
         return result
+
+    def user_variables(self):
+        expr = expression_to_model(self.body, _global_ctx)
+        names = expr.used_names()
+
+        names = [name for name in names if name in _user_variables]
+
+        return names
+
+    def __hash__(self):
+        return hash(self.body)
 
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -310,7 +333,7 @@ class Expression(Flow360BaseModel):
         return self.body
 
     def __repr__(self):
-        return f"Flow360Expression({self.body})"
+        return f"Expression({self.body})"
 
 
 T = TypeVar("T")

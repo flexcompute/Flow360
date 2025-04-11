@@ -27,6 +27,9 @@ class Expression(pd.BaseModel):
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         raise NotImplementedError
 
+    def used_names(self) -> set[str]:
+        raise NotImplementedError
+
 
 class Name(Expression):
     type: Literal["Name"] = "Name"
@@ -37,6 +40,9 @@ class Name(Expression):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
         return context.get(self.id)
 
+    def used_names(self) -> set[str]:
+        return {self.id}
+
 
 class Constant(Expression):
     type: Literal["Constant"] = "Constant"
@@ -44,6 +50,9 @@ class Constant(Expression):
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:  # noqa: ARG002
         return self.value
+
+    def used_names(self) -> set[str]:
+        return set()
 
 
 class UnaryOp(Expression):
@@ -60,6 +69,9 @@ class UnaryOp(Expression):
             raise ValueError(f"Unsupported operator: {self.op}")
 
         return UNARY_OPERATORS[self.op](operand_val)
+
+    def used_names(self) -> set[str]:
+        return self.operand.used_names()
 
 
 class BinOp(Expression):
@@ -84,6 +96,11 @@ class BinOp(Expression):
 
         return BINARY_OPERATORS[self.op](left_val, right_val)
 
+    def used_names(self) -> set[str]:
+        left = self.left.used_names()
+        right = self.right.used_names()
+        return left.union(right)
+
 
 class RangeCall(Expression):
     """
@@ -95,6 +112,9 @@ class RangeCall(Expression):
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> range:
         return range(self.arg.evaluate(context, strict))
+
+    def used_names(self) -> set[str]:
+        return self.arg.used_names()
 
 
 class CallModel(Expression):
@@ -159,6 +179,17 @@ class CallModel(Expression):
         except Exception as e:
             raise ValueError(f"Error evaluating call to '{self.func_qualname}': {str(e)}") from e
 
+    def used_names(self) -> set[str]:
+        names = set()
+
+        for arg in self.args:
+            names = names.union(arg.used_names())
+
+        for (keyword, arg) in self.kwargs.items():
+            names = names.union(arg.used_names())
+            
+        return names
+
 
 class Tuple(Expression):
     """Model for tuple expressions."""
@@ -169,6 +200,9 @@ class Tuple(Expression):
     def evaluate(self, context: EvaluationContext, strict: bool) -> tuple:
         return tuple(elem.evaluate(context, strict) for elem in self.elements)
 
+    def used_names(self) -> set[str]:
+        return self.arg.used_names()
+
 
 class List(Expression):
     """Model for list expressions."""
@@ -178,6 +212,14 @@ class List(Expression):
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> list:
         return [elem.evaluate(context, strict) for elem in self.elements]
+    
+    def used_names(self) -> set[str]:
+        names = set()
+
+        for arg in self.elements:
+            names = names.union(arg.used_names())
+            
+        return names
 
 
 class ListComp(Expression):
@@ -197,3 +239,9 @@ class ListComp(Expression):
             iter_context.set(self.target, item)
             result.append(self.element.evaluate(iter_context, strict))
         return result
+
+    def used_names(self) -> set[str]:
+        element = self.element.used_names()
+        iterable = self.iter.used_names()
+
+        return element.union(iterable)

@@ -79,7 +79,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
-    _check_unsteadiness_to_use_hybrid_model,
+    _check_unsteadiness_to_use_hybrid_model, _populate_project_variables,
 )
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
@@ -393,6 +393,11 @@ class SimulationParams(_ParamModelBase):
             known_user_defined_fields.add(field.name)
 
         return v
+
+    @pd.model_validator(mode="after")
+    def populate_project_variables(self):
+        """Populate project variables private attribute used in the simulation params"""
+        return _populate_project_variables(self)
 
     @pd.model_validator(mode="after")
     def check_cht_solver_settings(self):

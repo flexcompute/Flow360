@@ -1,6 +1,6 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import pydantic as pd
 
@@ -31,6 +31,7 @@ class AssetCache(Flow360BaseModel):
     project_entity_info: Optional[
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")
+    project_variables: Optional[List[str]] = pd.Field(None)
 
     @property
     def boundaries(self):
@@ -40,6 +41,41 @@ class AssetCache(Flow360BaseModel):
         if self.project_entity_info is None:
             return None
         return self.project_entity_info.get_boundaries()
+
+
+def find_instances(obj, target_type):
+    stack = [obj]
+    seen_ids = set()
+    results = set()
+
+    while stack:
+        current = stack.pop()
+
+        obj_id = id(current)
+        if obj_id in seen_ids:
+            continue
+        seen_ids.add(obj_id)
+
+        if isinstance(current, target_type):
+            results.add(current)
+
+        if isinstance(current, dict):
+            stack.extend(current.keys())
+            stack.extend(current.values())
+
+        elif isinstance(current, (list, tuple, set, frozenset)):
+            stack.extend(current)
+
+        elif hasattr(current, '__dict__'):
+            stack.extend(vars(current).values())
+
+        elif hasattr(current, '__iter__') and not isinstance(current, (str, bytes)):
+            try:
+                stack.extend(iter(current))
+            except Exception:
+                pass  # skip problematic iterables
+
+    return list(results)
 
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
