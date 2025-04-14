@@ -1,6 +1,6 @@
 import os
 
-import pandas
+import pandas as pd
 import pytest
 from pylatex import Document
 from pylatex.utils import bold
@@ -20,6 +20,7 @@ from flow360.plugins.report.report_items import (
     FixedRangeLimit,
     ManualLimit,
     PatternCaption,
+    PlotModel,
     SubsetLimit,
     Table,
     human_readable_formatter,
@@ -76,6 +77,22 @@ def cases(here):
     cache.add(vm)
 
     return cases
+
+@pytest.fixture
+def residual_plot_model(here):
+    residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
+    residual_data = pd.read_csv(os.path.join(here, "..", "data", 
+                                             "case-11111111-1111-1111-1111-111111111111",
+                                             "results", "nonlinear_residual_v2.csv"), 
+                                             skipinitialspace=True)
+    
+    x_data = list(residual_data["pseudo_step"])
+    y_data = [list(residual_data[res]) for res in residuals_sa]
+
+    y_label = "value"
+    x_label = "pseudo_step"
+
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
 
 @pytest.mark.parametrize(
@@ -503,11 +520,11 @@ def test_tables(cases):
             "OWW": [2.029983, 2.029983],
             "OWH": [1.405979, 1.405979],
         }
-        df_expected = pandas.DataFrame(expected_data)
+        df_expected = pd.DataFrame(expected_data)
         df_expected["Case No."] = df_expected["Case No."].astype("Int64")
         print(df_expected)
 
-        pandas.testing.assert_frame_equal(table_df, df_expected)
+        pd.testing.assert_frame_equal(table_df, df_expected)
 
 
 def test_calculate_y_lim(cases, here):
@@ -516,7 +533,7 @@ def test_calculate_y_lim(cases, here):
         y="total_forces/CD",
     )
     case = cases[0]
-    case_data = pandas.read_csv(
+    case_data = pd.read_csv(
         os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv")
     )
     x_series_list = [case_data[" pseudo_step"].to_list()]
@@ -853,3 +870,22 @@ def test_subfigure_row_splitting():
                 assert not caption_in_figure
             caption_in_figure = False
             in_figure = False
+
+def test_multi_variable_chart_2d(cases, residual_plot_model):
+    residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
+    context = ReportContext(cases=[cases[0]])
+
+    chart = Chart2D(
+        x="nonlinear_residuals/pseudo_step",
+        y=[f"nonlinear_residuals/{res}" for res in residuals_sa],
+        section_title="Continuity convergence",
+        fig_name="convergence_cont",
+        separate_plots=True
+    )
+
+    plot_model = chart.get_data([cases[0]], context)
+
+    assert plot_model.x_data_as_np == residual_plot_model.x_data_as_np
+    assert plot_model.y_data_as_np == residual_plot_model.y_data_as_np
+    assert plot_model.x_label == residual_plot_model.x_label
+    assert plot_model.y_label == residual_plot_model.y_label
