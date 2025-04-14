@@ -393,3 +393,23 @@ def _check_time_average_output(params):
         output_type_list.strip(",")
         raise ValueError(f"{output_type_list} can only be used in unsteady simulations.")
     return params
+
+
+def _check_duplicate_isosurface_names(outputs):
+    if outputs is None:
+        return outputs
+    isosurface_names = []
+    for output in outputs:
+        if isinstance(output, IsosurfaceOutput):
+            for entity in output.entities.items:
+                if entity.name == "qcriterion":
+                    raise ValueError(
+                        "The name `qcriterion` is reserved for the autovis isosurface from solver, "
+                        "please rename the isosurface."
+                    )
+                if entity.name in isosurface_names:
+                    raise ValueError(
+                        f"Another isosurface with name: `{entity.name}` already exists, please rename the isosurface."
+                    )
+                isosurface_names.append(entity.name)
+    return outputs
