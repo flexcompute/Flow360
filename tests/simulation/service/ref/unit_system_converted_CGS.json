@@ -181,7 +181,7 @@
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "g/(cm*s)",
+                        "units": "dyn*s/cm**2",
                         "value": 0.0001716
                     }
                 },
@@ -268,7 +268,7 @@
                             "value": 273.15
                         },
                         "reference_viscosity": {
-                            "units": "g/(cm*s)",
+                            "units": "dyn*s/cm**2",
                             "value": 0.0001716
                         }
                     },
@@ -309,7 +309,7 @@
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "g/(cm*s)",
+                        "units": "dyn*s/cm**2",
                         "value": 0.0001716
                     }
                 },
