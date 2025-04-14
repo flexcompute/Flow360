@@ -889,8 +889,8 @@ class Chart2D(Chart):
     ----------
     x : Union[str, Delta]
         The data source for the x-axis, which can be a string path or a `Delta` object.
-    y : Union[str, Delta]
-        The data source for the y-axis, which can be a string path or a `Delta` object.
+    y : Union[str, Delta, List[str]]
+        The data source for the y-axis, which can be a string path or their list or a `Delta` object.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
     _requirements : List[str]
@@ -908,10 +908,12 @@ class Chart2D(Chart):
     ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
         Defines the range of y values that will be displayed on the chart.
         This helps with highlighting a desired portion of the chart.
+    y_log : Optional[bool] 
+        Sets the y axis to logarithmic scale.
     """
 
     x: Union[str, Delta, DataItem]
-    y: Union[str, Delta, DataItem]
+    y: Union[str, Delta, DataItem, List[str]]
     background: Union[Literal["geometry"], None] = None
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
@@ -929,6 +931,7 @@ class Chart2D(Chart):
     ] = None
     xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
+    y_log:  Optional[bool] = False
 
     def get_requirements(self):
         """
@@ -938,18 +941,13 @@ class Chart2D(Chart):
 
     def is_log_plot(self):
         """
-        Determines if the plot is logarithmic based on the data path of the y-axis.
+        Determines if the plot is logarithmic.
 
         Returns
         -------
         bool
-            True if the root path of `self.y` corresponds to "nonlinear_residuals"
-            and "linear_residuals", indicating a logarithmic plot; False otherwise.
         """
-        root_path = get_root_path(self.y)
-        return root_path.startswith("nonlinear_residuals") or root_path.startswith(
-            "linear_residuals"
-        )
+        return self.y_log
 
     # pylint: disable=unpacking-non-sequence
     @pd.model_validator(mode="after")
@@ -999,7 +997,7 @@ class Chart2D(Chart):
         return False
 
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
-
+        # TODO: manage when different variables are plotted
         if self._check_dimensions_consistency(x_data) is True:
             x_unit = x_data[0].units
             x_data = [data.value for data in x_data]
@@ -1019,10 +1017,23 @@ class Chart2D(Chart):
 
     def _load_data(self, cases):
         x_label = split_path(self.x)[-1]
-        y_label = split_path(self.y)[-1]
 
-        x_data = [data_from_path(case, self.x, cases) for case in cases]
-        y_data = [data_from_path(case, self.y, cases) for case in cases]
+        if not isinstance(self.y, list):
+            y_label = split_path(self.y)[-1]
+            ys = [self.y.copy()]
+            vars = 1
+        else:
+            y_label = "value"
+            vars = len(self.y)
+            ys = self.y.copy()
+
+        x_data = []
+        y_data = []
+
+        for case in cases:
+            for idx in range(vars):
+                x_data.append(data_from_path(case, self.x, cases))
+                y_data.append(data_from_path(case, ys[idx], cases))
 
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label
@@ -1034,11 +1045,11 @@ class Chart2D(Chart):
                 data.filter(include=self.include, exclude=self.exclude)
                 x_data[i] = data.values[component]
 
-        component = y_label
+        components = [split_path(y)[-1] for y in ys]
         for i, data in enumerate(y_data):
             if isinstance(data, case_results.PerEntityResultCSVModel):
                 data.filter(include=self.include, exclude=self.exclude)
-                y_data[i] = data.values[component]
+                y_data[i] = data.values[components[i % vars]]
 
         return x_data, y_data, x_label, y_label
 
@@ -1200,6 +1211,13 @@ class Chart2D(Chart):
             y_data = [float(data) for data in y_data]
             legend = None
             style = "o-"
+        elif ((len(self.y) > 1) and isinstance(self.y, list)):
+            legend = []
+            for case in cases:
+                for y in self.y:
+                    y_var_name = split_path(y)[-1]
+                    legend.append(f"{case.name} - {y_var_name}") if len(cases) > 1 else legend.append(f"{y_var_name}")
+            style = "-" # TODO: different styles for differnet cases
         else:
             legend = [case.name for case in cases]
             style = "-"
@@ -1256,8 +1274,9 @@ class Chart2D(Chart):
         """
         Returns Chart3D for background.
         """
-        x_data, _, _, _ = self._load_data(cases)
-        reference_case = cases[0]
+        reference_case_idx = self.select_indices[0] if self.select_indices is not None else 0
+        x_data, _, _, _ = self._load_data([cases[reference_case_idx]])
+        reference_case = cases[reference_case_idx]
         return self._get_background_chart(x_data), reference_case
 
     def _get_figures(self, cases, context: ReportContext):

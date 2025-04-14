@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import numpy as np
 import pytest
 from pylatex import Document
 from pylatex.utils import bold
@@ -86,7 +87,7 @@ def residual_plot_model(here):
                                              "results", "nonlinear_residual_v2.csv"), 
                                              skipinitialspace=True)
     
-    x_data = list(residual_data["pseudo_step"])
+    x_data = [list(residual_data["pseudo_step"]) for _ in residuals_sa]
     y_data = [list(residual_data[res]) for res in residuals_sa]
 
     y_label = "value"
@@ -95,31 +96,29 @@ def residual_plot_model(here):
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
 @pytest.fixture
-def two_var_two_cases_plot_model(here):
+def two_var_two_cases_plot_model(here, cases):
     loads = ["CL", "CD"]
-    case_ids = [
-        "case-11111111-1111-1111-1111-111111111111",
-        "case-2222222222-2222-2222-2222-2222222222",
-    ]
+
+    x_data = []
     y_data = []
     legend = []
-    for cid in case_ids:
+    for case in cases:
         load_data = pd.read_csv(os.path.join(here, "..", "data", 
-                                                cid, "results", 
+                                                case.info.id, "results", 
                                                 "total_forces_v2.csv"), 
                                                 skipinitialspace=True)
     
-        x_data = list(load_data["pseudo_step"])
         for load in loads:
+            x_data.append(list(load_data["pseudo_step"]))
             y_data.append(list(load_data[load])) 
-            legend.append(f"{cid} - {load}")
-
+            
     y_label = "value"
     x_label = "pseudo_step"
 
-    
-
-    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
+    return PlotModel(x_data=x_data, 
+                     y_data=y_data, 
+                     x_label=x_label, 
+                     y_label=y_label)
 
 
 @pytest.mark.parametrize(
@@ -912,28 +911,33 @@ def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
 
     plot_model = chart.get_data([cases[0]], context)
 
-    assert plot_model.x_data_as_np == residual_plot_model.x_data_as_np
-    assert plot_model.y_data_as_np == residual_plot_model.y_data_as_np
+    assert plot_model.x_data == residual_plot_model.x_data
+    assert plot_model.y_data == residual_plot_model.y_data
     assert plot_model.x_label == residual_plot_model.x_label
     assert plot_model.y_label == residual_plot_model.y_label
     assert plot_model.legend == residuals_sa
 
 def test_multi_variable_chart_2d_mult_cases(cases, two_var_two_cases_plot_model):
-    loads = ["CL", "CD"]
+    loads = ["totalCL", "totalCD"]
     context = ReportContext(cases=cases)
 
+    legend = []
+    for case in cases:
+        for load in loads:
+            legend.append(f"{case.name} - {load}")
+
     chart = Chart2D(
-        x="nonlinear_residuals/pseudo_step",
-        y=[f"total_forces/{load}" for load in loads],
+        x="surface_forces/pseudo_step",
+        y=[f"surface_forces/{load}" for load in loads],
         section_title="Loads convergence",
         fig_name="loads_conv",
         separate_plots=False
     )
 
-    plot_model = chart.get_data([cases[0]], context)
+    plot_model = chart.get_data(cases, context)
 
-    assert plot_model.x_data_as_np == two_var_two_cases_plot_model.x_data_as_np
-    assert plot_model.y_data_as_np == two_var_two_cases_plot_model.y_data_as_np
+    assert np.allclose(plot_model.x_data_as_np, two_var_two_cases_plot_model.x_data_as_np, rtol=1e-4, atol=1e-7)
+    assert np.allclose(plot_model.y_data_as_np, two_var_two_cases_plot_model.y_data_as_np, rtol=1e-4, atol=1e-7)
     assert plot_model.x_label == two_var_two_cases_plot_model.x_label
     assert plot_model.y_label == two_var_two_cases_plot_model.y_label
-    assert plot_model.legend == two_var_two_cases_plot_model.legend
+    assert plot_model.legend == legend

@@ -652,6 +652,8 @@ class DataItem(Flow360BaseModel):
     @pd.model_validator(mode="before")
     @classmethod
     def _validate_operations(cls, values):
+        if not isinstance(values, dict):
+            raise ValueError("Invalid input structure.")
         operations = values.get("operations")
         if operations is None:
             values["operations"] = []
