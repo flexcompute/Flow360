@@ -94,6 +94,33 @@ def residual_plot_model(here):
 
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
+@pytest.fixture
+def two_var_two_cases_plot_model(here):
+    loads = ["CL", "CD"]
+    case_ids = [
+        "case-11111111-1111-1111-1111-111111111111",
+        "case-2222222222-2222-2222-2222-2222222222",
+    ]
+    y_data = []
+    legend = []
+    for cid in case_ids:
+        load_data = pd.read_csv(os.path.join(here, "..", "data", 
+                                                cid, "results", 
+                                                "total_forces_v2.csv"), 
+                                                skipinitialspace=True)
+    
+        x_data = list(load_data["pseudo_step"])
+        for load in loads:
+            y_data.append(list(load_data[load])) 
+            legend.append(f"{cid} - {load}")
+
+    y_label = "value"
+    x_label = "pseudo_step"
+
+    
+
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
+
 
 @pytest.mark.parametrize(
     "value,expected",
@@ -871,7 +898,7 @@ def test_subfigure_row_splitting():
             caption_in_figure = False
             in_figure = False
 
-def test_multi_variable_chart_2d(cases, residual_plot_model):
+def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
     residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
     context = ReportContext(cases=[cases[0]])
 
@@ -889,3 +916,24 @@ def test_multi_variable_chart_2d(cases, residual_plot_model):
     assert plot_model.y_data_as_np == residual_plot_model.y_data_as_np
     assert plot_model.x_label == residual_plot_model.x_label
     assert plot_model.y_label == residual_plot_model.y_label
+    assert plot_model.legend == residuals_sa
+
+def test_multi_variable_chart_2d_mult_cases(cases, two_var_two_cases_plot_model):
+    loads = ["CL", "CD"]
+    context = ReportContext(cases=cases)
+
+    chart = Chart2D(
+        x="nonlinear_residuals/pseudo_step",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads convergence",
+        fig_name="loads_conv",
+        separate_plots=False
+    )
+
+    plot_model = chart.get_data([cases[0]], context)
+
+    assert plot_model.x_data_as_np == two_var_two_cases_plot_model.x_data_as_np
+    assert plot_model.y_data_as_np == two_var_two_cases_plot_model.y_data_as_np
+    assert plot_model.x_label == two_var_two_cases_plot_model.x_label
+    assert plot_model.y_label == two_var_two_cases_plot_model.y_label
+    assert plot_model.legend == two_var_two_cases_plot_model.legend
