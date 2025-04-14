@@ -18,6 +18,7 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code import UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 
 
@@ -31,7 +32,7 @@ class AssetCache(Flow360BaseModel):
     project_entity_info: Optional[
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")
-    project_variables: Optional[List[str]] = pd.Field(None)
+    project_variables: Optional[List[UserVariable]] = pd.Field(None)
 
     @property
     def boundaries(self):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import get_origin, Generic, TypeVar, Optional, Iterable
 
-from pydantic import WrapSerializer
+from pydantic import WrapSerializer, WrapValidator
 from typing_extensions import Self
 import re
 
@@ -247,7 +247,7 @@ class Expression(Flow360BaseModel):
 
         names = [name for name in names if name in _user_variables]
 
-        return names
+        return [UserVariable(name=name, value=_global_ctx.get(name)) for name in names]
 
     def __hash__(self):
         return hash(self.expression)
@@ -345,11 +345,25 @@ class ValueOrExpression(Expression, Generic[T]):
     def __class_getitem__(cls, internal_type):
         def _internal_validator(value: Expression):
             result = value.evaluate(strict=False)
-            pd.TypeAdapter(internal_type).validate_python(result, strict=True)
-            # Make sure the value does not get culled
+            validated = pd.TypeAdapter(internal_type).validate_python(result, strict=True)
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
+
+        def _deserialize(value, handler) -> Self:
+            try:
+                value = SerializedValueOrExpression.model_validate(value, strict=True)
+                if value.type_name == "number":
+                    if value.units is not None:
+                        return handler(unyt_quantity(value.value, value.units))
+                    else:
+                        return handler(value.value)
+                elif value.type_name == "expression":
+                    return handler(value.expression)
+            except Exception as err:
+                pass
+
+            return handler(value)
 
         def _serializer(value, handler, info) -> dict:
             if isinstance(value, Expression):
@@ -384,4 +398,4 @@ class ValueOrExpression(Expression, Generic[T]):
 
             return serialized.model_dump(**info.__dict__)
 
-        return Annotated[Union[expr_type, internal_type], WrapSerializer(_serializer)]
+        return Annotated[Annotated[Union[expr_type, internal_type], WrapSerializer(_serializer)], WrapValidator(_deserialize)]

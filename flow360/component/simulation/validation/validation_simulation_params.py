@@ -33,14 +33,12 @@ from flow360.component.simulation.validation.validation_context import (
 )
 
 
-def _populate_project_variables(v):
+def _save_project_variables(v):
     expressions = find_instances(v, Expression)
     user_variables = set()
 
     for expression in expressions:
         user_variables = user_variables.union(expression.user_variables())
-
-    print(f"Used variables are: {user_variables}")
 
     v.private_attribute_asset_cache.project_variables = list(user_variables)
 

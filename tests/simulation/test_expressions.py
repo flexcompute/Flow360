@@ -347,7 +347,7 @@ def test_solver_builtin():
 
 def test_serializer():
     class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[float] = pd.Field()
+        field: ValueOrExpression[VelocityType] = pd.Field()
 
     x = UserVariable(name="x", value=4)
 
@@ -355,7 +355,49 @@ def test_serializer():
 
     assert str(model.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
 
-    print(model.model_dump_json(exclude_none=True, indent=2))
+    serialized = model.model_dump(exclude_none=True)
 
+    print(model.model_dump_json(indent=2, exclude_none=True))
+
+    assert serialized["field"]["type_name"] == "expression"
+    assert serialized["field"]["expression"] == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+
+    model = TestModel(field=4 * u.m / u.s)
+
+    serialized = model.model_dump(exclude_none=True)
+
+    print(model.model_dump_json(indent=2, exclude_none=True))
+
+    assert serialized["field"]["type_name"] == "number"
+    assert serialized["field"]["value"] == 4
+    assert serialized["field"]["units"] == "m/s"
+
+
+def test_deserializer():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[VelocityType] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    model = {
+        "type_name": "expression",
+        "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
+        "evaluated_value": 68.0,
+        "evaluated_units": "m/s"
+    }
+
+    deserialized = TestModel(field=model)
+
+    assert str(deserialized.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+
+    model = {
+        "type_name": "number",
+        "value": 4.0,
+        "units": "m/s"
+    }
+
+    deserialized = TestModel(field=model)
+
+    assert str(deserialized.field) == '4.0 m/s'
 
 
