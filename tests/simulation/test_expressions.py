@@ -1,4 +1,5 @@
 from math import isnan
+from pprint import pprint
 
 import pytest
 
@@ -342,6 +343,19 @@ def test_solver_builtin():
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
         model.field.evaluate()
+
+
+def test_serializer():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[float] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    model = TestModel(field=x * u.m / u.s + 4 * x ** 2 * u.m / u.s)
+
+    assert str(model.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+
+    print(model.model_dump_json(exclude_none=True, indent=2))
 
 
 
