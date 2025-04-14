@@ -3,6 +3,7 @@ import os
 import pandas
 import pytest
 from pylatex import Document
+from pylatex.utils import bold
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
@@ -696,6 +697,22 @@ def test_2d_caption(cases):
     assert (
         chart._handle_2d_caption(case=cases[1])
         == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
+    )
+
+    chart_selected_cases = Chart2D(
+        x="total_forces/pseudo_step", y="total_forces/CD", select_indices=[1]
+    )
+
+    assert (
+        chart_selected_cases._handle_2d_caption(x_lab="pseudo_step", y_lab="CD")
+        == f"{bold('CD')} against {bold('pseudo_step')} for {bold('selected cases')}."
+    )
+
+    chart_items_in_row = Chart2D(x="total_forces/pseudo_step", y="total_forces/CD", items_in_row=2)
+
+    assert (
+        chart_items_in_row._handle_2d_caption(x_lab="pseudo_step", y_lab="CD")
+        == f"{bold('CD')} against {bold('pseudo_step')}."
     )
 
 
