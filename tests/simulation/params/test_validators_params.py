@@ -1524,3 +1524,24 @@ def test_redefined_user_defined_fields():
         "Value error, User defined field variable name: pressure conflicts with pre-defined field names."
         " Please consider renaming this user defined field variable."
     )
+
+
+def test_check_duplicate_isosurface_names():
+
+    isosurface_qcriterion = Isosurface(name="qcriterion", field="qcriterion", iso_value=0.1)
+    message = "The name `qcriterion` is reserved for the autovis isosurface from solver, please rename the isosurface."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            outputs=[IsosurfaceOutput(isosurfaces=[isosurface_qcriterion], output_fields=["Mach"])],
+        )
+
+    isosurface1 = Isosurface(name="isosurface1", field="qcriterion", iso_value=0.1)
+    isosurface2 = Isosurface(name="isosurface1", field="Mach", iso_value=0.2)
+    message = f"Another isosurface with name: `{isosurface2.name}` already exists, please rename the isosurface."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            outputs=[
+                IsosurfaceOutput(isosurfaces=[isosurface1], output_fields=["Mach"]),
+                IsosurfaceOutput(isosurfaces=[isosurface2], output_fields=["pressure"]),
+            ],
+        )
