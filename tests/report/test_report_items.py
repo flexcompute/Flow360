@@ -1,7 +1,7 @@
 import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 from pylatex import Document
 from pylatex.utils import bold
@@ -20,11 +20,11 @@ from flow360.plugins.report.report_items import (
     Chart3D,
     FixedRangeLimit,
     ManualLimit,
+    NonlinearResiduals,
     PatternCaption,
     PlotModel,
     SubsetLimit,
     Table,
-    NonlinearResiduals,
     human_readable_formatter,
 )
 from flow360.plugins.report.utils import (
@@ -80,20 +80,29 @@ def cases(here):
 
     return cases
 
+
 @pytest.fixture
 def residual_plot_model(here):
-    residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
-    residual_data = pd.read_csv(os.path.join(here, "..", "data", 
-                                             "case-11111111-1111-1111-1111-111111111111",
-                                             "results", "nonlinear_residual_v2.csv"), 
-                                             skipinitialspace=True)
-    
+    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
+    residual_data = pd.read_csv(
+        os.path.join(
+            here,
+            "..",
+            "data",
+            "case-11111111-1111-1111-1111-111111111111",
+            "results",
+            "nonlinear_residual_v2.csv",
+        ),
+        skipinitialspace=True,
+    )
+
     x_data = [list(residual_data["pseudo_step"])[1:] for _ in residuals_sa]
     y_data = [list(residual_data[res])[1:] for res in residuals_sa]
 
     x_label = "pseudo_step"
 
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label="none")
+
 
 @pytest.fixture
 def two_var_two_cases_plot_model(here, cases):
@@ -103,22 +112,19 @@ def two_var_two_cases_plot_model(here, cases):
     y_data = []
     legend = []
     for case in cases:
-        load_data = pd.read_csv(os.path.join(here, "..", "data", 
-                                                case.info.id, "results", 
-                                                "total_forces_v2.csv"), 
-                                                skipinitialspace=True)
-    
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.info.id, "results", "total_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+
         for load in loads:
             x_data.append(list(load_data["pseudo_step"]))
-            y_data.append(list(load_data[load])) 
-            
+            y_data.append(list(load_data[load]))
+
     y_label = "value"
     x_label = "pseudo_step"
 
-    return PlotModel(x_data=x_data, 
-                     y_data=y_data, 
-                     x_label=x_label, 
-                     y_label=y_label)
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
 
 @pytest.mark.parametrize(
@@ -897,8 +903,9 @@ def test_subfigure_row_splitting():
             caption_in_figure = False
             in_figure = False
 
+
 def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
-    residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
+    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     context = ReportContext(cases=[cases[0]])
 
     chart = Chart2D(
@@ -906,7 +913,7 @@ def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
         y=[f"nonlinear_residuals/{res}" for res in residuals_sa],
         section_title="Continuity convergence",
         fig_name="convergence_cont",
-        separate_plots=True
+        separate_plots=True,
     )
 
     plot_model = chart.get_data([cases[0]], context)
@@ -916,6 +923,7 @@ def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
     assert plot_model.x_label == residual_plot_model.x_label
     assert plot_model.y_label == "value"
     assert plot_model.legend == residuals_sa
+
 
 def test_multi_variable_chart_2d_mult_cases(cases, two_var_two_cases_plot_model):
     loads = ["totalCL", "totalCD"]
@@ -931,13 +939,17 @@ def test_multi_variable_chart_2d_mult_cases(cases, two_var_two_cases_plot_model)
         y=[f"surface_forces/{load}" for load in loads],
         section_title="Loads convergence",
         fig_name="loads_conv",
-        separate_plots=False
+        separate_plots=False,
     )
 
     plot_model = chart.get_data(cases, context)
 
-    assert np.allclose(plot_model.x_data_as_np, two_var_two_cases_plot_model.x_data_as_np, rtol=1e-4, atol=1e-7)
-    assert np.allclose(plot_model.y_data_as_np, two_var_two_cases_plot_model.y_data_as_np, rtol=1e-4, atol=1e-7)
+    assert np.allclose(
+        plot_model.x_data_as_np, two_var_two_cases_plot_model.x_data_as_np, rtol=1e-4, atol=1e-7
+    )
+    assert np.allclose(
+        plot_model.y_data_as_np, two_var_two_cases_plot_model.y_data_as_np, rtol=1e-4, atol=1e-7
+    )
     assert plot_model.x_label == two_var_two_cases_plot_model.x_label
     assert plot_model.y_label == two_var_two_cases_plot_model.y_label
     assert plot_model.legend == legend
@@ -952,18 +964,18 @@ def test_chart_2d_grid(cases):
         y=[f"surface_forces/{load}" for load in loads],
         section_title="Loads convergence",
         fig_name="loads_conv",
-        show_grid = True
+        show_grid=True,
     )
 
     plot_model = chart.get_data(cases, context)
     fig = plot_model.get_plot()
     ax = fig.axes[0]
 
-    assert  all(line.get_visible() for line in ax.get_xgridlines() + ax.get_ygridlines())
+    assert all(line.get_visible() for line in ax.get_xgridlines() + ax.get_ygridlines())
 
 
 def test_residuals(cases, residual_plot_model):
-    residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
+    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     residuals = NonlinearResiduals()
     context = ReportContext(cases=[cases[0]])
 

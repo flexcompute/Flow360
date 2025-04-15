@@ -135,13 +135,15 @@ class ResultsDownloaderSettings(pd.BaseModel):
     overwrite: Optional[bool] = pd.Field(False)
     destination: Optional[str] = pd.Field(".")
 
+
 class TimeSeriesResultCSVModel(ResultCSVModel):
-        
+
     _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
     @property
     def x_columns(self):
         return self._x_columns
+
 
 # separate classes used to further customise give resutls, for example nonlinear_residuals.plot()
 class NonlinearResidualsResultCSVModel(TimeSeriesResultCSVModel):

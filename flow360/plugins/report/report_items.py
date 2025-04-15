@@ -55,7 +55,6 @@ from flow360.plugins.report.utils import (
     downsample_image_to_relative_width,
     generate_colorbar_from_image,
     get_requirements_from_data_path,
-    get_root_path,
     split_path,
 )
 from flow360.plugins.report.uvf_shutter import (
@@ -913,7 +912,7 @@ class Chart2D(Chart):
     ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
         Defines the range of y values that will be displayed on the chart.
         This helps with highlighting a desired portion of the chart.
-    y_log : Optional[bool] 
+    y_log : Optional[bool]
         Sets the y axis to logarithmic scale.
     show_grid : Optional[bool]
         Turns the gridlines on.
@@ -938,7 +937,7 @@ class Chart2D(Chart):
     ] = None
     xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
-    y_log:  Optional[bool] = False
+    y_log: Optional[bool] = False
     show_grid: Optional[bool] = True
 
     def get_requirements(self):
@@ -1025,24 +1024,23 @@ class Chart2D(Chart):
 
     def _load_data(self, cases):
         x_label = split_path(self.x)[-1]
-        
 
         if not isinstance(self.y, list):
             y_label = split_path(self.y)[-1]
             ys = [self.y.copy()]
-            vars = 1
+            vars_quant = 1
         else:
             y_label = "value"
-            vars = len(self.y)
+            vars_quant = len(self.y)
             ys = self.y.copy()
 
-        is_nonlinear_residual = any(["nonlinear_residuals" in split_path(y) for y in ys])
+        is_nonlinear_residual = any("nonlinear_residuals" in split_path(y) for y in ys)
 
         x_data = []
         y_data = []
 
         for case in cases:
-            for idx in range(vars):
+            for idx in range(vars_quant):
                 if not is_nonlinear_residual:
                     x_data.append(data_from_path(case, self.x, cases))
                     y_data.append(data_from_path(case, ys[idx], cases))
@@ -1064,7 +1062,7 @@ class Chart2D(Chart):
         for i, data in enumerate(y_data):
             if isinstance(data, case_results.PerEntityResultCSVModel):
                 data.filter(include=self.include, exclude=self.exclude)
-                y_data[i] = data.values[components[i % vars]]
+                y_data[i] = data.values[components[i % vars_quant]]
 
         return x_data, y_data, x_label, y_label
 
@@ -1226,13 +1224,16 @@ class Chart2D(Chart):
             y_data = [float(data) for data in y_data]
             legend = None
             style = "o-"
-        elif ((len(self.y) > 1) and isinstance(self.y, list)):
+        elif (len(self.y) > 1) and isinstance(self.y, list):
             legend = []
             for case in cases:
                 for y in self.y:
-                    y_var_name = split_path(y)[-1]
-                    legend.append(f"{case.name} - {y_var_name}") if len(cases) > 1 else legend.append(f"{y_var_name}")
-            style = "-" # TODO: different styles for differnet cases
+                    if len(cases) > 1:
+                        legend.append(f"{case.name} - {split_path(y)[-1]}")
+                    else:
+                        legend.append(f"{split_path(y)[-1]}")
+
+            style = "-"
         else:
             legend = [case.name for case in cases]
             style = "-"
@@ -1251,7 +1252,7 @@ class Chart2D(Chart):
             backgroung_png=background_png,
             xlim=xlim,
             ylim=ylim,
-            grid=self.show_grid
+            grid=self.show_grid,
         )
 
     def _get_background_chart(self, x_data):
@@ -1290,6 +1291,7 @@ class Chart2D(Chart):
         """
         Returns Chart3D for background.
         """
+        # pylint: disable=unsubscriptable-object
         reference_case_idx = self.select_indices[0] if self.select_indices is not None else 0
         x_data, _, _, _ = self._load_data([cases[reference_case_idx]])
         reference_case = cases[reference_case_idx]
@@ -1373,6 +1375,7 @@ class Chart2D(Chart):
         context.doc.append(NoEscape(r"\FloatBarrier"))
         context.doc.append(NoEscape(r"\clearpage"))
 
+
 class NonlinearResiduals(Chart2D):
     """
     Residuals is an object for showing the solution history of nonlinear residuals.
@@ -1380,22 +1383,22 @@ class NonlinearResiduals(Chart2D):
 
     section_title: Literal["Nonlinear residuals"] = "Nonlinear residuals"
     fig_name: Literal["fig-residuals"] = "fig-residuals"
-   # caption: PatternCaption = Field(PatternCaption(pattern="[case.name] - nonlinear residuals"), frozen=True)
+    caption: Literal[None] = None
     x: Literal["nonlinear_residuals/pseudo_step"] = "nonlinear_residuals/pseudo_step"
     y: List[str] = []
-    y_log: Literal[True]= True
+    y_log: Literal[True] = True
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
     _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
     show_grid: Optional[bool] = True
     separate_plots: Optional[bool] = True
-    
-    
+
     def get_requirements(self):
         """
         Returns requirements for this item.
         """
         return self._requirements
-    
+
+    # pylint: disable=too-many-locals
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
         Loads and processes data for creating a 2D residuals plot model.
@@ -1416,19 +1419,21 @@ class NonlinearResiduals(Chart2D):
         """
 
         cols_exclude = cases[0].results.nonlinear_residuals.x_columns
-        x_label = "pseudo_step"
-        y_label = "residual values"
         x_data = []
         y_data = []
         legend = []
 
         for case in cases:
-            self.y = [f"nonlinear_residuals/{res}" for 
-                        res in case.results.nonlinear_residuals.as_dict().keys() 
-                        if res not in cols_exclude]
+            self.y = [
+                f"nonlinear_residuals/{res}"
+                for res in case.results.nonlinear_residuals.as_dict().keys()
+                if res not in cols_exclude
+            ]
             x_data_part, y_data_part, _, _ = self._load_data([case])
-            legend_part = [f"{case.name} - {split_path(y)[-1]}" 
-                           if len(cases) > 1 else f"{split_path(y)[-1]}" for y in self.y]
+            legend_part = [
+                f"{case.name} - {split_path(y)[-1]}" if len(cases) > 1 else f"{split_path(y)[-1]}"
+                for y in self.y
+            ]
             x_data += x_data_part
             y_data += y_data_part
             legend += legend_part
@@ -1439,41 +1444,22 @@ class NonlinearResiduals(Chart2D):
             # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
 
-        style = "-"
-
         xlim = self._handle_xlimits()
         ylim = self._calculate_ylimits(x_data, y_data)
 
         return PlotModel(
             x_data=x_data,
             y_data=y_data,
-            x_label=x_label,
-            y_label=y_label,
+            x_label="pseudo_step",
+            y_label="residual values",
             legend=legend,
-            style=style,
+            style="-",
             is_log=self.is_log_plot(),
             backgroung_png=background_png,
             xlim=xlim,
             ylim=ylim,
-            grid=self.show_grid
+            grid=self.show_grid,
         )
-
-    # def _get_figures(self, cases, context: ReportContext):
-    #     file_names = []
-    #     case_by_case, data_storage = context.case_by_case, context.data_storage
-    #     cbc_str = "_cbc_" if case_by_case else "_"
-    #     exclude = case.results.nonlinear_residuals.x_columns
-    #     for case in cases:
-    #         file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".pdf")
-    #         self.y = [f"nonlinear_residuals/{res}" for 
-    #                   res in case.results.nonlinear_residuals.as_dict().keys() if res not in exclude]
-    #         data = self.get_data([case], context)
-    #         fig = data.get_plot()
-    #         fig.savefig(file_name, format="pdf", bbox_inches="tight")
-    #         file_names.append(file_name)
-    #         plt.close()
-
-    #     return file_names, data.x_label, "nonlinear residuals value"
 
 
 class Chart3D(Chart):
