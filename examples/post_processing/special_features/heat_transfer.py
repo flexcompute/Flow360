@@ -15,10 +15,9 @@ from flow360.version import __solver_version__
 
 TutorialCHTSolver.get_files()
 
-# project = fl.Project.from_volume_mesh(
-#     TutorialCHTSolver.mesh_filename, name="CHT results from Python"
-# )
-project = fl.Project.from_cloud(project_id="prj-50e64e40-f653-4625-8b74-173bc9975062")
+project = fl.Project.from_volume_mesh(
+    TutorialCHTSolver.mesh_filename, name="CHT results from Python"
+)
 
 volume_mesh = project.volume_mesh
 
@@ -77,7 +76,6 @@ with fl.SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(
-                name="fl.VolumeOutput",
                 output_format="both",
                 output_fields=[
                     "primitiveVars",
@@ -87,13 +85,11 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="fl.SurfaceOutput",
                 surfaces=volume_mesh["*"],
                 output_format="both",
                 output_fields=["primitiveVars", "T", "Cp", "Cf", "CfVec"],
             ),
             fl.SliceOutput(
-                name="slices",
                 entities=[
                     fl.Slice(
                         name="slice_x",
