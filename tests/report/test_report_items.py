@@ -12,6 +12,7 @@ from flow360.component.utils import LocalResourceCache
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
+from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_items import (
     Camera,
     Chart2D,
@@ -39,6 +40,7 @@ def here():
 
 @pytest.fixture
 def cases(here):
+
     case_ids = [
         "case-11111111-1111-1111-1111-111111111111",
         "case-2222222222-2222-2222-2222-2222222222",
@@ -801,3 +803,53 @@ def test_3d_caption(cases):
         chart._handle_3d_caption(case=cases[1])
         == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
     )
+
+
+@pytest.mark.usefixtures("mock_detect_latex_compiler")
+def test_subfigure_row_splitting():
+    report_doc = ReportDoc("tester")
+
+    chart = Chart2D(
+        x="nonlinear_residuals/pseudo_step",
+        y="nonlinear_residuals/0_cont",
+        section_title="Continuity convergence",
+        fig_name="convergence_cont",
+        items_in_row=2,
+    )
+
+    chart._add_row_figure(doc=report_doc.doc, img_list=["." for _ in range(6)], fig_caption="test")
+
+    tex = report_doc.doc.dumps()
+
+    lines = tex.split("\n")
+
+    subplots_in_row = 0
+
+    rows = 0
+
+    in_subfigure = False
+    in_figure = False
+
+    caption_in_figure = False
+
+    for line in lines:
+        line = line.lstrip()
+        if line.startswith(r"\caption") and in_figure and (not in_subfigure):
+            caption_in_figure = True
+        if line.startswith(r"\begin{subfigure}"):
+            in_subfigure = True
+            subplots_in_row += 1
+        if line.startswith(r"\end{subfigure}"):
+            in_subfigure = False
+        if line.startswith(r"\begin{figure}"):
+            in_figure = True
+        if line.startswith(r"\end{figure}"):
+            assert subplots_in_row == 2
+            subplots_in_row = 0
+            rows += 1
+            if rows == 3:
+                assert caption_in_figure
+            else:
+                assert not caption_in_figure
+            caption_in_figure = False
+            in_figure = False
