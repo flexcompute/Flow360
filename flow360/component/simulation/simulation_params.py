@@ -73,6 +73,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
+    _check_unsteadiness_to_use_hybrid_model,
 )
 from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
@@ -345,6 +346,11 @@ class SimulationParams(_ParamModelBase):
     def check_consistency_wall_function_and_surface_output(self):
         """Only allow wallFunctionMetric output field when there is a Wall model with a wall function enabled"""
         return _check_consistency_wall_function_and_surface_output(self)
+
+    @pd.model_validator(mode="after")
+    def check_unsteadiness_to_use_hybrid_model(self):
+        """Only allow hybrid RANS-LES model for unsteady simulations"""
+        return _check_unsteadiness_to_use_hybrid_model(self)
 
     @pd.model_validator(mode="after")
     def check_consistency_ddes_volume_output(self):
