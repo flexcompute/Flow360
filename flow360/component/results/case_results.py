@@ -135,45 +135,52 @@ class ResultsDownloaderSettings(pd.BaseModel):
     overwrite: Optional[bool] = pd.Field(False)
     destination: Optional[str] = pd.Field(".")
 
+class TimeSeriesResultCSVModel(ResultCSVModel):
+        
+    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
+
+    @property
+    def x_columns(self):
+        return self._x_columns
 
 # separate classes used to further customise give resutls, for example nonlinear_residuals.plot()
-class NonlinearResidualsResultCSVModel(ResultCSVModel):
+class NonlinearResidualsResultCSVModel(TimeSeriesResultCSVModel):
     """NonlinearResidualsResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.NONLINEAR_RESIDUALS.value, frozen=True)
 
 
-class LinearResidualsResultCSVModel(ResultCSVModel):
+class LinearResidualsResultCSVModel(TimeSeriesResultCSVModel):
     """LinearResidualsResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.LINEAR_RESIDUALS.value, frozen=True)
 
 
-class CFLResultCSVModel(ResultCSVModel):
+class CFLResultCSVModel(TimeSeriesResultCSVModel):
     """CFLResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.CFL.value, frozen=True)
 
 
-class MinMaxStateResultCSVModel(ResultCSVModel):
+class MinMaxStateResultCSVModel(TimeSeriesResultCSVModel):
     """CFLResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.MINMAX_STATE.value, frozen=True)
 
 
-class MaxResidualLocationResultCSVModel(ResultCSVModel):
+class MaxResidualLocationResultCSVModel(TimeSeriesResultCSVModel):
     """MaxResidualLocationResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, frozen=True)
 
 
-class TotalForcesResultCSVModel(ResultCSVModel):
+class TotalForcesResultCSVModel(TimeSeriesResultCSVModel):
     """TotalForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, frozen=True)
 
 
-class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
+class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
     """SurfaceForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
@@ -205,7 +212,6 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel):
         _CMz_VISCOUS,
         _HEAT_TRANSFER,
     ]
-    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
     def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         """
@@ -264,16 +270,15 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
     _x_columns: List[str] = [_Y, _STRIDE]
 
 
-class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel):
+class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
     """SurfaceHeatTransferResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, frozen=True)
     _variables: List[str] = [_HEAT_FLUX]
     _filter_when_zero = []
-    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
 
-class AeroacousticsResultCSVModel(ResultCSVModel):
+class AeroacousticsResultCSVModel(TimeSeriesResultCSVModel):
     """AeroacousticsResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, frozen=True)
@@ -358,7 +363,7 @@ class MonitorsResultModel(ResultTarGZModel):
         return self.get_monitor_by_name(name)
 
 
-UserDefinedDynamicsCSVModel = ResultCSVModel
+UserDefinedDynamicsCSVModel = TimeSeriesResultCSVModel
 
 
 class UserDefinedDynamicsResultModel(ResultBaseModel):

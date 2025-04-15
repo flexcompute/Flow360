@@ -24,6 +24,7 @@ from flow360.plugins.report.report_items import (
     PlotModel,
     SubsetLimit,
     Table,
+    NonlinearResiduals,
     human_readable_formatter,
 )
 from flow360.plugins.report.utils import (
@@ -87,13 +88,12 @@ def residual_plot_model(here):
                                              "results", "nonlinear_residual_v2.csv"), 
                                              skipinitialspace=True)
     
-    x_data = [list(residual_data["pseudo_step"]) for _ in residuals_sa]
-    y_data = [list(residual_data[res]) for res in residuals_sa]
+    x_data = [list(residual_data["pseudo_step"])[1:] for _ in residuals_sa]
+    y_data = [list(residual_data[res])[1:] for res in residuals_sa]
 
-    y_label = "value"
     x_label = "pseudo_step"
 
-    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label="none")
 
 @pytest.fixture
 def two_var_two_cases_plot_model(here, cases):
@@ -914,7 +914,7 @@ def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
     assert plot_model.x_data == residual_plot_model.x_data
     assert plot_model.y_data == residual_plot_model.y_data
     assert plot_model.x_label == residual_plot_model.x_label
-    assert plot_model.y_label == residual_plot_model.y_label
+    assert plot_model.y_label == "value"
     assert plot_model.legend == residuals_sa
 
 def test_multi_variable_chart_2d_mult_cases(cases, two_var_two_cases_plot_model):
@@ -962,4 +962,16 @@ def test_chart_2d_grid(cases):
     assert  all(line.get_visible() for line in ax.get_xgridlines() + ax.get_ygridlines())
 
 
-    
+def test_residuals(cases, residual_plot_model):
+    residuals_sa = ['0_cont', '1_momx', '2_momy', '3_momz', '4_energ', '5_nuHat']
+    residuals = NonlinearResiduals()
+    context = ReportContext(cases=[cases[0]])
+
+    plot_model = residuals.get_data([cases[0]], context)
+
+    assert plot_model.x_data == residual_plot_model.x_data
+    assert plot_model.y_data == residual_plot_model.y_data
+    assert plot_model.x_label == residual_plot_model.x_label
+    assert plot_model.y_label == "residual values"
+    assert plot_model.legend == residuals_sa
+    # TODO: add case and test for residuals from SST
