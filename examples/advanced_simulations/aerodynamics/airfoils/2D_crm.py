@@ -26,7 +26,7 @@ with fl.SI_unit_system:
     cylinder5 = fl.Cylinder(
         name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=10
     )
-    farfield = fl.AutomatedFarfield(ethod="quasi-3d")
+    farfield = fl.AutomatedFarfield(method="quasi-3d")
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
