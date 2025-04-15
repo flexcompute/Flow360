@@ -20,7 +20,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -413,3 +413,26 @@ def _check_duplicate_isosurface_names(outputs):
                     )
                 isosurface_names.append(entity.name)
     return outputs
+
+
+def _check_unsteadiness_to_use_hybrid_model(v):
+    models = v.models
+
+    if not v.models or not v.time_stepping:
+        return v
+
+    run_hybrid_model = False
+
+    for model in models:
+        if isinstance(model, Fluid):
+            if (
+                not isinstance(model.turbulence_model_solver, NoneSolver)
+                and model.turbulence_model_solver.DDES
+            ):
+                run_hybrid_model = True
+                break
+
+    if run_hybrid_model and isinstance(v.time_stepping, Steady):
+        raise ValueError("DDES model can only be used in unsteady simulations.")
+
+    return v

@@ -15,7 +15,10 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
-from flow360.component.simulation.models.solver_numerics import TransitionModelSolver
+from flow360.component.simulation.models.solver_numerics import (
+    KOmegaSST,
+    TransitionModelSolver,
+)
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     Inflow,
@@ -240,7 +243,9 @@ def test_ddes_wall_function_validator(
     # Valid simulation params
     with SI_unit_system:
         params = SimulationParams(
-            models=[fluid_model_with_DDES], outputs=[volume_output_with_SA_DDES]
+            models=[fluid_model_with_DDES],
+            outputs=[volume_output_with_SA_DDES],
+            time_stepping=Unsteady(steps=1, step_size=0.2),
         )
 
     assert params
@@ -249,11 +254,24 @@ def test_ddes_wall_function_validator(
 
     # Invalid simulation params (wrong output type)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(models=[fluid_model_with_DDES], outputs=[volume_output_with_kOmega_DDES])
+        SimulationParams(
+            models=[fluid_model_with_DDES],
+            outputs=[volume_output_with_kOmega_DDES],
+            time_stepping=Unsteady(steps=1, step_size=0.2),
+        )
 
     # Invalid simulation params (DDES turned off)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(models=[fluid_model], outputs=[volume_output_with_kOmega_DDES])
+
+
+def test_hybrid_model_for_unsteady_validator():
+
+    message = "DDES model can only be used in unsteady simulations."
+
+    # Invalid simulation params (using hybrid model for steady simulations)
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(models=[Fluid(turbulence_model_solver=KOmegaSST(DDES=True))])
 
 
 def test_cht_solver_settings_validator(
