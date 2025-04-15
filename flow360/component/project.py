@@ -719,7 +719,7 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        files : Union[str, list[str]]
+        files : Union[str, list[str]] (positional argument only)
             Geometry file paths.
         name : str, optional
             Name of the project (default is None).
@@ -785,7 +785,7 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file : str
+        file : str (positional argument only)
             Surface mesh file path. For UGRID file the mapbc
             file needs to be renamed with the same prefix under same folder.
         name : str, optional
@@ -853,7 +853,7 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file : str
+        file : str (positional argument only)
             Volume mesh file path. For UGRID file the mapbc
             file needs to be renamed with the same prefix under same folder.
         name : str, optional
