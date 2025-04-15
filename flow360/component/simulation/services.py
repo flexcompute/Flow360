@@ -111,9 +111,17 @@ def _store_project_length_unit(length_unit, params: SimulationParams):
     return params
 
 
+def _get_default_reference_geometry(length_unit: LengthType):
+    return ReferenceGeometry(
+        area=1 * length_unit**2,
+        moment_center=(0, 0, 0) * length_unit,
+        moment_length=(1, 1, 1) * length_unit,
+    )
+
+
 def get_default_params(
     unit_system_name, length_unit, root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
-) -> SimulationParams:
+) -> dict:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
     contain empty required values. When generating default case settings:
@@ -127,17 +135,16 @@ def get_default_params(
 
     Returns
     -------
-    SimulationParams
-        Default parameters for Flow360 simulation.
+    dict
+        Default parameters for Flow360 simulation stored in a dictionary.
 
     """
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
     with unit_system:
-        reference_geometry = ReferenceGeometry(
-            area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
-        )
+        # pylint: disable=no-member
+        reference_geometry = _get_default_reference_geometry(LengthType.validate(length_unit))
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
         surface_output = SurfaceOutput(
             name="Surface output",
