@@ -458,7 +458,7 @@
         0.0
     ],
     "n_loading_nodes": 20,
-    "name": null,
+    "name": "BET disk",
     "number_of_blades": 3,
     "omega": {
         "units": "rad/s",
