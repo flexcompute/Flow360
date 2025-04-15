@@ -841,7 +841,7 @@ def test_subfigure_row_splitting():
             subplots_in_row += 1
         if line.startswith(r"\end{subfigure}"):
             in_subfigure = False
-        if line.startswith(r"\begin{figure}[h!]"):
+        if line.startswith(r"\begin{figure}"):
             in_figure = True
         if line.startswith(r"\end{figure}"):
             assert subplots_in_row == 2
