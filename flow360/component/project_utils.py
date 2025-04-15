@@ -218,6 +218,7 @@ def _set_up_default_geometry_accuracy(
         return params
     if not params.meshing.defaults.geometry_accuracy:
         params.meshing.defaults.geometry_accuracy = root_asset.default_settings["geometry_accuracy"]
+    return params
 
 
 def _set_up_default_reference_geometry(params: SimulationParams, length_unit: LengthType):
