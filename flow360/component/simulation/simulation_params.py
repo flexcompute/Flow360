@@ -349,7 +349,7 @@ class SimulationParams(_ParamModelBase):
 
     @pd.model_validator(mode="after")
     def check_unsteadiness_to_use_hybrid_model(self):
-        """Only allow hybrid RANS-LES output field for unsteady simulations"""
+        """Only allow hybrid RANS-LES model for unsteady simulations"""
         return _check_unsteadiness_to_use_hybrid_model(self)
 
     @pd.model_validator(mode="after")
