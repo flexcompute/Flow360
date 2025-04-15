@@ -305,6 +305,18 @@ def test_init():
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
 
+    ##3: test default values for surface mesh starting point
+    data = services.get_default_params(
+        unit_system_name="SI", length_unit="cm", root_item_type="SurfaceMesh"
+    )
+    assert data["reference_geometry"]["area"]["units"] == "cm**2"
+    assert data["reference_geometry"]["moment_center"]["units"] == "cm"
+    assert data["reference_geometry"]["moment_length"]["units"] == "cm"
+    assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
+    # to convert tuples to lists:
+    data = json.loads(json.dumps(data))
+    compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
+
 
 def test_validate_init_data_errors():
 
