@@ -1,10 +1,11 @@
 from math import isnan
+from pprint import pprint
 
 import pytest
 
 from flow360.component.simulation.user_code import (
     ValueOrExpression,
-    Variable,
+    UserVariable,
     Expression,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -46,7 +47,7 @@ def test_expression_init():
         field: ValueOrExpression[float] = pd.Field()
 
     # Declare a variable
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     # Initialize with value
     model_1 = TestModel(field=1)
@@ -78,7 +79,7 @@ def test_variable_reassignment():
         field: ValueOrExpression[float] = pd.Field()
 
     # Declare a variable
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model = TestModel(field=x)
     assert isinstance(model.field, Expression)
@@ -96,8 +97,8 @@ def test_expression_operators():
         field: ValueOrExpression[float] = pd.Field()
 
     # Declare two variables
-    x = Variable(name="x", value=3)
-    y = Variable(name="y", value=2)
+    x = UserVariable(name="x", value=3)
+    y = UserVariable(name="y", value=2)
 
     model = TestModel(field=x + y)
 
@@ -216,7 +217,7 @@ def test_dimensioned_expressions():
 
     assert model_legacy
 
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model_expression = TestModel(
         length=x * u.m,
@@ -251,7 +252,7 @@ def test_constrained_scalar_type():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[pd.confloat(ge=0)] = pd.Field()
 
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model = TestModel(field=x)
 
@@ -267,7 +268,7 @@ def test_constrained_dimensioned_type():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[LengthType.Positive] = pd.Field()
 
-    x = Variable(name="x", value=1)
+    x = UserVariable(name="x", value=1)
 
     model = TestModel(field=x * u.m)
 
@@ -287,10 +288,10 @@ def test_vector_types():
         direction: ValueOrExpression[LengthType.Direction] = pd.Field()
         moment: ValueOrExpression[LengthType.Moment] = pd.Field()
 
-    x = Variable(name="x", value=[1, 0, 0])
-    y = Variable(name="y", value=[0, 0, 0])
-    z = Variable(name="z", value=[1, 0, 0, 0])
-    w = Variable(name="w", value=[1, 1, 1])
+    x = UserVariable(name="x", value=[1, 0, 0])
+    y = UserVariable(name="y", value=[0, 0, 0])
+    z = UserVariable(name="z", value=[1, 0, 0, 0])
+    w = UserVariable(name="w", value=[1, 1, 1])
 
     model = TestModel(
         vector=y * u.m, axis=x * u.m, array=z * u.m, direction=x * u.m, moment=w * u.m
@@ -333,13 +334,70 @@ def test_solver_builtin():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[float] = pd.Field()
 
-    x = Variable(name="x", value=4)
+    x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=x * u.m + fl.example_solver_variable * u.cm)
+    model = TestModel(field=x * u.m + fl.kOmega * u.cm)
 
-    assert str(model.field) == "x * u.m + (fl.example_solver_variable * u.cm)"
+    assert str(model.field) == "x * u.m + (fl.kOmega * u.cm)"
 
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
         model.field.evaluate()
+
+
+def test_serializer():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[VelocityType] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    model = TestModel(field=x * u.m / u.s + 4 * x ** 2 * u.m / u.s)
+
+    assert str(model.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+
+    serialized = model.model_dump(exclude_none=True)
+
+    print(model.model_dump_json(indent=2, exclude_none=True))
+
+    assert serialized["field"]["type_name"] == "expression"
+    assert serialized["field"]["expression"] == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+
+    model = TestModel(field=4 * u.m / u.s)
+
+    serialized = model.model_dump(exclude_none=True)
+
+    print(model.model_dump_json(indent=2, exclude_none=True))
+
+    assert serialized["field"]["type_name"] == "number"
+    assert serialized["field"]["value"] == 4
+    assert serialized["field"]["units"] == "m/s"
+
+
+def test_deserializer():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[VelocityType] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    model = {
+        "type_name": "expression",
+        "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
+        "evaluated_value": 68.0,
+        "evaluated_units": "m/s"
+    }
+
+    deserialized = TestModel(field=model)
+
+    assert str(deserialized.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+
+    model = {
+        "type_name": "number",
+        "value": 4.0,
+        "units": "m/s"
+    }
+
+    deserialized = TestModel(field=model)
+
+    assert str(deserialized.field) == '4.0 m/s'
+
 

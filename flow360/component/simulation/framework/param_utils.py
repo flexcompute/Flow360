@@ -1,6 +1,6 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import pydantic as pd
 
@@ -18,6 +18,7 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code import UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 
 
@@ -38,6 +39,7 @@ class AssetCache(Flow360BaseModel):
     use_geometry_AI: bool = pd.Field(
         False, description="Flag whether user requested the use of GAI."
     )
+    project_variables: Optional[List[UserVariable]] = pd.Field(None)
 
     @property
     def boundaries(self):
@@ -47,6 +49,41 @@ class AssetCache(Flow360BaseModel):
         if self.project_entity_info is None:
             return None
         return self.project_entity_info.get_boundaries()
+
+
+def find_instances(obj, target_type):
+    stack = [obj]
+    seen_ids = set()
+    results = set()
+
+    while stack:
+        current = stack.pop()
+
+        obj_id = id(current)
+        if obj_id in seen_ids:
+            continue
+        seen_ids.add(obj_id)
+
+        if isinstance(current, target_type):
+            results.add(current)
+
+        if isinstance(current, dict):
+            stack.extend(current.keys())
+            stack.extend(current.values())
+
+        elif isinstance(current, (list, tuple, set, frozenset)):
+            stack.extend(current)
+
+        elif hasattr(current, '__dict__'):
+            stack.extend(vars(current).values())
+
+        elif hasattr(current, '__iter__') and not isinstance(current, (str, bytes)):
+            try:
+                stack.extend(iter(current))
+            except Exception:
+                pass  # skip problematic iterables
+
+    return list(results)
 
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:

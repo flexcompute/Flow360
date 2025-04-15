@@ -25,10 +25,12 @@ class EvaluationContext:
         self._values = initial_values or {}
         self._resolver = resolver
 
-    def get(self, name: str) -> Any:
+    def get(self, name: str, resolve: bool = True) -> Any:
         if name not in self._values:
             # Try loading from builtin callables/constants if possible
             try:
+                if not resolve:
+                    raise ValueError(f"{name} was not defined explicitly in the context")
                 val = self.resolve(name)
                 # If successful, store it so we don't need to import again
                 self._values[name] = val

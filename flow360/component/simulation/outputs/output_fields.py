@@ -370,7 +370,7 @@ def _distribute_shared_output_fields(solver_values: dict, item_names: str):
         return
     shared_fields = solver_values.pop("output_fields")
     if solver_values[item_names] is not None:
-        for name in solver_values[item_names].names():
+        for name in solver_values[item_names].user_variables():
             item = solver_values[item_names][name]
             for field in shared_fields:
                 if item.output_fields is None:
