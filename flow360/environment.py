@@ -14,17 +14,6 @@ from .file_path import flow360_dir
 from .log import log
 
 
-class MockS3STSConfig(BaseModel):
-    """
-    Configuration for mock S3 STS.
-    """
-
-    cloud_path_prefix: str
-    access_key_id: str
-    secret_access_key: str
-    user_name: str
-
-
 class EnvironmentConfig(BaseModel):
     """
     Basic Configuration for definition environment.
@@ -38,7 +27,6 @@ class EnvironmentConfig(BaseModel):
     apikey_profile: str
     portal_web_api_endpoint: Optional[str] = None
     s3_endpoint_url: Optional[str] = None
-    mock_S3_STS_config: Optional[MockS3STSConfig] = None
 
     @classmethod
     def from_domain(cls, name, domain, aws_region, apikey_profile="default") -> EnvironmentConfig:
