@@ -25,6 +25,7 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
         mesh_unit=1 * u.cm,
         freestream_temperature=288.15 * u.K,
     )
+    disk.to_file("translatedBETDISKWOOOOOOOOOOOOO.json")
     assert isinstance(disk, BETDisk)
     disk = disk.model_dump_json()
     disk = json.loads(disk)
