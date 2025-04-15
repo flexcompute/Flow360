@@ -665,6 +665,7 @@ class PlotModel(BaseModel):
     backgroung_png: Optional[str] = None
     xlim: Optional[Tuple[float, float]] = None
     ylim: Optional[Tuple[float, float]] = None
+    grid: Optional[bool] = True
 
     @field_validator("x_data", "y_data", mode="before")
     @classmethod
@@ -775,9 +776,11 @@ class PlotModel(BaseModel):
             label = (
                 self.legend[idx] if self.legend and idx < len(self.legend) else f"Series {idx+1}"
             )
+
+            if self.grid:
+                ax.grid(True)
             if self.is_log:
                 ax.semilogy(x_series, y_series, self.style, label=label)
-                ax.grid(axis="y")
             else:
                 ax.plot(x_series, y_series, self.style, label=label)
 
@@ -910,6 +913,8 @@ class Chart2D(Chart):
         This helps with highlighting a desired portion of the chart.
     y_log : Optional[bool] 
         Sets the y axis to logarithmic scale.
+    show_grid : Optional[bool]
+        Turns the gridlines on.
     """
 
     x: Union[str, Delta, DataItem]
@@ -932,6 +937,7 @@ class Chart2D(Chart):
     xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
     y_log:  Optional[bool] = False
+    show_grid: Optional[bool] = True
 
     def get_requirements(self):
         """
@@ -997,7 +1003,6 @@ class Chart2D(Chart):
         return False
 
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
-        # TODO: manage when different variables are plotted
         if self._check_dimensions_consistency(x_data) is True:
             x_unit = x_data[0].units
             x_data = [data.value for data in x_data]
@@ -1006,7 +1011,8 @@ class Chart2D(Chart):
         if self._check_dimensions_consistency(y_data) is True:
             y_unit = y_data[0].units
             y_data = [data.value for data in y_data]
-            y_label += f" [{y_unit}]"
+            if not isinstance(self.y, list):
+                y_label += f" [{y_unit}]"
 
         return x_data, y_data, x_label, y_label
 
@@ -1236,6 +1242,7 @@ class Chart2D(Chart):
             backgroung_png=background_png,
             xlim=xlim,
             ylim=ylim,
+            grid=self.show_grid
         )
 
     def _get_background_chart(self, x_data):
