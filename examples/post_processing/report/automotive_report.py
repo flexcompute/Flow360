@@ -49,21 +49,16 @@ for beta in [0, 5, 10]:
             reference_geometry=fl.ReferenceGeometry(area=2.17, moment_length=2.7862),
             operating_condition=fl.AerospaceCondition(velocity_magnitude=40, beta=beta * u.deg),
             models=[
-                fl.Wall(
-                    surfaces=[vm[i] for i in wall_surfaces], name="Wall", use_wall_function=True
-                ),
+                fl.Wall(surfaces=[vm[i] for i in wall_surfaces], use_wall_function=True),
                 fl.Freestream(
                     surfaces=[vm[i] for i in freestream_surfaces],
-                    name="Freestream",
                 ),
                 fl.SlipWall(
                     surfaces=[vm[i] for i in slip_wall_surfaces],
-                    name="SlipWall",
                 ),
             ],
             outputs=[
                 fl.SurfaceOutput(
-                    name="surface",
                     surfaces=vm["*"],
                     output_fields=[
                         "Cp",
@@ -75,7 +70,6 @@ for beta in [0, 5, 10]:
                     ],
                 ),
                 fl.SliceOutput(
-                    name="slices",
                     entities=[
                         *[
                             fl.Slice(
@@ -102,7 +96,6 @@ for beta in [0, 5, 10]:
                     output_fields=["velocity", "velocity_x", "velocity_y", "velocity_z"],
                 ),
                 fl.IsosurfaceOutput(
-                    name="cpt",
                     output_fields=["Cp", "Mach"],
                     isosurfaces=[
                         fl.Isosurface(
@@ -113,7 +106,6 @@ for beta in [0, 5, 10]:
                     ],
                 ),
                 fl.ProbeOutput(
-                    name="probe1",
                     entities=[fl.Point(name="point1", location=(10, 0, 1))],
                     output_fields=["velocity"],
                 ),

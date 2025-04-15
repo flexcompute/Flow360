@@ -50,16 +50,13 @@ def simulation_params(angle_of_attack):
             models=[
                 fl.Wall(
                     surfaces=[geo["*"]],
-                    name="Wall",
                 ),
                 fl.Freestream(
                     surfaces=[far_field_zone.farfield],
-                    name="Freestream",
                 ),
             ],
             outputs=[
                 fl.SurfaceOutput(
-                    name="surface",
                     surfaces=geo["*"],
                     output_fields=[
                         "Cp",

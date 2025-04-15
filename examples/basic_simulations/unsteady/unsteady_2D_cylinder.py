@@ -26,11 +26,9 @@ with fl.SI_unit_system:
                 ),
                 turbulence_model_solver=fl.NoneSolver(),
             ),
-            fl.Wall(name="NoSlipWall", surfaces=[vm["fluid/wall"]]),
-            fl.Freestream(name="Freestream", surfaces=[vm["fluid/farfield"]]),
-            fl.SlipWall(
-                name="SlipWall", surfaces=[vm["fluid/periodic_0_l"], vm["fluid/periodic_0_r"]]
-            ),
+            fl.Wall(surfaces=[vm["fluid/wall"]]),
+            fl.Freestream(surfaces=[vm["fluid/farfield"]]),
+            fl.SlipWall(surfaces=[vm["fluid/periodic_0_l"], vm["fluid/periodic_0_r"]]),
         ],
         time_stepping=fl.Unsteady(
             max_pseudo_steps=40,
@@ -38,9 +36,8 @@ with fl.SI_unit_system:
             steps=20,
         ),
         outputs=[
-            fl.SurfaceOutput(name="SurfaceOutput", output_fields=["Cp"], surfaces=[vm["*"]]),
+            fl.SurfaceOutput(output_fields=["Cp"], surfaces=[vm["*"]]),
             fl.VolumeOutput(
-                name="VolumeOutput",
                 output_fields=[
                     "primitiveVars",
                     "vorticity",
