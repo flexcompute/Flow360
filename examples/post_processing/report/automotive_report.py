@@ -125,8 +125,6 @@ size = "5.7M"
 
 exclude += freestream_surfaces + slip_wall_surfaces
 
-SOLVER_VERSION = "report-25.4.0"
-
 top_camera = TopCamera(pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width")
 top_camera_slice = TopCamera(pan_target=(2.5, 0, 0), dimension=8, dimension_dir="width")
 side_camera = LeftCamera(pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width")
@@ -409,7 +407,7 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     f"{size}-{len(cases)}cases-slices-using-groups-Cpt, Cpx, wallShear, dpi=default",
     cases,
-    solver_version=SOLVER_VERSION,
+    solver_version=__solver_version__,
 )
 
 report.wait()
