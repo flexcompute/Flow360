@@ -2,11 +2,11 @@
 
 # pylint: disable=duplicate-code
 import json
-import re
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
@@ -14,21 +14,18 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
-# pylint: disable=unused-import
-from flow360.component.simulation.models.volume_models import (
-    BETDisk,  # For parse_model_dict
+# Following unused-import for supporting parse_model_dict
+from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
+    BETDisk,
 )
-from flow360.component.simulation.operating_condition.operating_condition import (
-    GenericReferenceCondition,  # For parse_model_dict
-)
-from flow360.component.simulation.operating_condition.operating_condition import (
-    ThermalState,  # For parse_model_dict
-)
-from flow360.component.simulation.operating_condition.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
     AerospaceCondition,
+    GenericReferenceCondition,
+    ThermalState,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box, Surface  # For parse_model_dict
+from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
+from flow360.component.simulation.primitives import Surface  # For parse_model_dict
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -50,10 +47,7 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.component.simulation.utils import (
-    get_unit_system_name_from_simulation_params_dict,
-    model_attribute_unlock,
-)
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
@@ -585,32 +579,62 @@ def generate_process_json(
 
 
 def _convert_unit_in_dict(
-    *, data: dict, target_unit_system: u.UnitSystem, delta_temperature_unit: u.Unit
+    *,
+    data: dict,
+    target_unit_system: Literal["SI", "Imperial", "CGS"],
+    is_delta_temperature: bool,
 ):
-    # Get angle unit from the input because we do not want to change it.
-    angle_unit = "degree" if re.search(r"\bdegree\b", data["units"]) else "rad"
-    target_unit_system["angle"] = angle_unit
+
+    def get_new_unit_as_string(
+        old_unit: u.Unit,
+        unit_system: Literal["SI", "Imperial", "CGS"],
+        is_delta_temperature: bool,
+    ) -> str:
+        dimension_str = (
+            str(old_unit.dimensions) if not is_delta_temperature else "(temperature_difference)"
+        )
+        assert (
+            dimension_str in supported_units_by_front_end
+        ), f"Unknown dimension found: {dimension_str}"
+
+        if isinstance(supported_units_by_front_end[dimension_str], list):
+            # This is a unit system agnostic dimension
+            for unit in supported_units_by_front_end[dimension_str]:
+                if u.Unit(unit) == old_unit:
+                    return unit
+            return supported_units_by_front_end[dimension_str][0]
+        return supported_units_by_front_end[dimension_str][unit_system]
+
+    def get_converted_value(original_value, old_unit, new_unit):
+        if isinstance(original_value, Collection):
+            new_value = []
+            for value in original_value:
+                value = (value * old_unit).to(new_unit).value
+                new_value.append(float(value))
+        else:
+            new_value = float((original_value * old_unit).to(new_unit).value)
+        return new_value
+
     old_unit = u.Unit(data["units"])
-    if str(old_unit) == str(u.Unit("delta_degC")) or str(old_unit) == str(u.Unit("delta_degC")):
-        # Special treatment for delta temperatures
-        new_unit = delta_temperature_unit
-    else:
-        new_unit = target_unit_system[old_unit.dimensions]
+    new_unit_str = get_new_unit_as_string(
+        old_unit, target_unit_system, is_delta_temperature=is_delta_temperature
+    )
+    new_unit = u.Unit(new_unit_str)
+    new_value = get_converted_value(data["value"], old_unit, new_unit)
 
-    if isinstance(data["value"], Collection):
-        new_value = []
-        for value in data["value"]:
-            value = (value * old_unit).to(new_unit).value
-            new_value.append(float(value))
-        data["value"] = new_value
-    else:
-        data["value"] = float((data["value"] * old_unit).to(new_unit).value)
-
-    data["units"] = str(new_unit.expr)
+    data["value"] = new_value
+    data["units"] = new_unit_str
     return data
 
 
-def _recursive_change_unit_system(*, data, target_unit_system, delta_temperature_unit) -> None:
+def change_unit_system(
+    *, data, target_unit_system: Literal["SI", "Imperial", "CGS"], current_key: str = None
+) -> None:
+    """
+    Recursively traverse a nested structure of dicts/lists.
+    If a dict has exactly the structure {'value': XX, 'units': XX},
+    Try to convert to the new unit system
+    """
 
     if isinstance(data, dict):
         # 1. Check if dict matches the desired pattern
@@ -618,51 +642,21 @@ def _recursive_change_unit_system(*, data, target_unit_system, delta_temperature
             data = _convert_unit_in_dict(
                 data=data,
                 target_unit_system=target_unit_system,
-                delta_temperature_unit=delta_temperature_unit,
+                is_delta_temperature=current_key == "temperature_offset",
             )
 
         # 2. Otherwise, recurse into each item in the dictionary
-        for _, val in data.items():
-            _recursive_change_unit_system(
+        for key, val in data.items():
+            change_unit_system(
                 data=val,
                 target_unit_system=target_unit_system,
-                delta_temperature_unit=delta_temperature_unit,
+                current_key=key,
             )
 
     elif isinstance(data, list):
         # Recurse into each item in the list
         for _, item in enumerate(data):
-            _recursive_change_unit_system(
-                data=item,
-                target_unit_system=target_unit_system,
-                delta_temperature_unit=delta_temperature_unit,
-            )
-
-
-def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"]):
-    """
-    Recursively traverse a nested structure of dicts/lists.
-    If a dict has exactly the structure {'value': XX, 'units': XX},
-    Try to convert to the new unit system
-    """
-    # Step 1: Get the new unit system that we want
-    if new_unit_system == "SI":
-        delta_temperature_unit = u.Unit("K")
-        target_unit_system = u.UnitSystem("__Converter", "m", "kg", "s")
-    elif new_unit_system == "Imperial":
-        delta_temperature_unit = u.Unit("delta_degF")
-        target_unit_system = u.UnitSystem("__Converter", "ft", "lb", "s", temperature_unit="degF")
-    elif new_unit_system == "CGS":
-        delta_temperature_unit = u.Unit("K")
-        target_unit_system = u.UnitSystem("__Converter", "cm", "g", "s")
-    else:
-        raise ValueError(f"Unknown input unit system: {new_unit_system}")
-
-    _recursive_change_unit_system(
-        data=data,
-        target_unit_system=target_unit_system,
-        delta_temperature_unit=delta_temperature_unit,
-    )
+            change_unit_system(data=item, target_unit_system=target_unit_system)
 
 
 def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):

@@ -2,9 +2,12 @@ import json
 import re
 
 import pytest
+from unyt import Unit
 
 from flow360.component.simulation import services
+from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.unit_system import _PredefinedUnitSystem
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
@@ -33,7 +36,7 @@ def test_validate_service():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                     "_id": "137854c4-dea1-47a4-b352-b545ffb0b85c",
@@ -129,7 +132,7 @@ def test_validate_error():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -195,7 +198,7 @@ def test_validate_multiple_errors():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -270,7 +273,7 @@ def test_validate_errors():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -467,7 +470,7 @@ def test_front_end_JSON_with_multi_constructor():
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
                         "private_attribute_id": "hardcoded_id-4",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -569,7 +572,7 @@ def test_generate_process_json():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -692,10 +695,10 @@ def test_generate_process_json():
 
 def test_validation_level_intersection():
     def get_validation_levels_to_use(root_item_type, requested_levels):
-        avaliable_levels = services._determine_validation_level(
+        available_levels = services._determine_validation_level(
             up_to="Case", root_item_type=root_item_type
         )
-        return services._intersect_validation_levels(requested_levels, avaliable_levels)
+        return services._intersect_validation_levels(requested_levels, available_levels)
 
     assert get_validation_levels_to_use("Geometry", "All") == ["SurfaceMesh", "VolumeMesh", "Case"]
 
@@ -731,8 +734,8 @@ def validate_proper_unit(obj, allowed_units_string):
 def test_imperial_unit_system_conversion():
     with open("data/simulation_param.json", "r") as fp:
         dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, new_unit_system="Imperial")
-    imperial_units = {"ft", "lb", "s", "degF", "delta_degF", "rad", "degree"}
+    services.change_unit_system(data=dict_to_convert, target_unit_system="Imperial")
+    imperial_units = {"ft", "lbf", "lb", "s", "degF", "delta_degF", "rad", "degree"}
 
     validate_proper_unit(dict_to_convert, imperial_units)
     # Check that the angles are not changed
@@ -753,14 +756,15 @@ def test_imperial_unit_system_conversion():
     # General comparison\
     with open("./ref/unit_system_converted_imperial.json", "r") as fp:
         ref_dict = json.load(fp)
+
     assert compare_values(dict_to_convert, ref_dict)
 
 
 def test_CGS_unit_system_conversion():
     with open("data/simulation_param.json", "r") as fp:
         dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, new_unit_system="CGS")
-    CGS_units = {"cm", "g", "s", "K", "rad", "degree"}
+    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
+    CGS_units = {"dyn", "cm", "g", "s", "K", "rad", "degree"}
 
     validate_proper_unit(dict_to_convert, CGS_units)
     # Check that the angles are not changed
@@ -787,8 +791,8 @@ def test_CGS_unit_system_conversion():
 def test_SI_unit_system_conversion():
     with open("data/simulation_param.json", "r") as fp:
         dict_to_convert = json.load(fp)
-    services.change_unit_system(data=dict_to_convert, new_unit_system="SI")
-    SI_units = {"m", "kg", "s", "K", "rad", "degree"}
+    services.change_unit_system(data=dict_to_convert, target_unit_system="SI")
+    SI_units = {"m", "kg", "s", "K", "rad", "degree", "Pa"}
 
     validate_proper_unit(dict_to_convert, SI_units)
     # Check that the angles are not changed
@@ -835,3 +839,39 @@ def test_updater_service():
         == "Input `SimulationParams` have higher version (999.999.999) than the target version (25.2.2) "
         "and thus cannot be handled."
     )
+
+
+def test_unit_conversion_front_end_compatibility():
+
+    ##### 1. Ensure that the units are valid in `supported_units_by_front_end`
+    def _get_all_units(value):
+        if isinstance(value, dict):
+            return [item for item in value.values()]
+        else:
+            assert isinstance(value, list)
+            return value
+
+    for dimension, value in supported_units_by_front_end.items():
+        for unit in _get_all_units(value=value):
+            if str(Unit(unit).dimensions) == dimension:
+                continue
+            elif (
+                dimension == "(temperature_difference)"
+                and str(Unit(unit).dimensions) == "(temperature)"
+            ):
+                continue
+            else:
+                raise ValueError(f"Unit {unit} is not valid for dimension {dimension}")
+
+    ##### 2.  Ensure that all units supported have set their front-end approved units
+    for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
+        if field_name == "name":
+            continue
+        print(">>> Unit: ", field_info.annotation.dim, field_info.annotation.dim.__class__)
+        unit_system_dimension_string = str(field_info.annotation.dim)
+        # for unit_name in unit:
+        if unit_system_dimension_string not in supported_units_by_front_end.keys():
+            raise ValueError(
+                f"Unit {unit_system_dimension_string} (A.K.A {field_name}) is not supported by the front-end.",
+                "Please ensure front end team is aware of this new unit and add its support.",
+            )
