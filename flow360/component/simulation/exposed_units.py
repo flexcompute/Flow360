@@ -44,7 +44,7 @@ supported_units_by_front_end = {
     "(mass)": {"SI": "kg", "CGS": "g", "Imperial": "lb"},  # Not used in SimulationParams
     "(length)*(mass)/(time)**2": {
         "SI": "N",
-        "CGS": "dyne",
+        "CGS": "dyn",
         "Imperial": "lbf",
     },  # [Force] Currently not used in SimulationParams.
     "(length)**2*(mass)/(time)**3": {
@@ -56,7 +56,7 @@ supported_units_by_front_end = {
     # Note: Using force*length for less user confusion.
     "(length)**2*(mass)/(time)**2": {
         "SI": "N*m",
-        "CGS": "dyne*cm",
+        "CGS": "dyn*cm",
         "Imperial": "ft*lbf",
     },  # [Moment/Energy] Currently not used in SimulationParams.
     "(length)*(mass)/((temperature)*(time)**3)": {

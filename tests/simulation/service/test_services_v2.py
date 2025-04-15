@@ -5,7 +5,9 @@ import pytest
 from unyt import Unit
 
 from flow360.component.simulation import services
+from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.unit_system import _PredefinedUnitSystem
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
@@ -743,9 +745,6 @@ def test_imperial_unit_system_conversion():
     with open("./ref/unit_system_converted_imperial.json", "r") as fp:
         ref_dict = json.load(fp)
 
-    with open("./DEBUG.json", "w") as fp:
-        json.dump(dict_to_convert, fp, indent=4)
-
     assert compare_values(dict_to_convert, ref_dict)
 
 
@@ -830,8 +829,6 @@ def test_updater_service():
 
 
 def test_unit_conversion_front_end_compatibility():
-    from flow360.component.simulation.exposed_units import supported_units_by_front_end
-    from flow360.component.simulation.unit_system import _PredefinedUnitSystem
 
     ##### 1. Ensure that the units are valid in `supported_units_by_front_end`
     def _get_all_units(value):
