@@ -127,7 +127,7 @@ def _get_default_reference_geometry(length_unit: LengthType):
 
 def get_default_params(
     unit_system_name, length_unit, root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
-) -> SimulationParams:
+) -> dict:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
     contain empty required values. When generating default case settings:
@@ -141,8 +141,8 @@ def get_default_params(
 
     Returns
     -------
-    SimulationParams
-        Default parameters for Flow360 simulation.
+    dict
+        Default parameters for Flow360 simulation stored in a dictionary.
 
     """
 
