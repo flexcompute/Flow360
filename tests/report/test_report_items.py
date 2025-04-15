@@ -836,7 +836,7 @@ def test_subfigure_row_splitting():
         line = line.lstrip()
         if line.startswith(r"\caption") and in_figure and (not in_subfigure):
             caption_in_figure = True
-        if line.startswith(r"\begin{subfigure}[t]"):
+        if line.startswith(r"\begin{subfigure}"):
             in_subfigure = True
             subplots_in_row += 1
         if line.startswith(r"\end{subfigure}"):
