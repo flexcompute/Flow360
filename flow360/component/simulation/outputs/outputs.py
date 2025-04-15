@@ -425,7 +425,7 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of integral.")
+    name: str = pd.Field("Surface integral output", description="Name of integral.")
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
         description="List of boundaries where the surface integral will be calculated.",
@@ -486,7 +486,7 @@ class ProbeOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of the monitor group.")
+    name: str = pd.Field("Probe output", description="Name of the monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
@@ -544,7 +544,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of the surface monitor group.")
+    name: str = pd.Field("Surface probe output", description="Name of the surface monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
@@ -576,7 +576,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     Surface slice settings.
     """
 
-    name: str = pd.Field(description="Name of the `SurfaceSliceOutput`.")
+    name: str = pd.Field("Surface slice output", description="Name of the `SurfaceSliceOutput`.")
     entities: EntityList[Slice] = pd.Field(
         alias="slices", description="List of :class:`Slice` entities."
     )
@@ -663,6 +663,9 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average probe output", description="Name of the `TimeAverageProbeOutput`."
+    )
     # pylint: disable=abstract-method
     frequency: int = pd.Field(
         default=1,
@@ -751,6 +754,10 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average surface probe output",
+        description="Name of the `TimeAverageSurfaceProbeOutput`.",
+    )
     # pylint: disable=abstract-method
     frequency: int = pd.Field(
         default=1,

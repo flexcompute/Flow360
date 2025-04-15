@@ -414,7 +414,7 @@ class ActuatorDisk(Flow360BaseModel):
         description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
     )
-    name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model.")
+    name: Optional[str] = pd.Field("Actuator disk", description="Name of the `ActuatorDisk` model.")
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
@@ -636,7 +636,7 @@ class BETDisk(MultiConstructorBaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
+    name: Optional[str] = pd.Field("BET disk", description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     type_name: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
@@ -1109,7 +1109,7 @@ class Rotation(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Rotation` model.")
+    name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityList[GenericVolume, Cylinder] = pd.Field(
         alias="volumes",
@@ -1193,7 +1193,7 @@ class PorousMedium(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model.")
+    name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
     entities: EntityList[GenericVolume, Box] = pd.Field(
         alias="volumes",
