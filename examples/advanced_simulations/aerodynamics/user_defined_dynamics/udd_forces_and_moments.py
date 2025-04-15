@@ -17,7 +17,7 @@ with fl.SI_unit_system:
     box1 = fl.Box(name="box1", size=[2, 6, 3], center=[6.5, 9, 0], axis_of_rotation=[0, 1, 0])
     box2 = fl.Box(name="box2", size=[2, 6, 3], center=[6.5, -9, 0], axis_of_rotation=[0, 1, 0])
     box3 = fl.Box(name="box3", size=[4, 8, 3], center=[12, 0, 2], axis_of_rotation=[0, 1, 0])
-    farfield = fl.AutomatedFarfield(name="farfield")
+    farfield = fl.AutomatedFarfield()
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
@@ -60,10 +60,9 @@ with fl.SI_unit_system:
                 ),
             ),
             fl.Wall(
-                name="NoSlipWall",
                 surfaces=[geometry["*Left"], geometry["*Right"], geometry["fuselage"]],
             ),
-            fl.Freestream(name="Freestream", surfaces=[farfield.farfield]),
+            fl.Freestream(surfaces=[farfield.farfield]),
         ],
         time_stepping=fl.Steady(max_steps=5000),
         outputs=[

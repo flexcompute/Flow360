@@ -123,8 +123,8 @@ with fl.SI_unit_system:
                 ),
                 volumes=actuator_disk,
             ),
-            fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
-            fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
+            fl.Wall(surfaces=vm["fluid/body"]),
+            fl.Freestream(surfaces=vm["fluid/farfield"]),
         ],
     )
 
