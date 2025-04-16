@@ -7,6 +7,9 @@ from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
+# Required for correct global scope initialization
+from flow360.component.simulation.solver_builtins import *
+
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
