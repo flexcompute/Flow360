@@ -57,6 +57,14 @@ for beta in [0, 5, 10]:
                     surfaces=[vm[i] for i in slip_wall_surfaces],
                 ),
             ],
+            user_defined_fields=[
+                fl.UserDefinedField(
+                    name="Cpx",
+                    expression="double prel = primitiveVars[4] - pressureFreestream;"
+                    + "double PressureForce_X = prel * nodeNormals[0]; "
+                    + "Cpx = PressureForce_X / (0.5 * MachRef * MachRef) / magnitude(nodeNormals);",
+                ),
+            ],
             outputs=[
                 fl.SurfaceOutput(
                     surfaces=vm["*"],
@@ -67,6 +75,7 @@ for beta in [0, 5, 10]:
                         "CfVec",
                         "primitiveVars",
                         "wall_shear_stress_magnitude",
+                        "Cpx",
                     ],
                 ),
                 fl.SliceOutput(
@@ -152,7 +161,6 @@ cameras_geo = [
     rear_right_bottom_camera,
 ]
 
-
 limits_cp = [(-1, 1), (-1, 1), (-1, 1), (-0.3, 0), (-0.3, 0), (-1, 1), (-1, 1), (-1, 1)]
 cameras_cp = [
     front_camera,
@@ -164,7 +172,6 @@ cameras_cp = [
     front_left_bottom_camera,
     rear_right_bottom_camera,
 ]
-
 
 avg = Average(fraction=0.1)
 CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
@@ -225,7 +232,6 @@ statistical_table = Table(
     ],
 )
 
-
 geometry_screenshots = [
     Chart3D(
         section_title="Geometry",
@@ -238,7 +244,6 @@ geometry_screenshots = [
     )
     for i, camera in enumerate(cameras_geo)
 ]
-
 cpt_screenshots = [
     Chart3D(
         section_title="Isosurface, Cpt=-1",
@@ -251,7 +256,6 @@ cpt_screenshots = [
     )
     for camera in cameras_cp
 ]
-
 cfvec_screenshots = [
     Chart3D(
         section_title="CfVec",
@@ -267,7 +271,6 @@ cfvec_screenshots = [
     )
     for camera in cameras_cp
 ]
-
 y_slices_lic_screenshots = [
     Chart3D(
         section_title=f"Slice velocity LIC y={y}",
@@ -283,7 +286,6 @@ y_slices_lic_screenshots = [
     )
     for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
 ]
-
 y_slices_screenshots = [
     Chart3D(
         section_title=f"Slice velocity y={y}",
@@ -298,8 +300,6 @@ y_slices_screenshots = [
     )
     for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
 ]
-
-
 y_slices_lic_screenshots = [
     Chart3D(
         section_title=f"Slice velocity LIC y={y}",
@@ -315,7 +315,6 @@ y_slices_lic_screenshots = [
     )
     for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
 ]
-
 z_slices_screenshots = [
     Chart3D(
         section_title=f"Slice velocity z={z}",
@@ -330,7 +329,6 @@ z_slices_screenshots = [
     )
     for name, z in zip(["neg0_2", "0", "0_2", "0_4", "0_6", "0_8"], [-0.2, 0, 0.2, 0.4, 0.6, 0.8])
 ]
-
 y_plus_screenshots = [
     Chart3D(
         section_title="y+",
@@ -356,6 +354,19 @@ cp_screenshots = [
         fig_name=f"cp_{i}",
     )
     for i, (limits, camera) in enumerate(zip(limits_cp, cameras_cp))
+]
+cpx_screenshots = [
+    Chart3D(
+        section_title="Cpx",
+        items_in_row=2,
+        show="boundaries",
+        field="Cpx",
+        exclude=exclude,
+        limits=(-0.3, 0.3),
+        camera=camera,
+        fig_name=f"cpx_{i}",
+    )
+    for i, camera in enumerate(cameras_cp)
 ]
 wall_shear_screenshots = [
     Chart3D(
@@ -393,12 +404,13 @@ report = ReportTemplate(
             focus_x=(1 / 3, 1),
         ),
         *geometry_screenshots,
+        *cp_screenshots,
+        *cpx_screenshots,
         *cpt_screenshots,
         *y_slices_screenshots,
         *y_slices_lic_screenshots,
         *z_slices_screenshots,
         *y_plus_screenshots,
-        *cp_screenshots,
         *wall_shear_screenshots,
     ],
     settings=Settings(dpi=150),
