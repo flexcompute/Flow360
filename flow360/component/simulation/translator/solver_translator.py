@@ -975,7 +975,12 @@ def get_solver_json(
         geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
         translated["geometry"] = {}
         if input_params.reference_geometry.area is not None:
-            translated["geometry"]["refArea"] = geometry["area"]
+            if geometry["area"]["typeName"] == "number":
+                translated["geometry"]["refArea"] = geometry["area"]["value"]
+            elif geometry["area"]["typeName"] == "expression":
+                if not geometry["area"]["evaluatedValue"]:
+                    raise ValueError("Value of reference area cannot evaluate to a non-numeric value")
+                translated["geometry"]["refArea"] = geometry["area"]["evaluatedValue"]
         if input_params.reference_geometry.moment_center is not None:
             translated["geometry"]["momentCenter"] = list(geometry["momentCenter"])
         if input_params.reference_geometry.moment_length is not None:

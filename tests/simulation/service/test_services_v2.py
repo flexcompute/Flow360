@@ -176,6 +176,7 @@ def test_validate_error():
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
 
 
+#TODO: Fix this by filtering errors based on the inferred input type
 def test_validate_multiple_errors():
     params_data = {
         "meshing": {
@@ -294,6 +295,7 @@ def test_init():
     assert "velocity_magnitude" not in data["operating_condition"].keys()
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
+
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
 
     ##2: test default values for volume mesh starting point
@@ -303,6 +305,9 @@ def test_init():
     assert "meshing" not in data
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
+
+    print(data)
+
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
 
 

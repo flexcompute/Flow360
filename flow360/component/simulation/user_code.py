@@ -221,7 +221,7 @@ class Expression(Flow360BaseModel):
             expression = str(value)
         else:
             details = InitErrorDetails(
-                type="value_error", ctx={"error": f"Invalid type {type(value)}"}
+                type="value_error", ctx={"error": f"Invalid type {type(value)} for {value}"}
             )
             raise pd.ValidationError.from_exception_data("expression type error", [details])
 
