@@ -152,7 +152,7 @@ class _ParamModelBase(Flow360BaseModel):
         dict
             The updated parameters dictionary.
         bool
-            Whether the `model_dict` has higher version than `version_to` (AKA forward compatability mode).
+            Whether the `model_dict` has higher version than `version_to` (AKA forward compatibility mode).
         """
         input_version = cls._get_version_from_dict(model_dict=model_dict)
         forward_compatibility_mode = Flow360Version(input_version) > Flow360Version(version_to)
