@@ -243,7 +243,7 @@ class ValidationCalledBy(Enum):
     SERVICE = "Service"
     PIPELINE = "Pipeline"
 
-    def get_forward_compatability_error_message(self, version_from: str, version_to: str):
+    def get_forward_compatibility_error_message(self, version_from: str, version_to: str):
         """
         Return error message string indicating that the forward compatability is not guaranteed.
         """
