@@ -105,13 +105,18 @@ def test_validate_service():
     params_data_from_geo["version"] = "24.11.0"
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_geo, root_item_type="Geometry"
+        params_as_dict=params_data_from_geo,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
     )
 
     assert errors is None
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_vm, root_item_type="VolumeMesh", validation_level=CASE
+        params_as_dict=params_data_from_vm,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
     )
 
     assert errors is None
@@ -153,7 +158,11 @@ def test_validate_error():
         "version": "24.11.5",
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
     expected_errors = [
         {
@@ -219,7 +228,11 @@ def test_validate_multiple_errors():
         "version": "24.11.5",
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
     expected_errors = [
         {
@@ -283,7 +296,11 @@ def test_validate_errors():
         "unit_system": {"name": "SI"},
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
     json.dumps(errors)
 
 
@@ -326,7 +343,11 @@ def test_validate_init_data_errors():
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
     )
-    _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
     expected_errors = [
         {
@@ -360,6 +381,7 @@ def test_validate_init_data_for_sm_and_vm_errors():
     )
     _, errors, _ = services.validate_model(
         params_as_dict=data,
+        validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level=[SURFACE_MESH, VOLUME_MESH],
     )
@@ -390,7 +412,10 @@ def test_validate_init_data_vm_workflow_errors():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     _, errors, _ = services.validate_model(
-        params_as_dict=data, root_item_type="VolumeMesh", validation_level=CASE
+        params_as_dict=data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
     )
 
     expected_errors = [
@@ -543,13 +568,17 @@ def test_front_end_JSON_with_multi_constructor():
     }
 
     simulation_param, errors, _ = services.validate_model(
-        params_as_dict=params_data, root_item_type="Geometry"
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
     )
     assert errors is None
     with open("../../ref/simulation/simulation_json_with_multi_constructor_used.json", "r") as f:
         ref_data = json.load(f)
         ref_param, err, _ = services.validate_model(
-            params_as_dict=ref_data, root_item_type="Geometry"
+            params_as_dict=ref_data,
+            root_item_type="Geometry",
+            validated_by=services.ValidationCalledBy.LOCAL,
         )
         assert err is None
 
@@ -714,6 +743,27 @@ def test_validation_level_intersection():
     ]
 
 
+def test_forward_compatability_error():
+
+    # Mock a future simulation.json
+    with open("data/updater_should_pass.json", "r") as fp:
+        future_dict = json.load(fp)
+    future_dict["version"] = "99.99.99"
+    _, errors, _ = services.validate_model(
+        params_as_dict=future_dict,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
+
+    assert errors[0] == {
+        "type": "99.99.99 > 25.2.3",
+        "loc": [],
+        "msg": "The cloud `SimulationParam` is too new for your local Python client. "
+        "Errors may occur since foward compatability is limited.",
+        "ctx": {},
+    }
+
+
 def validate_proper_unit(obj, allowed_units_string):
     def is_expected_unit(unit_str, allowed_units_string):
         tokens = re.findall(r"[A-Za-z_]+", unit_str)
@@ -836,7 +886,7 @@ def test_updater_service():
     assert len(errors) == 1
     assert (
         errors[0]
-        == "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
+        == "[Internal] API misuse. Input version (999.999.999) is higher than requested target version (25.2.2)."
     )
 
 

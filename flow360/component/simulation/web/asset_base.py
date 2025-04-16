@@ -134,7 +134,8 @@ class AssetBase(metaclass=ABCMeta):
             method="simulation/file", params={"type": "simulation"}
         )["simulationJson"]
 
-        return SimulationParams._update_param_dict(json.loads(simulation_json))
+        updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
+        return updated_params_as_dict
 
     @property
     def info(self) -> AssetMetaBaseModelV2:

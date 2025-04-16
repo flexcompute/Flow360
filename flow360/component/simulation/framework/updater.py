@@ -181,16 +181,6 @@ def _find_update_path(
     if version_from == version_to:
         return []
 
-    if version_from > version_to:
-        raise ValueError(
-            "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
-        )
-
-    if version_from > version_milestones[-1][0]:
-        raise ValueError(
-            "Input `SimulationParams` have higher version than all known versions and thus cannot be handled."
-        )
-
     if version_from == version_milestones[-1][0]:
         return []
 
@@ -217,6 +207,10 @@ def _find_update_path(
     path_start = _get_path_start()
     path_end = _get_path_end()
 
+    if path_start is None:
+        # version_from is higher than any known version.
+        return []
+
     return [
         item[1] for index, item in enumerate(version_milestones) if path_start <= index <= path_end
     ]
@@ -231,7 +225,7 @@ def updater(version_from, version_to, params_as_dict) -> dict:
     version_from : str
         The starting version.
     version_to : str
-        The target version to update to.
+        The target version to update to. This has to be equal or higher than `version_from`
     params_as_dict : dict
         A dictionary containing parameters to be updated.
 
@@ -251,6 +245,12 @@ def updater(version_from, version_to, params_as_dict) -> dict:
     updates the parameters based on the update path found.
     """
     log.debug(f"Input SimulationParam has version: {version_from}.")
+    version_from_is_newer = Flow360Version(version_from) > Flow360Version(version_to)
+
+    if version_from_is_newer:
+        raise ValueError(
+            f"[Internal] Misuse of updater, version_from ({version_from}) is higher than version_to ({version_to})"
+        )
     update_functions = _find_update_path(
         version_from=Flow360Version(version_from),
         version_to=Flow360Version(version_to),
