@@ -890,7 +890,19 @@ class FixedRangeLimit(Flow360BaseModel):
 
 class BaseChart2D(Chart, metaclass=ABCMeta):
     """
-    Base class for Chart2D like objects - does not contain data
+    Base class for Chart2D like objects - does not contain data.
+
+    Parameters
+    ----------
+    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
+        Defines the range of x values that will be displayed on the chart.
+    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
+        Defines the range of y values that will be displayed on the chart.
+        This helps with highlighting a desired portion of the chart.
+    y_log : Optional[bool]
+        Sets the y axis to logarithmic scale.
+    show_grid : Optional[bool]
+        Turns the gridlines on.
     """
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
     focus_x: Optional[
@@ -915,7 +927,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         -------
         bool
         """
-        return self.y_log
+        return self.y_log == True
 
     # pylint: disable=unpacking-non-sequence
     @pd.model_validator(mode="after")
@@ -1090,7 +1102,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         pass
     
     @abstractmethod
-    def _handle_legend(self, cases, x_data, y_data):
+    def _handle_legend(self, cases, y_components):
         pass
     
     def _handle_plot_style(self, x_data, y_data):
@@ -1262,19 +1274,10 @@ class Chart2D(BaseChart2D):
         Specifies the type of report item as "Chart2D"; this field is immutable.
     include : Optional[List[str]]
         List of boundaries to include in data. Applicable to:
-        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
-        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
-    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
-        Defines the range of x values that will be displayed on the chart.
-    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
-        Defines the range of y values that will be displayed on the chart.
-        This helps with highlighting a desired portion of the chart.
-    y_log : Optional[bool]
-        Sets the y axis to logarithmic scale.
-    show_grid : Optional[bool]
-        Turns the gridlines on.
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
     """
 
     x: Union[str, Delta, DataItem]
@@ -1329,36 +1332,34 @@ class Chart2D(BaseChart2D):
 
         if not isinstance(self.y, list):
             y_label = path_variable_name(self.y)
-            ys = [self.y.copy()]
-            vars_quant = 1
+            y_variables = [self.y.copy()]
         else:
             y_label = "value"
-            vars_quant = len(self.y)
-            ys = self.y.copy()
+            y_variables = self.y.copy()
 
         x_data = []
         y_data = []
+        x_components = []
+        y_components = []
 
         for case in cases:
-            for idx in range(vars_quant):
+            for y in y_variables:
                 x_data.append(data_from_path(case, self.x, cases))
-                y_data.append(data_from_path(case, ys[idx], cases))
+                y_data.append(data_from_path(case, y, cases))
+                x_components.append(path_variable_name(self.x))
+                y_components.append(path_variable_name(y))
 
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label
         )
 
-        component = x_label
-        for i, data in enumerate(x_data):
-            if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(include=self.include, exclude=self.exclude)
-                x_data[i] = data.values[component]
-
-        components = [split_path(y)[-1] for y in ys]
-        for i, data in enumerate(y_data):
-            if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(include=self.include, exclude=self.exclude)
-                y_data[i] = data.values[components[i % vars_quant]]
+        for idx, (x_series, y_series, x_component, y_component) in enumerate(zip(x_data, y_data, x_components, y_components)):
+            if isinstance(x_series, case_results.PerEntityResultCSVModel):
+                x_series.filter(include=self.include, exclude=self.exclude)
+                x_data[idx] = x_series.values[x_component]
+            if isinstance(y_series, case_results.PerEntityResultCSVModel):
+                y_series.filter(include=self.include, exclude=self.exclude)
+                y_data[idx] = y_series.values[y_component]
 
         return x_data, y_data, x_label, y_label
     
@@ -1400,21 +1401,22 @@ class Chart2D(BaseChart2D):
         """
         # pylint: disable=unsubscriptable-object
         reference_case_idx = self.select_indices[0] if self.select_indices is not None else 0
-        x_data, _, _, _ = self._load_data([cases[reference_case_idx]])
         reference_case = cases[reference_case_idx]
+        x_data, _, _, _ = self._load_data([reference_case])
         return self._get_background_chart(x_data), reference_case
 
     
 class NonlinearResiduals(BaseChart2D):
     """
     Residuals is an object for showing the solution history of nonlinear residuals.
+
     """
 
-    section_title: Literal["Nonlinear residuals"] = "Nonlinear residuals"
-    fig_name: Literal["fig-residuals"] = "fig-residuals"
+    section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
+    fig_name: Literal["fig-residuals"] = Field("fig-residuals", frozen=True)
     caption: Literal[None] = None
-    x: Optional[str] = "nonlinear_residuals/pseudo_step"
-    y_log: bool = True
+    x: Literal["nonlinear_residuals/pseudo_step"] = Field("nonlinear_residuals/pseudo_step", frozen=True)
+    y_log: Literal[True] = Field(True, frozen=True)
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
     _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
     show_grid: Optional[bool] = True
@@ -1430,14 +1432,14 @@ class NonlinearResiduals(BaseChart2D):
         cols_exclude = cases[0].results.nonlinear_residuals.x_columns
         legend = []
         for case in cases:
-            ys = [
+            y_variables = [
                 f"nonlinear_residuals/{res}"
                 for res in case.results.nonlinear_residuals.as_dict().keys()
                 if res not in cols_exclude
             ]
             legend += [
                 f"{case.name} - {path_variable_name(y)}" if len(cases) > 1 else f"{path_variable_name(y)}"
-                for y in ys
+                for y in y_variables
             ]
 
         return legend
@@ -1450,29 +1452,16 @@ class NonlinearResiduals(BaseChart2D):
 
         x_data = []
         y_data = []
-        y_components = []
 
         for case in cases:
-            ys = [
+            y_variables = [
                 f"nonlinear_residuals/{res}"
                 for res in case.results.nonlinear_residuals.as_dict().keys()
                 if res not in cols_exclude
             ]
-            for y in ys:
+            for y in y_variables:
                 x_data.append(data_from_path(case, self.x, cases)[1:])
                 y_data.append(data_from_path(case, y, cases)[1:])
-                y_components.append(y)
-
-        component = x_label
-        for i, data in enumerate(x_data):
-            if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(include=self.include, exclude=self.exclude)
-                x_data[i] = data.values[component]
-
-        for i, data in enumerate(y_data):
-            if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(include=self.include, exclude=self.exclude)
-                y_data[i] = data.values[y_components[i]]
 
         return x_data, y_data, x_label, y_label
 
