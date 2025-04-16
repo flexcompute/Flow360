@@ -247,7 +247,7 @@ class ValidationCalledBy(Enum):
         """
         Return error message string indicating that the forward compatability is not guaranteed.
         """
-        error_suffix = " Errors may occur since foward compatability is limited."
+        error_suffix = " Errors may occur since forward compatibility is limited."
         if self == ValidationCalledBy.LOCAL:
             return {
                 "type": (f"{version_from} > {version_to}"),
