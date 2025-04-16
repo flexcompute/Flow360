@@ -24,6 +24,7 @@ from flow360.plugins.report.report_items import (
     Chart,
     Chart2D,
     Chart3D,
+    NonlinearResiduals,
     FileNameStr,
     Inputs,
     Settings,
@@ -148,7 +149,7 @@ class ReportTemplate(Flow360BaseModel):
     """
 
     title: Optional[str] = None
-    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = pd.Field(
+    items: List[Union[Summary, Inputs, Table, NonlinearResiduals, Chart2D, Chart3D]] = pd.Field(
         discriminator="type_name"
     )
     include_case_by_case: bool = False

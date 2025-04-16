@@ -96,8 +96,8 @@ def residual_plot_model(here):
         skipinitialspace=True,
     )
 
-    x_data = [list(residual_data["pseudo_step"])[1:] for _ in residuals_sa]
-    y_data = [list(residual_data[res])[1:] for res in residuals_sa]
+    x_data = [list(residual_data["pseudo_step"]) for _ in residuals_sa]
+    y_data = [list(residual_data[res]) for res in residuals_sa]
 
     x_label = "pseudo_step"
 
@@ -981,8 +981,8 @@ def test_residuals(cases, residual_plot_model):
 
     plot_model = residuals.get_data([cases[0]], context)
 
-    assert plot_model.x_data == residual_plot_model.x_data
-    assert plot_model.y_data == residual_plot_model.y_data
+    assert plot_model.x_data == (np.array(residual_plot_model.x_data)[:, 1:]).tolist()
+    assert plot_model.y_data == (np.array(residual_plot_model.y_data)[:, 1:]).tolist()
     assert plot_model.x_label == residual_plot_model.x_label
     assert plot_model.y_label == "residual values"
     assert plot_model.legend == residuals_sa

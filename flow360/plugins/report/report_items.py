@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 from typing import Annotated, List, Literal, Optional, Tuple, Union
 
+from abc import ABCMeta, abstractmethod
+
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
@@ -56,6 +58,7 @@ from flow360.plugins.report.utils import (
     generate_colorbar_from_image,
     get_requirements_from_data_path,
     split_path,
+    path_variable_name,
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
@@ -885,47 +888,11 @@ class FixedRangeLimit(Flow360BaseModel):
         return self
 
 
-class Chart2D(Chart):
+class BaseChart2D(Chart, metaclass=ABCMeta):
     """
-    Represents a 2D chart within a report, plotting x and y data.
-
-    Parameters
-    ----------
-    x : Union[str, Delta]
-        The data source for the x-axis, which can be a string path or a `Delta` object.
-    y : Union[str, Delta, List[str]]
-        The data source for the y-axis, which can be a string path or their list or a `Delta` object.
-    background : Union[Literal["geometry"], None], optional
-        Background type for the chart; set to "geometry" or None.
-    _requirements : List[str]
-        Internal list of requirements associated with the chart.
-    type_name : Literal["Chart2D"], default="Chart2D"
-        Specifies the type of report item as "Chart2D"; this field is immutable.
-    include : Optional[List[str]]
-        List of boundaries to include in data. Applicable to:
-        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
-    exclude : Optional[List[str]]
-        List of boundaries to exclude from data. Applicable to:
-        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
-    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
-        Defines the range of x values that will be displayed on the chart.
-    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
-        Defines the range of y values that will be displayed on the chart.
-        This helps with highlighting a desired portion of the chart.
-    y_log : Optional[bool]
-        Sets the y axis to logarithmic scale.
-    show_grid : Optional[bool]
-        Turns the gridlines on.
+    Base class for Chart2D like objects - does not contain data
     """
-
-    x: Union[str, Delta, DataItem]
-    y: Union[str, Delta, DataItem, List[str]]
-    background: Union[Literal["geometry"], None] = None
-    _requirements: List[str] = [_requirements_mapping["total_forces"]]
-    type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
-    include: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
     focus_x: Optional[
         Annotated[
             Tuple[float, float],
@@ -939,12 +906,6 @@ class Chart2D(Chart):
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
     y_log: Optional[bool] = False
     show_grid: Optional[bool] = True
-
-    def get_requirements(self):
-        """
-        Returns requirements for this item.
-        """
-        return get_requirements_from_data_path([self.x, self.y])
 
     def is_log_plot(self):
         """
@@ -1003,68 +964,13 @@ class Chart2D(Chart):
             return True
         return False
 
-    def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
-        if self._check_dimensions_consistency(x_data) is True:
-            x_unit = x_data[0].units
-            x_data = [data.value for data in x_data]
-            x_label += f" [{x_unit}]"
-
-        if self._check_dimensions_consistency(y_data) is True:
-            y_unit = y_data[0].units
-            y_data = [data.value for data in y_data]
-            if not isinstance(self.y, list):
-                y_label += f" [{y_unit}]"
-
-        return x_data, y_data, x_label, y_label
-
     def _is_multiline_data(self, x_data, y_data):
         return all(not isinstance(data, list) for data in x_data) and all(
             not isinstance(data, list) for data in y_data
         )
-
-    def _load_data(self, cases):
-        x_label = split_path(self.x)[-1]
-
-        if not isinstance(self.y, list):
-            y_label = split_path(self.y)[-1]
-            ys = [self.y.copy()]
-            vars_quant = 1
-        else:
-            y_label = "value"
-            vars_quant = len(self.y)
-            ys = self.y.copy()
-
-        is_nonlinear_residual = any("nonlinear_residuals" in split_path(y) for y in ys)
-
-        x_data = []
-        y_data = []
-
-        for case in cases:
-            for idx in range(vars_quant):
-                if not is_nonlinear_residual:
-                    x_data.append(data_from_path(case, self.x, cases))
-                    y_data.append(data_from_path(case, ys[idx], cases))
-                else:
-                    x_data.append(data_from_path(case, self.x, cases)[1:])
-                    y_data.append(data_from_path(case, ys[idx], cases)[1:])
-
-        x_data, y_data, x_label, y_label = self._handle_data_with_units(
-            x_data, y_data, x_label, y_label
-        )
-
-        component = x_label
-        for i, data in enumerate(x_data):
-            if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(include=self.include, exclude=self.exclude)
-                x_data[i] = data.values[component]
-
-        components = [split_path(y)[-1] for y in ys]
-        for i, data in enumerate(y_data):
-            if isinstance(data, case_results.PerEntityResultCSVModel):
-                data.filter(include=self.include, exclude=self.exclude)
-                y_data[i] = data.values[components[i % vars_quant]]
-
-        return x_data, y_data, x_label, y_label
+    
+    def _get_background_chart(self, _):
+        return None
 
     def _handle_xlimits(self) -> Tuple[Optional[float], Optional[float]]:
         """
@@ -1177,6 +1083,23 @@ class Chart2D(Chart):
             y_range = self._calculate_y_min_max(all_last_y, ylim.type_name)
 
         return y_range
+    
+
+    @abstractmethod
+    def _load_data(self, cases):
+        pass
+    
+    @abstractmethod
+    def _handle_legend(self, cases, x_data, y_data):
+        pass
+    
+    def _handle_plot_style(self, x_data, y_data):
+        if self._is_multiline_data(x_data, y_data):
+            style = "o-"
+        else:
+            style = "-"
+
+        return style
 
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
@@ -1219,24 +1142,9 @@ class Chart2D(Chart):
             # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
 
-        if self._is_multiline_data(x_data, y_data):
-            x_data = [float(data) for data in x_data]
-            y_data = [float(data) for data in y_data]
-            legend = None
-            style = "o-"
-        elif (len(self.y) > 1) and isinstance(self.y, list):
-            legend = []
-            for case in cases:
-                for y in self.y:
-                    if len(cases) > 1:
-                        legend.append(f"{case.name} - {split_path(y)[-1]}")
-                    else:
-                        legend.append(f"{split_path(y)[-1]}")
-
-            style = "-"
-        else:
-            legend = [case.name for case in cases]
-            style = "-"
+        legend = self._handle_legend(cases, x_data, y_data)
+        
+        style = self._handle_plot_style(x_data, y_data)
 
         xlim = self._handle_xlimits()
         ylim = self._calculate_ylimits(x_data, y_data)
@@ -1254,48 +1162,6 @@ class Chart2D(Chart):
             ylim=ylim,
             grid=self.show_grid,
         )
-
-    def _get_background_chart(self, x_data):
-        if self.background == "geometry":
-            dimension = np.amax(x_data[0]) - np.amin(x_data[0])
-            if self.x == "x_slicing_force_distribution/X":
-                log.warning(
-                    "First case is used as a background image with dimensions matched to the extent of X data"
-                )
-                camera = Camera(
-                    position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
-                )
-            elif self.x == "y_slicing_force_distribution/Y":
-                log.warning(
-                    "First case is used as a background image with dimensions matched to the extent of X data"
-                )
-                camera = Camera(
-                    position=(-1, 0, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
-                )
-            else:
-                raise ValueError(
-                    f"background={self.background} can be only used with x == x_slicing_force_distribution/X"
-                    + " OR x == y_slicing_force_distribution/Y"
-                )
-            background = Chart3D(
-                show="boundaries",
-                camera=camera,
-                fig_name="background_" + self.fig_name,
-                include=self.include,
-                exclude=self.exclude,
-            )
-            return background
-        return None
-
-    def get_background_chart3d(self, cases) -> Tuple[Chart3D, Case]:
-        """
-        Returns Chart3D for background.
-        """
-        # pylint: disable=unsubscriptable-object
-        reference_case_idx = self.select_indices[0] if self.select_indices is not None else 0
-        x_data, _, _, _ = self._load_data([cases[reference_case_idx]])
-        reference_case = cases[reference_case_idx]
-        return self._get_background_chart(x_data), reference_case
 
     def _get_figures(self, cases, context: ReportContext):
         file_names = []
@@ -1376,7 +1242,170 @@ class Chart2D(Chart):
         context.doc.append(NoEscape(r"\clearpage"))
 
 
-class NonlinearResiduals(Chart2D):
+
+
+class Chart2D(BaseChart2D):
+    """
+    Represents a 2D chart within a report, plotting x and y data.
+
+    Parameters
+    ----------
+    x : Union[str, Delta]
+        The data source for the x-axis, which can be a string path or a `Delta` object.
+    y : Union[str, Delta, List[str]]
+        The data source for the y-axis, which can be a string path or their list or a `Delta` object.
+    background : Union[Literal["geometry"], None], optional
+        Background type for the chart; set to "geometry" or None.
+    _requirements : List[str]
+        Internal list of requirements associated with the chart.
+    type_name : Literal["Chart2D"], default="Chart2D"
+        Specifies the type of report item as "Chart2D"; this field is immutable.
+    include : Optional[List[str]]
+        List of boundaries to include in data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
+    exclude : Optional[List[str]]
+        List of boundaries to exclude from data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces
+    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
+        Defines the range of x values that will be displayed on the chart.
+    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
+        Defines the range of y values that will be displayed on the chart.
+        This helps with highlighting a desired portion of the chart.
+    y_log : Optional[bool]
+        Sets the y axis to logarithmic scale.
+    show_grid : Optional[bool]
+        Turns the gridlines on.
+    """
+
+    x: Union[str, Delta, DataItem]
+    y: Union[str, Delta, DataItem, List[str]]
+    _requirements: List[str] = [_requirements_mapping["total_forces"]]
+    include: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
+    background: Union[Literal["geometry"], None] = None
+    type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
+
+
+    def get_requirements(self):
+        """
+        Returns requirements for this item.
+        """
+        return get_requirements_from_data_path([self.x, self.y])
+    
+    def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
+        if self._check_dimensions_consistency(x_data) is True:
+            x_unit = x_data[0].units
+            x_data = [data.value for data in x_data]
+            x_label += f" [{x_unit}]"
+
+        if self._check_dimensions_consistency(y_data) is True:
+            y_unit = y_data[0].units
+            y_data = [data.value for data in y_data]
+            if not isinstance(self.y, list):
+                y_label += f" [{y_unit}]"
+
+        return x_data, y_data, x_label, y_label
+    
+    def _handle_legend(self, cases, x_data, y_data):
+        if self._is_multiline_data(x_data, y_data):
+            x_data = [float(data) for data in x_data]
+            y_data = [float(data) for data in y_data]
+            legend = None
+        elif (len(self.y) > 1) and isinstance(self.y, list):
+            legend = []
+            for case in cases:
+                for y in self.y:
+                    if len(cases) > 1:
+                        legend.append(f"{case.name} - {path_variable_name(y)}")
+                    else:
+                        legend.append(f"{path_variable_name(y)}")
+        else:
+            legend = [case.name for case in cases]
+
+        return legend
+    
+    def _load_data(self, cases):
+        x_label = path_variable_name(self.x)
+
+        if not isinstance(self.y, list):
+            y_label = path_variable_name(self.y)
+            ys = [self.y.copy()]
+            vars_quant = 1
+        else:
+            y_label = "value"
+            vars_quant = len(self.y)
+            ys = self.y.copy()
+
+        x_data = []
+        y_data = []
+
+        for case in cases:
+            for idx in range(vars_quant):
+                x_data.append(data_from_path(case, self.x, cases))
+                y_data.append(data_from_path(case, ys[idx], cases))
+
+        x_data, y_data, x_label, y_label = self._handle_data_with_units(
+            x_data, y_data, x_label, y_label
+        )
+
+        component = x_label
+        for i, data in enumerate(x_data):
+            if isinstance(data, case_results.PerEntityResultCSVModel):
+                data.filter(include=self.include, exclude=self.exclude)
+                x_data[i] = data.values[component]
+
+        components = [split_path(y)[-1] for y in ys]
+        for i, data in enumerate(y_data):
+            if isinstance(data, case_results.PerEntityResultCSVModel):
+                data.filter(include=self.include, exclude=self.exclude)
+                y_data[i] = data.values[components[i % vars_quant]]
+
+        return x_data, y_data, x_label, y_label
+    
+    def _get_background_chart(self, x_data):
+        if self.background == "geometry":
+            dimension = np.amax(x_data[0]) - np.amin(x_data[0])
+            if self.x == "x_slicing_force_distribution/X":
+                log.warning(
+                    "First case is used as a background image with dimensions matched to the extent of X data"
+                )
+                camera = Camera(
+                    position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
+                )
+            elif self.x == "y_slicing_force_distribution/Y":
+                log.warning(
+                    "First case is used as a background image with dimensions matched to the extent of X data"
+                )
+                camera = Camera(
+                    position=(-1, 0, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
+                )
+            else:
+                raise ValueError(
+                    f"background={self.background} can be only used with x == x_slicing_force_distribution/X"
+                    + " OR x == y_slicing_force_distribution/Y"
+                )
+            background = Chart3D(
+                show="boundaries",
+                camera=camera,
+                fig_name="background_" + self.fig_name,
+                include=self.include,
+                exclude=self.exclude,
+            )
+            return background
+        return None
+
+    def get_background_chart3d(self, cases) -> Tuple[Chart3D, Case]:
+        """
+        Returns Chart3D for background.
+        """
+        # pylint: disable=unsubscriptable-object
+        reference_case_idx = self.select_indices[0] if self.select_indices is not None else 0
+        x_data, _, _, _ = self._load_data([cases[reference_case_idx]])
+        reference_case = cases[reference_case_idx]
+        return self._get_background_chart(x_data), reference_case
+
+    
+class NonlinearResiduals(BaseChart2D):
     """
     Residuals is an object for showing the solution history of nonlinear residuals.
     """
@@ -1384,9 +1413,8 @@ class NonlinearResiduals(Chart2D):
     section_title: Literal["Nonlinear residuals"] = "Nonlinear residuals"
     fig_name: Literal["fig-residuals"] = "fig-residuals"
     caption: Literal[None] = None
-    x: Literal["nonlinear_residuals/pseudo_step"] = "nonlinear_residuals/pseudo_step"
-    y: List[str] = []
-    y_log: Literal[True] = True
+    x: Optional[str] = "nonlinear_residuals/pseudo_step"
+    y_log: bool = True
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
     _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
     show_grid: Optional[bool] = True
@@ -1397,69 +1425,119 @@ class NonlinearResiduals(Chart2D):
         Returns requirements for this item.
         """
         return self._requirements
-
-    # pylint: disable=too-many-locals
-    def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
-        """
-        Loads and processes data for creating a 2D residuals plot model.
-
-        Parameters
-        ----------
-        cases : List[Case]
-            A list of simulation cases to extract data from.
-        context : ReportContext
-            The report context providing additional configuration and case-specific data.
-
-        Returns
-        -------
-        PlotModel
-            A `PlotModel` instance containing the processed x and y data, axis labels,
-            legend, and optional background image for plotting.
-
-        """
-
+    
+    def _handle_legend(self, cases, _, __):
         cols_exclude = cases[0].results.nonlinear_residuals.x_columns
-        x_data = []
-        y_data = []
         legend = []
-
         for case in cases:
-            self.y = [
+            ys = [
                 f"nonlinear_residuals/{res}"
                 for res in case.results.nonlinear_residuals.as_dict().keys()
                 if res not in cols_exclude
             ]
-            x_data_part, y_data_part, _, _ = self._load_data([case])
-            legend_part = [
-                f"{case.name} - {split_path(y)[-1]}" if len(cases) > 1 else f"{split_path(y)[-1]}"
-                for y in self.y
+            legend += [
+                f"{case.name} - {path_variable_name(y)}" if len(cases) > 1 else f"{path_variable_name(y)}"
+                for y in ys
             ]
-            x_data += x_data_part
-            y_data += y_data_part
-            legend += legend_part
 
-        background = self._get_background_chart(x_data)
-        background_png = None
-        if background is not None:
-            # pylint: disable=protected-access
-            background_png = background._get_images([cases[0]], context)[0]
+        return legend
 
-        xlim = self._handle_xlimits()
-        ylim = self._calculate_ylimits(x_data, y_data)
+    
+    def _load_data(self, cases):
+        cols_exclude = cases[0].results.nonlinear_residuals.x_columns
+        x_label = path_variable_name(self.x)
+        y_label = "residual values"
 
-        return PlotModel(
-            x_data=x_data,
-            y_data=y_data,
-            x_label="pseudo_step",
-            y_label="residual values",
-            legend=legend,
-            style="-",
-            is_log=self.is_log_plot(),
-            backgroung_png=background_png,
-            xlim=xlim,
-            ylim=ylim,
-            grid=self.show_grid,
-        )
+        x_data = []
+        y_data = []
+        y_components = []
+
+        for case in cases:
+            ys = [
+                f"nonlinear_residuals/{res}"
+                for res in case.results.nonlinear_residuals.as_dict().keys()
+                if res not in cols_exclude
+            ]
+            for y in ys:
+                x_data.append(data_from_path(case, self.x, cases)[1:])
+                y_data.append(data_from_path(case, y, cases)[1:])
+                y_components.append(y)
+
+        component = x_label
+        for i, data in enumerate(x_data):
+            if isinstance(data, case_results.PerEntityResultCSVModel):
+                data.filter(include=self.include, exclude=self.exclude)
+                x_data[i] = data.values[component]
+
+        for i, data in enumerate(y_data):
+            if isinstance(data, case_results.PerEntityResultCSVModel):
+                data.filter(include=self.include, exclude=self.exclude)
+                y_data[i] = data.values[y_components[i]]
+
+        return x_data, y_data, x_label, y_label
+
+    # pylint: disable=too-many-locals
+    # def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
+    #     """
+    #     Loads and processes data for creating a 2D residuals plot model.
+
+    #     Parameters
+    #     ----------
+    #     cases : List[Case]
+    #         A list of simulation cases to extract data from.
+    #     context : ReportContext
+    #         The report context providing additional configuration and case-specific data.
+
+    #     Returns
+    #     -------
+    #     PlotModel
+    #         A `PlotModel` instance containing the processed x and y data, axis labels,
+    #         legend, and optional background image for plotting.
+
+    #     """
+
+    #     cols_exclude = cases[0].results.nonlinear_residuals.x_columns
+    #     x_data = []
+    #     y_data = []
+    #     legend = []
+
+    #     for case in cases:
+    #         self.y = [
+    #             f"nonlinear_residuals/{res}"
+    #             for res in case.results.nonlinear_residuals.as_dict().keys()
+    #             if res not in cols_exclude
+    #         ]
+    #         x_data_part, y_data_part, _, _ = self._load_data([case])
+    #         legend_part = [
+    #             f"{case.name} - {split_path(y)[-1]}" if len(cases) > 1 else f"{split_path(y)[-1]}"
+    #             for y in self.y
+    #         ]
+    #         x_data += x_data_part
+    #         y_data += y_data_part
+    #         legend += legend_part
+
+    #     background = self._get_background_chart(x_data)
+    #     background_png = None
+    #     if background is not None:
+    #         # pylint: disable=protected-access
+    #         background_png = background._get_images([cases[0]], context)[0]
+
+    #     xlim = self._handle_xlimits()
+    #     ylim = self._calculate_ylimits(x_data, y_data)
+
+    #     return PlotModel(
+    #         x_data=x_data,
+    #         y_data=y_data,
+    #         x_label="pseudo_step",
+    #         y_label="residual values",
+    #         legend=legend,
+    #         style="-",
+    #         is_log=self.is_log_plot(),
+    #         backgroung_png=background_png,
+    #         xlim=xlim,
+    #         ylim=ylim,
+    #         grid=self.show_grid,
+    #     )
 
 
 class Chart3D(Chart):

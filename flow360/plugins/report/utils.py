@@ -223,6 +223,12 @@ def split_path(path):
     path_components = [comp for comp in re.split(r"[/.]", path) if comp]
     return path_components
 
+def path_variable_name(path):
+    """
+    Get the last component of the path.
+    """
+    return split_path(path)[-1]
+
 
 # pylint: disable=too-many-return-statements
 def data_from_path(
@@ -738,7 +744,7 @@ class DataItem(Flow360BaseModel):
     def __str__(self):
         if self.title is not None:
             return self.title
-        return split_path(self.data)[-1]
+        return path_variable_name(self.data)
 
 
 class Delta(Flow360BaseModel):
@@ -788,7 +794,7 @@ class Delta(Flow360BaseModel):
 
     def __str__(self):
         if isinstance(self.data, str):
-            data_str = split_path(self.data)[-1]
+            data_str = path_variable_name(self.data)
         else:
             data_str = str(self.data)
         return f"Delta {data_str}"
