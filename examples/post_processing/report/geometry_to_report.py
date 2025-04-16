@@ -14,7 +14,7 @@ from flow360.plugins.report.report_items import (
 from flow360.plugins.report.utils import Average, DataItem, Delta
 from flow360.version import __solver_version__
 
-project_id = None  # if running for the first time
+project_id = "prj-75356e9e-49fc-442e-9183-473f117b6fab"  # if running for the first time
 
 # then replace it with your project ID to avoid re-creation of projects. You can find project ID on web GUI:
 # project_id = "prj-...."
@@ -124,15 +124,16 @@ cameras_geo = [
 
 avg = Average(fraction=0.1)
 
-CD = DataItem(data="surface_forces/totalCD", title="CD", operations=avg)
-
 CL = DataItem(data="surface_forces/totalCL", title="CL", operations=avg)
 
+CD = DataItem(data="surface_forces/totalCD", title="CD", operations=avg)
+
 statistical_data = [
+    "params/operating_condition/alpha",
     "params/reference_geometry/area",
-    CD,
     CL,
     Delta(data=CL),
+    CD,
     "volume_mesh/stats/n_nodes",
     "params/time_stepping/max_steps",
 ]
@@ -154,7 +155,6 @@ statistical_table = Table(
     ],
 )
 
-
 geometry_screenshots = [
     Chart3D(
         section_title="Geometry",
@@ -174,8 +174,8 @@ report = ReportTemplate(
         Inputs(),
         statistical_table,
         Chart2D(
-            x="surface_forces/pseudo_step",
-            y="surface_forces/totalCL",
+            x="total_forces/pseudo_step",
+            y="total_forces/CL",
             section_title="Lift Coefficient",
             fig_name="cl_fig",
             focus_x=(1 / 3, 1),
