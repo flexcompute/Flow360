@@ -223,6 +223,7 @@ def split_path(path):
     path_components = [comp for comp in re.split(r"[/.]", path) if comp]
     return path_components
 
+
 def path_variable_name(path):
     """
     Get the last component of the path.

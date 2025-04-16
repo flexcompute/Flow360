@@ -6,9 +6,8 @@ Module containg detailed report items
 from __future__ import annotations
 
 import os
-from typing import Annotated, List, Literal, Optional, Tuple, Union
-
 from abc import ABCMeta, abstractmethod
+from typing import Annotated, List, Literal, Optional, Tuple, Union
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -57,8 +56,8 @@ from flow360.plugins.report.utils import (
     downsample_image_to_relative_width,
     generate_colorbar_from_image,
     get_requirements_from_data_path,
-    split_path,
     path_variable_name,
+    split_path,
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
@@ -904,6 +903,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
     show_grid : Optional[bool]
         Turns the gridlines on.
     """
+
     operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
     focus_x: Optional[
         Annotated[
@@ -927,7 +927,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         -------
         bool
         """
-        return self.y_log == True
+        return self.y_log is True
 
     # pylint: disable=unpacking-non-sequence
     @pd.model_validator(mode="after")
@@ -980,9 +980,10 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         return all(not isinstance(data, list) for data in x_data) and all(
             not isinstance(data, list) for data in y_data
         )
-    
+
+    @abstractmethod
     def _get_background_chart(self, _):
-        return None
+        pass
 
     def _handle_xlimits(self) -> Tuple[Optional[float], Optional[float]]:
         """
@@ -1095,16 +1096,15 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             y_range = self._calculate_y_min_max(all_last_y, ylim.type_name)
 
         return y_range
-    
 
     @abstractmethod
     def _load_data(self, cases):
         pass
-    
+
     @abstractmethod
-    def _handle_legend(self, cases, y_components):
+    def _handle_legend(self, cases, x_data, y_data):
         pass
-    
+
     def _handle_plot_style(self, x_data, y_data):
         if self._is_multiline_data(x_data, y_data):
             style = "o-"
@@ -1155,7 +1155,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             background_png = background._get_images([cases[0]], context)[0]
 
         legend = self._handle_legend(cases, x_data, y_data)
-        
+
         style = self._handle_plot_style(x_data, y_data)
 
         xlim = self._handle_xlimits()
@@ -1254,8 +1254,6 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         context.doc.append(NoEscape(r"\clearpage"))
 
 
-
-
 class Chart2D(BaseChart2D):
     """
     Represents a 2D chart within a report, plotting x and y data.
@@ -1288,13 +1286,12 @@ class Chart2D(BaseChart2D):
     background: Union[Literal["geometry"], None] = None
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
-
     def get_requirements(self):
         """
         Returns requirements for this item.
         """
         return get_requirements_from_data_path([self.x, self.y])
-    
+
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
         if self._check_dimensions_consistency(x_data) is True:
             x_unit = x_data[0].units
@@ -1308,7 +1305,7 @@ class Chart2D(BaseChart2D):
                 y_label += f" [{y_unit}]"
 
         return x_data, y_data, x_label, y_label
-    
+
     def _handle_legend(self, cases, x_data, y_data):
         if self._is_multiline_data(x_data, y_data):
             x_data = [float(data) for data in x_data]
@@ -1326,7 +1323,8 @@ class Chart2D(BaseChart2D):
             legend = [case.name for case in cases]
 
         return legend
-    
+
+    # pylint: disable=too-many-locals
     def _load_data(self, cases):
         x_label = path_variable_name(self.x)
 
@@ -1353,7 +1351,9 @@ class Chart2D(BaseChart2D):
             x_data, y_data, x_label, y_label
         )
 
-        for idx, (x_series, y_series, x_component, y_component) in enumerate(zip(x_data, y_data, x_components, y_components)):
+        for idx, (x_series, y_series, x_component, y_component) in enumerate(
+            zip(x_data, y_data, x_components, y_components)
+        ):
             if isinstance(x_series, case_results.PerEntityResultCSVModel):
                 x_series.filter(include=self.include, exclude=self.exclude)
                 x_data[idx] = x_series.values[x_component]
@@ -1362,7 +1362,7 @@ class Chart2D(BaseChart2D):
                 y_data[idx] = y_series.values[y_component]
 
         return x_data, y_data, x_label, y_label
-    
+
     def _get_background_chart(self, x_data):
         if self.background == "geometry":
             dimension = np.amax(x_data[0]) - np.amin(x_data[0])
@@ -1405,7 +1405,7 @@ class Chart2D(BaseChart2D):
         x_data, _, _, _ = self._load_data([reference_case])
         return self._get_background_chart(x_data), reference_case
 
-    
+
 class NonlinearResiduals(BaseChart2D):
     """
     Residuals is an object for showing the solution history of nonlinear residuals.
@@ -1415,7 +1415,9 @@ class NonlinearResiduals(BaseChart2D):
     section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
     fig_name: Literal["fig-residuals"] = Field("fig-residuals", frozen=True)
     caption: Literal[None] = None
-    x: Literal["nonlinear_residuals/pseudo_step"] = Field("nonlinear_residuals/pseudo_step", frozen=True)
+    x: Literal["nonlinear_residuals/pseudo_step"] = Field(
+        "nonlinear_residuals/pseudo_step", frozen=True
+    )
     y_log: Literal[True] = Field(True, frozen=True)
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
     _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
@@ -1427,8 +1429,11 @@ class NonlinearResiduals(BaseChart2D):
         Returns requirements for this item.
         """
         return self._requirements
-    
-    def _handle_legend(self, cases, _, __):
+
+    def _get_background_chart(self, _):
+        return None
+
+    def _handle_legend(self, cases, _, y_data):
         cols_exclude = cases[0].results.nonlinear_residuals.x_columns
         legend = []
         for case in cases:
@@ -1438,13 +1443,16 @@ class NonlinearResiduals(BaseChart2D):
                 if res not in cols_exclude
             ]
             legend += [
-                f"{case.name} - {path_variable_name(y)}" if len(cases) > 1 else f"{path_variable_name(y)}"
+                (
+                    f"{case.name} - {path_variable_name(y)}"
+                    if len(cases) > 1
+                    else f"{path_variable_name(y)}"
+                )
                 for y in y_variables
             ]
 
         return legend
 
-    
     def _load_data(self, cases):
         cols_exclude = cases[0].results.nonlinear_residuals.x_columns
         x_label = path_variable_name(self.x)
@@ -1464,69 +1472,6 @@ class NonlinearResiduals(BaseChart2D):
                 y_data.append(data_from_path(case, y, cases)[1:])
 
         return x_data, y_data, x_label, y_label
-
-    # pylint: disable=too-many-locals
-    # def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
-    #     """
-    #     Loads and processes data for creating a 2D residuals plot model.
-
-    #     Parameters
-    #     ----------
-    #     cases : List[Case]
-    #         A list of simulation cases to extract data from.
-    #     context : ReportContext
-    #         The report context providing additional configuration and case-specific data.
-
-    #     Returns
-    #     -------
-    #     PlotModel
-    #         A `PlotModel` instance containing the processed x and y data, axis labels,
-    #         legend, and optional background image for plotting.
-
-    #     """
-
-    #     cols_exclude = cases[0].results.nonlinear_residuals.x_columns
-    #     x_data = []
-    #     y_data = []
-    #     legend = []
-
-    #     for case in cases:
-    #         self.y = [
-    #             f"nonlinear_residuals/{res}"
-    #             for res in case.results.nonlinear_residuals.as_dict().keys()
-    #             if res not in cols_exclude
-    #         ]
-    #         x_data_part, y_data_part, _, _ = self._load_data([case])
-    #         legend_part = [
-    #             f"{case.name} - {split_path(y)[-1]}" if len(cases) > 1 else f"{split_path(y)[-1]}"
-    #             for y in self.y
-    #         ]
-    #         x_data += x_data_part
-    #         y_data += y_data_part
-    #         legend += legend_part
-
-    #     background = self._get_background_chart(x_data)
-    #     background_png = None
-    #     if background is not None:
-    #         # pylint: disable=protected-access
-    #         background_png = background._get_images([cases[0]], context)[0]
-
-    #     xlim = self._handle_xlimits()
-    #     ylim = self._calculate_ylimits(x_data, y_data)
-
-    #     return PlotModel(
-    #         x_data=x_data,
-    #         y_data=y_data,
-    #         x_label="pseudo_step",
-    #         y_label="residual values",
-    #         legend=legend,
-    #         style="-",
-    #         is_log=self.is_log_plot(),
-    #         backgroung_png=background_png,
-    #         xlim=xlim,
-    #         ylim=ylim,
-    #         grid=self.show_grid,
-    #     )
 
 
 class Chart3D(Chart):
