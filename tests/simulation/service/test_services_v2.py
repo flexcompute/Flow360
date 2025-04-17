@@ -743,7 +743,7 @@ def test_validation_level_intersection():
     ]
 
 
-def test_forward_compatability_error():
+def test_forward_compatibility_error():
 
     # Mock a future simulation.json
     with open("data/updater_should_pass.json", "r") as fp:
@@ -759,9 +759,34 @@ def test_forward_compatability_error():
         "type": "99.99.99 > 25.2.3",
         "loc": [],
         "msg": "The cloud `SimulationParam` is too new for your local Python client. "
-        "Errors may occur since foward compatability is limited.",
+        "Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=future_dict,
+        validated_by=services.ValidationCalledBy.PIPELINE,
+        root_item_type="Geometry",
+    )
+
+    assert errors[0] == {
+        "type": "99.99.99 > 25.2.3",
+        "loc": [],
+        "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
+        "ctx": {},
+    }
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited."
+        ),
+    ):
+        _, _, _ = services.generate_process_json(
+            simulation_json=json.dumps(future_dict),
+            up_to=CASE,
+            root_item_type="Geometry",
+        )
 
 
 def validate_proper_unit(obj, allowed_units_string):

@@ -156,11 +156,11 @@ class _ParamModelBase(Flow360BaseModel):
         """
         input_version = cls._get_version_from_dict(model_dict=model_dict)
         forward_compatibility_mode = Flow360Version(input_version) > Flow360Version(version_to)
-        if not forward_compatability_mode:
+        if not forward_compatibility_mode:
             model_dict = updater(
                 version_from=input_version, version_to=version_to, params_as_dict=model_dict
             )
-        return model_dict, forward_compatability_mode
+        return model_dict, forward_compatibility_mode
 
     @classmethod
     def _sanitize_params_dict(cls, model_dict):
@@ -479,7 +479,7 @@ class SimulationParams(_ParamModelBase):
 
     def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
-        Once the SimulationParams is set, extract and upate information
+        Once the SimulationParams is set, extract and update information
         into all used entities by parsing the params.
         """
 

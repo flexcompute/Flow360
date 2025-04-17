@@ -277,19 +277,19 @@ class ValidationCalledBy(Enum):
         return None
 
 
-def _insert_forward_compatability_notice(
+def _insert_forward_compatibility_notice(
     validation_errors: list,
     params_as_dict: dict,
     validated_by: ValidationCalledBy,
     version_to: str = __version__,
 ):
-    # If error occurs, inform user that the error message could due to failure in forward compatability.
+    # If error occurs, inform user that the error message could due to failure in forward compatibility.
     # pylint:disable=protected-access
     version_from = SimulationParams._get_version_from_dict(model_dict=params_as_dict)
-    forward_compatability_failure_error = validated_by.get_forward_compatability_error_message(
+    forward_compatibility_failure_error = validated_by.get_forward_compatibility_error_message(
         version_from=version_from, version_to=version_to
     )
-    validation_errors.insert(0, forward_compatability_failure_error)
+    validation_errors.insert(0, forward_compatibility_failure_error)
     return validation_errors
 
 
@@ -309,6 +309,8 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
+    validated_by : ValidationCalledBy
+        Indicator of where the `validate_model` function is called. Allowing generation of helpful messages.
     root_item_type : Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
         The root item type for validation. If None then no context-aware validation is performed.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
@@ -333,12 +335,12 @@ def validate_model(
     # We always assume we want to run case so that we can expose as many errors as possible
     available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
-    forward_compatability_mode = False
+    forward_compatibility_mode = False
 
     try:
         # pylint: disable=protected-access
         # Note: Need to run updater first to accomodate possible schema change in input caches.
-        updated_param_as_dict, forward_compatability_mode = SimulationParams._update_param_dict(
+        updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
             params_as_dict
         )
 
@@ -355,11 +357,11 @@ def validate_model(
     if validation_errors is not None:
         validation_errors = validate_error_locations(validation_errors, params_as_dict)
 
-    if forward_compatability_mode and validation_errors is not None:
+    if forward_compatibility_mode and validation_errors is not None:
         # pylint: disable=fixme
-        # TODO: If forward compatability issue found. Try to tell user how they can get around it.
-        # TODO: Recomment solver/python client version they should use instead.
-        validation_errors = _insert_forward_compatability_notice(
+        # TODO: If forward compatibility issue found. Try to tell user how they can get around it.
+        # TODO: Recommend solver/python client version they should use instead.
+        validation_errors = _insert_forward_compatibility_notice(
             validation_errors, params_as_dict, validated_by
         )
 
