@@ -2,6 +2,7 @@
 
 # pylint: disable=duplicate-code
 import json
+from enum import Enum
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
@@ -54,6 +55,7 @@ from flow360.component.simulation.validation.validation_context import (
     ValidationContext,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
+from flow360.version import __version__
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -232,9 +234,69 @@ def _intersect_validation_levels(requested_levels, available_levels):
     return None
 
 
+class ValidationCalledBy(Enum):
+    """
+    Enum as indicator where `validate_model()` is called.
+    """
+
+    LOCAL = "Local"
+    SERVICE = "Service"
+    PIPELINE = "Pipeline"
+
+    def get_forward_compatibility_error_message(self, version_from: str, version_to: str):
+        """
+        Return error message string indicating that the forward compatability is not guaranteed.
+        """
+        error_suffix = " Errors may occur since forward compatibility is limited."
+        if self == ValidationCalledBy.LOCAL:
+            return {
+                "type": (f"{version_from} > {version_to}"),
+                "loc": [],
+                "msg": "The cloud `SimulationParam` is too new for your local Python client."
+                + error_suffix,
+                "ctx": {},
+            }
+        if self == ValidationCalledBy.SERVICE:
+            return {
+                "type": (f"{version_from} > {version_to}"),
+                "loc": [],
+                "msg": "Your `SimulationParams` is too new for the solver." + error_suffix,
+                "ctx": {},
+            }
+        if self == ValidationCalledBy.PIPELINE:
+            # These will only appear in log. Ideally we should not rely on pipelines
+            # to emit useful error messages. Or else the local/service validation is not doing their jobs properly.
+            return {
+                # pylint:disable = protected-access
+                "type": (f"{version_from} > {version_to}"),
+                "loc": [],
+                "msg": "[Internal] Your `SimulationParams` is too new for the solver."
+                + error_suffix,
+                "ctx": {},
+            }
+        return None
+
+
+def _insert_forward_compatibility_notice(
+    validation_errors: list,
+    params_as_dict: dict,
+    validated_by: ValidationCalledBy,
+    version_to: str = __version__,
+):
+    # If error occurs, inform user that the error message could due to failure in forward compatibility.
+    # pylint:disable=protected-access
+    version_from = SimulationParams._get_version_from_dict(model_dict=params_as_dict)
+    forward_compatibility_failure_error = validated_by.get_forward_compatibility_error_message(
+        version_from=version_from, version_to=version_to
+    )
+    validation_errors.insert(0, forward_compatibility_failure_error)
+    return validation_errors
+
+
 def validate_model(
     *,
     params_as_dict,
+    validated_by: ValidationCalledBy,
     root_item_type: Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
@@ -247,6 +309,8 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
+    validated_by : ValidationCalledBy
+        Indicator of where the `validate_model` function is called. Allowing generation of helpful messages.
     root_item_type : Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
         The root item type for validation. If None then no context-aware validation is performed.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
@@ -271,13 +335,20 @@ def validate_model(
     # We always assume we want to run case so that we can expose as many errors as possible
     available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
+    forward_compatibility_mode = False
+
     try:
-        params_as_dict = parse_model_dict(params_as_dict, globals())
         # pylint: disable=protected-access
-        updated_param_as_dict = SimulationParams._update_param_dict(params_as_dict)
+        # Note: Need to run updater first to accomodate possible schema change in input caches.
+        updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
+            params_as_dict
+        )
+
+        updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
+
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            validated_param = SimulationParams(file_content=params_as_dict)
+            validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
@@ -285,6 +356,14 @@ def validate_model(
 
     if validation_errors is not None:
         validation_errors = validate_error_locations(validation_errors, params_as_dict)
+
+    if forward_compatibility_mode and validation_errors is not None:
+        # pylint: disable=fixme
+        # TODO: If forward compatibility issue found. Try to tell user how they can get around it.
+        # TODO: Recommend solver/python client version they should use instead.
+        validation_errors = _insert_forward_compatibility_notice(
+            validation_errors, params_as_dict, validated_by
+        )
 
     return validated_param, validation_errors, validation_warnings
 
@@ -564,6 +643,7 @@ def generate_process_json(
     # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
     params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.SERVICE,  # This is called only by web service currently.
         root_item_type=root_item_type,
         validation_level=validation_level,
     )
@@ -667,9 +747,15 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
     updated_params_as_dict: dict = None
     try:
         # pylint:disable = protected-access
-        updated_params_as_dict = SimulationParams._update_param_dict(
+        updated_params_as_dict, input_has_higher_version = SimulationParams._update_param_dict(
             params_as_dict, target_python_api_version
         )
+        if input_has_higher_version:
+            raise ValueError(
+                f"[Internal] API misuse. Input version "
+                f"({SimulationParams._get_version_from_dict(model_dict=params_as_dict)}) is higher than "
+                f"requested target version ({target_python_api_version})."
+            )
     except (Flow360RuntimeError, ValueError, KeyError) as e:
         # Expected exceptions
         errors.append(str(e))
