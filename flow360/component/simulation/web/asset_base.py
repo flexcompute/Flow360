@@ -142,7 +142,8 @@ class AssetBase(metaclass=ABCMeta):
                 f"Failed to get simulation json for {asset._cloud_resource_type_name}."
             )
 
-        return SimulationParams._update_param_dict(json.loads(simulation_json))
+        updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
+        return updated_params_as_dict
 
     @property
     def info(self) -> AssetMetaBaseModelV2:
@@ -162,6 +163,7 @@ class AssetBase(metaclass=ABCMeta):
         # pylint: disable=duplicate-code
         param, errors, _ = services.validate_model(
             params_as_dict=params_as_dict,
+            validated_by=services.ValidationCalledBy.LOCAL,
             root_item_type=None,
             validation_level=None,
         )
