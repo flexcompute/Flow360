@@ -50,12 +50,11 @@ with fl.SI_unit_system:
                 ),
             ),
             bet,
-            fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
-            fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
+            fl.Wall(surfaces=vm["fluid/body"]),
+            fl.Freestream(surfaces=vm["fluid/farfield"]),
         ],
         outputs=[
             fl.SliceOutput(
-                name="SliceOutput",
                 slices=[fl.Slice(name="slice_x", normal=(1, 0, 0), origin=(0, 0, 0))],
                 output_fields=["betMetrics"],
             )
@@ -105,7 +104,7 @@ bet_slice_screenshot = Chart3D(
     items_in_row=2,
     force_new_page=True,
     show="slices",
-    include=["slice_x_0"],
+    include=["slice_x"],
     field="betMetrics_AlphaDegrees",
     limits=(-18, 0),
     camera=front_camera_slice,

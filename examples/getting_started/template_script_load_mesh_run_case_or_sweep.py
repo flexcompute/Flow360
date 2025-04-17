@@ -51,11 +51,8 @@ def make_params(mesh_object):
                         mesh_object["fluid/rightWing"],
                         mesh_object["fluid/fuselage"],
                     ],
-                    name="Airplane",
                 ),
-                fl.Freestream(
-                    surfaces=mesh_object["fluid/farfield"], name="FF"
-                ),  # For far field boundaries
+                fl.Freestream(surfaces=mesh_object["fluid/farfield"]),  # For far field boundaries
                 # Define what sort of physical model of a fluid we will use
                 fl.Fluid(
                     navier_stokes_solver=fl.NavierStokesSolver(),

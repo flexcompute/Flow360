@@ -69,7 +69,6 @@ with fl.SI_unit_system:
                 ),
             ),
             fl.Wall(
-                name="NoSlipWall",
                 surfaces=[
                     vm["zone_s/airframe"],
                     vm["zone_r1/blade1"],
@@ -78,7 +77,7 @@ with fl.SI_unit_system:
                     vm["zone_r4/blade4"],
                 ],
             ),
-            fl.Freestream(name="Freestream", surfaces=vm["zone_s/farfield"]),
+            fl.Freestream(surfaces=vm["zone_s/farfield"]),
             fl.Rotation(
                 name="Rotation",
                 volumes=[rotation_zone_1, rotation_zone_2, rotation_zone_3, rotation_zone_4],
@@ -109,7 +108,6 @@ case_fork_1 = project.run_case(case.params, "Second order run", fork_from=case)
 
 case_fork_1.params.outputs = [
     fl.AeroAcousticOutput(
-        name="AeroAcousticOutput",
         observers=[
             fl.Observer(position=[0, -1.905, 0] * fl.u.m, group_name="1"),
             fl.Observer(position=[0, -1.7599905, -0.72901194] * fl.u.m, group_name="1"),

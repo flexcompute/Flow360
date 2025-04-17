@@ -29,7 +29,6 @@ with fl.SI_unit_system:
         ],
         outputs=[
             fl.ProbeOutput(
-                name="ProbeOutput",
                 output_fields=["primitiveVars", "vorticity", "T", "s", "Cp", "mut"],
                 probe_points=[
                     fl.Point(name="Probe1", location=[0.12, 0.34, 0.262] * fl.u.m),
