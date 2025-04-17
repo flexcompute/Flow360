@@ -817,6 +817,29 @@ class ManualLimit(Flow360BaseModel):
     upper: float
     type_name: Literal["ManualLimit"] = Field("ManualLimit", frozen=True)
 
+class LastLimit(Flow360BaseModel):
+    """
+    Class for setting up xlim in Chart2D by providing
+    the range of last values to plot.
+
+    Parameters
+    last : float
+        How much last values are supposed to be plotted.
+    """
+    last: float
+
+class FirstLimit(Flow360BaseModel):
+    """
+    Class for setting up xlim in Chart2D by providing
+    the range of first values to plot.
+
+    Parameters
+    first : float
+        How much first values are supposed to be plotted.
+    """
+    first: float
+
+
 
 class SubsetLimit(Flow360BaseModel):
     """
@@ -914,7 +937,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             ),
         ]
     ] = None
-    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
+    xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
     y_log: Optional[bool] = False
     show_grid: Optional[bool] = True
@@ -985,7 +1008,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
     def _get_background_chart(self, _):
         pass
 
-    def _handle_xlimits(self) -> Tuple[Optional[float], Optional[float]]:
+    def _handle_xlimits(self, x_data) -> Tuple[Optional[float], Optional[float]]:
         """
         Make sure that xlim is always passed
         as a tuple of floats to the plotting tool.
@@ -996,6 +1019,15 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
 
         if isinstance(xlim, ManualLimit):
             return (xlim.lower, xlim.upper)
+        
+        min_x = np.min(x_data)
+        max_x = np.max(x_data)
+ 
+        if isinstance(xlim, FirstLimit):
+            return (min_x, min_x + xlim.first)
+        
+        if isinstance(xlim, LastLimit):
+            return (max_x - xlim.last, max_x)
 
         return xlim
 
@@ -1158,7 +1190,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
 
         style = self._handle_plot_style(x_data, y_data)
 
-        xlim = self._handle_xlimits()
+        xlim = self._handle_xlimits(x_data)
         ylim = self._calculate_ylimits(x_data, y_data)
 
         return PlotModel(
@@ -1423,6 +1455,7 @@ class NonlinearResiduals(BaseChart2D):
     _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
     show_grid: Optional[bool] = True
     separate_plots: Optional[bool] = True
+    xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = LastLimit(last=4000)
 
     def get_requirements(self):
         """
