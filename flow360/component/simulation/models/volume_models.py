@@ -629,7 +629,6 @@ class BETDiskCache(Flow360BaseModel):
     entities: Optional[EntityList[Cylinder]] = None
     angle_unit: Optional[AngleType] = None
     length_unit: Optional[LengthType.NonNegative] = None
-    mesh_unit: Optional[LengthType.NonNegative] = None
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
     blade_line_chord: Optional[LengthType.NonNegative] = None
@@ -915,7 +914,7 @@ class BETDisk(MultiConstructorBaseModel):
         --------
         Create a BET disk with a DFDC file.
 
-        >>> param = fl.BETDisk.from_xrotor(
+        >>> param = fl.BETDisk.from_dfdc(
         ...     file=fl.DFDCFile(file_path="dfdc_xv15.case")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
@@ -923,7 +922,6 @@ class BETDisk(MultiConstructorBaseModel):
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder,
         ...     length_unit=fl.u.m,
-        ...     mesh_unit=fl.u.m,
         ...     angle_unit=fl.u.deg,
         ... )
         """
