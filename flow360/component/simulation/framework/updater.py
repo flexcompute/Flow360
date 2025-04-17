@@ -181,7 +181,7 @@ def _find_update_path(
     if version_from == version_to:
         return []
 
-    if version_from == version_milestones[-1][0]:
+    if version_from >= version_milestones[-1][0]:
         return []
 
     if version_to < version_milestones[0][0]:
@@ -206,10 +206,6 @@ def _find_update_path(
 
     path_start = _get_path_start()
     path_end = _get_path_end()
-
-    if path_start is None:
-        # version_from is higher than any known version.
-        return []
 
     return [
         item[1] for index, item in enumerate(version_milestones) if path_start <= index <= path_end
