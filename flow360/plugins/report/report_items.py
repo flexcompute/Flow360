@@ -817,6 +817,7 @@ class ManualLimit(Flow360BaseModel):
     upper: float
     type_name: Literal["ManualLimit"] = Field("ManualLimit", frozen=True)
 
+
 class LastLimit(Flow360BaseModel):
     """
     Class for setting up xlim in Chart2D by providing
@@ -826,7 +827,9 @@ class LastLimit(Flow360BaseModel):
     last : float
         How much last values are supposed to be plotted.
     """
+
     last: float
+
 
 class FirstLimit(Flow360BaseModel):
     """
@@ -837,8 +840,8 @@ class FirstLimit(Flow360BaseModel):
     first : float
         How much first values are supposed to be plotted.
     """
-    first: float
 
+    first: float
 
 
 class SubsetLimit(Flow360BaseModel):
@@ -1019,13 +1022,13 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
 
         if isinstance(xlim, ManualLimit):
             return (xlim.lower, xlim.upper)
-        
+
         min_x = np.min(x_data)
         max_x = np.max(x_data)
- 
+
         if isinstance(xlim, FirstLimit):
             return (min_x, min_x + xlim.first)
-        
+
         if isinstance(xlim, LastLimit):
             return (max_x - xlim.last, max_x)
 
@@ -1455,7 +1458,9 @@ class NonlinearResiduals(BaseChart2D):
     _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
     show_grid: Optional[bool] = True
     separate_plots: Optional[bool] = True
-    xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = LastLimit(last=4000)
+    xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = LastLimit(
+        last=4000
+    )
 
     def get_requirements(self):
         """
