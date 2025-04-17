@@ -221,6 +221,24 @@ def _set_up_default_geometry_accuracy(
     return params
 
 
+def _set_up_default_reference_geometry(params: SimulationParams, length_unit: LengthType):
+    """
+    Setting up the default reference geometry if not provided in params.
+    Ensure the simulation.json contains the default settings other than None.
+    """
+    # pylint: disable=protected-access
+    default_reference_geometry = services._get_default_reference_geometry(length_unit)
+    if params.reference_geometry is None:
+        params.reference_geometry = default_reference_geometry
+        return params
+
+    for field in params.reference_geometry.model_fields:
+        if getattr(params.reference_geometry, field) is None:
+            setattr(params.reference_geometry, field, getattr(default_reference_geometry, field))
+
+    return params
+
+
 def set_up_params_for_uploading(
     root_asset: AssetBase,
     length_unit: LengthType,
@@ -260,6 +278,8 @@ def set_up_params_for_uploading(
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
+
+    params = _set_up_default_reference_geometry(params, length_unit)
 
     return params
 
