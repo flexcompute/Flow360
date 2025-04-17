@@ -1365,7 +1365,7 @@ class Chart2D(BaseChart2D):
 
         if not isinstance(self.y, list):
             y_label = path_variable_name(self.y)
-            y_variables = [self.y.copy()]
+            y_variables = [self.y]
         else:
             y_label = "value"
             y_variables = self.y.copy()
