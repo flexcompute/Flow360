@@ -1451,7 +1451,6 @@ class NonlinearResiduals(BaseChart2D):
         last=4000
     )
     section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
-    # caption: Literal[None] = None
     x: Literal["nonlinear_residuals/pseudo_step"] = Field(
         "nonlinear_residuals/pseudo_step", frozen=True
     )
