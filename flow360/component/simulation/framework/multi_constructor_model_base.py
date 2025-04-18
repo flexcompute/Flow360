@@ -8,7 +8,7 @@
 import abc
 import inspect
 from functools import wraps
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Callable, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -154,6 +154,22 @@ def get_class_by_name(class_name, global_vars):
     return cls
 
 
+def _add_parent_location_to_validation_error(
+    validation_error: pd.ValidationError, parent_loc=None
+) -> pd.ValidationError:
+    """Convert the validation error by appending the parent location"""
+    if parent_loc is None:
+        return validation_error
+    updated_errors = []
+    for error in validation_error.errors():
+        error["loc"] = (parent_loc,) + error["loc"]
+        updated_errors.append(error)
+    return pd.ValidationError.from_exception_data(
+        title=validation_error.title,
+        line_errors=updated_errors,
+    )
+
+
 def model_custom_constructor_parser(model_as_dict, global_vars):
     """Parse the dictionary, construct the object and return obj dict."""
     constructor_name = model_as_dict.get("private_attribute_constructor", None)
@@ -166,16 +182,31 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
             id_kwarg["private_attribute_id"] = model_as_dict["private_attribute_id"]
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
-            return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
+            try:
+                return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
+            except pd.ValidationError as err:
+                # pylint:disable = raise-missing-from
+                raise _add_parent_location_to_validation_error(
+                    validation_error=err, parent_loc="private_attribute_input_cache"
+                )
+
     return model_as_dict
 
 
-def parse_model_dict(model_as_dict, global_vars) -> dict:
+def parse_model_dict(model_as_dict, global_vars, parent_loc: Union[str, int] = None) -> dict:
     """Recursively parses the model dictionary and attempts to construct the multi-constructor object."""
-    if isinstance(model_as_dict, dict):
-        for key, value in model_as_dict.items():
-            model_as_dict[key] = parse_model_dict(value, global_vars)
-        model_as_dict = model_custom_constructor_parser(model_as_dict, global_vars)
-    elif isinstance(model_as_dict, list):
-        model_as_dict = [parse_model_dict(item, global_vars) for item in model_as_dict]
+    try:
+        if isinstance(model_as_dict, dict):
+            for key, value in model_as_dict.items():
+                model_as_dict[key] = parse_model_dict(value, global_vars, key)
+
+            model_as_dict = model_custom_constructor_parser(model_as_dict, global_vars)
+        elif isinstance(model_as_dict, list):
+            model_as_dict = [
+                parse_model_dict(item, global_vars, idx) for idx, item in enumerate(model_as_dict)
+            ]
+    except pd.ValidationError as err:
+        # pylint:disable = raise-missing-from
+        raise _add_parent_location_to_validation_error(validation_error=err, parent_loc=parent_loc)
+
     return model_as_dict
