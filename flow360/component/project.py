@@ -1228,7 +1228,7 @@ class Project(pd.BaseModel):
         target: AssetOrResource,
         draft_name: str,
         fork_from: Case,
-        fork_with_mesh: VolumeMeshV2,
+        interpolate_to_mesh: VolumeMeshV2,
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
@@ -1249,8 +1249,8 @@ class Project(pd.BaseModel):
             The name of the draft to create for the simulation run (default is None).
         fork_from : Case, optional
             The parent case to fork from if fork (default is None).
-        fork_with_mesh : VolumeMeshV2, optional
-            If specified, forked case will interpolate parent case results to this mesh before running solver.
+        interpolate_to_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpolate parent case's results to this mesh before running solver.
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
         use_beta_mesher : bool, optional
@@ -1315,7 +1315,7 @@ class Project(pd.BaseModel):
             source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
-            fork_case_volume_mesh_id=fork_with_mesh.id if fork_with_mesh else None,
+            fork_case_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
             tags=job_tags,
         ).submit()
 
@@ -1407,7 +1407,7 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=None,
-            fork_with_mesh=None,
+            interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
@@ -1467,7 +1467,7 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=None,
-            fork_with_mesh=None,
+            interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
@@ -1483,7 +1483,7 @@ class Project(pd.BaseModel):
         name: str = "Case",
         run_async: bool = True,
         fork_from: Optional[Case] = None,
-        fork_with_mesh: Optional[VolumeMeshV2] = None,
+        interpolate_to_mesh: Optional[VolumeMeshV2] = None,
         solver_version: str = None,
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
@@ -1503,7 +1503,7 @@ class Project(pd.BaseModel):
             Whether to run the case asynchronously (default is True).
         fork_from : Case, optional
             Which Case we should fork from (if fork).
-        fork_with_mesh : VolumeMeshV2, optional
+        interpolate_to_mesh : VolumeMeshV2, optional
             If specified, forked case will interpolate parent case results to this mesh before running solver.
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
@@ -1521,7 +1521,7 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=fork_from,
-            fork_with_mesh=fork_with_mesh,
+            interpolate_to_mesh=interpolate_to_mesh,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,

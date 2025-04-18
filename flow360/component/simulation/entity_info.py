@@ -355,29 +355,26 @@ class GeometryEntityInfo(EntityInfoModel):
         if internal_registry is None:
             internal_registry = EntityRegistry()
             if self.face_group_tag is None:
-                with model_attribute_unlock(self, "face_group_tag"):
-                    self.face_group_tag = self._get_default_grouping_tag("face")
-                log.info(f"Using `{self.face_group_tag}` as default grouping for faces.")
+                face_group_tag = self._get_default_grouping_tag("face")
+                log.info(f"Using `{face_group_tag}` as default grouping for faces.")
             internal_registry = self._group_entity_by_tag(
-                "face", self.face_group_tag, registry=internal_registry
+                "face", face_group_tag, registry=internal_registry
             )
 
             if self.edge_group_tag is None:
-                with model_attribute_unlock(self, "edge_group_tag"):
-                    self.edge_group_tag = self._get_default_grouping_tag("edge")
-                log.info(f"Using `{self.edge_group_tag}` as default grouping for edges.")
+                edge_group_tag = self._get_default_grouping_tag("edge")
+                log.info(f"Using `{edge_group_tag}` as default grouping for edges.")
             internal_registry = self._group_entity_by_tag(
-                "edge", self.edge_group_tag, registry=internal_registry
+                "edge", edge_group_tag, registry=internal_registry
             )
 
             if self.body_group_tag is None:
                 if self.body_attribute_names:
                     # Post-25.4 geometry asset. For Pre 25.4 we just skip body grouping.
-                    with model_attribute_unlock(self, "body_group_tag"):
-                        self.body_group_tag = self._get_default_grouping_tag("body")
-                    log.info(f"Using `{self.body_group_tag}` as default grouping for bodies.")
+                    body_group_tag = self._get_default_grouping_tag("body")
+                    log.info(f"Using `{body_group_tag}` as default grouping for bodies.")
                     internal_registry = self._group_entity_by_tag(
-                        "body", self.body_group_tag, registry=internal_registry
+                        "body", body_group_tag, registry=internal_registry
                     )
         return internal_registry
 
