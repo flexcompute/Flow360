@@ -743,13 +743,11 @@ def test_2d_caption(cases):
     assert chart._handle_2d_caption(case_number=1) == "Caption 2"
 
     chart.caption = PatternCaption(pattern="This is case: [case.name] with ID: [case.id]")
-    assert (
-        chart._handle_2d_caption(case=cases[0])
-        == escape_latex("This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111")
+    assert chart._handle_2d_caption(case=cases[0]) == escape_latex(
+        "This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111"
     )
-    assert (
-        chart._handle_2d_caption(case=cases[1])
-        == escape_latex("This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222")
+    assert chart._handle_2d_caption(case=cases[1]) == escape_latex(
+        "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
     )
 
     chart_selected_cases = Chart2D(
