@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from pylatex import Document
-from pylatex.utils import bold
+from pylatex.utils import bold, escape_latex
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
@@ -745,11 +745,11 @@ def test_2d_caption(cases):
     chart.caption = PatternCaption(pattern="This is case: [case.name] with ID: [case.id]")
     assert (
         chart._handle_2d_caption(case=cases[0])
-        == "This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111"
+        == escape_latex("This is case: case-11111111-1111-1111-1111-111111111111-name with ID: case-11111111-1111-1111-1111-111111111111")
     )
     assert (
         chart._handle_2d_caption(case=cases[1])
-        == "This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222"
+        == escape_latex("This is case: case-2222222222-2222-2222-2222-2222222222-name with ID: case-2222222222-2222-2222-2222-2222222222")
     )
 
     chart_selected_cases = Chart2D(
