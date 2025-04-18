@@ -1315,7 +1315,7 @@ class Project(pd.BaseModel):
             source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
-            fork_case_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
+            interpolation_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
             tags=job_tags,
         ).submit()
 

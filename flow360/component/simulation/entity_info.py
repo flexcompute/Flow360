@@ -172,7 +172,7 @@ class GeometryEntityInfo(EntityInfoModel):
         if attribute_name is not None:
             specified_attribute_name = attribute_name
 
-        if specified_attribute_name in entity_attribute_names:
+        if specified_attribute_name in entity_attribute_names:  # pylint:unsupported-membership-test
             # pylint: disable=no-member, unsubscriptable-object
             return entity_full_list[entity_attribute_names.index(specified_attribute_name)]
 
@@ -314,9 +314,10 @@ class GeometryEntityInfo(EntityInfoModel):
             existing_tag = self.body_group_tag
 
         if existing_tag:
-            log.info(
-                f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{existing_tag}`)."
-            )
+            if existing_tag != tag_name:
+                log.info(
+                    f"Regrouping {entity_type_name} entities under `{tag_name}` tag (previous `{existing_tag}`)."
+                )
             registry = self._reset_grouping(entity_type_name=entity_type_name, registry=registry)
 
         registry = self.group_in_registry(
@@ -357,6 +358,9 @@ class GeometryEntityInfo(EntityInfoModel):
             if self.face_group_tag is None:
                 face_group_tag = self._get_default_grouping_tag("face")
                 log.info(f"Using `{face_group_tag}` as default grouping for faces.")
+            else:
+                face_group_tag = self.face_group_tag
+
             internal_registry = self._group_entity_by_tag(
                 "face", face_group_tag, registry=internal_registry
             )
@@ -364,18 +368,24 @@ class GeometryEntityInfo(EntityInfoModel):
             if self.edge_group_tag is None:
                 edge_group_tag = self._get_default_grouping_tag("edge")
                 log.info(f"Using `{edge_group_tag}` as default grouping for edges.")
+            else:
+                edge_group_tag = self.edge_group_tag
+
             internal_registry = self._group_entity_by_tag(
                 "edge", edge_group_tag, registry=internal_registry
             )
 
-            if self.body_group_tag is None:
-                if self.body_attribute_names:
-                    # Post-25.4 geometry asset. For Pre 25.4 we just skip body grouping.
+            if self.body_attribute_names:
+                # Post-25.5 geometry asset. For Pre 25.5 we just skip body grouping.
+                if self.body_group_tag is None:
                     body_group_tag = self._get_default_grouping_tag("body")
                     log.info(f"Using `{body_group_tag}` as default grouping for bodies.")
-                    internal_registry = self._group_entity_by_tag(
-                        "body", body_group_tag, registry=internal_registry
-                    )
+                else:
+                    body_group_tag = self.body_group_tag
+
+                internal_registry = self._group_entity_by_tag(
+                    "body", self.body_group_tag, registry=internal_registry
+                )
         return internal_registry
 
     def compute_transformation_matrices(self):

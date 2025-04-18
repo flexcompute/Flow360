@@ -2,6 +2,9 @@
 
 import flow360 as fl
 from flow360.examples import Airplane
+from flow360.log import set_logging_level
+
+set_logging_level("DEBUG")
 
 
 def get_project_with_refinement_factor(refinement_factor: float, run_case: bool):
