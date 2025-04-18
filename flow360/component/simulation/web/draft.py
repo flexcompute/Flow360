@@ -41,6 +41,7 @@ class DraftDraft(ResourceDraft):
         ],
         solver_version: str,
         fork_case: bool,
+        interpolation_volume_mesh_id: str,
         tags: list[str],
     ):
         self._request = DraftCreateRequest(
@@ -50,6 +51,8 @@ class DraftDraft(ResourceDraft):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            interpolation_volume_mesh_id=interpolation_volume_mesh_id,
+            interpolation_case_id=source_item_id if interpolation_volume_mesh_id else None,
             tags=tags,
         )
         ResourceDraft.__init__(self)
@@ -92,6 +95,7 @@ class Draft(Flow360Resource):
         ] = None,
         solver_version: str = None,
         fork_case: bool = None,
+        interpolation_volume_mesh_id: str = None,
         tags: list[str] = None,
     ) -> DraftDraft:
         """Create a new instance of DraftDraft"""
@@ -102,6 +106,7 @@ class Draft(Flow360Resource):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            interpolation_volume_mesh_id=interpolation_volume_mesh_id,
             tags=tags,
         )
 
