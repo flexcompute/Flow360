@@ -366,19 +366,12 @@ def test_validate_error_from_multi_constructor():
     ]
     _compare_validation_errors(errors, expected_errors)
 
-    # test BETDisk.from_dfdc() with one validation error within private_attribute_input_cache
-    # and one validation error outside the input_cache
+    # test BETDisk.from_dfdc() with:
+    #   1. one validation error within private_attribute_input_cache
+    #   2. an extra BETDiskCache argument for the dfdc constructor
+    #   3. one validation error outside the input_cache
     params_data = {
         "models": [
-            {
-                "entities": {"stored_entities": []},
-                "heat_spec": {"type_name": "HeatFlux", "value": {"units": "W/m**2", "value": 0.0}},
-                "name": "Wall",
-                "roughness_height": {"units": "m", "value": -10.0},
-                "type": "Wall",
-                "use_wall_function": False,
-                "velocity": None,
-            },
             {
                 "name": "BET disk",
                 "private_attribute_constructor": "from_dfdc",
@@ -413,9 +406,19 @@ def test_validate_error_from_multi_constructor():
                     "n_loading_nodes": 20,
                     "omega": {"units": "degree/s", "value": 0.0046},
                     "rotation_direction_rule": "leftHand",
+                    "number_of_blades": 2,
                 },
                 "type": "BETDisk",
                 "type_name": "BETDisk",
+            },
+            {
+                "entities": {"stored_entities": []},
+                "heat_spec": {"type_name": "HeatFlux", "value": {"units": "W/m**2", "value": 0.0}},
+                "name": "Wall",
+                "roughness_height": {"units": "m", "value": -10.0},
+                "type": "Wall",
+                "use_wall_function": False,
+                "velocity": None,
             },
         ],
         "unit_system": {"name": "SI"},
@@ -430,7 +433,7 @@ def test_validate_error_from_multi_constructor():
 
     expected_errors = [
         {
-            "loc": ("models", 1, "private_attribute_input_cache", "chord_ref", "value"),
+            "loc": ("models", 0, "private_attribute_input_cache", "chord_ref", "value"),
             "type": "greater_than",
             "msg": "Input should be greater than 0",
             "input": -14,
@@ -439,7 +442,7 @@ def test_validate_error_from_multi_constructor():
         {
             "loc": (
                 "models",
-                1,
+                0,
                 "private_attribute_input_cache",
                 "entities",
                 "stored_entities",
@@ -451,6 +454,13 @@ def test_validate_error_from_multi_constructor():
             "msg": "Input should be greater than 0",
             "input": -15,
             "ctx": {"gt": "0.0"},
+        },
+        {
+            "type": "unexpected_keyword_argument",
+            "loc": ("models", 0, "private_attribute_input_cache", "number_of_blades"),
+            "msg": "Unexpected keyword argument",
+            "input": 2,
+            "ctx": {},
         },
     ]
     _compare_validation_errors(errors, expected_errors)
