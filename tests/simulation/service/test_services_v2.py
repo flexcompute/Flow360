@@ -305,6 +305,17 @@ def test_validate_errors():
 
 
 def test_validate_error_from_multi_constructor():
+
+    def _compare_validation_errors(err, exp_err):
+        assert len(errors) == len(expected_errors)
+        for err, exp_err in zip(errors, expected_errors):
+            assert err["loc"] == exp_err["loc"]
+            assert err["type"] == exp_err["type"]
+            assert err["msg"] == exp_err["msg"]
+            assert err["input"] == exp_err["input"]
+            assert err["ctx"] == exp_err["ctx"]
+
+    # test from_mach() with two validation errors within private_attribute_input_cache
     params_data = {
         "operating_condition": {
             "private_attribute_constructor": "from_mach",
@@ -353,14 +364,10 @@ def test_validate_error_from_multi_constructor():
             "ctx": {"gt": "0.0"},
         },
     ]
-    assert len(errors) == len(expected_errors)
-    for err, exp_err in zip(errors, expected_errors):
-        assert err["loc"] == exp_err["loc"]
-        assert err["type"] == exp_err["type"]
-        assert err["msg"] == exp_err["msg"]
-        assert err["input"] == exp_err["input"]
-        assert err["ctx"] == exp_err["ctx"]
+    _compare_validation_errors(errors, expected_errors)
 
+    # test BETDisk.from_dfdc() with one validation error within private_attribute_input_cache
+    # and one validation error outside the input_cache
     params_data = {
         "models": [
             {
@@ -446,13 +453,156 @@ def test_validate_error_from_multi_constructor():
             "ctx": {"gt": "0.0"},
         },
     ]
-    assert len(errors) == len(expected_errors)
-    for err, exp_err in zip(errors, expected_errors):
-        assert err["loc"] == exp_err["loc"]
-        assert err["type"] == exp_err["type"]
-        assert err["msg"] == exp_err["msg"]
-        assert err["input"] == exp_err["input"]
-        assert err["ctx"] == exp_err["ctx"]
+    _compare_validation_errors(errors, expected_errors)
+
+    # test Box.from_principal_axes() with one validation error within private_attribute_input_cache
+    # the multiconstructor call is within a default constructor call
+    params_data = {
+        "models": [
+            {
+                "darcy_coefficient": {"units": "m**(-2)", "value": [1000000.0, 0.0, 0.0]},
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "angle_of_rotation": {"units": "rad", "value": -2.0943951023931953},
+                            "axis_of_rotation": [
+                                -0.5773502691896257,
+                                -0.5773502691896257,
+                                -0.5773502691896261,
+                            ],
+                            "center": {"units": "m", "value": [0, 0, 0]},
+                            "name": "porous_zone",
+                            "private_attribute_constructor": "from_principal_axes",
+                            "private_attribute_entity_type_name": "Box",
+                            "private_attribute_full_name": None,
+                            "private_attribute_id": "69751367-210b-4df3-b4cd-1f2adbd866ed",
+                            "private_attribute_input_cache": {
+                                "axes": [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                                "center": {"units": "m", "value": [0, 0, 0]},
+                                "name": "porous_zone",
+                                "size": {"units": "m", "value": [0.2, 0.3, -2.0]},
+                            },
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_zone_boundary_names": {"items": []},
+                            "size": {"units": "m", "value": [0.2, 0.3, 2.0]},
+                            "type_name": "Box",
+                        }
+                    ]
+                },
+                "forchheimer_coefficient": {"units": "1/m", "value": [1, 0, 0]},
+                "name": "Porous medium",
+                "type": "PorousMedium",
+                "volumetric_heat_source": {"units": "W/m**3", "value": 1.0},
+            }
+        ],
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": (
+                "models",
+                0,
+                "entities",
+                "stored_entities",
+                0,
+                "private_attribute_input_cache",
+                "size",
+            ),
+            "msg": "Value error, arg '[ 0.2  0.3 -2. ] m' cannot have negative value",
+            "input": {"units": "m", "value": [0.2, 0.3, -2.0]},
+            "ctx": {"error": "arg '[ 0.2  0.3 -2. ] m' cannot have negative value"},
+        }
+    ]
+    _compare_validation_errors(errors, expected_errors)
+
+    # test ThermalState.from_standard_atmosphere() with one validation error within private_attribute_input_cache
+    # the multiconstructor call is nested in another multiconstructor call
+    params_data = {
+        "operating_condition": {
+            "alpha": {"units": "degree", "value": 0.0},
+            "beta": {"units": "degree", "value": 0.0},
+            "private_attribute_constructor": "from_mach",
+            "private_attribute_input_cache": {
+                "alpha": {"units": "degree", "value": 0.0},
+                "beta": {"units": "degree", "value": 0.0},
+                "mach": -1,
+                "reference_mach": None,
+                "thermal_state": {
+                    "density": {"units": "kg/m**3", "value": 1.1724995324950298},
+                    "material": {
+                        "dynamic_viscosity": {
+                            "effective_temperature": {"units": "K", "value": 110.4},
+                            "reference_temperature": {"units": "K", "value": 273.15},
+                            "reference_viscosity": {"units": "Pa*s", "value": 1.716e-05},
+                        },
+                        "name": "air",
+                        "type": "air",
+                    },
+                    "private_attribute_constructor": "from_standard_atmosphere",
+                    "private_attribute_input_cache": {
+                        "altitude": {"units": "m", "value": 100.0},
+                        "temperature_offset": {"units": "K", "value": 10.0},
+                    },
+                    "temperature": {"units": "K", "value": 297.5000102251644},
+                    "type_name": "ThermalState",
+                },
+            },
+            "reference_velocity_magnitude": None,
+            "thermal_state": {
+                "density": {"units": "kg/m**3", "value": 1.1724995324950298},
+                "material": {
+                    "dynamic_viscosity": {
+                        "effective_temperature": {"units": "K", "value": 110.4},
+                        "reference_temperature": {"units": "K", "value": 273.15},
+                        "reference_viscosity": {"units": "Pa*s", "value": 1.716e-05},
+                    },
+                    "name": "air",
+                    "type": "air",
+                },
+                "private_attribute_constructor": "from_standard_atmosphere",
+                "private_attribute_input_cache": {
+                    "altitude": {"units": "K", "value": 100.0},
+                    "temperature_offset": {"units": "K", "value": 10.0},
+                },
+                "temperature": {"units": "K", "value": 297.5000102251644},
+                "type_name": "ThermalState",
+            },
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"units": "m/s", "value": 34.57709313392731},
+        },
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": (
+                "operating_condition",
+                "thermal_state",
+                "private_attribute_input_cache",
+                "altitude",
+            ),
+            "msg": "Value error, arg '100.0 K' does not match (length) dimension.",
+            "input": None,
+            "ctx": {"error": "arg '100.0 K' does not match (length) dimension."},
+        }
+    ]
+    _compare_validation_errors(errors, expected_errors)
 
 
 def test_init():

@@ -8,7 +8,7 @@
 import abc
 import inspect
 from functools import wraps
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Callable, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -154,7 +154,7 @@ def get_class_by_name(class_name, global_vars):
     return cls
 
 
-def _convert_multi_constructor_validation_error(
+def _add_parent_location_to_validation_error(
     validation_error: pd.ValidationError, parent_loc=None
 ) -> pd.ValidationError:
     """Convert the validation error by appending the parent location"""
@@ -162,11 +162,8 @@ def _convert_multi_constructor_validation_error(
         return validation_error
     updated_errors = []
     for error in validation_error.errors():
-        if parent_loc in error["loc"]:
-            continue
-        error_copy = error.copy()
-        error_copy["loc"] = (parent_loc,) + error_copy["loc"]
-        updated_errors.append(error_copy)
+        error["loc"] = (parent_loc,) + error["loc"]
+        updated_errors.append(error)
     return pd.ValidationError.from_exception_data(
         title=validation_error.title,
         line_errors=updated_errors,
@@ -189,14 +186,14 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
                 return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
             except pd.ValidationError as err:
                 # pylint:disable = raise-missing-from
-                raise _convert_multi_constructor_validation_error(
+                raise _add_parent_location_to_validation_error(
                     validation_error=err, parent_loc="private_attribute_input_cache"
                 )
 
     return model_as_dict
 
 
-def parse_model_dict(model_as_dict, global_vars, parent_loc=None) -> dict:
+def parse_model_dict(model_as_dict, global_vars, parent_loc: Union[str, int] = None) -> dict:
     """Recursively parses the model dictionary and attempts to construct the multi-constructor object."""
     try:
         if isinstance(model_as_dict, dict):
@@ -210,8 +207,6 @@ def parse_model_dict(model_as_dict, global_vars, parent_loc=None) -> dict:
             ]
     except pd.ValidationError as err:
         # pylint:disable = raise-missing-from
-        raise _convert_multi_constructor_validation_error(
-            validation_error=err, parent_loc=parent_loc
-        )
+        raise _add_parent_location_to_validation_error(validation_error=err, parent_loc=parent_loc)
 
     return model_as_dict

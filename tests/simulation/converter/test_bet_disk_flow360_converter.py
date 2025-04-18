@@ -50,7 +50,7 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The supplied Flow360 input for BETDisk hsa invalid format. Details: 'axisOfRotation'."
+            "The supplied Flow360 input for BETDisk has invalid format. Details: 'axisOfRotation'."
         ),
     ):
         # Wrong usage by supplying incorrect schema json
