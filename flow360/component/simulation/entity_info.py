@@ -172,7 +172,8 @@ class GeometryEntityInfo(EntityInfoModel):
         if attribute_name is not None:
             specified_attribute_name = attribute_name
 
-        if specified_attribute_name in entity_attribute_names:  # pylint:unsupported-membership-test
+        # pylint: disable=unsupported-membership-test
+        if specified_attribute_name in entity_attribute_names:
             # pylint: disable=no-member, unsubscriptable-object
             return entity_full_list[entity_attribute_names.index(specified_attribute_name)]
 
