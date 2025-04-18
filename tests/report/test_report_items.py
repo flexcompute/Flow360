@@ -82,51 +82,7 @@ def cases(here):
 
     return cases
 
-
 @pytest.fixture
-def residual_plot_model(here):
-    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
-    residual_data = pd.read_csv(
-        os.path.join(
-            here,
-            "..",
-            "data",
-            "case-11111111-1111-1111-1111-111111111111",
-            "results",
-            "nonlinear_residual_v2.csv",
-        ),
-        skipinitialspace=True,
-    )
-
-    x_data = [list(residual_data["pseudo_step"]) for _ in residuals_sa]
-    y_data = [list(residual_data[res]) for res in residuals_sa]
-
-    x_label = "pseudo_step"
-
-    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label="none")
-
-
-@pytest.fixture
-def two_var_two_cases_plot_model(here, cases):
-    loads = ["CL", "CD"]
-
-    x_data = []
-    y_data = []
-    legend = []
-    for case in cases:
-        load_data = pd.read_csv(
-            os.path.join(here, "..", "data", case.info.id, "results", "total_forces_v2.csv"),
-            skipinitialspace=True,
-        )
-
-        for load in loads:
-            x_data.append(list(load_data["pseudo_step"]))
-            y_data.append(list(load_data[load]))
-
-    y_label = "value"
-    x_label = "pseudo_step"
-
-    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 def cases_transient(here):
 
     case_ids = [
@@ -167,6 +123,74 @@ def cases_transient(here):
 
     return cases
 
+
+
+@pytest.fixture
+def residual_plot_model_SA(here):
+    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
+    residual_data = pd.read_csv(
+        os.path.join(
+            here,
+            "..",
+            "data",
+            "case-11111111-1111-1111-1111-111111111111",
+            "results",
+            "nonlinear_residual_v2.csv",
+        ),
+        skipinitialspace=True,
+    )
+
+    x_data = [list(residual_data["pseudo_step"]) for _ in residuals_sa]
+    y_data = [list(residual_data[res]) for res in residuals_sa]
+
+    x_label = "pseudo_step"
+
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label="none")
+
+@pytest.fixture
+def residual_plot_model_SST(here):
+    residuals_sst = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_k", "6_omega"]
+    residual_data = pd.read_csv(
+        os.path.join(
+            here,
+            "..",
+            "data",
+            "case-333333333-333333-3333333333-33333333",
+            "results",
+            "nonlinear_residual_v2.csv",
+        ),
+        skipinitialspace=True,
+    )
+
+    x_data = [list(residual_data["pseudo_step"]) for _ in residuals_sst]
+    y_data = [list(residual_data[res]) for res in residuals_sst]
+
+    x_label = "pseudo_step"
+
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label="none")
+
+
+@pytest.fixture
+def two_var_two_cases_plot_model(here, cases):
+    loads = ["CL", "CD"]
+
+    x_data = []
+    y_data = []
+    legend = []
+    for case in cases:
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.info.id, "results", "total_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+
+        for load in loads:
+            x_data.append(list(load_data["pseudo_step"]))
+            y_data.append(list(load_data[load]))
+
+    y_label = "value"
+    x_label = "pseudo_step"
+
+    return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
 @pytest.mark.parametrize(
     "value,expected",
@@ -943,7 +967,7 @@ def test_subfigure_row_splitting():
             in_figure = False
 
 
-def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
+def test_multi_variable_chart_2d_one_case(cases, residual_plot_model_SA):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     context = ReportContext(cases=[cases[0]])
 
@@ -957,9 +981,9 @@ def test_multi_variable_chart_2d_one_case(cases, residual_plot_model):
 
     plot_model = chart.get_data([cases[0]], context)
 
-    assert plot_model.x_data == residual_plot_model.x_data
-    assert plot_model.y_data == residual_plot_model.y_data
-    assert plot_model.x_label == residual_plot_model.x_label
+    assert plot_model.x_data == residual_plot_model_SA.x_data
+    assert plot_model.y_data == residual_plot_model_SA.y_data
+    assert plot_model.x_label == residual_plot_model_SA.x_label
     assert plot_model.y_label == "value"
     assert plot_model.legend == residuals_sa
 
@@ -1013,16 +1037,37 @@ def test_chart_2d_grid(cases):
     assert all(line.get_visible() for line in ax.get_xgridlines() + ax.get_ygridlines())
 
 
-def test_residuals(cases, residual_plot_model):
+def test_residuals_same(cases, residual_plot_model_SA, residual_plot_model_SST):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
+    residuals_sst = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_k", "6_omega"]
+    
     residuals = NonlinearResiduals()
     context = ReportContext(cases=[cases[0]])
 
-    plot_model = residuals.get_data([cases[0]], context)
+    plot_model_SA = residuals.get_data([cases[0]], context)
 
-    assert plot_model.x_data == (np.array(residual_plot_model.x_data)[:, 1:]).tolist()
-    assert plot_model.y_data == (np.array(residual_plot_model.y_data)[:, 1:]).tolist()
-    assert plot_model.x_label == residual_plot_model.x_label
-    assert plot_model.y_label == "residual values"
-    assert plot_model.legend == residuals_sa
-    # TODO: add case and test for residuals from SST
+    plot_model_SST = residuals.get_data([cases[2]], context)
+
+    plot_model_both = residuals.get_data([cases[0], cases[2]], context)
+
+    assert plot_model_SA.x_data == (np.array(residual_plot_model_SA.x_data)[:, 1:]).tolist()
+    assert plot_model_SA.y_data == (np.array(residual_plot_model_SA.y_data)[:, 1:]).tolist()
+    assert plot_model_SA.x_label == residual_plot_model_SA.x_label
+    assert plot_model_SA.y_label == "residual values"
+    assert plot_model_SA.legend == residuals_sa
+
+    assert plot_model_SST.x_data == (np.array(residual_plot_model_SST.x_data)[:, 1:]).tolist()
+    assert plot_model_SST.y_data == (np.array(residual_plot_model_SST.y_data)[:, 1:]).tolist()
+    assert plot_model_SST.x_label == residual_plot_model_SST.x_label
+    assert plot_model_SST.y_label == "residual values"
+    assert plot_model_SST.legend == residuals_sst
+
+    assert plot_model_both.x_data == ((np.array(residual_plot_model_SA.x_data)[:, 1:]).tolist() + 
+                                      (np.array(residual_plot_model_SST.x_data)[:, 1:]).tolist())
+    assert plot_model_both.y_data == ((np.array(residual_plot_model_SA.y_data)[:, 1:]).tolist() + 
+                                      (np.array(residual_plot_model_SST.y_data)[:, 1:]).tolist())
+    assert plot_model_both.x_label == residual_plot_model_SST.x_label
+    assert plot_model_both.y_label == "residual values"
+
+
+
