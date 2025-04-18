@@ -5,6 +5,7 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.models.material import Water
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -15,12 +16,16 @@ from flow360.component.simulation.models.solver_numerics import (
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    Inflow,
     Mach,
     MassFlowRate,
     Outflow,
     Pressure,
+    SlaterPorousBleed,
     SlipWall,
+    TotalPressure,
     Wall,
+    WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -32,6 +37,8 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    LiquidOperatingCondition,
+    ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
@@ -76,6 +83,8 @@ from tests.simulation.translator.utils.TurbFlatPlate137x97_BoxTrip_generator imp
 )
 from tests.simulation.translator.utils.tutorial_2dcrm_param_generator import (
     get_2dcrm_tutorial_param,
+    get_2dcrm_tutorial_param_deg_c,
+    get_2dcrm_tutorial_param_deg_f,
 )
 from tests.simulation.translator.utils.vortex_propagation_generator import (
     create_periodic_euler_vortex_param,
@@ -99,7 +108,10 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 
 assertions = unittest.TestCase("__init__")
 
-from tests.utils import compare_values
+from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.models.volume_models import AngleExpression, Rotation
+from flow360.component.simulation.primitives import GenericVolume
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 
 
 @pytest.fixture()
@@ -168,7 +180,7 @@ def get_om6Wing_tutorial_param():
                 SurfaceOutput(
                     entities=[my_wall, my_symmetry_plane, my_freestream],
                     output_format="paraview",
-                    output_fields=["nuHat"],
+                    output_fields=["Cp"],
                 ),
             ],
         )
@@ -189,6 +201,24 @@ def translate_and_compare(
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+
+def test_om6wing_temperature(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.operating_condition.thermal_state = ThermalState(temperature=15 * u.degC)
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+    params.operating_condition.thermal_state = ThermalState(temperature=59 * u.degF)
+    translate_and_compare(
+        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+    )
+
+    params.operating_condition.thermal_state = ThermalState(temperature=518.67 * u.R)
     translate_and_compare(
         get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
     )
@@ -381,8 +411,18 @@ def test_2dcrm_tutorial(get_2dcrm_tutorial_param):
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
 
 
+def test_2dcrm_tutorial_temperature_c(get_2dcrm_tutorial_param_deg_c):
+    param = get_2dcrm_tutorial_param_deg_c
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
+
+
+def test_2dcrm_tutorial_temperature_f(get_2dcrm_tutorial_param_deg_f):
+    param = get_2dcrm_tutorial_param_deg_f
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
+
+
 def test_operating_condition(get_2dcrm_tutorial_param):
-    converted = get_2dcrm_tutorial_param.preprocess(mesh_unit=1 * u.m)
+    converted = get_2dcrm_tutorial_param._preprocess(mesh_unit=1 * u.m)
     assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
     assertions.assertAlmostEqual(
         converted.operating_condition.thermal_state.dynamic_viscosity.value,
@@ -478,6 +518,21 @@ def test_boundaries():
         param = SimulationParams(
             operating_condition=operating_condition,
             models=[
+                Inflow(
+                    name="inflow-1",
+                    total_temperature=300 * u.K,
+                    surfaces=Surface(name="boundary_name_A"),
+                    spec=TotalPressure(
+                        value=operating_condition.thermal_state.pressure * 0.9,
+                        velocity_direction=(1, 0, 0),
+                    ),
+                ),
+                Inflow(
+                    name="inflow-2",
+                    total_temperature=300 * u.K,
+                    surfaces=Surface(name="boundary_name_B"),
+                    spec=MassFlowRate(value=mass_flow_rate, ramp_steps=10),
+                ),
                 Outflow(
                     name="outflow-1",
                     surfaces=Surface(name="boundary_name_E"),
@@ -486,13 +541,74 @@ def test_boundaries():
                 Outflow(
                     name="outflow-2",
                     surfaces=Surface(name="boundary_name_H"),
-                    spec=MassFlowRate(mass_flow_rate),
+                    spec=MassFlowRate(value=mass_flow_rate, ramp_steps=10),
                 ),
                 Outflow(
                     name="outflow-3",
                     surfaces=Surface(name="boundary_name_F"),
                     spec=Mach(0.3),
                 ),
+                Wall(
+                    name="slater-porous-bleed",
+                    surfaces=Surface(name="boundary_name_G"),
+                    velocity=SlaterPorousBleed(
+                        static_pressure=12.0 * u.psi, porosity=0.49, activation_step=20
+                    ),
+                ),
+                Wall(
+                    surfaces=Surface(name="boundary_name_I"),
+                    velocity=WallRotation(
+                        axis=(0, 0, 1), center=(1, 2, 3) * u.m, angular_velocity=100 * u.rpm
+                    ),
+                ),
             ],
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_boundaries.json")
+
+
+def test_liquid_simulation_translation():
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                alpha=5 * u.deg,
+                beta=2 * u.deg,
+                material=Water(name="my_water", density=1.1 * 10**3 * u.kg / u.m**3),
+            ),
+            models=[
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+        )
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid.json")
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                alpha=5 * u.deg,
+                beta=2 * u.deg,
+                material=Water(name="my_water", density=1.1 * 10**3 * u.kg / u.m**3),
+            ),
+            models=[
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+                Rotation(
+                    volumes=[
+                        GenericVolume(name="zone_zone_1", axis=[3, 4, 0], center=(1, 1, 1) * u.cm)
+                    ],
+                    spec=AngleExpression(
+                        "-180/pi * atan(2 * 3.00 * 20.00 * 2.00/180*pi * "
+                        "cos(2.00/180*pi * sin(0.05877271 * t_seconds)) * cos(0.05877271 * t_seconds) / 50.00) +"
+                        " 2 * 2.00 * sin(0.05877271 * t_seconds) - 2.00 * sin(0.05877271 * t_seconds)"
+                    ),
+                    rotating_reference_frame_model=False,
+                ),
+            ],
+            time_stepping=Unsteady(steps=100, step_size=0.4),
+        )
+        # Derivation:
+        # Solver speed of sound = 10m/s / 0.2 = 50m/s
+        # Flow360 time to seconds = 1m/(50m/s) = 0.02 s
+        # t_seconds = (0.02 s * t)
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")

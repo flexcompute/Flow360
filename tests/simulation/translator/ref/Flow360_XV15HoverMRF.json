@@ -47,6 +47,7 @@
         },
         "CFLMultiplier": 2.0,
         "DDES": false,
+        "ZDES": false,
         "gridSizeForLES": "maxEdgeLength",
         "reconstructionGradientLimiter": 1.0,
         "quadraticConstitutiveRelation": false,
@@ -67,7 +68,8 @@
             "C_sigma_k2": 1.0,
             "C_sigma_omega1": 0.5,
             "C_sigma_omega2": 0.856
-        }
+        },
+        "rotationCorrection": false
     },
     "volumeZones": {
         "innerRotating": {
@@ -91,7 +93,8 @@
     "boundaries": {
         "innerRotating/blade": {
             "type": "NoSlipWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0
         },
         "farField/farField": {
             "type": "Freestream"
@@ -101,8 +104,7 @@
         "outputFields": [
             "primitiveVars",
             "Mach",
-            "qcriterion",
-            "nuHat"
+            "qcriterion"
         ],
         "outputFormat": "paraview",
         "computeTimeAverages": false,
@@ -141,5 +143,9 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[]
+    "userDefinedFields":[],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }

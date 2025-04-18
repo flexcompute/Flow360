@@ -16,6 +16,8 @@ from flow360.component.simulation.unit_system import (
 
 from ...exceptions import Flow360ConfigurationError
 
+LIQUID_IMAGINARY_FREESTREAM_MACH = 0.2
+
 
 def get_from_dict_by_key_list(key_list, data_dict):
     """
@@ -78,7 +80,10 @@ def require(required_parameter, required_by, params):
 
     required_msg = f'required by {" -> ".join(required_by)} for unit conversion'
     try:
-        value = get_from_dict_by_key_list(required_parameter, params.model_dump())
+        params_as_dict = params
+        if not isinstance(params_as_dict, dict):
+            params_as_dict = params.model_dump()
+        value = get_from_dict_by_key_list(required_parameter, params_as_dict)
         if value is None:
             raise ValueError
 
@@ -98,7 +103,7 @@ def require(required_parameter, required_by, params):
 
 
 # pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
-def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: List[str] = None):
+def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSystem:
     """
 
     Returns a flow360 conversion unit system for a given dimension.
@@ -107,9 +112,9 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     ----------
     dimension : str
         The dimension for which the conversion unit system is needed. e.g., length
-    mesh_unit : unyt_attribute
-        Externally provided mesh unit.
-    params : SimulationParams
+    length_unit : unyt_attribute
+        Externally provided mesh unit or geometry unit.
+    params : SimulationParams or dict
         The parameters needed for unit conversion.
     required_by : List[str], optional
         List of keys specifying the path to the parameter that requires this unit conversion, by default [].
@@ -130,15 +135,33 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
         required_by = []
 
     def get_base_length():
-        base_length = mesh_unit.to("m").v.item()
+        require(["private_attribute_asset_cache", "project_length_unit"], required_by, params)
+        base_length = params.private_attribute_asset_cache.project_length_unit.to("m").v.item()
         return base_length
 
     def get_base_temperature():
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            # Temperature in this condition has no effect because the thermal features will be disabled.
+            # Also the viscosity will be constant.
+            # pylint:disable = no-member
+            return 273 * u.K
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_temperature = params.operating_condition.thermal_state.temperature.to("K").v.item()
         return base_temperature
 
     def get_base_velocity():
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            # Provides an imaginary "speed of sound"
+            # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
+            # To ensure incompressible range.
+            if params.operating_condition.velocity_magnitude.value != 0:
+                return (
+                    params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+                )
+            return (
+                params.operating_condition.reference_velocity_magnitude
+                / LIQUID_IMAGINARY_FREESTREAM_MACH
+            )
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
         return base_velocity
@@ -156,6 +179,8 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
         return base_angular_velocity
 
     def get_base_density():
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            return params.operating_condition.material.density
         require(["operating_condition", "thermal_state", "density"], required_by, params)
         base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
 
@@ -168,6 +193,13 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
         base_viscosity = base_density * base_velocity * base_length
 
         return base_viscosity
+
+    def get_base_kinematic_viscosity():
+        base_length = get_base_length()
+        base_time = get_base_time()
+        base_kinematic_viscosity = base_length * base_length / base_time
+
+        return base_kinematic_viscosity
 
     def get_base_force():
         base_length = get_base_length()
@@ -233,6 +265,9 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
         flow360_conversion_unit_system.base_temperature = base_temperature
+        # Flow360 uses absolute temperature for scaling.
+        # So the base_delta_temperature and base_temperature can have same scaling.
+        flow360_conversion_unit_system.base_delta_temperature = base_temperature
 
     elif dimension == u.dimensions.area:
         base_length = get_base_length()
@@ -257,6 +292,10 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
     elif dimension == u.dimensions.viscosity:
         base_viscosity = get_base_viscosity()
         flow360_conversion_unit_system.base_viscosity = base_viscosity
+
+    elif dimension == u.dimensions.kinematic_viscosity:
+        base_kinematic_viscosity = get_base_kinematic_viscosity()
+        flow360_conversion_unit_system.base_kinematic_viscosity = base_kinematic_viscosity
 
     elif dimension == u.dimensions.force:
         base_force = get_base_force()
@@ -325,7 +364,7 @@ def unit_converter(dimension, mesh_unit: u.unyt_quantity, params, required_by: L
 
     else:
         raise ValueError(
-            f"Unit converter: not recognised dimension: {dimension}. Conversion for this dimension is not implemented."
+            f"Unit converter: not recognized dimension: {dimension}. Conversion for this dimension is not implemented."
         )
 
     return flow360_conversion_unit_system.conversion_system

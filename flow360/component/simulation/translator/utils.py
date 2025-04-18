@@ -38,15 +38,13 @@ def preprocess_input(func):
         else:
             preprocess_exclude = []
         validated_mesh_unit = LengthType.validate(mesh_unit)
-        processed_input = get_simulation_param_dict(
-            input_params, validated_mesh_unit, preprocess_exclude
-        )
+        processed_input = preprocess_param(input_params, validated_mesh_unit, preprocess_exclude)
         return func(processed_input, validated_mesh_unit, *args, **kwargs)
 
     return wrapper
 
 
-def get_simulation_param_dict(
+def preprocess_param(
     input_params: SimulationParams | str | dict,
     validated_mesh_unit: LengthType,
     preprocess_exclude: list[str],
@@ -62,18 +60,17 @@ def get_simulation_param_dict(
         try:
             # If input is a JSON string
             param_dict = json.loads(input_params)
+            if param_dict is None:
+                raise ValueError(f"Invalid input <{input_params}> for translator. ")
+            param = SimulationParams(file_content=param_dict)
         except json.JSONDecodeError:
             # If input is a file path
-            with open(input_params, "r", encoding="utf-8") as file:
-                param_dict = json.load(file)
-        if param_dict is None:
-            raise ValueError(f"Invalid input <{input_params}> for translator. ")
-        param = SimulationParams(**param_dict)
-    elif isinstance(input_params, dict):
-        param = SimulationParams(**input_params)
+            param = SimulationParams(filename=input_params)
 
     if param is not None:
-        return param.preprocess(validated_mesh_unit, exclude=preprocess_exclude)
+        # pylint: disable=protected-access
+        param._private_set_length_unit(validated_mesh_unit)
+        return param._preprocess(validated_mesh_unit, exclude=preprocess_exclude)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
 

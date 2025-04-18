@@ -32,7 +32,7 @@ def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
         return {"type": "aniso", "method": "height", "value": obj.method.value.value.item()}
 
     if obj.method.type == "aspectRatio":
-        return {"type": "aniso", "method": "aspectRatio", "value": obj.method.value.value.item()}
+        return {"type": "aniso", "method": "aspectRatio", "value": obj.method.value}
 
     if obj.method.type == "projectAnisoSpacing":
         return {"type": "projectAnisoSpacing"}

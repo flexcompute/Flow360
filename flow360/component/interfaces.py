@@ -25,6 +25,12 @@ SurfaceMeshInterface = BaseInterface(
     endpoint="surfacemeshes",
 )
 
+SurfaceMeshInterfaceV2 = BaseInterface(
+    resource_type="Surface Mesh",
+    s3_transfer_method=S3TransferType.SURFACE_MESH,
+    endpoint="v2/surface-meshes",
+)
+
 
 VolumeMeshInterface = BaseInterface(
     resource_type="Volume Mesh",
@@ -40,6 +46,10 @@ VolumeMeshInterfaceV2 = BaseInterface(
 
 CaseInterface = BaseInterface(
     resource_type="Case", s3_transfer_method=S3TransferType.CASE, endpoint="cases"
+)
+
+CaseInterfaceV2 = BaseInterface(
+    resource_type="Case", s3_transfer_method=S3TransferType.CASE, endpoint="v2/cases"
 )
 
 GeometryInterface = BaseInterface(
@@ -60,6 +70,6 @@ FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None,
 
 ReportInterface = BaseInterface(
     resource_type="Report",
-    s3_transfer_method=S3TransferType.GEOMETRY,
+    s3_transfer_method=S3TransferType.REPORT,
     endpoint="v2/report",
 )

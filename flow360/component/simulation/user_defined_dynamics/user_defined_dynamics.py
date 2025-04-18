@@ -8,6 +8,12 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
+from flow360.component.simulation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+)
 
 
 class UserDefinedDynamic(Flow360BaseModel):
@@ -49,7 +55,9 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     """
 
-    name: str = pd.Field(description="Name of the dynamics defined by the user.")
+    name: str = pd.Field(
+        "User defined dynamics", description="Name of the dynamics defined by the user."
+    )
     input_vars: List[str] = pd.Field(
         description="List of the inputs to define the user defined dynamics. For example :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "
@@ -88,9 +96,36 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "For input variables that already specified the source in the name (like bet_NUM_torque) "
         + "this entry does not have any effect.",
     )
-    output_target: Optional[Union[Cylinder, GenericVolume]] = pd.Field(
+    output_target: Optional[Union[Cylinder, GenericVolume, Surface]] = pd.Field(
         None,
         description="The target to which the output variables belong to. For example this can be the rotating "
         + "volume zone name. Only one output target is supported per user defined dynamics instance. Only "
         + ":class:`~flow360.Cylinder` entity is supported as target for now.",
     )  # Limited to `Cylinder` for now as we have only tested using UDD to control rotation.
+
+    @pd.field_validator("input_boundary_patches", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        if value is None:
+            return value
+        return check_deleted_surface_in_entity_list(value)
+
+    @pd.field_validator("output_target", mode="after")
+    @classmethod
+    def ensure_output_surface_existence(cls, value):
+        """Ensure that the output target surface is not a deleted surface"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.auto_farfield_method is None:
+            # validation not necessary now.
+            return value
+
+        # - Check if the surfaces are deleted.
+        # pylint: disable=protected-access
+        if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
+            validation_info.auto_farfield_method
+        ):
+            raise ValueError(
+                f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+            )
+        return value

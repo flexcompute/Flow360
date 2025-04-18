@@ -8,6 +8,7 @@ from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.conversion import unit_converter
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
@@ -18,6 +19,7 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -50,27 +52,39 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
+    DimensionedTypes,
+    LengthType,
     UnitSystem,
     UnitSystemType,
+    is_flow360_unit,
     unit_system_manager,
+    unyt_quantity,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
+    _check_output_fields_valid_given_turbulence_model,
+    _check_unsteadiness_to_use_aero_acoustics,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
     _check_and_add_noninertial_reference_frame_flag,
     _check_cht_solver_settings,
     _check_complete_boundary_condition_and_unknown_surface,
-    _check_consistency_ddes_volume_output,
+    _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
+    _check_duplicate_isosurface_names,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
+    _check_time_average_output,
+    _check_unsteadiness_to_use_hybrid_model,
+    _check_valid_models_for_liquid,
 )
+from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -85,6 +99,7 @@ from .validation.validation_context import (
     CaseField,
     ConditionalField,
     context_validator,
+    get_validation_info,
 )
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
@@ -99,7 +114,8 @@ class _ParamModelBase(Flow360BaseModel):
     unit_system: UnitSystemType = pd.Field(frozen=True, discriminator="name")
     model_config = pd.ConfigDict(include_hash=True)
 
-    def _init_check_unit_system(self, **kwargs):
+    @classmethod
+    def _init_check_unit_system(cls, **kwargs):
         """
         Check existence of unit system and raise an error if it is not set or inconsistent.
         """
@@ -119,7 +135,44 @@ class _ParamModelBase(Flow360BaseModel):
 
         return kwargs
 
-    def _init_no_context(self, filename, **kwargs):
+    @classmethod
+    def _get_version_from_dict(cls, model_dict: dict) -> str:
+        version = model_dict.get("version", None)
+        if version is None:
+            raise Flow360RuntimeError("Failed to find SimulationParams version from the input.")
+        return version
+
+    @classmethod
+    def _update_param_dict(cls, model_dict, version_to=__version__):
+        """
+        1. Find the version from the input dict.
+        2. Update the input dict to `version_to` which by default is the current version.
+        3. If the simulation.json has higher version, then return the dict as is without modification.
+
+        Returns
+        -------
+        dict
+            The updated parameters dictionary.
+        bool
+            Whether the `model_dict` has higher version than `version_to` (AKA forward compatibility mode).
+        """
+        input_version = cls._get_version_from_dict(model_dict=model_dict)
+        forward_compatibility_mode = Flow360Version(input_version) > Flow360Version(version_to)
+        if not forward_compatibility_mode:
+            model_dict = updater(
+                version_from=input_version, version_to=version_to, params_as_dict=model_dict
+            )
+        return model_dict, forward_compatibility_mode
+
+    @classmethod
+    def _sanitize_params_dict(cls, model_dict):
+        """
+        Clean the redundant content in the params dict from WebUI
+        """
+        model_dict = remove_properties_by_name(model_dict, "_id")
+        return model_dict
+
+    def _init_no_unit_context(self, filename, file_content, **kwargs):
         """
         Initialize the simulation parameters without a unit context.
         """
@@ -129,38 +182,36 @@ class _ParamModelBase(Flow360BaseModel):
                 "unit context must not be used."
             )
 
-        model_dict = self._handle_file(filename=filename, **kwargs)
-
-        version = model_dict.pop("version", None)
-        unit_system = model_dict.get("unit_system")
-        if version is not None and unit_system is not None:
-            if version != __version__:
-                model_dict = updater(  # pylint: disable=R0801
-                    version_from=version, version_to=__version__, params_as_dict=model_dict
-                )
-            # pylint: disable=not-context-manager
-            with UnitSystem.from_dict(**unit_system):
-                super().__init__(**model_dict)
+        if filename is not None:
+            model_dict = self._handle_file(filename=filename, **kwargs)
         else:
-            raise Flow360RuntimeError(
-                "Missing version or unit system info in file content, please check the input file."
-            )
+            model_dict = self._handle_dict(**file_content)
 
-    def _init_with_context(self, **kwargs):
+        model_dict = _ParamModelBase._sanitize_params_dict(model_dict)
+        # When treating files/file like contents the updater will always be run.
+        model_dict, _ = _ParamModelBase._update_param_dict(model_dict)
+
+        unit_system = model_dict.get("unit_system")
+
+        with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
+            super().__init__(**model_dict)
+
+    def _init_with_unit_context(self, **kwargs):
         """
         Initializes the simulation parameters with the given unit context.
         """
-        kwargs = self._init_check_unit_system(**kwargs)
+        # When treating dicts the updater is skipped.
+        kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
     # pylint: disable=fixme
     # TODO: avoid overloading the __init__ so IDE can proper prompt root level keys
-    def __init__(self, filename: str = None, **kwargs):
-        if filename is not None:
-            self._init_no_context(filename, **kwargs)
+    def __init__(self, filename: str = None, file_content: dict = None, **kwargs):
+        if filename is not None or file_content is not None:
+            self._init_no_unit_context(filename, file_content, **kwargs)
         else:
-            self._init_with_context(**kwargs)
+            self._init_with_unit_context(**kwargs)
 
     def copy(self, update=None, **kwargs) -> _ParamModelBase:
         if unit_system_manager.current is None:
@@ -232,23 +283,92 @@ class SimulationParams(_ParamModelBase):
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
     # pylint: disable=arguments-differ
-    def preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
+    def _preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
         """Internal function for non-dimensionalizing the simulation parameters"""
         if exclude is None:
             exclude = []
 
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
+        self._private_set_length_unit(LengthType.validate(mesh_unit))  # pylint: disable=no-member
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
-        return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
+                return super().preprocess(params=self, exclude=exclude)
+        return super().preprocess(params=self, exclude=exclude)
+
+    def _private_set_length_unit(self, validated_mesh_unit):
+        with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
+            # pylint: disable=assigning-non-slot
+            self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
+
+    @pd.validate_call
+    def convert_unit(
+        self, value: DimensionedTypes, target_system: str, length_unit: Optional[LengthType] = None
+    ):
+        """
+        Converts a given value to the specified unit system.
+
+        This method takes a dimensioned quantity and converts it from its current unit system
+        to the target unit system, optionally considering a specific length unit for the conversion.
+
+        Parameters
+        ----------
+        value : DimensionedTypes
+            The dimensioned quantity to convert. This should have units compatible with Flow360's
+            unit system.
+        target_system : str
+            The target unit system for conversion. Common values include "SI", "Imperial", flow360".
+        length_unit : LengthType, optional
+            The length unit to use for conversion. If not provided, the method defaults to
+            the project length unit stored in the `private_attribute_asset_cache`.
+
+        Returns
+        -------
+        DimensionedTypes
+            The converted value in the specified target unit system.
+
+        Raises
+        ------
+        Flow360RuntimeError
+            If the input unit system is not compatible with the target system, or if the required
+            length unit is missing.
+
+        Examples
+        --------
+        Convert a value from the current system to Flow360's V2 unit system:
+
+        >>> simulation_params = SimulationParams()
+        >>> value = unyt_quantity(1.0, "meters")
+        >>> converted_value = simulation_params.convert_unit(value, target_system="flow360")
+        >>> print(converted_value)
+        1.0 (flow360_length_unit)
+        """
+
+        if length_unit is not None:
+            # pylint: disable=no-member
+            self._private_set_length_unit(LengthType.validate(length_unit))
+
+        flow360_conv_system = unit_converter(
+            value.units.dimensions,
+            params=self,
+            required_by=[f"{self.__class__.__name__}.convert_unit(value=, target_system=)"],
+        )
+
+        if target_system == "flow360":
+            target_system = "flow360_v2"
+
+        if is_flow360_unit(value) and not isinstance(value, unyt_quantity):
+            converted = value.in_base(target_system, flow360_conv_system)
+        else:
+            value.units.registry = flow360_conv_system.registry  # pylint: disable=no-member
+            converted = value.in_base(unit_system=target_system)
+        return converted
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
     @classmethod
-    def apply_defult_fluid_settings(cls, v):
+    def apply_default_fluid_settings(cls, v):
         """apply default Fluid() settings if not found in models"""
         if v is None:
             v = []
@@ -262,6 +382,31 @@ class SimulationParams(_ParamModelBase):
     def check_parent_volume_is_rotating(cls, models):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
         return _check_parent_volume_is_rotating(models)
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_valid_models_for_liquid(cls, models):
+        """Ensure that all the boundary conditions used are valid."""
+        return _check_valid_models_for_liquid(models)
+
+    @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        """Ensure that string expressions are disabled for liquid simulation."""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        if value:
+            raise ValueError(
+                f"{info.field_name} cannot be used when using liquid as simulation material."
+            )
+        return value
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_duplicate_isosurface_names(cls, outputs):
+        """Check if we have isosurfaces with a duplicate name"""
+        return _check_duplicate_isosurface_names(outputs)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
@@ -289,9 +434,21 @@ class SimulationParams(_ParamModelBase):
         return _check_consistency_wall_function_and_surface_output(self)
 
     @pd.model_validator(mode="after")
-    def check_consistency_ddes_volume_output(self):
-        """Only allow DDES output field when there is a corresponding solver with DDES enabled in models"""
-        return _check_consistency_ddes_volume_output(self)
+    def check_consistency_hybrid_model_volume_output(self):
+        """Only allow hybrid RANS-LES output field when there is a corresponding solver with
+        hybrid RANS-LES enabled in models
+        """
+        return _check_consistency_hybrid_model_volume_output(self)
+
+    @pd.model_validator(mode="after")
+    def check_unsteadiness_to_use_hybrid_model(self):
+        """Only allow hybrid RANS-LES output field for unsteady simulations"""
+        return _check_unsteadiness_to_use_hybrid_model(self)
+
+    @pd.model_validator(mode="after")
+    def check_unsteadiness_to_use_aero_acoustics(self):
+        """Only allow Aero acoustics when using unsteady simulation"""
+        return _check_unsteadiness_to_use_aero_acoustics(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
@@ -320,11 +477,21 @@ class SimulationParams(_ParamModelBase):
         return _check_output_fields(params)
 
     @pd.model_validator(mode="after")
+    def check_output_fields_valid_given_turbulence_model(params):
+        """Check output fields are valid given the turbulence model"""
+        return _check_output_fields_valid_given_turbulence_model(params)
+
+    @pd.model_validator(mode="after")
     def check_and_add_rotating_reference_frame_model_flag_in_volumezones(params):
         """Ensure that all volume zones have the rotating_reference_frame_model flag with correct values"""
         return _check_and_add_noninertial_reference_frame_flag(params)
 
-    def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
+    @pd.model_validator(mode="after")
+    def check_time_average_output(params):
+        """Only allow TimeAverage output field in the unsteady simulations"""
+        return _check_time_average_output(params)
+
+    def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
         registry.clear()
@@ -333,7 +500,7 @@ class SimulationParams(_ParamModelBase):
 
     def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
-        Once the SimulationParams is set, extract and upate information
+        Once the SimulationParams is set, extract and update information
         into all used entities by parsing the params.
         """
 
@@ -366,7 +533,7 @@ class SimulationParams(_ParamModelBase):
         And also try to update the entities now that we have a global view of the simulation.
         """
         registry = EntityRegistry()
-        registry = self._move_registry_to_asset_cache(registry)
+        registry = self._register_assigned_entities(registry)
         registry = self._update_entity_private_attrs(registry)
         return registry
 
@@ -379,6 +546,7 @@ class SimulationParams(_ParamModelBase):
         """
         # pylint:disable=no-member
         used_entity_registry = self.used_entity_registry
+        # Below includes the Ghost entities.
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)

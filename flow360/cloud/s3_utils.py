@@ -185,8 +185,18 @@ class S3TransferType(Enum):
             return f"v2/cases/{resource_id}/file?filename={file_name}"
         if self is S3TransferType.GEOMETRY:
             return f"v2/geometries/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.REPORT:
+            return f"v2/report/{resource_id}/file?filename={file_name}"
 
         raise Flow360ValueError(f"unknown download method for {self}")
+
+    def get_cloud_path_prefix(self, resource_id, file_name):
+        """
+        returns path prefix (without resource_id) to corresponding bucket
+        """
+        token = self._get_s3_sts_token(resource_id, file_name)
+        base_path = token.cloud_path_prefix.rsplit("/", 1)[0]
+        return base_path
 
     def create_multipart_upload(
         self,

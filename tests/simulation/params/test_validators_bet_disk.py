@@ -29,7 +29,7 @@ def test_bet_disk_blade_line_chord(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="In one of the BETDisk: the blade_line_chord has to be positive since its initial_blade_direction is specified.",
+        match="BETDisk with name 'BET disk': the blade_line_chord has to be positive since its initial_blade_direction is specified.",
     ):
         bet_disk.initial_blade_direction = (1, 0, 0)
 
@@ -40,7 +40,7 @@ def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
 
     with pytest.raises(
         ValueError,
-        match="In one of the BETDisk: the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
+        match="BETDisk with name 'BET disk': the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
     ):
         bet_disk_2 = bet_disk.model_copy(deep=True)
         bet_disk_2.blade_line_chord = 0.1 * u.inch
@@ -60,7 +60,7 @@ def test_bet_disk_disorder_alphas(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="In one of the BETDisk: the alphas are not in increasing order.",
+        match="BETDisk with name 'BET disk': the alphas are not in increasing order.",
     ):
         tmp = bet_disk.alphas[0]
         bet_disk.alphas[0] = bet_disk.alphas[1]

@@ -7,7 +7,7 @@ from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
-from flow360.component.simulation import services
+from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -33,8 +33,14 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
+from flow360.component.simulation.models.material import (
+    Air,
+    SolidMaterial,
+    Sutherland,
+    Water,
+)
 from flow360.component.simulation.models.solver_numerics import (
+    DetachedEddySimulation,
     HeatEquationSolver,
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -55,6 +61,7 @@ from flow360.component.simulation.models.surface_models import (
     Periodic,
     Pressure,
     Rotational,
+    SlaterPorousBleed,
     SlipWall,
     SymmetryPlane,
     Temperature,
@@ -73,6 +80,8 @@ from flow360.component.simulation.models.volume_models import (
     BETDiskChord,
     BETDiskSectionalPolar,
     BETDiskTwist,
+    C81File,
+    DFDCFile,
     Fluid,
     ForcePerArea,
     FromUserDefinedDynamics,
@@ -81,10 +90,13 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    XFOILFile,
+    XROTORFile,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
+    LiquidOperatingCondition,
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
@@ -92,16 +104,20 @@ from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
+    SurfaceSliceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
@@ -110,7 +126,12 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    ReferenceGeometry,
+    Transformation,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -126,6 +147,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.version import __solver_version__, __version__
@@ -162,6 +184,7 @@ __all__ = [
     "GeometryEntityInfo",
     "AerospaceCondition",
     "ThermalState",
+    "LiquidOperatingCondition",
     "Steady",
     "Unsteady",
     "RampCFL",
@@ -194,12 +217,14 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
     "NoneSolver",
     "SpalartAllmaras",
     "KOmegaSST",
     "SpalartAllmarasModelConstants",
+    "DetachedEddySimulation",
     "KOmegaSSTModelConstants",
     "LinearSolver",
     "ForcePerArea",
@@ -230,8 +255,20 @@ __all__ = [
     "UserDefinedField",
     "operating_condition_from_mach_reynolds",
     "VolumeMesh",
+    "SurfaceMesh",
     "UserDefinedFarfield",
     "Geometry",
+    "XROTORFile",
+    "DFDCFile",
+    "C81File",
+    "XFOILFile",
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
+    "SurfaceSliceOutput",
+    "SlaterPorousBleed",
+    "migration",
+    "Water",
+    "PointArray2D",
+    "StreamlineOutput",
+    "Transformation",
 ]

@@ -1,19 +1,28 @@
+import json
 import unittest
 
 import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
-from examples.migration_guide.extra_operating_condition import (
-    operating_condition_from_mach_muref,
+from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
+from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
+    VolumeMeshEntityInfo,
 )
+from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.models.material import SolidMaterial
+from flow360.component.simulation.migration.extra_operating_condition import (
+    operating_condition_from_mach_muref,
+)
+from flow360.component.simulation.models.material import SolidMaterial, Water
 from flow360.component.simulation.models.surface_models import (
+    Freestream,
     HeatFlux,
     Inflow,
     MassFlowRate,
@@ -34,12 +43,14 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    LiquidOperatingCondition,
     ThermalState,
     operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
+    Edge,
     GenericVolume,
     ReferenceGeometry,
     Surface,
@@ -50,6 +61,7 @@ from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_sy
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -130,7 +142,7 @@ def get_the_param():
                 Inflow(
                     surfaces=[my_inflow1],
                     total_temperature=300 * u.K,
-                    spec=TotalPressure(123 * u.Pa),
+                    spec=TotalPressure(value=123 * u.Pa),
                     turbulence_quantities=TurbulenceQuantities(
                         turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
                     ),
@@ -138,7 +150,7 @@ def get_the_param():
                 Inflow(
                     surfaces=[my_inflow2],
                     total_temperature=300 * u.K,
-                    spec=MassFlowRate(123 * u.lb / u.s),
+                    spec=MassFlowRate(value=123 * u.lb / u.s),
                 ),
             ],
             time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
@@ -155,6 +167,49 @@ def get_the_param():
         return param
 
 
+@pytest.fixture()
+def get_param_with_liquid_operating_condition():
+    with SI_unit_system:
+        water = Water(
+            name="h2o", density=1000 * u.kg / u.m**3, dynamic_viscosity=0.001 * u.kg / u.m / u.s
+        )
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=50,
+                reference_velocity_magnitude=100,
+                material=water,
+            ),
+            models=[
+                Fluid(material=water),
+                Wall(
+                    entities=[Surface(name="wall1")],
+                    velocity=(1.0, 1.2, 2.4),
+                ),
+                Rotation(
+                    volumes=[
+                        Cylinder(
+                            name="cyl-1",
+                            axis=(5, 0, 0),
+                            center=(1.2, 2.3, 3.4),
+                            height=3.0,
+                            inner_radius=3.0,
+                            outer_radius=5.0,
+                        )
+                    ],
+                    spec=AngularVelocity(0.45 * u.rad / u.s),
+                ),
+                Freestream(
+                    entities=Surface(name="my_fs"),
+                    turbulence_quantities=TurbulenceQuantities(
+                        modified_viscosity=10,
+                    ),
+                ),
+            ],
+            time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
+        )
+        return param
+
+
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_serialization(get_the_param):
     to_file_from_file_test(get_the_param)
@@ -162,8 +217,8 @@ def test_simulation_params_serialization(get_the_param):
 
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
-    converted = get_the_param.preprocess(mesh_unit=10 * u.m)
-    # converted.to_json("converted.json")
+    converted = get_the_param._preprocess(mesh_unit=10 * u.m)
+
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
     # LengthType
@@ -172,7 +227,7 @@ def test_simulation_params_unit_conversion(get_the_param):
     assertions.assertAlmostEqual(converted.operating_condition.alpha.value, 0.5235987755982988)
     # TimeType
     assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.8888282)
-    # TemperatureType
+    # AbsoluteTemperatureType
     assertions.assertAlmostEqual(
         converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.368
     )
@@ -257,8 +312,19 @@ def test_standard_atmosphere():
         assert atm.pressure == pytest.approx(pressure, rel=1e-4)
         assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
 
+    for alt, temp_offset, temp, density, pressure, viscosity in ref_data:
+        delta_temp_in_F = (temp_offset * u.K).in_units("delta_degF")
+        atm = ThermalState.from_standard_atmosphere(
+            altitude=alt * u.m, temperature_offset=delta_temp_in_F
+        )
 
-def test_subsequent_param_with_different_unit_system(get_the_param):
+        assert atm.temperature == pytest.approx(temp, rel=1e-6)
+        assert atm.density == pytest.approx(density, rel=1e-4)
+        assert atm.pressure == pytest.approx(pressure, rel=1e-4)
+        assert atm.dynamic_viscosity == pytest.approx(viscosity, rel=1e-4)
+
+
+def test_subsequent_param_with_different_unit_system():
     with SI_unit_system:
         param_SI = SimulationParams(
             meshing=MeshingParams(
@@ -278,7 +344,6 @@ def test_subsequent_param_with_different_unit_system(get_the_param):
 
 
 def test_mach_reynolds_op_cond():
-
     condition = operating_condition_from_mach_reynolds(
         mach=0.2,
         reynolds=5e6,
@@ -290,6 +355,17 @@ def test_mach_reynolds_op_cond():
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
+    condition = operating_condition_from_mach_reynolds(
+        mach=0.2,
+        reynolds=5e6,
+        temperature=288.15 * u.K,
+        alpha=2.0 * u.deg,
+        beta=0.0 * u.deg,
+        project_length_unit=u.m,
+        reference_mach=0.4,
+    )
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 0.6572616596801923)
+
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = operating_condition_from_mach_reynolds(
             mach=0.2,
@@ -300,7 +376,6 @@ def test_mach_reynolds_op_cond():
 
 
 def test_mach_muref_op_cond():
-
     condition = operating_condition_from_mach_muref(
         mach=0.2,
         mu_ref=4e-8,
@@ -312,9 +387,190 @@ def test_mach_muref_op_cond():
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
+    assertions.assertAlmostEqual(
+        condition.flow360_reynolds_number(length_unit=1 * u.m), (1.0 / 4e-8) * condition.mach
+    )  # 1/muRef * freestream mach
+
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = operating_condition_from_mach_muref(
             mach=0.2,
             mu_ref=0,
             temperature=288.15 * u.K,
         )
+
+
+def test_delta_temperature_scaling():
+    with CGS_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                thermal_state=ThermalState.from_standard_atmosphere(
+                    temperature_offset=123 * u.delta_degF
+                )
+            )
+        )
+    reference_temperature = param.operating_condition.thermal_state.temperature.to("K")
+
+    scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
+    processed_param = param._preprocess(mesh_unit=1 * u.m)
+
+    assert (
+        processed_param.operating_condition.thermal_state.temperature_offset.value
+        == scaled_temperature_offset
+    )
+
+
+def test_simulation_params_unit_conversion_with_liquid_condition(
+    get_param_with_liquid_operating_condition,
+):
+    params: SimulationParams = get_param_with_liquid_operating_condition
+    converted = params._preprocess(mesh_unit=1 * u.m)
+
+    fake_water_speed_of_sound = (
+        params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+    )
+    # TimeType
+    assertions.assertAlmostEqual(
+        converted.time_stepping.step_size.value,
+        params.time_stepping.step_size / (1.0 / fake_water_speed_of_sound),
+    )
+
+    # VelocityType
+    assertions.assertAlmostEqual(
+        converted.models[1].velocity.value[0],
+        1.0 / fake_water_speed_of_sound,
+    )
+
+    # AngularVelocityType
+    assertions.assertAlmostEqual(
+        converted.models[2].spec.value.value,
+        0.45 / fake_water_speed_of_sound.value,
+        # Note: We did not use original value from params like the others b.c
+        # for some unknown reason THIS value in params will also converted to flow360 unit system...
+    )
+    # ViscosityType
+    assertions.assertAlmostEqual(
+        converted.models[3].turbulence_quantities.modified_turbulent_viscosity.value,
+        10 / (1 * fake_water_speed_of_sound.value),
+        # Note: We did not use original value from params like the others b.c
+        # for some unknown reason THIS value in params will also converted to flow360 unit system...
+    )
+
+
+def test_persistent_entity_info_update_geometry():
+    #### Geometry Entity Info ####
+    with open("./data/geometry_metadata_asset_cache.json", "r") as fp:
+        geometry_info_dict = json.load(fp)["project_entity_info"]
+        geometry_info = GeometryEntityInfo.model_validate(geometry_info_dict)
+    # modify a surface
+    selected_surface = geometry_info.get_boundaries()[0]
+    selected_surface_dict = selected_surface.model_dump(mode="json")
+    selected_surface_dict["name"] = "new_surface_name"
+    brand_new_surface = Surface.model_validate(selected_surface_dict)
+    # modify an edge
+    selected_edge = geometry_info._get_list_of_entities(entity_type_name="edge")[0]
+    selected_edge_dict = selected_edge.model_dump(mode="json")
+    selected_edge_dict["name"] = "new_edge_name"
+    brand_new_edge = Edge.model_validate(selected_edge_dict)
+
+    fake_asset_entity_registry = EntityRegistry()
+    fake_asset_entity_registry.register(brand_new_surface)
+    fake_asset_entity_registry.register(brand_new_edge)
+
+    geometry_info.update_persistent_entities(asset_entity_registry=fake_asset_entity_registry)
+
+    assert geometry_info.get_boundaries()[0].name == "new_surface_name"
+    assert geometry_info._get_list_of_entities(entity_type_name="edge")[0].name == "new_edge_name"
+
+
+def test_persistent_entity_info_update_volume_mesh():
+    #### VolumeMesh Entity Info ####
+    with open("./data/volume_mesh_metadata_asset_cache.json", "r") as fp:
+        volume_mesh_info_dict = json.load(fp)
+        volume_mesh_info = VolumeMeshEntityInfo.model_validate(volume_mesh_info_dict)
+
+    # modify the axis and center of a zone
+    selected_zone = volume_mesh_info.zones[0]
+    selected_zone_dict = selected_zone.model_dump(mode="json")
+    selected_zone_dict["axes"] = [[1, 0, 0], [0, 0, 1]]
+    selected_zone_dict["center"] = {"units": "cm", "value": [1.2, 2.3, 3.4]}
+    brand_new_zone = GenericVolume.model_validate(selected_zone_dict)
+
+    fake_asset_entity_registry = EntityRegistry()
+    fake_asset_entity_registry.register(brand_new_zone)
+
+    volume_mesh_info.update_persistent_entities(asset_entity_registry=fake_asset_entity_registry)
+
+    assert volume_mesh_info.zones[0].axes == ((1, 0, 0), (0, 0, 1))
+    assert all(volume_mesh_info.zones[0].center == [1.2, 2.3, 3.4] * u.cm)
+
+
+def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    assert geometry_entity_info._get_processed_file_list() == (
+        ["airplane_simple_obtained_from_csm_by_esp.step.egads"],
+        ["airplane_translate_in_z_-5.stl", "farfield_only_sphere_volume_mesh.lb8.ugrid"],
+    )
+
+    assert sorted(
+        geometry_entity_info._get_id_to_file_map(entity_type_name="body").items()
+    ) == sorted(
+        {
+            "body00001": "airplane_simple_obtained_from_csm_by_esp.step.egads",
+            "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
+            "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+        }.items()
+    )
+
+
+def test_transformation_matrix():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=geometry_entity_info,
+            ),
+        )
+    nondim_params = params._preprocess(mesh_unit=2 * u.m)
+    transformation_matrix = (
+        nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+            0
+        ].transformation.get_transformation_matrix()
+    )
+
+    assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
+    assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
+    assert np.isclose(
+        transformation_matrix @ np.array([8, 4.5, 4, 2]),
+        np.array([16.80178373, 106.60356745, 7.66369379]),
+    ).all()
+
+    # Test compute_transformation_matrices
+    with model_attribute_unlock(
+        nondim_params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
+    ):
+        nondim_params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
+
+    nondim_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    assert nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+        0
+    ].transformation.private_attribute_matrix == [
+        0.07142857142857151,
+        -1.3178531657602606,
+        2.2464245943316894,
+        6.587498011451558,
+        0.9446408685944161,
+        0.5714285714285716,
+        0.48393055997701245,
+        47.269644845691296,
+        -0.3202367695391345,
+        1.3916653409677058,
+        1.9285714285714284,
+        -1.8755959009447176,
+    ]

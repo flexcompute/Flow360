@@ -4,6 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
+from enum import Enum
 from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
@@ -28,7 +29,7 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
     """Ideally volume_mesh_meta should be a pydantic model.
 
     TODO:  Note that the same surface_name may appear in different blocks. E.g.
-    `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support spliting boundary into
+    `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support splitting boundary into
     blocks but we will need to support this someday.
     """
     for zone_name, zone_meta in volume_mesh_meta["zones"].items():
@@ -61,7 +62,7 @@ OrthogonalAxes = Annotated[Tuple[Axis, Axis], pd.AfterValidator(_check_axis_is_o
 
 class ReferenceGeometry(Flow360BaseModel):
     """
-    :class:`ReferenceGeometry` class contains all geometrical related refrence values.
+    :class:`ReferenceGeometry` class contains all geometrical related reference values.
 
     Example
     -------
@@ -92,10 +93,73 @@ class ReferenceGeometry(Flow360BaseModel):
 
 
 class Transformation(Flow360BaseModel):
-    """Used in preprocess()/translator to meshing param for volume meshing interface"""
+    """Transformation that will be applied to a body group."""
 
-    axis_of_rotation: Optional[Axis] = pd.Field()
-    angle_of_rotation: Optional[AngleType] = pd.Field()
+    type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
+
+    origin: LengthType.Point = pd.Field(  # pylint:disable=no-member
+        (0, 0, 0) * u.m,  # pylint:disable=no-member
+        description="The origin for geometry transformation in the order of scale,"
+        " rotation and translation.",
+    )
+
+    axis_of_rotation: Axis = pd.Field((1, 0, 0))
+    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
+
+    scale: Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat] = pd.Field((1, 1, 1))
+
+    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
+
+    private_attribute_matrix: Optional[list[float]] = pd.Field(None)
+
+    def get_transformation_matrix(self) -> np.ndarray:
+        """
+        Find 3(row)x4(column) transformation matrix and store as row major.
+        Applies to vector of [x, y, z, 1] in project length unit.
+        """
+        # pylint:disable=no-member
+        error_msg = "[Internal] `{}` is dimensioned. Use get_transformation_matrix() after non-dimensionalization!"
+        assert str(self.origin.units) == "flow360_length_unit", error_msg.format("origin")
+        assert str(self.translation.units) == "flow360_length_unit", error_msg.format("translation")
+        origin_array = np.asarray(self.origin.value)
+        translation_array = np.asarray(self.translation.value)
+
+        axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
+        angle = self.angle_of_rotation.to("rad").v.item()
+
+        axis = axis / np.linalg.norm(axis)
+
+        rotation_scale_matrix = rotation_matrix_from_axis_and_angle(axis, angle) * np.array(
+            self.scale
+        )
+        final_translation = -rotation_scale_matrix @ origin_array + origin_array + translation_array
+
+        return np.hstack([rotation_scale_matrix, final_translation[:, np.newaxis]])
+
+
+class GeometryBodyGroup(EntityBase):
+    """
+    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
+    """
+
+    private_attribute_registry_bucket_name: Literal["GeometryBodyGroupEntityType"] = (
+        "GeometryBodyGroupEntityType"
+    )
+    private_attribute_tag_key: str = pd.Field(
+        description="The tag/attribute string used to group bodies.",
+    )
+    private_attribute_entity_type_name: Literal["GeometryBodyGroup"] = pd.Field(
+        "GeometryBodyGroup", frozen=True
+    )
+    private_attribute_sub_components: List[str] = pd.Field(
+        description="A list of body IDs which constitutes the current body group"
+    )
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Color used for visualization"
+    )
+    transformation: Transformation = pd.Field(
+        Transformation(), description="The transformation performed on the body group"
+    )
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
@@ -183,7 +247,7 @@ class Edge(_EdgeEntityBase):
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
-        description="The tag/attribute string used to gourp geometry edges to form this `Edge`.",
+        description="The tag/attribute string used to group geometry edges to form this `Edge`.",
     )
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The edge ids in geometry that composed into this `Edge`."
@@ -397,10 +461,43 @@ class Cylinder(_VolumeEntityBase):
         return self
 
 
+class _SurfaceIssueEnums(str, Enum):
+    """
+    Enums for indicating that there is something wrong/special about the surface.
+
+    +-------------------+--------------------+--------------------+
+    | If my sub faces...| Issue should be    | Conflict with when |
+    |                   | predicted as       | using              |
+    +-------------------+--------------------+--------------------+
+    | All overlaps with | overlap_half_model_| Auto and Quasi     |
+    | the HalfModel Symm| symmetric          |                    |
+    +-------------------+--------------------+--------------------+
+    | All overlaps with | overlap_quasi_3d_  | Quasi              |
+    | the Non Half      | symmetric          |                    |
+    | Model (the other  |                    |                    |
+    | Q3D) Symm. Or not |                    |                    |
+    | half model at all.|                    |                    |
+    +-------------------+--------------------+--------------------+
+    | Some on HalfModel | overlap_quasi_3d_  | Quasi              |
+    | Symm, Some on Non | symmetric          |                    |
+    | HalfModel Symm    |                    |                    |
+    +-------------------+--------------------+--------------------+
+    | Have some faces   | None               | None               |
+    | elsewhere         |                    |                    |
+    +-------------------+--------------------+--------------------+
+
+
+    """
+
+    # pylint: disable=invalid-name
+    overlap_half_model_symmetric = "OverlapHalfModelSymmetric"
+    overlap_quasi_3d_symmetric = "OverlapQuasi3DSymmetric"
+
+
 @final
 class Surface(_SurfaceEntityBase):
     """
-    :class:`Surface` represents a boudary surface in three-dimensional space.
+    :class:`Surface` represents a boundary surface in three-dimensional space.
     """
 
     private_attribute_entity_type_name: Literal["Surface"] = pd.Field("Surface", frozen=True)
@@ -412,31 +509,72 @@ class Surface(_SurfaceEntityBase):
     )
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
-        description="The tag/attribute string used to gourp geometry faces to form this `Surface`.",
+        description="The tag/attribute string used to group geometry faces to form this `Surface`.",
     )
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
+    )
+    private_attribute_potential_issues: List[_SurfaceIssueEnums] = pd.Field(
+        [],
+        description="Issues (not necessarily problems) found on this `Surface` after inspection by "
+        "surface mesh / geometry pipeline. Used for determining the usability of the `Surface` instance"
+        " under certain features and/or its existence.",
+    )
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Color used for visualization"
+    )
+
+    # Note: private_attribute_id should not be `Optional` anymore.
+    # B.C. Updater and geometry pipeline will populate it.
+
+    # pylint: disable=fixme
+    # TODO: With the amount of private_attribute prefixes we have
+    # TODO: here maybe it makes more sense to lump them together to save space?
+
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Front end storage for the color selected for this `Surface` entity."
     )
 
     # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
+    def _will_be_deleted_by_mesher(self, farfield_method: Literal["auto", "quasi-3d"]) -> bool:
+        """
+        Check against the automated farfield method and
+        determine if the current `Surface` will be deleted by the mesher.
+        """
+        if not self.private_attribute_potential_issues:
+            # If no special status reported or there is no auto farfield involved at all.
+            return False
+
+        if farfield_method == "auto":
+            # Single symmetry
+            # pylint: disable=unsupported-membership-test
+            return (
+                _SurfaceIssueEnums.overlap_half_model_symmetric
+                in self.private_attribute_potential_issues
+            )
+
+        if farfield_method == "quasi-3d":
+            # Two symmetry
+            # pylint: disable=unsupported-membership-test
+            return (
+                _SurfaceIssueEnums.overlap_quasi_3d_symmetric
+                in self.private_attribute_potential_issues
+                or _SurfaceIssueEnums.overlap_half_model_symmetric
+                in self.private_attribute_potential_issues
+            )
+
+        raise ValueError(f"Unknown auto farfield generation method: {farfield_method}.")
+
 
 class GhostSurface(_SurfaceEntityBase):
     """
-    Represents a boudary surface that may or may not be generated therefore may or may not exist.
+    Represents a boundary surface that may or may not be generated therefore may or may not exist.
     It depends on the submitted geometry/Surface mesh. E.g. the symmetry plane in `AutomatedFarfield`.
 
-    For now we do not use metadata or any other information to validate (on the client side) whether the surface
-    actually exists. We will let workflow error out if the surface is not found.
-
-    - For meshing:
-       - we forbid using `GhostSurface` in any surface-related features which is not supported right now anyways.
-
-    - For boundary condition and post-processing:
-        - Allow usage of `GhostSurface` but no validation. Solver validation will error out when finding mismatch
-        between the boundary condition and the mesh meta.
-
+    This is a token/place-holder used only on the Python API side.
+    All `GhostSurface` entities will be replaced with exact entity instances before simulation.json submission.
     """
 
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
@@ -446,21 +584,25 @@ class GhostSurface(_SurfaceEntityBase):
 
 # pylint: disable=missing-class-docstring
 @final
-class GhostSphere(GhostSurface):
-    type_name: Literal["GhostSphere"] = pd.Field("GhostSphere", frozen=True)
-    center: List = pd.Field(alias="center")
-    max_radius: PositiveFloat = pd.Field(alias="maxRadius")
+class GhostSphere(_SurfaceEntityBase):
+    private_attribute_entity_type_name: Literal["GhostSphere"] = pd.Field(
+        "GhostSphere", frozen=True
+    )
+    # Note: Making following optional since front end will not carry these over to assigned entities.
+    center: Optional[List] = pd.Field(None, alias="center")
+    max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
 
 
 # pylint: disable=missing-class-docstring
 @final
-class GhostCircularPlane(GhostSurface):
+class GhostCircularPlane(_SurfaceEntityBase):
     private_attribute_entity_type_name: Literal["GhostCircularPlane"] = pd.Field(
         "GhostCircularPlane", frozen=True
     )
-    center: List = pd.Field(alias="center")
-    max_radius: PositiveFloat = pd.Field(alias="maxRadius")
-    normal_axis: List = pd.Field(alias="normalAxis")
+    # Note: Making following optional since front end will not carry these over to assigned entities.
+    center: Optional[List] = pd.Field(None, alias="center")
+    max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
+    normal_axis: Optional[List] = pd.Field(None, alias="normalAxis")
 
 
 class SurfacePair(Flow360BaseModel):

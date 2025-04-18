@@ -238,6 +238,10 @@ class Logger:
         message = f"[white]{message}[/white]"
         self._log(_level_value["CRITICAL"], "CRITICAL", message)
 
+    def status(self, status: str = ""):
+        """Returns status context to show spinner"""
+        return log.handlers["console"].console.status(status)
+
 
 # Initialize FLow360's logger
 log = Logger()
@@ -305,7 +309,7 @@ def set_logging_file(
 
     try:
         # pylint: disable=consider-using-with,unspecified-encoding
-        file = open(fname, filemode)
+        file = open(fname, filemode, encoding="utf-8")
     except OSError:
         log.warning(f"File {fname} could not be opened. Logging to file disabled.")
         return

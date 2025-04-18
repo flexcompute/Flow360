@@ -1,16 +1,50 @@
 {
     "boundaries": {
+        "boundary_name_A": {
+            "type": "SubsonicInflow",
+            "totalTemperatureRatio": 1.0411244143675171,
+            "totalPressureRatio": 0.9,
+            "velocityDirection": [1.0,0.0,0.0]
+        },
+        "boundary_name_B": {
+            "type": "MassInflow",
+            "totalTemperatureRatio": 1.0411244143675171,
+            "massFlowRate": 0.2,
+            "rampSteps": 10
+        },
         "boundary_name_E": {
             "type": "SubsonicOutflowPressure",
             "staticPressureRatio": 0.9
         },
         "boundary_name_H": {
             "type": "MassOutflow",
-            "massFlowRate": 0.2
+            "massFlowRate": 0.2,
+            "rampSteps": 10
         },
         "boundary_name_F": {
             "type": "SubsonicOutflowMach",
             "MachNumber": 0.3
+        },
+        "boundary_name_G" : {
+            "type" : "NoSlipWall",
+            "wallVelocityModel" : {
+            "type" : "SlaterPorousBleed",
+            "staticPressureRatio" :  0.8165514936615943,
+            "porosity" : 0.49,
+            "activationStep" : 20
+            },
+            "heatFlux" : 0.0,
+            "roughnessHeight" : 0.0
+        },
+        "boundary_name_I" : {
+            "type" : "NoSlipWall",
+            "velocity": [
+                "0.0 * (z - 3.0) - 0.030773317581937965 * (y - 2.0)", 
+                "0.030773317581937965 * (x - 1.0) - 0.0 * (z - 3.0)", 
+                "0.0 * (y - 2.0) - 0.0 * (x - 1.0)"
+            ],
+            "heatFlux": 0.0, 
+            "roughnessHeight": 0.0
         }
     },
     "freestream": {
@@ -62,6 +96,7 @@
     "turbulenceModelSolver": {
         "CFLMultiplier": 2.0,
         "DDES": false,
+        "ZDES": false,  
         "absoluteTolerance": 1e-08,
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
@@ -90,5 +125,9 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "userDefinedFields": []
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "v24.3.0"
+version = "v25.4.1b2"
 description = ""
 authors = ["Flexcompute <support@flexcompute.com>"]
 
@@ -32,7 +32,7 @@ unyt = [{ python = "^3.7", version = "^2.8.0" },
     { python = "^3.8", version = "^2.9.5" }]
 pandas = "^2.2.1"
 pylint = "^3.1.0"
-black = "^24.1.0"
+black = {extras = ["jupyter"], version = "^24.10.0"}
 
 # docs
 autodoc_pydantic = {version="*", optional = true}
@@ -61,7 +61,10 @@ sphinx_design = {version="*", optional = true}
 sphinx_toolbox = {version="*", optional = true}
 sphinx_paramlinks = {version="*", optional = true}
 numpydoc = "^1.8.0"
+numexpr = "^2.10.1"
 sphinxcontrib-mermaid = {version="*", optional = true}
+pylatex = "^1.4.2"
+prettyprinttree = "^2.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -75,6 +78,7 @@ pytest = "^7.3.0"
 pylint = "^3.1.0"
 black = "^24.1.0"
 notebook = "^7.0.6"
+pytest-mock = "^3.14.0"
 
 [tool.poetry.extras]
 docs = [

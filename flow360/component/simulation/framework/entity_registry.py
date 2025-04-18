@@ -1,17 +1,12 @@
 """Registry for managing and storing instances of various entity types."""
 
-import re
 from typing import Any, Dict, Union
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import (
-    EntityBase,
-    MergeConflictError,
-    _merge_objects,
-)
-from flow360.log import log
+from flow360.component.simulation.framework.entity_base import EntityBase
+from flow360.component.utils import _naming_pattern_handler
 
 
 class EntityRegistryBucket:
@@ -63,22 +58,20 @@ class EntityRegistry(Flow360BaseModel):
         # pylint: disable=unsubscriptable-object
         for existing_entity in self.internal_registry[entity.entity_bucket]:
             if existing_entity.name == entity.name:
-                # Same type and same name. Now we try to update existing entity with new values.
-                try:
-                    existing_entity = _merge_objects(existing_entity, entity)
-                    return
-                except MergeConflictError as e:
-                    raise MergeConflictError(
-                        f"Entity with name '{entity.name}' and type '{entity.entity_bucket}' "
-                        "already exists and have different definition."
-                    ) from e
-                except Exception as e:
-                    log.debug("Merge failed unexpectly: %s", e)
-                    raise
+                # pylint:disable=protected-access
+                if existing_entity._get_hash() != entity._get_hash():
+                    # Same type and same name but different definitions.
+                    raise ValueError(
+                        f"Multiple entities with name '{entity.name}' and type '{entity.entity_bucket}' "
+                        "already exists and have different definitions."
+                    )
+                # Identical entities. Just ignore
+                return
+
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
-    def get_bucket(self, by_type: EntityBase) -> EntityRegistryBucket:
+    def get_bucket(self, by_type: type[EntityBase]) -> EntityRegistryBucket:
         """Get the bucket of a certain type of entity."""
         return EntityRegistryBucket(
             self.internal_registry,
@@ -109,13 +102,7 @@ class EntityRegistry(Flow360BaseModel):
             List[EntityBase]: A list of entities whose names match the pattern.
         """
         matched_entities = []
-        if "*" in pattern:
-            # Convert wildcard to regex pattern
-            regex_pattern = "^" + pattern.replace("*", ".*") + "$"
-        else:
-            regex_pattern = f"^{pattern}$"  # Exact match if no '*'
-
-        regex = re.compile(regex_pattern)
+        regex = _naming_pattern_handler(pattern=pattern)
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
             matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
@@ -146,9 +133,9 @@ class EntityRegistry(Flow360BaseModel):
         result = "---- Content of the registry ----\n"
         # pylint: disable=no-member
         for entity_bucket, entities in self.internal_registry.items():
-            result += f"    Entities of type '{entity_bucket}':\n"
+            result += f"\n    Entities of type '{entity_bucket}':\n"
             for entity in entities:
-                result += f"    - [{index:03d}]\n{entity}\n"
+                result += f"    - [{index:05d}]\n{entity}\n"
                 index += 1
         result += "---- End of content ----"
         return result
@@ -205,6 +192,25 @@ class EntityRegistry(Flow360BaseModel):
                 return
 
         self.register(new_entity)
+
+    def find_by_asset_id(self, *, entity_id: str, entity_class: type[EntityBase]):
+        """
+        Find the entity with matching asset id and the same entity bucket as the input entity.
+        Return None if no such entity is found.
+        """
+        bucket = self.get_bucket(by_type=entity_class)
+        matched_entities = [
+            item for item in bucket.entities if item.private_attribute_id == entity_id
+        ]
+
+        if len(matched_entities) > 1:
+            raise ValueError(
+                f"[INTERNAL] Multiple entities with the same asset id ({entity_id}) found."
+                " Data is likely corrupted."
+            )
+        if len(matched_entities) == 0:
+            return None
+        return matched_entities[0]
 
     @property
     def is_empty(self):

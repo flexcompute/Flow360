@@ -21,6 +21,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.services import (
+    ValidationCalledBy,
     simulation_to_case_json,
     simulation_to_surface_meshing_json,
     simulation_to_volume_meshing_json,
@@ -104,7 +105,10 @@ def test_simulation_to_surface_meshing_json():
 
     start_time = time.time()
     params, _, _ = validate_model(
-        params_as_dict=param_data, root_item_type="Geometry", validation_level=SURFACE_MESH
+        params_as_dict=param_data,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level=SURFACE_MESH,
     )
     simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     end_time = time.time()
@@ -237,7 +241,10 @@ def test_simulation_to_volume_meshing_json():
     }
 
     params, _, _ = validate_model(
-        params_as_dict=param_data, root_item_type="Geometry", validation_level=VOLUME_MESH
+        params_as_dict=param_data,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level=VOLUME_MESH,
     )
 
     sm_json, hash = simulation_to_volume_meshing_json(params, {"value": 100.0, "units": "cm"})
@@ -279,10 +286,8 @@ def test_simulation_to_case_json():
                 },
                 "turbulence_model_solver": {
                     "CFL_multiplier": 2.0,
-                    "DDES": False,
                     "absolute_tolerance": 1e-08,
                     "equation_evaluation_frequency": 4,
-                    "grid_size_for_LES": "maxEdgeLength",
                     "linear_solver": {"max_iterations": 15},
                     "max_force_jac_update_physical_steps": 0,
                     "modeling_constants": {
@@ -542,9 +547,12 @@ def test_simulation_to_case_json():
                 ],
             },
         },
+        "version": "25.2.0",
     }
 
-    params, _, _ = validate_model(params_as_dict=param_data, root_item_type="Geometry")
+    params, _, _ = validate_model(
+        params_as_dict=param_data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
     simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
 
     with pytest.raises(ValueError, match="Mesh unit is required for translation."):
@@ -604,7 +612,7 @@ def test_simulation_to_case_vm_workflow():
             "beta": {"value": 0, "units": "degree"},
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "25.2.0",
         "models": [
             {
                 "type": "Wall",
@@ -644,18 +652,23 @@ def test_simulation_to_case_vm_workflow():
     }
 
     params, _, _ = validate_model(
-        params_as_dict=param_data, root_item_type="Geometry", validation_level=CASE
+        params_as_dict=param_data,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level=CASE,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r"input_params must be of type SimulationParams"):
         case_json, _ = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
         print(case_json)
 
     params, _, _ = validate_model(
-        params_as_dict=param_data, root_item_type="VolumeMesh", validation_level=CASE
+        params_as_dict=param_data,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
     )
     case_json, _ = simulation_to_case_json(params, {"value": 100.0, "units": "cm"})
-    print(case_json)
 
 
 def test_simulation_to_all_translation_2():
@@ -740,9 +753,14 @@ def test_simulation_to_all_translation_2():
                 ],
             },
         },
+        "version": "25.2.0",
     }
 
-    params, _, _ = validate_model(params_as_dict=params_as_dict, root_item_type="Geometry")
+    params, _, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
     surface_json, hash = simulation_to_surface_meshing_json(params, {"value": 100.0, "units": "cm"})
     print(surface_json)

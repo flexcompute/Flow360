@@ -1,13 +1,24 @@
 """Requests module"""
 
-from typing import List, Optional, Union
+from datetime import datetime
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd_v2
 import pydantic.v1 as pd
 from pydantic.alias_generators import to_camel
 from typing_extensions import Literal
 
+from ..component.utils import is_valid_uuid
+
 LengthUnitType = Literal["m", "mm", "cm", "inch", "ft"]
+
+
+def _valid_id_validator(input_id: str):
+    is_valid_uuid(input_id)
+    return input_id
+
+
+IDStringType = Annotated[str, pd_v2.AfterValidator(_valid_id_validator)]
 
 
 ###==== V1 API Payload definition ===###
@@ -81,7 +92,7 @@ class Flow360RequestsV2(pd_v2.BaseModel):
 
     def dict(self, *args, **kwargs) -> dict:
         """returns dict representation of request"""
-        return super().dict(*args, by_alias=True, exclude_none=True, **kwargs)
+        return super().model_dump(*args, by_alias=True, exclude_none=True, **kwargs)
 
     model_config = pd_v2.ConfigDict(populate_by_name=True, alias_generator=to_camel)
 
@@ -107,6 +118,22 @@ class NewGeometryRequest(Flow360RequestsV2):
         alias="lengthUnit", description="project length unit"
     )
     description: str = pd_v2.Field(default="", description="project description")
+
+
+class NewSurfaceMeshRequestV2(Flow360RequestsV2):
+    """[Simulation V2] Creates new project and a new surface mesh resource."""
+
+    name: str = pd_v2.Field(description="project name")
+    solver_version: str = pd_v2.Field(
+        alias="solverVersion", description="solver version used for the project"
+    )
+    tags: List[str] = pd_v2.Field(default=[], description="project tags")
+    parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")
+    length_unit: Literal["m", "mm", "cm", "inch", "ft"] = pd_v2.Field(
+        alias="lengthUnit", description="project length unit"
+    )
+    description: str = pd_v2.Field(default="", description="project description")
+    file_name: str = pd_v2.Field(alias="fileName", description="file name of the surface mesh")
 
 
 class NewVolumeMeshRequestV2(Flow360RequestsV2):
@@ -137,3 +164,69 @@ class NewReportRequest(Flow360RequestsV2):
     resources: List[_Resource]
     config_json: str
     solver_version: str
+
+
+class DraftCreateRequest(Flow360RequestsV2):
+    """Data model for draft create request"""
+
+    name: Optional[str] = pd.Field(None)
+    project_id: IDStringType = pd.Field()
+    source_item_id: IDStringType = pd.Field()
+    source_item_type: Literal[
+        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
+    ] = pd.Field()
+    solver_version: str = pd.Field()
+    fork_case: bool = pd.Field()
+    tags: Optional[List[str]] = pd.Field(None)
+
+    @pd_v2.field_validator("name", mode="after")
+    @classmethod
+    def _generate_default_name(cls, values):
+        if values is None:
+            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
+        return values
+
+
+class ForceCreationConfig(Flow360RequestsV2):
+    """Data model for force creation configuration"""
+
+    start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+
+
+class DraftRunRequest(Flow360RequestsV2):
+    """Data model for draft run request"""
+
+    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+    use_in_house: bool = pd.Field()
+    use_gai: bool = pd.Field()
+    force_creation_config: Optional[ForceCreationConfig] = pd.Field(
+        None,
+    )
+    source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
+        exclude=True
+    )
+
+    @pd_v2.model_validator(mode="after")
+    def _validate_force_creation_config(self):
+        # pylint: disable=no-member
+
+        order = {"Geometry": 0, "SurfaceMesh": 1, "VolumeMesh": 2, "Case": 3}
+        source_order = order[self.source_item_type]
+        up_to_order = order[self.up_to]
+
+        if self.force_creation_config is not None:
+            force_start_order = order[self.force_creation_config.start_from]
+            if (force_start_order <= source_order and self.source_item_type != "Case") or (
+                self.source_item_type == "Case" and self.force_creation_config.start_from != "Case"
+            ):
+                raise ValueError(
+                    f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "
+                    f"must be later than 'source_item_type' ({self.source_item_type})."
+                )
+
+            if force_start_order > up_to_order:
+                raise ValueError(
+                    f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "
+                    f"cannot be later than 'up_to' ({self.up_to})."
+                )
+        return self

@@ -1,5 +1,5 @@
 {
-  "version": "24.11.0",
+  "version": "25.4.1b2",
   "unit_system": {
     "name": "SI"
   },
@@ -12,7 +12,8 @@
         "units": "degree",
         "value": 12.0
       },
-      "surface_edge_growth_rate": 1.2
+      "surface_edge_growth_rate": 1.2,
+      "planar_face_tolerance": 1e-6
     },
   "refinements": [],
   "volume_zones": [
@@ -138,7 +139,8 @@
           "private_attribute_registry_bucket_name": "SurfaceEntityType",
           "private_attribute_entity_type_name": "Surface",
           "name": "*",
-          "private_attribute_sub_components": []
+          "private_attribute_sub_components": [],
+          "private_attribute_potential_issues": []
         }
       ]
     },
@@ -150,6 +152,10 @@
         "units": "W/m**2"
       },
       "type_name": "HeatFlux"
+    },
+    "roughness_height": {
+      "value": 0.0,
+      "units": "m"
     }
   },
   {
@@ -221,8 +227,6 @@
       },
       "CFL_multiplier": 2.0,
       "type_name": "SpalartAllmaras",
-      "DDES": false,
-      "grid_size_for_LES": "maxEdgeLength",
       "reconstruction_gradient_limiter": 0.5,
       "quadratic_constitutive_relation": false,
       "modeling_constants": {
@@ -280,8 +284,8 @@
                 "private_attribute_registry_bucket_name": "SurfaceEntityType",
                 "private_attribute_entity_type_name": "Surface",
                 "name": "*",
-                "private_attribute_sub_components": [
-                ]
+                "private_attribute_sub_components": [],
+                "private_attribute_potential_issues": []
             }
         ]
     },
@@ -293,6 +297,8 @@
   "project_length_unit": {
     "value": 1.0,
     "units": "m"
-  }
+  },
+  "use_inhouse_mesher": false,
+  "use_geometry_AI": false
 }
 }

@@ -13,16 +13,17 @@ from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
-from flow360.component.simulation.models.material import Air, FluidMaterialTypes
+from flow360.component.simulation.models.material import Air, Water
 from flow360.component.simulation.operating_condition.atmosphere_model import (
     StandardAtmosphereModel,
 )
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
     AngleType,
+    DeltaTemperatureType,
     DensityType,
     LengthType,
     PressureType,
-    TemperatureType,
     VelocityType,
     ViscosityType,
 )
@@ -45,7 +46,7 @@ class ThermalStateCache(Flow360BaseModel):
 
     # pylint: disable=no-member
     altitude: Optional[LengthType] = None
-    temperature_offset: Optional[TemperatureType] = None
+    temperature_offset: Optional[DeltaTemperatureType] = None
 
 
 class ThermalState(MultiConstructorBaseModel):
@@ -65,17 +66,15 @@ class ThermalState(MultiConstructorBaseModel):
     """
 
     # pylint: disable=fixme
-    # TODO: romove frozen and throw warning if temperature/density is modified after construction from atmospheric model
+    # TODO: remove frozen and throw warning if temperature/density is modified after construction from atmospheric model
     type_name: Literal["ThermalState"] = pd.Field("ThermalState", frozen=True)
-    temperature: TemperatureType.Positive = pd.Field(
+    temperature: AbsoluteTemperatureType = pd.Field(
         288.15 * u.K, frozen=True, description="The temperature of the fluid."
     )
     density: DensityType.Positive = pd.Field(
         1.225 * u.kg / u.m**3, frozen=True, description="The density of the fluid."
     )
-    material: FluidMaterialTypes = pd.Field(
-        Air(), frozen=True, description="The material of the fluid."
-    )
+    material: Air = pd.Field(Air(), frozen=True, description="The material of the fluid.")
     private_attribute_input_cache: ThermalStateCache = ThermalStateCache()
     private_attribute_constructor: Literal["from_standard_atmosphere", "default"] = pd.Field(
         default="default", frozen=True
@@ -87,7 +86,7 @@ class ThermalState(MultiConstructorBaseModel):
     def from_standard_atmosphere(
         cls,
         altitude: LengthType = 0 * u.m,
-        temperature_offset: TemperatureType = 0 * u.K,
+        temperature_offset: DeltaTemperatureType = 0 * u.K,
     ):
         """
         Constructs a :class:`ThermalState` instance from the standard atmosphere model.
@@ -96,7 +95,7 @@ class ThermalState(MultiConstructorBaseModel):
         ----------
         altitude : LengthType, optional
             The altitude at which the thermal state is calculated. Defaults to ``0 * u.m``.
-        temperature_offset : TemperatureType, optional
+        temperature_offset : DeltaTemperatureType, optional
             The temperature offset to be applied to the standard temperature at the given altitude.
             Defaults to ``0 * u.K``.
 
@@ -122,11 +121,11 @@ class ThermalState(MultiConstructorBaseModel):
         >>> thermal_state.density
         <calculated_density>
 
-        Apply a temperature offset of -5 Kelvin at 5,000 meters:
+        Apply a temperature offset of -5 Fahrenheit at 5,000 meters:
 
         >>> thermal_state = ThermalState.from_standard_atmosphere(
         ...     altitude=5000 * u.m,
-        ...     temperature_offset=-5 * u.K
+        ...     temperature_offset=-5 * u.delta_degF
         ... )
         >>> thermal_state.temperature
         <adjusted_temperature>
@@ -147,16 +146,16 @@ class ThermalState(MultiConstructorBaseModel):
     @property
     def altitude(self) -> Optional[LengthType]:
         """Return user specified altitude."""
-        if not self._cached.altitude:
+        if not self.private_attribute_input_cache.altitude:
             log.warning("Altitude not provided from input")
-        return self._cached.altitude
+        return self.private_attribute_input_cache.altitude
 
     @property
-    def temperature_offset(self) -> Optional[TemperatureType]:
+    def temperature_offset(self) -> Optional[DeltaTemperatureType]:
         """Return user specified temperature offset."""
-        if not self._cached.altitude:
+        if not self.private_attribute_input_cache.temperature_offset:
             log.warning("Temperature offset not provided from input")
-        return self._cached.temperature_offset
+        return self.private_attribute_input_cache.temperature_offset
 
     @property
     def speed_of_sound(self) -> VelocityType.Positive:
@@ -388,7 +387,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     @property
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
-        return self.velocity_magnitude / self.thermal_state.speed_of_sound
+        return (self.velocity_magnitude / self.thermal_state.speed_of_sound).value
 
     @pd.field_validator("alpha", "beta", "thermal_state", mode="after")
     @classmethod
@@ -396,10 +395,82 @@ class AerospaceCondition(MultiConstructorBaseModel):
         setattr(info.data["private_attribute_input_cache"], info.field_name, value)
         return value
 
+    @pd.validate_call
+    def flow360_reynolds_number(self, length_unit: LengthType.Positive):
+        """
+        Computes length_unit based Reynolds number.
+        :math:`Re = \\rho_{\\infty} \\cdot U_{ref} \\cdot L_{grid}/\\mu_{\\infty}` where
+        - :math:`rho_{\\infty}` is the freestream fluid density.
+        - :math:`U_{ref}` is the reference velocity magnitude or freestream velocity magnitude if reference
+          velocity magnitude is not set.
+        - :math:`L_{grid}` is physical length represented by unit length in the given mesh/geometry file.
+        - :math:`\\mu_{\\infty}` is the dynamic eddy viscosity of the fluid of freestream.
+
+        Parameters
+        ----------
+        length_unit : LengthType.Positive
+            Physical length represented by unit length in the given mesh/geometry file.
+        """
+        reference_velocity = (
+            self.reference_velocity_magnitude
+            if self.reference_velocity_magnitude
+            else self.velocity_magnitude
+        )
+        return (
+            self.thermal_state.density
+            * reference_velocity
+            * length_unit
+            / self.thermal_state.dynamic_viscosity
+        ).value
+
+
+class LiquidOperatingCondition(Flow360BaseModel):
+    """
+    Operating condition for simulation of water as the only material.
+    """
+
+    type_name: Literal["LiquidOperatingCondition"] = pd.Field(
+        "LiquidOperatingCondition", frozen=True
+    )
+    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
+    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
+    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
+        context=CASE,
+        description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
+    )
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
+        None,
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0."
+        " Used as the velocity scale for nondimensionalization.",
+        frozen=True,
+    )
+    material: Water = pd.Field(
+        Water(name="Water"),
+        description="Type of liquid material used.",
+    )
+
+    @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
+    def check_valid_reference_velocity(self) -> Self:
+        """Ensure reference velocity is provided when inflow velocity is 0."""
+        if (
+            self.velocity_magnitude is not None
+            and self.velocity_magnitude.value == 0
+            and self.reference_velocity_magnitude is None
+        ):
+            raise ValueError(
+                "Reference velocity magnitude must be provided when inflow velocity magnitude is 0."
+            )
+        return self
+
 
 # pylint: disable=fixme
 # TODO: AutomotiveCondition
-OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
+OperatingConditionTypes = Union[
+    GenericReferenceCondition, AerospaceCondition, LiquidOperatingCondition
+]
 
 
 # pylint: disable=too-many-arguments
@@ -410,7 +481,7 @@ def operating_condition_from_mach_reynolds(
     project_length_unit: LengthType.Positive = pd.Field(
         description="The Length unit of the project."
     ),
-    temperature: TemperatureType.Positive = 288.15 * u.K,
+    temperature: AbsoluteTemperatureType = 288.15 * u.K,
     alpha: Optional[AngleType] = 0 * u.deg,
     beta: Optional[AngleType] = 0 * u.deg,
     reference_mach: Optional[pd.PositiveFloat] = None,
@@ -430,7 +501,7 @@ def operating_condition_from_mach_reynolds(
         Freestream Reynolds number defined with mesh unit (must be positive).
     project_length_unit: LengthType.Positive
         Project length unit.
-    temperature : TemperatureType.Positive, optional
+    temperature : AbsoluteTemperatureType, optional
         Freestream static temperature (must be a positive temperature value). Default is 288.15 Kelvin.
     alpha : AngleType, optional
         Angle of attack. Default is 0 degrees.
@@ -469,12 +540,14 @@ def operating_condition_from_mach_reynolds(
 
     """
 
-    if temperature == 288.15 * u.K:
+    if temperature.units is u.K and temperature.value == 288.15:
         log.info("Default value of 288.15 K will be used as temperature.")
 
     material = Air()
 
-    velocity = mach * material.get_speed_of_sound(temperature)
+    velocity = (mach if reference_mach is None else reference_mach) * material.get_speed_of_sound(
+        temperature
+    )
 
     density = (
         reynolds * material.get_dynamic_viscosity(temperature) / (velocity * project_length_unit)

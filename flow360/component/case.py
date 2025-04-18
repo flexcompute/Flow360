@@ -6,6 +6,7 @@ Case component
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from typing import Any, Iterator, List, Optional, Union
 
@@ -19,9 +20,15 @@ from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
 from ..log import log
 from .folder import Folder
-from .interfaces import CaseInterface, FolderInterface, VolumeMeshInterface
+from .interfaces import (
+    CaseInterface,
+    CaseInterfaceV2,
+    FolderInterface,
+    VolumeMeshInterface,
+)
 from .resource_base import (
     AssetMetaBaseModel,
+    AssetMetaBaseModelV2,
     Flow360Resource,
     Flow360ResourceListBase,
     Flow360Status,
@@ -32,6 +39,7 @@ from .resource_base import (
 from .results.case_results import (
     ActuatorDiskResultCSVModel,
     AeroacousticsResultCSVModel,
+    BETForcesRadialDistributionResultCSVModel,
     BETForcesResultCSVModel,
     CaseDownloadable,
     CFLResultCSVModel,
@@ -45,7 +53,7 @@ from .results.case_results import (
     ResultsDownloaderSettings,
     ResultTarGZModel,
     SurfaceForcesResultCSVModel,
-    SurfaceHeatTrasferResultCSVModel,
+    SurfaceHeatTransferResultCSVModel,
     TotalForcesResultCSVModel,
     UserDefinedDynamicsResultModel,
     XSlicingForceDistributionResultCSVModel,
@@ -156,6 +164,22 @@ class CaseMeta(AssetMetaBaseModel):
         if value is Flow360Status.UPLOADED:
             return Flow360Status.CASE_UPLOADED
         return value
+
+    def to_case(self) -> Case:
+        """
+        returns Case object from case meta info
+        """
+        return Case(self.id)
+
+
+class CaseMetaV2(AssetMetaBaseModelV2):
+    """
+    CaseMetaV2 component
+    """
+
+    id: str = pd.Field(alias="caseId")
+    case_mesh_id: str = pd.Field(alias="caseMeshId")
+    status: Flow360Status = pd.Field()
 
     def to_case(self) -> Case:
         """
@@ -385,7 +409,7 @@ class CaseDraft(CaseBase, ResourceDraft):
         )
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class Case(CaseBase, Flow360Resource):
     """
     Case component
@@ -393,6 +417,7 @@ class Case(CaseBase, Flow360Resource):
 
     _manifest_path = "visualize/manifest/manifest.json"
     _cloud_resource_type_name = "Case"
+    _web_api_v2_class = Flow360Resource
 
     # pylint: disable=redefined-builtin
     def __init__(self, id: str):
@@ -406,6 +431,12 @@ class Case(CaseBase, Flow360Resource):
         self._raw_params = None
         self._results = CaseResultsModel(case=self)
         self._manifest = None
+        # _web_api_v2 handles all V2 communications for Case
+        self._web_api_v2 = self._web_api_v2_class(
+            interface=CaseInterfaceV2,
+            meta_class=CaseMetaV2,
+            id=id,
+        )
 
     @classmethod
     def _from_meta(cls, meta: CaseMeta):
@@ -418,28 +449,28 @@ class Case(CaseBase, Flow360Resource):
         """
         returns simulation params
         """
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".json") as temp_file:
-            try:
-                self._download_file("simulation.json", to_file=temp_file.name, log_error=False)
-            except CloudFileNotFoundError as err:
-                raise Flow360ValueError(
-                    "Simulation params not found for this case. It is likely it was created with old interface"
-                ) from err
 
-            # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
-            with open(temp_file.name, "r", encoding="utf-8") as fh:
-                params_as_dict: dict = json.load(fh)
+        try:
+            params_as_dict = self._parse_json_from_cloud("simulation.json")
+        except CloudFileNotFoundError as err:
+            raise Flow360ValueError(
+                "Simulation params not found for this case. It is likely it was created with old interface"
+            ) from err
 
-            param, errors, _ = services.validate_model(
-                params_as_dict=params_as_dict, root_item_type=None, validation_level=None
+        # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
+        param, errors, _ = services.validate_model(
+            params_as_dict=params_as_dict,
+            validated_by=services.ValidationCalledBy.LOCAL,
+            root_item_type=None,
+            validation_level=None,
+        )
+
+        if errors is not None:
+            raise Flow360ValidationError(
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
             )
 
-            if errors is not None:
-                raise Flow360ValidationError(
-                    f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
-                )
-
-            return param
+        return param
 
     @property
     def params(self) -> Union[Flow360Params, SimulationParams]:
@@ -504,11 +535,29 @@ class Case(CaseBase, Flow360Resource):
         raise Flow360RuntimeError("Case does not have parent case.")
 
     @property
-    def info(self) -> CaseMeta:
+    def info(self) -> CaseMetaV2:
         """
         returns metadata info for case
         """
         return super().info
+
+    @property
+    def project_id(self) -> Optional[str]:
+        """Returns the project id of the case if case was run with V2 interface."""
+        return self.info.project_id
+
+    @property
+    def volume_mesh(self) -> "VolumeMeshV2":
+        """
+        returns volume mesh
+        """
+        from_cache = self.local_resource_cache[self.volume_mesh_id]
+        if from_cache is not None:
+            return from_cache
+        # pylint: disable=import-outside-toplevel,cyclic-import
+        from .volume_mesh import VolumeMeshV2
+
+        return VolumeMeshV2(self.volume_mesh_id)
 
     @property
     def volume_mesh_id(self):
@@ -640,20 +689,22 @@ class Case(CaseBase, Flow360Resource):
         return cls(case_id)
 
     @classmethod
-    def from_local_storage(cls, id, name, local_storage_path, user_id: str = "local") -> Case:
+    def from_local_storage(cls, local_storage_path, meta_data: CaseMeta) -> Case:
         """
         Create a `Case` instance from local storage.
 
         Parameters
         ----------
-        id : str
-            The unique identifier for the case.
-        name : str
-            The name of the case.
         local_storage_path : str
             The path to the local storage directory.
-        user_id : str, optional
-            The user ID associated with the case, by default "local".
+        meta_data : CaseMeta
+            case metadata such as:
+            id : str
+                The unique identifier for the case.
+            name : str
+                The name of the case.
+            user_id : str
+                The user ID associated with the case, can be "local".
 
         Returns
         -------
@@ -661,19 +712,10 @@ class Case(CaseBase, Flow360Resource):
             An instance of `Case` with data loaded from local storage.
         """
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
-        # we don't know if the status is completed, but if we load from local, we can assume
-        case = cls._from_meta(
-            CaseMeta(
-                caseId=id,
-                name=name,
-                status=Flow360Status.COMPLETED,
-                userId=user_id,
-                deleted=False,
-                caseMeshId="unknown",
-            )
-        )
+        case = cls._from_meta(meta_data)
         case._download_file = _local_download_file
-        case._results = CaseResultsModel(case=case, local_storage=local_storage_path)
+        case._results = CaseResultsModel(case=case)
+        case.results.set_local_storage(local_storage_path, keep_remote_structure=True)
         return case
 
     # pylint: disable=too-many-arguments
@@ -776,6 +818,9 @@ class CaseResultsModel(pd.BaseModel):
     bet_forces: BETForcesResultCSVModel = pd.Field(
         default_factory=lambda: BETForcesResultCSVModel()
     )
+    bet_forces_radial_distribution: BETForcesRadialDistributionResultCSVModel = pd.Field(
+        default_factory=lambda: BETForcesRadialDistributionResultCSVModel()
+    )
     legacy_force_distribution: LegacyForceDistributionResultCSVModel = pd.Field(
         default_factory=lambda: LegacyForceDistributionResultCSVModel()
     )
@@ -792,8 +837,8 @@ class CaseResultsModel(pd.BaseModel):
     )
 
     # others
-    surface_heat_transfer: SurfaceHeatTrasferResultCSVModel = pd.Field(
-        default_factory=lambda: SurfaceHeatTrasferResultCSVModel()
+    surface_heat_transfer: SurfaceHeatTransferResultCSVModel = pd.Field(
+        default_factory=lambda: SurfaceHeatTransferResultCSVModel()
     )
     aeroacoustics: AeroacousticsResultCSVModel = pd.Field(
         default_factory=lambda: AeroacousticsResultCSVModel()
@@ -844,6 +889,7 @@ class CaseResultsModel(pd.BaseModel):
         has_function_map = {
             "actuator_disks": self.case.has_actuator_disks,
             "bet_forces": self.case.has_bet_disks,
+            "bet_forces_radial_distribution": self.case.has_bet_disks,
             "isosurfaces": self.case.has_isosurfaces,
             "monitors": self.case.has_monitors,
             "volumes": self.case.has_volume_output,
@@ -927,6 +973,7 @@ class CaseResultsModel(pd.BaseModel):
         surface_forces: bool = None,
         total_forces: bool = None,
         bet_forces: bool = None,
+        bet_forces_radial_distribution: bool = None,
         actuator_disks: bool = None,
         legacy_force_distribution: bool = None,
         x_slicing_force_distribution: bool = None,
@@ -961,6 +1008,8 @@ class CaseResultsModel(pd.BaseModel):
             Download total forces file if True.
         bet_forces : bool, optional
             Download BET (Blade Element Theory) forces file if True.
+        bet_forces_radial_distribution : bool, optional
+            Download BET (Blade Element Theory) forces radial distribution file if True.
         actuator_disk_output : bool, optional
             Download actuator disk output file if True.
         all : bool, optional
@@ -986,6 +1035,7 @@ class CaseResultsModel(pd.BaseModel):
         self.surface_forces.do_download = surface_forces
         self.total_forces.do_download = total_forces
         self.bet_forces.do_download = bet_forces
+        self.bet_forces_radial_distribution.do_download = bet_forces_radial_distribution
         self.actuator_disks.do_download = actuator_disks
         self.legacy_force_distribution.do_download = legacy_force_distribution
         self.x_slicing_force_distribution.do_download = x_slicing_force_distribution
@@ -1010,6 +1060,28 @@ class CaseResultsModel(pd.BaseModel):
         return self.case._download_file(
             file_name=file_name, to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
+
+    def set_local_storage(self, local_storage: str, keep_remote_structure: bool = False):
+        """
+        Set local storage for fetching data from. Used with Case.from_local_storage(...)
+
+        Parameters
+        ----------
+        local_storage : str
+            Path to local folder
+        keep_remote_structure : bool, optional
+            When true, remote folder structure is assumed to be preserved, otherwise flat structure, by default False
+        """
+        for field_name in self.model_fields:
+            value = getattr(self, field_name)
+            if isinstance(value, ResultBaseModel):
+                if keep_remote_structure is True:
+                    # pylint: disable=protected-access,no-member
+                    value.local_storage = os.path.dirname(
+                        os.path.join(local_storage, value._remote_path())
+                    )
+                else:
+                    value.local_storage = local_storage
 
 
 class CaseList(Flow360ResourceListBase):

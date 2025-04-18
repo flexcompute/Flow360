@@ -59,6 +59,7 @@
         },
         "CFLMultiplier": 2.0,
         "DDES": false,
+        "ZDES": false,
         "gridSizeForLES": "maxEdgeLength",
         "reconstructionGradientLimiter": 0.5,
         "quadraticConstitutiveRelation": false,
@@ -92,7 +93,8 @@
     "boundaries": {
         "1": {
             "type": "NoSlipWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0
         },
         "2": {
             "type": "SlipWall"
@@ -101,5 +103,9 @@
             "type": "Freestream"
         }
     },
-    "userDefinedFields": []
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }

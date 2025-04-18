@@ -4,6 +4,11 @@ validation utility functions
 
 from functools import wraps
 
+from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
+
 
 def _validator_append_instance_name(func):
     """
@@ -50,3 +55,53 @@ def _validator_append_instance_name(func):
             raise ValueError(f"{prepend_message}: {str(e)}") from e
 
     return wrapper
+
+
+def check_deleted_surface_in_entity_list(value):
+    """
+    Check if any boundary is meant to be deleted
+    value--> EntityList
+    """
+    validation_info = get_validation_info()
+    if (
+        validation_info is None
+        or validation_info.auto_farfield_method is None
+        or validation_info.is_beta_mesher is True
+    ):
+        # validation not necessary now.
+        return value
+
+    # - Check if the surfaces are deleted.
+    for surface in value.stored_entities:
+        if isinstance(
+            surface, Surface
+        ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+            validation_info.auto_farfield_method
+        ):
+            raise ValueError(
+                f"Boundary `{surface.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+            )
+
+    return value
+
+
+def check_deleted_surface_pair(value):
+    """
+    Check if any boundary is meant to be deleted
+    value--> SurfacePair
+    """
+    validation_info = get_validation_info()
+    if validation_info is None or validation_info.auto_farfield_method is None:
+        # validation not necessary now.
+        return value
+
+    # - Check if the surfaces are deleted.
+    for surface in value.pair:
+        if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+            validation_info.auto_farfield_method
+        ):
+            raise ValueError(
+                f"Boundary `{surface.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+            )
+
+    return value

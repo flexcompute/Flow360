@@ -58,7 +58,8 @@
         },
         "CFLMultiplier": 2.0,
         "DDES": false,
-        "gridSizeForLES": "maxEdgeLength",
+        "ZDES": true,
+        "gridSizeForLES": "meanEdgeLength",
         "reconstructionGradientLimiter": 0.5,
         "quadraticConstitutiveRelation": false,
         "updateJacobianFrequency": 1,
@@ -110,7 +111,8 @@
         },
         "plateBlock/noSlipWall": {
             "type": "NoSlipWall",
-            "heatFlux": 0.0
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0
         }
     },
     "volumeOutput": {
@@ -185,5 +187,9 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[]
+    "userDefinedFields":[],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
 }

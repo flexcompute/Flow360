@@ -2,14 +2,18 @@ import json
 import re
 
 import pytest
+from unyt import Unit
 
 from flow360.component.simulation import services
+from flow360.component.simulation.exposed_units import supported_units_by_front_end
+from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.unit_system import _PredefinedUnitSystem
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
     VOLUME_MESH,
 )
-from tests.utils import compare_dict_to_ref, compare_values
+from tests.utils import compare_dict_to_ref
 
 
 @pytest.fixture(autouse=True)
@@ -32,9 +36,10 @@ def test_validate_service():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
+                    "_id": "137854c4-dea1-47a4-b352-b545ffb0b85c",
                 }
             ],
         },
@@ -50,6 +55,7 @@ def test_validate_service():
         },
         "models": [
             {
+                "_id": "09435427-c2dd-4535-935c-b131ab7d1a5b",
                 "type": "Wall",
                 "entities": {
                     "stored_entities": [
@@ -59,6 +65,7 @@ def test_validate_service():
                             "name": "Mysurface",
                             "private_attribute_is_interface": False,
                             "private_attribute_sub_components": [],
+                            "_id": "Mysurface",
                         }
                     ]
                 },
@@ -82,6 +89,7 @@ def test_validate_service():
                         "private_attribute_is_interface": False,
                         "private_attribute_tag_key": None,
                         "private_attribute_sub_components": [],
+                        "_id": "Mysurface",
                     }
                 ],
             },
@@ -94,15 +102,21 @@ def test_validate_service():
         "boundary_layer_first_layer_thickness": "1*m",
         "surface_max_edge_length": "1*m",
     }
+    params_data_from_geo["version"] = "24.11.0"
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_geo, root_item_type="Geometry"
+        params_as_dict=params_data_from_geo,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
     )
 
     assert errors is None
 
     _, errors, _ = services.validate_model(
-        params_as_dict=params_data_from_vm, root_item_type="VolumeMesh", validation_level=CASE
+        params_as_dict=params_data_from_vm,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
     )
 
     assert errors is None
@@ -123,7 +137,7 @@ def test_validate_error():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -141,11 +155,16 @@ def test_validate_error():
         },
         "user_defined_dynamics": [],
         "unit_system": {"name": "SI"},
+        "version": "24.11.5",
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
@@ -162,8 +181,8 @@ def test_validate_error():
             "ctx": {"relevant_for": ["SurfaceMesh", "VolumeMesh"]},
         },
     ]
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -188,7 +207,7 @@ def test_validate_multiple_errors():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -206,11 +225,16 @@ def test_validate_multiple_errors():
         },
         "user_defined_dynamics": [],
         "unit_system": {"name": "SI"},
+        "version": "24.11.5",
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "surface_max_edge_length"),
             "type": "value_error",
@@ -227,8 +251,8 @@ def test_validate_multiple_errors():
             "ctx": {"relevant_for": ["Case"]},
         },
     ]
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -262,7 +286,7 @@ def test_validate_errors():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -272,7 +296,11 @@ def test_validate_errors():
         "unit_system": {"name": "SI"},
     }
 
-    _, errors, _ = services.validate_model(params_as_dict=params_data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
     json.dumps(errors)
 
 
@@ -297,15 +325,31 @@ def test_init():
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
 
+    ##3: test default values for surface mesh starting point
+    data = services.get_default_params(
+        unit_system_name="SI", length_unit="cm", root_item_type="SurfaceMesh"
+    )
+    assert data["reference_geometry"]["area"]["units"] == "cm**2"
+    assert data["reference_geometry"]["moment_center"]["units"] == "cm"
+    assert data["reference_geometry"]["moment_length"]["units"] == "cm"
+    assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
+    # to convert tuples to lists:
+    data = json.loads(json.dumps(data))
+    compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
+
 
 def test_validate_init_data_errors():
 
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
     )
-    _, errors, _ = services.validate_model(params_as_dict=data, root_item_type="Geometry")
+    _, errors, _ = services.validate_model(
+        params_as_dict=data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
@@ -323,8 +367,8 @@ def test_validate_init_data_errors():
         },
     ]
 
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -337,11 +381,12 @@ def test_validate_init_data_for_sm_and_vm_errors():
     )
     _, errors, _ = services.validate_model(
         params_as_dict=data,
+        validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level=[SURFACE_MESH, VOLUME_MESH],
     )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("meshing", "defaults", "boundary_layer_first_layer_thickness"),
             "type": "missing",
@@ -354,8 +399,8 @@ def test_validate_init_data_for_sm_and_vm_errors():
         },
     ]
 
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -367,10 +412,13 @@ def test_validate_init_data_vm_workflow_errors():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     _, errors, _ = services.validate_model(
-        params_as_dict=data, root_item_type="VolumeMesh", validation_level=CASE
+        params_as_dict=data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
     )
 
-    excpected_errors = [
+    expected_errors = [
         {
             "loc": ("operating_condition", "velocity_magnitude"),
             "type": "missing",
@@ -378,8 +426,8 @@ def test_validate_init_data_vm_workflow_errors():
         },
     ]
 
-    assert len(errors) == len(excpected_errors)
-    for err, exp_err in zip(errors, excpected_errors):
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
         assert err["type"] == exp_err["type"]
         assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
@@ -447,7 +495,7 @@ def test_front_end_JSON_with_multi_constructor():
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
                         "private_attribute_id": "hardcoded_id-4",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
@@ -520,13 +568,17 @@ def test_front_end_JSON_with_multi_constructor():
     }
 
     simulation_param, errors, _ = services.validate_model(
-        params_as_dict=params_data, root_item_type="Geometry"
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
     )
     assert errors is None
     with open("../../ref/simulation/simulation_json_with_multi_constructor_used.json", "r") as f:
         ref_data = json.load(f)
         ref_param, err, _ = services.validate_model(
-            params_as_dict=ref_data, root_item_type="Geometry"
+            params_as_dict=ref_data,
+            root_item_type="Geometry",
+            validated_by=services.ValidationCalledBy.LOCAL,
         )
         assert err is None
 
@@ -549,14 +601,14 @@ def test_generate_process_json():
                     "private_attribute_entity": {
                         "private_attribute_registry_bucket_name": "VolumetricEntityType",
                         "private_attribute_entity_type_name": "GenericVolume",
-                        "name": "automated_farfied_entity",
+                        "name": "automated_farfield_entity",
                         "private_attribute_zone_boundary_names": {"items": []},
                     },
                 }
             ],
         },
         "unit_system": {"name": "SI"},
-        "version": "24.2.0",
+        "version": "24.11.5",
         "operating_condition": {
             "type_name": "AerospaceCondition",
             "private_attribute_constructor": "default",
@@ -615,7 +667,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -634,7 +686,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -653,7 +705,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[Internal] Validation error occurred for supposedly validated param! Errors are: [{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -672,10 +724,10 @@ def test_generate_process_json():
 
 def test_validation_level_intersection():
     def get_validation_levels_to_use(root_item_type, requested_levels):
-        avaliable_levels = services._determine_validation_level(
+        available_levels = services._determine_validation_level(
             up_to="Case", root_item_type=root_item_type
         )
-        return services._intersect_validation_levels(requested_levels, avaliable_levels)
+        return services._intersect_validation_levels(requested_levels, available_levels)
 
     assert get_validation_levels_to_use("Geometry", "All") == ["SurfaceMesh", "VolumeMesh", "Case"]
 
@@ -689,3 +741,211 @@ def test_validation_level_intersection():
         "Case",
         "VolumeMesh",
     ]
+
+
+def test_forward_compatibility_error():
+
+    # Mock a future simulation.json
+    with open("data/updater_should_pass.json", "r") as fp:
+        future_dict = json.load(fp)
+    future_dict["version"] = "99.99.99"
+    _, errors, _ = services.validate_model(
+        params_as_dict=future_dict,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
+
+    assert errors[0] == {
+        "type": "99.99.99 > 25.4.1b2",
+        "loc": [],
+        "msg": "The cloud `SimulationParam` is too new for your local Python client. "
+        "Errors may occur since forward compatibility is limited.",
+        "ctx": {},
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=future_dict,
+        validated_by=services.ValidationCalledBy.PIPELINE,
+        root_item_type="Geometry",
+    )
+
+    assert errors[0] == {
+        "type": "99.99.99 > 25.4.1b2",
+        "loc": [],
+        "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
+        "ctx": {},
+    }
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited."
+        ),
+    ):
+        _, _, _ = services.generate_process_json(
+            simulation_json=json.dumps(future_dict),
+            up_to=CASE,
+            root_item_type="Geometry",
+        )
+
+
+def validate_proper_unit(obj, allowed_units_string):
+    def is_expected_unit(unit_str, allowed_units_string):
+        tokens = re.findall(r"[A-Za-z_]+", unit_str)
+        return all(token in allowed_units_string for token in tokens)
+
+    if isinstance(obj, dict):
+        if "value" in obj and "units" in obj:
+            assert is_expected_unit(obj["units"], allowed_units_string)
+
+        for _, val in obj.items():
+            validate_proper_unit(val, allowed_units_string)
+
+    elif isinstance(obj, list):
+        for item in obj:
+            validate_proper_unit(item, allowed_units_string)
+
+
+def test_imperial_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, target_unit_system="Imperial")
+    imperial_units = {"ft", "lbf", "lb", "s", "degF", "delta_degF", "rad", "degree"}
+
+    validate_proper_unit(dict_to_convert, imperial_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "degF"
+    assert abs(temperature_tester["value"] - 302) / 302 < 1e-10
+
+    # General comparison\
+    with open("./ref/unit_system_converted_imperial.json", "r") as fp:
+        ref_dict = json.load(fp)
+
+    assert compare_values(dict_to_convert, ref_dict)
+
+
+def test_CGS_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
+    CGS_units = {"dyn", "cm", "g", "s", "K", "rad", "degree"}
+
+    validate_proper_unit(dict_to_convert, CGS_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "K"
+    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # General comparison
+    with open("./ref/unit_system_converted_CGS.json", "r") as fp:
+        ref_dict = json.load(fp)
+    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
+
+
+def test_SI_unit_system_conversion():
+    with open("data/simulation_param.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, target_unit_system="SI")
+    SI_units = {"m", "kg", "s", "K", "rad", "degree", "Pa"}
+
+    validate_proper_unit(dict_to_convert, SI_units)
+    # Check that the angles are not changed
+    assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
+        "angle_of_rotation"
+    ] == {"units": "degree", "value": 20.0}
+
+    # Assert no change in angle unit
+    assert dict_to_convert["operating_condition"]["alpha"] == {"units": "rad", "value": 5.0}
+
+    # Assert temperature unit name is correct
+    temperature_tester = dict_to_convert["operating_condition"]["thermal_state"]["material"][
+        "dynamic_viscosity"
+    ]["effective_temperature"]
+    assert temperature_tester["units"] == "K"
+    assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # General comparison
+    with open("./ref/unit_system_converted_SI.json", "r") as fp:
+        ref_dict = json.load(fp)
+    assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
+
+
+def test_updater_service():
+    with open("data/updater_should_pass.json", "r") as fp:
+        dict_to_update = json.load(fp)
+    updated_params_as_dict, errors = services.update_simulation_json(
+        params_as_dict=dict_to_update, target_python_api_version="25.2.2"
+    )
+
+    with open("ref/updater_to_25_2_2.json", "r") as fp:
+        ref_dict = json.load(fp)
+    assert compare_values(updated_params_as_dict, ref_dict)
+    assert not errors
+
+    # ============#
+    dict_to_update["version"] = "999.999.999"
+    updated_params_as_dict, errors = services.update_simulation_json(
+        params_as_dict=dict_to_update, target_python_api_version="25.2.2"
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]
+        == "[Internal] API misuse. Input version (999.999.999) is higher than requested target version (25.2.2)."
+    )
+
+
+def test_unit_conversion_front_end_compatibility():
+
+    ##### 1. Ensure that the units are valid in `supported_units_by_front_end`
+    def _get_all_units(value):
+        if isinstance(value, dict):
+            return [item for item in value.values()]
+        else:
+            assert isinstance(value, list)
+            return value
+
+    for dimension, value in supported_units_by_front_end.items():
+        for unit in _get_all_units(value=value):
+            if str(Unit(unit).dimensions) == dimension:
+                continue
+            elif (
+                dimension == "(temperature_difference)"
+                and str(Unit(unit).dimensions) == "(temperature)"
+            ):
+                continue
+            else:
+                raise ValueError(f"Unit {unit} is not valid for dimension {dimension}")
+
+    ##### 2.  Ensure that all units supported have set their front-end approved units
+    for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
+        if field_name == "name":
+            continue
+        print(">>> Unit: ", field_info.annotation.dim, field_info.annotation.dim.__class__)
+        unit_system_dimension_string = str(field_info.annotation.dim)
+        # for unit_name in unit:
+        if unit_system_dimension_string not in supported_units_by_front_end.keys():
+            raise ValueError(
+                f"Unit {unit_system_dimension_string} (A.K.A {field_name}) is not supported by the front-end.",
+                "Please ensure front end team is aware of this new unit and add its support.",
+            )

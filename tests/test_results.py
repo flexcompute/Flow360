@@ -2,6 +2,7 @@ import os
 import tempfile
 from copy import deepcopy
 from itertools import product
+from typing import List
 
 import numpy as np
 import pandas
@@ -10,6 +11,8 @@ import pytest
 import flow360.component.v1.units as u1
 import flow360.v1 as fl
 from flow360 import log
+from flow360.component.results.base_results import _filter_headers_by_prefix
+from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -25,7 +28,12 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_actuator_disk_results(mock_id, mock_response):
+@pytest.fixture()
+def data_path(mock_id):
+    return os.path.join("data", mock_id)
+
+
+def test_actuator_disk_results(mock_id, mock_response, data_path):
     case = fl.Case(id=mock_id)
 
     with fl.SI_unit_system:
@@ -39,7 +47,9 @@ def test_actuator_disk_results(mock_id, mock_response):
         )
 
     results = case.results
-    results.actuator_disks.load_from_local("data/results/actuatorDisk_output_v2.csv")
+    results.actuator_disks.load_from_local(
+        os.path.join(data_path, "results", "actuatorDisk_output_v2.csv")
+    )
 
     print(results.actuator_disks.as_dataframe())
     assert results.actuator_disks.values["Disk0_Power"][0] == 30.0625485898572
@@ -71,7 +81,7 @@ def test_actuator_disk_results(mock_id, mock_response):
     assert str(results.actuator_disks.values["Disk0_Power"][0].units) == "ft**2*lb/s**3"
 
 
-def test_bet_disk_results(mock_id, mock_response):
+def test_bet_disk_results(mock_id, mock_response, data_path):
     case = fl.Case(id=mock_id)
 
     with fl.SI_unit_system:
@@ -85,7 +95,7 @@ def test_bet_disk_results(mock_id, mock_response):
         )
 
     results = case.results
-    results.bet_forces.load_from_local("data/results/bet_forces_v2.csv")
+    results.bet_forces.load_from_local(os.path.join(data_path, "results", "bet_forces_v2.csv"))
 
     print(results.bet_forces.as_dataframe())
     assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
@@ -103,7 +113,7 @@ def test_bet_disk_results(mock_id, mock_response):
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
 
 
-def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
+def test_bet_disk_results_with_simulation_interface(mock_id, mock_response, data_path):
     case = fl.Case(id=mock_id)
 
     with u2.SI_unit_system:
@@ -112,7 +122,7 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
             params.private_attribute_asset_cache.project_length_unit = 1 * u2.m
 
     results = case.results
-    results.bet_forces.load_from_local("data/results/bet_forces_v2.csv")
+    results.bet_forces.load_from_local(os.path.join(data_path, "results", "bet_forces_v2.csv"))
 
     print(results.bet_forces.as_dataframe())
     assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
@@ -128,6 +138,25 @@ def test_bet_disk_results_with_simulation_interface(mock_id, mock_response):
 
     assert float(results.bet_forces.values["Disk0_Moment_x"][0].v) == 23068914203.12496
     assert str(results.bet_forces.values["Disk0_Moment_x"][0].units) == "kg*m**2/s**2"
+
+    results.bet_forces_radial_distribution.load_from_local(
+        os.path.join(data_path, "results", "bet_forces_radial_distribution_v2.csv")
+    )
+
+    print(results.bet_forces_radial_distribution.as_dataframe())
+    assert isinstance(results.bet_forces_radial_distribution.as_dataframe(), pandas.DataFrame)
+    assert isinstance(results.bet_forces_radial_distribution.as_dict(), dict)
+    assert isinstance(results.bet_forces_radial_distribution.as_numpy(), np.ndarray)
+
+    assert (
+        results.bet_forces_radial_distribution.values["Disk0_Blade0_All_ThrustCoeff"][0]
+        == 0.015451537799664
+    )
+
+    assert (
+        results.bet_forces_radial_distribution.values["Disk0_Blade0_All_TorqueCoeff"][0]
+        == 0.0002627693012437
+    )
 
 
 def test_downloading(mock_id, mock_response, s3_download_override):
@@ -155,6 +184,7 @@ def test_downloading(mock_id, mock_response, s3_download_override):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_downloader(mock_id, mock_response):
+    print(mock_id)
     case = fl.Case(id=mock_id)
     results = case.results
 
@@ -184,15 +214,189 @@ def test_downloader(mock_id, mock_response):
         assert results.total_forces.values["CL"][0] == 0.400770406499246
 
 
+def test_include_filter_with_suffixes():
+    headers = [
+        "boundary_a_A",
+        "boundary_a_B",
+        "boundary_a_a_A",
+        "boundary_a_a_B",
+    ]
+    result = _filter_headers_by_prefix(headers, include=["boundary_a"], suffixes=["A", "B"])
+    assert sorted(result) == sorted(["boundary_a_A", "boundary_a_B"])
+
+    result = _filter_headers_by_prefix(headers, exclude=["boundary_a_a"], suffixes=["A", "B"])
+    assert sorted(result) == sorted(["boundary_a_A", "boundary_a_B"])
+
+
+def test_include_and_exclude_filter_with_suffixes():
+    headers = [
+        "prefix1_A",
+        "prefix2_A",
+        "prefix3_A",
+        "prefix1_B",
+        "prefix2_B",
+        "prefix3_B",
+    ]
+    result = _filter_headers_by_prefix(
+        headers, include=["prefix1", "prefix2"], exclude=["prefix2"], suffixes=["A", "B"]
+    )
+    assert sorted(result) == sorted(["prefix1_A", "prefix1_B"])
+
+
+def test_regex_suffix_provided_headers_with_underscore():
+    headers = [
+        "abc_def",
+        "xyz_123",
+        "nounderscore",
+        "abc_xyz",
+    ]
+    result = _filter_headers_by_prefix(headers, include=["abc"], suffixes=[".*"])
+    assert sorted(result) == sorted(["abc_def", "abc_xyz"])
+
+
+def test_no_suffixes_provided_headers_with_underscore():
+    headers = [
+        "abc_def",
+        "xyz_123",
+        "nounderscore",
+        "abc_xyz",
+    ]
+    result = _filter_headers_by_prefix(headers, include=["abc", "abc_def"])
+    assert sorted(result) == sorted(["abc_def"])
+
+
+def test_no_suffixes_provided_no_include_filter():
+    headers = [
+        "abc_def",
+        "xyz_123",
+        "nounderscore",
+        "abc_xyz",
+    ]
+    result = _filter_headers_by_prefix(headers)
+    assert sorted(result) == sorted(
+        [
+            "abc_def",
+            "xyz_123",
+            "nounderscore",
+            "abc_xyz",
+        ]
+    )
+
+
+test_no_suffixes_provided_no_include_filter()
+
+
+def test_empty_headers():
+    headers: List[str] = []
+    result = _filter_headers_by_prefix(headers, include=["anything"], suffixes=["A", "B"])
+    assert result == []
+
+
+def test_filter():
+
+    class TempPerEntityResultCSVModel(PerEntityResultCSVModel):
+        """ForceDistributionResultCSVModel"""
+
+        remote_file_name: str = "tempfile"
+        _variables: List[str] = ["A", "B"]
+        _x_columns: List[str] = ["X"]
+
+    data = TempPerEntityResultCSVModel()
+    data._raw_values = {
+        "X": [0, 1],
+        "boundary_a_A": [0, 1],
+        "boundary_a_B": [2, 3],
+        "boundary_a_a_A": [4, 5],
+        "boundary_a_a_B": [6, 7],
+        "boundary_aa_A": [8, 9],
+        "boundary_aa_B": [10, 11],
+    }
+
+    assert data.as_dataframe()["totalA"].to_list() == [12, 15]
+    assert data.as_dataframe()["totalB"].to_list() == [18, 21]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(include=["boundary_a"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [0, 1]
+    assert data.as_dataframe()["totalB"].to_list() == [2, 3]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(exclude=["boundary_a"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [12, 14]
+    assert data.as_dataframe()["totalB"].to_list() == [16, 18]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(exclude=["boundary_a*"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [0, 0]
+    assert data.as_dataframe()["totalB"].to_list() == [0, 0]
+    assert sorted(data.as_dataframe().keys()) == sorted(
+        [
+            "X",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+    data.filter(include=["boundary_a*"])
+
+    assert data.as_dataframe()["totalA"].to_list() == [12, 15]
+    assert data.as_dataframe()["totalB"].to_list() == [18, 21]
+    assert sorted(data.as_dict().keys()) == sorted(
+        [
+            "X",
+            "boundary_a_A",
+            "boundary_a_B",
+            "boundary_a_a_A",
+            "boundary_a_a_B",
+            "boundary_aa_A",
+            "boundary_aa_B",
+            "totalA",
+            "totalB",
+        ]
+    )
+
+
 @pytest.mark.usefixtures("s3_download_override")
 def test_x_sectional_results(mock_id, mock_response):
     case = fl.Case(id=mock_id)
     cd_curve = case.results.x_slicing_force_distribution
-    # wait for postprocessing to finish
     cd_curve.wait()
 
-    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
-    variables = ["Cumulative_CD_Curve", "CD_per_length"]
+    boundaries = ["blk-1/fuselage", "blk-1/leftWing", "blk-1/rightWing"]
+    variables = ["Cumulative_CD_Curve", "CD_per_strip"]
     x_columns = ["X"]
     total = [f"total{postfix}" for postfix in variables]
 
@@ -202,53 +406,62 @@ def test_x_sectional_results(mock_id, mock_response):
         + total
     )
 
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.42326354287032886
+    total_cd_on_all_walls = 0.0148069815193822
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == total_cd_on_all_walls
     assert set(cd_curve.values.keys()) == set(all_headers)
+    num_total_rows = cd_curve.as_dataframe().shape[0]
+    assert cd_curve.as_dataframe().shape[0] == 300
 
+    # filter
     cd_curve.filter(include="*Wing*")
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+    cd_on_both_wings = 0.0104545376519996
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_both_wings
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
-    all_headers = (
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
+    all_headers_both_wings = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
-    assert set(cd_curve.values.keys()) == set(all_headers)
+    assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
+    assert cd_curve.as_dataframe().shape[0] == 168
 
     cd_curve.filter(exclude="*fuselage*")
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_both_wings
+    assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
+    assert cd_curve.as_dataframe().shape[0] == 168
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    cd_on_fuselage = 0.0043524438673826
+    cd_curve.filter(include="*fuselage*")
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_fuselage
+    assert cd_curve.as_dataframe().shape[0] == 300
+
+    cd_curve.filter(include=["blk-1/leftWing", "blk-1/rightWing"])
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_both_wings
+
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
-    assert set(cd_curve.values.keys()) == set(all_headers)
+    assert set(cd_curve.values.keys()) == set(all_headers_both_wings)
+    assert cd_curve.as_dataframe().shape[0] == 168
 
-    cd_curve.filter(include=["fluid/leftWing", "fluid/rightWing"])
-    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == 0.3217360243988844
-
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
-    all_headers = (
-        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
-        + x_columns
-        + total
-    )
-    assert set(cd_curve.values.keys()) == set(all_headers)
+    cd_curve.filter(exclude=["blk-1/leftWing", "blk-1/rightWing"])
+    assert cd_curve.as_dataframe().iloc[-1]["totalCumulative_CD_Curve"] == cd_on_fuselage
+    assert cd_curve.as_dataframe().shape[0] == 300
 
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_y_sectional_results(mock_id, mock_response):
     case = fl.Case(id=mock_id)
     y_slicing = case.results.y_slicing_force_distribution
-    # wait for postprocessing to finish
     y_slicing.wait()
 
-    boundaries = ["fluid/fuselage", "fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/fuselage", "blk-1/leftWing", "blk-1/rightWing"]
     variables = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
-    x_columns = ["Y"]
+    x_columns = ["Y", "stride"]
     total = [f"total{postfix}" for postfix in variables]
 
     all_headers = (
@@ -257,13 +470,27 @@ def test_y_sectional_results(mock_id, mock_response):
         + total
     )
 
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 300
 
     y_slicing.filter(include="*Wing*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 280
+
+    # make sure the data excluded in the previous filter operation can still be retrieved
+    y_slicing.filter(include="*fuselage*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFz_per_span"] == -0.0015624292568078
+
+    boundaries = ["blk-1/fuselage"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
@@ -272,23 +499,49 @@ def test_y_sectional_results(mock_id, mock_response):
     assert set(y_slicing.values.keys()) == set(all_headers)
 
     y_slicing.filter(exclude="*fuselage*")
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 280
 
-    y_slicing.filter(include=["fluid/leftWing", "fluid/rightWing"])
-    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0
+    y_slicing.filter(include="*fuselage*")
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0010109367119019
 
-    boundaries = ["fluid/leftWing", "fluid/rightWing"]
+    boundaries = ["blk-1/fuselage"]
     all_headers = (
         [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
         + x_columns
         + total
     )
     assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 28
+
+    y_slicing.filter(include=["blk-1/leftWing", "blk-1/rightWing"])
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.0004722955787145
+
+    boundaries = ["blk-1/leftWing", "blk-1/rightWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 280
+
+    y_slicing.filter(include=["blk-1/leftWing"])
+    assert y_slicing.as_dataframe().iloc[-1]["totalCFx_per_span"] == 0.000145645121735
+
+    boundaries = ["blk-1/leftWing"]
+    all_headers = (
+        [f"{prefix}_{postfix}" for prefix, postfix in product(boundaries, variables)]
+        + x_columns
+        + total
+    )
+    assert set(y_slicing.values.keys()) == set(all_headers)
+    assert y_slicing.as_dataframe().shape[0] == 140

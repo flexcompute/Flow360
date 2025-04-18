@@ -2,10 +2,11 @@
 Caveats:
 1. Check if we support non-average and average output specified at the same time in solver.
 (Yes but they share the same output_fields)
-2. We do not support mulitple output frequencies/file format for the same type of output.
+2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
-from typing import Annotated, List, Literal, Optional, Union
+# pylint: disable=too-many-lines
+from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -17,18 +18,33 @@ from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.output_fields import (
+    AllFieldNames,
     CommonFieldNames,
+    InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    get_field_values,
 )
-from flow360.component.simulation.primitives import GhostSurface, Surface
+from flow360.component.simulation.primitives import (
+    GhostCircularPlane,
+    GhostSphere,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.validation.validation_output import (
-    _check_unique_probe_type,
+from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
+    get_validation_info,
+    get_validation_levels,
+)
+from flow360.component.simulation.validation_utils import (
+    check_deleted_surface_in_entity_list,
 )
 
 
@@ -72,8 +88,39 @@ class UserDefinedField(Flow360BaseModel):
         description="The mathematical expression for the field."
     )
 
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _check_redefined_user_defined_fields(cls, value):
+        current_levels = get_validation_levels() if get_validation_levels() else []
+        if all(level not in current_levels for level in (ALL, CASE)):
+            return value
+        defined_field_names = get_field_values(AllFieldNames)
+        if value in defined_field_names:
+            raise ValueError(
+                f"User defined field variable name: {value} conflicts with pre-defined field names."
+                " Please consider renaming this user defined field variable."
+            )
+        return value
 
-class _AnimationSettings(Flow360BaseModel):
+
+class _OutputBase(Flow360BaseModel):
+    output_fields: UniqueItemList[str] = pd.Field()
+
+    @pd.field_validator("output_fields", mode="after")
+    @classmethod
+    def _validate_non_liquid_output_fields(cls, value: UniqueItemList):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        for output_item in value.items:
+            if output_item in get_args(InvalidOutputFieldsForLiquid):
+                raise ValueError(
+                    f"Output field {output_item} cannot be selected when using liquid as simulation material."
+                )
+        return value
+
+
+class _AnimationSettings(_OutputBase):
     """
     Controls how frequently the output files are generated.
     """
@@ -135,10 +182,9 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="List of output :class:`~flow360.Surface`/"
-        + ":class:`~flow360.GhostSurface` entities. ",
+        description="List of boundaries where output is generated.",
     )
     write_single_file: bool = pd.Field(
         default=False,
@@ -153,6 +199,12 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
+
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
     """
@@ -166,8 +218,8 @@ class TimeAverageSurfaceOutput(SurfaceOutput):
     (14, 24, 34 etc.).
 
     >>> fl.TimeAverageSurfaceOutput(
-    ...     output_format=["primitiveVars"],
-    ...     output_fields=restart_output_fields,
+    ...     output_format="paraview",
+    ...     output_fields=["primitiveVars"],
     ...     entities=[
     ...         volume_mesh["VOLUME/LEFT"],
     ...         volume_mesh["VOLUME/RIGHT"],
@@ -369,7 +421,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
-class SurfaceIntegralOutput(Flow360BaseModel):
+class SurfaceIntegralOutput(_OutputBase):
     """
 
     :class:`SurfaceIntegralOutput` class for surface integral output settings.
@@ -394,73 +446,68 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of integral.")
-    entities: EntityList[Surface, GhostSurface] = pd.Field(
+    name: str = pd.Field("Surface integral output", description="Name of integral.")
+    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
         alias="surfaces",
-        description="List of :class:`~flow360.component.simulation.primitives.Surface`/"
-        + ":class:`~flow360.component.simulation.primitives.GhostSurface` entities on which "
-        + "the surface integral will be calculated.",
+        description="List of boundaries where the surface integral will be calculated.",
     )
     output_fields: UniqueItemList[str] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
-class ProbeOutput(Flow360BaseModel):
+
+class ProbeOutput(_OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points.
 
     Example
     -------
 
-    - Define :class:`ProbeOutput` on multiple monitor points.
+    Define :class:`ProbeOutput` on multiple specific monitor points and monitor points along the line.
 
-      >>> fl.ProbeOutput(
-      ...     name="probe_group_points",
-      ...     entities=[
-      ...         fl.Point(
-      ...             name="Point_1",
-      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...         fl.Point(
-      ...             name="Point_2",
-      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...     ],
-      ...     output_fields=["primitiveVars"],
-      ... )
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
+    - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
+    - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
+      namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
 
-
-    - Define :class:`ProbeOutput` on monitor points along the line.
-
-      - :code:`Line_1` is from (1,0,0) * fl.u,m to (1.5,0,0) * fl.u,m and has 6 monitor points.
-      - :code:`Line_2` is from (-1,0,0) * fl.u,m to (-1.5,0,0) * fl.u,m and has 3 monitor points,
-        namely, (-1,0,0) * fl.u,m, (-1.25,0,0) * fl.u,m and (-1.5,0,0) * fl.u,m.
-
-      >>> fl.ProbeOutput(
-      ...     name="probe_group_lines",
-      ...     entities=[
-      ...         fl.PointArray(
-      ...             name="Line_1",
-      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(1.5, 0.0, 0.0) * fl.u.m,
-      ...             number_of_points=6,
-      ...         ),
-      ...         fl.PointArray(
-      ...             name="Line_2",
-      ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
-      ...             number_of_points=3,
-      ...         ),
-      ...     ],
-      ...     output_fields=["primitiveVars"],
-      ... )
+    >>> fl.ProbeOutput(
+    ...     name="probe_group_points_and_lines",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_1",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=6,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_2",
+    ...             start=(-1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(-1.5, 0.0, 0.0) * fl.u.m,
+    ...             number_of_points=3,
+    ...         ),
+    ...     ],
+    ...     output_fields=["primitiveVars"],
+    ... )
 
     ====
     """
 
-    name: str = pd.Field(description="Name of the monitor group.")
+    name: str = pd.Field("Probe output", description="Name of the monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
@@ -474,17 +521,6 @@ class ProbeOutput(Flow360BaseModel):
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
-    @classmethod
-    def load_point_location_from_file(cls, file_path: str):
-        """Load probe point locations from a file. (Not implemented yet)"""
-        raise NotImplementedError("Not implemented yet.")
-
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "ProbeOutput")
-
 
 class SurfaceProbeOutput(Flow360BaseModel):
     """
@@ -495,53 +531,41 @@ class SurfaceProbeOutput(Flow360BaseModel):
     Example
     -------
 
-    - Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
-      with multiple monitor points.
+    Define :class:`SurfaceProbeOutput` on the :code:`geometry["wall"]` surface
+    with multiple specific monitor points and monitor points along the line.
 
-      >>> fl.SurfaceProbeOutput(
-      ...     name="surface_probe_group_points",
-      ...     entities=[
-      ...         fl.Point(
-      ...             name="Point_1",
-      ...             location=(0.0, 1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...         fl.Point(
-      ...             name="Point_2",
-      ...             location=(0.0, -1.5, 0.0) * fl.u.m,
-      ...         ),
-      ...     ],
-      ...     target_surfaces=[
-      ...         geometry["wall"],
-      ...     ],
-      ...     output_fields=["heatFlux", "T"],
-      ... )
-
-
-    - Define :class:`SurafceProbeOutput` on the :code:`volume_mesh["fluid/wall"]` surface
-      with monitor points along the line.
-      :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to monitor in this probe output group.
+    - :code:`Line_surface` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 monitor points,
       including both starting and end points.
 
-      >>> fl.SurfaceProbeOutput(
-      ...     name="surface_probe_group_lines",
-      ...     entities=[
-      ...         fl.PointArray(
-      ...             name="Line_surface",
-      ...             start=(1.0, 0.0, 0.0) * fl.u.m,
-      ...             end=(1.0, 0.0, -10.0) * fl.u.m,
-      ...             number_of_points=11,
-      ...         ),
-      ...     ],
-      ...     target_surfaces=[
-      ...         volume_mesh["fluid/wall"],
-      ...     ],
-      ...     output_fields=["heatFlux", "T"],
-      ... )
+    >>> fl.SurfaceProbeOutput(
+    ...     name="surface_probe_group_points",
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_surface",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...     ],
+    ...     target_surfaces=[
+    ...         geometry["wall"],
+    ...     ],
+    ...     output_fields=["heatFlux", "T"],
+    ... )
 
     ====
     """
 
-    name: str = pd.Field(description="Name of the surface monitor group.")
+    name: str = pd.Field("Surface probe output", description="Name of the surface monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
@@ -561,11 +585,11 @@ class SurfaceProbeOutput(Flow360BaseModel):
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @pd.field_validator("target_surfaces", mode="after")
     @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "SurfaceProbeOutput")
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
@@ -573,7 +597,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     Surface slice settings.
     """
 
-    name: str = pd.Field(description="Name of the `SurfaceSliceOutput`.")
+    name: str = pd.Field("Surface slice output", description="Name of the `SurfaceSliceOutput`.")
     entities: EntityList[Slice] = pd.Field(
         alias="slices", description="List of :class:`Slice` entities."
     )
@@ -590,11 +614,11 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
 
-    @pd.field_validator("entities", mode="after")
+    @pd.field_validator("target_surfaces", mode="after")
     @classmethod
-    def check_unique_probe_type(cls, value):
-        """Check to ensure every entity has the same type"""
-        return _check_unique_probe_type(value, "SurfaceSliceOutput")
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class TimeAverageProbeOutput(ProbeOutput):
@@ -660,9 +684,22 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average probe output", description="Name of the `TimeAverageProbeOutput`."
+    )
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(default=1, ge=1)
-    frequency_offset: int = pd.Field(default=0, ge=0)
+    frequency: int = pd.Field(
+        default=1,
+        ge=-1,
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
@@ -686,9 +723,9 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
       >>> TimeAverageSurfaceProbeOutput(
       ...     name="time_average_surface_probe_group_points",
       ...     entities=[
-      ...         Point(name="Point_1", location=[1, 1.02, 0.03] * u.cm),
-      ...         Point(name="Point_2", location=[2, 1.01, 0.03] * u.m),
-      ...         Point(name="Point_3", location=[3, 1.02, 0.03] * u.m),
+      ...         Point(name="Point_1", location=[1, 1.02, 0.03] * fl.u.cm),
+      ...         Point(name="Point_2", location=[2, 1.01, 0.03] * fl.u.m),
+      ...         Point(name="Point_3", location=[3, 1.02, 0.03] * fl.u.m),
       ...     ],
       ...     target_surfaces=[
       ...         Surface(name="Surface_1", geometry["surface1"]),
@@ -738,15 +775,54 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average surface probe output",
+        description="Name of the `TimeAverageSurfaceProbeOutput`.",
+    )
     # pylint: disable=abstract-method
-    frequency: int = pd.Field(default=1, ge=1)
-    frequency_offset: int = pd.Field(default=0, ge=0)
+    frequency: int = pd.Field(
+        default=1,
+        ge=-1,
+        description="Frequency (in number of physical time steps) at which output is saved. "
+        + "-1 is at end of simulation.",
+    )
+    frequency_offset: int = pd.Field(
+        default=0,
+        ge=0,
+        description="Offset (in number of physical time steps) at which output animation is started."
+        + " 0 is at beginning of simulation.",
+    )
     start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
         default=-1, description="Physical time step to start calculating averaging"
     )
     output_type: Literal["TimeAverageSurfaceProbeOutput"] = pd.Field(
         "TimeAverageSurfaceProbeOutput", frozen=True
     )
+
+
+class Observer(Flow360BaseModel):
+    """
+    :class:`Observer` class for setting up the :py:attr:`AeroAcousticOutput.observers`.
+
+    Example
+    -------
+
+    >>> fl.Observer(position=[1, 2, 3] * fl.u.m, group_name="1")
+
+    ====
+    """
+
+    # pylint: disable=no-member
+    position: LengthType.Point = pd.Field(
+        description="Position at which time history of acoustic pressure signal "
+        + "is stored in aeroacoustic output file. The observer position can be outside the simulation domain, "
+        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    )
+    group_name: str = pd.Field(
+        description="Name of the group to which the observer will be assigned "
+        + "for postprocessing purposes in Flow360 web client."
+    )
+    private_attribute_expand: Optional[bool] = pd.Field(None)
 
 
 class AeroAcousticOutput(Flow360BaseModel):
@@ -759,16 +835,17 @@ class AeroAcousticOutput(Flow360BaseModel):
 
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [0.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.0, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ... )
 
-    Using permeable surfaces:
+    If using permeable surfaces:
+
     >>> fl.AeroAcousticOutput(
     ...     observers=[
-    ...         [1.0, 0.0, 1.75] * fl.u.m,
-    ...         [0.2, 0.3, 1.725] * fl.u.m,
+    ...         fl.Observer(position=[1.0, 0.0, 1.75] * fl.u.m, group_name="1"),
+    ...         fl.Observer(position=[0.2, 0.3, 1.725] * fl.u.m, group_name="1"),
     ...     ],
     ...     patch_type="permeable",
     ...     permeable_surfaces=[volume_mesh["inner/interface*"]]
@@ -788,14 +865,14 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "embedded in the volumetric domain as aeroacoustic solver "
         + "input.",
     )
-    permeable_surfaces: Optional[EntityList[Surface, GhostSurface]] = pd.Field(
+    permeable_surfaces: Optional[
+        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
+    ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
     # pylint: disable=no-member
-    observers: List[LengthType.Point] = pd.Field(
-        description="List of observer locations at which time history of acoustic pressure signal "
-        + "is stored in aeroacoustic output file. The observer locations can be outside the simulation domain, "
-        + "but cannot be on or inside the solid surfaces of the simulation domain."
+    observers: List[Observer] = pd.Field(
+        description="A List of :class:`Observer` objects specifying each observer's position and group name."
     )
     write_per_surface_output: bool = pd.Field(
         False,
@@ -803,6 +880,23 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+
+    @pd.field_validator("observers", mode="after")
+    @classmethod
+    def validate_observer_has_same_unit(cls, input_value):
+        """
+        All observer location should have the same length unit.
+        This is because UI has single toggle for all coordinates.
+        """
+        unit_set = {}
+        for observer in input_value:
+            unit_set[observer.position.units] = None
+            if len(unit_set.keys()) > 1:
+                raise ValueError(
+                    "All observer locations should have the same unit."
+                    f" But now it has both `{list(unit_set.keys())[0]}` and `{list(unit_set.keys())[1]}`."
+                )
+        return input_value
 
     @pd.model_validator(mode="after")
     def check_consistent_patch_type_and_permeable_surfaces(self):
@@ -813,6 +907,79 @@ class AeroAcousticOutput(Flow360BaseModel):
             raise ValueError("`permeable_surfaces` cannot be empty when `patch_type` is permeable.")
 
         return self
+
+    @pd.field_validator("permeable_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        if value is None:
+            return value
+        return check_deleted_surface_in_entity_list(value)
+
+
+class StreamlineOutput(Flow360BaseModel):
+    """
+    :class:`StreamlineOutput` class for calculating streamlines.
+    Stramtraces are computed upwind and downwind, and may originate from a single point,
+    from a line, or from points evenly distributed across a parallelogram.
+
+    Example
+    -------
+
+    Define a :class:`StreamlineOutput` with streaptraces originating from points, lines (PointArray), and
+    parallelograms (PointArray2D).
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+      including both starting and end points.
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+      orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
+      with 20 points along the v direction.
+
+    >>> fl.StreamlineOutput(
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_streamline",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...         fl.PointArray2D(
+    ...             name="Parallelogram_streamline",
+    ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
+    ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
+    ...             u_number_of_points=11,
+    ...             v_number_of_points=20
+    ...         )
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Streamline output", description="Name of the `StreamlineOutput`."
+    )
+    entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
+        alias="streamline_points",
+        description="List of monitored :class:`~flow360.Point`/"
+        + ":class:`~flow360.PointArray`/:class:`~flow360.Point`"
+        + "entities belonging to this "
+        + "streamline group. :class:`~flow360.PointArray` "
+        + "is used to define streamline originating along a line."
+        + ":class:`~flow360.PointArray2D` "
+        + "is used to define streamline originating from a parallelogram.",
+    )
+    output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
 
 
 OutputTypes = Annotated[
@@ -831,6 +998,15 @@ OutputTypes = Annotated[
         TimeAverageProbeOutput,
         TimeAverageSurfaceProbeOutput,
         AeroAcousticOutput,
+        StreamlineOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
+
+TimeAverageOutputTypes = (
+    TimeAverageSurfaceOutput,
+    TimeAverageVolumeOutput,
+    TimeAverageSliceOutput,
+    TimeAverageProbeOutput,
+    TimeAverageSurfaceProbeOutput,
+)

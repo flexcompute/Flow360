@@ -3,6 +3,7 @@
 # pylint: disable=too-many-lines
 from typing import Type, Union
 
+from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
@@ -15,6 +16,7 @@ from flow360.component.simulation.models.surface_models import (
     Outflow,
     Periodic,
     Pressure,
+    SlaterPorousBleed,
     SlipWall,
     SurfaceModelTypes,
     SymmetryPlane,
@@ -22,6 +24,8 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallRotation,
+    WallVelocityModelTypes,
 )
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
@@ -33,7 +37,15 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
-from flow360.component.simulation.outputs.output_entities import PointArray
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
+)
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
+from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -41,6 +53,7 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     Slice,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -50,6 +63,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
+    UserDefinedField,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Box, SurfacePair
@@ -67,7 +81,10 @@ from flow360.component.simulation.translator.utils import (
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import is_exact_instance
+from flow360.component.simulation.utils import (
+    is_exact_instance,
+    is_instance_of_type_in_union,
+)
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -211,6 +228,7 @@ def translate_output_fields(
         SurfaceIntegralOutput,
         SurfaceProbeOutput,
         SurfaceSliceOutput,
+        StreamlineOutput,
     ],
 ):
     """Get output fields"""
@@ -271,32 +289,46 @@ def inject_isosurface_info(entity: Isosurface):
 
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "probe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
-    if isinstance(entity.stored_entities[0], PointArray):
-        return {
-            "start": [item.start.value.tolist() for item in entity.stored_entities],
-            "end": [item.end.value.tolist() for item in entity.stored_entities],
-            "numberOfPoints": [item.number_of_points for item in entity.stored_entities],
-            "type": "lineProbe",
-        }
-    return {
-        "monitorLocations": [item.location.value.tolist() for item in entity.stored_entities],
-        "type": "surfaceProbe",
+
+    translated_entity_dict = {
+        "start": [],
+        "end": [],
+        "numberOfPoints": [],
+        "type": "lineProbe",
     }
+    for item in entity.stored_entities:
+        if isinstance(item, PointArray):
+            translated_entity_dict["start"].append(item.start.value.tolist())
+            translated_entity_dict["end"].append(item.end.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
+        if isinstance(item, Point):
+            translated_entity_dict["start"].append(item.location.value.tolist())
+            translated_entity_dict["end"].append(item.location.value.tolist())
+            translated_entity_dict["numberOfPoints"].append(1)
+
+    return translated_entity_dict
 
 
 def inject_surface_list_info(entity: EntityList):
@@ -460,7 +492,9 @@ def translate_acoustic_output(output_params: list):
     aeroacoustic_output = {}
     for output in output_params:
         if isinstance(output, AeroAcousticOutput):
-            aeroacoustic_output["observers"] = [item.value.tolist() for item in output.observers]
+            aeroacoustic_output["observers"] = [
+                item.position.value.tolist() for item in output.observers
+            ]
             aeroacoustic_output["writePerSurfaceOutput"] = output.write_per_surface_output
             aeroacoustic_output["patchType"] = output.patch_type
             if output.permeable_surfaces is not None:
@@ -469,6 +503,69 @@ def translate_acoustic_output(output_params: list):
                 ]
             return aeroacoustic_output
     return None
+
+
+def process_output_fields_for_udf(input_params):
+    """
+    Process all output fields from different output types and generate additional
+    UserDefinedFields for dimensioned fields.
+
+    Args:
+        input_params: SimulationParams object containing outputs configuration
+
+    Returns:
+        tuple: (all_field_names, generated_udfs) where:
+            - all_field_names is a set of all output field names
+            - generated_udfs is a list of UserDefinedField objects for dimensioned fields
+    """
+
+    # Collect all output field names from all output types
+    all_field_names = set()
+
+    if input_params.outputs:
+        for output in input_params.outputs:
+            if hasattr(output, "output_fields") and output.output_fields:
+                all_field_names.update(output.output_fields.items)
+
+    # Generate UDFs for dimensioned fields
+    generated_udfs = []
+    for field_name in all_field_names:
+        udf_expression = generate_predefined_udf(field_name, input_params)
+        if udf_expression:
+            generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
+
+    return generated_udfs
+
+
+def translate_streamline_output(output_params: list):
+    """Translate streamline output settings."""
+    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    for output in output_params:
+        if isinstance(output, StreamlineOutput):
+            for entity in output.entities.stored_entities:
+                if isinstance(entity, Point):
+                    point = {"name": entity.name, "location": entity.location.value.tolist()}
+                    streamline_output["Points"].append(point)
+                elif isinstance(entity, PointArray):
+                    line = {
+                        "name": entity.name,
+                        "start": entity.start.value.tolist(),
+                        "end": entity.end.value.tolist(),
+                        "numberOfPoints": entity.number_of_points,
+                    }
+                    streamline_output["PointArrays"].append(line)
+                elif isinstance(entity, PointArray2D):
+                    parallelogram = {
+                        "name": entity.name,
+                        "origin": entity.origin.value.tolist(),
+                        "uAxisVector": entity.u_axis_vector.value.tolist(),
+                        "vAxisVector": entity.v_axis_vector.value.tolist(),
+                        "uNumberOfPoints": entity.u_number_of_points,
+                        "vNumberOfPoints": entity.v_number_of_points,
+                    }
+                    streamline_output["PointArrays2D"].append(parallelogram)
+
+    return streamline_output
 
 
 def translate_output(input_params: SimulationParams, translated: dict):
@@ -575,6 +672,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step6: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
+
+    ##:: Step7: Get translated["streamlineOutput"]
+    if has_instance_in_list(outputs, StreamlineOutput):
+        translated["streamlineOutput"] = translate_streamline_output(outputs)
 
     return translated
 
@@ -729,6 +830,8 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
                 output[key_name]["type"] = "SolidIsofluxWall"
             else:
                 output[key_name]["type"] = "SolidAdiabaticWall"
+            if "roughnessHeight" in translated_setting:
+                output[key_name].pop("roughnessHeight")
     return output
 
 
@@ -740,37 +843,65 @@ def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
     return boundary
 
 
-# pylint: disable=too-many-branches
-def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pressure_ratio):
+# pylint: disable=too-many-branches, too-many-statements
+def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pressure_ratio):
     """Boundary translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
     boundary = {}
     if isinstance(model, Wall):
         boundary["type"] = "WallFunction" if model.use_wall_function else "NoSlipWall"
         if model.velocity is not None:
-            boundary["velocity"] = list(model_dict["velocity"])
+            if not is_instance_of_type_in_union(model.velocity, WallVelocityModelTypes):
+                boundary["velocity"] = list(model_dict["velocity"])
+            elif isinstance(model.velocity, SlaterPorousBleed):
+                boundary["wallVelocityModel"] = {}
+                boundary["wallVelocityModel"]["staticPressureRatio"] = (
+                    model.velocity.static_pressure.value * op_acoustic_to_static_pressure_ratio
+                )
+                boundary["wallVelocityModel"]["porosity"] = model.velocity.porosity
+                boundary["wallVelocityModel"]["type"] = model.velocity.type_name
+                if model.velocity.activation_step is not None:
+                    boundary["wallVelocityModel"]["activationStep"] = model.velocity.activation_step
+            elif isinstance(model.velocity, WallRotation):
+                omega = model.velocity.angular_velocity.value
+                axis = model.velocity.axis
+                center = model.velocity.center.value
+                boundary["velocity"] = [
+                    f"{omega * axis[1]} * (z - {center[2]}) - {omega * axis[2]} * (y - {center[1]})",
+                    f"{omega * axis[2]} * (x - {center[0]}) - {omega * axis[0]} * (z - {center[2]})",
+                    f"{omega * axis[0]} * (y - {center[1]}) - {omega * axis[1]} * (x - {center[0]})",
+                ]
+            else:
+                raise Flow360TranslationError(
+                    f"Unsupported wall velocity setting found with type: {type(model.velocity)}",
+                    input_value=model,
+                    location=["models"],
+                )
         if isinstance(model.heat_spec, Temperature):
             boundary["temperature"] = model_dict["heatSpec"]["value"]
         elif isinstance(model.heat_spec, HeatFlux):
             boundary["heatFlux"] = model_dict["heatSpec"]["value"]
+        boundary["roughnessHeight"] = model_dict["roughnessHeight"]
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
-        if model.velocity_direction is not None:
-            boundary["velocityDirection"] = model_dict["velocityDirection"]
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             boundary["totalPressureRatio"] = (
-                model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
+                model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
             )
+            if model.spec.velocity_direction is not None:
+                boundary["velocityDirection"] = list(model_dict["spec"]["velocityDirection"])
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassInflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
+            if model.spec.ramp_steps is not None:
+                boundary["rampSteps"] = model_dict["spec"]["rampSteps"]
         boundary = _append_turbulence_quantities_to_dict(model, model_dict, boundary)
     elif isinstance(model, Outflow):
         if isinstance(model.spec, Pressure):
             boundary["type"] = "SubsonicOutflowPressure"
             boundary["staticPressureRatio"] = (
-                model_dict["spec"]["value"] * op_acousitc_to_static_pressure_ratio
+                model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
             )
         elif isinstance(model.spec, Mach):
             boundary["type"] = "SubsonicOutflowMach"
@@ -778,6 +909,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassOutflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
+            if model.spec.ramp_steps is not None:
+                boundary["rampSteps"] = model_dict["spec"]["rampSteps"]
     elif isinstance(model, Periodic):
         boundary["type"] = (
             "TranslationallyPeriodic"
@@ -798,7 +931,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acousitc_to_static_pre
 
 
 def get_navier_stokes_initial_condition(
-    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution]
+    initial_condition: Union[NavierStokesInitialCondition, NavierStokesModifiedRestartSolution],
 ):
     """Translate the initial condition for NavierStokes"""
     if is_exact_instance(initial_condition, NavierStokesInitialCondition):
@@ -861,16 +994,27 @@ def get_solver_json(
         "Mach": op.velocity_magnitude.v.item(),
         "Temperature": (
             op.thermal_state.temperature.to("K").v.item()
-            if isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
+            if not isinstance(op, LiquidOperatingCondition)
+            and isinstance(op.thermal_state.material.dynamic_viscosity, Sutherland)
             else -1
         ),
-        "muRef": op.thermal_state.dynamic_viscosity.v.item(),
+        "muRef": (
+            op.thermal_state.dynamic_viscosity.v.item()
+            if not isinstance(op, LiquidOperatingCondition)
+            else op.material.dynamic_viscosity.v.item()
+        ),
     }
     if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
-    op_acousitc_to_static_pressure_ratio = (
-        op.thermal_state.density * op.thermal_state.speed_of_sound**2 / op.thermal_state.pressure
-    ).value
+    op_acoustic_to_static_pressure_ratio = (
+        (
+            op.thermal_state.density
+            * op.thermal_state.speed_of_sound**2
+            / op.thermal_state.pressure
+        ).value
+        if not isinstance(op, LiquidOperatingCondition)
+        else 1.0
+    )
 
     ##:: Step 5: Get timeStepping
     ts = input_params.time_stepping
@@ -894,15 +1038,21 @@ def get_solver_json(
 
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
-
         if isinstance(model, Fluid):
-
             if model.navier_stokes_solver.low_mach_preconditioner:
                 if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
                     model.navier_stokes_solver.low_mach_preconditioner_threshold = (
                         input_params.operating_condition.mach
                     )
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
+            if translated["navierStokesSolver"]["lowMachPreconditioner"] is False and isinstance(
+                op, LiquidOperatingCondition
+            ):
+                translated["navierStokesSolver"]["lowMachPreconditioner"] = True
+                translated["navierStokesSolver"][
+                    "lowMachPreconditionerThreshold"
+                ] = LIQUID_IMAGINARY_FREESTREAM_MACH
+
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
                 translated["navierStokesSolver"],
@@ -950,6 +1100,24 @@ def get_solver_json(
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
+
+            if not isinstance(model.turbulence_model_solver, NoneSolver):
+                hybrid_model = model.turbulence_model_solver.hybrid_model
+                if hybrid_model is not None:
+                    if hybrid_model.shielding_function == "DDES":
+                        translated["turbulenceModelSolver"]["DDES"] = True
+                        translated["turbulenceModelSolver"]["ZDES"] = False
+                    if hybrid_model.shielding_function == "ZDES":
+                        translated["turbulenceModelSolver"]["ZDES"] = True
+                        translated["turbulenceModelSolver"]["DDES"] = False
+                    translated["turbulenceModelSolver"][
+                        "gridSizeForLES"
+                    ] = hybrid_model.grid_size_for_LES
+                    translated["turbulenceModelSolver"].pop("hybridModel")
+                else:
+                    translated["turbulenceModelSolver"]["DDES"] = False
+                    translated["turbulenceModelSolver"]["ZDES"] = False
+                    translated["turbulenceModelSolver"]["gridSizeForLES"] = "maxEdgeLength"
 
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
@@ -1108,7 +1276,7 @@ def get_solver_json(
         entity_injection_func=boundary_entity_info_serializer,
         pass_translated_setting_to_entity_injection=True,
         custom_output_dict_entries=True,
-        translation_func_op_acousitc_to_static_pressure_ratio=op_acousitc_to_static_pressure_ratio,
+        translation_func_op_acoustic_to_static_pressure_ratio=op_acoustic_to_static_pressure_ratio,
         entity_injection_solid_zone_boundaries=solid_zone_boundaries,
     )
 
@@ -1116,9 +1284,13 @@ def get_solver_json(
 
     translated = translate_output(input_params, translated)
 
-    ##:: Step 5: Get user defined fields
+    ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
-    for udf in input_params.user_defined_fields:
+    # Add auto-generated UDFs for dimensioned fields
+    generated_udfs = process_output_fields_for_udf(input_params)
+
+    # Add user-specified UDFs and auto-generated UDFs for dimensioned fields
+    for udf in [*input_params.user_defined_fields, *generated_udfs]:
         udf_dict = {}
         udf_dict["name"] = udf.name
         udf_dict["expression"] = udf.expression
@@ -1143,5 +1315,16 @@ def get_solver_json(
             if udd.output_target is not None:
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
+
+    translated["usingLiquidAsMaterial"] = isinstance(
+        input_params.operating_condition, LiquidOperatingCondition
+    )
+    translated["outputRescale"] = {"velocityScale": 1.0}
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        translated["outputRescale"]["velocityScale"] = (
+            1.0 / translated["freestream"]["MachRef"]
+            if "MachRef" in translated["freestream"].keys()
+            else 1.0 / translated["freestream"]["Mach"]
+        )
 
     return translated

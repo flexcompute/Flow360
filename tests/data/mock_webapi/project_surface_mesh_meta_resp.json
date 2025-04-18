@@ -1,0 +1,35 @@
+{
+    "data": {
+        "type": "SurfaceMesh",
+        "userId": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "id": "sm-1f1f2753-fe31-47ea-b3ab-efb2313ab65a",
+        "parentId": "geo-2877e124-96ff-473d-864b-11eec8648d42",
+        "name": "SurfaceMesh_Tutorial Calculating Dynamic Derivatives using Sliding Interfaces (Steady)",
+        "tags": [],
+        "status": "processed",
+        "visualizationStatus": "completed",
+        "solverVersion": "release-24.11",
+        "parentFolderId": "ROOT.FLOW360",
+        "projectId": "prj-41d2333b-85fd-4bed-ae13-15dcb6da519e",
+        "viewed": null,
+        "parentFolders": [
+            {
+                "type": "Folder",
+                "userId": "XXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+                "name": "ROOT.FLOW360",
+                "tags": [],
+                "id": "ROOT.FLOW360",
+                "parentFolderId": null,
+                "parentFolders": null,
+                "createdAt": "2023-09-01T09:14:15.293797Z",
+                "updatedAt": "2023-09-01T09:14:15.293797Z"
+            }
+        ],
+        "storageSize": 19146449,
+        "deleted": false,
+        "createdAt": "2024-12-05T12:27:12.607Z",
+        "updatedAt": "2024-12-05T14:07:57.249Z",
+        "fileName": "surfaceMesh.pw",
+        "displayStatus": "completed"
+    }
+}

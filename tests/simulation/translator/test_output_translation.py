@@ -3,14 +3,23 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.outputs.output_entities import Point, PointArray
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     Slice,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
@@ -24,7 +33,11 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.translator.solver_translator import translate_output
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.translator.solver_translator import (
+    get_solver_json,
+    translate_output,
+)
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
@@ -85,14 +98,20 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
 
     ##:: timeAverageVolumeOutput only
     with SI_unit_system:
-        param = SimulationParams(outputs=[avg_volume_output_config[0]])
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[avg_volume_output_config[0]],
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(avg_volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
 
     ##:: timeAverageVolumeOutput and volumeOutput
     with SI_unit_system:
-        param = SimulationParams(outputs=[volume_output_config[0], avg_volume_output_config[0]])
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=[volume_output_config[0], avg_volume_output_config[0]],
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
@@ -176,7 +195,10 @@ def test_surface_output(
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
-        param = SimulationParams(outputs=surface_output_config[0] + avg_surface_output_config)
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=surface_output_config[0] + avg_surface_output_config,
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
@@ -282,7 +304,7 @@ def test_slice_output(
     ##:: sliceOutput with NO global settings
     with SI_unit_system:
         param = SimulationParams(outputs=sliceoutput_config[0])
-    param = param.preprocess(1.0 * u.m, exclude=["models"])
+    param = param._preprocess(1.0 * u.m, exclude=["models"])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
@@ -421,17 +443,21 @@ def probe_output_config():
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "numberOfPoints": [1, 1],
                     "outputFields": ["primitiveVars", "Cp"],
-                    "type": "probe",
+                    "type": "lineProbe",
                 },
                 "prb 12": {
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "numberOfPoints": [1],
                     "outputFields": ["primitiveVars", "Cp"],
-                    "type": "probe",
+                    "type": "lineProbe",
                 },
                 "prb average": {
                     "animationFrequency": 1,
@@ -440,9 +466,11 @@ def probe_output_config():
                     "animationFrequencyTimeAverageOffset": 0,
                     "startAverageIntegrationStep": -1,
                     "computeTimeAverages": True,
-                    "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                    "numberOfPoints": [1],
                     "outputFields": ["primitiveVars", "Cp", "T"],
-                    "type": "probe",
+                    "type": "lineProbe",
                 },
             },
             "outputFields": [],
@@ -486,6 +514,22 @@ def probe_output_with_point_array():
                 ],
                 output_fields=["primitiveVars", "Cp"],
             ),
+            ProbeOutput(
+                name="prb mix",
+                entities=[
+                    Point(
+                        name="124",
+                        location=[1, 1.02, 0.03] * u.cm,
+                    ),
+                    PointArray(
+                        name="Line 1",
+                        start=[0.1, 0.2, 0.3] * u.m,
+                        end=[1.1, 1.2, 1.3] * u.m,
+                        number_of_points=5,
+                    ),
+                ],
+                output_fields=["primitiveVars", "Cp"],
+            ),
         ],
         {
             "monitors": {
@@ -500,12 +544,24 @@ def probe_output_with_point_array():
                     "type": "lineProbe",
                 },
                 "prb point": {
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "numberOfPoints": [1, 1],
                     "outputFields": ["primitiveVars", "Cp"],
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                     "computeTimeAverages": False,
-                    "type": "probe",
+                    "type": "lineProbe",
+                },
+                "prb mix": {
+                    "start": [[0.1, 0.2, 0.3], [1e-2, 1.02e-2, 0.0003]],
+                    "end": [[1.1, 1.2, 1.3], [1e-2, 1.02e-2, 0.0003]],
+                    "numberOfPoints": [5, 1],
+                    "outputFields": ["primitiveVars", "Cp"],
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
+                    "type": "lineProbe",
                 },
             },
             "outputFields": [],
@@ -617,8 +673,10 @@ def test_surface_probe_output():
                     "computeTimeAverages": False,
                     "outputFields": ["Cp", "Cf"],
                     "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
-                    "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
-                    "type": "surfaceProbe",
+                    "start": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
+                    "end": [[1e-2, 1.02e-2, 0.0003], [2.0, 1.01, 0.03]],
+                    "numberOfPoints": [1, 1],
+                    "type": "lineProbe",
                 },
                 "SP-2": {
                     "animationFrequency": 1,
@@ -629,12 +687,18 @@ def test_surface_probe_output():
                     "computeTimeAverages": True,
                     "outputFields": ["Mach", "primitiveVars", "yPlus"],
                     "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
-                    "monitorLocations": [
+                    "start": [
                         [1e-2, 1.02e-2, 0.0003],
                         [2.0, 1.01, 0.03],
                         [3.0, 1.02, 0.03],
                     ],
-                    "type": "surfaceProbe",
+                    "end": [
+                        [1e-2, 1.02e-2, 0.0003],
+                        [2.0, 1.01, 0.03],
+                        [3.0, 1.02, 0.03],
+                    ],
+                    "numberOfPoints": [1, 1, 1],
+                    "type": "lineProbe",
                 },
                 "SP-3": {
                     "animationFrequency": 1,
@@ -654,10 +718,12 @@ def test_surface_probe_output():
 
     with SI_unit_system:
         param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=param_with_ref[0],
             user_defined_fields=[UserDefinedField(name="my_own_field", expression="1+1")],
         )
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -671,8 +737,12 @@ def test_monitor_output(
 ):
     ##:: monitorOutput
     with SI_unit_system:
-        param = SimulationParams(outputs=probe_output_config[0])
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=probe_output_config[0],
+        )
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -681,7 +751,7 @@ def test_monitor_output(
     ##:: monitorOutput with line probes
     with SI_unit_system:
         param = SimulationParams(outputs=probe_output_with_point_array[0])
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -698,7 +768,7 @@ def test_monitor_output(
                 UserDefinedField(name="My_field_2", expression="1+12"),
             ],
         )
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -709,13 +779,15 @@ def test_monitor_output(
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
         param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=surface_integral_output_config[0] + probe_output_config[0],
             user_defined_fields=[
                 UserDefinedField(name="My_field_1", expression="1+1"),
                 UserDefinedField(name="My_field_2", expression="1+12"),
             ],
         )
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
@@ -725,9 +797,11 @@ def test_monitor_output(
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": False,
-                "monitorLocations": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                "numberOfPoints": [1, 1],
                 "outputFields": ["primitiveVars", "Cp"],
-                "type": "probe",
+                "type": "lineProbe",
             },
             "prb 110": {
                 "animationFrequency": 1,
@@ -741,9 +815,11 @@ def test_monitor_output(
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": False,
-                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                "numberOfPoints": [1],
                 "outputFields": ["primitiveVars", "Cp"],
-                "type": "probe",
+                "type": "lineProbe",
             },
             "prb 122": {
                 "animationFrequency": 1,
@@ -760,9 +836,11 @@ def test_monitor_output(
                 "animationFrequencyTimeAverageOffset": 0,
                 "startAverageIntegrationStep": -1,
                 "computeTimeAverages": True,
-                "monitorLocations": [[10e-2, 10.02e-2, 10.03e-2]],
+                "start": [[10e-2, 10.02e-2, 10.03e-2]],
+                "end": [[10e-2, 10.02e-2, 10.03e-2]],
+                "numberOfPoints": [1],
                 "outputFields": ["primitiveVars", "Cp", "T"],
-                "type": "probe",
+                "type": "lineProbe",
             },
         },
         "outputFields": [],
@@ -775,12 +853,15 @@ def aeroacoustic_output_config():
     return (
         [
             AeroAcousticOutput(
-                observers=[[0.2, 0.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                observers=[
+                    Observer(position=[0.2, 0.02, 0.03] * u.m, group_name="0"),
+                    Observer(position=[0.0001, 0.02, 0.03] * u.m, group_name="0"),
+                ],
                 write_per_surface_output=True,
             ),
         ],
         {
-            "observers": [[0.002, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
+            "observers": [[0.2, 0.02, 0.03], [0.0001, 0.02, 0.03]],
             "writePerSurfaceOutput": True,
             "patchType": "solid",
         },
@@ -792,7 +873,10 @@ def aeroacoustic_output_permeable_config():
     return (
         [
             AeroAcousticOutput(
-                observers=[[1.2, 0.02, 0.03] * u.cm, [0.0001, 0.02, 0.03] * u.m],
+                observers=[
+                    Observer(position=[1.2, 0.02, 0.03] * u.cm, group_name="0"),
+                    Observer(position=[1, 0.02, 0.03] * u.cm, group_name="0"),
+                ],
                 patch_type="permeable",
                 permeable_surfaces=[
                     Surface(
@@ -805,7 +889,7 @@ def aeroacoustic_output_permeable_config():
             ),
         ],
         {
-            "observers": [[0.012, 0.0002, 0.0003], [0.0001, 0.02, 0.03]],
+            "observers": [[0.012, 0.0002, 0.0003], [0.01, 0.0002, 0.0003]],
             "patchType": "permeable",
             "permeableSurfaces": ["zoneA/interface-A-B", "zoneA/interface-A-C"],
             "writePerSurfaceOutput": False,
@@ -815,9 +899,13 @@ def aeroacoustic_output_permeable_config():
 
 def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeable_config):
     with SI_unit_system:
-        param = SimulationParams(outputs=aeroacoustic_output_config[0])
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=aeroacoustic_output_config[0],
+            time_stepping=Unsteady(steps=1, step_size=0.1),
+        )
     translated = {"boundaries": {}}
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_config[1].items()) == sorted(
@@ -825,9 +913,13 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     )
 
     with SI_unit_system:
-        param = SimulationParams(outputs=aeroacoustic_output_permeable_config[0])
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=aeroacoustic_output_permeable_config[0],
+            time_stepping=Unsteady(steps=1, step_size=0.1),
+        )
     translated = {"boundaries": {}}
-    param = param.preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
     assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
@@ -927,9 +1019,224 @@ def test_surface_slice_output():
 
     with SI_unit_system:
         param = SimulationParams(outputs=param_with_ref[0])
-    param = param.preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     print(json.dumps(translated, indent=4))
     assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
+
+
+def test_dimensioned_output_fields_translation():
+    """Test the translation of output fields from user-facing fields to solver fields."""
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=100.0 * u.m / u.s,
+            ),
+            outputs=[
+                VolumeOutput(
+                    frequency=1,
+                    output_format="both",
+                    output_fields=[
+                        "velocity",
+                        "velocity_m_per_s",
+                        "velocity_magnitude",
+                        "velocity_magnitude_m_per_s",
+                        "velocity_x_m_per_s",
+                        "velocity_y_m_per_s",
+                        "velocity_z_m_per_s",
+                        "pressure",
+                        "pressure_pa",
+                    ],
+                ),
+                SurfaceOutput(
+                    entities=[Surface(name="surface11")],
+                    output_fields=[
+                        "wall_shear_stress_magnitude",
+                        "wall_shear_stress_magnitude_pa",
+                    ],
+                ),
+                SliceOutput(
+                    name="my_slice",
+                    entities=[Slice(name="my_slice", origin=[0, 0, 0], normal=(0, 1, 0))],
+                    output_fields=["my_field"],
+                ),
+            ],
+            user_defined_fields=[
+                UserDefinedField(
+                    name="my_field",
+                    expression="1+1",
+                ),
+            ],
+        )
+
+    solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
+    expected_fields_v = [
+        "velocity",
+        "velocity_m_per_s",
+        "velocity_magnitude",
+        "velocity_magnitude_m_per_s",
+        "velocity_x_m_per_s",
+        "velocity_y_m_per_s",
+        "velocity_z_m_per_s",
+        "pressure",
+        "pressure_pa",
+    ]
+
+    expected_fields_s = [
+        "wall_shear_stress_magnitude",
+        "wall_shear_stress_magnitude_pa",
+    ]
+
+    assert set(solver_json["volumeOutput"]["outputFields"]) == set(expected_fields_v)
+    assert set(solver_json["surfaceOutput"]["surfaces"]["surface11"]["outputFields"]) == set(
+        expected_fields_s
+    )
+
+    ref = {
+        "userDefinedFields": [
+            {"name": "pressure", "expression": "pressure = primitiveVars[4];"},
+            {
+                "name": "velocity_m_per_s",
+                "expression": "double velocity[3];"
+                "velocity[0] = primitiveVars[1];"
+                "velocity[1] = primitiveVars[2];"
+                "velocity[2] = primitiveVars[3];"
+                "velocity_m_per_s[0] = velocity[0] * 340.29400580821283;"
+                "velocity_m_per_s[1] = velocity[1] * 340.29400580821283;"
+                "velocity_m_per_s[2] = velocity[2] * 340.29400580821283;",
+            },
+            {
+                "name": "wall_shear_stress_magnitude",
+                "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress);",
+            },
+            {
+                "name": "velocity_magnitude",
+                "expression": "double velocity[3]"
+                "velocity[0] = primitiveVars[1]"
+                "velocity[1] = primitiveVars[2]"
+                "velocity[2] = primitiveVars[3]"
+                "velocity_magnitude = magnitude(velocity)",
+            },
+            {
+                "name": "velocity",
+                "expression": "velocity[0] = primitiveVars[1]"
+                "velocity[1] = primitiveVars[2]"
+                "velocity[2] = primitiveVars[3]",
+            },
+            {
+                "name": "wall_shear_stress_magnitude_pa",
+                "expression": "double wall_shear_stress_magnitude"
+                "wall_shear_stress_magnitude = magnitude(wallShearStress)"
+                "wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.012726525",
+            },
+            {
+                "name": "velocity_y_m_per_s",
+                "expression": "double velocity_y"
+                "velocity_y = primitiveVars[2]"
+                "velocity_y_m_per_s = velocity_y * 340.29400580821283",
+            },
+            {
+                "name": "velocity_x_m_per_s",
+                "expression": "double velocity_x"
+                "velocity_x = primitiveVars[1]"
+                "velocity_x_m_per_s = velocity_x * 340.29400580821283",
+            },
+            {
+                "name": "velocity_magnitude_m_per_s",
+                "expression": "double velocity_magnitude"
+                "double velocity[3]"
+                "velocity[0] = primitiveVars[1]"
+                "velocity[1] = primitiveVars[2]"
+                "velocity[2] = primitiveVars[3]"
+                "velocity_magnitude = magnitude(velocity)"
+                "velocity_magnitude_m_per_s = velocity_magnitude * 340.29400580821283",
+            },
+            {
+                "name": "pressure_pa",
+                "expression": "double pressure"
+                "pressure = primitiveVars[4]"
+                "pressure_pa = pressure * 141855.012726525",
+            },
+            {
+                "name": "velocity_z_m_per_s",
+                "expression": "double velocity_z"
+                "velocity_z = primitiveVars[3]"
+                "velocity_z_m_per_s = velocity_z * 340.29400580821283",
+            },
+            {
+                "name": "my_field",
+                "expression": "1+1",
+            },
+        ]
+    }
+
+    solver_user_defined_fields = {}
+    solver_user_defined_fields["userDefinedFields"] = solver_json["userDefinedFields"]
+    assert sorted(solver_user_defined_fields) == sorted(ref)
+
+
+@pytest.fixture()
+def streamline_output_config():
+    return (
+        [
+            StreamlineOutput(
+                entities=[
+                    Point(name="point_streamline", location=(0.0, 1.0, 0.04) * u.m),
+                    PointArray(
+                        name="pointarray_streamline",
+                        start=(0.0, 0.0, 0.2) * u.m,
+                        end=(0.0, 1.0, 0.2) * u.m,
+                        number_of_points=20,
+                    ),
+                    PointArray2D(
+                        name="pointarray2d_streamline",
+                        origin=(0.0, 0.0, -0.2) * u.m,
+                        u_axis_vector=(0.0, 1.4, 0.0) * u.m,
+                        v_axis_vector=(0.0, 0.0, 0.4) * u.m,
+                        u_number_of_points=10,
+                        v_number_of_points=10,
+                    ),
+                ]
+            )
+        ],
+        {
+            "PointArrays": [
+                {
+                    "end": [0.0, 1.0, 0.2],
+                    "name": "pointarray_streamline",
+                    "numberOfPoints": 20,
+                    "start": [0.0, 0.0, 0.2],
+                }
+            ],
+            "PointArrays2D": [
+                {
+                    "name": "pointarray2d_streamline",
+                    "origin": [0.0, 0.0, -0.2],
+                    "uAxisVector": [0.0, 1.4, 0.0],
+                    "uNumberOfPoints": 10,
+                    "vAxisVector": [0.0, 0.0, 0.4],
+                    "vNumberOfPoints": 10,
+                }
+            ],
+            "Points": [{"location": [0.0, 1.0, 0.04], "name": "point_streamline"}],
+        },
+    )
+
+
+def test_streamline_output(streamline_output_config):
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=streamline_output_config[0],
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
+        )
+    translated = {"boundaries": {}}
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+
+    assert sorted(streamline_output_config[1].items()) == sorted(
+        translated["streamlineOutput"].items()
+    )

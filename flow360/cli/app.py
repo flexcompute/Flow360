@@ -9,6 +9,7 @@ import click
 import toml
 
 from flow360.cli import dict_utils
+from flow360.component.project_utils import show_projects_with_keyword_filter
 
 home = expanduser("~")
 # pylint: disable=invalid-name
@@ -35,7 +36,10 @@ def flow360():
 )
 @click.option("--profile", prompt=False, default="default", help="Profile, e.g., default, dev.")
 @click.option(
-    "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in dev environment."
+    "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in DEV environment."
+)
+@click.option(
+    "--uat", prompt=False, type=bool, is_flag=True, help="Only use this apikey in UAT environment."
 )
 @click.option(
     "--suppress-submit-warning",
@@ -47,7 +51,8 @@ def flow360():
     type=bool,
     help="Toggle beta features support",
 )
-def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
+# pylint: disable=too-many-arguments
+def configure(apikey, profile, dev, uat, suppress_submit_warning, beta_features):
     """
     Configure flow360.
     """
@@ -61,7 +66,12 @@ def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
             config = toml.loads(file_handler.read())
 
     if apikey is not None:
-        entry = {profile: {"apikey": apikey}} if not dev else {profile: {"dev": {"apikey": apikey}}}
+        if dev is True:
+            entry = {profile: {"dev": {"apikey": apikey}}}
+        elif uat is True:
+            entry = {profile: {"uat": {"apikey": apikey}}}
+        else:
+            entry = {profile: {"apikey": apikey}}
         dict_utils.merge_overwrite(config, entry)
         changed = True
 
@@ -85,4 +95,16 @@ def configure(apikey, profile, dev, suppress_submit_warning, beta_features):
     click.echo("done.")
 
 
+# For displaying all projects
+@click.command("show_projects", context_settings={"show_default": True})
+@click.option("--keyword", "-k", help="Filter projects by keyword", default=None, type=str)
+def show_projects(keyword):
+    """
+    Display all available projects with optional keyword filter.
+    """
+
+    show_projects_with_keyword_filter(search_keyword=keyword)
+
+
 flow360.add_command(configure)
+flow360.add_command(show_projects)

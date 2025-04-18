@@ -1,5 +1,7 @@
 """ Case results module"""
 
+from __future__ import annotations
+
 import os
 import re
 import shutil
@@ -7,7 +9,7 @@ import tempfile
 import time
 import uuid
 from enum import Enum
-from itertools import chain
+from itertools import chain, product
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
@@ -32,62 +34,49 @@ from ..simulation.conversion import unit_converter as unit_converter_v2
 from ..simulation.simulation_params import SimulationParams
 from ..v1.conversions import unit_converter as unit_converter_v1
 from ..v1.flow360_params import Flow360Params
+from .base_results import (
+    _PHYSICAL_STEP,
+    PerEntityResultCSVModel,
+    ResultBaseModel,
+    ResultCSVModel,
+    ResultTarGZModel,
+)
 
-# pylint: disable=consider-using-with
-TMP_DIR = tempfile.TemporaryDirectory()
-
-
-def _temp_file_generator(suffix: str = ""):
-    random_name = str(uuid.uuid4()) + suffix
-    file_path = os.path.join(TMP_DIR.name, random_name)
-    return file_path
-
-
-def _find_by_pattern(all_items: list, pattern):
-
-    matched_items = []
-    if pattern is not None and "*" in pattern:
-        regex_pattern = pattern.replace("*", ".*")
-    else:
-        regex_pattern = f"^{pattern}$"  # Exact match if no '*'
-
-    regex = re.compile(regex_pattern)
-    # pylint: disable=no-member
-    matched_items.extend(filter(lambda x: regex.match(x), all_items))
-    return matched_items
-
-
-def _filter_headers_by_prefix(
-    headers: List[str], include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
-) -> List[str]:
-    """
-    Filters headers based on provided include and exclude prefix lists.
-
-    Parameters
-    ----------
-    headers : List[str]
-        List of headers to filter.
-    include : Optional[List[str]]
-        List of prefixes to include in the result. If None, includes all.
-    exclude : Optional[List[str]]
-        List of prefixes to exclude from the result. If None, excludes none.
-
-    Returns
-    -------
-    List[str]
-        Filtered list of headers.
-    """
-    if include:
-        headers = [
-            header for header in headers if any(header.startswith(prefix) for prefix in include)
-        ]
-
-    if exclude:
-        headers = [
-            header for header in headers if not any(header.startswith(prefix) for prefix in exclude)
-        ]
-
-    return headers
+_PSEUDO_STEP = "pseudo_step"
+_CL = "CL"
+_CD = "CD"
+_CFx = "CFx"
+_CFy = "CFy"
+_CFz = "CFz"
+_CMx = "CMx"
+_CMy = "CMy"
+_CMz = "CMz"
+_CL_PRESSURE = "CLPressure"
+_CD_PRESSURE = "CDPressure"
+_CFx_PRESSURE = "CFxPressure"
+_CFy_PRESSURE = "CFyPressure"
+_CFz_PRESSURE = "CFzPressure"
+_CMx_PRESSURE = "CMxPressure"
+_CMy_PRESSURE = "CMyPressure"
+_CMz_PRESSURE = "CMzPressure"
+_CL_VISCOUS = "CLViscous"
+_CD_VISCOUS = "CDViscous"
+_CFx_VISCOUS = "CFxViscous"
+_CFy_VISCOUS = "CFyViscous"
+_CFz_VISCOUS = "CFzViscous"
+_CMx_VISCOUS = "CMxViscous"
+_CMy_VISCOUS = "CMyViscous"
+_CMz_VISCOUS = "CMzViscous"
+_HEAT_TRANSFER = "HeatTransfer"
+_HEAT_FLUX = "HeatFlux"
+_X = "X"
+_Y = "Y"
+_STRIDE = "stride"
+_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
+_CD_PER_STRIP = "CD_per_strip"
+_CFx_PER_SPAN = "CFx_per_span"
+_CFz_PER_SPAN = "CFz_per_span"
+_CMy_PER_SPAN = "CMy_per_span"
 
 
 class CaseDownloadable(Enum):
@@ -113,10 +102,11 @@ class CaseDownloadable(Enum):
     SURFACE_FORCES = "surface_forces_v2.csv"
     TOTAL_FORCES = "total_forces_v2.csv"
     BET_FORCES = "bet_forces_v2.csv"
+    BET_FORCES_RADIAL_DISTRIBUTION = "bet_forces_radial_distribution_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
     LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
-    Y_SLICING_FORCE_DISTRIBUTION = "postprocess/Y_slicing_forceDistribution.csv"
-    X_SLICING_FORCE_DISTRIBUTION = "postprocess/X_slicing_forceDistribution.csv"
+    Y_SLICING_FORCE_DISTRIBUTION = "Y_slicing_forceDistribution.csv"
+    X_SLICING_FORCE_DISTRIBUTION = "X_slicing_forceDistribution.csv"
 
     # user defined:
     MONITOR_PATTERN = r"monitor_(.+)_v2.csv"
@@ -146,465 +136,95 @@ class ResultsDownloaderSettings(pd.BaseModel):
     destination: Optional[str] = pd.Field(".")
 
 
-class ResultBaseModel(pd.BaseModel):
-    """
-    Base model for handling results.
+class TimeSeriesResultCSVModel(ResultCSVModel):
 
-    Parameters
-    ----------
-    remote_file_name : str
-        The name of the file stored remotely.
-    local_file_name : str, optional
-        The name of the file stored locally.
-    do_download : bool, optional
-        Flag indicating whether to perform the download.
-    _download_method : Callable, optional
-        The method responsible for downloading the file.
-    _get_params_method : Callable, optional
-        The method to get Case parameters.
-    _is_downloadable : Callable, optional
-        Function to determine if the file is downloadable.
-
-    Methods
-    -------
-    download(to_file: str = None, to_folder: str = ".", overwrite: bool = False)
-        Download the file to the specified location.
-
-    """
-
-    remote_file_name: str = pd.Field()
-    local_file_name: str = pd.Field(None)
-    do_download: Optional[bool] = pd.Field(None)
-    local_storage: Optional[str] = pd.Field(None)
-    _download_method: Optional[Callable] = pd.PrivateAttr()
-    _get_params_method: Optional[Callable] = pd.PrivateAttr()
-    _is_downloadable: Optional[Callable] = pd.PrivateAttr()
-
-    def download(self, to_file: str = None, to_folder: str = ".", overwrite: bool = False):
-        """
-        Download the file to the specified location.
-
-        Parameters
-        ----------
-        to_file : str, optional
-            The name of the file after downloading.
-        to_folder : str, optional
-            The folder where the file will be downloaded.
-        overwrite : bool, optional
-            Flag indicating whether to overwrite existing files.
-        """
-
-        self._download_method(
-            self._remote_path(), to_file=to_file, to_folder=to_folder, overwrite=overwrite
-        )
-
-    def _remote_path(self):
-        return f"results/{self.remote_file_name}"
-
-
-class ResultCSVModel(ResultBaseModel):
-    """
-    Model for handling CSV results.
-
-    Parameters
-    ----------
-    temp_file : str
-        Path to the temporary CSV file.
-    _values : dict, optional
-        Internal storage for the CSV data.
-    _raw_values : dict, optional
-        Internal storage for the raw CSV data.
-
-    Methods
-    -------
-    load_from_local(filename: str)
-        Load CSV data from a local file.
-    load_from_remote(**kwargs_download)
-        Load CSV data from a remote source.
-    download(to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs)
-        Download the CSV file.
-    values
-        Get the CSV data.
-    to_base(base)
-        Convert the CSV data to a different base system.
-    to_file(filename: str = None)
-        Save the data to a CSV file.
-    as_dict()
-        Convert the data to a dictionary.
-    as_numpy()
-        Convert the data to a NumPy array.
-    as_dataframe()
-        Convert the data to a Pandas DataFrame.
-    """
-
-    temp_file: str = pd.Field(
-        frozen=True, default_factory=lambda: _temp_file_generator(suffix=".csv")
-    )
-    _values: Optional[Dict] = pd.PrivateAttr(None)
-    _raw_values: Optional[Dict] = pd.PrivateAttr(None)
-
-    def _read_csv_file(self, filename: str):
-        dataframe = pandas.read_csv(filename, skipinitialspace=True)
-        dataframe = dataframe.loc[:, ~dataframe.columns.str.contains("^Unnamed")]
-        return dataframe.to_dict("list")
+    _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
     @property
-    def raw_values(self):
-        """
-        Get the raw CSV data.
-
-        Returns
-        -------
-        dict
-            Dictionary containing the raw CSV data.
-        """
-
-        if self._raw_values is None:
-            self.load_from_remote()
-        return self._raw_values
-
-    def load_from_local(self, filename: str):
-        """
-        Load CSV data from a local file.
-
-        Parameters
-        ----------
-        filename : str
-            Path to the local CSV file.
-        """
-
-        self._raw_values = self._read_csv_file(filename)
-        self.local_file_name = filename
-
-    def load_from_remote(self, **kwargs_download):
-        """
-        Load CSV data from a remote source.
-        """
-
-        if self.local_storage is not None:
-            self.download(to_folder=self.local_storage, overwrite=True, **kwargs_download)
-        else:
-            self.download(to_file=self.temp_file, overwrite=True, **kwargs_download)
-        self._raw_values = self._read_csv_file(self.local_file_name)
-
-    def download(
-        self, to_file: str = None, to_folder: str = ".", overwrite: bool = False, **kwargs
-    ):
-        """
-        Download the CSV file.
-
-        Parameters
-        ----------
-        to_file : str, optional
-            The name of the file after downloading.
-        to_folder : str, optional
-            The folder where the file will be downloaded.
-        overwrite : bool, optional
-            Flag indicating whether to overwrite existing files.
-        """
-
-        local_file_path = get_local_filename_and_create_folders(
-            self._remote_path(), to_file, to_folder
-        )
-        if os.path.exists(local_file_path) and not overwrite:
-            log.info(
-                f"Skipping downloading {self.remote_file_name}, local file {local_file_path} exists."
-            )
-
-        else:
-            if overwrite is True or self.local_file_name is None:
-                self._download_method(
-                    self._remote_path(),
-                    to_file=to_file,
-                    to_folder=to_folder,
-                    overwrite=overwrite,
-                    **kwargs,
-                )
-                self.local_file_name = local_file_path
-            else:
-                shutil.copy(self.local_file_name, local_file_path)
-                log.info(f"Saved to {local_file_path}")
-
-    def __str__(self):
-        res_str = self.as_dataframe().__str__()
-        res_str += "\nif you want to get access to data, use one of the data format functions:"
-        res_str += "\n .as_dataframe()\n .as_dict()\n .as_numpy()"
-        return res_str
-
-    def __repr__(self):
-        res_str = self.as_dataframe().__repr__()
-        res_str += "\nif you want to get access to data, use one of the data format functions:"
-        res_str += "\n .as_dataframe()\n .as_dict()\n .as_numpy()"
-        return res_str
-
-    @property
-    def values(self):
-        """
-        Get the current data.
-
-        Returns
-        -------
-        dict
-            Dictionary containing the current data.
-        """
-
-        if self._values is None:
-            self._values = self.raw_values
-        return self._values
-
-    def to_base(self, base: str):
-        """
-        Convert the CSV data to a different base system.
-
-        Parameters
-        ----------
-        base : str
-            The base system to which the CSV data will be converted, for example SI
-        """
-        raise ValueError(f"You cannot convert these results to {base}, the method is not defined.")
-
-    def to_file(self, filename: str = None):
-        """
-        Save the data to a CSV file.
-
-        Parameters
-        ----------
-        filename : str, optional
-            The name of the file to save the CSV data.
-        """
-
-        self.as_dataframe().to_csv(filename, index=False)
-        log.info(f"Saved to {filename}")
-
-    def as_dict(self):
-        """
-        Convert the data to a dictionary.
-
-        Returns
-        -------
-        dict
-            Dictionary containing the data.
-        """
-
-        return self.values
-
-    def as_numpy(self):
-        """
-        Convert the data to a NumPy array.
-
-        Returns
-        -------
-        numpy.ndarray
-            NumPy array containing the data.
-        """
-
-        return self.as_dataframe().to_numpy()
-
-    def as_dataframe(self):
-        """
-        Convert the data to a Pandas DataFrame.
-
-        Returns
-        -------
-        pandas.DataFrame
-            DataFrame containing the data.
-        """
-
-        return pandas.DataFrame(self.values)
-
-    def wait(self, timeout_minutes=60):
-        """
-        Wait until the Case finishes processing, refresh periodically. Useful for postprocessing, eg sectional data
-        """
-
-        start_time = time.time()
-        while time.time() - start_time < timeout_minutes * 60:
-            try:
-                self.load_from_remote(log_error=False)
-                return None
-            except CloudFileNotFoundError:
-                pass
-            time.sleep(2)
-
-        raise TimeoutError(
-            "Timeout: post-processing did not finish within the specified timeout period."
-        )
-
-
-class ResultTarGZModel(ResultBaseModel):
-    """
-    Model for handling TAR GZ results.
-
-    Inherits from ResultBaseModel.
-
-    Methods
-    -------
-    to_file(filename: str, overwrite: bool = False)
-        Save the TAR GZ file.
-
-    """
-
-    def to_file(self, filename, overwrite: bool = False):
-        """
-        Save the TAR GZ file.
-
-        Parameters
-        ----------
-        filename : str
-            The name of the file to save the TAR GZ data.
-        overwrite : bool, optional
-            Flag indicating whether to overwrite existing files.
-        """
-
-        self.download(to_file=filename, overwrite=overwrite)
+    def x_columns(self):
+        return self._x_columns
 
 
 # separate classes used to further customise give resutls, for example nonlinear_residuals.plot()
-class NonlinearResidualsResultCSVModel(ResultCSVModel):
+class NonlinearResidualsResultCSVModel(TimeSeriesResultCSVModel):
     """NonlinearResidualsResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.NONLINEAR_RESIDUALS.value, frozen=True)
 
 
-class LinearResidualsResultCSVModel(ResultCSVModel):
+class LinearResidualsResultCSVModel(TimeSeriesResultCSVModel):
     """LinearResidualsResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.LINEAR_RESIDUALS.value, frozen=True)
 
 
-class CFLResultCSVModel(ResultCSVModel):
+class CFLResultCSVModel(TimeSeriesResultCSVModel):
     """CFLResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.CFL.value, frozen=True)
 
 
-class MinMaxStateResultCSVModel(ResultCSVModel):
+class MinMaxStateResultCSVModel(TimeSeriesResultCSVModel):
     """CFLResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.MINMAX_STATE.value, frozen=True)
 
 
-class MaxResidualLocationResultCSVModel(ResultCSVModel):
+class MaxResidualLocationResultCSVModel(TimeSeriesResultCSVModel):
     """MaxResidualLocationResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.MAX_RESIDUAL_LOCATION.value, frozen=True)
 
 
-class ResultOperations:
-    @classmethod
-    def average_last_fraction(obj: ResultCSVModel, column, avarage_fraction):
-        df = obj.as_dataframe()
-        selected_fraction = df.tail(int(len(df) * avarage_fraction))
-        average = selected_fraction[column].mean()
-        return average
-
-
-class TotalForcesResultCSVModel(ResultCSVModel):
+class TotalForcesResultCSVModel(TimeSeriesResultCSVModel):
     """TotalForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.TOTAL_FORCES.value, frozen=True)
-    _averages: Optional[Dict] = pd.PrivateAttr(None)
-
-    def get_averages(self, avarage_fraction):
-        return {
-            column: ResultOperations.average_last_fraction(self, column, avarage_fraction)
-            for column in self.values.keys()
-        }
-
-    @property
-    def averages(self):
-        """
-        Get average data over last 10%
-
-        Returns
-        -------
-        dict
-            Dictionary containing CL, CD, CFx/y/z, CMx/y/z
-        """
-
-        if self._averages is None:
-            self._averages = self.get_averages(0.1)
-        return self._averages
 
 
-class SurfaceForcesResultCSVModel(ResultCSVModel):
+class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
     """SurfaceForcesResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_FORCES.value, frozen=True)
 
+    _variables: List[str] = [
+        _CL,
+        _CD,
+        _CFx,
+        _CFy,
+        _CFz,
+        _CMx,
+        _CMy,
+        _CMz,
+        _CL_PRESSURE,
+        _CD_PRESSURE,
+        _CFx_PRESSURE,
+        _CFy_PRESSURE,
+        _CFz_PRESSURE,
+        _CMx_PRESSURE,
+        _CMy_PRESSURE,
+        _CMz_PRESSURE,
+        _CL_VISCOUS,
+        _CD_VISCOUS,
+        _CFx_VISCOUS,
+        _CFy_VISCOUS,
+        _CFz_VISCOUS,
+        _CMx_VISCOUS,
+        _CMy_VISCOUS,
+        _CMz_VISCOUS,
+        _HEAT_TRANSFER,
+    ]
 
-class PerEntityResultCSVModel(ResultCSVModel):
-    _variables: List[str] = []
-    _x_columns: List[str] = []
-    _entities: List[str] = None
-
-    @property
-    def values(self):
+    def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         """
-        Get the current data.
-
-        Returns
-        -------
-        dict
-            Dictionary containing the current data.
+        run some processing after data is loaded
         """
-        if self._values is None:
-            super().values
-            self._filtered_sum()
-        return super().values
-
-    @property
-    def entities(self):
-        """
-        Returns list of entities (boundary names) available for this result
-        """
-        if self._entities is None:
-            pattern = re.compile(rf"(.*)_({'|'.join(self._variables)})$")
-            prefixes = {
-                match.group(1) for col in self.as_dict().keys() if (match := pattern.match(col))
-            }
-            self._entities = sorted(prefixes)
-        return self._entities
-
-    def filter(self, include: list = None, exclude: list = None):
-        """
-        Filters entities based on include and exclude lists.
-
-        Parameters
-        ----------
-        include : list or single item, optional
-            List of patterns or single pattern to include.
-        exclude : list or single item, optional
-            List of patterns or single pattern to exclude.
-        """
-        include = (
-            [include] if include is not None and not isinstance(include, list) else include or []
-        )
-        exclude = (
-            [exclude] if exclude is not None and not isinstance(exclude, list) else exclude or []
+        super()._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
         )
 
-        include_resolved = list(
-            chain.from_iterable(_find_by_pattern(self.entities, inc) for inc in include)
-        )
-        exclude_resolved = list(
-            chain.from_iterable(_find_by_pattern(self.entities, exc) for exc in exclude)
-        )
-
-        headers = _filter_headers_by_prefix(
-            self._raw_values.keys(), include_resolved, exclude_resolved
-        )
-        self._values = {
-            key: val for key, val in self.as_dict().items() if key in [*headers, *self._x_columns]
-        }
-        self._filtered_sum()
-
-    def _filtered_sum(self):
-        df = self.as_dataframe()
-        for variable in self._variables:
-            new_col_name = "total" + variable
-            regex_pattern = rf"^(?!total).*{variable}$"
-            self._values[new_col_name] = df.filter(regex=regex_pattern).sum(axis=1)
+    def reload_data(self, filter_physical_steps_only: bool = True, include_time: bool = True):
+        return super().reload_data(filter_physical_steps_only, include_time)
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
@@ -620,8 +240,24 @@ class XSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         CaseDownloadable.X_SLICING_FORCE_DISTRIBUTION.value, frozen=True
     )
 
-    _variables: List[str] = ["Cumulative_CD_Curve", "CD_per_length"]
-    _x_columns: List[str] = ["X"]
+    _variables: List[str] = [_CUMULATIVE_CD_CURVE, _CD_PER_STRIP]
+    _filter_when_zero = [_CD_PER_STRIP]
+    _x_columns: List[str] = [_X]
+
+    def _preprocess(self, filter_physical_steps_only: bool = False, include_time: bool = False):
+        """
+        add _CD_PER_STRIP for filtering purpose and preprocess
+        """
+        for entity in self.entities:
+            header = f"{entity}_{_CUMULATIVE_CD_CURVE}"
+            cumulative_cd = np.array(self._values[header])
+            cd_per_strip = np.insert(np.diff(cumulative_cd), 0, cumulative_cd[0])
+            header_to_add = f"{entity}_{_CD_PER_STRIP}"
+            self._values[header_to_add] = cd_per_strip.tolist()
+
+        super()._preprocess(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
 
 
 class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
@@ -631,17 +267,20 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
         CaseDownloadable.Y_SLICING_FORCE_DISTRIBUTION.value, frozen=True
     )
 
-    _variables: List[str] = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
-    _x_columns: List[str] = ["Y"]
+    _variables: List[str] = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
+    _filter_when_zero = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
+    _x_columns: List[str] = [_Y, _STRIDE]
 
 
-class SurfaceHeatTrasferResultCSVModel(ResultCSVModel):
-    """SurfaceHeatTrasferResultCSVModel"""
+class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
+    """SurfaceHeatTransferResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.SURFACE_HEAT_TRANSFER.value, frozen=True)
+    _variables: List[str] = [_HEAT_FLUX]
+    _filter_when_zero = []
 
 
-class AeroacousticsResultCSVModel(ResultCSVModel):
+class AeroacousticsResultCSVModel(TimeSeriesResultCSVModel):
     """AeroacousticsResultCSVModel"""
 
     remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, frozen=True)
@@ -726,7 +365,7 @@ class MonitorsResultModel(ResultTarGZModel):
         return self.get_monitor_by_name(name)
 
 
-UserDefinedDynamicsCSVModel = ResultCSVModel
+UserDefinedDynamicsCSVModel = TimeSeriesResultCSVModel
 
 
 class UserDefinedDynamicsResultModel(ResultBaseModel):
@@ -837,7 +476,6 @@ class _DimensionedCSVResultModel(pd.BaseModel):
         if isinstance(params, SimulationParams):
             flow360_conv_system = unit_converter_v2(
                 component.units.dimensions,
-                params.private_attribute_asset_cache.project_length_unit,
                 params=params,
                 required_by=[self._name, component_name],
             )
@@ -1112,3 +750,16 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
+
+
+class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):
+    """
+    Model for handling BET forces radial distribution CSV results.
+
+    Inherits from OptionallyDownloadableResultCSVModel.
+    """
+
+    remote_file_name: str = pd.Field(
+        CaseDownloadable.BET_FORCES_RADIAL_DISTRIBUTION.value, frozen=True
+    )
+    _err_msg = "Case does not have any BET disks."
