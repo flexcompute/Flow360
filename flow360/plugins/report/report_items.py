@@ -1251,9 +1251,9 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             return f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
         if self.separate_plots is True:
             if isinstance(self.caption, List):
-                return self.caption[case_number]
+                return escape_latex(self.caption[case_number])
             if isinstance(self.caption, PatternCaption):
-                return self.caption.resolve(case)
+                return escape_latex(self.caption.resolve(case))
         return self.caption
 
     # pylint: disable=too-many-arguments,too-many-locals
@@ -1301,8 +1301,6 @@ class Chart2D(BaseChart2D):
         The data source for the y-axis, which can be a string path or their list or a `Delta` object.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
-    _requirements : List[str]
-        Internal list of requirements associated with the chart.
     type_name : Literal["Chart2D"], default="Chart2D"
         Specifies the type of report item as "Chart2D"; this field is immutable.
     include : Optional[List[str]]
@@ -1315,10 +1313,10 @@ class Chart2D(BaseChart2D):
 
     x: Union[str, Delta, DataItem]
     y: Union[str, Delta, DataItem, List[str]]
-    _requirements: List[str] = [_requirements_mapping["total_forces"]]
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     background: Union[Literal["geometry"], None] = None
+    _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
     def get_requirements(self):
@@ -1446,21 +1444,19 @@ class NonlinearResiduals(BaseChart2D):
     Residuals is an object for showing the solution history of nonlinear residuals.
 
     """
-
-    section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
-    fig_name: Literal["fig-residuals"] = Field("fig-residuals", frozen=True)
-    caption: Literal[None] = None
-    x: Literal["nonlinear_residuals/pseudo_step"] = Field(
-        "nonlinear_residuals/pseudo_step", frozen=True
-    )
-    y_log: Literal[True] = Field(True, frozen=True)
-    type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
-    _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
     show_grid: Optional[bool] = True
     separate_plots: Optional[bool] = True
     xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = LastLimit(
         last=4000
     )
+    section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
+    # caption: Literal[None] = None
+    x: Literal["nonlinear_residuals/pseudo_step"] = Field(
+        "nonlinear_residuals/pseudo_step", frozen=True
+    )
+    y_log: Literal[True] = Field(True, frozen=True)
+    _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
+    type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
 
     def get_requirements(self):
         """
