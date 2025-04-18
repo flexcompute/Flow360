@@ -27,11 +27,9 @@ with fl.SI_unit_system:
         models=[
             fl.Wall(
                 surfaces=[geo["*"]],
-                name="Wall",
             ),
             fl.Freestream(
                 surfaces=[far_field_zone.farfield],
-                name="Freestream",
             ),
         ],
         outputs=[

@@ -32,7 +32,7 @@ with fl.SI_unit_system:
         entities=cylinder,
         enclosed_entities=geometry["wing"],
     )
-    farfield = fl.AutomatedFarfield(name="farfield")
+    farfield = fl.AutomatedFarfield()
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
@@ -70,13 +70,11 @@ with fl.SI_unit_system:
         ),
         outputs=[
             fl.VolumeOutput(
-                name="VolumeOutput",
                 output_fields=[
                     "Mach",
                 ],
             ),
             fl.SurfaceOutput(
-                name="SurfaceOutput",
                 surfaces=geometry["*"],
                 output_fields=[
                     "Cp",
@@ -89,8 +87,8 @@ with fl.SI_unit_system:
                 volumes=cylinder,
                 spec=fl.AngularVelocity(0 * fl.u.rad / fl.u.s),
             ),
-            fl.Freestream(surfaces=farfield.farfield, name="Freestream"),
-            fl.Wall(surfaces=geometry["wing"], name="NoSlipWall"),
+            fl.Freestream(surfaces=farfield.farfield),
+            fl.Wall(surfaces=geometry["wing"]),
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
                     absolute_tolerance=1e-9,
