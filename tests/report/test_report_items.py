@@ -44,7 +44,9 @@ def cases(here):
     case_ids = [
         "case-11111111-1111-1111-1111-111111111111",
         "case-2222222222-2222-2222-2222-2222222222",
+        "case-333333333-333333-3333333333-33333333"
     ]
+    vm_id = "vm-11111111-1111-1111-1111-111111111111"
 
     cache = LocalResourceCache()
 
@@ -55,13 +57,13 @@ def cases(here):
             name=f"{cid}-name",
             status="completed",
             userId="user-id",
-            caseMeshId="vm-11111111-1111-1111-1111-111111111111",
+            caseMeshId=vm_id,
             cloud_path_prefix="s3://flow360cases-v1/users/user-id",
         )
         case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
         cases.append(case)
 
-    vm_id = "vm-11111111-1111-1111-1111-111111111111"
+    
     vm = VolumeMeshV2.from_local_storage(
         mesh_id=vm_id,
         local_storage_path=os.path.join(here, "..", "data", vm_id),
@@ -69,6 +71,48 @@ def cases(here):
             **local_metadata_builder(
                 id=vm_id,
                 name="DrivAer mesh",
+                cloud_path_prefix="s3://flow360meshes-v1/users/user-id",
+            )
+        ),
+    )
+    cache.add(vm)
+
+    return cases
+
+
+@pytest.fixture
+def cases_transient(here):
+
+    case_ids = [
+        "case-444444444-444444-4444444444-44444444",
+        "case-5555-5555555-5555555555-555555555555"
+    ]
+
+    vm_id = "vm-22222222-22222222-2222-2222-22222222"
+
+    cache = LocalResourceCache()
+
+    cases = []
+    for cid in case_ids:
+        case_meta = CaseMeta(
+            caseId=cid,
+            name=f"{cid}-name",
+            status="completed",
+            userId="user-id",
+            caseMeshId=vm_id,
+            cloud_path_prefix="s3://flow360cases-v1/users/user-id",
+        )
+        case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
+        cases.append(case)
+
+    
+    vm = VolumeMeshV2.from_local_storage(
+        mesh_id=vm_id,
+        local_storage_path=os.path.join(here, "..", "data", vm_id),
+        meta_data=VolumeMeshMetaV2(
+            **local_metadata_builder(
+                id=vm_id,
+                name="Cylinder mesh",
                 cloud_path_prefix="s3://flow360meshes-v1/users/user-id",
             )
         ),
@@ -388,7 +432,7 @@ def test_operation():
 
 def test_tables(cases):
     context = ReportContext(
-        cases=cases,
+        cases=cases[:2],
         doc=Document(),
         data_storage=".",
     )
@@ -673,7 +717,7 @@ def test_2d_caption_validity(cases):
         ValueError, match="Caption list is not the same length as the list of cases."
     ):
         chart.separate_plots = True
-        chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
+        chart.caption = ["Caption 1", "Caption 2", "Caption 3", "Caption 4"]
         chart._check_caption_validity(cases)
 
 
@@ -746,7 +790,7 @@ def test_3d_caption_validity(cases):
             camera=top_camera,
             fig_name="geo",
             items_in_row=2,
-            caption=["Caption 1", "Caption 2"],
+            caption=["Caption 1", "Caption 2", "Caption 3"],
         )
 
     with pytest.raises(
@@ -765,7 +809,7 @@ def test_3d_caption_validity(cases):
     with pytest.raises(
         ValueError, match="Caption list is not the same length as the list of cases."
     ):
-        chart.caption = ["Caption 1", "Caption 2", "Caption 3"]
+        chart.caption = ["Caption 1", "Caption 2", "Caption 3", "Caption 4"]
         chart._check_caption_validity(cases)
 
 
