@@ -818,32 +818,6 @@ class ManualLimit(Flow360BaseModel):
     type_name: Literal["ManualLimit"] = Field("ManualLimit", frozen=True)
 
 
-class LastLimit(Flow360BaseModel):
-    """
-    Class for setting up xlim in Chart2D by providing
-    the range of last values to plot.
-
-    Parameters
-    last : float
-        How much last values are supposed to be plotted.
-    """
-
-    last: float
-
-
-class FirstLimit(Flow360BaseModel):
-    """
-    Class for setting up xlim in Chart2D by providing
-    the range of first values to plot.
-
-    Parameters
-    first : float
-        How much first values are supposed to be plotted.
-    """
-
-    first: float
-
-
 class SubsetLimit(Flow360BaseModel):
     """
     Class for setting up ylim in Chart2D by providing
@@ -940,7 +914,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             ),
         ]
     ] = None
-    xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = None
+    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
     y_log: Optional[bool] = False
     show_grid: Optional[bool] = True
@@ -1011,7 +985,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
     def _get_background_chart(self, _):
         pass
 
-    def _handle_xlimits(self, x_data) -> Tuple[Optional[float], Optional[float]]:
+    def _handle_xlimits(self) -> Tuple[Optional[float], Optional[float]]:
         """
         Make sure that xlim is always passed
         as a tuple of floats to the plotting tool.
@@ -1022,15 +996,6 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
 
         if isinstance(xlim, ManualLimit):
             return (xlim.lower, xlim.upper)
-
-        min_x = np.min(x_data)
-        max_x = np.max(x_data)
-
-        if isinstance(xlim, FirstLimit):
-            return (min_x, min_x + xlim.first)
-
-        if isinstance(xlim, LastLimit):
-            return (max_x - xlim.last, max_x)
 
         return xlim
 
@@ -1193,7 +1158,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
 
         style = self._handle_plot_style(x_data, y_data)
 
-        xlim = self._handle_xlimits(x_data)
+        xlim = self._handle_xlimits()
         ylim = self._calculate_ylimits(x_data, y_data)
 
         return PlotModel(
@@ -1311,8 +1276,8 @@ class Chart2D(BaseChart2D):
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
     """
 
-    x: Union[str, Delta, DataItem]
-    y: Union[str, Delta, DataItem, List[str]]
+    x: Union[str, Delta]
+    y: Union[str, Delta, List[str]]
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     background: Union[Literal["geometry"], None] = None
@@ -1447,9 +1412,7 @@ class NonlinearResiduals(BaseChart2D):
 
     show_grid: Optional[bool] = True
     separate_plots: Optional[bool] = True
-    xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = LastLimit(
-        last=4000
-    )
+    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
     section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
     x: Literal["nonlinear_residuals/pseudo_step"] = Field(
         "nonlinear_residuals/pseudo_step", frozen=True

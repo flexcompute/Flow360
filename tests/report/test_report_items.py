@@ -18,9 +18,7 @@ from flow360.plugins.report.report_items import (
     Camera,
     Chart2D,
     Chart3D,
-    FirstLimit,
     FixedRangeLimit,
-    LastLimit,
     ManualLimit,
     NonlinearResiduals,
     PatternCaption,
@@ -987,28 +985,3 @@ def test_residuals(cases, residual_plot_model):
     assert plot_model.y_label == "residual values"
     assert plot_model.legend == residuals_sa
     # TODO: add case and test for residuals from SST
-
-
-def test_handle_xlim():
-    xs = np.linspace(100, 200, 201, endpoint=True)
-
-    chart_last = Chart2D(
-        x="none",
-        y="none",
-        section_title="none",
-        fig_name="none",
-        show_grid=True,
-        xlim=LastLimit(last=50),
-    )
-
-    chart_first = Chart2D(
-        x="none",
-        y="none",
-        section_title="none",
-        fig_name="none",
-        show_grid=True,
-        xlim=FirstLimit(first=50),
-    )
-
-    assert chart_last._handle_xlimits(xs) == (xs[-101], xs[-1])
-    assert chart_first._handle_xlimits(xs) == (xs[0], xs[100])
