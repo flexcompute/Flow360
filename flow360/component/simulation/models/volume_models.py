@@ -777,6 +777,25 @@ class BETDisk(MultiConstructorBaseModel):
         """validate dimension of 3d coefficients in polars"""
         return _check_bet_disk_3d_coefficients_in_polars(self)
 
+    @pd.field_validator(
+        "rotation_direction_rule",
+        "omega",
+        "chord_ref",
+        "n_loading_nodes",
+        "number_of_blades",
+        "entities",
+        "initial_blade_direction",
+        mode="after",
+    )
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(
+            info.data["private_attribute_input_cache"],
+            info.field_name,
+            value if info.field_name != "entities" else value.stored_entities,
+        )
+        return value
+
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
