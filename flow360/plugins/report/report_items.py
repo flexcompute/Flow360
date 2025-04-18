@@ -1444,6 +1444,7 @@ class NonlinearResiduals(BaseChart2D):
     Residuals is an object for showing the solution history of nonlinear residuals.
 
     """
+
     show_grid: Optional[bool] = True
     separate_plots: Optional[bool] = True
     xlim: Optional[Union[ManualLimit, Tuple[float, float], LastLimit, FirstLimit]] = LastLimit(
