@@ -304,6 +304,317 @@ def test_validate_errors():
     json.dumps(errors)
 
 
+def test_validate_error_from_multi_constructor():
+
+    def _compare_validation_errors(err, exp_err):
+        assert len(errors) == len(expected_errors)
+        for err, exp_err in zip(errors, expected_errors):
+            assert err["loc"] == exp_err["loc"]
+            assert err["type"] == exp_err["type"]
+            assert err["msg"] == exp_err["msg"]
+            assert err["input"] == exp_err["input"]
+            assert err["ctx"] == exp_err["ctx"]
+
+    # test from_mach() with two validation errors within private_attribute_input_cache
+    params_data = {
+        "operating_condition": {
+            "private_attribute_constructor": "from_mach",
+            "type_name": "AerospaceCondition",
+            "private_attribute_input_cache": {
+                "mach": -1,
+                "alpha": {"value": 0, "units": "degree"},
+                "beta": {"value": 0, "units": "degree"},
+                "thermal_state": {
+                    "type_name": "ThermalState",
+                    "private_attribute_constructor": "default",
+                    "density": {"value": -2, "units": "kg/m**3"},
+                    "temperature": {"value": 288.15, "units": "K"},
+                },
+            },
+        },
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    expected_errors = [
+        {
+            "loc": ("operating_condition", "private_attribute_input_cache", "mach"),
+            "type": "greater_than_equal",
+            "msg": "Input should be greater than or equal to 0",
+            "input": -1,
+            "ctx": {"ge": "0.0"},
+        },
+        {
+            "loc": (
+                "operating_condition",
+                "private_attribute_input_cache",
+                "thermal_state",
+                "density",
+                "value",
+            ),
+            "type": "greater_than",
+            "msg": "Input should be greater than 0",
+            "input": -2,
+            "ctx": {"gt": "0.0"},
+        },
+    ]
+    _compare_validation_errors(errors, expected_errors)
+
+    # test BETDisk.from_dfdc() with:
+    #   1. one validation error within private_attribute_input_cache
+    #   2. an extra BETDiskCache argument for the dfdc constructor
+    #   3. one validation error outside the input_cache
+    params_data = {
+        "models": [
+            {
+                "name": "BET disk",
+                "private_attribute_constructor": "from_dfdc",
+                "private_attribute_input_cache": {
+                    "angle_unit": {"units": "degree", "value": 1.0},
+                    "blade_line_chord": {"units": "m", "value": 5.0},
+                    "chord_ref": {"units": "m", "value": -14.0},
+                    "entities": {
+                        "stored_entities": [
+                            {
+                                "axis": [0.0, 0.0, 1.0],
+                                "center": {"units": "m", "value": [0.0, 0.0, 0.0]},
+                                "height": {"units": "m", "value": -15.0},
+                                "inner_radius": {"units": "m", "value": 0.0},
+                                "name": "BET_cylinder",
+                                "outer_radius": {"units": "m", "value": 3.81},
+                                "private_attribute_entity_type_name": "Cylinder",
+                                "private_attribute_full_name": None,
+                                "private_attribute_id": "ca0d3a3f-49cb-4637-a789-744c643ce955",
+                                "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                                "private_attribute_zone_boundary_names": {"items": []},
+                            }
+                        ]
+                    },
+                    "file": {
+                        "content": "DFDC Version 0.70E+03\nvb block 1 c 25 HP SLS\n\nOPER\n!   Vinf         Vref         RPM1\n   0.000       10.000         15.0\n!   Rho          Vso          Rmu          Alt\n   1.0          342.0      0.17791E-04  0.30000E-01\n!  XDwake             Nwake\n   1.0000               20\n!        Lwkrlx\n            F\nENDOPER\n\nAERO\n!  #sections\n     5\n!  Xisection\n  0.09\n  !       A0deg        dCLdA        CLmax         CLmin\n    -6.5           4.000       1.2500     -0.0000\n  !  dCLdAstall     dCLstall      Cmconst         Mcrit\n    0.10000      0.10000     -0.10000      0.75000\n  !       CDmin      CLCDmin     dCDdCL^2\n    0.075000E-01  0.00000      0.40000E-02\n  !       REref        REexp\n    0.30000E+06 -0.70000\n    0.17\n  !       A0deg        dCLdA        CLmax         CLmin\n          -6.0         6.0       1.300     -0.55000\n  !  dCLdAstall     dCLstall      Cmconst         Mcrit\n      0.10000      0.10000     -0.10000      0.75000\n  !       CDmin      CLCDmin     dCDdCL^2\n      0.075000E-01  0.10000      0.40000E-02\n  !       REref        REexp\n      0.30000E+06 -0.70000\n     0.51\n  !       A0deg        dCLdA        CLmax         CLmin\n     -1.0       6.00                1.400     -1.4000\n  !  dCLdAstall     dCLstall      Cmconst         Mcrit\n       0.10000      0.10000     -0.10000      0.75000\n  !       CDmin      CLCDmin     dCDdCL^2\n       0.05000E-01  0.10000      0.40000E-02\n  !       REref        REexp\n       0.30000E+06 -0.70000\n    0.8\n  !       A0deg        dCLdA        CLmax         CLmin\n         -1.0      6.0       1.600     -1.500\n  !  dCLdAstall     dCLstall      Cmconst         Mcrit\n           0.10000      0.10000     -0.10000      0.75000\n  !       CDmin      CLCDmin     dCDdCL^2\n           0.03000E-01  0.10000      0.40000E-02\n  !       REref        REexp\n           0.30000E+06 -0.70000\n    1.0\n  !       A0deg        dCLdA        CLmax         CLmin\n            -1          6.0           1.0     -1.8000\n  !  dCLdAstall     dCLstall      Cmconst         Mcrit\n        0.10000      0.10000     -0.10000      0.75000\n  !       CDmin      CLCDmin     dCDdCL^2\n          0.04000E-01  0.10000      0.40000E-02\n  !       REref        REexp\n        0.30000E+06 -0.70000\nENDAERO\n\nROTOR\n!  Xdisk               Nblds       NRsta\n  150                   3           63\n!  #stations\n    63\n!      r        C       Beta0deg\n0.087645023\t0.432162215\t33.27048712\n0.149032825\t0.432162215\t32.37853609\n0.230063394\t0.432162215\t31.42712165\n0.31845882\t0.432162215\t30.65409742\n0.354421836\t0.432162215\t30.13214089\n0.412445831\t0.432162215\t29.41523066\n0.465733177\t0.425230275\t28.75567325\n0.535598785\t0.418298338\t27.89538097\n0.607834576\t0.411366397\t26.69097178\n0.657570537\t0.404434457\t25.88803232\n0.695464717\t0.39750252\t25.25715132\n0.733359236\t0.390570579\t24.5689175\n0.773621567\t0.383638638\t23.93803649\n0.818620882\t0.376706702\t23.19244985\n0.86598886\t0.369774761\t22.36083398\n0.912171916\t0.36284282\t21.67260016\n0.958355818\t0.355910895\t20.84098429\n1.008092457\t0.355906578\t19.92333919\n1.051908539\t0.355902261\t19.03437051\n1.090987133\t0.355897941\t18.34613668\n1.134803219\t0.355893624\t17.457168\n1.17980135\t0.355889307\t16.91231622\n1.229536976\t0.355884987\t16.16672958\n1.275719693\t0.35588067\t15.53584858\n1.314797781\t0.355876353\t14.93364398\n1.358613021\t0.355872033\t14.18805734\n1.398875352\t0.355867716\t13.55717634\n1.42966541\t0.355863399\t12.86894251\n1.468744004\t0.355859079\t12.18070869\n1.51019075\t0.355854762\t11.49247487\n1.549268331\t0.355850445\t10.9762995\n1.596633604\t0.355846125\t10.60350618\n1.6629458\t0.355841808\t9.94394877\n1.717417226\t0.355837491\t9.28439136\n1.773072894\t0.355833171\t8.59615753\n1.81688746\t0.355828854\t7.96527653\n1.866622407\t0.355824537\t7.33439553\n1.893858878\t0.355820217\t6.87557298\n1.949512352\t0.3558159\t6.56013248\n2.015823535\t0.355811583\t6.07263352\n2.07503076\t0.355807263\t5.49910533\n2.124764355\t0.355802946\t5.0976356\n2.169761643\t0.355798629\t4.69616587\n2.231337023\t0.355794309\t4.12263769\n2.273965822\t0.355789992\t3.77852078\n2.321330759\t0.355785675\t3.46308028\n2.395930475\t0.355781355\t2.97558132\n2.533289143\t0.355777038\t2.0005834\n2.61499265\t0.355772721\t1.62779008\n2.664726078\t0.355768401\t1.25499676\n2.709722688\t0.355764084\t0.96823267\n2.768929239\t0.355759767\t0.50941012\n2.839977235\t0.355755447\t-0.064118065\n2.906288246\t0.35575113\t-0.522940614\n3.03772619\t0.355746813\t-1.44058571\n3.208240195\t0.355742493\t-2.61631849\n3.342045113\t0.355738176\t-3.333228722\n3.481771091\t0.355733859\t-4.164844591\n3.56702767\t0.355729539\t-4.681019957\n3.647547098\t0.355725222\t-5.053813278\n3.725699048\t0.355720905\t-5.541312235\n3.770695491\t0.355716585\t-5.799399919\n3.81\t0.355714554\t-6.1\nENDROTOR\n\nGEOM\n    /IGNORED BELOW THIS POINT\n",
+                        "file_path": "aba",
+                        "type_name": "DFDCFile",
+                    },
+                    "initial_blade_direction": [1.0, 0.0, 0.0],
+                    "length_unit": {"units": "m", "value": 1.0},
+                    "n_loading_nodes": 20,
+                    "omega": {"units": "degree/s", "value": 0.0046},
+                    "rotation_direction_rule": "leftHand",
+                    "number_of_blades": 2,
+                },
+                "type": "BETDisk",
+                "type_name": "BETDisk",
+            },
+            {
+                "entities": {"stored_entities": []},
+                "heat_spec": {"type_name": "HeatFlux", "value": {"units": "W/m**2", "value": 0.0}},
+                "name": "Wall",
+                "roughness_height": {"units": "m", "value": -10.0},
+                "type": "Wall",
+                "use_wall_function": False,
+                "velocity": None,
+            },
+        ],
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    expected_errors = [
+        {
+            "loc": ("models", 0, "private_attribute_input_cache", "chord_ref", "value"),
+            "type": "greater_than",
+            "msg": "Input should be greater than 0",
+            "input": -14,
+            "ctx": {"gt": "0.0"},
+        },
+        {
+            "loc": (
+                "models",
+                0,
+                "private_attribute_input_cache",
+                "entities",
+                "stored_entities",
+                0,
+                "height",
+                "value",
+            ),
+            "type": "greater_than",
+            "msg": "Input should be greater than 0",
+            "input": -15,
+            "ctx": {"gt": "0.0"},
+        },
+        {
+            "type": "unexpected_keyword_argument",
+            "loc": ("models", 0, "private_attribute_input_cache", "number_of_blades"),
+            "msg": "Unexpected keyword argument",
+            "input": 2,
+            "ctx": {},
+        },
+    ]
+    _compare_validation_errors(errors, expected_errors)
+
+    # test Box.from_principal_axes() with one validation error within private_attribute_input_cache
+    # the multiconstructor call is within a default constructor call
+    params_data = {
+        "models": [
+            {
+                "darcy_coefficient": {"units": "m**(-2)", "value": [1000000.0, 0.0, 0.0]},
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "angle_of_rotation": {"units": "rad", "value": -2.0943951023931953},
+                            "axis_of_rotation": [
+                                -0.5773502691896257,
+                                -0.5773502691896257,
+                                -0.5773502691896261,
+                            ],
+                            "center": {"units": "m", "value": [0, 0, 0]},
+                            "name": "porous_zone",
+                            "private_attribute_constructor": "from_principal_axes",
+                            "private_attribute_entity_type_name": "Box",
+                            "private_attribute_full_name": None,
+                            "private_attribute_id": "69751367-210b-4df3-b4cd-1f2adbd866ed",
+                            "private_attribute_input_cache": {
+                                "axes": [[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+                                "center": {"units": "m", "value": [0, 0, 0]},
+                                "name": "porous_zone",
+                                "size": {"units": "m", "value": [0.2, 0.3, -2.0]},
+                            },
+                            "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                            "private_attribute_zone_boundary_names": {"items": []},
+                            "size": {"units": "m", "value": [0.2, 0.3, 2.0]},
+                            "type_name": "Box",
+                        }
+                    ]
+                },
+                "forchheimer_coefficient": {"units": "1/m", "value": [1, 0, 0]},
+                "name": "Porous medium",
+                "type": "PorousMedium",
+                "volumetric_heat_source": {"units": "W/m**3", "value": 1.0},
+            }
+        ],
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": (
+                "models",
+                0,
+                "entities",
+                "stored_entities",
+                0,
+                "private_attribute_input_cache",
+                "size",
+            ),
+            "msg": "Value error, arg '[ 0.2  0.3 -2. ] m' cannot have negative value",
+            "input": {"units": "m", "value": [0.2, 0.3, -2.0]},
+            "ctx": {"error": "arg '[ 0.2  0.3 -2. ] m' cannot have negative value"},
+        }
+    ]
+    _compare_validation_errors(errors, expected_errors)
+
+    # test ThermalState.from_standard_atmosphere() with one validation error within private_attribute_input_cache
+    # the multiconstructor call is nested in another multiconstructor call
+    params_data = {
+        "operating_condition": {
+            "alpha": {"units": "degree", "value": 0.0},
+            "beta": {"units": "degree", "value": 0.0},
+            "private_attribute_constructor": "from_mach",
+            "private_attribute_input_cache": {
+                "alpha": {"units": "degree", "value": 0.0},
+                "beta": {"units": "degree", "value": 0.0},
+                "mach": -1,
+                "reference_mach": None,
+                "thermal_state": {
+                    "density": {"units": "kg/m**3", "value": 1.1724995324950298},
+                    "material": {
+                        "dynamic_viscosity": {
+                            "effective_temperature": {"units": "K", "value": 110.4},
+                            "reference_temperature": {"units": "K", "value": 273.15},
+                            "reference_viscosity": {"units": "Pa*s", "value": 1.716e-05},
+                        },
+                        "name": "air",
+                        "type": "air",
+                    },
+                    "private_attribute_constructor": "from_standard_atmosphere",
+                    "private_attribute_input_cache": {
+                        "altitude": {"units": "m", "value": 100.0},
+                        "temperature_offset": {"units": "K", "value": 10.0},
+                    },
+                    "temperature": {"units": "K", "value": 297.5000102251644},
+                    "type_name": "ThermalState",
+                },
+            },
+            "reference_velocity_magnitude": None,
+            "thermal_state": {
+                "density": {"units": "kg/m**3", "value": 1.1724995324950298},
+                "material": {
+                    "dynamic_viscosity": {
+                        "effective_temperature": {"units": "K", "value": 110.4},
+                        "reference_temperature": {"units": "K", "value": 273.15},
+                        "reference_viscosity": {"units": "Pa*s", "value": 1.716e-05},
+                    },
+                    "name": "air",
+                    "type": "air",
+                },
+                "private_attribute_constructor": "from_standard_atmosphere",
+                "private_attribute_input_cache": {
+                    "altitude": {"units": "K", "value": 100.0},
+                    "temperature_offset": {"units": "K", "value": 10.0},
+                },
+                "temperature": {"units": "K", "value": 297.5000102251644},
+                "type_name": "ThermalState",
+            },
+            "type_name": "AerospaceCondition",
+            "velocity_magnitude": {"units": "m/s", "value": 34.57709313392731},
+        },
+        "unit_system": {"name": "SI"},
+        "version": "24.11.5",
+    }
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": (
+                "operating_condition",
+                "thermal_state",
+                "private_attribute_input_cache",
+                "altitude",
+            ),
+            "msg": "Value error, arg '100.0 K' does not match (length) dimension.",
+            "input": None,
+            "ctx": {"error": "arg '100.0 K' does not match (length) dimension."},
+        }
+    ]
+    _compare_validation_errors(errors, expected_errors)
+
+
 def test_init():
     ##1: test default values for geometry starting point
     data = services.get_default_params(
