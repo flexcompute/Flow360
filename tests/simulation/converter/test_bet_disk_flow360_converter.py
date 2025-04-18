@@ -29,7 +29,9 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
     disk = disk.model_dump_json()
     disk = json.loads(disk)
     del disk["entities"]["stored_entities"][0]["private_attribute_id"]
-    del disk["private_attribute_input_cache"]["entities"]["stored_entities"][0]["private_attribute_id"]
+    del disk["private_attribute_input_cache"]["entities"]["stored_entities"][0][
+        "private_attribute_id"
+    ]
     with open("./ref/ref_single_bet_disk.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
     if debug:
