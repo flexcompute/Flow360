@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import get_origin, Generic, TypeVar, Optional, Iterable
 
-from pydantic import WrapSerializer, WrapValidator
+from pydantic import BeforeValidator, WrapSerializer, WrapValidator
 from typing_extensions import Self
 import re
 
@@ -18,13 +18,6 @@ from unyt import Unit, unyt_quantity, unyt_array
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
-
-
-def _is_descendant_of(t, base):
-    if t is None:
-        return False
-    origin = get_origin(t) or t
-    return issubclass(origin, base)
 
 
 def _is_number_string(s: str) -> bool:
@@ -208,9 +201,9 @@ class Expression(Flow360BaseModel):
 
     model_config = pd.ConfigDict(validate_assignment=True)
 
-    @pd.model_validator(mode="wrap")
+    @pd.model_validator(mode="before")
     @classmethod
-    def _validate_expression(cls, value, handler) -> Self:
+    def _validate_expression(cls, value) -> Self:
         if isinstance(value, str):
             expression = value
         elif isinstance(value, dict) and "expression" in value.keys():
@@ -234,7 +227,7 @@ class Expression(Flow360BaseModel):
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
             raise pd.ValidationError.from_exception_data("expression value error", [details])
 
-        return handler({"expression": expression})
+        return {"expression": expression}
 
     def evaluate(self, strict=True) -> float:
         expr = expression_to_model(self.expression, _global_ctx)
@@ -350,22 +343,22 @@ class ValueOrExpression(Expression, Generic[T]):
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
-        def _deserialize(value, handler) -> Self:
+        def _deserialize(value) -> Self:
             try:
                 value = SerializedValueOrExpression.model_validate(value, strict=True)
                 if value.type_name == "number":
                     if value.units is not None:
-                        return handler(unyt_quantity(value.value, value.units))
+                        return unyt_quantity(value.value, value.units)
                     else:
-                        return handler(value.value)
+                        return value.value
                 elif value.type_name == "expression":
-                    return handler(value.expression)
+                    return expr_type(expression=value.expression)
             except Exception as err:
                 pass
 
-            return handler(value)
+            return value
 
-        def _serializer(value, handler, info) -> dict:
+        def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
                 serialized = SerializedValueOrExpression(typeName="expression")
 
@@ -397,5 +390,9 @@ class ValueOrExpression(Expression, Generic[T]):
                     serialized.units = str(value.units.expr)
 
             return serialized.model_dump(**info.__dict__)
+        
+        union_type = Union[expr_type, internal_type]
+        union_type = Annotated[union_type, PlainSerializer(_serializer)]
+        union_type = Annotated[union_type, BeforeValidator(_deserialize)]
 
-        return Annotated[Annotated[Union[expr_type, internal_type], WrapSerializer(_serializer)], WrapValidator(_deserialize)]
+        return union_type
