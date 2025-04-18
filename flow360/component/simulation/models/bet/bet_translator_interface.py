@@ -433,6 +433,7 @@ def generate_xfoil_bet_json(
     number_of_blades,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Take in a geometry input file along with the remaining required
@@ -452,6 +453,7 @@ def generate_xfoil_bet_json(
     twist_vec, chord_vec, sectional_radiuses = parse_geometry_file(
         geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
     )
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -591,6 +593,7 @@ def generate_c81_bet_json(
     angle_unit,
     length_unit,
     number_of_blades,
+    name,
 ):
     """
     Take in a geometry input file along with the remaining required
@@ -610,6 +613,7 @@ def generate_c81_bet_json(
     )
 
     bet_disk = {}
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -1417,6 +1421,7 @@ def generate_xrotor_bet_json(
     entities,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
@@ -1435,6 +1440,7 @@ def generate_xrotor_bet_json(
 
     bet_disk = {}
 
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -1478,6 +1484,7 @@ def generate_dfdc_bet_json(
     entities,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
@@ -1502,4 +1509,5 @@ def generate_dfdc_bet_json(
         entities=entities,
         angle_unit=angle_unit,
         length_unit=length_unit,
+        name=name,
     )
