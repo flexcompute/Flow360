@@ -536,7 +536,7 @@ class SlipWall(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        "SlipWall", description="Name of the `SlipWall` boundary condition."
+        "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
@@ -567,7 +567,7 @@ class SymmetryPlane(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        "SymmetryPlane", description="Name of the `SymmetryPlane` boundary condition."
+        "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(

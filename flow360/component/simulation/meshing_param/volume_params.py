@@ -25,7 +25,7 @@ from flow360.component.simulation.validation_utils import (
 class UniformRefinement(Flow360BaseModel):
     """Uniform spacing refinement inside specified region of mesh."""
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Uniform refinement")
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
     entities: EntityList[Box, Cylinder] = pd.Field(
         description=":class:`UniformRefinement` can be applied to :class:`~flow360.Box` "
@@ -58,7 +58,7 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     - The spacings along the axial, radial and circumferential directions can be adjusted independently.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Axisymmetric refinement")
     refinement_type: Literal["AxisymmetricRefinement"] = pd.Field(
         "AxisymmetricRefinement", frozen=True
     )
@@ -78,7 +78,7 @@ class RotationCylinder(CylindricalRefinementBase):
     # Note: 78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
 
     type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
-    name: Optional[str] = pd.Field(None, description="Name to display in the GUI.")
+    name: Optional[str] = pd.Field("Rotation cylinder", description="Name to display in the GUI.")
     entities: EntityList[Cylinder] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
         None,

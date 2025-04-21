@@ -21,7 +21,7 @@ class SurfaceRefinement(Flow360BaseModel):
     Setting for refining surface elements for given `Surface`.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
@@ -42,7 +42,7 @@ class PassiveSpacing(Flow360BaseModel):
     setting or doing nothing to change existing surface mesh at all.
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Passive spacing")
     type: Literal["projected", "unchanged"] = pd.Field(
         description="""
         1. When set to *projected*, turn off anisotropic layers growing for this `Surface`. 
@@ -67,7 +67,7 @@ class BoundaryLayer(Flow360BaseModel):
     Setting for growing anisotropic layers orthogonal to the specified `Surface` (s).
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Boundary layer refinement")
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
