@@ -3,8 +3,7 @@
         "1": {
             "type": "WallFunction",
             "heatFlux": 0.0,
-            "roughnessHeight": 0.0,
-            "wallModelType": "BoundaryLayer"
+            "roughnessHeight": 0.0
         },
         "2": {
             "type": "SlipWall"
