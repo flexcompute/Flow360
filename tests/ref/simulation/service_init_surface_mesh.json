@@ -156,8 +156,7 @@
             "roughness_height": {
                 "value": 0.0,
                 "units": "m"
-            },
-            "wall_model_type": "BoundaryLayer"
+            }
         },
         {
             "type": "Freestream",

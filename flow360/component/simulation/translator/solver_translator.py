@@ -883,7 +883,7 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
             boundary["heatFlux"] = model_dict["heatSpec"]["value"]
         boundary["roughnessHeight"] = model_dict["roughnessHeight"]
         if boundary["type"] == "WallFunction":
-            boundary["wallModelType"] = model_dict["wallModelType"]
+            boundary["wallModelType"] = model_dict.get("wallModelType", "BoundaryLayer")
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
         if isinstance(model.spec, TotalPressure):

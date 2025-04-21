@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -348,7 +348,6 @@ class Wall(BoundaryBase):
         description="Specify if use wall functions to estimate the velocity field "
         + "close to the solid boundaries.",
     )
-    wall_model_type: Literal["BoundaryLayer", "InnerLayer"] = pd.Field("BoundaryLayer")
 
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
         None, description="Prescribe a velocity or the velocity model on the wall."
@@ -364,6 +363,7 @@ class Wall(BoundaryBase):
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
