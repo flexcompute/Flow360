@@ -19,6 +19,7 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -75,6 +76,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
+    _check_duplicate_isosurface_names,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
@@ -132,19 +134,33 @@ class _ParamModelBase(Flow360BaseModel):
         return kwargs
 
     @classmethod
+    def _get_version_from_dict(cls, model_dict: dict) -> str:
+        version = model_dict.get("version", None)
+        if version is None:
+            raise Flow360RuntimeError("Failed to find SimulationParams version from the input.")
+        return version
+
+    @classmethod
     def _update_param_dict(cls, model_dict, version_to=__version__):
         """
         1. Find the version from the input dict.
         2. Update the input dict to `version_to` which by default is the current version.
+        3. If the simulation.json has higher version, then return the dict as is without modification.
+
+        Returns
+        -------
+        dict
+            The updated parameters dictionary.
+        bool
+            Whether the `model_dict` has higher version than `version_to` (AKA forward compatibility mode).
         """
-        version = model_dict.get("version", None)
-        if version is None:
-            raise Flow360RuntimeError("Failed to find SimulationParams version from the input.")
-        if version != version_to:
+        input_version = cls._get_version_from_dict(model_dict=model_dict)
+        forward_compatibility_mode = Flow360Version(input_version) > Flow360Version(version_to)
+        if not forward_compatibility_mode:
             model_dict = updater(
-                version_from=version, version_to=version_to, params_as_dict=model_dict
+                version_from=input_version, version_to=version_to, params_as_dict=model_dict
             )
-        return model_dict
+        return model_dict, forward_compatibility_mode
 
     @classmethod
     def _sanitize_params_dict(cls, model_dict):
@@ -171,7 +187,7 @@ class _ParamModelBase(Flow360BaseModel):
 
         model_dict = _ParamModelBase._sanitize_params_dict(model_dict)
         # When treating files/file like contents the updater will always be run.
-        model_dict = _ParamModelBase._update_param_dict(model_dict)
+        model_dict, _ = _ParamModelBase._update_param_dict(model_dict)
 
         unit_system = model_dict.get("unit_system")
 
@@ -365,6 +381,12 @@ class SimulationParams(_ParamModelBase):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
         return _check_parent_volume_is_rotating(models)
 
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_duplicate_isosurface_names(cls, outputs):
+        """Check if we have isosurfaces with a duplicate name"""
+        return _check_duplicate_isosurface_names(outputs)
+
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
     def check_duplicate_user_defined_fields(cls, v):
@@ -457,7 +479,7 @@ class SimulationParams(_ParamModelBase):
 
     def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
-        Once the SimulationParams is set, extract and upate information
+        Once the SimulationParams is set, extract and update information
         into all used entities by parsing the params.
         """
 

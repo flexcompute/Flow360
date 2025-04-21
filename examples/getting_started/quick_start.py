@@ -46,13 +46,11 @@ with fl.SI_unit_system:
         models=[
             fl.Wall(
                 surfaces=[geo["*"]],  # Apply wall boundary conditions to all surfaces in geometry
-                name="Wall",
             ),
             fl.Freestream(
                 surfaces=[
                     far_field_zone.farfield
                 ],  # Apply freestream boundary to the far-field zone
-                name="Freestream",
             ),
         ],
         # Define output parameters for the simulation

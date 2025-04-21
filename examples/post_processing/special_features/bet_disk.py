@@ -50,12 +50,11 @@ with fl.SI_unit_system:
                 ),
             ),
             bet,
-            fl.Wall(name="NoSlipWall", surfaces=vm["fluid/body"]),
-            fl.Freestream(name="Freestream", surfaces=vm["fluid/farfield"]),
+            fl.Wall(surfaces=vm["fluid/body"]),
+            fl.Freestream(surfaces=vm["fluid/farfield"]),
         ],
         outputs=[
             fl.SliceOutput(
-                name="SliceOutput",
                 slices=[fl.Slice(name="slice_x", normal=(1, 0, 0), origin=(0, 0, 0))],
                 output_fields=["betMetrics"],
             )
