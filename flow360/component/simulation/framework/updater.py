@@ -50,45 +50,51 @@ def _to_24_11_1(params_as_dict):
 
 
 def _to_24_11_7(params_as_dict):
-    # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
-    # to all occurrence of the same PointArray
-    if params_as_dict.get("outputs") is None:
-        return params_as_dict
+    def _add_private_attribute_id_for_point_array(params_as_dict: dict) -> dict:
+        """
+                Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
+        to all occurrence of the same PointArray
+        """
+        if params_as_dict.get("outputs") is None:
+            return params_as_dict
 
-    point_array_list = []
-    for output in params_as_dict["outputs"]:
-        if output.get("entities", None) and output["entities"].get("stored_entities", None):
-            for entity in output["entities"]["stored_entities"]:
-                if (
-                    entity.get("private_attribute_entity_type_name") == "PointArray"
-                    and entity.get("private_attribute_id") is None
-                ):
-                    new_uuid = generate_uuid()
-                    entity["private_attribute_id"] = new_uuid
-                    point_array_list.append(entity)
+        point_array_list = []
+        for output in params_as_dict["outputs"]:
+            if output.get("entities", None) and output["entities"].get("stored_entities", None):
+                for entity in output["entities"]["stored_entities"]:
+                    if (
+                        entity.get("private_attribute_entity_type_name") == "PointArray"
+                        and entity.get("private_attribute_id") is None
+                    ):
+                        new_uuid = generate_uuid()
+                        entity["private_attribute_id"] = new_uuid
+                        point_array_list.append(entity)
 
-    if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
-        return params_as_dict
-    if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
-        "draft_entities"
-    ):
-        return params_as_dict
-    for idx, draft_entity in enumerate(
-        params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
-    ):
-        if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
-            continue
-        for point_array in point_array_list:
-            if compare_dicts(
-                dict1=draft_entity,
-                dict2=point_array,
-                ignore_keys=["private_attribute_id"],
-            ):
-                params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
-                    "draft_entities"
-                ][idx] = point_array
+        if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
+            return params_as_dict
+        if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
+            "draft_entities"
+        ):
+            return params_as_dict
+
+        for idx, draft_entity in enumerate(
+            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+        ):
+            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
                 continue
+            for point_array in point_array_list:
+                if compare_dicts(
+                    dict1=draft_entity,
+                    dict2=point_array,
+                    ignore_keys=["private_attribute_id"],
+                ):
+                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+                        "draft_entities"
+                    ][idx] = point_array
+                    continue
+        return params_as_dict
 
+    params_as_dict = _add_private_attribute_id_for_point_array(params_as_dict=params_as_dict)
     update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
     return params_as_dict
 
