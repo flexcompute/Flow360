@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flow360"
-version = "v25.2.3b1"
+version = "v25.2.4"
 description = ""
 authors = ["Flexcompute <support@flexcompute.com>"]
 
