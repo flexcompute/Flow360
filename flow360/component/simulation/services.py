@@ -100,16 +100,14 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
-def _store_project_length_unit(length_unit, params: SimulationParams):
-    if length_unit is not None:
+def _store_project_length_unit(project_length_unit, params: SimulationParams):
+    if project_length_unit is not None:
         # Store the length unit so downstream services/pipelines can use it
         # pylint: disable=fixme
         # TODO: client does not call this. We need to start using new webAPI for that
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
             # pylint: disable=assigning-non-slot,no-member
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
-            )
+            params.private_attribute_asset_cache.project_length_unit = project_length_unit
     return params
 
 
@@ -144,9 +142,9 @@ def get_default_params(
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
+    project_length_unit = LengthType.validate(length_unit)  # pylint: disable=no-member
     with unit_system:
-        # pylint: disable=no-member
-        reference_geometry = _get_default_reference_geometry(LengthType.validate(length_unit))
+        reference_geometry = _get_default_reference_geometry(project_length_unit)
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
         surface_output = SurfaceOutput(
             name="Surface output",
@@ -164,13 +162,17 @@ def get_default_params(
                 ),
                 operating_condition=operating_condition,
                 models=[
-                    Wall(name="Wall", surfaces=[Surface(name="*")]),
+                    Wall(
+                        name="Wall",
+                        surfaces=[Surface(name="*")],
+                        roughness_height=0 * project_length_unit,
+                    ),
                     Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
                 ],
                 outputs=[surface_output],
             )
 
-        params = _store_project_length_unit(length_unit, params)
+        params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
             exclude_none=True,
@@ -187,7 +189,9 @@ def get_default_params(
                 operating_condition=operating_condition,
                 models=[
                     Wall(
-                        name="Wall", surfaces=[Surface(name="placeholder1")]
+                        name="Wall",
+                        surfaces=[Surface(name="placeholder1")],
+                        roughness_height=0 * project_length_unit,
                     ),  # to make it consistent with geo
                     Freestream(
                         name="Freestream", surfaces=[Surface(name="placeholder2")]
@@ -199,7 +203,7 @@ def get_default_params(
         params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
         params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
 
-        params = _store_project_length_unit(length_unit, params)
+        params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
             exclude_none=True,
