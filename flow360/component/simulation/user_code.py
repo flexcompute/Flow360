@@ -93,7 +93,7 @@ class Variable(Flow360BaseModel):
     name: str = pd.Field()
     value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
 
-    model_config = pd.ConfigDict(validate_assignment=True)
+    model_config = pd.ConfigDict(validate_assignment=True, extra='allow')
 
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)

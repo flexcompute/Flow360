@@ -1,5 +1,6 @@
 from math import isnan
 from pprint import pprint
+from typing import List
 
 import pytest
 
@@ -40,6 +41,22 @@ from flow360.component.simulation.unit_system import (
     ThermalConductivityType,
     InverseLengthType,
 )
+
+
+def test_variable_init():
+    class TestModel(Flow360BaseModel):
+        field: List[UserVariable] = pd.Field()
+
+    # Variables can be initialized with a...
+
+    # Value
+    a = UserVariable(name="a", value=1)
+
+    # Dimensioned value
+    b = UserVariable(name="b", value=1 * u.m)
+
+    # A dictionary (can contain extra values - important for frontend)
+    c = UserVariable.model_validate({"name": "c", "value": 1, "extra": "foo"})
 
 
 def test_expression_init():
