@@ -14,7 +14,7 @@ geometry.group_faces_by_tag("faceName")
 geometry.group_edges_by_tag("edgeName")
 
 
-bet = json.loads(open(TutorialBETDisk.extra["disk0"]).read())
+bet = fl.BETDisk.from_file(TutorialBETDisk.extra["disk0"])
 
 with fl.SI_unit_system:
     cylinder1 = fl.Cylinder(
@@ -128,7 +128,7 @@ with fl.SI_unit_system:
                     equation_evaluation_frequency=1,
                 ),
             ),
-            fl.BETDisk(**bet),
+            bet,
         ],
     )
 
