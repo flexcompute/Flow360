@@ -82,6 +82,25 @@ def cases(here):
 
     return cases
 
+def get_cumulative_pseudo_time_step(pseudo_time_step):
+    cumulative = []
+    last = 0
+    for step in pseudo_time_step:
+        if ((step == 0) and cumulative):
+            last = cumulative[-1] + 1
+        cumulative.append(step + last)
+    
+    return cumulative
+
+def get_last_time_step_values(pseudo_time_step, value_array):
+    last_array = []
+    for idx, step in enumerate(pseudo_time_step):
+        if ((step == 0) and last_array):
+            last_array.append(value_array[idx-1])
+
+    return last_array
+
+
 @pytest.fixture
 def cases_transient(here):
 
@@ -1070,4 +1089,77 @@ def test_residuals_same(cases, residual_plot_model_SA, residual_plot_model_SST):
     assert plot_model_both.y_label == "residual values"
 
 
+def test_transient_forces(here, cases_transient):
+    loads = ["CFx", "CFy"]
+    cid = "case-444444444-444444-4444444444-44444444"
+
+    context = ReportContext(cases=cases_transient)
+
+    # expected data
+    data = pd.read_csv(os.path.join(here, "..", "data", cid, "results", "total_forces_v2.csv"), skipinitialspace=True)
+    
+    data["cumulative_pseudo_step"] = get_cumulative_pseudo_time_step(data["pseudo_step"])
+
+    data["time"] = data["physical_step"] * 0.1
+
+    loads_by_physical_step = [get_last_time_step_values(data["pseudo_step"], data[load]) for load in loads]
+
+    chart_forces_pseudo = Chart2D(
+        x="total_forces/pseudo_step",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads pseudo",
+        fig_name="loads_pseudo",
+    )
+
+    chart_forces_physical = Chart2D(
+        x="total_forces/physical_step",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads physical",
+        fig_name="loads_physical",
+    )
+
+    chart_forces_time = Chart2D(
+        x="total_forces/time",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads time",
+        fig_name="loads_time",
+    )
+
+
+    plot_model_pseudo = chart_forces_pseudo.get_data(cases_transient, context)
+    plot_model_physical = chart_forces_physical.get_data(cases_transient, context)
+    plot_model_time = chart_forces_time.get_data(cases_transient, context)
+
+    assert plot_model_pseudo.x_data == [data["cumulative_pseudo_step"].to_list()] * len(loads)
+    assert plot_model_pseudo.y_data == [data[load].to_list() for load in loads]
+    assert plot_model_pseudo.secondary_x_data == [data["physical_step"]] * len(loads)
+
+    assert plot_model_physical.x_data == [get_last_time_step_values(data["pseudo_step"], data["physical_step"])] * len(loads)
+    assert plot_model_physical.y_data == loads_by_physical_step
+
+    assert plot_model_time.x_data == [get_last_time_step_values(data["pseudo_step"], data["time"])] * len(loads)
+    assert plot_model_time.y_data == loads_by_physical_step
+
+
+def test_transient_residuals(here, cases_transient):
+    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
+    cid = "case-444444444-444444-4444444444-44444444"
+
+    context = ReportContext(cases=[cases_transient[0]])
+
+    # expected data
+    data = pd.read_csv(os.path.join(here, "..", "data", cid, "results", "nonlinear_residual_v2.csv"), skipinitialspace=True)
+
+    cum_ts = get_cumulative_pseudo_time_step(data["pseudo_step"])
+    data["cumulative_pseudo_step"] = cum_ts
+
+    data["time"] = data["physical_step"] * 0.1
+
+    residuals = NonlinearResiduals()
+
+    plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
+
+    assert plot_model_residuals.x_data == [(data["cumulative_pseudo_step"][1:]).to_list()] * len(residuals_sa)
+    assert plot_model_residuals.y_data == [(data[res][1:]).to_list() for res in residuals_sa]
+    assert plot_model_residuals.secondary_x_data == [data["physical_step"][1:]] * len(residuals_sa)
 
