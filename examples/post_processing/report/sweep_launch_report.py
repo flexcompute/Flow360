@@ -157,20 +157,18 @@ def generate_report(
 
     if include_residuals:
         residual_chart = NonlinearResiduals(
-            force_new_page=True,
-            section_title="Nonlinear residuals",
-            fig_name=f"nonlin-res_fig"
+            force_new_page=True, section_title="Nonlinear residuals", fig_name=f"nonlin-res_fig"
         )
         items.append(residual_chart)
 
     if include_cfl and params.time_stepping.CFL.type == "adaptive":
         cfl_chart = Chart2D(
-                x=f"cfl/{step_type}",
-                y=["cfl/0_NavierStokes_cfl", f"cfl/1_{turbulence_solver}_cfl"],
-                force_new_page=True,
-                section_title="CFL",
-                fig_name="cfl_fig",
-            )
+            x=f"cfl/{step_type}",
+            y=["cfl/0_NavierStokes_cfl", f"cfl/1_{turbulence_solver}_cfl"],
+            force_new_page=True,
+            section_title="CFL",
+            fig_name="cfl_fig",
+        )
         items.append(cfl_chart)
 
     if include_forces_moments_charts:
@@ -182,7 +180,7 @@ def generate_report(
                 section_title="Forces/Moments",
                 fig_name=f"{force}_fig",
                 exclude=exclude,
-                ylim=SubsetLimit(subset=(0.5, 1), offset=0.25)
+                ylim=SubsetLimit(subset=(0.5, 1), offset=0.25),
             )
             for force in force_list
         ]
@@ -195,7 +193,7 @@ def generate_report(
                 y=f"total_forces/averages/{force}",
                 force_new_page=True,
                 section_title="Averaged Forces/Moments against alpha",
-                fig_name=f"{force}_alpha_fig"
+                fig_name=f"{force}_alpha_fig",
             )
             for force in force_list
         ]
@@ -208,7 +206,7 @@ def generate_report(
                 y=f"total_forces/averages/{force}",
                 force_new_page=True,
                 section_title="Averaged Forces/Moments against beta",
-                fig_name=f"{force}_beta_fig"
+                fig_name=f"{force}_beta_fig",
             )
             for force in force_list
         ]
