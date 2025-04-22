@@ -50,45 +50,51 @@ def _to_24_11_1(params_as_dict):
 
 
 def _to_24_11_7(params_as_dict):
-    # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
-    # to all occurrence of the same PointArray
-    if params_as_dict.get("outputs") is None:
-        return params_as_dict
+    def _add_private_attribute_id_for_point_array(params_as_dict: dict) -> dict:
+        """
+                Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
+        to all occurrence of the same PointArray
+        """
+        if params_as_dict.get("outputs") is None:
+            return params_as_dict
 
-    point_array_list = []
-    for output in params_as_dict["outputs"]:
-        if output.get("entities", None) and output["entities"].get("stored_entities", None):
-            for entity in output["entities"]["stored_entities"]:
-                if (
-                    entity.get("private_attribute_entity_type_name") == "PointArray"
-                    and entity.get("private_attribute_id") is None
-                ):
-                    new_uuid = generate_uuid()
-                    entity["private_attribute_id"] = new_uuid
-                    point_array_list.append(entity)
+        point_array_list = []
+        for output in params_as_dict["outputs"]:
+            if output.get("entities", None) and output["entities"].get("stored_entities", None):
+                for entity in output["entities"]["stored_entities"]:
+                    if (
+                        entity.get("private_attribute_entity_type_name") == "PointArray"
+                        and entity.get("private_attribute_id") is None
+                    ):
+                        new_uuid = generate_uuid()
+                        entity["private_attribute_id"] = new_uuid
+                        point_array_list.append(entity)
 
-    if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
-        return params_as_dict
-    if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
-        "draft_entities"
-    ):
-        return params_as_dict
-    for idx, draft_entity in enumerate(
-        params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
-    ):
-        if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
-            continue
-        for point_array in point_array_list:
-            if compare_dicts(
-                dict1=draft_entity,
-                dict2=point_array,
-                ignore_keys=["private_attribute_id"],
-            ):
-                params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
-                    "draft_entities"
-                ][idx] = point_array
+        if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
+            return params_as_dict
+        if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
+            "draft_entities"
+        ):
+            return params_as_dict
+
+        for idx, draft_entity in enumerate(
+            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+        ):
+            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
                 continue
+            for point_array in point_array_list:
+                if compare_dicts(
+                    dict1=draft_entity,
+                    dict2=point_array,
+                    ignore_keys=["private_attribute_id"],
+                ):
+                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+                        "draft_entities"
+                    ][idx] = point_array
+                    continue
+        return params_as_dict
 
+    params_as_dict = _add_private_attribute_id_for_point_array(params_as_dict=params_as_dict)
     update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
     return params_as_dict
 
@@ -192,19 +198,7 @@ def _find_update_path(
     if version_from == version_to:
         return []
 
-    if version_from > version_to:
-        raise ValueError(
-            f"Input `SimulationParams` have higher version ({version_from}) than "
-            f"the target version ({version_to}) and thus cannot be handled."
-        )
-
-    if version_from > version_milestones[-1][0]:
-        raise ValueError(
-            f"Input `SimulationParams` have higher version ({version_from}) "
-            "than all known versions and thus cannot be handled."
-        )
-
-    if version_from == version_milestones[-1][0]:
+    if version_from >= version_milestones[-1][0]:
         return []
 
     if version_to < version_milestones[0][0]:
@@ -244,7 +238,7 @@ def updater(version_from, version_to, params_as_dict) -> dict:
     version_from : str
         The starting version.
     version_to : str
-        The target version to update to.
+        The target version to update to. This has to be equal or higher than `version_from`
     params_as_dict : dict
         A dictionary containing parameters to be updated.
 
@@ -264,6 +258,12 @@ def updater(version_from, version_to, params_as_dict) -> dict:
     updates the parameters based on the update path found.
     """
     log.debug(f"Input SimulationParam has version: {version_from}.")
+    version_from_is_newer = Flow360Version(version_from) > Flow360Version(version_to)
+
+    if version_from_is_newer:
+        raise ValueError(
+            f"[Internal] Misuse of updater, version_from ({version_from}) is higher than version_to ({version_to})"
+        )
     update_functions = _find_update_path(
         version_from=Flow360Version(version_from),
         version_to=Flow360Version(version_to),

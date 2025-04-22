@@ -73,7 +73,7 @@ from flow360.component.simulation.primitives import (
     Surface,
     _SurfaceIssueEnums,
 )
-from flow360.component.simulation.services import validate_model
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -496,6 +496,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -525,6 +526,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -558,6 +560,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -592,6 +595,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -633,6 +637,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -1391,6 +1396,7 @@ def test_deleted_surfaces():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -1421,6 +1427,7 @@ def test_deleted_surfaces():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -1479,6 +1486,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1547,6 +1555,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1585,6 +1594,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1611,6 +1621,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1641,6 +1652,7 @@ def test_beta_mesher_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
@@ -1662,6 +1674,7 @@ def test_beta_mesher_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
@@ -1681,6 +1694,7 @@ def test_beta_mesher_only_features():
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
         )
     params, errors, _ = validate_model(
+        validated_by=ValidationCalledBy.LOCAL,
         params_as_dict=params.model_dump(mode="json"),
         root_item_type="Geometry",
         validation_level="VolumeMesh",
@@ -1705,6 +1719,7 @@ def test_geometry_AI_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
@@ -1725,6 +1740,7 @@ def test_geometry_AI_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
@@ -1757,6 +1773,7 @@ def test_redefined_user_defined_fields():
         )
 
     params, errors, _ = validate_model(
+        validated_by=ValidationCalledBy.LOCAL,
         params_as_dict=params.model_dump(mode="json"),
         root_item_type="VolumeMesh",
         validation_level="Case",

@@ -224,6 +224,13 @@ def split_path(path):
     return path_components
 
 
+def path_variable_name(path):
+    """
+    Get the last component of the path.
+    """
+    return split_path(path)[-1]
+
+
 # pylint: disable=too-many-return-statements
 def data_from_path(
     case: Case, path: str, cases: list[Case] = None, case_by_case: bool = False
@@ -652,6 +659,8 @@ class DataItem(Flow360BaseModel):
     @pd.model_validator(mode="before")
     @classmethod
     def _validate_operations(cls, values):
+        if not isinstance(values, dict):
+            raise ValueError("Invalid input structure.")
         operations = values.get("operations")
         if operations is None:
             values["operations"] = []
@@ -736,7 +745,7 @@ class DataItem(Flow360BaseModel):
     def __str__(self):
         if self.title is not None:
             return self.title
-        return split_path(self.data)[-1]
+        return path_variable_name(self.data)
 
 
 class Delta(Flow360BaseModel):
@@ -786,7 +795,7 @@ class Delta(Flow360BaseModel):
 
     def __str__(self):
         if isinstance(self.data, str):
-            data_str = split_path(self.data)[-1]
+            data_str = path_variable_name(self.data)
         else:
             data_str = str(self.data)
         return f"Delta {data_str}"

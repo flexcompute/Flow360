@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -363,6 +363,7 @@ class Wall(BoundaryBase):
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
@@ -587,7 +588,7 @@ class SlipWall(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        "SlipWall", description="Name of the `SlipWall` boundary condition."
+        "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
@@ -618,7 +619,7 @@ class SymmetryPlane(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        "SymmetryPlane", description="Name of the `SymmetryPlane` boundary condition."
+        "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(

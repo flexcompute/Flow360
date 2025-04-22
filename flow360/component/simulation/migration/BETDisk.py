@@ -174,7 +174,7 @@ def read_single_v1_BETDisk(
         return BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict))
     except KeyError as err:
         raise ValueError(
-            "The supplied Flow360 input for BETDisk hsa invalid format. Details: " + str(err) + "."
+            "The supplied Flow360 input for BETDisk has invalid format. Details: " + str(err) + "."
         ) from err
 
 

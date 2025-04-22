@@ -76,7 +76,6 @@ with fl.SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(
-                name="fl.VolumeOutput",
                 output_format="both",
                 output_fields=[
                     "primitiveVars",
@@ -86,13 +85,11 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="fl.SurfaceOutput",
                 surfaces=volume_mesh["*"],
                 output_format="both",
                 output_fields=["primitiveVars", "T", "Cp", "Cf", "CfVec"],
             ),
             fl.SliceOutput(
-                name="slices",
                 entities=[
                     fl.Slice(
                         name="slice_x",
@@ -177,4 +174,4 @@ report = report.create_in_cloud(
 )
 
 report.wait()
-report.download("cht_report.pdf")
+report.download("report.pdf")

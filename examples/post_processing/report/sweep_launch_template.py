@@ -184,19 +184,17 @@ def assign_boundary_conditions(project):
         geo.group_faces_by_tag("faceName")
         models = [
             fl.Wall(
-                name="NoSlipWall",
                 surfaces=[
                     # "*" will select all geometry boundaries
                     geo["*"],
                 ],
             ),
-            fl.Freestream(surfaces=fl.AutomatedFarfield().farfield, name="farfield"),
+            fl.Freestream(surfaces=fl.AutomatedFarfield().farfield),
         ]
     else:
         vm = project.volume_mesh
         models = [
             fl.Wall(
-                name="NoSlipWall",
                 surfaces=[
                     vm["fluid/fuselage"],
                     # *_pylon will select all boundaries ending with _pylon
@@ -207,7 +205,7 @@ def assign_boundary_conditions(project):
                     vm["fluid/v_tail"],
                 ],
             ),
-            fl.Freestream(surfaces=vm["fluid/farfield"], name="farfield"),
+            fl.Freestream(surfaces=vm["fluid/farfield"]),
         ]
     return models
 
