@@ -110,8 +110,6 @@ def generate_report(
         if model.type == "Fluid":
             turbulence_solver = model.turbulence_model_solver.type_name
 
-    cfl_list = ["0_NavierStokes_cfl", f"1_{turbulence_solver}_cfl"]
-
     CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
     CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
     CFX = DataItem(data="surface_forces/totalCFx", exclude=exclude, title="CFx", operations=avg)
@@ -158,25 +156,22 @@ def generate_report(
         items.append(table)
 
     if include_residuals:
-        residual_charts = NonlinearResiduals(
+        residual_chart = NonlinearResiduals(
             force_new_page=True,
             section_title="Nonlinear residuals",
             fig_name=f"nonlin-res_fig"
         )
-        items.append(residual_charts)
+        items.append(residual_chart)
 
     if include_cfl and params.time_stepping.CFL.type == "adaptive":
-        cfl_charts = [
-            Chart2D(
+        cfl_chart = Chart2D(
                 x=f"cfl/{step_type}",
-                y=f"cfl/{cfl}",
+                y=["cfl/0_NavierStokes_cfl", f"cfl/1_{turbulence_solver}_cfl"],
                 force_new_page=True,
                 section_title="CFL",
-                fig_name=f"{cfl}_fig",
+                fig_name="cfl_fig",
             )
-            for cfl in cfl_list
-        ]
-        items.extend(cfl_charts)
+        items.append(cfl_chart)
 
     if include_forces_moments_charts:
         force_charts = [
