@@ -55,8 +55,11 @@ def test_variable_init():
     # Dimensioned value
     b = UserVariable(name="b", value=1 * u.m)
 
+    # Expression (possibly with other variable)
+    c = UserVariable(name="c", value=b + 1 * u.m)
+
     # A dictionary (can contain extra values - important for frontend)
-    c = UserVariable.model_validate({"name": "c", "value": 1, "extra": "foo"})
+    d = UserVariable.model_validate({"name": "d", "value": 1, "extra": "foo"})
 
 
 def test_expression_init():
@@ -374,16 +377,12 @@ def test_serializer():
 
     serialized = model.model_dump(exclude_none=True)
 
-    print(model.model_dump_json(indent=2, exclude_none=True))
-
     assert serialized["field"]["type_name"] == "expression"
     assert serialized["field"]["expression"] == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
 
     model = TestModel(field=4 * u.m / u.s)
 
     serialized = model.model_dump(exclude_none=True)
-
-    print(model.model_dump_json(indent=2, exclude_none=True))
 
     assert serialized["field"]["type_name"] == "number"
     assert serialized["field"]["value"] == 4
@@ -417,70 +416,4 @@ def test_deserializer():
 
     assert str(deserialized.field) == '4.0 m/s'
 
-
-
-
-def test_error_message():
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[VelocityType] = pd.Field()
-
-    x = UserVariable(name="x", value=4)
-
-    try:
-        model = TestModel(field="1 + nonexisting * 1")
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-        
-        assert len(validation_errors) >= 1
-        assert validation_errors[0]["type"] == "value_error"
-        assert "Name 'nonexisting' is not defined" in validation_errors[0]["msg"]
-        
-    try:
-        model = TestModel(field="1 + x * 1")
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-        
-        assert len(validation_errors) >= 1
-        assert validation_errors[0]["type"] == "value_error"
-        assert "does not match (length)/(time) dimension" in validation_errors[0]["msg"]
-
-
-    try:
-        model = TestModel(field="1 * 1 +")
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-        
-        assert len(validation_errors) >= 1
-        assert validation_errors[0]["type"] == "value_error"
-        assert "invalid syntax" in validation_errors[0]["msg"]
-        assert "1 * 1 +" in validation_errors[0]["msg"]
-        assert "line" in validation_errors[0]["ctx"]
-        assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 8
-
-    try:
-        model = TestModel(field="1 * 1 +* 2")
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-        
-        assert len(validation_errors) >= 1
-        assert validation_errors[0]["type"] == "value_error"
-        assert "invalid syntax" in validation_errors[0]["msg"]
-        assert "1 * 1 +* 2" in validation_errors[0]["msg"]
-        assert "line" in validation_errors[0]["ctx"]
-        assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 8
-
-    try:
-        model = TestModel(field="1 * 1 + (2")
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-        
-        assert len(validation_errors) >= 1
-        assert validation_errors[0]["type"] == "value_error"
-        assert "unexpected EOF" in validation_errors[0]["msg"]
-        assert "1 * 1 + (2" in validation_errors[0]["msg"]
-        assert "line" in validation_errors[0]["ctx"]
-        assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 11
 

@@ -91,7 +91,7 @@ class SerializedValueOrExpression(Flow360BaseModel):
 
 class Variable(Flow360BaseModel):
     name: str = pd.Field()
-    value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
+    value: ValueOrExpression[Any] = pd.Field()
 
     model_config = pd.ConfigDict(validate_assignment=True, extra='allow')
 
@@ -257,8 +257,17 @@ class Expression(Flow360BaseModel):
         return {"expression": expression}
 
     def evaluate(self, strict=True) -> float:
+        # We need this to be recursive because the variables might
+        # reference other variables or expressions, so an evaluate
+        # call might still yield an expression
+
         expr = expression_to_model(self.expression, _global_ctx)
         result = expr.evaluate(_global_ctx, strict)
+
+        while isinstance(result, Expression):
+            expr = expression_to_model(result.expression, _global_ctx)
+            result = expr.evaluate(_global_ctx, strict)
+
         return result
 
     def user_variables(self):
@@ -422,7 +431,7 @@ class ValueOrExpression(Expression, Generic[T]):
                     serialized.units = str(value.units.expr)
 
             return serialized.model_dump(**info.__dict__)
-        
+
         union_type = Union[expr_type, internal_type]
         union_type = Annotated[union_type, PlainSerializer(_serializer)]
         union_type = Annotated[union_type, BeforeValidator(_deserialize)]
