@@ -1288,7 +1288,10 @@ class Chart2D(BaseChart2D):
         """
         Returns requirements for this item.
         """
-        return get_requirements_from_data_path([self.x, self.y])
+        if isinstance(self.y, list):
+            return get_requirements_from_data_path([self.x, *self.y])
+        else:
+            return get_requirements_from_data_path([self.x, self.y])
 
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
         if self._check_dimensions_consistency(x_data) is True:
