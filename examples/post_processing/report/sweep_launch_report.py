@@ -10,10 +10,12 @@ from flow360.plugins.report.report_items import (
     FrontLeftTopCamera,
     Inputs,
     LeftCamera,
+    NonlinearResiduals,
     PatternCaption,
     RearCamera,
     RearRightBottomCamera,
     Settings,
+    SubsetLimit,
     Summary,
     Table,
     TopCamera,
@@ -31,6 +33,8 @@ def generate_report(
     include_cfl: bool = False,
     include_forces_moments_table: bool = False,
     include_forces_moments_charts: bool = False,
+    include_forces_moments_alpha_charts: bool = False,
+    include_forces_moments_beta_charts: bool = False,
     include_cf_vec: bool = False,
     include_cp: bool = False,
     include_yplus: bool = False,
@@ -41,8 +45,6 @@ def generate_report(
     freestream_surfaces = ["fluid/farfield"]
 
     exclude = freestream_surfaces
-
-    SOLVER_VERSION = __solver_version__
 
     top_camera = TopCamera(pan_target=(3.5, 0, -0.5), dimension=15, dimension_dir="height")
     bottom_camera = BottomCamera(pan_target=(3.5, 0, -0.5), dimension=15, dimension_dir="height")
@@ -94,17 +96,15 @@ def generate_report(
     avg = Average(fraction=0.1)
 
     force_list = [
-        "totalCD",
-        "totalCL",
-        "totalCFx",
-        "totalCFy",
-        "totalCFz",
-        "totalCMx",
-        "totalCMy",
-        "totalCMz",
+        "CD",
+        "CL",
+        "CFx",
+        "CFy",
+        "CFz",
+        "CMx",
+        "CMy",
+        "CMz",
     ]
-
-    residuals_list = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
 
     for model in params.models:
         if model.type == "Fluid":
@@ -158,17 +158,12 @@ def generate_report(
         items.append(table)
 
     if include_residuals:
-        residual_charts = [
-            Chart2D(
-                x=f"nonlinear_residuals/{step_type}",
-                y=f"nonlinear_residuals/{residual}",
-                force_new_page=True,
-                section_title="Residuals",
-                fig_name=f"{residual}_fig",
-            )
-            for residual in residuals_list
-        ]
-        items.extend(residual_charts)
+        residual_charts = NonlinearResiduals(
+            force_new_page=True,
+            section_title="Nonlinear residuals",
+            fig_name=f"nonlin-res_fig"
+        )
+        items.append(residual_charts)
 
     if include_cfl and params.time_stepping.CFL.type == "adaptive":
         cfl_charts = [
@@ -187,15 +182,42 @@ def generate_report(
         force_charts = [
             Chart2D(
                 x=f"surface_forces/{step_type}",
-                y=f"surface_forces/{force}",
+                y=f"surface_forces/total{force}",
                 force_new_page=True,
                 section_title="Forces/Moments",
                 fig_name=f"{force}_fig",
                 exclude=exclude,
+                ylim=SubsetLimit(subset=(0.5, 1), offset=0.25)
             )
             for force in force_list
         ]
         items.extend(force_charts)
+
+    if include_forces_moments_alpha_charts:
+        force_alpha_charts = [
+            Chart2D(
+                x=f"params/operating_condition/alpha",
+                y=f"total_forces/averages/{force}",
+                force_new_page=True,
+                section_title="Averaged Forces/Moments against alpha",
+                fig_name=f"{force}_alpha_fig"
+            )
+            for force in force_list
+        ]
+        items.extend(force_alpha_charts)
+
+    if include_forces_moments_beta_charts:
+        force_beta_charts = [
+            Chart2D(
+                x=f"params/operating_condition/beta",
+                y=f"total_forces/averages/{force}",
+                force_new_page=True,
+                section_title="Averaged Forces/Moments against beta",
+                fig_name=f"{force}_beta_fig"
+            )
+            for force in force_list
+        ]
+        items.extend(force_beta_charts)
 
     if include_yplus:
         y_plus_screenshots = [
@@ -271,7 +293,7 @@ def generate_report(
     report = report.create_in_cloud(
         "sweep-script-report",
         cases,
-        solver_version=SOLVER_VERSION,
+        solver_version=__solver_version__,
     )
 
     report.wait()
