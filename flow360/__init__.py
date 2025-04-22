@@ -68,6 +68,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -271,4 +272,5 @@ __all__ = [
     "PointArray2D",
     "StreamlineOutput",
     "Transformation",
+    "WallRotation",
 ]
