@@ -799,6 +799,10 @@ class BETDisk(MultiConstructorBaseModel):
     )
     @classmethod
     def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        if info.data.get("private_attribute_input_cache") is None:
+            # This happens when deserializing the simulation.json and
+            # updating private_attribute_input_cache is not needed
+            return value
         setattr(
             info.data["private_attribute_input_cache"],
             info.field_name,
