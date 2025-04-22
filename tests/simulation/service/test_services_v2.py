@@ -645,6 +645,8 @@ def test_init():
     assert data["reference_geometry"]["moment_center"]["units"] == "cm"
     assert data["reference_geometry"]["moment_length"]["units"] == "cm"
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
+
+    assert data["models"][0]["roughness_height"]["units"] == "cm"
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
