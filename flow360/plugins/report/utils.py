@@ -233,7 +233,11 @@ def path_variable_name(path):
 
 # pylint: disable=too-many-return-statements
 def data_from_path(
-    case: Case, path: str, cases: list[Case] = None, case_by_case: bool = False, filter_physical_steps_only: bool = False
+    case: Case,
+    path: str,
+    cases: list[Case] = None,
+    case_by_case: bool = False,
+    filter_physical_steps_only: bool = False,
 ) -> Any:
     """
     Retrieves data from a specified path within a `Case` object, with optional delta calculations.
@@ -277,10 +281,11 @@ def data_from_path(
 
     if isinstance(path, DataItem):
         return path.calculate(case, cases)
-    
+
     # Split path into components
     path_components = split_path(path)
 
+    # pylint: disable=too-many-branches
     def _search_path(case: Case, component: str) -> Any:
         """
         Case starts as a `Case` object but changes as it recurses through the path components
@@ -289,7 +294,7 @@ def data_from_path(
         if component == "time":
             case.reload_data(include_time=True)
 
-        if (filter_physical_steps_only and (component == path_components[-1])):
+        if filter_physical_steps_only and (component == path_components[-1]):
             case.reload_data(filter_physical_steps_only=True)
 
         # Check if component is an attribute

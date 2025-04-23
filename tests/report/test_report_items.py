@@ -1,13 +1,13 @@
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.testing.decorators import check_figures_equal
+from matplotlib.ticker import FuncFormatter
 from pylatex import Document
 from pylatex.utils import bold, escape_latex
-from matplotlib.testing.decorators import check_figures_equal
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
@@ -50,7 +50,7 @@ def cases(here):
     case_ids = [
         "case-11111111-1111-1111-1111-111111111111",
         "case-2222222222-2222-2222-2222-2222222222",
-        "case-333333333-333333-3333333333-33333333"
+        "case-333333333-333333-3333333333-33333333",
     ]
     vm_id = "vm-11111111-1111-1111-1111-111111111111"
 
@@ -69,7 +69,6 @@ def cases(here):
         case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
         cases.append(case)
 
-    
     vm = VolumeMeshV2.from_local_storage(
         mesh_id=vm_id,
         local_storage_path=os.path.join(here, "..", "data", vm_id),
@@ -85,22 +84,24 @@ def cases(here):
 
     return cases
 
+
 def get_cumulative_pseudo_time_step(pseudo_time_step):
     cumulative = []
     last = 0
     for step in pseudo_time_step:
-        if ((step == 0) and cumulative):
+        if (step == 0) and cumulative:
             last = cumulative[-1] + 1
         cumulative.append(step + last)
-    
+
     return cumulative
+
 
 def get_last_time_step_values(pseudo_time_step, value_array):
     last_array = []
     for idx, step in enumerate(pseudo_time_step[1:]):
-        if (step == 0):
+        if step == 0:
             last_array.append(float(value_array[idx]))
-    last_array.append(float(value_array[idx+1]))
+    last_array.append(float(value_array[idx + 1]))
     return last_array
 
 
@@ -109,7 +110,7 @@ def cases_transient(here):
 
     case_ids = [
         "case-444444444-444444-4444444444-44444444",
-        "case-5555-5555555-5555555555-555555555555"
+        "case-5555-5555555-5555555555-555555555555",
     ]
 
     vm_id = "vm-22222222-22222222-2222-2222-22222222"
@@ -129,7 +130,6 @@ def cases_transient(here):
         case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
         cases.append(case)
 
-    
     vm = VolumeMeshV2.from_local_storage(
         mesh_id=vm_id,
         local_storage_path=os.path.join(here, "..", "data", vm_id),
@@ -144,7 +144,6 @@ def cases_transient(here):
     cache.add(vm)
 
     return cases
-
 
 
 @pytest.fixture
@@ -168,6 +167,7 @@ def residual_plot_model_SA(here):
     x_label = "pseudo_step"
 
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label="none")
+
 
 @pytest.fixture
 def residual_plot_model_SST(here):
@@ -213,6 +213,7 @@ def two_var_two_cases_plot_model(here, cases):
     x_label = "pseudo_step"
 
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
+
 
 @pytest.mark.parametrize(
     "value,expected",
@@ -996,7 +997,7 @@ def test_plot_model_basic(fig_test, fig_ref):
         y_data=[[4, 5, 6, 7, 8], [1, 2, 3, 4, 5]],
         x_label="argument",
         y_label="value",
-        legend=["a", "b"]
+        legend=["a", "b"],
     )
 
     original_subplots = plt.subplots
@@ -1004,7 +1005,6 @@ def test_plot_model_basic(fig_test, fig_ref):
     def _fake_subplots(*args, **kwargs):
         ax = fig_test.subplots()
         return fig_test, ax
-
 
     plt.subplots = _fake_subplots
 
@@ -1020,11 +1020,12 @@ def test_plot_model_basic(fig_test, fig_ref):
 
     ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
     ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
-    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
+    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, "g")))
     ax_ref.legend(["a", "b"])
     ax_ref.set_xlabel("argument")
     ax_ref.set_ylabel("value")
     ax_ref.grid(True)
+
 
 @check_figures_equal(extensions=["png"])
 def test_plot_model_secondary_x(fig_test, fig_ref):
@@ -1035,7 +1036,7 @@ def test_plot_model_secondary_x(fig_test, fig_ref):
         secondary_x_label="arg2",
         x_label="argument",
         y_label="value",
-        legend=["a", "b"]
+        legend=["a", "b"],
     )
 
     original_subplots = plt.subplots
@@ -1061,7 +1062,7 @@ def test_plot_model_secondary_x(fig_test, fig_ref):
 
     ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
     ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
-    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
+    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, "g")))
     sec_ax = ax_ref.secondary_xaxis(location="top")
     sec_ax.set_xlabel("arg2")
     sec_ax.set_xticks(x1_changes, x2)
@@ -1069,6 +1070,7 @@ def test_plot_model_secondary_x(fig_test, fig_ref):
     ax_ref.set_xlabel("argument")
     ax_ref.set_ylabel("value")
     ax_ref.grid(True)
+
 
 @check_figures_equal(extensions=["png"])
 def test_plot_model_secondary_x_w_xlim(fig_test, fig_ref):
@@ -1080,7 +1082,7 @@ def test_plot_model_secondary_x_w_xlim(fig_test, fig_ref):
         x_label="argument",
         y_label="value",
         legend=["a", "b"],
-        xlim=(3, 5)
+        xlim=(3, 5),
     )
 
     original_subplots = plt.subplots
@@ -1106,7 +1108,7 @@ def test_plot_model_secondary_x_w_xlim(fig_test, fig_ref):
 
     ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
     ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
-    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
+    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, "g")))
     sec_ax = ax_ref.secondary_xaxis(location="top")
     sec_ax.set_xlabel("arg2")
     sec_ax.set_xticks(x1_changes, x2)
@@ -1190,7 +1192,7 @@ def test_chart_2d_grid(cases):
 def test_residuals_same(cases, residual_plot_model_SA, residual_plot_model_SST):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     residuals_sst = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_k", "6_omega"]
-    
+
     residuals = NonlinearResiduals()
     context = ReportContext(cases=[cases[0]])
 
@@ -1212,12 +1214,17 @@ def test_residuals_same(cases, residual_plot_model_SA, residual_plot_model_SST):
     assert plot_model_SST.y_label == "residual values"
     assert plot_model_SST.legend == residuals_sst
 
-    assert plot_model_both.x_data == ((np.array(residual_plot_model_SA.x_data)[:, 1:]).tolist() + 
-                                      (np.array(residual_plot_model_SST.x_data)[:, 1:]).tolist())
-    assert plot_model_both.y_data == ((np.array(residual_plot_model_SA.y_data)[:, 1:]).tolist() + 
-                                      (np.array(residual_plot_model_SST.y_data)[:, 1:]).tolist())
+    assert plot_model_both.x_data == (
+        (np.array(residual_plot_model_SA.x_data)[:, 1:]).tolist()
+        + (np.array(residual_plot_model_SST.x_data)[:, 1:]).tolist()
+    )
+    assert plot_model_both.y_data == (
+        (np.array(residual_plot_model_SA.y_data)[:, 1:]).tolist()
+        + (np.array(residual_plot_model_SST.y_data)[:, 1:]).tolist()
+    )
     assert plot_model_both.x_label == residual_plot_model_SST.x_label
     assert plot_model_both.y_label == "residual values"
+
 
 @pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
 def test_transient_forces(here, cases_transient):
@@ -1227,13 +1234,18 @@ def test_transient_forces(here, cases_transient):
     context = ReportContext(cases=[cases_transient[0]])
 
     # expected data
-    data = pd.read_csv(os.path.join(here, "..", "data", cid, "results", "total_forces_v2.csv"), skipinitialspace=True)
-    
+    data = pd.read_csv(
+        os.path.join(here, "..", "data", cid, "results", "total_forces_v2.csv"),
+        skipinitialspace=True,
+    )
+
     data["cumulative_pseudo_step"] = get_cumulative_pseudo_time_step(data["pseudo_step"])
 
     data["time"] = data["physical_step"] * 0.1
 
-    loads_by_physical_step = [get_last_time_step_values(data["pseudo_step"], data[load]) for load in loads]
+    loads_by_physical_step = [
+        get_last_time_step_values(data["pseudo_step"], data[load]) for load in loads
+    ]
 
     chart_forces_pseudo = Chart2D(
         x="total_forces/pseudo_step",
@@ -1256,7 +1268,6 @@ def test_transient_forces(here, cases_transient):
         fig_name="loads_time",
     )
 
-
     plot_model_pseudo = chart_forces_pseudo.get_data([cases_transient[0]], context)
     plot_model_physical = chart_forces_physical.get_data([cases_transient[0]], context)
     plot_model_time = chart_forces_time.get_data([cases_transient[0]], context)
@@ -1264,10 +1275,14 @@ def test_transient_forces(here, cases_transient):
     assert plot_model_pseudo.x_data == [data["cumulative_pseudo_step"].to_list()] * len(loads)
     assert plot_model_pseudo.y_data == [data[load].to_list() for load in loads]
 
-    assert plot_model_physical.x_data == [get_last_time_step_values(data["pseudo_step"], data["physical_step"])] * len(loads)
+    assert plot_model_physical.x_data == [
+        get_last_time_step_values(data["pseudo_step"], data["physical_step"])
+    ] * len(loads)
     assert plot_model_physical.y_data == loads_by_physical_step
 
-    assert plot_model_time.x_data == [get_last_time_step_values(data["pseudo_step"], data["time"])] * len(loads)
+    assert plot_model_time.x_data == [
+        get_last_time_step_values(data["pseudo_step"], data["time"])
+    ] * len(loads)
     assert plot_model_time.y_data == loads_by_physical_step
 
 
@@ -1278,7 +1293,10 @@ def test_transient_residuals(here, cases_transient):
     context = ReportContext(cases=[cases_transient[0]])
 
     # expected data
-    data = pd.read_csv(os.path.join(here, "..", "data", cid, "results", "nonlinear_residual_v2.csv"), skipinitialspace=True)
+    data = pd.read_csv(
+        os.path.join(here, "..", "data", cid, "results", "nonlinear_residual_v2.csv"),
+        skipinitialspace=True,
+    )
 
     cum_ts = get_cumulative_pseudo_time_step(data["pseudo_step"])
     data["cumulative_pseudo_step"] = cum_ts
@@ -1287,7 +1305,9 @@ def test_transient_residuals(here, cases_transient):
 
     plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
 
-    assert plot_model_residuals.x_data == [(data["cumulative_pseudo_step"][1:]).to_list()] * len(residuals_sa)
+    assert plot_model_residuals.x_data == [(data["cumulative_pseudo_step"][1:]).to_list()] * len(
+        residuals_sa
+    )
     assert plot_model_residuals.y_data == [(data[res][1:]).to_list() for res in residuals_sa]
     assert plot_model_residuals.secondary_x_data is None
 
@@ -1295,6 +1315,7 @@ def test_transient_residuals(here, cases_transient):
 
     plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
 
-    assert np.allclose(plot_model_residuals.secondary_x_data_as_np, 
-                       np.array([data["physical_step"][1:].to_numpy()] * len(residuals_sa)))
-
+    assert np.allclose(
+        plot_model_residuals.secondary_x_data_as_np,
+        np.array([data["physical_step"][1:].to_numpy()] * len(residuals_sa)),
+    )
