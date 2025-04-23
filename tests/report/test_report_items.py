@@ -7,6 +7,7 @@ from pylatex import Document
 from pylatex.utils import bold, escape_latex
 from matplotlib.testing.decorators import check_figures_equal
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
@@ -1019,6 +1020,7 @@ def test_plot_model_basic(fig_test, fig_ref):
 
     ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
     ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
     ax_ref.legend(["a", "b"])
     ax_ref.set_xlabel("argument")
     ax_ref.set_ylabel("value")
@@ -1055,11 +1057,11 @@ def test_plot_model_secondary_x(fig_test, fig_ref):
     ax_ref = fig_ref.subplots()
 
     x1_changes = [1, 2, 4]
-    x2 = [0.0, 1.0, 2.0]
+    x2 = [0, 1, 2]
 
     ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
     ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
-
+    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
     sec_ax = ax_ref.secondary_xaxis(location="top")
     sec_ax.set_xlabel("arg2")
     sec_ax.set_xticks(x1_changes, x2)
@@ -1100,11 +1102,11 @@ def test_plot_model_secondary_x_w_xlim(fig_test, fig_ref):
     ax_ref = fig_ref.subplots()
 
     x1_changes = [1, 2, 4]
-    x2 = [0.0, 1.0, 2.0]
+    x2 = [0, 1, 2]
 
     ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
     ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
-
+    ax_ref.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
     sec_ax = ax_ref.secondary_xaxis(location="top")
     sec_ax.set_xlabel("arg2")
     sec_ax.set_xticks(x1_changes, x2)
@@ -1217,7 +1219,7 @@ def test_residuals_same(cases, residual_plot_model_SA, residual_plot_model_SST):
     assert plot_model_both.x_label == residual_plot_model_SST.x_label
     assert plot_model_both.y_label == "residual values"
 
-
+@pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
 def test_transient_forces(here, cases_transient):
     loads = ["CFx", "CFy"]
     cid = "case-444444444-444444-4444444444-44444444"

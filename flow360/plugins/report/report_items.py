@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from abc import ABCMeta, abstractmethod
 from typing import Annotated, List, Literal, Optional, Tuple, Union
-from matplotlib.ticker import StrMethodFormatter
+from matplotlib.ticker import FuncFormatter
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
@@ -663,8 +663,8 @@ class PlotModel(BaseModel):
     y_data: Union[List[float], List[List[float]]]
     x_label: str
     y_label: str
-    secondary_x_data: Optional[Union[List[float], List[List[float]]]] = None # TODO: add validator
-    secondary_x_label: Optional[str] = None # TODO: add validator
+    secondary_x_data: Optional[Union[List[float], List[List[float]]]] = None
+    secondary_x_label: Optional[str] = None
     legend: Optional[List[str]] = None
     is_log: bool = False
     style: str = "-"
@@ -681,6 +681,17 @@ class PlotModel(BaseModel):
                 return v
             return [v]
         raise ValueError("x_data/y_data must be a list")
+    
+    @field_validator("secondary_x_data", mode="before")
+    @classmethod
+    def _ensure_secondary_x_data_identical(cls, v):
+        if isinstance(v, list):
+            if all((item == v[0]) for item in v):
+                return v
+            else:
+                raise ValueError("Every series in secondary_x_data must be the same.")
+        if v is None:
+            return v
 
     @model_validator(mode="after")
     def _check_lengths(self):
@@ -702,6 +713,12 @@ class PlotModel(BaseModel):
                     f"Length of legend ({len(self.legend)}) must match number of y_data series ({len(self.y_data)})"
                 )
 
+        return self
+    
+    @model_validator(mode="after")
+    def _check_x_label_use(self):
+        if (self.secondary_x_data is None) and (self.secondary_x_label is not None):
+            raise ValueError("Cannot define secondary x label when there is no data on secondary x axis.")
         return self
 
     @property
@@ -749,7 +766,7 @@ class PlotModel(BaseModel):
         for x_entry, sec_x_entry in zip(self.x_data_as_np[0], self.secondary_x_data_as_np[0]):
             if sec_x_entry != curr_secondary:
                 locations.append(x_entry)
-                labels.append(sec_x_entry)
+                labels.append(f"{sec_x_entry:g}")
                 curr_secondary = sec_x_entry
 
         return locations, labels
@@ -811,16 +828,15 @@ class PlotModel(BaseModel):
                 ax.semilogy(x_series, y_series, self.style, label=label)
             else:
                 ax.plot(x_series, y_series, self.style, label=label)
-            
-            #ax.xaxis.set_major_formatter(StrMethodFormatter('{:g}'))
         
         if self.secondary_x_data is not None:
             sec_xax = ax.secondary_xaxis(location="top")
             locations, labels = self._calcuate_secondary_labels()
             sec_xax.set_xticks(locations, labels)
-            #sec_xax.xaxis.set_major_formatter(StrMethodFormatter('{:g}'))
             if self.secondary_x_label is not None:
                 sec_xax.set_xlabel(self.secondary_x_label)
+
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda x, pos: format(x, 'g')))
 
         if self.xlim is not None:
             ax.set_xlim(self.xlim)
