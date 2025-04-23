@@ -13,7 +13,7 @@ from flow360.component.simulation.blueprint import expression_to_model
 
 import pydantic as pd
 from numbers import Number
-from unyt import Unit, unyt_quantity, unyt_array
+from unyt import Unit, unyt_array
 
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
@@ -49,16 +49,6 @@ def _convert_argument(other):
         unit = str(other)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
         arg = ""
-        for token in tokens:
-            if token not in unit_delimiters and not _is_number_string(token):
-                token = f"u.{token}"
-                arg += token
-            else:
-                arg += token
-    elif isinstance(other, unyt_quantity):
-        unit = str(other.units)
-        tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(other.value)} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
@@ -187,6 +177,7 @@ class UserVariable(Variable):
     def update_context(cls, value):
         _global_ctx.set(value.name, value.value)
         _user_variables.add(value.name)
+        return value
 
 
 class SolverVariable(Variable):
@@ -194,6 +185,7 @@ class SolverVariable(Variable):
     @classmethod
     def update_context(cls, value):
         _global_ctx.set(value.name, value.value)
+        return value
 
 
 def _handle_syntax_error(se: SyntaxError, source: str):
@@ -377,27 +369,29 @@ class ValueOrExpression(Expression, Generic[T]):
                 result = value.evaluate(strict=False)
             except Exception as err:
                 raise ValueError(f'expression evaluation failed: {err}') from err
-
-            pd.TypeAdapter(internal_type).validate_python(result, strict=True)
-
+            pd.TypeAdapter(internal_type).validate_python(result)
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
+            is_serialized = False
             try:
-                value = SerializedValueOrExpression.model_validate(value, strict=True)
+                value = SerializedValueOrExpression.model_validate(value)
+                is_serialized = True
+            except Exception as err:
+                pass
+
+            if is_serialized:
                 if value.type_name == "number":
                     if value.units is not None:
-                        return unyt_quantity(value.value, value.units)
+                        return unyt_array(value.value, value.units)
                     else:
                         return value.value
                 elif value.type_name == "expression":
                     return expr_type(expression=value.expression)
-            except Exception as err:
-                pass
-
-            return value
+            else:
+                return value
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
@@ -409,7 +403,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
-                elif isinstance(evaluated, unyt_quantity) or isinstance(evaluated, unyt_array):
+                elif isinstance(evaluated, unyt_array):
 
                     if evaluated.size == 1:
                         serialized.evaluated_value = float(evaluated.value)
@@ -421,7 +415,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 serialized = SerializedValueOrExpression(typeName="number")
                 if isinstance(value, Number):
                     serialized.value = value
-                elif isinstance(value, unyt_quantity) or isinstance(value, unyt_array):
+                elif isinstance(value, unyt_array):
 
                     if value.size == 1:
                         serialized.value = float(value.value)
@@ -433,6 +427,7 @@ class ValueOrExpression(Expression, Generic[T]):
             return serialized.model_dump(**info.__dict__)
 
         union_type = Union[expr_type, internal_type]
+
         union_type = Annotated[union_type, PlainSerializer(_serializer)]
         union_type = Annotated[union_type, BeforeValidator(_deserialize)]
 

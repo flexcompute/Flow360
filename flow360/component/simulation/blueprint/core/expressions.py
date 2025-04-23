@@ -38,7 +38,8 @@ class Name(Expression):
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         if strict and not context.can_evaluate(self.id):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
-        return context.get(self.id)
+        value = context.get(self.id)
+        return value
 
     def used_names(self) -> set[str]:
         return {self.id}

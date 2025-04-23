@@ -3,6 +3,8 @@
 # pylint: disable=duplicate-code
 import json
 from enum import Enum
+import re
+from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
@@ -52,6 +54,7 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.user_code import UserVariable, Expression
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
@@ -59,6 +62,7 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
+from unyt import unyt_quantity, unyt_array
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -767,3 +771,35 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
+
+
+def validate_expression(variables: list[dict], expression: str):
+    """
+    Validate an expression using the specified variable space
+    """
+    errors = []
+    value = None
+    units = None
+
+    try:
+        # Populate variable scope
+        for variable in variables:
+            _ = UserVariable(name=variable["name"], value=variable["value"])
+
+        expression_object = Expression(expression=expression)
+
+        result = expression_object.evaluate()
+
+        if isinstance(result, Number):
+            value = result
+        elif isinstance(result, unyt_array):
+            if result.size == 1:
+                value = float(result.value)
+            else:
+                value = tuple(result.value.tolist())
+            units = str(result.units.expr)
+        
+    except (ValueError, KeyError, NameError) as e:
+        errors.append(str(e))
+
+    return errors, value, units

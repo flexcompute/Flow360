@@ -415,5 +415,3 @@ def test_deserializer():
     deserialized = TestModel(field=model)
 
     assert str(deserialized.field) == '4.0 m/s'
-
-
