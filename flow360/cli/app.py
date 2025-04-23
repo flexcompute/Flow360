@@ -39,6 +39,9 @@ def flow360():
 @click.option(
     "--dev", prompt=False, type=bool, is_flag=True, help="Only use this apikey in dev environment."
 )
+@click.option(
+    "--uat", prompt=False, type=bool, is_flag=True, help="Only use this apikey in UAT environment."
+)
 @click.option("--env", prompt=False, default=None, help="Only use this apikey in this environment.")
 @click.option(
     "--suppress-submit-warning",
