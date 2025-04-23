@@ -226,6 +226,11 @@ class Environment:
                 f"The name of environment setting must be a string. Instead got {env_config_name}."
             )
 
+        predefined_envs = (dev, uat, prod, preprod)
+        for env in predefined_envs:
+            if env_config_name == env.name:
+                return env
+
         return EnvironmentConfig.from_config(env_config_name)
 
     def set_current(self, config: EnvironmentConfig):

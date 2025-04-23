@@ -10,6 +10,7 @@ import toml
 
 from flow360.cli import dict_utils
 from flow360.component.project_utils import show_projects_with_keyword_filter
+from flow360.environment import Env
 
 home = expanduser("~")
 # pylint: disable=invalid-name
@@ -109,12 +110,21 @@ def configure(apikey, profile, dev, uat, env, suppress_submit_warning, beta_feat
 # For displaying all projects
 @click.command("show_projects", context_settings={"show_default": True})
 @click.option("--keyword", "-k", help="Filter projects by keyword", default=None, type=str)
-def show_projects(keyword):
+@click.option("--env", prompt=False, default=None, help="The environment used for the query.")
+def show_projects(keyword, env: str):
     """
     Display all available projects with optional keyword filter.
     """
+    prev_env_config = None
+    if env:
+        env_config = Env.load(env)
+        prev_env_config = Env.current
+        env_config.active()
 
     show_projects_with_keyword_filter(search_keyword=keyword)
+
+    if prev_env_config:
+        prev_env_config.active()
 
 
 flow360.add_command(configure)
