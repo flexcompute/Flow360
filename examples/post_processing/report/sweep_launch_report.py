@@ -34,7 +34,6 @@ def generate_report(
     include_forces_moments_table: bool = False,
     include_forces_moments_charts: bool = False,
     include_forces_moments_alpha_charts: bool = False,
-    include_forces_moments_beta_charts: bool = False,
     include_cf_vec: bool = False,
     include_cp: bool = False,
     include_yplus: bool = False,
@@ -198,19 +197,6 @@ def generate_report(
             for force in force_list
         ]
         items.extend(force_alpha_charts)
-
-    if include_forces_moments_beta_charts:
-        force_beta_charts = [
-            Chart2D(
-                x=f"params/operating_condition/beta",
-                y=f"total_forces/averages/{force}",
-                force_new_page=True,
-                section_title="Averaged Forces/Moments against beta",
-                fig_name=f"{force}_beta_fig",
-            )
-            for force in force_list
-        ]
-        items.extend(force_beta_charts)
 
     if include_yplus:
         y_plus_screenshots = [
