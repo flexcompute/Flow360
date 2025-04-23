@@ -5,6 +5,8 @@ import pandas as pd
 import pytest
 from pylatex import Document
 from pylatex.utils import bold, escape_latex
+from matplotlib.testing.decorators import check_figures_equal
+import matplotlib.pyplot as plt
 
 from flow360 import Case, u
 from flow360.component.case import CaseMeta
@@ -94,10 +96,10 @@ def get_cumulative_pseudo_time_step(pseudo_time_step):
 
 def get_last_time_step_values(pseudo_time_step, value_array):
     last_array = []
-    for idx, step in enumerate(pseudo_time_step):
-        if ((step == 0) and last_array):
-            last_array.append(value_array[idx-1])
-
+    for idx, step in enumerate(pseudo_time_step[1:]):
+        if (step == 0):
+            last_array.append(float(value_array[idx]))
+    last_array.append(float(value_array[idx+1]))
     return last_array
 
 
@@ -986,6 +988,133 @@ def test_subfigure_row_splitting():
             in_figure = False
 
 
+@check_figures_equal(extensions=["png"])
+def test_plot_model_basic(fig_test, fig_ref):
+    plot_model = PlotModel(
+        x_data=[[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]],
+        y_data=[[4, 5, 6, 7, 8], [1, 2, 3, 4, 5]],
+        x_label="argument",
+        y_label="value",
+        legend=["a", "b"]
+    )
+
+    original_subplots = plt.subplots
+
+    def _fake_subplots(*args, **kwargs):
+        ax = fig_test.subplots()
+        return fig_test, ax
+
+
+    plt.subplots = _fake_subplots
+
+    try:
+        fig = plot_model.get_plot()
+    finally:
+        plt.subplots = original_subplots
+
+    # sanity: ensure it really did draw on fig_test
+    assert fig is fig_test
+
+    ax_ref = fig_ref.subplots()
+
+    ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
+    ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+    ax_ref.legend(["a", "b"])
+    ax_ref.set_xlabel("argument")
+    ax_ref.set_ylabel("value")
+    ax_ref.grid(True)
+
+@check_figures_equal(extensions=["png"])
+def test_plot_model_secondary_x(fig_test, fig_ref):
+    plot_model = PlotModel(
+        x_data=[[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]],
+        y_data=[[4, 5, 6, 7, 8], [1, 2, 3, 4, 5]],
+        secondary_x_data=[[0, 1, 1, 2, 2], [0, 1, 1, 2, 2]],
+        secondary_x_label="arg2",
+        x_label="argument",
+        y_label="value",
+        legend=["a", "b"]
+    )
+
+    original_subplots = plt.subplots
+
+    def _fake_subplots(*args, **kwargs):
+        ax = fig_test.subplots()
+        return fig_test, ax
+
+    plt.subplots = _fake_subplots
+
+    try:
+        fig = plot_model.get_plot()
+    finally:
+        plt.subplots = original_subplots
+
+    # sanity: ensure it really did draw on fig_test
+    assert fig is fig_test
+
+    ax_ref = fig_ref.subplots()
+
+    x1_changes = [1, 2, 4]
+    x2 = [0.0, 1.0, 2.0]
+
+    ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
+    ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+
+    sec_ax = ax_ref.secondary_xaxis(location="top")
+    sec_ax.set_xlabel("arg2")
+    sec_ax.set_xticks(x1_changes, x2)
+    ax_ref.legend(["a", "b"])
+    ax_ref.set_xlabel("argument")
+    ax_ref.set_ylabel("value")
+    ax_ref.grid(True)
+
+@check_figures_equal(extensions=["png"])
+def test_plot_model_secondary_x_w_xlim(fig_test, fig_ref):
+    plot_model = PlotModel(
+        x_data=[[1, 2, 3, 4, 5], [1, 2, 3, 4, 5]],
+        y_data=[[4, 5, 6, 7, 8], [1, 2, 3, 4, 5]],
+        secondary_x_data=[[0, 1, 1, 2, 2], [0, 1, 1, 2, 2]],
+        secondary_x_label="arg2",
+        x_label="argument",
+        y_label="value",
+        legend=["a", "b"],
+        xlim=(3, 5)
+    )
+
+    original_subplots = plt.subplots
+
+    def _fake_subplots(*args, **kwargs):
+        ax = fig_test.subplots()
+        return fig_test, ax
+
+    plt.subplots = _fake_subplots
+
+    try:
+        fig = plot_model.get_plot()
+    finally:
+        plt.subplots = original_subplots
+
+    # sanity: ensure it really did draw on fig_test
+    assert fig is fig_test
+
+    ax_ref = fig_ref.subplots()
+
+    x1_changes = [1, 2, 4]
+    x2 = [0.0, 1.0, 2.0]
+
+    ax_ref.plot([1, 2, 3, 4, 5], [4, 5, 6, 7, 8])
+    ax_ref.plot([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+
+    sec_ax = ax_ref.secondary_xaxis(location="top")
+    sec_ax.set_xlabel("arg2")
+    sec_ax.set_xticks(x1_changes, x2)
+    ax_ref.legend(["a", "b"])
+    ax_ref.set_xlabel("argument")
+    ax_ref.set_ylabel("value")
+    ax_ref.grid(True)
+    ax_ref.set_xlim(3, 5)
+
+
 def test_multi_variable_chart_2d_one_case(cases, residual_plot_model_SA):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     context = ReportContext(cases=[cases[0]])
@@ -1093,7 +1222,7 @@ def test_transient_forces(here, cases_transient):
     loads = ["CFx", "CFy"]
     cid = "case-444444444-444444-4444444444-44444444"
 
-    context = ReportContext(cases=cases_transient)
+    context = ReportContext(cases=[cases_transient[0]])
 
     # expected data
     data = pd.read_csv(os.path.join(here, "..", "data", cid, "results", "total_forces_v2.csv"), skipinitialspace=True)
@@ -1126,13 +1255,12 @@ def test_transient_forces(here, cases_transient):
     )
 
 
-    plot_model_pseudo = chart_forces_pseudo.get_data(cases_transient, context)
-    plot_model_physical = chart_forces_physical.get_data(cases_transient, context)
-    plot_model_time = chart_forces_time.get_data(cases_transient, context)
+    plot_model_pseudo = chart_forces_pseudo.get_data([cases_transient[0]], context)
+    plot_model_physical = chart_forces_physical.get_data([cases_transient[0]], context)
+    plot_model_time = chart_forces_time.get_data([cases_transient[0]], context)
 
     assert plot_model_pseudo.x_data == [data["cumulative_pseudo_step"].to_list()] * len(loads)
     assert plot_model_pseudo.y_data == [data[load].to_list() for load in loads]
-    assert plot_model_pseudo.secondary_x_data == [data["physical_step"]] * len(loads)
 
     assert plot_model_physical.x_data == [get_last_time_step_values(data["pseudo_step"], data["physical_step"])] * len(loads)
     assert plot_model_physical.y_data == loads_by_physical_step
@@ -1153,13 +1281,18 @@ def test_transient_residuals(here, cases_transient):
     cum_ts = get_cumulative_pseudo_time_step(data["pseudo_step"])
     data["cumulative_pseudo_step"] = cum_ts
 
-    data["time"] = data["physical_step"] * 0.1
-
     residuals = NonlinearResiduals()
 
     plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
 
     assert plot_model_residuals.x_data == [(data["cumulative_pseudo_step"][1:]).to_list()] * len(residuals_sa)
     assert plot_model_residuals.y_data == [(data[res][1:]).to_list() for res in residuals_sa]
-    assert plot_model_residuals.secondary_x_data == [data["physical_step"][1:]] * len(residuals_sa)
+    assert plot_model_residuals.secondary_x_data is None
+
+    residuals = NonlinearResiduals(xlim=ManualLimit(lower=200, upper=380))
+
+    plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
+
+    assert np.allclose(plot_model_residuals.secondary_x_data_as_np, 
+                       np.array([data["physical_step"][1:].to_numpy()] * len(residuals_sa)))
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from abc import ABCMeta, abstractmethod
 from typing import Annotated, List, Literal, Optional, Tuple, Union
-
+from matplotlib.ticker import StrMethodFormatter
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,6 +34,7 @@ from pylatex.utils import bold, escape_latex
 from flow360 import Case, SimulationParams
 from flow360.component.results import case_results
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.outputs.output_fields import (
     IsoSurfaceFieldNames,
     SurfaceFieldNames,
@@ -662,6 +663,8 @@ class PlotModel(BaseModel):
     y_data: Union[List[float], List[List[float]]]
     x_label: str
     y_label: str
+    secondary_x_data: Optional[Union[List[float], List[List[float]]]] = None # TODO: add validator
+    secondary_x_label: Optional[str] = None # TODO: add validator
     legend: Optional[List[str]] = None
     is_log: bool = False
     style: str = "-"
@@ -707,6 +710,13 @@ class PlotModel(BaseModel):
         returns X data as list of numpy arrays
         """
         return [np.array(x_series) for x_series in self.x_data]
+    
+    @property
+    def secondary_x_data_as_np(self):
+        """
+        returns secondary X data as list of numpy arrays
+        """
+        return [np.array(x_series) for x_series in self.secondary_x_data]
 
     @property
     def y_data_as_np(self):
@@ -729,6 +739,21 @@ class PlotModel(BaseModel):
         extent[2] -= y_extent * 0.1
         extent[3] += y_extent * 0.1
         return extent
+    
+    def _calcuate_secondary_labels(self):
+        locations = []
+        labels = []
+
+        curr_secondary = None
+
+        for x_entry, sec_x_entry in zip(self.x_data_as_np[0], self.secondary_x_data_as_np[0]):
+            if sec_x_entry != curr_secondary:
+                locations.append(x_entry)
+                labels.append(sec_x_entry)
+                curr_secondary = sec_x_entry
+
+        return locations, labels
+            
 
     def get_plot(self):
         """
@@ -786,6 +811,16 @@ class PlotModel(BaseModel):
                 ax.semilogy(x_series, y_series, self.style, label=label)
             else:
                 ax.plot(x_series, y_series, self.style, label=label)
+            
+            #ax.xaxis.set_major_formatter(StrMethodFormatter('{:g}'))
+        
+        if self.secondary_x_data is not None:
+            sec_xax = ax.secondary_xaxis(location="top")
+            locations, labels = self._calcuate_secondary_labels()
+            sec_xax.set_xticks(locations, labels)
+            #sec_xax.xaxis.set_major_formatter(StrMethodFormatter('{:g}'))
+            if self.secondary_x_label is not None:
+                sec_xax.set_xlabel(self.secondary_x_label)
 
         if self.xlim is not None:
             ax.set_xlim(self.xlim)
@@ -1112,6 +1147,37 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             style = "-"
 
         return style
+    
+    def _cumulate_pseudo_step(self, pseudo_steps):
+        cumulative = []
+        last = 0
+        for step in pseudo_steps:
+            if ((step == 0) and cumulative):
+                last = cumulative[-1] + 1
+            cumulative.append(step + last)
+        
+        return cumulative
+        
+    
+    def _handle_secondary_x_axis(self, cases, x_data, x_lim, x_label):
+        if (x_label == "pseudo_step" and any([isinstance(case.params.time_stepping, Unsteady) for case in cases])):
+            for idx, x_series in enumerate(x_data):
+                x_data[idx] = self._cumulate_pseudo_step(x_series)
+            if len(cases) == 1:
+                path_to_physical_step = self.x.rstrip("pseudo_step") + "physical_step"
+                sec_x_data = data_from_path(cases[0], path_to_physical_step, [])
+                x_min = min(x_data[0])
+                x_max = max(x_data[0])
+                lower_idx = x_data[0].index(max(x_min, x_lim[0] if x_lim is not None else -np.inf))
+                upper_idx = x_data[0].index(min(x_max, x_lim[1] if x_lim is not None else np.inf))
+                physical_steps_to_show = sec_x_data[upper_idx] - sec_x_data[lower_idx]
+                if physical_steps_to_show <= 5:
+                    return [sec_x_data] * len(x_data), "physical_step"
+            else: 
+                log.warning("Does not show physical step with multiple cases plotted.")
+        return None, None
+
+
 
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
@@ -1148,6 +1214,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         >>> fig.show()
         """
         x_data, y_data, x_label, y_label = self._load_data(cases)
+
         background = self._get_background_chart(x_data)
         background_png = None
         if background is not None:
@@ -1161,6 +1228,8 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         xlim = self._handle_xlimits()
         ylim = self._calculate_ylimits(x_data, y_data)
 
+        secondary_x_data, seondary_x_label = self._handle_secondary_x_axis(x_lim=xlim, x_data=x_data, x_label=x_label, cases=cases)
+
         return PlotModel(
             x_data=x_data,
             y_data=y_data,
@@ -1173,6 +1242,8 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             xlim=xlim,
             ylim=ylim,
             grid=self.show_grid,
+            secondary_x_data=secondary_x_data,
+            secondary_x_label=seondary_x_label
         )
 
     def _get_figures(self, cases, context: ReportContext):
@@ -1339,9 +1410,11 @@ class Chart2D(BaseChart2D):
         y_components = []
 
         for case in cases:
+            filter_physical_steps = (isinstance(case.params.time_stepping, Unsteady) and 
+                                     (x_label in ["time", "physical_step"]))
             for y in y_variables:
-                x_data.append(data_from_path(case, self.x, cases))
-                y_data.append(data_from_path(case, y, cases))
+                x_data.append(data_from_path(case, self.x, cases, filter_physical_steps_only=filter_physical_steps))
+                y_data.append(data_from_path(case, y, cases, filter_physical_steps_only=filter_physical_steps))
                 x_components.append(path_variable_name(self.x))
                 y_components.append(path_variable_name(y))
 
@@ -1449,6 +1522,12 @@ class NonlinearResiduals(BaseChart2D):
             ]
 
         return legend
+    
+    def _handle_secondary_x_axis(self, cases, x_data, x_lim, x_label):
+        secondary_x_data, seondary_x_label = super()._handle_secondary_x_axis(cases, x_data, x_lim, x_label)
+        if secondary_x_data is not None:
+            return np.array(secondary_x_data)[:, 1:].tolist(), seondary_x_label
+        return secondary_x_data, seondary_x_label
 
     def _load_data(self, cases):
         cols_exclude = cases[0].results.nonlinear_residuals.x_columns

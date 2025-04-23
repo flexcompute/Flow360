@@ -445,7 +445,7 @@ class ResultCSVModel(ResultBaseModel):
                     "Cannot find time step size for this simulation. Check flow360.json file."
                 )
 
-        elif isinstance(params, SimulationParams):
+        if isinstance(params, SimulationParams):
             try:
                 step_size = params.time_stepping.step_size
             except KeyError:
