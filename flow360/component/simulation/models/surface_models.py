@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -363,6 +363,7 @@ class Wall(BoundaryBase):
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
