@@ -54,14 +54,18 @@ def get_aerospace_condition_using_from_mach():
 def get_aerospace_condition_using_from_mach_reynolds():
     return AerospaceCondition.from_mach_reynolds(
         mach=0.8,
-        reynolds=1e+6,
+        reynolds=1e6,
         project_length_unit=u.m,
         alpha=5 * u.deg,
         temperature=290 * u.K,
     )
 
 
-def test_full_model(get_aerospace_condition_default, get_aerospace_condition_using_from_mach, get_aerospace_condition_using_from_mach_reynolds):
+def test_full_model(
+    get_aerospace_condition_default,
+    get_aerospace_condition_using_from_mach,
+    get_aerospace_condition_using_from_mach_reynolds,
+):
     full_data = get_aerospace_condition_default.model_dump(exclude_none=True)
     data_parsed = parse_model_dict(full_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
@@ -73,6 +77,7 @@ def test_full_model(get_aerospace_condition_default, get_aerospace_condition_usi
     full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=True)
     data_parsed = parse_model_dict(full_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
+
 
 def test_incomplete_model(
     get_aerospace_condition_default,
@@ -97,8 +102,6 @@ def test_incomplete_model(
 
     data_parsed = parse_model_dict(incomplete_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
-    print(data_parsed)
-
 
     full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=True)
     incomplete_data = {
@@ -109,8 +112,6 @@ def test_incomplete_model(
 
     data_parsed = parse_model_dict(incomplete_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
-    # print(data_parsed)
-
 
     full_data = get_aerospace_condition_default_and_thermal_state_using_from.model_dump(
         exclude_none=True
