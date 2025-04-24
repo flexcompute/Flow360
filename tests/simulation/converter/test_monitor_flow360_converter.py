@@ -36,6 +36,7 @@ def test_flow360_monitor_convert():
 
     params_dict = params.model_dump(
         mode="json",
+        exclude_none=False,
         exclude={
             "type_name",
             "private_attribute_constructor",
