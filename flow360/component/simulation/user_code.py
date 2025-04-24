@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import get_origin, Generic, TypeVar, Optional, Iterable
 
-from pydantic import BeforeValidator, WrapSerializer, WrapValidator
+from pydantic import BeforeValidator
 from typing_extensions import Self
 import re
 
@@ -196,6 +196,34 @@ class SolverVariable(Variable):
         _global_ctx.set(value.name, value.value)
 
 
+def _handle_syntax_error(se: SyntaxError, source: str):
+    caret = (
+        " " * (se.offset - 1) + "^"
+        if se.text and se.offset
+        else None
+    )
+    msg = f"{se.msg} at line {se.lineno}, column {se.offset}"
+    if caret:
+        msg += f"\n{se.text.rstrip()}\n{caret}"
+
+    raise pd.ValidationError.from_exception_data(
+        "expression_syntax",
+        [
+            InitErrorDetails(
+                type="value_error",
+                msg=se.msg,
+                input=source,
+                ctx={
+                    "line": se.lineno,
+                    "column": se.offset,
+                    "error": msg,
+                },
+            )
+        ],
+    )
+
+
+
 class Expression(Flow360BaseModel):
     expression: str = pd.Field("")
 
@@ -221,8 +249,7 @@ class Expression(Flow360BaseModel):
         try:
             _ = expression_to_model(expression, _global_ctx)
         except SyntaxError as s_err:
-            details = InitErrorDetails(type="value_error", ctx={"error": s_err})
-            raise pd.ValidationError.from_exception_data("expression syntax error", [details])
+            raise _handle_syntax_error(s_err, expression)
         except ValueError as v_err:
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
             raise pd.ValidationError.from_exception_data("expression value error", [details])
@@ -337,8 +364,13 @@ T = TypeVar("T")
 class ValueOrExpression(Expression, Generic[T]):
     def __class_getitem__(cls, internal_type):
         def _internal_validator(value: Expression):
-            result = value.evaluate(strict=False)
-            validated = pd.TypeAdapter(internal_type).validate_python(result, strict=True)
+            try:
+                result = value.evaluate(strict=False)
+            except Exception as err:
+                raise ValueError(f'expression evaluation failed: {err}') from err
+
+            pd.TypeAdapter(internal_type).validate_python(result, strict=True)
+
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
