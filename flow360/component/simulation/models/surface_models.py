@@ -36,7 +36,6 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
-from flow360.component.simulation.utils import is_instance_of_type_in_union
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -370,7 +369,7 @@ class Wall(BoundaryBase):
         """Check no setting is conflicting with the usage of wall function"""
         if self.use_wall_function is False:
             return self
-        if is_instance_of_type_in_union(self.velocity, WallVelocityModelTypes):
+        if isinstance(self.velocity, SlaterPorousBleed):
             raise ValueError(
                 f"Using `{type(self.velocity).__name__}` with wall function is not supported currently."
             )

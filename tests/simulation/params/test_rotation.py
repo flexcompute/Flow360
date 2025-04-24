@@ -39,6 +39,7 @@ def test_wall_angular_velocity():
     Wall(
         surfaces=[my_wall_surface],
         velocity=WallRotation(axis=(0, 0, 1), center=(1, 2, 3) * u.m, angular_velocity=100 * u.rpm),
+        use_wall_function=True,
     )
 
 
