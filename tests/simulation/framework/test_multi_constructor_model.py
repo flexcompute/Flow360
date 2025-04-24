@@ -42,7 +42,7 @@ def get_aerospace_condition_default_and_thermal_state_using_from():
 
 
 @pytest.fixture
-def get_aerospace_condition_using_from():
+def get_aerospace_condition_using_from_mach():
     return AerospaceCondition.from_mach(
         mach=0.8,
         alpha=5 * u.deg,
@@ -50,19 +50,34 @@ def get_aerospace_condition_using_from():
     )
 
 
-def test_full_model(get_aerospace_condition_default, get_aerospace_condition_using_from):
+@pytest.fixture
+def get_aerospace_condition_using_from_mach_reynolds():
+    return AerospaceCondition.from_mach_reynolds(
+        mach=0.8,
+        reynolds=1e+6,
+        project_length_unit=u.m,
+        alpha=5 * u.deg,
+        temperature=290 * u.K,
+    )
+
+
+def test_full_model(get_aerospace_condition_default, get_aerospace_condition_using_from_mach, get_aerospace_condition_using_from_mach_reynolds):
     full_data = get_aerospace_condition_default.model_dump(exclude_none=True)
     data_parsed = parse_model_dict(full_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
 
-    full_data = get_aerospace_condition_using_from.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=True)
     data_parsed = parse_model_dict(full_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
 
+    full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=True)
+    data_parsed = parse_model_dict(full_data, globals())
+    assert sorted(data_parsed.items()) == sorted(full_data.items())
 
 def test_incomplete_model(
     get_aerospace_condition_default,
-    get_aerospace_condition_using_from,
+    get_aerospace_condition_using_from_mach,
+    get_aerospace_condition_using_from_mach_reynolds,
     get_aerospace_condition_default_and_thermal_state_using_from,
 ):
     full_data = get_aerospace_condition_default.model_dump(exclude_none=True)
@@ -73,7 +88,7 @@ def test_incomplete_model(
 
     assert sorted(data_parsed.items()) == sorted(full_data.items())
 
-    full_data = get_aerospace_condition_using_from.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=True)
     incomplete_data = {
         "type_name": full_data["type_name"],
         "private_attribute_constructor": full_data["private_attribute_constructor"],
@@ -82,6 +97,20 @@ def test_incomplete_model(
 
     data_parsed = parse_model_dict(incomplete_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
+    print(data_parsed)
+
+
+    full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=True)
+    incomplete_data = {
+        "type_name": full_data["type_name"],
+        "private_attribute_constructor": full_data["private_attribute_constructor"],
+        "private_attribute_input_cache": full_data["private_attribute_input_cache"],
+    }
+
+    data_parsed = parse_model_dict(incomplete_data, globals())
+    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    # print(data_parsed)
+
 
     full_data = get_aerospace_condition_default_and_thermal_state_using_from.model_dump(
         exclude_none=True
@@ -101,9 +130,9 @@ def test_incomplete_model(
     assert sorted(data_parsed.items()) == sorted(full_data.items())
 
 
-def test_recursive_incomplete_model(get_aerospace_condition_using_from):
+def test_recursive_incomplete_model(get_aerospace_condition_using_from_mach):
     # `incomplete_data` contains only the private_attribute_* for both the AerospaceCondition and ThermalState
-    full_data = get_aerospace_condition_using_from.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=True)
     input_cache = full_data["private_attribute_input_cache"]
     input_cache["thermal_state"] = {
         "type_name": input_cache["thermal_state"]["type_name"],
@@ -180,7 +209,7 @@ def test_entity_with_multi_constructor():
     assert sorted(data_parsed.items()) == sorted(full_data.items())
 
 
-def test_entity_modification(get_aerospace_condition_using_from):
+def test_entity_modification(get_aerospace_condition_using_from_mach):
 
     my_box = Box.from_principal_axes(
         name="box",
@@ -203,7 +232,7 @@ def test_entity_modification(get_aerospace_condition_using_from):
     my_box.size = (1, 2, 32) * u.m
     assert all(my_box.private_attribute_input_cache.size == (1, 2, 32) * u.m)
 
-    my_op = get_aerospace_condition_using_from
+    my_op = get_aerospace_condition_using_from_mach
     my_op.alpha = -12 * u.rad
     assert my_op.private_attribute_input_cache.alpha == -12 * u.rad
 
