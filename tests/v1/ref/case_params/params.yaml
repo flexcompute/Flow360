@@ -19,7 +19,7 @@ geometry:
     refArea:
         units: 2*m**2
         value: 1.0
-hash: 80001e28dab1f4b540f1bf4a631357fde13950104ac42ec75cd6c0a6e5fe5466
+hash: 54051a84c1cf62f5d24daaec54f587bfec2decba7c5d161f4d81a2851888e6f8
 navierStokesSolver:
     CFLMultiplier: 1.0
     absoluteTolerance: 1.0e-10
