@@ -8,7 +8,6 @@ from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 import pydantic as pd
 
 # Required for correct global scope initialization
-from flow360.component.simulation.solver_builtins import *
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
@@ -22,7 +21,8 @@ from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
     BETDisk,
 )
-from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
+# pylint: disable=unused-import
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
