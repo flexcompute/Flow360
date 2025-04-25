@@ -29,6 +29,16 @@ def _import_flow360(name: str) -> Any:
 
         return u
 
+    if name == "control":
+        from flow360 import control
+
+        return control
+
+    if name == "solution":
+        from flow360 import solution
+
+        return solution
+
 
 def _import_numpy(name: str) -> Any:
     import numpy as np
@@ -38,9 +48,62 @@ def _import_numpy(name: str) -> Any:
 
 
 WHITELISTED_CALLABLES = {
-    "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
-    "flow360.solver_builtins": {
-        "prefix": "fl.",
+    "flow360.units": {
+        "prefix": "u.",
+        "callables": _unit_list(),
+        "evaluate": True
+    },
+    "flow360.control": {
+        "prefix": "control.",
+        "callables": [
+            "mut",
+            "mu",
+            "solutionNavierStokes",
+            "residualNavierStokes",
+            "solutionTurbulence",
+            "residualTurbulence",
+            "kOmega",
+            "nuHat",
+            "solutionTransition",
+            "residualTransition",
+            "solutionHeatSolver",
+            "residualHeatSolver",
+            "coordinate",
+            "physicalStep",
+            "pseudoStep",
+            "timeStepSize",
+            "alphaAngle",
+            "betaAngle",
+            "pressureFreestream",
+            "momentLengthX",
+            "momentLengthY",
+            "momentLengthZ",
+            "momentCenterX",
+            "momentCenterY",
+            "momentCenterZ",
+            "bet_thrust",
+            "bet_torque",
+            "bet_omega",
+            "CD",
+            "CL",
+            "forceX",
+            "forceY",
+            "forceZ",
+            "momentX",
+            "momentY",
+            "momentZ",
+            "nodeNormals",
+            "theta",
+            "omega",
+            "omegaDot",
+            "wallFunctionMetric",
+            "wallShearStress",
+            "yPlus",
+        ],
+        "evaluate": False
+    },
+    "flow360.solution": {
+        "prefix": "solution.",
         "callables": [
             "mut",
             "mu",
