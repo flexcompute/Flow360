@@ -63,6 +63,7 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
 from unyt import unyt_quantity, unyt_array
+from unyt.exceptions import UnitParseError
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -773,33 +774,52 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
     return updated_params_as_dict, errors
 
 
-def validate_expression(variables: list[dict], expression: str):
+def validate_expression(variables: list[dict], expressions: list[str]):
     """
     Validate an expression using the specified variable space
     """
     errors = []
-    value = None
-    units = None
+    values = []
+    units = []
 
-    try:
-        # Populate variable scope
-        for variable in variables:
-            _ = UserVariable(name=variable["name"], value=variable["value"])
+    loc = ""
 
-        expression_object = Expression(expression=expression)
+    # Populate variable scope
+    for i in range(len(variables)):
+        variable = variables[i]
+        loc = f"variables/{i}"
+        try:
+            variable = UserVariable(name=variable["name"], value=variable["value"])
+            if variable and isinstance(variable.value, Expression):
+                _ = variable.value.evaluate()
+        except (ValueError, KeyError, NameError, UnitParseError) as e:
+            errors.append({
+                "loc": loc,
+                "msg": str(e)
+            })
 
-        result = expression_object.evaluate()
+    for i in range(len(expressions)):
+        expression = expressions[i]
+        loc = f"expressions/{i}"
+        value = None
+        unit = None
+        try:
+            expression_object = Expression(expression=expression)
+            result = expression_object.evaluate()
+            if isinstance(result, Number):
+                value = result
+            elif isinstance(result, unyt_array):
+                if result.size == 1:
+                    value = float(result.value)
+                else:
+                    value = tuple(result.value.tolist())
+                unit = str(result.units.expr)
+        except (ValueError, KeyError, NameError, UnitParseError) as e:
+            errors.append({
+                "loc": loc,
+                "msg": str(e)
+            })
+        values.append(value)
+        units.append(unit)
 
-        if isinstance(result, Number):
-            value = result
-        elif isinstance(result, unyt_array):
-            if result.size == 1:
-                value = float(result.value)
-            else:
-                value = tuple(result.value.tolist())
-            units = str(result.units.expr)
-        
-    except (ValueError, KeyError, NameError) as e:
-        errors.append(str(e))
-
-    return errors, value, units
+    return errors, values, units
