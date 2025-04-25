@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Dict, Literal, Optional, Union, List
+from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
