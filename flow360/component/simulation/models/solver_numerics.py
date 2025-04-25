@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Dict, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union, List
 
 import numpy as np
 import pydantic as pd
@@ -119,6 +119,8 @@ class NavierStokesSolver(GenericSolverSettings):
         + "dissipation of the numerical flux. The recommended starting value for most "
         + "low-dissipation runs is 0.2.",
     )
+    low_dissipation_control_factors: Optional[List[float]] = pd.Field(None)
+
     limit_velocity: bool = pd.Field(False, description="Limiter for velocity")
     limit_pressure_density: bool = pd.Field(False, description="Limiter for pressure and density.")
 
