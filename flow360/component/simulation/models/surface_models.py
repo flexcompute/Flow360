@@ -362,7 +362,7 @@ class Wall(BoundaryBase):
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
-    private_attribute_dict: Optional[Dict] = pd.Field(None)
+    # private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):

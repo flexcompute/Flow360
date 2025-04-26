@@ -1,5 +1,8 @@
 """This script is used by sweep_launch_template.py to create a report."""
 
+import pandas as pd
+
+import flow360 as fl
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
     BottomCamera,
@@ -10,16 +13,33 @@ from flow360.plugins.report.report_items import (
     FrontLeftTopCamera,
     Inputs,
     LeftCamera,
+    NonlinearResiduals,
     PatternCaption,
     RearCamera,
     RearRightBottomCamera,
     Settings,
+    SubsetLimit,
     Summary,
     Table,
     TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem
-from flow360.version import __solver_version__
+
+
+def csv_reader(
+    file_path,
+):
+    csv_case_specific = pd.read_csv(file_path, sep=",", skiprows=2)
+
+    case_list = []
+
+    for case_id in csv_case_specific["case_id"]:
+        case = fl.Case(case_id)
+        case_list.append(case)
+
+    params = case_list[0].params
+
+    return case_list, params
 
 
 def generate_report(
@@ -31,6 +51,8 @@ def generate_report(
     include_cfl: bool = False,
     include_forces_moments_table: bool = False,
     include_forces_moments_charts: bool = False,
+    include_forces_moments_alpha_charts: bool = False,
+    include_forces_moments_beta_charts: bool = False,
     include_cf_vec: bool = False,
     include_cp: bool = False,
     include_yplus: bool = False,
@@ -42,7 +64,7 @@ def generate_report(
 
     exclude = freestream_surfaces
 
-    SOLVER_VERSION = __solver_version__
+    SOLVER_VERSION = "report-25.5.0"
 
     top_camera = TopCamera(pan_target=(3.5, 0, -0.5), dimension=15, dimension_dir="height")
     bottom_camera = BottomCamera(pan_target=(3.5, 0, -0.5), dimension=15, dimension_dir="height")
@@ -94,23 +116,19 @@ def generate_report(
     avg = Average(fraction=0.1)
 
     force_list = [
-        "totalCD",
-        "totalCL",
-        "totalCFx",
-        "totalCFy",
-        "totalCFz",
-        "totalCMx",
-        "totalCMy",
-        "totalCMz",
+        "CD",
+        "CL",
+        "CFx",
+        "CFy",
+        "CFz",
+        "CMx",
+        "CMy",
+        "CMz",
     ]
-
-    residuals_list = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
 
     for model in params.models:
         if model.type == "Fluid":
             turbulence_solver = model.turbulence_model_solver.type_name
-
-    cfl_list = ["0_NavierStokes_cfl", f"1_{turbulence_solver}_cfl"]
 
     CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
     CL = DataItem(data="surface_forces/totalCL", exclude=exclude, title="CL", operations=avg)
@@ -158,44 +176,61 @@ def generate_report(
         items.append(table)
 
     if include_residuals:
-        residual_charts = [
-            Chart2D(
-                x=f"nonlinear_residuals/{step_type}",
-                y=f"nonlinear_residuals/{residual}",
-                force_new_page=True,
-                section_title="Residuals",
-                fig_name=f"{residual}_fig",
-            )
-            for residual in residuals_list
-        ]
-        items.extend(residual_charts)
+        residual_chart = NonlinearResiduals(
+            force_new_page=True, section_title="Nonlinear residuals", fig_name=f"nonlin-res_fig"
+        )
+        items.append(residual_chart)
 
     if include_cfl and params.time_stepping.CFL.type == "adaptive":
-        cfl_charts = [
-            Chart2D(
-                x=f"cfl/{step_type}",
-                y=f"cfl/{cfl}",
-                force_new_page=True,
-                section_title="CFL",
-                fig_name=f"{cfl}_fig",
-            )
-            for cfl in cfl_list
-        ]
-        items.extend(cfl_charts)
+        cfl_chart = Chart2D(
+            x=f"cfl/{step_type}",
+            y=["cfl/0_NavierStokes_cfl", f"cfl/1_{turbulence_solver}_cfl"],
+            force_new_page=True,
+            section_title="CFL",
+            fig_name="cfl_fig",
+        )
+        items.append(cfl_chart)
 
     if include_forces_moments_charts:
         force_charts = [
             Chart2D(
                 x=f"surface_forces/{step_type}",
-                y=f"surface_forces/{force}",
+                y=f"surface_forces/total{force}",
                 force_new_page=True,
                 section_title="Forces/Moments",
                 fig_name=f"{force}_fig",
                 exclude=exclude,
+                ylim=SubsetLimit(subset=(0.5, 1), offset=0.25),
             )
             for force in force_list
         ]
         items.extend(force_charts)
+
+    if include_forces_moments_alpha_charts:
+        force_alpha_charts = [
+            Chart2D(
+                x=f"params/operating_condition/alpha",
+                y=f"total_forces/averages/{force}",
+                force_new_page=True,
+                section_title="Averaged Forces/Moments against alpha",
+                fig_name=f"{force}_alpha_fig",
+            )
+            for force in force_list
+        ]
+        items.extend(force_alpha_charts)
+
+    if include_forces_moments_beta_charts:
+        force_beta_charts = [
+            Chart2D(
+                x=f"params/operating_condition/beta",
+                y=f"total_forces/averages/{force}",
+                force_new_page=True,
+                section_title="Averaged Forces/Moments against beta",
+                fig_name=f"{force}_beta_fig",
+            )
+            for force in force_list
+        ]
+        items.extend(force_beta_charts)
 
     if include_yplus:
         y_plus_screenshots = [

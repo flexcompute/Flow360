@@ -20,7 +20,7 @@ This script will:
 import os
 
 import pandas as pd
-from sweep_launch_report import generate_report
+from sweep_launch_report import csv_reader, generate_report
 
 import flow360 as fl
 from flow360 import u
@@ -137,7 +137,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
     df = df_data.join(df_forces)
     df.to_csv(csv_path, index=False, mode="a")
 
-    return case_list
+    return csv_path
 
 
 ######################################################################################################################
@@ -261,17 +261,18 @@ def main():
     # Step3: Launch the cases and save the relevant data.
     models = assign_boundary_conditions(project)
     params = make_run_params(vm, models)
-    cases = launch_sweep(params, project, vm, dir_name)
+    csv_path = launch_sweep(params, project, vm, dir_name)
 
     generate_report(
-        cases,
-        params,
+        *csv_reader(csv_path),
         include_geometry=True,
         include_general_tables=True,
         include_residuals=True,
         include_cfl=True,
         include_forces_moments_table=True,
         include_forces_moments_charts=True,
+        include_forces_moments_alpha_charts=True,
+        include_forces_moments_beta_charts=True,
         include_cf_vec=True,
         include_cp=True,
         include_yplus=True,
