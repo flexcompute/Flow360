@@ -485,16 +485,16 @@ class Flow360BaseModel(pd.BaseModel):
 
     def model_dump(self, **kwargs) -> dict:
         """Override of pydantic's model_dump to set exclude_none=True by default.
-        
+
         Returns a dictionary representation of the model.
         All None values will be excluded by default.
-        
+
         Returns
         -------
         dict
             A dictionary of the model's fields and values.
         """
-        kwargs.setdefault('exclude_none', True)
+        kwargs.setdefault("exclude_none", True)
         return super().model_dump(**kwargs)
 
     @classmethod

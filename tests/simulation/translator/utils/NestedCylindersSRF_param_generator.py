@@ -81,7 +81,10 @@ def create_NestedCylindersSRF_param(srf_cylinder):
                     rotating_reference_frame_model=True,
                 ),
             ],
-            time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=2000),
+            time_stepping=Steady(
+                CFL=AdaptiveCFL(max=10000, max_relative_change=1, convergence_limiting_factor=0.25),
+                max_steps=2000,
+            ),
             outputs=[
                 VolumeOutput(
                     output_format="paraview",

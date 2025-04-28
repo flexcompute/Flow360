@@ -146,7 +146,7 @@ def get_om6Wing_tutorial_param():
                 SlipWall(entities=[my_symmetry_plane]),
                 Freestream(entities=[my_freestream]),
             ],
-            time_stepping=Steady(CFL=RampCFL()),
+            time_stepping=Steady(CFL=RampCFL(final=200, initial=5, ramp_steps=40)),
             outputs=[
                 VolumeOutput(
                     output_format="paraview",
