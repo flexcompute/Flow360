@@ -101,7 +101,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
         # modify the alpha
         params.operating_condition.alpha = alpha_angle
 
-        case = project.run_case(params=params, name=f"{alpha_angle}_case ")
+        case = project.run_case(params=params, name=f"alpha_{alpha_angle.value}_case")
         data = {
             "case_id": case.id,
             "alpha(deg)": params.operating_condition.alpha.value,
