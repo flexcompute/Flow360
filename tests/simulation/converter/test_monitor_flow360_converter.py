@@ -47,7 +47,7 @@ def test_flow360_monitor_convert():
     assert compare_values(
         params_dict,
         ref_dict,
-        ignore_keys=["private_attribute_id", "low_dissipation_control_factors"],
+        ignore_keys=["private_attribute_id"],
     )
 
     with pytest.raises(

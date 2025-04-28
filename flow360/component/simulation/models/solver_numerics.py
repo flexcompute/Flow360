@@ -119,7 +119,7 @@ class NavierStokesSolver(GenericSolverSettings):
         + "dissipation of the numerical flux. The recommended starting value for most "
         + "low-dissipation runs is 0.2.",
     )
-    low_dissipation_control_factors: Optional[List[float]] = pd.Field(None)
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     limit_velocity: bool = pd.Field(False, description="Limiter for velocity")
     limit_pressure_density: bool = pd.Field(False, description="Limiter for pressure and density.")
