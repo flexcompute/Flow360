@@ -441,7 +441,9 @@ def test_by_reference_registry(my_cylinder2):
             assert entity.height == 131 * u.m
 
     # [Registry] Internal changes --> External
-    my_cylinder2_ref = registry.find_single_entity_by_name("zone/Cylinder2")
+    my_cylinder2_ref = registry.find_by_naming_pattern(
+        pattern="zone/Cylinder2", enforce_output_as_list=False
+    )
     my_cylinder2_ref.height = 132 * u.m
     assert my_cylinder2.height == 132 * u.m
 
@@ -650,7 +652,9 @@ def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_me
     my_cylinder1.center = (3, 2, 1) * u.m
     used_entity_registry = EntityRegistry()
     register_entity_list(my_param1, used_entity_registry)
-    my_cylinder1_ref = used_entity_registry.find_single_entity_by_name("zone/Cylinder1")
+    my_cylinder1_ref = used_entity_registry.find_by_naming_pattern(
+        pattern="zone/Cylinder1", enforce_output_as_list=False
+    )
     assert all(my_cylinder1_ref.center == [3, 2, 1] * u.m)
 
 
@@ -664,7 +668,9 @@ def test_registry_replacing_existing_entity(my_volume_mesh_with_interface):
         center=(1, 2, 3) * u.m,
     )
     backup = deepcopy(
-        my_volume_mesh_with_interface.internal_registry.find_single_entity_by_name("innerZone")
+        my_volume_mesh_with_interface.internal_registry.find_by_naming_pattern(
+            pattern="innerZone", enforce_output_as_list=False
+        )
     )
     assert my_volume_mesh_with_interface.internal_registry.contains(backup)
 
