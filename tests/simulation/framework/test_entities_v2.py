@@ -835,7 +835,7 @@ def test_entity_registry_find_by_id():
         )
 
 
-def test_used_entity_registry_in_simulation_param():
+def test_same_name_and_type_entities_in_entity_registry():
     with u.SI_unit_system:
         point_array_2d_1 = PointArray2D(
             name="Parallelogram_streamline",
