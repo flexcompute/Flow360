@@ -1284,7 +1284,7 @@ class Chart2D(BaseChart2D):
     """
 
     x: Union[str, Delta]
-    y: Union[str, Delta, List[str]]
+    y: Union[str, Delta, List[str], List[DataItem]]
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     background: Union[Literal["geometry"], None] = None
@@ -1328,15 +1328,15 @@ class Chart2D(BaseChart2D):
             legend = None
         elif (len(self.y) > 1) and isinstance(self.y, list):
             if len(cases)*len(self.y)!=len(x_data):
-                legend = [path_variable_name(y) for y in self.y]
+                legend = [path_variable_name(str(y)) for y in self.y]
             else:
                 legend = []
                 for case in cases:
                     for y in self.y:
                         if len(cases) > 1:
-                            legend.append(f"{case.name} - {path_variable_name(y)}")
+                            legend.append(f"{case.name} - {path_variable_name(str(y))}")
                         else:
-                            legend.append(f"{path_variable_name(y)}")
+                            legend.append(f"{path_variable_name(str(y))}")
         else:
             legend = [case.name for case in cases]
 
@@ -1347,7 +1347,7 @@ class Chart2D(BaseChart2D):
         x_label = path_variable_name(self.x)
 
         if not isinstance(self.y, list):
-            y_label = path_variable_name(self.y)
+            y_label = path_variable_name(str(self.y))
             y_variables = [self.y]
         else:
             y_label = "value"
@@ -1366,13 +1366,13 @@ class Chart2D(BaseChart2D):
                     x_data.append(x_data_point)
                     y_data.append(y_data_point)
                     x_components.append(path_variable_name(self.x))
-                    y_components.append(path_variable_name(y))
+                    y_components.append(path_variable_name(str(y)))
                 else:
                     if len(x_data) <= var_idx:
                         x_data.append([x_data_point])
                         y_data.append([y_data_point])
                         x_components.append(path_variable_name(self.x))
-                        y_components.append(path_variable_name(y))
+                        y_components.append(path_variable_name(str(y)))
                     else:
                         x_data[var_idx].append(x_data_point)
                         y_data[var_idx].append(y_data_point)

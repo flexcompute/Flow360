@@ -1015,3 +1015,35 @@ def test_multiple_point_variables_on_chart2d(cases, here):
     assert plot_model.x_label == "beta [degree]"
     assert plot_model.y_label == "value"
     assert plot_model.legend == loads
+
+def test_dataitem_point_variables_on_chart2d(cases, here):
+    loads_surf = ["totalCFy", "totalCFx"]
+    loads = ["CFy", "CFx"]
+
+    dataitems = [DataItem(data=f"surface_forces/{load}", operations=[Average(fraction=0.2)]) for load in loads_surf]
+    context = ReportContext(cases=cases[:2])
+    chart = Chart2D(
+        x="params/operating_condition/beta",
+        y=dataitems,
+        section_title="Loads on beta",
+        fig_name="loads_beta",
+        show_grid=True,
+    )
+
+    plot_model = chart.get_data(cases=cases, context=context)
+
+    ys_to_plot = np.empty((len(loads), 2))
+    xs_to_plot = np.empty((len(loads), 2))
+
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv"), skipinitialspace=True)
+        to_avg = round(len(load_data) * 0.2)
+        xs_to_plot[:, idx0] = case.params.operating_condition.beta.value
+        for idx1, load in enumerate(loads):
+            ys_to_plot[idx1, idx0] = np.average(load_data[load].iloc[-to_avg:])
+
+    assert np.allclose(plot_model.x_data_as_np, xs_to_plot)
+    assert np.allclose(plot_model.y_data_as_np, ys_to_plot)
+    assert plot_model.x_label == "beta [degree]"
+    assert plot_model.y_label == "value"
+    assert plot_model.legend == loads_surf
