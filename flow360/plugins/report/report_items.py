@@ -9,6 +9,7 @@ import os
 from abc import ABCMeta, abstractmethod
 from typing import Annotated, List, Literal, Optional, Tuple, Union
 
+
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,7 +31,7 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 
 # pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
-
+from collections.abc import Iterable
 from flow360 import Case, SimulationParams
 from flow360.component.results import case_results
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -85,6 +86,7 @@ from flow360.plugins.report.uvf_shutter import (
     TopCamera,
     make_shutter_context,
 )
+import unyt.dimensions
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -977,6 +979,11 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         return False
 
     def _is_multiline_data(self, x_data, y_data):
+        if (len(x_data) == 1 and isinstance(x_data[0], list) and 
+            len(y_data) == 1 and isinstance(y_data[0], list)):
+            x_data = [*x_data[0]]
+            y_data = [*y_data[0]]
+
         return all(not isinstance(data, list) for data in x_data) and all(
             not isinstance(data, list) for data in y_data
         )
@@ -1293,14 +1300,22 @@ class Chart2D(BaseChart2D):
         return get_requirements_from_data_path([self.x, self.y])
 
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
+        for idx, (x_series, y_series) in enumerate(zip(x_data, y_data)):
+            united_array_x = unyt.unyt_array(x_series)
+            united_array_y = unyt.unyt_array(y_series)
+            if united_array_x.units != unyt.dimensionless:
+                x_data[idx] = united_array_x
+            if united_array_y.units != unyt.dimensionless:
+                y_data[idx] = united_array_y
+            
         if self._check_dimensions_consistency(x_data) is True:
             x_unit = x_data[0].units
-            x_data = [data.value for data in x_data]
+            x_data = [data.value.tolist() for data in x_data]
             x_label += f" [{x_unit}]"
 
         if self._check_dimensions_consistency(y_data) is True:
             y_unit = y_data[0].units
-            y_data = [data.value for data in y_data]
+            y_data = [data.value.tolist() for data in y_data]
             if not isinstance(self.y, list):
                 y_label += f" [{y_unit}]"
 
@@ -1312,13 +1327,16 @@ class Chart2D(BaseChart2D):
             y_data = [float(data) for data in y_data]
             legend = None
         elif (len(self.y) > 1) and isinstance(self.y, list):
-            legend = []
-            for case in cases:
-                for y in self.y:
-                    if len(cases) > 1:
-                        legend.append(f"{case.name} - {path_variable_name(y)}")
-                    else:
-                        legend.append(f"{path_variable_name(y)}")
+            if len(cases)*len(self.y)!=len(x_data):
+                legend = [path_variable_name(y) for y in self.y]
+            else:
+                legend = []
+                for case in cases:
+                    for y in self.y:
+                        if len(cases) > 1:
+                            legend.append(f"{case.name} - {path_variable_name(y)}")
+                        else:
+                            legend.append(f"{path_variable_name(y)}")
         else:
             legend = [case.name for case in cases]
 
@@ -1341,11 +1359,24 @@ class Chart2D(BaseChart2D):
         y_components = []
 
         for case in cases:
-            for y in y_variables:
-                x_data.append(data_from_path(case, self.x, cases))
-                y_data.append(data_from_path(case, y, cases))
-                x_components.append(path_variable_name(self.x))
-                y_components.append(path_variable_name(y))
+            for var_idx, y in enumerate(y_variables):
+                x_data_point = data_from_path(case, self.x, cases)
+                y_data_point = data_from_path(case, y, cases)
+                if (isinstance(x_data_point, Iterable) and isinstance(y_data_point, Iterable)):
+                    x_data.append(x_data_point)
+                    y_data.append(y_data_point)
+                    x_components.append(path_variable_name(self.x))
+                    y_components.append(path_variable_name(y))
+                else:
+                    if len(x_data) <= var_idx:
+                        x_data.append([x_data_point])
+                        y_data.append([y_data_point])
+                        x_components.append(path_variable_name(self.x))
+                        y_components.append(path_variable_name(y))
+                    else:
+                        x_data[var_idx].append(x_data_point)
+                        y_data[var_idx].append(y_data_point)
+
 
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label

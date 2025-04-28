@@ -985,3 +985,33 @@ def test_residuals(cases, residual_plot_model):
     assert plot_model.y_label == "residual values"
     assert plot_model.legend == residuals_sa
     # TODO: add case and test for residuals from SST
+
+
+def test_multiple_point_variables_on_chart2d(cases, here):
+    loads = ["CL", "CD"]
+    context = ReportContext(cases=cases[:2])
+    chart = Chart2D(
+        x="params/operating_condition/beta",
+        y=[f"total_forces/averages/{load}" for load in loads],
+        section_title="Loads on beta",
+        fig_name="loads_beta",
+        show_grid=True,
+    )
+
+    plot_model = chart.get_data(cases=cases, context=context)
+
+    ys_to_plot = np.empty((len(loads), 2))
+    xs_to_plot = np.empty((len(loads), 2))
+
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv"), skipinitialspace=True)
+        to_avg = round(len(load_data) * 0.1)
+        xs_to_plot[:, idx0] = case.params.operating_condition.beta.value
+        for idx1, load in enumerate(loads):
+            ys_to_plot[idx1, idx0] = np.average(load_data[load].iloc[-to_avg:])
+
+    assert np.allclose(plot_model.x_data_as_np, xs_to_plot)
+    assert np.allclose(plot_model.y_data_as_np, ys_to_plot)
+    assert plot_model.x_label == "beta [degree]"
+    assert plot_model.y_label == "value"
+    assert plot_model.legend == loads
