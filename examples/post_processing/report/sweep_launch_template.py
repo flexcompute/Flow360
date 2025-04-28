@@ -94,7 +94,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
     df.to_csv(csv_path, index=False)
 
     # For example let's vary alpha:
-    alphas = [-10, 12] * u.deg
+    alphas = [-10, -5, 0, 5, 10, 12, 14] * u.deg
 
     cases_params = []
     for i, alpha_angle in enumerate(alphas):
