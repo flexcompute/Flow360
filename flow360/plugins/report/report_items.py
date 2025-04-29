@@ -1175,7 +1175,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             cumulative.append(step + last)
 
         return cumulative
-    
+
     def _handle_transient_pseudo_step(self, cases, x_data, x_label):
         if x_label == "pseudo_step" and any(
             isinstance(case.params.time_stepping, Unsteady) for case in cases
