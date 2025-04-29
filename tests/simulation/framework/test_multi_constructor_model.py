@@ -50,7 +50,7 @@ def get_aerospace_condition_using_from():
     )
 
 
-def compare_objects_from_dict(dict1: dict, dict2: dict, object_class: Flow360BaseModel):
+def compare_objects_from_dict(dict1: dict, dict2: dict, object_class: type[Flow360BaseModel]):
     obj1 = object_class.model_validate(dict1)
     obj2 = object_class.model_validate(dict2)
     assert obj1.model_dump_json() == obj2.model_dump_json()

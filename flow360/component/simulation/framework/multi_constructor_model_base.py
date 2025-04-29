@@ -182,6 +182,11 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
             id_kwarg["private_attribute_id"] = model_as_dict["private_attribute_id"]
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
+            # pylint: disable=fixme
+            # The current simulation.json file from model_dump includes keys with None value. This fix is to
+            # pop such keys in the private_attribute_input_cache to ensure these files are parsed correctly.
+            # TODO This will not be required once the model_dump always exclude None and old json from
+            # the current version are not supported anymore.
             input_kwargs = {key: val for key, val in input_kwargs.items() if val is not None}
             try:
                 return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
