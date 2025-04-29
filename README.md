@@ -49,7 +49,7 @@ Environment ``FLOW360_APIKEY`` variable takes precedence before Flow360 configur
 ## setup
 0. clone repo
 1. Install poetry ``pip install poetry``
-2. Activate poetry shell ``poetry shell``
+2. Activate poetry shell ``poetry env activate``
 3. Install dependencies: ``poetry install``
 
 ## run examples

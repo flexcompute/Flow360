@@ -13,7 +13,7 @@ geometry.show_available_groupings(verbose_mode=True)
 geometry.group_faces_by_tag("faceName")
 
 with fl.SI_unit_system:
-    farfield = fl.AutomatedFarfield(name="farfield")
+    farfield = fl.UserDefinedFarfield()
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(

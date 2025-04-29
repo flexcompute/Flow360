@@ -15,6 +15,7 @@ from flow360.log import log
 # pylint: disable=too-many-arguments
 def set_up_bet_dict_with_user_inputs(
     bet_disk,
+    name,
     rotation_direction_rule,
     initial_blade_direction,
     blade_line_chord,
@@ -25,6 +26,7 @@ def set_up_bet_dict_with_user_inputs(
     number_of_blades=None,
 ):
     """Set up the remaining BET settings from user input. Returns the dictionary of BET disk."""
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -462,6 +464,7 @@ def generate_xfoil_bet_json(
     number_of_blades,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Take in a geometry input file along with the remaining required
@@ -488,6 +491,7 @@ def generate_xfoil_bet_json(
     )
     bet_disk = set_up_bet_dict_with_user_inputs(
         bet_disk=bet_disk,
+        name=name,
         entities=entities,
         omega=omega,
         chord_ref=chord_ref,
@@ -658,6 +662,7 @@ def generate_c81_bet_json(
     angle_unit,
     length_unit,
     number_of_blades,
+    name,
 ):
     """
     Take in a geometry input file along with the remaining required
@@ -689,6 +694,7 @@ def generate_c81_bet_json(
     )
     bet_disk = set_up_bet_dict_with_user_inputs(
         bet_disk=bet_disk,
+        name=name,
         entities=entities,
         omega=omega,
         chord_ref=chord_ref,
@@ -1553,9 +1559,10 @@ def generate_xrotor_bet_json(
     entities,
     angle_unit,
     length_unit,
+    name,
 ) -> dict:
     """
-    Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
+    Takes in a XROTOR input file and translates it into a flow360 BET input dictionary.
 
     DFDC and XROTOR come from the same family of CFD codes. They are both written by Mark Drela over at MIT.
 
@@ -1575,6 +1582,7 @@ def generate_xrotor_bet_json(
     )
     bet_disk = set_up_bet_dict_with_user_inputs(
         bet_disk=bet_disk,
+        name=name,
         entities=entities,
         omega=omega,
         chord_ref=chord_ref,
@@ -1597,9 +1605,10 @@ def generate_dfdc_bet_json(
     entities,
     angle_unit,
     length_unit,
+    name,
 ):
     """
-    Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
+    Takes in a DFDC input file and translates it into a flow360 BET input dictionary.
 
     DFDC and XROTOR come from the same family of CFD codes. They are both written by Mark Drela over at MIT.
 
@@ -1618,6 +1627,7 @@ def generate_dfdc_bet_json(
     )
     bet_disk = set_up_bet_dict_with_user_inputs(
         bet_disk=bet_disk,
+        name=name,
         entities=entities,
         omega=omega,
         chord_ref=chord_ref,

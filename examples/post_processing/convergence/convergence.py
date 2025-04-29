@@ -30,13 +30,13 @@ with fl.SI_unit_system:
                     absolute_tolerance=1e-8, linear_solver=fl.LinearSolver(max_iterations=25)
                 ),
             ),
-            fl.Wall(name="NoSlipWall", surfaces=vm["2"]),
-            fl.SlipWall(name="SlipWall", surfaces=vm["1"]),
-            fl.Freestream(name="Freestream", surfaces=vm["3"]),
+            fl.Wall(surfaces=vm["2"]),
+            fl.SlipWall(surfaces=vm["1"]),
+            fl.Freestream(surfaces=vm["3"]),
         ],
         outputs=[
-            fl.SurfaceOutput(name="SurfaceOutput", surfaces=vm["1"], output_fields=["Cp", "CfVec"]),
-            fl.VolumeOutput(name="VolumeOutput", output_fields=["Cp", "Mach", "qcriterion"]),
+            fl.SurfaceOutput(surfaces=vm["1"], output_fields=["Cp", "CfVec"]),
+            fl.VolumeOutput(output_fields=["Cp", "Mach", "qcriterion"]),
         ],
     )
 

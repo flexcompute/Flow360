@@ -29,7 +29,7 @@ def test_bet_disk_blade_line_chord(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="In one of the BETDisk: the blade_line_chord has to be positive since its initial_blade_direction is specified.",
+        match="BETDisk with name 'BET disk': the blade_line_chord has to be positive since its initial_blade_direction is specified.",
     ):
         bet_disk.initial_blade_direction = (1, 0, 0)
 
@@ -40,7 +40,7 @@ def test_bet_disk_initial_blade_direction(create_steady_bet_disk):
 
     with pytest.raises(
         ValueError,
-        match="In one of the BETDisk: the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
+        match="BETDisk with name 'BET disk': the initial_blade_direction is required to specify since its blade_line_chord is non-zero",
     ):
         bet_disk_2 = bet_disk.model_copy(deep=True)
         bet_disk_2.blade_line_chord = 0.1 * u.inch
@@ -60,7 +60,7 @@ def test_bet_disk_disorder_alphas(create_steady_bet_disk):
     bet_disk = create_steady_bet_disk
     with pytest.raises(
         ValueError,
-        match="In one of the BETDisk: the alphas are not in increasing order.",
+        match="BETDisk with name 'BET disk': the alphas are not in increasing order.",
     ):
         tmp = bet_disk.alphas[0]
         bet_disk.alphas[0] = bet_disk.alphas[1]
@@ -97,10 +97,12 @@ def test_bet_disk_nonequal_sectional_radiuses_and_polars(create_steady_bet_disk)
         match=r"BETDisk with name 'diskABC': the length of sectional_radiuses \(7\) is not the same as that of sectional_polars \(6\).",
     ):
         bet_disk.name = "diskABC"
-        sectional_radiuses_value = bet_disk.sectional_radiuses.value.tolist()
-        sectional_radiuses_value.append(bet_disk.sectional_radiuses[-1])
-        bet_disk.sectional_radiuses = sectional_radiuses_value * bet_disk.sectional_radiuses.units
-        BETDisk.model_validate(bet_disk)
+        bet_disk_dict = bet_disk.model_dump()
+        bet_disk_dict["sectional_radiuses"]["value"] = bet_disk_dict["sectional_radiuses"][
+            "value"
+        ] + (bet_disk.sectional_radiuses[-1],)
+        bet_disk_error = BETDisk(**bet_disk_dict)
+        BETDisk.model_validate(bet_disk_error)
 
 
 def test_bet_disk_3d_coefficients_dimension_wrong_mach_numbers(create_steady_bet_disk):
@@ -132,8 +134,7 @@ def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_be
         match=r"BETDisk with name 'diskABC': \(cross section: 0\) \(Mach index \(0-based\) 0, Reynolds index \(0-based\) 0\): number of Alphas = 18, but the third dimension of lift_coeffs is 17.",
     ):
         bet_disk.name = "diskABC"
-
-        alphas_value = bet_disk.alphas.value.tolist()
-        alphas_value.append(bet_disk.alphas[-1])
-        bet_disk.alphas = alphas_value * bet_disk.alphas.units
-        BETDisk.model_validate(bet_disk)
+        bet_disk_dict = bet_disk.model_dump()
+        bet_disk_dict["alphas"]["value"] = bet_disk_dict["alphas"]["value"] + (bet_disk.alphas[-1],)
+        bet_disk_error = BETDisk(**bet_disk_dict)
+        BETDisk.model_validate(bet_disk_error)

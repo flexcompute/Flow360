@@ -43,7 +43,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
     Setting for growing anisotropic layers orthogonal to the specified `Edge` (s).
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Surface edge refinement")
     refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
         "SurfaceEdgeRefinement", frozen=True
     )

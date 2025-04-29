@@ -248,7 +248,7 @@ log = Logger()
 
 
 def set_logging_level(level: LogValue = DEFAULT_LEVEL) -> None:
-    """Set tidy3d console logging level priority.
+    """Set flow360 console logging level priority.
     Parameters
     ----------
     level : str

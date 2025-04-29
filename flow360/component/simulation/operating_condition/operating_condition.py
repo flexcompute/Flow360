@@ -545,7 +545,9 @@ def operating_condition_from_mach_reynolds(
 
     material = Air()
 
-    velocity = mach * material.get_speed_of_sound(temperature)
+    velocity = (mach if reference_mach is None else reference_mach) * material.get_speed_of_sound(
+        temperature
+    )
 
     density = (
         reynolds * material.get_dynamic_viscosity(temperature) / (velocity * project_length_unit)

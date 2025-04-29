@@ -77,8 +77,13 @@ def _check_duplicate_entities_in_models(params):
         entity_type = None
         if isinstance(entity, _SurfaceEntityBase):
             entity_type = "Surface"
-        if isinstance(entity, _VolumeEntityBase):
+        elif isinstance(entity, _VolumeEntityBase):
             entity_type = "Volume"
+        else:
+            raise ValueError(
+                f"[Internal Error] Entity `{entity.name}` in the {model_type} model "
+                f"cannot be registered as a valid Surface or Volume entity."
+            )
         entity_key = _get_entity_key(entity=entity)
         entity_log = dict_entity[entity_type].get(
             entity_key, {"entity_name": entity.name, "model_list": []}
@@ -468,3 +473,23 @@ def _check_valid_models_for_liquid(models):
                 f"`{model.type}` type model cannot be used when using liquid as simulation material."
             )
     return models
+
+
+def _check_duplicate_isosurface_names(outputs):
+    if outputs is None:
+        return outputs
+    isosurface_names = []
+    for output in outputs:
+        if isinstance(output, IsosurfaceOutput):
+            for entity in output.entities.items:
+                if entity.name == "qcriterion":
+                    raise ValueError(
+                        "The name `qcriterion` is reserved for the autovis isosurface from solver, "
+                        "please rename the isosurface."
+                    )
+                if entity.name in isosurface_names:
+                    raise ValueError(
+                        f"Another isosurface with name: `{entity.name}` already exists, please rename the isosurface."
+                    )
+                isosurface_names.append(entity.name)
+    return outputs
