@@ -57,16 +57,16 @@ def cases(here):
     cache = LocalResourceCache()
 
     cases = []
-    for cid in case_ids:
+    for case_id in case_ids:
         case_meta = CaseMeta(
-            caseId=cid,
-            name=f"{cid}-name",
+            caseId=case_id,
+            name=f"{case_id}-name",
             status="completed",
             userId="user-id",
             caseMeshId=vm_id,
             cloud_path_prefix="s3://flow360cases-v1/users/user-id",
         )
-        case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
+        case = Case.from_local_storage(os.path.join(here, "..", "data", case_id), case_meta)
         cases.append(case)
 
     vm = VolumeMeshV2.from_local_storage(
@@ -118,16 +118,16 @@ def cases_transient(here):
     cache = LocalResourceCache()
 
     cases = []
-    for cid in case_ids:
+    for case_id in case_ids:
         case_meta = CaseMeta(
-            caseId=cid,
-            name=f"{cid}-name",
+            caseId=case_id,
+            name=f"{case_id}-name",
             status="completed",
             userId="user-id",
             caseMeshId=vm_id,
             cloud_path_prefix="s3://flow360cases-v1/users/user-id",
         )
-        case = Case.from_local_storage(os.path.join(here, "..", "data", cid), case_meta)
+        case = Case.from_local_storage(os.path.join(here, "..", "data", case_id), case_meta)
         cases.append(case)
 
     vm = VolumeMeshV2.from_local_storage(
@@ -1229,13 +1229,13 @@ def test_residuals_same(cases, residual_plot_model_SA, residual_plot_model_SST):
 @pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
 def test_transient_forces(here, cases_transient):
     loads = ["CFx", "CFy"]
-    cid = "case-444444444-444444-4444444444-44444444"
+    case_id = "case-444444444-444444-4444444444-44444444"
 
     context = ReportContext(cases=[cases_transient[0]])
 
     # expected data
     data = pd.read_csv(
-        os.path.join(here, "..", "data", cid, "results", "total_forces_v2.csv"),
+        os.path.join(here, "..", "data", case_id, "results", "total_forces_v2.csv"),
         skipinitialspace=True,
     )
 
@@ -1288,13 +1288,13 @@ def test_transient_forces(here, cases_transient):
 
 def test_transient_residuals(here, cases_transient):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
-    cid = "case-444444444-444444-4444444444-44444444"
+    case_id = "case-444444444-444444-4444444444-44444444"
 
     context = ReportContext(cases=[cases_transient[0]])
 
     # expected data
     data = pd.read_csv(
-        os.path.join(here, "..", "data", cid, "results", "nonlinear_residual_v2.csv"),
+        os.path.join(here, "..", "data", case_id, "results", "nonlinear_residual_v2.csv"),
         skipinitialspace=True,
     )
 
