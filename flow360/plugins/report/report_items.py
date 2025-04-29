@@ -1175,13 +1175,18 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             cumulative.append(step + last)
 
         return cumulative
-
-    def _handle_secondary_x_axis(self, cases, x_data, x_lim, x_label):
+    
+    def _handle_transient_pseudo_step(self, cases, x_data, x_label):
         if x_label == "pseudo_step" and any(
             isinstance(case.params.time_stepping, Unsteady) for case in cases
         ):
             for idx, x_series in enumerate(x_data):
                 x_data[idx] = self._cumulate_pseudo_step(x_series)
+
+    def _handle_secondary_x_axis(self, cases, x_data, x_lim, x_label):
+        if x_label == "pseudo_step" and any(
+            isinstance(case.params.time_stepping, Unsteady) for case in cases
+        ):
             if len(cases) == 1:
                 path_to_physical_step = self.x.rstrip("pseudo_step") + "physical_step"
                 sec_x_data = data_from_path(cases[0], path_to_physical_step, [])
@@ -1244,6 +1249,8 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
 
         xlim = self._handle_xlimits()
         ylim = self._calculate_ylimits(x_data, y_data)
+
+        self._handle_transient_pseudo_step(x_data=x_data, x_label=x_label, cases=cases)
 
         secondary_x_data, seondary_x_label = self._handle_secondary_x_axis(
             x_lim=xlim, x_data=x_data, x_label=x_label, cases=cases

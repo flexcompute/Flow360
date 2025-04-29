@@ -1286,7 +1286,7 @@ def test_transient_forces(here, cases_transient):
     assert plot_model_time.y_data == loads_by_physical_step
 
 
-def test_transient_residuals(here, cases_transient):
+def test_transient_residuals_pseudo(here, cases_transient):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
     case_id = "case-444444444-444444-4444444444-44444444"
 
