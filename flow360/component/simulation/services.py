@@ -36,7 +36,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import (  # For parse_model_dict
     Box,
-    Cylinder,
     Surface,
 )
 from flow360.component.simulation.simulation_params import (
@@ -51,10 +50,8 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
-    AbsoluteTemperatureType,
     AngleType,
     CGS_unit_system,
-    DimensionedTypes,
     LengthType,
     SI_unit_system,
     UnitSystem,
@@ -65,7 +62,6 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
 )
 from flow360.component.simulation.utils import (
-    get_unit_system_name_from_simulation_params_dict,
     model_attribute_unlock,
 )
 from flow360.component.simulation.validation.validation_context import (
