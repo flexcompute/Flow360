@@ -13,9 +13,6 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.migration.BETDisk import (
-    _parse_all_flow360_bet_disk_dicts,
-)
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_polar_file_name_list,
     translate_xfoil_c81_to_bet_dict,
@@ -696,35 +693,6 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
-
-
-def translate_flow360_bet_disk(
-    *,
-    flow360_json_dict: dict,
-    length_unit: str,
-    freestream_temperature: dict,
-) -> list[dict]:
-    """
-    Run the BET Disk translator for the BET config stored in the Flow360.json.
-    Returns the dict of BETDisk and the cylinder entity used.
-    """
-    # pylint: disable=no-member
-    errors = []
-    bet_dict_list = []
-    try:
-        length_unit = LengthType.validate(length_unit)
-        freestream_temperature = AbsoluteTemperatureType.validate(freestream_temperature)
-        bet_disk_list = _parse_all_flow360_bet_disk_dicts(
-            data_dict=flow360_json_dict,
-            mesh_unit=length_unit,
-            freestream_temperature=freestream_temperature,
-        )
-        for bet_disk_obj in bet_disk_list:
-            bet_dict_list.append(bet_disk_obj.model_dump(mode="json"))
-    except (pd.ValidationError, ValueError) as e:
-        # Expected exceptions
-        errors.append(str(e))
-    return bet_dict_list, errors
 
 
 def _serialize_unit_in_dict(data):
