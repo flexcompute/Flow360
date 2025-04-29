@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import get_origin, Generic, TypeVar, Optional, Iterable
+from typing import Generic, TypeVar, Optional, Iterable
 
 from pydantic import BeforeValidator
 from typing_extensions import Self
@@ -35,18 +35,18 @@ def _split_keep_delimiters(input: str, delimiters: list) -> list:
     return [part for part in result if part != ""]
 
 
-def _convert_argument(other):
+def _convert_argument(value):
     parenthesize = False
     unit_delimiters = ["+", "-", "*", "/", "(", ")"]
-    if isinstance(other, Expression):
-        arg = other.expression
+    if isinstance(value, Expression):
+        arg = value.expression
         parenthesize = True
-    elif isinstance(other, Variable):
-        arg = other.name
-    elif isinstance(other, Number):
-        arg = str(other)
-    elif isinstance(other, Unit):
-        unit = str(other)
+    elif isinstance(value, Variable):
+        arg = value.name
+    elif isinstance(value, Number):
+        arg = str(value)
+    elif isinstance(value, Unit):
+        unit = str(value)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
         arg = ""
         for token in tokens:
@@ -55,10 +55,10 @@ def _convert_argument(other):
                 arg += token
             else:
                 arg += token
-    elif isinstance(other, unyt_array):
-        unit = str(other.units)
+    elif isinstance(value, unyt_array):
+        unit = str(value.units)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(other.value)} * "
+        arg = f"{str(value.value)} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
@@ -66,7 +66,7 @@ def _convert_argument(other):
             else:
                 arg += token
     else:
-        raise ValueError(f"Incompatible argument of type {type(other)}")
+        raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
 
 
@@ -229,26 +229,27 @@ class Expression(Flow360BaseModel):
         elif isinstance(value, dict) and "expression" in value.keys():
             expression = value["expression"]
         elif isinstance(value, Expression):
-            expression = value.expression
+            expression = str(value)
         elif isinstance(value, Variable):
             expression = str(value)
+        elif isinstance(value, list):
+            expression = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
             )
             raise pd.ValidationError.from_exception_data("expression type error", [details])
-
         try:
             _ = expression_to_model(expression, _global_ctx)
         except SyntaxError as s_err:
             raise _handle_syntax_error(s_err, expression)
         except ValueError as v_err:
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
-            raise pd.ValidationError.from_exception_data("expression value error", [details])
+            raise pd.ValidationError.from_exception_data("Expression value error", [details])
 
         return {"expression": expression}
 
-    def evaluate(self, strict=True) -> float:
+    def evaluate(self, strict=True) -> Union[float, list[float], unyt_array]:
         # We need this to be recursive because the variables might
         # reference other variables or expressions, so an evaluate
         # call might still yield an expression
@@ -256,11 +257,24 @@ class Expression(Flow360BaseModel):
         expr = expression_to_model(self.expression, _global_ctx)
         result = expr.evaluate(_global_ctx, strict)
 
-        while isinstance(result, Expression):
-            expr = expression_to_model(result.expression, _global_ctx)
-            result = expr.evaluate(_global_ctx, strict)
+        # Handle vector expressions during evaluation, assume
+        # we only handle 1D vectors so they are at the top level
+        if isinstance(result, list):
+            vector = []
 
-        return result
+            for item in result:
+                while isinstance(item, Expression):
+                    expr = expression_to_model(item.expression, _global_ctx)
+                    item = expr.evaluate(_global_ctx, strict)
+                vector.append(item)
+
+            return vector
+        else:
+            while isinstance(result, Expression):
+                expr = expression_to_model(result.expression, _global_ctx)
+                result = expr.evaluate(_global_ctx, strict)
+
+            return result
 
     def user_variables(self):
         expr = expression_to_model(self.expression, _global_ctx)

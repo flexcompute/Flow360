@@ -1,5 +1,3 @@
-from math import isnan
-from pprint import pprint
 from typing import List
 
 import pytest
@@ -120,7 +118,7 @@ def test_expression_operators():
     x = UserVariable(name="x", value=3)
     y = UserVariable(name="y", value=2)
 
-    model = TestModel(field=x + y)
+    model = TestModel(field = x + y)
 
     # Addition
     model.field = x + y
@@ -348,6 +346,31 @@ def test_vector_types():
 
     with pytest.raises(pd.ValidationError):
         model.moment = x * u.m
+
+
+def test_expression_vectors():
+    class TestModel(Flow360BaseModel):
+        vector: ValueOrExpression[List[float]] = pd.Field()
+
+    x = UserVariable(name="x", value=[1, 0, 0])
+    y = UserVariable(name="y", value=2)
+
+    # If we want to assign a vector value we can either do it by value...
+    model = TestModel(vector=[1, 0, 0])
+
+    assert str(model.vector) == "[1,0,0]"
+
+    # By variable (when the variable is a vector)
+    model = TestModel(vector=x)
+
+    assert str(model.vector) == "x"
+
+    # Or by defining the vector component by component (each component
+    # can be a separate expression) we cannot multiply the whole vector
+    # by unyt symbols because of inability to override operators
+    model = TestModel(vector=[y, (y + 2 ** y) / 2, 1])
+
+    assert str(model.vector) == "[y,(y + (2 ** y)) / 2,1]"
 
 
 def test_solver_builtin():
