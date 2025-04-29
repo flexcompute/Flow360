@@ -182,6 +182,7 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
             id_kwarg["private_attribute_id"] = model_as_dict["private_attribute_id"]
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
+            input_kwargs = {key: val for key, val in input_kwargs.items() if val is not None}
             try:
                 return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
             except pd.ValidationError as err:
