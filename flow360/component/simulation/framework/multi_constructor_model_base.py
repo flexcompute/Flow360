@@ -183,7 +183,7 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
             # pylint: disable=fixme
-            # The current & previous simulation.json file from model_dum() includes keys with None value.
+            # The current & previous simulation.json file from model_dump() includes keys with None value.
             # This fix is to pop such keys in the private_attribute_input_cache to ensure only required
             # arguments are passed to constructor.
             # TODO This will not be required once the model_dump always exclude None and old json from
