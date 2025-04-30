@@ -27,16 +27,12 @@ from PIL import Image
 from pylatex import NoEscape, Package, Tabular
 
 from flow360 import Case
-from flow360.component.results import case_results, base_results
+from flow360.component.results import base_results, case_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
-from flow360.component.volume_mesh import (
-    VolumeMeshBoundingBox,
-    VolumeMeshDownloadable,
-    VolumeMeshV2,
-)
+from flow360.component.volume_mesh import VolumeMeshDownloadable, VolumeMeshV2
 from flow360.log import log
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -230,6 +226,8 @@ def path_variable_name(path):
     """
     return split_path(path)[-1]
 
+
+# pylint: disable=too-many-return-statements
 def search_path(case: Case, component: str) -> Any:
     """
     Case starts as a `Case` object but changes as it recurses through the path components
@@ -286,7 +284,7 @@ def search_path(case: Case, component: str) -> Any:
 
     return None
 
-# pylint: disable=too-many-return-statements
+
 def data_from_path(
     case: Case,
     path: str,
@@ -352,7 +350,26 @@ def data_from_path(
 
     return case
 
-def results_from_path(case, path) -> tuple[base_results.ResultBaseModel, Union[str, None]]:
+
+def results_from_path(
+    case, path
+) -> tuple[Union[base_results.ResultBaseModel, None], Union[str, None]]:
+    """
+    Returns the last ResultsBaseModel object on the path.
+
+    Parameters
+    ----------
+    path : str
+        The path string indicating the nested attributes or dictionary keys.
+
+    Returns
+    -------
+
+    returned_case, returned_component: tuple[Union[base_results.ResultBaseModel, None], Union[str, None]]
+        returned_case - the last ResultsBaseModel object on the path,
+        returned_component - component of the returned case or None if the case was a last part of the path
+
+    """
     path_components = split_path(path)
     returned_case = None
     returned_component = None
@@ -363,6 +380,7 @@ def results_from_path(case, path) -> tuple[base_results.ResultBaseModel, Union[s
             returned_case = case
             returned_component = None
     return returned_case, returned_component
+
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
     """
@@ -691,7 +709,7 @@ class DataItem(Flow360BaseModel):
 
         if isinstance(source, case_results.ResultCSVModel):
             new_variable_name = "opr_" + uuid.uuid4().hex[:8]
-            if component is not None: 
+            if component is not None:
                 self.operations.insert(0, Expression(expr=component))
             return source, new_variable_name
 
@@ -716,7 +734,6 @@ class DataItem(Flow360BaseModel):
             The computed data array.
 
         """
-
 
         source, component = results_from_path(case, self.data)
 
