@@ -29,15 +29,23 @@ def api_key_auth(request):
     if not key:
         if Env.current.name == "dev":
             raise Flow360AuthorisationError(
-                "API key not found for env=dev, please set it by commandline: flow360 configure --dev."
+                "API key not found for env=dev, please set it by commandline: "
+                f"flow360 configure --dev --profile {UserConfig.profile} --apikey <apikey>."
             )
         if Env.current.name == "uat":
             raise Flow360AuthorisationError(
-                "API key not found for env=uat, please set it by commandline: flow360 configure --uat."
+                "API key not found for env=uat, please set it by commandline: "
+                f"flow360 configure --uat --profile {UserConfig.profile} --apikey <apikey>."
+            )
+        if Env.current.name == "prod":
+            raise Flow360AuthorisationError(
+                "API key not found for env=prod, please set it by commandline: "
+                f"flow360 configure  --profile {UserConfig.profile} --apikey <apikey>."
             )
         raise Flow360AuthorisationError(
             f"API key not found for profile={UserConfig.profile} in env={Env.current.name}, "
-            f"please set it by commandline: flow360 configure --profile {UserConfig.profile} --env {Env.current.name}."
+            "please set it by commandline: "
+            f"flow360 configure --profile {UserConfig.profile} --env {Env.current.name} --apikey <apikey>."
         )
     request.headers["simcloud-api-key"] = key
     request.headers["flow360-python-version"] = __version__
