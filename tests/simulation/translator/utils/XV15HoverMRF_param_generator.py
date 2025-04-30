@@ -79,10 +79,7 @@ def create_XV15HoverMRF_param(rotation_cylinder):
                 Freestream(entities=[my_freestream]),
                 Rotation(entities=[rotation_cylinder], spec=AngularVelocity(600.106 * u.rpm)),
             ],
-            time_stepping=Steady(
-                CFL=AdaptiveCFL(max=10000, max_relative_change=1, convergence_limiting_factor=0.25),
-                max_steps=4000,
-            ),
+            time_stepping=Steady(CFL=AdaptiveCFL(), max_steps=4000),
             outputs=[
                 VolumeOutput(
                     output_format="paraview",
