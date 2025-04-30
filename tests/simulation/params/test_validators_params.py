@@ -837,7 +837,7 @@ def test_duplicate_entities_in_models():
         private_attribute_id="3",
     )
     volume_model1 = Solid(
-        volumes=[entity_generic_volume],
+        volumes=[entity_generic_volume, entity_generic_volume],
         material=aluminum,
         volumetric_heat_source="0",
     )
