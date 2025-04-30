@@ -1238,7 +1238,7 @@ def test_multiple_point_variables_on_chart2d(cases, here):
         show_grid=True,
     )
 
-    plot_model = chart.get_data(cases=cases, context=context)
+    plot_model = chart.get_data(cases=cases[:2], context=context)
 
     ys_to_plot = np.empty((len(loads), 2))
     xs_to_plot = np.empty((len(loads), 2))
@@ -1270,7 +1270,7 @@ def test_dataitem_point_variables_on_chart2d(cases, here):
         show_grid=True,
     )
 
-    plot_model = chart.get_data(cases=cases, context=context)
+    plot_model = chart.get_data(cases=cases[:2], context=context)
 
     ys_to_plot = np.empty((len(loads), 2))
     xs_to_plot = np.empty((len(loads), 2))
@@ -1301,7 +1301,7 @@ def test_dataitem_result_csv_compatibility(cases, here):
         show_grid=True,
     )
 
-    plot_model = chart.get_data(cases=cases, context=context)
+    plot_model = chart.get_data(cases=cases[:2], context=context)
 
     ys_to_plot = np.empty((len(loads), 2))
     xs_to_plot = np.empty((len(loads), 2))

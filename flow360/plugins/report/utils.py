@@ -274,9 +274,6 @@ def search_path(case: Case, component: str) -> Any:
     if isinstance(case, Number):
         return case
 
-    if isinstance(case, case_results.PerEntityResultCSVModel):
-        return case
-
     # Check if component is a key of a value
     try:
         return case.values[component]
@@ -345,17 +342,27 @@ def data_from_path(
 
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
+        if component == "time":
+            case.reload_data(include_time=True)
+
+        if filter_physical_steps_only and (component == path_components[-1]):
+            case.reload_data(filter_physical_steps_only=True)
+
         case = search_path(case, component)
 
     return case
 
-def results_from_path(case, path):
+def results_from_path(case, path) -> tuple[base_results.ResultBaseModel, Union[str, None]]:
     path_components = split_path(path)
+    returned_case = None
+    returned_component = None
     for component in path_components:
+        returned_component = component
         case = search_path(case, component)
         if isinstance(case, base_results.ResultBaseModel):
-            return case
-    return None
+            returned_case = case
+            returned_component = None
+    return returned_case, returned_component
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
     """
@@ -472,7 +479,7 @@ class Average(GenericOperation):
             if self.fraction is None:
                 raise NotImplementedError('Only "fraction" average method implemented.')
             averages = data.get_averages(average_fraction=self.fraction)
-            return data, cases, averages
+            return data, cases, averages[new_variable_name]
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
@@ -616,7 +623,7 @@ class Expression(GenericOperation):
                 data.as_dataframe(), self.expr, variables, new_variable_name, case
             )
             data.update(df)
-            return data, cases, data.values
+            return data, cases, data.values[new_variable_name]
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
@@ -684,7 +691,8 @@ class DataItem(Flow360BaseModel):
 
         if isinstance(source, case_results.ResultCSVModel):
             new_variable_name = "opr_" + uuid.uuid4().hex[:8]
-            self.operations.insert(0, Expression(expr=component))
+            if component is not None: 
+                self.operations.insert(0, Expression(expr=component))
             return source, new_variable_name
 
         raise NotImplementedError(
@@ -693,7 +701,7 @@ class DataItem(Flow360BaseModel):
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
         """
-        Calculates the delta between the specified case and the reference case.
+        Calculates the DataItem values based on specified operations.
 
         Parameters
         ----------
@@ -705,20 +713,15 @@ class DataItem(Flow360BaseModel):
         Returns
         -------
         float
-            The computed delta value between the case and reference case data.
-
-        Raises
-        ------
-        ValueError
-            If `ref_index` is out of bounds or `None`, indicating a missing reference.
+            The computed data array.
 
         """
 
-        source = results_from_path(case, self.data)
-        component = path_variable_name(self.data)
-        
+
+        source, component = results_from_path(case, self.data)
+
         if isinstance(source, base_results.ResultCSVModel):
-            if isinstance(source, case_results.SurfaceForcesResultCSVModel):
+            if isinstance(source, case_results.PerEntityResultCSVModel):
                 if self.exclude is not None or self.include is not None:
                     source.filter(include=self.include, exclude=self.exclude)
             source, new_variable_name = self._preprocess_data(source=source, component=component)
@@ -727,18 +730,18 @@ class DataItem(Flow360BaseModel):
                     source, cases, result = opr.calculate(
                         source, case, cases, self.variables, new_variable_name
                     )
-                return result[new_variable_name]
+                return result
 
             return source
 
-        source = data_from_path(case, self.data)
-        if isinstance(source, VolumeMeshBoundingBox):
-            if self.exclude is not None or self.include is not None:
-                source.filter(include=self.include, exclude=self.exclude)
+        # source = data_from_path(case, self.data)
+        # if isinstance(source, VolumeMeshBoundingBox):
+        #     if self.exclude is not None or self.include is not None:
+        #         source.filter(include=self.include, exclude=self.exclude)
 
-            for opr in self.operations:  # pylint: disable=not-an-iterable
-                source, cases, result = opr.calculate(source, case, cases, self.variables, None)
-                return result
+        #     for opr in self.operations:  # pylint: disable=not-an-iterable
+        #         source, cases, result = opr.calculate(source, case, cases, self.variables, None)
+        #         return result
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(source)=}"
