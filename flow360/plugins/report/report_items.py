@@ -657,7 +657,7 @@ class Chart(ReportItem):
 
 class PlotModel(BaseModel):
     """
-    PlotModel that holds data and ability to return matplotlib fig
+    PlotModel that holds data and ability to return matplotlib fig.
     """
 
     x_data: Union[List[float], List[List[float]]]
@@ -1177,6 +1177,9 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         return cumulative
 
     def _handle_transient_pseudo_step(self, cases, x_data, x_label):
+        """
+        Converts pseudo_step to cumulative pseudo_step.
+        """
         if x_label == "pseudo_step" and any(
             isinstance(case.params.time_stepping, Unsteady) for case in cases
         ):
@@ -1184,6 +1187,11 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
                 x_data[idx] = self._cumulate_pseudo_step(x_series)
 
     def _handle_secondary_x_axis(self, cases, x_data, x_lim, x_label):
+        """
+        Creates physical_step array to use on the secondary axis
+        when the primary axis is pseudo_step, and the number of physical_steps visible
+        within x axis limits is less or equal than 5.
+        """
         if x_label == "pseudo_step" and any(
             isinstance(case.params.time_stepping, Unsteady) for case in cases
         ):
