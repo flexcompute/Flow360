@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -36,7 +36,6 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
-from flow360.component.simulation.utils import is_instance_of_type_in_union
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -363,13 +362,14 @@ class Wall(BoundaryBase):
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
         if self.use_wall_function is False:
             return self
-        if is_instance_of_type_in_union(self.velocity, WallVelocityModelTypes):
+        if isinstance(self.velocity, SlaterPorousBleed):
             raise ValueError(
                 f"Using `{type(self.velocity).__name__}` with wall function is not supported currently."
             )
@@ -587,7 +587,7 @@ class SlipWall(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        "SlipWall", description="Name of the `SlipWall` boundary condition."
+        "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
@@ -618,7 +618,7 @@ class SymmetryPlane(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        "SymmetryPlane", description="Name of the `SymmetryPlane` boundary condition."
+        "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
     entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(

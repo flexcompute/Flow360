@@ -13,7 +13,7 @@ from flow360.component.simulation.framework.updater import (
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
-from flow360.component.simulation.services import validate_model
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.validation.validation_context import ALL
 from flow360.version import __version__
 
@@ -169,33 +169,22 @@ def test_updater_completeness():
     )
     assert res == [], "Case 11: crosses nothing => []"
 
-    # 12) from >99.11.3, to >99.11.3 => ValueError => []
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            r"Input `SimulationParams` have higher version (99.11.4) than all"
-            + r" known versions and thus cannot be handled."
-        ),
-    ):
-        _find_update_path(
-            version_from=Flow360Version("99.11.4"),
-            version_to=Flow360Version("99.11.5"),
-            version_milestones=version_milestones,
-        )
+    # 12) from >99.11.3, to >99.11.3 => forward compatability mode
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.4"),
+        version_to=Flow360Version("99.11.5"),
+        version_milestones=version_milestones,
+    )
+    assert res == []
 
-    # 13) to < from => ValueError
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            r"Input `SimulationParams` have higher version (99.11.3) than"
-            r" the target version (99.11.2) and thus cannot be handled."
-        ),
-    ):
-        _find_update_path(
-            version_from=Flow360Version("99.11.3"),
-            version_to=Flow360Version("99.11.2"),
-            version_milestones=version_milestones,
-        )
+    # 13) to < from => forward compatability mode
+
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.3"),
+        version_to=Flow360Version("99.11.2"),
+        version_milestones=version_milestones,
+    )
+    assert res == []
 
     # 14) [more than 2 versions] to > max version
     version_milestones = [
@@ -295,6 +284,23 @@ def test_updater_to_24_11_7():
             1
         ]["private_attribute_id"]
     )
+
+    with open("../data/simulation/simulation_pre_24_11_1_symmetry.json", "r") as fp:
+        params_pre_24_11_1_symmetry = json.load(fp)
+
+    params_pre_24_11_1_symmetry = updater(
+        version_from="24.11.6", version_to="24.11.7", params_as_dict=params_pre_24_11_1_symmetry
+    )
+
+    updated_surface_1 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][1]
+    updated_surface_2 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][2]
+
+    assert updated_surface_1["name"] == "symmetric-1"
+    assert updated_surface_2["name"] == "symmetric-2"
 
 
 def test_updater_to_25_2_0():
@@ -485,4 +491,9 @@ def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0
     with open("../data/simulation/simulation_24_11_0.json", "r") as fp:
         params = json.load(fp)
-    validate_model(params_as_dict=params, root_item_type="VolumeMesh", validation_level=ALL)
+    validate_model(
+        params_as_dict=params,
+        root_item_type="VolumeMesh",
+        validated_by=ValidationCalledBy.LOCAL,
+        validation_level=ALL,
+    )
