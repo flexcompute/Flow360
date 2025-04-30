@@ -183,6 +183,9 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
             try:
+                for i in list(input_kwargs):
+                    if input_kwargs[i] == None:
+                        input_kwargs.pop(i)
                 return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
             except pd.ValidationError as err:
                 # pylint:disable = raise-missing-from
