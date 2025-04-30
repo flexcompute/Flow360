@@ -61,11 +61,17 @@ class AdaptiveCFL(Flow360BaseModel):
     Example
     -------
 
-    >>> fl.AdaptiveCFL(
-    ...     min=1,
-    ...     max=100000,
-    ...     max_relative_change=50
-    ... )
+    - Set up Adaptive CFL with convergence limiting factor:
+
+      >>> fl.AdaptiveCFL(convergence_limiting_factor=0.5)
+
+    - Set up Adaptive CFL with max relative change:
+
+      >>> fl.AdaptiveCFL(
+      ...     min=1,
+      ...     max=100000,
+      ...     max_relative_change=50
+      ... )
 
     ====
     """

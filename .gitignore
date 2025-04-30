@@ -176,6 +176,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Matplotlib testing
+result_images/
+
 # Translations
 *.mo
 *.pot

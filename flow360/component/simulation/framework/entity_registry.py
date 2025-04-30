@@ -57,14 +57,8 @@ class EntityRegistry(Flow360BaseModel):
 
         # pylint: disable=unsubscriptable-object
         for existing_entity in self.internal_registry[entity.entity_bucket]:
-            if existing_entity.name == entity.name:
-                # pylint:disable=protected-access
-                if existing_entity._get_hash() != entity._get_hash():
-                    # Same type and same name but different definitions.
-                    raise ValueError(
-                        f"Multiple entities with name '{entity.name}' and type '{entity.entity_bucket}' "
-                        "already exists and have different definitions."
-                    )
+            # pylint: disable=protected-access
+            if existing_entity._get_hash() == entity._get_hash():
                 # Identical entities. Just ignore
                 return
 
@@ -115,15 +109,6 @@ class EntityRegistry(Flow360BaseModel):
             return matched_entities[0]
 
         return matched_entities
-
-    def find_single_entity_by_name(self, name: str):
-        """Retrieve the entity with the given name from the registry."""
-        entities = self.find_by_naming_pattern(
-            name, enforce_output_as_list=True, error_when_no_match=True
-        )
-        if len(entities) > 1:
-            raise ValueError(f"Multiple entities found in registry with given name: '{name}'.")
-        return entities[0]
 
     def __str__(self):
         """
