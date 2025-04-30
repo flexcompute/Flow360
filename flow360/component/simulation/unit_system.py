@@ -39,6 +39,8 @@ udim.thermal_conductivity = udim.mass / udim.time**3 * udim.length / udim.temper
 udim.inverse_area = 1 / udim.area
 udim.inverse_length = 1 / udim.length
 udim.mass_flow_rate = udim.mass / udim.time
+udim.mass_flux = udim.density * udim.velocity
+udim.energy_density = udim.energy / udim.volume
 udim.specific_energy = udim.length**2 * udim.time ** (-2)
 udim.frequency = udim.time ** (-1)
 udim.delta_temperature = Symbol("(delta temperature)", positive=True)
@@ -1017,6 +1019,29 @@ class _FrequencyType(_DimensionedType):
 FrequencyType = Annotated[_FrequencyType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+# Following are dimensioned types specific for output fields (for now)
+
+
+class _MassFluxType(_DimensionedType):
+    """:class: MassFluxType"""
+
+    dim = udim.mass_flux
+    dim_name = "mass_flux"
+
+
+MassFluxType = Annotated[_MassFluxType, PlainSerializer(_dimensioned_type_serializer)]
+
+
+class _EnergyDensityType(_DimensionedType):
+    """:class: EnergyDensityType"""
+
+    dim = udim.energy_density
+    dim_name = "energy_density"
+
+
+EnergyDensityType = Annotated[_EnergyDensityType, PlainSerializer(_dimensioned_type_serializer)]
+
+
 DimensionedTypes = Union[
     LengthType,
     AngleType,
@@ -1042,6 +1067,9 @@ DimensionedTypes = Union[
     MassFlowRateType,
     SpecificEnergyType,
     FrequencyType,
+    # Outputs
+    MassFluxType,
+    EnergyDensityType,
 ]
 
 
@@ -1417,6 +1445,20 @@ class Flow360FrequencyUnit(_Flow360BaseUnit):
     unit_name = "flow360_frequency_unit"
 
 
+class Flow360MassFluxUnit(_Flow360BaseUnit):
+    """:class: Flow360MassFluxUnit"""
+
+    dimension_type = MassFluxType
+    unit_name = "flow360_mass_flux_unit"
+
+
+class Flow360EnergyDensityUnit(_Flow360BaseUnit):
+    """:class: Flow360EnergyDensityUnit"""
+
+    dimension_type = EnergyDensityType
+    unit_name = "flow360_energy_density_unit"
+
+
 def is_flow360_unit(value):
     """
     Check if the provided value represents a dimensioned quantity with units
@@ -1478,6 +1520,8 @@ _dim_names = [
     "mass_flow_rate",
     "specific_energy",
     "frequency",
+    "mass_flux",
+    "energy_density",
     "delta_temperature",
 ]
 
@@ -1512,6 +1556,8 @@ class UnitSystem(pd.BaseModel):
     specific_energy: SpecificEnergyType = pd.Field()
     frequency: FrequencyType = pd.Field()
     delta_temperature: DeltaTemperatureType = pd.Field()
+    mass_flux: MassFluxType = pd.Field()
+    energy_density: EnergyDensityType = pd.Field()
 
     name: Literal["Custom"] = pd.Field("Custom")
 
@@ -1648,6 +1694,8 @@ flow360_mass_flow_rate_unit = Flow360MassFlowRateUnit()
 flow360_specific_energy_unit = Flow360SpecificEnergyUnit()
 flow360_delta_temperature_unit = Flow360DeltaTemperatureUnit()
 flow360_frequency_unit = Flow360FrequencyUnit()
+flow360_mass_flux_unit = Flow360MassFluxUnit()
+flow360_energy_density_unit = Flow360EnergyDensityUnit()
 
 dimensions = [
     flow360_length_unit,
@@ -1675,6 +1723,8 @@ dimensions = [
     flow360_delta_temperature_unit,
     flow360_frequency_unit,
     flow360_heat_source_unit,
+    flow360_mass_flux_unit,
+    flow360_energy_density_unit,
 ]
 
 _flow360_system = {u.dimension_type.dim_name: u for u in dimensions}
@@ -1737,6 +1787,12 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_mass_flow_rate: float = pd.Field(
         np.inf, json_schema_extra={"target_dimension": Flow360MassFlowRateUnit}
     )
+    base_mass_flux: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360MassFluxUnit}
+    )
+    base_energy_density: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360EnergyDensityUnit}
+    )
     base_specific_energy: float = pd.Field(
         np.inf, json_schema_extra={"target_dimension": Flow360SpecificEnergyUnit}
     )
@@ -1792,6 +1848,8 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["inverse_area"] = "flow360_inverse_area_unit"
         conversion_system["inverse_length"] = "flow360_inverse_length_unit"
         conversion_system["mass_flow_rate"] = "flow360_mass_flow_rate_unit"
+        conversion_system["mass_flux"] = "flow360_mass_flux_unit"
+        conversion_system["energy_density"] = "flow360_energy_density_unit"
         conversion_system["specific_energy"] = "flow360_specific_energy_unit"
         conversion_system["delta_temperature"] = "flow360_delta_temperature_unit"
         conversion_system["frequency"] = "flow360_frequency_unit"
@@ -1844,6 +1902,8 @@ class _PredefinedUnitSystem(UnitSystem):
     specific_energy: SpecificEnergyType = pd.Field(exclude=True)
     delta_temperature: DeltaTemperatureType = pd.Field(exclude=True)
     frequency: FrequencyType = pd.Field(exclude=True)
+    mass_flux: MassFluxType = pd.Field(exclude=True)
+    energy_density: EnergyDensityType = pd.Field(exclude=True)
 
     # pylint: disable=missing-function-docstring
     def system_repr(self):

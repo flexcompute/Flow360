@@ -117,9 +117,10 @@ def convert_tuples_to_lists(input_dict):
 def remove_units_in_dict(input_dict):
     """Remove units from a dimensioned value."""
     unit_keys = {"value", "units"}
+    const_value_expression_keys = {"value", "units", "typeName"}
     if isinstance(input_dict, dict):
         new_dict = {}
-        if input_dict.keys() == unit_keys:
+        if input_dict.keys() == unit_keys or input_dict.keys() == const_value_expression_keys:
             new_dict = input_dict["value"]
             if input_dict["units"].startswith("flow360_") is False:
                 raise ValueError(

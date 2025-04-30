@@ -3,6 +3,8 @@
 # pylint: disable=too-many-lines
 from typing import Type, Union
 
+import unyt as u  # TEST
+
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
@@ -80,7 +82,8 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     update_dict_recursively,
 )
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.unit_system import LengthType, unit_system_manager
+from flow360.component.simulation.user_code import SolverVariable
 from flow360.component.simulation.utils import (
     is_exact_instance,
     is_instance_of_type_in_union,
@@ -218,6 +221,20 @@ def rotation_translator(model: Rotation):
     return volume_zone
 
 
+def _convert_output_field(output_field: Union[SolverVariable, str]):
+    """Convert output field to string"""
+    if isinstance(output_field, str):
+        return output_field
+    elif isinstance(output_field, SolverVariable):
+        return output_field._get_udf_name(unit_system=unit_system_manager.current)
+    else:
+        raise Flow360TranslationError(
+            f"Unsupported output field type: {type(output_field)}",
+            input_value=output_field,
+            location=["outputs"],
+        )
+
+
 def translate_output_fields(
     output_model: Union[
         SurfaceOutput,
@@ -232,11 +249,15 @@ def translate_output_fields(
     ],
 ):
     """Get output fields"""
-    return {"outputFields": output_model.output_fields.items}
+    output_fields = []
+    for output_field in output_model.output_fields.items:
+        output_fields.append(_convert_output_field(output_field))
+
+    return {"outputFields": output_fields}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
-    """Translate non-entitties part of SurfaceProbeOutput"""
+    """Translate non-entities part of SurfaceProbeOutput"""
     dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
         surface.full_name for surface in entity.target_surfaces.stored_entities
@@ -350,11 +371,16 @@ def translate_volume_output(
         is_average=volume_output_class is TimeAverageVolumeOutput,
     )
     # Get outputFields
+    output_fields = []
+
+    for output_field in get_global_setting_from_first_instance(
+        output_params, volume_output_class, "output_fields"
+    ).items:
+        output_fields.append(_convert_output_field(output_field))
+
     volume_output.update(
         {
-            "outputFields": get_global_setting_from_first_instance(
-                output_params, volume_output_class, "output_fields"
-            ).model_dump()["items"],
+            "outputFields": output_fields,
         }
     )
     return volume_output
@@ -514,25 +540,36 @@ def process_output_fields_for_udf(input_params):
         input_params: SimulationParams object containing outputs configuration
 
     Returns:
-        tuple: (all_field_names, generated_udfs) where:
-            - all_field_names is a set of all output field names
+        tuple: (all_fields, generated_udfs) where:
+            - all_fields is a set of all output field names
             - generated_udfs is a list of UserDefinedField objects for dimensioned fields
     """
 
     # Collect all output field names from all output types
-    all_field_names = set()
+    all_fields = set()
 
     if input_params.outputs:
         for output in input_params.outputs:
             if hasattr(output, "output_fields") and output.output_fields:
-                all_field_names.update(output.output_fields.items)
+                all_fields.update(output.output_fields.items)
 
     # Generate UDFs for dimensioned fields
     generated_udfs = []
-    for field_name in all_field_names:
-        udf_expression = generate_predefined_udf(field_name, input_params)
-        if udf_expression:
-            generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
+    for field in all_fields:
+        if isinstance(field, str):
+            udf_expression = generate_predefined_udf(field, input_params)
+            if udf_expression:
+                generated_udfs.append(UserDefinedField(name=field, expression=udf_expression))
+
+        elif isinstance(field, SolverVariable):
+            generated_udfs.append(
+                UserDefinedField(
+                    name=field._get_udf_name(unit_system=unit_system_manager.current),
+                    expression=field._get_udf_source_code(
+                        unit_system=unit_system_manager.current, params=input_params
+                    ),
+                )
+            )
 
     return generated_udfs
 
@@ -1283,13 +1320,14 @@ def get_solver_json(
     )
 
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
-
-    translated = translate_output(input_params, translated)
+    with input_params.unit_system:
+        translated = translate_output(input_params, translated)
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
     # Add auto-generated UDFs for dimensioned fields
-    generated_udfs = process_output_fields_for_udf(input_params)
+    with input_params.unit_system:
+        generated_udfs = process_output_fields_for_udf(input_params)
 
     # Add user-specified UDFs and auto-generated UDFs for dimensioned fields
     for udf in [*input_params.user_defined_fields, *generated_udfs]:

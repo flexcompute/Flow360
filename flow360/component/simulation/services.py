@@ -33,6 +33,9 @@ from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
 )
+
+# Required for correct global scope initialization
+from flow360.component.simulation.solver_builtins import *
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -526,7 +529,7 @@ def _translate_simulation_json(
         translated_dict = translation_func(input_params, mesh_unit)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
-    except Exception as err:  # tranlsation itself is not supposed to raise any other exception
+    except Exception as err:  # translation itself is not supposed to raise any other exception
         raise ValueError(
             f"Unexpected error translating to {target_name} json: " + str(err)
         ) from err

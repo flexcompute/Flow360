@@ -342,6 +342,21 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
             base_density * base_length**3 / base_time
         )
 
+    elif dimension == u.dimensions.mass_flux:
+        base_density = get_base_density()
+        base_length = get_base_length()
+        base_time = get_base_time()
+        # TODO: Unit test for non-dimensionalize this new unit
+        flow360_conversion_unit_system.base_mass_flux = base_density * base_length / base_time
+
+    elif dimension == u.dimensions.energy_density:
+        base_density = get_base_density()
+        base_velocity = get_base_velocity()
+        # TODO: Unit test for non-dimensionalize this new unit
+        flow360_conversion_unit_system.base_energy_density = (
+            base_density * base_velocity * base_velocity
+        )
+
     elif dimension == u.dimensions.specific_energy:
         base_velocity = get_base_velocity()
 
