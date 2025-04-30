@@ -272,6 +272,7 @@ def main():
         include_cfl=True,
         include_forces_moments_table=True,
         include_forces_moments_charts=True,
+        include_forces_moments_alpha_charts=True,
         include_cf_vec=True,
         include_cp=True,
         include_yplus=True,
