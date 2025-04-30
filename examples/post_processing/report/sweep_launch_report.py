@@ -167,6 +167,7 @@ def generate_report(
             force_new_page=True,
             section_title="CFL",
             fig_name="cfl_fig",
+            y_log=True,
         )
         items.append(cfl_chart)
 
