@@ -244,7 +244,7 @@ class AerospaceConditionCache(Flow360BaseModel):
     """[INTERNAL] Cache for AerospaceCondition inputs"""
 
     mach: Optional[pd.NonNegativeFloat] = None
-    reynolds: Optional[pd.PositiveFloat] = None
+    # reynolds: Optional[pd.PositiveFloat] = None
     project_length_unit: Optional[LengthType.Positive] = None
     alpha: Optional[AngleType] = None
     beta: Optional[AngleType] = None
