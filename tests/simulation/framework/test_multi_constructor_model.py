@@ -32,7 +32,7 @@ def get_aerospace_condition_default():
 
 
 @pytest.fixture
-def get_aerospace_condition_default_and_thermal_state_using_from_mach():
+def get_aerospace_condition_default_and_thermal_state_using_from():
     return AerospaceCondition(
         velocity_magnitude=0.8 * u.km / u.s,
         alpha=5 * u.deg,
@@ -83,7 +83,7 @@ def test_incomplete_model(
     get_aerospace_condition_default,
     get_aerospace_condition_using_from_mach,
     get_aerospace_condition_using_from_mach_reynolds,
-    get_aerospace_condition_default_and_thermal_state_using_from_mach,
+    get_aerospace_condition_default_and_thermal_state_using_from,
 ):
     full_data = get_aerospace_condition_default.model_dump(exclude_none=True)
 
@@ -113,7 +113,7 @@ def test_incomplete_model(
     data_parsed = parse_model_dict(incomplete_data, globals())
     assert sorted(data_parsed.items()) == sorted(full_data.items())
 
-    full_data = get_aerospace_condition_default_and_thermal_state_using_from_mach.model_dump(
+    full_data = get_aerospace_condition_default_and_thermal_state_using_from.model_dump(
         exclude_none=True
     )
     incomplete_data = deepcopy(full_data)
