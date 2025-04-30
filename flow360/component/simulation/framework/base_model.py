@@ -483,20 +483,6 @@ class Flow360BaseModel(pd.BaseModel):
         with open(filename, "w+", encoding="utf-8") as file_handle:
             json.dump(model_dict, file_handle, indent=4, sort_keys=True)
 
-    def model_dump(self, **kwargs) -> dict:
-        """Override of pydantic's model_dump to set exclude_none=True by default.
-        
-        Returns a dictionary representation of the model.
-        All None values will be excluded by default.
-        
-        Returns
-        -------
-        dict
-            A dictionary of the model's fields and values.
-        """
-        kwargs.setdefault('exclude_none', True)
-        return super().model_dump(**kwargs)
-
     @classmethod
     def _dict_from_yaml(cls, filename: str) -> dict:
         """Load dictionary of the model from a .yaml file.
