@@ -338,7 +338,6 @@ def data_from_path(
     # Split path into components
     path_components = split_path(path)
 
-
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
         if component == "time":
@@ -346,7 +345,6 @@ def data_from_path(
 
         if filter_physical_steps_only and (component == path_components[-1]):
             case.reload_data(filter_physical_steps_only=True)
-
 
         case = search_path(case, component)
 
