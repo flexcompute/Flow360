@@ -27,7 +27,7 @@ from PIL import Image
 from pylatex import NoEscape, Package, Tabular
 
 from flow360 import Case
-from flow360.component.results import case_results
+from flow360.component.results import case_results, base_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
@@ -230,6 +230,64 @@ def path_variable_name(path):
     """
     return split_path(path)[-1]
 
+def search_path(case: Case, component: str) -> Any:
+    """
+    Case starts as a `Case` object but changes as it recurses through the path components
+    """
+
+    # Check if component is an attribute
+    try:
+        return getattr(case, component)
+    except AttributeError:
+        pass
+
+    # Check if component is an attribute of case.results
+    # Convenience feature so the user doesn't have to include "results" in path
+    try:
+        return getattr(case.results, component)
+    except AttributeError:
+        pass
+
+    # Check if component is a key for a dictionary
+    try:
+        case = case[component]
+        # Have to test for int or str here otherwise...
+        if isinstance(case, (int, str)):
+            return case
+        # .. this raises a KeyError.
+        # This is a convenience that may be removed for if people want something other than the value
+        if "value" in case:
+            return case["value"]
+        return case
+    except TypeError:
+        pass
+
+    # Check if case is a list and interpret component as an int index
+    # E.g. in user defined functions
+    if isinstance(case, list):
+        try:
+            return case[int(component)]
+        except (ValueError, IndexError):
+            pass
+
+    # Check if case is a number
+    if isinstance(case, Number):
+        return case
+
+    if isinstance(case, case_results.PerEntityResultCSVModel):
+        return case
+
+    # Check if component is a key of a value
+    try:
+        return case.values[component]
+    except KeyError as err:
+        raise ValueError(
+            f"Could not find path component: '{component}', available: {case.values.keys()}"
+        ) from err
+    except AttributeError:
+        log.warning(f"unknown value for path: {case=}, {component=}")
+
+    return None
 
 # pylint: disable=too-many-return-statements
 def data_from_path(
@@ -279,71 +337,19 @@ def data_from_path(
     # Split path into components
     path_components = split_path(path)
 
-    def _search_path(case: Case, component: str) -> Any:
-        """
-        Case starts as a `Case` object but changes as it recurses through the path components
-        """
-
-        # Check if component is an attribute
-        try:
-            return getattr(case, component)
-        except AttributeError:
-            pass
-
-        # Check if component is an attribute of case.results
-        # Convenience feature so the user doesn't have to include "results" in path
-        try:
-            return getattr(case.results, component)
-        except AttributeError:
-            pass
-
-        # Check if component is a key for a dictionary
-        try:
-            case = case[component]
-            # Have to test for int or str here otherwise...
-            if isinstance(case, (int, str)):
-                return case
-            # .. this raises a KeyError.
-            # This is a convenience that may be removed for if people want something other than the value
-            if "value" in case:
-                return case["value"]
-            return case
-        except TypeError:
-            pass
-
-        # Check if case is a list and interpret component as an int index
-        # E.g. in user defined functions
-        if isinstance(case, list):
-            try:
-                return case[int(component)]
-            except (ValueError, IndexError):
-                pass
-
-        # Check if case is a number
-        if isinstance(case, Number):
-            return case
-
-        if isinstance(case, case_results.PerEntityResultCSVModel):
-            return case
-
-        # Check if component is a key of a value
-        try:
-            return case.values[component]
-        except KeyError as err:
-            raise ValueError(
-                f"Could not find path component: '{component}', available: {case.values.keys()}"
-            ) from err
-        except AttributeError:
-            log.warning(f"unknown value for path: {case=}, {component=}")
-
-        return None
-
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
-        case = _search_path(case, component)
+        case = search_path(case, component)
 
     return case
 
+def results_from_path(case, path):
+    path_components = split_path(path)
+    for component in path_components:
+        case = search_path(case, component)
+        if isinstance(case, base_results.ResultBaseModel):
+            return case
+    return None
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
     """
@@ -599,7 +605,7 @@ class Expression(GenericOperation):
         """
         log.debug(f"evaluating expression {self.expr}, {case.id=}")
 
-        if isinstance(data, case_results.SurfaceForcesResultCSVModel):
+        if isinstance(data, case_results.ResultCSVModel):
             df = self.evaluate_expression(
                 data.as_dataframe(), self.expr, variables, new_variable_name, case
             )
@@ -668,24 +674,11 @@ class DataItem(Flow360BaseModel):
             values["operations"] = [operations]
         return values
 
-    def _preprocess_data(self, case):
-        source = data_from_path(case, self.data)
+    def _preprocess_data(self, source, component):
 
-        if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            full_path = split_path(self.data)
+        if isinstance(source, case_results.ResultCSVModel):
             new_variable_name = "opr_" + uuid.uuid4().hex[:8]
-            variable_name = None
-            if len(full_path) == 1:
-                pass
-            elif len(full_path) == 2:
-                variable_name = full_path[-1]
-                self.operations.insert(0, Expression(expr=variable_name))
-            else:
-                raise ValueError(
-                    f"{self.__class__.__name__}, unknown input: data={self.data},"
-                    + " allowed single <source> or <source>/<variable>"
-                )
-
+            self.operations.insert(0, Expression(expr=component))
             return source, new_variable_name
 
         raise NotImplementedError(
@@ -715,12 +708,14 @@ class DataItem(Flow360BaseModel):
 
         """
 
-        source = data_from_path(case, self.data)
-        if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            if self.exclude is not None or self.include is not None:
-                source.filter(include=self.include, exclude=self.exclude)
-
-            source, new_variable_name = self._preprocess_data(case)
+        source = results_from_path(case, self.data)
+        component = path_variable_name(self.data)
+        
+        if isinstance(source, base_results.ResultCSVModel):
+            if isinstance(source, case_results.SurfaceForcesResultCSVModel):
+                if self.exclude is not None or self.include is not None:
+                    source.filter(include=self.include, exclude=self.exclude)
+            source, new_variable_name = self._preprocess_data(source=source, component=component)
             if len(self.operations) > 0:
                 for opr in self.operations:  # pylint: disable=not-an-iterable
                     source, cases, result = opr.calculate(
@@ -730,6 +725,7 @@ class DataItem(Flow360BaseModel):
 
             return source
 
+        source = data_from_path(case, self.data)
         if isinstance(source, VolumeMeshBoundingBox):
             if self.exclude is not None or self.include is not None:
                 source.filter(include=self.include, exclude=self.exclude)
