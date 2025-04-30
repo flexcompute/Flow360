@@ -61,22 +61,28 @@ def get_aerospace_condition_using_from_mach_reynolds():
     )
 
 
+def compare_objects_from_dict(dict1: dict, dict2: dict, object_class: type[Flow360BaseModel]):
+     obj1 = object_class.model_validate(dict1)
+     obj2 = object_class.model_validate(dict2)
+     assert obj1.model_dump_json() == obj2.model_dump_json()
+
+
 def test_full_model(
     get_aerospace_condition_default,
     get_aerospace_condition_using_from_mach,
     get_aerospace_condition_using_from_mach_reynolds,
 ):
-    full_data = get_aerospace_condition_default.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_default.model_dump(exclude_none=False)
     data_parsed = parse_model_dict(full_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
-    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=False)
     data_parsed = parse_model_dict(full_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
-    full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=False)
     data_parsed = parse_model_dict(full_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
 
 def test_incomplete_model(
@@ -85,15 +91,14 @@ def test_incomplete_model(
     get_aerospace_condition_using_from_mach_reynolds,
     get_aerospace_condition_default_and_thermal_state_using_from,
 ):
-    full_data = get_aerospace_condition_default.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_default.model_dump(exclude_none=False)
 
-    incomplete_data = full_data
-    incomplete_data["private_attribute_input_cache"] = None
+    incomplete_data = deepcopy(full_data)
+    incomplete_data["private_attribute_input_cache"] = {}
     data_parsed = parse_model_dict(incomplete_data, globals())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
-
-    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=False)
     incomplete_data = {
         "type_name": full_data["type_name"],
         "private_attribute_constructor": full_data["private_attribute_constructor"],
@@ -101,9 +106,9 @@ def test_incomplete_model(
     }
 
     data_parsed = parse_model_dict(incomplete_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
-    full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach_reynolds.model_dump(exclude_none=False)
     incomplete_data = {
         "type_name": full_data["type_name"],
         "private_attribute_constructor": full_data["private_attribute_constructor"],
@@ -111,10 +116,10 @@ def test_incomplete_model(
     }
 
     data_parsed = parse_model_dict(incomplete_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
     full_data = get_aerospace_condition_default_and_thermal_state_using_from.model_dump(
-        exclude_none=True
+        exclude_none=False
     )
     incomplete_data = deepcopy(full_data)
     incomplete_data["thermal_state"] = {
@@ -128,12 +133,12 @@ def test_incomplete_model(
     }
 
     data_parsed = parse_model_dict(incomplete_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
 
 def test_recursive_incomplete_model(get_aerospace_condition_using_from_mach):
     # `incomplete_data` contains only the private_attribute_* for both the AerospaceCondition and ThermalState
-    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=True)
+    full_data = get_aerospace_condition_using_from_mach.model_dump(exclude_none=False)
     input_cache = full_data["private_attribute_input_cache"]
     input_cache["thermal_state"] = {
         "type_name": input_cache["thermal_state"]["type_name"],
@@ -151,7 +156,7 @@ def test_recursive_incomplete_model(get_aerospace_condition_using_from_mach):
     }
 
     data_parsed = parse_model_dict(incomplete_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, AerospaceCondition)
 
 
 def test_entity_with_multi_constructor():
@@ -184,7 +189,7 @@ def test_entity_with_multi_constructor():
                 ),
             ]
         )
-    full_data = model.model_dump(exclude_none=True)
+    full_data = model.model_dump(exclude_none=False)
     incomplete_data = {"entities": {"stored_entities": []}}
     # For default constructed entity we do not do anything
     incomplete_data["entities"]["stored_entities"].append(
@@ -207,7 +212,7 @@ def test_entity_with_multi_constructor():
     )
 
     data_parsed = parse_model_dict(incomplete_data, globals())
-    assert sorted(data_parsed.items()) == sorted(full_data.items())
+    compare_objects_from_dict(full_data, data_parsed, ModelWithEntityList)
 
 
 def test_entity_modification(get_aerospace_condition_using_from_mach):
@@ -241,9 +246,9 @@ def test_entity_modification(get_aerospace_condition_using_from_mach):
 def test_BETDisk_multi_constructor_full():
     for bet_type in ["c81", "dfdc", "xfoil", "xrotor"]:
         bet = generate_BET_param(bet_type)
-        full_data = bet.model_dump(exclude_none=True)
+        full_data = bet.model_dump(exclude_none=False)
         data_parsed = parse_model_dict(full_data, globals())
-        assert sorted(data_parsed.items()) == sorted(full_data.items())
+        compare_objects_from_dict(full_data, data_parsed, BETDisk)
 
 
 def test_BETDisk_multi_constructor_cache_only():
@@ -257,7 +262,7 @@ def test_BETDisk_multi_constructor_cache_only():
             # Ooops I changed my directory (trying using the json in some other folder)
             os.chdir(original_workdir)
 
-        full_data = bet.model_dump(exclude_none=True)
+        full_data = bet.model_dump(exclude_none=False)
         incomplete_data = {
             "type_name": full_data["type_name"],
             "private_attribute_constructor": full_data["private_attribute_constructor"],
@@ -266,4 +271,4 @@ def test_BETDisk_multi_constructor_cache_only():
         # Make sure cache only can be deserialized and that we won't have
         # trouble even if we switch directory where the file path no longer is valid.
         data_parsed = parse_model_dict(incomplete_data, globals())
-        assert sorted(data_parsed.items()) == sorted(full_data.items())
+        compare_objects_from_dict(full_data, data_parsed, BETDisk)
