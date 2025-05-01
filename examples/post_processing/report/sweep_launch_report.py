@@ -306,7 +306,7 @@ def generate_report(
     report = report.create_in_cloud(
         "sweep-script-report",
         cases,
-        solver_version=SOLVER_VERSION,
+        solver_version=__solver_version__,
     )
 
     report.wait()
