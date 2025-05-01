@@ -251,7 +251,6 @@ def main():
     # project = fl.Project.from_cloud(
     #     'prj-XXXXXXXXXXX')  # where prj-XXXXXXXXXX is an ID that can be saved from a previously created project or read off the WEBUI
 
-
     vm = project.volume_mesh
     # If the project has more then one mesh then use hte line below to choose a specific mesh instead.
     # vm = project.get_volume_mesh(asset_id='vm-XXXXXXXXXXXXXXX')
