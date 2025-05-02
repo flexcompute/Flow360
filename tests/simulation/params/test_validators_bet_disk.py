@@ -12,8 +12,9 @@ from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     _rpm_hover_mode,
 )
 
-from flow360 import XROTORFile, Cylinder, SI_unit_system, AutomatedFarfield, MeshingParams, AerospaceCondition, Freestream, MeshingDefaults
-from flow360.component.simulation.services import validate_model, _determine_validation_level, ValidationCalledBy
+from flow360 import XROTORFile, Cylinder, SI_unit_system
+from tests.utils import to_file_from_file_test
+
 
 assertions = unittest.TestCase("__init__")
 
@@ -169,10 +170,6 @@ def test_bet_disk_from_xrotor_reconstruction(here):
             angle_unit=u.deg,
         )
 
-    params_as_dict = bet_disk.model_dump(exclude_none=False)
-
     
-    bet_disk_reconstructed = BETDisk(**params_as_dict)
-
-    assert params_as_dict["private_attribute_input_cache"] == bet_disk_reconstructed.model_dump(exclude_none=False)["private_attribute_input_cache"]
+    to_file_from_file_test(bet_disk)
     
