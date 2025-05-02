@@ -176,21 +176,24 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
     if constructor_name is not None:
         model_cls = get_class_by_name(model_as_dict.get("type_name"), global_vars)
         input_kwargs = model_as_dict.get("private_attribute_input_cache")
-        # Make sure we do not generate a new ID.
-        id_kwarg = {}
-        if "private_attribute_id" in model_as_dict:
-            id_kwarg["private_attribute_id"] = model_as_dict["private_attribute_id"]
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
-            # pylint: disable=fixme
-            # The current & previous simulation.json file from model_dump() includes keys with None value.
-            # This fix is to pop such keys in the private_attribute_input_cache to ensure only required
-            # arguments are passed to constructor.
-            # TODO This will not be required once the model_dump always exclude None and old json from
-            # the current version are not supported anymore.
-            input_kwargs = {key: val for key, val in input_kwargs.items() if val is not None}
+            constructor_params = inspect.signature(constructor).parameters
             try:
-                return constructor(**(input_kwargs | id_kwarg)).model_dump(exclude_none=True)
+                # Filter the input_kwargs using constructor signatures
+                # If the argument is not found in input_kwargs:
+                # 1. Error out if the argument is required
+                # 2. Use default value if the argument is optional
+                input_kwargs_filtered = {
+                    param_name: input_kwargs[param_name]
+                    for param_name in constructor_params.keys()
+                    if param_name in input_kwargs.keys()
+                }
+                model_dict = constructor(**input_kwargs_filtered).model_dump(exclude_none=True)
+                # Make sure we do not generate a new ID.
+                if "private_attribute_id" in model_as_dict:
+                    model_dict["private_attribute_id"] = model_as_dict["private_attribute_id"]
+                return model_dict
             except pd.ValidationError as err:
                 # pylint:disable = raise-missing-from
                 raise _add_parent_location_to_validation_error(

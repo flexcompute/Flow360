@@ -309,11 +309,8 @@ def test_validate_error_from_multi_constructor():
     def _compare_validation_errors(err, exp_err):
         assert len(errors) == len(expected_errors)
         for err, exp_err in zip(errors, expected_errors):
-            assert err["loc"] == exp_err["loc"]
-            assert err["type"] == exp_err["type"]
-            assert err["msg"] == exp_err["msg"]
-            assert err["input"] == exp_err["input"]
-            assert err["ctx"] == exp_err["ctx"]
+            for key in exp_err.keys():
+                assert err[key] == exp_err[key]
 
     # test from_mach() with two validation errors within private_attribute_input_cache
     params_data = {
@@ -368,7 +365,7 @@ def test_validate_error_from_multi_constructor():
 
     # test BETDisk.from_dfdc() with:
     #   1. one validation error within private_attribute_input_cache
-    #   2. an extra BETDiskCache argument for the dfdc constructor
+    #   2. a missing BETDiskCache argument for the dfdc constructor
     #   3. one validation error outside the input_cache
     params_data = {
         "models": [
@@ -403,7 +400,6 @@ def test_validate_error_from_multi_constructor():
                     },
                     "initial_blade_direction": [1.0, 0.0, 0.0],
                     "length_unit": {"units": "m", "value": 1.0},
-                    "n_loading_nodes": 20,
                     "omega": {"units": "degree/s", "value": 0.0046},
                     "rotation_direction_rule": "leftHand",
                     "number_of_blades": 2,
@@ -430,6 +426,10 @@ def test_validate_error_from_multi_constructor():
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
     )
+    print(errors)
+    # for error in errors:
+    #     print(error)
+    # print(json.dumps(error, indent=4))
 
     expected_errors = [
         {
@@ -438,6 +438,12 @@ def test_validate_error_from_multi_constructor():
             "msg": "Input should be greater than 0",
             "input": -14,
             "ctx": {"gt": "0.0"},
+        },
+        {
+            "type": "missing_argument",
+            "loc": ("models", 0, "private_attribute_input_cache", "n_loading_nodes"),
+            "msg": "Missing required argument",
+            "ctx": {},
         },
         {
             "loc": (
@@ -455,14 +461,8 @@ def test_validate_error_from_multi_constructor():
             "input": -15,
             "ctx": {"gt": "0.0"},
         },
-        {
-            "type": "unexpected_keyword_argument",
-            "loc": ("models", 0, "private_attribute_input_cache", "number_of_blades"),
-            "msg": "Unexpected keyword argument",
-            "input": 2,
-            "ctx": {},
-        },
     ]
+
     _compare_validation_errors(errors, expected_errors)
 
     # test Box.from_principal_axes() with one validation error within private_attribute_input_cache
