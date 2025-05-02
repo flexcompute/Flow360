@@ -179,16 +179,16 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         if constructor_name != "default":
             constructor = get_class_method(model_cls, constructor_name)
             constructor_params = inspect.signature(constructor).parameters
+            # Filter the input_kwargs using constructor signatures
+            # If the argument is not found in input_kwargs:
+            # 1. Error out if the argument is required
+            # 2. Use default value if the argument is optional
+            input_kwargs_filtered = {
+                param_name: input_kwargs[param_name]
+                for param_name in constructor_params.keys()
+                if param_name in input_kwargs.keys()
+            }
             try:
-                # Filter the input_kwargs using constructor signatures
-                # If the argument is not found in input_kwargs:
-                # 1. Error out if the argument is required
-                # 2. Use default value if the argument is optional
-                input_kwargs_filtered = {
-                    param_name: input_kwargs[param_name]
-                    for param_name in constructor_params.keys()
-                    if param_name in input_kwargs.keys()
-                }
                 model_dict = constructor(**input_kwargs_filtered).model_dump(exclude_none=True)
                 # Make sure we do not generate a new ID.
                 if "private_attribute_id" in model_as_dict:
