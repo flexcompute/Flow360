@@ -426,10 +426,6 @@ def test_validate_error_from_multi_constructor():
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
     )
-    print(errors)
-    # for error in errors:
-    #     print(error)
-    # print(json.dumps(error, indent=4))
 
     expected_errors = [
         {

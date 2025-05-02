@@ -173,32 +173,32 @@ def _add_parent_location_to_validation_error(
 def model_custom_constructor_parser(model_as_dict, global_vars):
     """Parse the dictionary, construct the object and return obj dict."""
     constructor_name = model_as_dict.get("private_attribute_constructor", None)
-    if constructor_name is not None:
+    if constructor_name is not None and constructor_name != "default":
         model_cls = get_class_by_name(model_as_dict.get("type_name"), global_vars)
         input_kwargs = model_as_dict.get("private_attribute_input_cache")
-        if constructor_name != "default":
-            constructor = get_class_method(model_cls, constructor_name)
-            constructor_params = inspect.signature(constructor).parameters
-            # Filter the input_kwargs using constructor signatures
-            # If the argument is not found in input_kwargs:
-            # 1. Error out if the argument is required
-            # 2. Use default value if the argument is optional
-            input_kwargs_filtered = {
-                param_name: input_kwargs[param_name]
-                for param_name in constructor_params.keys()
-                if param_name in input_kwargs.keys()
-            }
-            try:
-                model_dict = constructor(**input_kwargs_filtered).model_dump(exclude_none=True)
-                # Make sure we do not generate a new ID.
-                if "private_attribute_id" in model_as_dict:
-                    model_dict["private_attribute_id"] = model_as_dict["private_attribute_id"]
-                return model_dict
-            except pd.ValidationError as err:
-                # pylint:disable = raise-missing-from
-                raise _add_parent_location_to_validation_error(
-                    validation_error=err, parent_loc="private_attribute_input_cache"
-                )
+
+        constructor = get_class_method(model_cls, constructor_name)
+        constructor_args = inspect.signature(constructor).parameters
+        # Filter the input_kwargs using constructor signatures
+        # If the argument is not found in input_kwargs:
+        # 1. Error out if the argument is required
+        # 2. Use default value if the argument is optional
+        input_kwargs_filtered = {
+            arg_name: input_kwargs[arg_name]
+            for arg_name in constructor_args.keys()
+            if arg_name in input_kwargs.keys()
+        }
+        try:
+            model_dict = constructor(**input_kwargs_filtered).model_dump(exclude_none=True)
+            # Make sure we do not generate a new ID.
+            if "private_attribute_id" in model_as_dict:
+                model_dict["private_attribute_id"] = model_as_dict["private_attribute_id"]
+            return model_dict
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise _add_parent_location_to_validation_error(
+                validation_error=err, parent_loc="private_attribute_input_cache"
+            )
 
     return model_as_dict
 
