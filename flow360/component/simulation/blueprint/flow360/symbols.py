@@ -29,6 +29,12 @@ def _import_flow360(name: str) -> Any:
 
         return u
 
+def _import_numpy(name: str) -> Any:
+    import numpy as np
+
+    if name == "np":
+        return np
+
 
 WHITELISTED_CALLABLES = {
     "flow360.units": {
@@ -84,11 +90,11 @@ WHITELISTED_CALLABLES = {
             "yPlus",
         ],
         "evaluate": False
-    }
+    },
 }
 
 # Define allowed modules
-ALLOWED_MODULES = {"flow360", "fl"}
+ALLOWED_MODULES = {"flow360", "fl", "np"}
 
 ALLOWED_CALLABLES = {
     "fl": None,
@@ -109,6 +115,7 @@ EVALUATION_BLACKLIST = {
 
 IMPORT_FUNCTIONS = {
     ("fl", "u"): _import_flow360,
+    "np": _import_numpy,
 }
 
 resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST)

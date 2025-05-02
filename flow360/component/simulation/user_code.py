@@ -9,7 +9,7 @@ from flow360.component.simulation.blueprint.flow360 import resolver
 from flow360.component.simulation.unit_system import *
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.blueprint import expression_to_model
+from flow360.component.simulation.blueprint import expression_to_model, Evaluable
 
 import pydantic as pd
 from numbers import Number
@@ -65,6 +65,8 @@ def _convert_argument(value):
                 arg += token
             else:
                 arg += token
+    elif isinstance(value, np.ndarray):
+        arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
     else:
         raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
@@ -96,6 +98,9 @@ class Variable(Flow360BaseModel):
         return Expression(expression=f"{self.name} - {str_arg}")
 
     def __mul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} * {str_arg}")
@@ -140,6 +145,9 @@ class Variable(Flow360BaseModel):
         return Expression(expression=f"{str_arg} - {self.name}")
 
     def __rmul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} * {self.name}")
@@ -164,11 +172,36 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} ** {self.name}")
 
+    def __getitem__(self, item):
+        (arg, _) = _convert_argument(item)
+        return Expression(expression=f"{self.name}[{arg}]")
+
     def __str__(self):
         return self.name
 
     def __repr__(self):
         return f"Variable({self.name} = {self.value})"
+
+    def sqrt(self):
+        return Expression(expression=f"np.sqrt({self.expression})")
+
+    def sin(self):
+        return Expression(expression=f"np.sin({self.expression})")
+
+    def cos(self):
+        return Expression(expression=f"np.cos({self.expression})")
+
+    def tan(self):
+        return Expression(expression=f"np.tan({self.expression})")
+
+    def arcsin(self):
+        return Expression(expression=f"np.arcsin({self.expression})")
+
+    def arccos(self):
+        return Expression(expression=f"np.arccos({self.expression})")
+
+    def arctan(self):
+        return Expression(expression=f"np.arctan({self.expression})")
 
 
 class UserVariable(Variable):
@@ -215,11 +248,11 @@ def _handle_syntax_error(se: SyntaxError, source: str):
     )
 
 
-
-class Expression(Flow360BaseModel):
+class Expression(Flow360BaseModel, Evaluable):
     expression: str = pd.Field("")
 
     model_config = pd.ConfigDict(validate_assignment=True)
+
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -232,8 +265,8 @@ class Expression(Flow360BaseModel):
             expression = str(value)
         elif isinstance(value, Variable):
             expression = str(value)
-        elif isinstance(value, list):
-            expression = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
+        elif isinstance(value, np.ndarray) and not isinstance(value, unyt_array):
+            expression = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
@@ -249,32 +282,14 @@ class Expression(Flow360BaseModel):
 
         return {"expression": expression}
 
-    def evaluate(self, strict=True) -> Union[float, list[float], unyt_array]:
-        # We need this to be recursive because the variables might
-        # reference other variables or expressions, so an evaluate
-        # call might still yield an expression
+    def evaluate(self, context: EvaluationContext = None, strict: bool = True) -> Union[float, list[float], unyt_array]:
+        if context is None:
+            context = _global_ctx
 
-        expr = expression_to_model(self.expression, _global_ctx)
-        result = expr.evaluate(_global_ctx, strict)
+        expr = expression_to_model(self.expression, context)
+        result = expr.evaluate(context, strict)
 
-        # Handle vector expressions during evaluation, assume
-        # we only handle 1D vectors so they are at the top level
-        if isinstance(result, list):
-            vector = []
-
-            for item in result:
-                while isinstance(item, Expression):
-                    expr = expression_to_model(item.expression, _global_ctx)
-                    item = expr.evaluate(_global_ctx, strict)
-                vector.append(item)
-
-            return vector
-        else:
-            while isinstance(result, Expression):
-                expr = expression_to_model(result.expression, _global_ctx)
-                result = expr.evaluate(_global_ctx, strict)
-
-            return result
+        return result
 
     def user_variables(self):
         expr = expression_to_model(self.expression, _global_ctx)
@@ -298,6 +313,9 @@ class Expression(Flow360BaseModel):
         return Expression(expression=f"{self.expression} - {str_arg}")
 
     def __mul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"({self.expression}) * {str_arg}")
@@ -342,6 +360,9 @@ class Expression(Flow360BaseModel):
         return Expression(expression=f"{str_arg} - {self.expression}")
 
     def __rmul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} * ({self.expression})")
@@ -366,11 +387,36 @@ class Expression(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} ** ({self.expression})")
 
+    def __getitem__(self, item):
+        (arg, _) = _convert_argument(item)
+        return Expression(expression=f"({self.expression})[{arg}]")
+
     def __str__(self):
         return self.expression
 
     def __repr__(self):
         return f"Expression({self.expression})"
+
+    def sqrt(self):
+        return Expression(expression=f"np.sqrt({self.expression})")
+
+    def sin(self):
+        return Expression(expression=f"np.sin({self.expression})")
+
+    def cos(self):
+        return Expression(expression=f"np.cos({self.expression})")
+
+    def tan(self):
+        return Expression(expression=f"np.tan({self.expression})")
+
+    def arcsin(self):
+        return Expression(expression=f"np.arcsin({self.expression})")
+
+    def arccos(self):
+        return Expression(expression=f"np.arccos({self.expression})")
+
+    def arctan(self):
+        return Expression(expression=f"np.arctan({self.expression})")
 
 
 T = TypeVar("T")

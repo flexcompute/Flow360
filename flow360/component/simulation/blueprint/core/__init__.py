@@ -12,6 +12,7 @@ from .expressions import (
     Name,
     RangeCall,
     Tuple,
+    Subscript
 )
 from .function import Function
 from .statements import (
@@ -24,6 +25,7 @@ from .statements import (
     StatementType,
     TupleUnpack,
 )
+from .types import Evaluable
 
 
 def _model_rebuild() -> None:
@@ -38,6 +40,7 @@ def _model_rebuild() -> None:
         "Tuple": Tuple,
         "List": List,
         "ListComp": ListComp,
+        "Subscript": Subscript,
         "ExpressionType": ExpressionType,
         # Statement types
         "Assign": Assign,
@@ -58,6 +61,7 @@ def _model_rebuild() -> None:
     Tuple.model_rebuild(_types_namespace=namespace)
     List.model_rebuild(_types_namespace=namespace)
     ListComp.model_rebuild(_types_namespace=namespace)
+    Subscript.model_rebuild(_types_namespace=namespace)
 
     # Then update statement classes that depend on both types
     Assign.model_rebuild(_types_namespace=namespace)

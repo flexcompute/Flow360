@@ -14,6 +14,7 @@ from ..core.expressions import (
     RangeCall,
     Tuple,
     Expression,
+    Subscript
 )
 from ..core.expressions import (
     List as ListExpr,
@@ -71,6 +72,13 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             op=type(node.ops[0]).__name__,
             left=parse_expr(node.left, ctx),
             right=parse_expr(node.comparators[0], ctx),
+        )
+
+    elif isinstance(node, ast.Subscript):
+        return Subscript(
+            value=parse_expr(node.value, ctx),
+            slice=parse_expr(node.slice, ctx),
+            ctx=type(node.ctx).__name__
         )
 
     elif isinstance(node, ast.Call):
