@@ -1,4 +1,5 @@
 import unittest
+import os
 
 import pytest
 
@@ -11,8 +12,14 @@ from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     _rpm_hover_mode,
 )
 
+from flow360 import XROTORFile, Cylinder, SI_unit_system, AutomatedFarfield, MeshingParams, AerospaceCondition, Freestream, MeshingDefaults
+from flow360.component.simulation.services import validate_model, _determine_validation_level, ValidationCalledBy
+
 assertions = unittest.TestCase("__init__")
 
+@pytest.fixture
+def here():
+    return os.path.dirname(os.path.abspath(__file__))
 
 @pytest.fixture
 def create_steady_bet_disk():
@@ -138,3 +145,34 @@ def test_bet_disk_3d_coefficients_dimension_wrong_alpha_numbers(create_steady_be
         bet_disk_dict["alphas"]["value"] = bet_disk_dict["alphas"]["value"] + (bet_disk.alphas[-1],)
         bet_disk_error = BETDisk(**bet_disk_dict)
         BETDisk.model_validate(bet_disk_error)
+
+
+def test_bet_disk_from_xrotor_reconstruction(here):
+    xrotor_file = XROTORFile(file_path=os.path.join(here, "data", "xv15_like_twist0.xrotor"))
+    with SI_unit_system:
+        bet_disk = BETDisk.from_xrotor(
+            file=xrotor_file,
+            rotation_direction_rule="rightHand",
+            omega=460*u.rpm,
+            chord_ref=0.3556,
+            n_loading_nodes=20,
+            entities=[
+                Cylinder(
+                    name="bet_disc_cylinder2",
+                    outer_radius=4.25,
+                    height=0.6,
+                    axis=(-1,0,0),
+                    center=(-2,5,0)
+                )      
+            ],
+            length_unit=u.m,
+            angle_unit=u.deg,
+        )
+
+    params_as_dict = bet_disk.model_dump(exclude_none=False)
+
+    
+    bet_disk_reconstructed = BETDisk(**params_as_dict)
+
+    assert params_as_dict["private_attribute_input_cache"] == bet_disk_reconstructed.model_dump(exclude_none=False)["private_attribute_input_cache"]
+    
