@@ -293,7 +293,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         center: LengthType.Point,
         size: LengthType.PositiveVector,
         axes: OrthogonalAxes,
-        **kwargs,
     ):
         """
         Construct box from principal axes
@@ -324,7 +323,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
             size=size,
             axis_of_rotation=tuple(axis),
             angle_of_rotation=angle * u.rad,
-            **kwargs,
         )
 
     @pd.model_validator(mode="after")
