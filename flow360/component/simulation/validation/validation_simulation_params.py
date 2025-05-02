@@ -77,8 +77,13 @@ def _check_duplicate_entities_in_models(params):
         entity_type = None
         if isinstance(entity, _SurfaceEntityBase):
             entity_type = "Surface"
-        if isinstance(entity, _VolumeEntityBase):
+        elif isinstance(entity, _VolumeEntityBase):
             entity_type = "Volume"
+        else:
+            raise ValueError(
+                f"[Internal Error] Entity `{entity.name}` in the {model_type} model "
+                f"cannot be registered as a valid Surface or Volume entity."
+            )
         entity_key = _get_entity_key(entity=entity)
         entity_log = dict_entity[entity_type].get(
             entity_key, {"entity_name": entity.name, "model_list": []}
@@ -90,7 +95,9 @@ def _check_duplicate_entities_in_models(params):
     if models:
         for model in models:
             if hasattr(model, "entities"):
-                for entity in model.entities.stored_entities:
+                # pylint: disable = protected-access
+                expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+                for entity in expanded_entities:
                     dict_entity = register_single_entity(entity, model.type, dict_entity)
 
     error_msg = ""
