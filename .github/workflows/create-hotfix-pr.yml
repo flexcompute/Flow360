@@ -79,7 +79,7 @@ jobs:
             git checkout -b "$new_branch"
             
             # Attempt cherry-pick
-            if ! git cherry-pick ${{ steps.get_commit.outputs.sha }} -m 1; then
+            if ! git cherry-pick ${{ steps.get_commit.outputs.sha }} -m 1 --empty=keep; then
               echo "Cherry-pick encountered conflicts for $base_branch, attempting to resolve..."
               git add -A
               git cherry-pick --continue
@@ -96,7 +96,17 @@ jobs:
               echo "Cherry-pick successful for $base_branch"
               had_conflicts="false"
             fi
-            
+
+            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+            if [ -z "$CHANGED_FILES" ]; then
+                echo "No files were changed during cherry-pick, skipping PR creation for $base_branch"
+                git reset --hard HEAD^
+                continue
+            fi
+
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+
             # Push branch
             if git push origin "$new_branch"; then
               echo "Successfully pushed branch $new_branch"
