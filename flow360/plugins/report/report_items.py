@@ -1435,13 +1435,14 @@ class Chart2D(BaseChart2D):
             return get_requirements_from_data_path([self.x, *self.y])
         return get_requirements_from_data_path([self.x, self.y])
 
+    # pylint: disable=no-member
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
         for idx, (x_series, y_series) in enumerate(zip(x_data, y_data)):
             united_array_x = unyt.unyt_array(x_series)
             united_array_y = unyt.unyt_array(y_series)
-            if united_array_x.units != unyt.dimensionless:  # pylint: disable=no-member
+            if united_array_x.units != unyt.dimensionless:
                 x_data[idx] = united_array_x
-            if united_array_y.units != unyt.dimensionless:  # pylint: disable=no-member
+            if united_array_y.units != unyt.dimensionless:
                 y_data[idx] = united_array_y
 
         if self._check_dimensions_consistency(x_data) is True:

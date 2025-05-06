@@ -751,15 +751,6 @@ class DataItem(Flow360BaseModel):
 
             return source
 
-        # source = data_from_path(case, self.data)
-        # if isinstance(source, VolumeMeshBoundingBox):
-        #     if self.exclude is not None or self.include is not None:
-        #         source.filter(include=self.include, exclude=self.exclude)
-
-        #     for opr in self.operations:  # pylint: disable=not-an-iterable
-        #         source, cases, result = opr.calculate(source, case, cases, self.variables, None)
-        #         return result
-
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(source)=}"
         )
