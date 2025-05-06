@@ -140,7 +140,8 @@ jobs:
                 --head "$new_branch" \
                 --base "$base_branch" \
                 --label "auto-hotfix" \
-                --assignee "$PR_AUTHOR" 
+                --assignee "$PR_AUTHOR" \
+                --draft
             else
               echo "Failed to push branch $new_branch"
             fi
