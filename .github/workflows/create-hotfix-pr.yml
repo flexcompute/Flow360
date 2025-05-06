@@ -79,9 +79,15 @@ jobs:
             git checkout -b "$new_branch"
             
             # Attempt cherry-pick
-            if ! git cherry-pick ${{ steps.get_commit.outputs.sha }} -m 1 --empty=keep; then
+            if ! git cherry-pick ${{ steps.get_commit.outputs.sha }} --empty=keep; then
               echo "Cherry-pick encountered conflicts for $base_branch, attempting to resolve..."
               git add -A
+              # Check if there are actual changes staged after conflict resolution attempt
+              if git diff --cached --quiet; then
+                  echo "Conflict resolution resulted in no changes. Aborting cherry-pick."
+                  git cherry-pick --abort
+                  continue # Skip PR creation if no changes after resolution
+              fi
               git cherry-pick --continue
               
               if [ $? -eq 0 ]; then
@@ -97,10 +103,10 @@ jobs:
               had_conflicts="false"
             fi
 
-            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD)
             if [ -z "$CHANGED_FILES" ]; then
-                echo "No files were changed during cherry-pick, skipping PR creation for $base_branch"
-                git reset --hard HEAD^
+                echo "Cherry-pick resulted in no changes, skipping PR creation for $base_branch"
+                git reset --hard HEAD^ # Discard the empty commit if one was created by cherry-pick
                 continue
             fi
 
