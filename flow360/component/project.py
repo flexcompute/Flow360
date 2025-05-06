@@ -1232,7 +1232,6 @@ class Project(pd.BaseModel):
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
-        use_geometry_AI: bool,
         raise_on_error: bool,
         **kwargs,
     ):
@@ -1255,8 +1254,6 @@ class Project(pd.BaseModel):
             Specifies whether the simulation should run asynchronously (default is True).
         use_beta_mesher : bool, optional
             Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
-        use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
 
@@ -1272,6 +1269,7 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
+        use_geometry_AI = kwargs.get("use_geometry_AI", False)  # pylint: disable=invalid-name
         if use_beta_mesher is None:
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
@@ -1367,7 +1365,6 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = None,
-        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1386,8 +1383,6 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         use_beta_mesher : bool, optional
             Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
-        use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
 
@@ -1410,7 +1405,6 @@ class Project(pd.BaseModel):
             interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
-            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
@@ -1424,7 +1418,6 @@ class Project(pd.BaseModel):
         run_async: bool = True,
         solver_version: str = None,
         use_beta_mesher: bool = None,
-        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1443,8 +1436,6 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         use_beta_mesher : bool, optional
             Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
-        use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
 
@@ -1470,7 +1461,6 @@ class Project(pd.BaseModel):
             interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
-            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
@@ -1486,7 +1476,6 @@ class Project(pd.BaseModel):
         interpolate_to_mesh: Optional[VolumeMeshV2] = None,
         solver_version: str = None,
         use_beta_mesher: bool = None,
-        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         **kwargs,
     ):
@@ -1509,8 +1498,6 @@ class Project(pd.BaseModel):
             Optional solver version to use during this run (defaults to the project solver version)
         use_beta_mesher : bool, optional
             Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
-        use_geometry_AI : bool, optional
-            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
         """
@@ -1524,7 +1511,6 @@ class Project(pd.BaseModel):
             interpolate_to_mesh=interpolate_to_mesh,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
-            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             **kwargs,
         )
