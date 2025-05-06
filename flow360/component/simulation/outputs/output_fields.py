@@ -102,6 +102,7 @@ CommonFieldNames = Literal[
     "velocity_z_m_per_s",
     "velocity_magnitude_m_per_s",
     "pressure_pa",
+    "residualComponentsSA",
 ]
 
 # Skin friction coefficient vector
