@@ -94,6 +94,15 @@ def http_interceptor(func):
                 # Handle the case where the response does not contain JSON data
                 return None
 
+        # Whitelist known 500 errors:
+        if resp.text.count("credit has expired") or resp.text.count("credit is not enough"):
+            import json  # pylint: disable=import-outside-toplevel
+
+            error_dict = json.loads(resp.text)
+            raise Flow360WebError(
+                f"Error: {error_dict.get('error', error_dict)}",
+            )
+
         raise Flow360WebError(f"Web {args[1]}: Unexpected response error: {resp.status_code}")
 
     return wrapper
