@@ -96,6 +96,7 @@ def http_interceptor(func):
 
         # Whitelist known 500 errors:
         if resp.text.count("credit has expired") or resp.text.count("credit is not enough"):
+            # Note: Top import results in "json" redefinition error.
             import json  # pylint: disable=import-outside-toplevel
 
             error_dict = json.loads(resp.text)
