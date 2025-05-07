@@ -41,11 +41,7 @@ def _import_flow360(name: str) -> Any:
 
 
 WHITELISTED_CALLABLES = {
-    "flow360.units": {
-        "prefix": "u.",
-        "callables": _unit_list(),
-        "evaluate": True
-    },
+    "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
     "flow360.control": {
         "prefix": "control.",
         "callables": [
@@ -93,7 +89,7 @@ WHITELISTED_CALLABLES = {
             "wallShearStress",
             "yPlus",
         ],
-        "evaluate": False
+        "evaluate": False,
     },
     "flow360.solution": {
         "prefix": "solution.",
@@ -142,8 +138,8 @@ WHITELISTED_CALLABLES = {
             "wallShearStress",
             "yPlus",
         ],
-        "evaluate": False
-    }
+        "evaluate": False,
+    },
 }
 
 # Define allowed modules
@@ -162,7 +158,8 @@ EVALUATION_BLACKLIST = {
     **{
         f"{group['prefix']}{name}": None
         for group in WHITELISTED_CALLABLES.values()
-        for name in group["callables"] if not group["evaluate"]
+        for name in group["callables"]
+        if not group["evaluate"]
     },
 }
 
@@ -170,4 +167,6 @@ IMPORT_FUNCTIONS = {
     ("fl", "u"): _import_flow360,
 }
 
-resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST)
+resolver = CallableResolver(
+    ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST
+)

@@ -13,14 +13,7 @@ from ..core.expressions import (
     UnaryOp,
 )
 from ..core.function import Function
-from ..core.statements import (
-    Assign,
-    AugAssign,
-    ForLoop,
-    IfElse,
-    Return,
-    TupleUnpack,
-)
+from ..core.statements import Assign, AugAssign, ForLoop, IfElse, Return, TupleUnpack
 from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS
 from ..utils.types import TargetSyntax
 
@@ -36,8 +29,11 @@ def check_syntax_type(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         if result is None:
-            raise ValueError(f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}")
+            raise ValueError(
+                f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
+            )
         return result
+
     return wrapper
 
 
@@ -149,10 +145,9 @@ def _list_comp(expr, syntax, remap):
 
     raise ValueError("List comprehensions are only supported for Python target syntax")
 
+
 def expr_to_code(
-    expr: Any,
-    syntax: TargetSyntax = TargetSyntax.PYTHON,
-    remap: dict[str, str] = None
+    expr: Any, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
 ) -> str:
     """Convert an expression model back to source code."""
     if expr is None:
@@ -191,9 +186,7 @@ def expr_to_code(
 
 
 def stmt_to_code(
-    stmt: Any,
-    syntax: TargetSyntax = TargetSyntax.PYTHON,
-    remap: dict[str, str] = None
+    stmt: Any, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
 ) -> str:
     if syntax == TargetSyntax.PYTHON:
         """Convert a statement model back to source code."""
@@ -244,9 +237,7 @@ def stmt_to_code(
 
 
 def model_to_function(
-    func: Function,
-    syntax: TargetSyntax = TargetSyntax.PYTHON,
-    remap: dict[str, str] = None
+    func: Function, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
 ) -> str:
     if syntax == TargetSyntax.PYTHON:
         """Convert a Function model back to source code."""

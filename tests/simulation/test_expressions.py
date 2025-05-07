@@ -2,44 +2,41 @@ from math import isnan
 from pprint import pprint
 from typing import List
 
+import pydantic as pd
 import pytest
 
-from flow360.component.simulation.user_code import (
-    ValueOrExpression,
-    UserVariable,
-    Expression,
-)
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-
-import pydantic as pd
-from flow360 import u
-
 import flow360 as fl
-
+from flow360 import u
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
-    LengthType,
-    AngleType,
-    MassType,
-    TimeType,
     AbsoluteTemperatureType,
-    VelocityType,
-    AreaType,
-    ForceType,
-    PressureType,
-    DensityType,
-    ViscosityType,
-    PowerType,
-    MomentType,
+    AngleType,
     AngularVelocityType,
+    AreaType,
+    DensityType,
+    ForceType,
+    FrequencyType,
     HeatFluxType,
     HeatSourceType,
-    SpecificHeatCapacityType,
     InverseAreaType,
-    MassFlowRateType,
-    SpecificEnergyType,
-    FrequencyType,
-    ThermalConductivityType,
     InverseLengthType,
+    LengthType,
+    MassFlowRateType,
+    MassType,
+    MomentType,
+    PowerType,
+    PressureType,
+    SpecificEnergyType,
+    SpecificHeatCapacityType,
+    ThermalConductivityType,
+    TimeType,
+    VelocityType,
+    ViscosityType,
+)
+from flow360.component.simulation.user_code import (
+    Expression,
+    UserVariable,
+    ValueOrExpression,
 )
 
 
@@ -368,16 +365,16 @@ def test_serializer():
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=x * u.m / u.s + 4 * x ** 2 * u.m / u.s)
+    model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s)
 
-    assert str(model.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert str(model.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
     serialized = model.model_dump(exclude_none=True)
 
     print(model.model_dump_json(indent=2, exclude_none=True))
 
     assert serialized["field"]["type_name"] == "expression"
-    assert serialized["field"]["expression"] == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert serialized["field"]["expression"] == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
     model = TestModel(field=4 * u.m / u.s)
 
@@ -400,22 +397,18 @@ def test_deserializer():
         "type_name": "expression",
         "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
         "evaluated_value": 68.0,
-        "evaluated_units": "m/s"
+        "evaluated_units": "m/s",
     }
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert str(deserialized.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
-    model = {
-        "type_name": "number",
-        "value": 4.0,
-        "units": "m/s"
-    }
+    model = {"type_name": "number", "value": 4.0, "units": "m/s"}
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == '4.0 m/s'
+    assert str(deserialized.field) == "4.0 m/s"
 
 
 def test_error_message():
@@ -428,26 +421,25 @@ def test_error_message():
         model = TestModel(field="1 + nonexisting * 1")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "Name 'nonexisting' is not defined" in validation_errors[0]["msg"]
-        
+
     try:
         model = TestModel(field="1 + x * 1")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "does not match (length)/(time) dimension" in validation_errors[0]["msg"]
-
 
     try:
         model = TestModel(field="1 * 1 +")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "invalid syntax" in validation_errors[0]["msg"]
@@ -460,7 +452,7 @@ def test_error_message():
         model = TestModel(field="1 * 1 +* 2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "invalid syntax" in validation_errors[0]["msg"]
@@ -473,7 +465,7 @@ def test_error_message():
         model = TestModel(field="1 * 1 + (2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "unexpected EOF" in validation_errors[0]["msg"]

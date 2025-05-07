@@ -9,8 +9,6 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.variables import control_variables as control
-from flow360.component.simulation.variables import solution_variables as solution
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -150,6 +148,8 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.variables import control_variables as control
+from flow360.component.simulation.variables import solution_variables as solution
 from flow360.component.simulation.variables.control_variables import *
 from flow360.component.simulation.variables.solution_variables import *
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh

@@ -1,22 +1,21 @@
 from __future__ import annotations
-from typing import get_origin, Generic, TypeVar, Optional, Iterable
 
-from pydantic import BeforeValidator
-from typing_extensions import Self
 import re
-
-from flow360.component.simulation.blueprint.codegen import expr_to_code
-from flow360.component.simulation.blueprint.flow360 import resolver
-from flow360.component.simulation.blueprint.utils.types import TargetSyntax
-from flow360.component.simulation.unit_system import *
-from flow360.component.simulation.blueprint.core import EvaluationContext
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.blueprint import expr_to_model
+from numbers import Number
+from typing import Generic, Iterable, Optional, TypeVar, get_origin
 
 import pydantic as pd
-from numbers import Number
-from unyt import Unit, unyt_quantity, unyt_array
+from pydantic import BeforeValidator
+from typing_extensions import Self
+from unyt import Unit, unyt_array, unyt_quantity
 
+from flow360.component.simulation.blueprint import expr_to_model
+from flow360.component.simulation.blueprint.codegen import expr_to_code
+from flow360.component.simulation.blueprint.core import EvaluationContext
+from flow360.component.simulation.blueprint.flow360 import resolver
+from flow360.component.simulation.blueprint.utils.types import TargetSyntax
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.unit_system import *
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
@@ -88,7 +87,9 @@ class SerializedValueOrExpression(Flow360BaseModel):
     value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None, alias="evaluatedValue")
+    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(
+        None, alias="evaluatedValue"
+    )
     evaluated_units: Optional[str] = pd.Field(None, alias="evaluatedUnits")
 
 
@@ -96,7 +97,7 @@ class Variable(Flow360BaseModel):
     name: str = pd.Field()
     value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
 
-    model_config = pd.ConfigDict(validate_assignment=True, extra='allow')
+    model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
 
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -199,15 +200,13 @@ class SolverVariable(Variable):
     @classmethod
     def update_context(cls, value):
         _global_ctx.set(value.name, value.value)
-        _solver_variables[value.name] = value.solver_name if value.solver_name is not None else value.name
+        _solver_variables[value.name] = (
+            value.solver_name if value.solver_name is not None else value.name
+        )
 
 
 def _handle_syntax_error(se: SyntaxError, source: str):
-    caret = (
-        " " * (se.offset - 1) + "^"
-        if se.text and se.offset
-        else None
-    )
+    caret = " " * (se.offset - 1) + "^" if se.text and se.offset else None
     msg = f"{se.msg} at line {se.lineno}, column {se.offset}"
     if caret:
         msg += f"\n{se.text.rstrip()}\n{caret}"
@@ -246,7 +245,9 @@ class Expression(Flow360BaseModel):
         elif isinstance(value, Variable):
             expression = str(value)
         else:
-            details = InitErrorDetails(type="value_error", ctx={"error": f"Invalid type {type(value)}"})
+            details = InitErrorDetails(
+                type="value_error", ctx={"error": f"Invalid type {type(value)}"}
+            )
             raise pd.ValidationError.from_exception_data("expression type error", [details])
 
         try:
@@ -376,7 +377,7 @@ class ValueOrExpression(Expression, Generic[T]):
             try:
                 result = value.evaluate(strict=False)
             except Exception as err:
-                raise ValueError(f'expression evaluation failed: {err}') from err
+                raise ValueError(f"expression evaluation failed: {err}") from err
 
             pd.TypeAdapter(internal_type).validate_python(result, strict=True)
 
@@ -431,7 +432,7 @@ class ValueOrExpression(Expression, Generic[T]):
                     serialized.units = str(value.units.expr)
 
             return serialized.model_dump(**info.__dict__)
-        
+
         union_type = Union[expr_type, internal_type]
         union_type = Annotated[union_type, PlainSerializer(_serializer)]
         union_type = Annotated[union_type, BeforeValidator(_deserialize)]
