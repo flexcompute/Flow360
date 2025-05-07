@@ -242,7 +242,7 @@ def function_to_model(
     return Function(name=name, args=args, body=body, defaults=defaults)
 
 
-def expression_to_model(
+def expr_to_model(
     source: str,
     ctx: EvaluationContext,
 ) -> Expression:

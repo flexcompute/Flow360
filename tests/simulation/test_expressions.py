@@ -418,8 +418,6 @@ def test_deserializer():
     assert str(deserialized.field) == '4.0 m/s'
 
 
-
-
 def test_error_message():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
@@ -484,3 +482,19 @@ def test_error_message():
         assert "column" in validation_errors[0]["ctx"]
         assert validation_errors[0]["ctx"]["column"] == 11
 
+
+def test_solver_translation():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[float] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    model = TestModel(field=(x // 3) ** 2)
+
+    assert isinstance(model.field, Expression)
+    assert model.field.evaluate() == 1
+    assert str(model.field) == "(x // 3) ** 2"
+
+    solver_code = model.field.to_solver_code()
+
+    assert solver_code == "pow(floor(x / 3), 2)"
