@@ -2,6 +2,8 @@ import operator
 from collections.abc import Callable
 from typing import Any, Union
 
+from .types import TargetSyntax
+
 
 class OpInfo:
     """Class to hold operator information."""

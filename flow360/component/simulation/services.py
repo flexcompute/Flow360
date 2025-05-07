@@ -62,8 +62,6 @@ from flow360.version import __version__
 # Required for correct global scope initialization
 
 
-
-
 unit_system_map = {
     "SI": SI_unit_system,
     "CGS": CGS_unit_system,

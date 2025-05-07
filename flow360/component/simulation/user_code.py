@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import re
-from numbers import Number
-from typing import Generic, Iterable, Optional, TypeVar, get_origin
+from typing import Generic, Iterable, Optional, TypeVar
 
 import pydantic as pd
 from pydantic import BeforeValidator
 from typing_extensions import Self
-from unyt import Unit, unyt_array, unyt_quantity
+from unyt import Unit, unyt_array
 
-from flow360.component.simulation.blueprint import expression_to_model
+from flow360.component.simulation.blueprint import expr_to_model
+from flow360.component.simulation.blueprint.codegen import expr_to_code
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.blueprint.flow360 import resolver
+from flow360.component.simulation.blueprint.utils.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import *
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
+_solver_variables: dict[str, str] = dict()
 
 
 def _is_number_string(s: str) -> bool:
@@ -80,14 +82,12 @@ def _convert_argument(other):
 
 
 class SerializedValueOrExpression(Flow360BaseModel):
-    type_name: Union[Literal["number"], Literal["expression"]] = pd.Field(None, alias="typeName")
+    type_name: Union[Literal["number"], Literal["expression"]] = pd.Field(None)
     value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(
-        None, alias="evaluatedValue"
-    )
-    evaluated_units: Optional[str] = pd.Field(None, alias="evaluatedUnits")
+    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
+    evaluated_units: Optional[str] = pd.Field(None)
 
 
 class Variable(Flow360BaseModel):
@@ -191,10 +191,15 @@ class UserVariable(Variable):
 
 
 class SolverVariable(Variable):
+    solver_name: Optional[str] = pd.Field(None)
+
     @pd.model_validator(mode="after")
     @classmethod
     def update_context(cls, value):
         _global_ctx.set(value.name, value.value)
+        _solver_variables[value.name] = (
+            value.solver_name if value.solver_name is not None else value.name
+        )
 
 
 def _handle_syntax_error(se: SyntaxError, source: str):
@@ -243,7 +248,7 @@ class Expression(Flow360BaseModel):
             raise pd.ValidationError.from_exception_data("expression type error", [details])
 
         try:
-            _ = expression_to_model(expression, _global_ctx)
+            expr_to_model(expression, _global_ctx)
         except SyntaxError as s_err:
             raise _handle_syntax_error(s_err, expression)
         except ValueError as v_err:
@@ -253,17 +258,23 @@ class Expression(Flow360BaseModel):
         return {"expression": expression}
 
     def evaluate(self, strict=True) -> float:
-        expr = expression_to_model(self.expression, _global_ctx)
+        expr = expr_to_model(self.expression, _global_ctx)
         result = expr.evaluate(_global_ctx, strict)
         return result
 
     def user_variables(self):
-        expr = expression_to_model(self.expression, _global_ctx)
+        expr = expr_to_model(self.expression, _global_ctx)
         names = expr.used_names()
 
         names = [name for name in names if name in _user_variables]
 
         return [UserVariable(name=name, value=_global_ctx.get(name)) for name in names]
+
+    def to_solver_code(self):
+        expr = expr_to_model(self.expression, _global_ctx)
+        source = expr_to_code(expr, TargetSyntax.CPP, _solver_variables)
+        # TODO: What do we do with dimensioned expressions? We need to replace all units by their conversion factors.
+        return source
 
     def __hash__(self):
         return hash(self.expression)
