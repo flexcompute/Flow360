@@ -1240,8 +1240,8 @@ def test_multiple_point_variables_on_chart2d(cases, here):
 
     plot_model = chart.get_data(cases=cases[:2], context=context)
 
-    ys_to_plot = np.empty((len(loads), 2))
-    xs_to_plot = np.empty((len(loads), 2))
+    ys_to_plot = np.zeros((len(loads), 2))
+    xs_to_plot = np.zeros((len(loads), 2))
 
     for idx0, case in enumerate(cases[:2]):
         load_data = pd.read_csv(
