@@ -11,6 +11,7 @@ import pydantic as pd
 from unyt import unyt_array, unyt_quantity
 from unyt.exceptions import UnitParseError
 
+# Required for correct global scope initialization
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -23,7 +24,9 @@ from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
     BETDisk,
 )
-from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
+
+# pylint: disable=unused-import
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
@@ -37,7 +40,6 @@ from flow360.component.simulation.simulation_params import (
 )
 
 # Required for correct global scope initialization
-from flow360.component.simulation.solver_builtins import *
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -64,6 +66,9 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
+
+# Required for correct global scope initialization
+
 
 unit_system_map = {
     "SI": SI_unit_system,

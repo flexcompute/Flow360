@@ -4,8 +4,7 @@ import numpy as np
 import pydantic as pd
 import pytest
 
-import flow360 as fl
-from flow360 import u
+from flow360 import control, solution, u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -352,9 +351,9 @@ def test_solver_builtin():
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=x * u.m + fl.kOmega * u.cm)
+    model = TestModel(field=x * u.m + solution.kOmega * u.cm)
 
-    assert str(model.field) == "x * u.m + (fl.kOmega * u.cm)"
+    assert str(model.field) == "x * u.m + (solution.kOmega * u.cm)"
 
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
@@ -582,3 +581,20 @@ def test_error_message():
         assert "line" in validation_errors[0]["ctx"]
         assert "column" in validation_errors[0]["ctx"]
         assert validation_errors[0]["ctx"]["column"] == 11
+
+
+def test_solver_translation():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[float] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    model = TestModel(field=(x // 3) ** 2)
+
+    assert isinstance(model.field, Expression)
+    assert model.field.evaluate() == 1
+    assert str(model.field) == "(x // 3) ** 2"
+
+    solver_code = model.field.to_solver_code()
+
+    assert solver_code == "pow(floor(x / 3), 2)"
