@@ -15,10 +15,11 @@ ExpressionType = Annotated[
         "Tuple",
         "List",
         "ListComp",
-        "Subscript"
+        "Subscript",
     ],
-    pd.Field(discriminator="type")
+    pd.Field(discriminator="type"),
 ]
+
 
 class Expression(pd.BaseModel):
     """
@@ -113,8 +114,8 @@ class Subscript(Expression):
 
     type: Literal["Subscript"] = "Subscript"
     value: "ExpressionType"
-    slice: "ExpressionType" # No proper slicing for now, only constants..
-    ctx: str # Only load context
+    slice: "ExpressionType"  # No proper slicing for now, only constants..
+    ctx: str  # Only load context
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         value = self.value.evaluate(context, strict)
@@ -214,9 +215,9 @@ class CallModel(Expression):
         for arg in self.args:
             names = names.union(arg.used_names())
 
-        for (keyword, arg) in self.kwargs.items():
+        for keyword, arg in self.kwargs.items():
             names = names.union(arg.used_names())
-            
+
         return names
 
 
@@ -241,13 +242,13 @@ class List(Expression):
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> list:
         return [elem.evaluate(context, strict) for elem in self.elements]
-    
+
     def used_names(self) -> set[str]:
         names = set()
 
         for arg in self.elements:
             names = names.union(arg.used_names())
-            
+
         return names
 
 

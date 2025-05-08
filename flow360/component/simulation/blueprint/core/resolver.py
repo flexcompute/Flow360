@@ -99,7 +99,8 @@ class CallableResolver:
                 or qualname in self._module_builtins
                 or any(
                     qualname.startswith(f"{group['prefix']}{name}")
-                    for group in self._callable_builtins.values() if group is not None
+                    for group in self._callable_builtins.values()
+                    if group is not None
                     for name in group["callables"]
                 )
             ):

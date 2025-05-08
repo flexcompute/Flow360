@@ -29,6 +29,7 @@ def _import_flow360(name: str) -> Any:
 
         return u
 
+
 def _import_numpy(name: str) -> Any:
     import numpy as np
 
@@ -37,11 +38,7 @@ def _import_numpy(name: str) -> Any:
 
 
 WHITELISTED_CALLABLES = {
-    "flow360.units": {
-        "prefix": "u.",
-        "callables": _unit_list(),
-        "evaluate": True
-    },
+    "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
     "flow360.solver_builtins": {
         "prefix": "fl.",
         "callables": [
@@ -89,7 +86,7 @@ WHITELISTED_CALLABLES = {
             "wallShearStress",
             "yPlus",
         ],
-        "evaluate": False
+        "evaluate": False,
     },
 }
 
@@ -109,7 +106,8 @@ EVALUATION_BLACKLIST = {
     **{
         f"{group['prefix']}{name}": None
         for group in WHITELISTED_CALLABLES.values()
-        for name in group["callables"] if not group["evaluate"]
+        for name in group["callables"]
+        if not group["evaluate"]
     },
 }
 
@@ -118,4 +116,6 @@ IMPORT_FUNCTIONS = {
     "np": _import_numpy,
 }
 
-resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST)
+resolver = CallableResolver(
+    ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST
+)

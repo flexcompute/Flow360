@@ -1,44 +1,41 @@
 from typing import List
 
+import numpy as np
+import pydantic as pd
 import pytest
 
-from flow360.component.simulation.user_code import (
-    ValueOrExpression,
-    UserVariable,
-    Expression,
-)
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-
-import pydantic as pd
-from flow360 import u
-import numpy as np
-
 import flow360 as fl
-
+from flow360 import u
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
-    LengthType,
-    AngleType,
-    MassType,
-    TimeType,
     AbsoluteTemperatureType,
-    VelocityType,
-    AreaType,
-    ForceType,
-    PressureType,
-    DensityType,
-    ViscosityType,
-    PowerType,
-    MomentType,
+    AngleType,
     AngularVelocityType,
+    AreaType,
+    DensityType,
+    ForceType,
+    FrequencyType,
     HeatFluxType,
     HeatSourceType,
-    SpecificHeatCapacityType,
     InverseAreaType,
-    MassFlowRateType,
-    SpecificEnergyType,
-    FrequencyType,
-    ThermalConductivityType,
     InverseLengthType,
+    LengthType,
+    MassFlowRateType,
+    MassType,
+    MomentType,
+    PowerType,
+    PressureType,
+    SpecificEnergyType,
+    SpecificHeatCapacityType,
+    ThermalConductivityType,
+    TimeType,
+    VelocityType,
+    ViscosityType,
+)
+from flow360.component.simulation.user_code import (
+    Expression,
+    UserVariable,
+    ValueOrExpression,
 )
 
 
@@ -119,7 +116,7 @@ def test_expression_operators():
     x = UserVariable(name="x", value=3)
     y = UserVariable(name="y", value=2)
 
-    model = TestModel(field = x + y)
+    model = TestModel(field=x + y)
 
     # Addition
     model.field = x + y
@@ -370,14 +367,14 @@ def test_serializer():
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=x * u.m / u.s + 4 * x ** 2 * u.m / u.s)
+    model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s)
 
-    assert str(model.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert str(model.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
     serialized = model.model_dump(exclude_none=True)
 
     assert serialized["field"]["type_name"] == "expression"
-    assert serialized["field"]["expression"] == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert serialized["field"]["expression"] == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
     model = TestModel(field=4 * u.m / u.s)
 
@@ -398,22 +395,18 @@ def test_deserializer():
         "type_name": "expression",
         "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
         "evaluated_value": 68.0,
-        "evaluated_units": "m/s"
+        "evaluated_units": "m/s",
     }
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert str(deserialized.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
-    model = {
-        "type_name": "number",
-        "value": 4.0,
-        "units": "m/s"
-    }
+    model = {"type_name": "number", "value": 4.0, "units": "m/s"}
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == '4.0 m/s'
+    assert str(deserialized.field) == "4.0 m/s"
 
 
 def test_numpy_interop_scalars():
@@ -428,23 +421,27 @@ def test_numpy_interop_scalars():
     # to building our own vector arithmetic. We just add the symbols to the whitelist
 
     # Using expression types inside numpy arrays works OK
-    a = np.array([x + 1, 0, x ** 2])
+    a = np.array([x + 1, 0, x**2])
     b = np.array([0, x / 2, 3])
 
-    c = np.linalg.norm(a + b) # This yields an expression containing the inlined dot product...
+    c = np.linalg.norm(a + b)  # This yields an expression containing the inlined dot product...
 
     # Sadly it seems like we cannot stop numpy from inlining some functions by
     # implementing a specific method (like with trigonometic functions for example)
 
-    d = np.sin(c) # This yields an expression
-    e = np.cos(c) # This also yields an expression
+    d = np.sin(c)  # This yields an expression
+    e = np.cos(c)  # This also yields an expression
 
-    model = ScalarModel(scalar=np.arctan(d + e + 1)) # So we can later compose those into expressions further...
+    model = ScalarModel(
+        scalar=np.arctan(d + e + 1)
+    )  # So we can later compose those into expressions further...
 
-    assert str(model.scalar) == ("np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
-                                 "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
-                                 "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
-                                 "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)")
+    assert str(model.scalar) == (
+        "np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
+        "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
+        "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
+        "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)"
+    )
 
     result = model.scalar.evaluate()
 
@@ -495,7 +492,7 @@ def test_numpy_interop_vectors():
     x = UserVariable(name="x", value=np.array([2, 3, 4]))
     y = UserVariable(name="y", value=2 * x)
 
-    model = VectorModel(vector=x ** 2 + y + np.array([1, 0, 0]))
+    model = VectorModel(vector=x**2 + y + np.array([1, 0, 0]))
 
     assert str(model.vector) == "x ** 2 + y + np.array([1,0,0])"
 

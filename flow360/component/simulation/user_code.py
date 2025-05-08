@@ -1,20 +1,19 @@
 from __future__ import annotations
-from typing import Generic, TypeVar, Optional, Iterable
 
-from pydantic import BeforeValidator
-from typing_extensions import Self
 import re
-
-from flow360.component.simulation.blueprint.flow360 import resolver
-from flow360.component.simulation.unit_system import *
-from flow360.component.simulation.blueprint.core import EvaluationContext
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.blueprint import expression_to_model, Evaluable
+from numbers import Number
+from typing import Generic, Iterable, Optional, TypeVar
 
 import pydantic as pd
-from numbers import Number
+from pydantic import BeforeValidator
+from typing_extensions import Self
 from unyt import Unit, unyt_array
 
+from flow360.component.simulation.blueprint import Evaluable, expression_to_model
+from flow360.component.simulation.blueprint.core import EvaluationContext
+from flow360.component.simulation.blueprint.flow360 import resolver
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.unit_system import *
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
@@ -77,7 +76,9 @@ class SerializedValueOrExpression(Flow360BaseModel):
     value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None, alias="evaluatedValue")
+    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(
+        None, alias="evaluatedValue"
+    )
     evaluated_units: Optional[str] = pd.Field(None, alias="evaluatedUnits")
 
 
@@ -85,7 +86,7 @@ class Variable(Flow360BaseModel):
     name: str = pd.Field()
     value: ValueOrExpression[Any] = pd.Field()
 
-    model_config = pd.ConfigDict(validate_assignment=True, extra='allow')
+    model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
 
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -222,11 +223,7 @@ class SolverVariable(Variable):
 
 
 def _handle_syntax_error(se: SyntaxError, source: str):
-    caret = (
-        " " * (se.offset - 1) + "^"
-        if se.text and se.offset
-        else None
-    )
+    caret = " " * (se.offset - 1) + "^" if se.text and se.offset else None
     msg = f"{se.msg} at line {se.lineno}, column {se.offset}"
     if caret:
         msg += f"\n{se.text.rstrip()}\n{caret}"
@@ -252,7 +249,6 @@ class Expression(Flow360BaseModel, Evaluable):
     expression: str = pd.Field("")
 
     model_config = pd.ConfigDict(validate_assignment=True)
-
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -282,7 +278,9 @@ class Expression(Flow360BaseModel, Evaluable):
 
         return {"expression": expression}
 
-    def evaluate(self, context: EvaluationContext = None, strict: bool = True) -> Union[float, list[float], unyt_array]:
+    def evaluate(
+        self, context: EvaluationContext = None, strict: bool = True
+    ) -> Union[float, list[float], unyt_array]:
         if context is None:
             context = _global_ctx
 
@@ -428,7 +426,7 @@ class ValueOrExpression(Expression, Generic[T]):
             try:
                 result = value.evaluate(strict=False)
             except Exception as err:
-                raise ValueError(f'expression evaluation failed: {err}') from err
+                raise ValueError(f"expression evaluation failed: {err}") from err
             pd.TypeAdapter(internal_type).validate_python(result)
             return value
 

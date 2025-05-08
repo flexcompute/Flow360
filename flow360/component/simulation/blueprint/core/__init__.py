@@ -11,8 +11,8 @@ from .expressions import (
     ListComp,
     Name,
     RangeCall,
+    Subscript,
     Tuple,
-    Subscript
 )
 from .function import Function
 from .statements import (

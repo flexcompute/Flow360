@@ -1,6 +1,6 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import pydantic as pd
 
@@ -74,10 +74,10 @@ def find_instances(obj, target_type):
         elif isinstance(current, (list, tuple, set, frozenset)):
             stack.extend(current)
 
-        elif hasattr(current, '__dict__'):
+        elif hasattr(current, "__dict__"):
             stack.extend(vars(current).values())
 
-        elif hasattr(current, '__iter__') and not isinstance(current, (str, bytes)):
+        elif hasattr(current, "__iter__") and not isinstance(current, (str, bytes)):
             try:
                 stack.extend(iter(current))
             except Exception:

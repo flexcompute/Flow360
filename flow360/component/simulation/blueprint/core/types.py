@@ -1,6 +1,8 @@
 import abc
-from .context import EvaluationContext
 from typing import Any
+
+from .context import EvaluationContext
+
 
 class Evaluable(metaclass=abc.ABCMeta):
     @abc.abstractmethod

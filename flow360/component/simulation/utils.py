@@ -61,7 +61,7 @@ def is_instance_of_type_in_union(obj, typ) -> bool:
 
 class UnknownFloat(float):
     def __new__(cls):
-        return super().__new__(cls, float('nan'))
+        return super().__new__(cls, float("nan"))
 
     def __repr__(self):
         return "UnknownFloat()"

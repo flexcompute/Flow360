@@ -2,15 +2,14 @@
 
 # pylint: disable=duplicate-code
 import json
-from enum import Enum
 import re
+from enum import Enum
 from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
-
-# Required for correct global scope initialization
-from flow360.component.simulation.solver_builtins import *
+from unyt import unyt_array, unyt_quantity
+from unyt.exceptions import UnitParseError
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
@@ -36,6 +35,9 @@ from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
 )
+
+# Required for correct global scope initialization
+from flow360.component.simulation.solver_builtins import *
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -53,8 +55,8 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
+from flow360.component.simulation.user_code import Expression, UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.simulation.user_code import UserVariable, Expression
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
@@ -62,8 +64,6 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
-from unyt import unyt_quantity, unyt_array
-from unyt.exceptions import UnitParseError
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -776,7 +776,7 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
 
 def validate_expression(variables: list[dict], expressions: list[str]):
     """
-    Validate an expression using the specified variable space
+    Validate all given expressions using the specified variable space (which is also validated)
     """
     errors = []
     values = []
@@ -793,10 +793,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
             if variable and isinstance(variable.value, Expression):
                 _ = variable.value.evaluate()
         except (ValueError, KeyError, NameError, UnitParseError) as e:
-            errors.append({
-                "loc": loc,
-                "msg": str(e)
-            })
+            errors.append({"loc": loc, "msg": str(e)})
 
     for i in range(len(expressions)):
         expression = expressions[i]
@@ -815,10 +812,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
                     value = tuple(result.value.tolist())
                 unit = str(result.units.expr)
         except (ValueError, KeyError, NameError, UnitParseError) as e:
-            errors.append({
-                "loc": loc,
-                "msg": str(e)
-            })
+            errors.append({"loc": loc, "msg": str(e)})
         values.append(value)
         units.append(unit)
 
