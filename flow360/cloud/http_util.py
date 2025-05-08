@@ -29,14 +29,23 @@ def api_key_auth(request):
     if not key:
         if Env.current.name == "dev":
             raise Flow360AuthorisationError(
-                "API key not found for env=dev, please set it by commandline: flow360 configure --dev."
+                "API key not found for env=dev, please set it by commandline: "
+                f"flow360 configure --dev --profile {UserConfig.profile} --apikey <apikey>"
             )
         if Env.current.name == "uat":
             raise Flow360AuthorisationError(
-                "API key not found for env=uat, please set it by commandline: flow360 configure --uat."
+                "API key not found for env=uat, please set it by commandline: "
+                f"flow360 configure --uat --profile {UserConfig.profile} --apikey <apikey>"
+            )
+        if Env.current.name == "prod":
+            raise Flow360AuthorisationError(
+                "API key not found for env=prod, please set it by commandline: "
+                f"flow360 configure  --profile {UserConfig.profile} --apikey <apikey>"
             )
         raise Flow360AuthorisationError(
-            f"API key not found for profile={UserConfig.profile}, please set it by commandline: flow360 configure."
+            f"API key not found for profile={UserConfig.profile} in env={Env.current.name}, "
+            "please set it by commandline: "
+            f"flow360 configure --profile {UserConfig.profile} --env {Env.current.name} --apikey <apikey>"
         )
     request.headers["simcloud-api-key"] = key
     request.headers["flow360-python-version"] = __version__
@@ -84,6 +93,16 @@ def http_interceptor(func):
             except ValueError:
                 # Handle the case where the response does not contain JSON data
                 return None
+
+        # Whitelist known 500 errors:
+        if resp.text.count("credit has expired") or resp.text.count("credit is not enough"):
+            # Note: Top import results in "json" redefinition error.
+            import json  # pylint: disable=import-outside-toplevel
+
+            error_dict = json.loads(resp.text)
+            raise Flow360WebError(
+                f"Error: {error_dict.get('error', error_dict)}",
+            )
 
         raise Flow360WebError(f"Web {args[1]}: Unexpected response error: {resp.status_code}")
 
