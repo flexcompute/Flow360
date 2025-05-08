@@ -831,6 +831,38 @@ class Tabulary(Tabular):
         super().__init__(*args, start_arguments=width_argument, **kwargs)
 
 
+class Grouper(Flow360BaseModel):
+    '''
+    Class for objects responsible for grouping data into series in Chart2D objects.
+
+    Parameters
+    ----------
+    ....
+    '''
+    group_by: Union[str, List[str]]
+    buckets: Optional[Union[dict[str: List], List[dict[str: List]]]] = None
+
+    @pd.model_validator(mode="after")
+    def _handle_singular_inputs(self):
+        if not isinstance(self.group_by, List):
+            self.group_by = [self.group_by]
+        if not isinstance(self.buckets, List):
+            self.buckets = [self.buckets]
+
+    def initialize_arrays(self, cases, y_variables):
+        x_data = []
+        y_data = []
+        return x_data, y_data
+
+    def arrange_data(self, case, x_data, y_data, x_data_point, y_data_point, y_variable_index):
+        # puts the data points into the right series
+        return x_data, y_data
+
+    def arrange_legend(self, cases, y_variables):
+        legend = []
+        return legend
+
+
 def generate_colorbar_from_image(
     image_filename=os.path.join(here, "img", "colorbar_rainbow_banded_30.png"),
     limits: Tuple[float, float] = (0, 1),

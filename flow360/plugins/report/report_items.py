@@ -51,6 +51,7 @@ from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
     DataItem,
     Delta,
+    Grouper,
     OperationTypes,
     Tabulary,
     _requirements_mapping,
@@ -1395,6 +1396,7 @@ class Chart2D(BaseChart2D):
 
     x: Union[str, Delta]
     y: Union[str, Delta, DataItem, List[str], List[DataItem]]
+    group_by: Union[str, Grouper] = None
     include: Optional[
         Annotated[
             List[str],
@@ -1488,9 +1490,11 @@ class Chart2D(BaseChart2D):
         else:
             y_label = "value"
             y_variables = self.y.copy()
+        
 
         x_data = []
         y_data = []
+        
 
         for case in cases:
             filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
