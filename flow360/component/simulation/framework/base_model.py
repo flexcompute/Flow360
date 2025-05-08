@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import copy
-import re
 import hashlib
 import json
+import re
 from itertools import chain
 from typing import Any, List, Literal, Set, get_origin
 
@@ -33,7 +33,6 @@ DISCRIMINATOR_NAMES = [
 
 # matches every virtual path part that Pydantic adds for function validators
 _FUNCTION_SEGMENT = re.compile(r"^function-")
-
 
 
 def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup):
@@ -342,7 +341,8 @@ class Flow360BaseModel(pd.BaseModel):
             for error in raw_errors:
 
                 new_loc = tuple(
-                    seg for seg in error["loc"]
+                    seg
+                    for seg in error["loc"]
                     if not (isinstance(seg, str) and _FUNCTION_SEGMENT.match(seg))
                 )
 
@@ -363,12 +363,9 @@ class Flow360BaseModel(pd.BaseModel):
                     )
                 )
 
-
             raise pd.ValidationError.from_exception_data(
                 title=cls.__class__.__name__, line_errors=cleaned_errors
             ) from None
-
-
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference

@@ -55,23 +55,11 @@ WHITELISTED_CALLABLES = {
             "ModeSpec",
             "inf",
         ],
-        "evaluate": True
+        "evaluate": True,
     },
-    "tidy3d.plugins": {
-        "prefix": "",
-        "callables": ["ModeSolver"],
-        "evaluate": True
-    },
-    "tidy3d.constants": {
-        "prefix": "",
-        "callables": ["C_0"],
-        "evaluate": True
-    },
-    "utilities": {
-        "prefix": "",
-        "callables": ["print"],
-        "evaluate": True
-    },
+    "tidy3d.plugins": {"prefix": "", "callables": ["ModeSolver"], "evaluate": True},
+    "tidy3d.constants": {"prefix": "", "callables": ["C_0"], "evaluate": True},
+    "utilities": {"prefix": "", "callables": ["print"], "evaluate": True},
 }
 
 # Define allowed modules
@@ -94,7 +82,8 @@ EVALUATION_BLACKLIST = {
     **{
         f"{group['prefix']}{name}": None
         for group in WHITELISTED_CALLABLES.values()
-        for name in group["callables"] if not group["evaluate"]
+        for name in group["callables"]
+        if not group["evaluate"]
     },
 }
 
@@ -104,4 +93,6 @@ IMPORT_FUNCTIONS = {
     ("print",): _import_utilities,
 }
 
-resolver = CallableResolver(ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST)
+resolver = CallableResolver(
+    ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST
+)

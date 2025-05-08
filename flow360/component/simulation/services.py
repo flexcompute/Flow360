@@ -7,8 +7,6 @@ from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
-# Required for correct global scope initialization
-
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -21,6 +19,7 @@ from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
     BETDisk,
 )
+
 # pylint: disable=unused-import
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -59,6 +58,11 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
+
+# Required for correct global scope initialization
+
+
+
 
 unit_system_map = {
     "SI": SI_unit_system,
