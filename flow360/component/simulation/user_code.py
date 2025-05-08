@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import re
-from numbers import Number
 from typing import Generic, Iterable, Optional, TypeVar
 
-import pydantic as pd
 from pydantic import BeforeValidator
 from typing_extensions import Self
 from unyt import Unit, unyt_array
@@ -214,6 +212,28 @@ class UserVariable(Variable):
         _user_variables.add(value.name)
         return value
 
+    @pd.model_validator(mode="after")
+    @classmethod
+    def check_dependencies(cls, value):
+        visited = set()
+        stack = [(value.name, [value.name])]
+        while stack:
+            (current_name, current_path) = stack.pop()
+            current_value = _global_ctx.get(current_name)
+            if isinstance(current_value, Expression):
+                used_names = current_value.user_variable_names()
+                if [name for name in used_names if name in current_path]:
+                    path_string = " -> ".join(current_path + [current_path[0]])
+                    details = InitErrorDetails(
+                        type="value_error",
+                        ctx={"error": f"Cyclic dependency between variables {path_string}"},
+                    )
+                    raise pd.ValidationError.from_exception_data("Variable value error", [details])
+                stack.extend(
+                    [(name, current_path + [name]) for name in used_names if name not in visited]
+                )
+        return value
+
 
 class SolverVariable(Variable):
     solver_name: Optional[str] = pd.Field(None)
@@ -273,7 +293,7 @@ class Expression(Flow360BaseModel, Evaluable):
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
             )
-            raise pd.ValidationError.from_exception_data("expression type error", [details])
+            raise pd.ValidationError.from_exception_data("Expression type error", [details])
         try:
             expr_to_model(expression, _global_ctx)
         except SyntaxError as s_err:
@@ -286,7 +306,7 @@ class Expression(Flow360BaseModel, Evaluable):
 
     def evaluate(
         self, context: EvaluationContext = None, strict: bool = True
-    ) -> Union[float, list[float], unyt_array]:
+    ) -> Union[float, np.ndarray, unyt_array]:
         if context is None:
             context = _global_ctx
         expr = expr_to_model(self.expression, context)
@@ -296,10 +316,16 @@ class Expression(Flow360BaseModel, Evaluable):
     def user_variables(self):
         expr = expr_to_model(self.expression, _global_ctx)
         names = expr.used_names()
-
         names = [name for name in names if name in _user_variables]
 
         return [UserVariable(name=name, value=_global_ctx.get(name)) for name in names]
+
+    def user_variable_names(self):
+        expr = expr_to_model(self.expression, _global_ctx)
+        names = expr.used_names()
+        names = [name for name in names if name in _user_variables]
+
+        return names
 
     def to_solver_code(self):
         expr = expr_to_model(self.expression, _global_ctx)

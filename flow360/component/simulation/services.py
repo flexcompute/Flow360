@@ -7,6 +7,7 @@ from enum import Enum
 from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
+import numpy as np
 import pydantic as pd
 from unyt import unyt_array, unyt_quantity
 from unyt.exceptions import UnitParseError
@@ -787,8 +788,6 @@ def validate_expression(variables: list[dict], expressions: list[str]):
     values = []
     units = []
 
-    loc = ""
-
     # Populate variable scope
     for i in range(len(variables)):
         variable = variables[i]
@@ -796,7 +795,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
             if variable and isinstance(variable.value, Expression):
-                _ = variable.value.evaluate()
+                _ = variable.value.evaluate(strict=False)
         except (ValueError, KeyError, NameError, UnitParseError) as e:
             errors.append({"loc": loc, "msg": str(e)})
 
@@ -807,8 +806,10 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         unit = None
         try:
             expression_object = Expression(expression=expression)
-            result = expression_object.evaluate()
-            if isinstance(result, Number):
+            result = expression_object.evaluate(strict=False)
+            if np.isnan(result):
+                pass
+            elif isinstance(result, Number):
                 value = result
             elif isinstance(result, unyt_array):
                 if result.size == 1:
@@ -816,6 +817,11 @@ def validate_expression(variables: list[dict], expressions: list[str]):
                 else:
                     value = tuple(result.value.tolist())
                 unit = str(result.units.expr)
+            elif isinstance(result, np.ndarray):
+                if result.size == 1:
+                    value = float(result[0])
+                else:
+                    value = tuple(result.tolist())
         except (ValueError, KeyError, NameError, UnitParseError) as e:
             errors.append({"loc": loc, "msg": str(e)})
         values.append(value)
