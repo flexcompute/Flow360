@@ -4,6 +4,11 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
+<<<<<<< HEAD
+=======
+from flow360.component.simulation import services
+from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
+>>>>>>> ca84b079 (Add unit test for the default params used in local test (#981))
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     VolumeMeshEntityInfo,
@@ -418,3 +423,96 @@ def test_persistent_entity_info_update_volume_mesh():
 
     assert volume_mesh_info.zones[0].axes == ((1, 0, 0), (0, 0, 1))
     assert all(volume_mesh_info.zones[0].center == [1.2, 2.3, 3.4] * u.cm)
+<<<<<<< HEAD
+=======
+
+
+def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    assert geometry_entity_info._get_processed_file_list() == (
+        ["airplane_simple_obtained_from_csm_by_esp.step.egads"],
+        ["airplane_translate_in_z_-5.stl", "farfield_only_sphere_volume_mesh.lb8.ugrid"],
+    )
+
+    assert sorted(
+        geometry_entity_info._get_id_to_file_map(entity_type_name="body").items()
+    ) == sorted(
+        {
+            "body00001": "airplane_simple_obtained_from_csm_by_esp.step.egads",
+            "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
+            "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+        }.items()
+    )
+
+
+def test_transformation_matrix():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=geometry_entity_info,
+            ),
+        )
+    nondim_params = params._preprocess(mesh_unit=2 * u.m)
+    transformation_matrix = (
+        nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+            0
+        ].transformation.get_transformation_matrix()
+    )
+
+    assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
+    assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
+    assert np.isclose(
+        transformation_matrix @ np.array([8, 4.5, 4, 2]),
+        np.array([16.80178373, 106.60356745, 7.66369379]),
+    ).all()
+
+    # Test compute_transformation_matrices
+    with model_attribute_unlock(
+        nondim_params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
+    ):
+        nondim_params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
+
+    nondim_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    assert nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+        0
+    ].transformation.private_attribute_matrix == [
+        0.07142857142857151,
+        -1.3178531657602606,
+        2.2464245943316894,
+        6.587498011451558,
+        0.9446408685944161,
+        0.5714285714285716,
+        0.48393055997701245,
+        47.269644845691296,
+        -0.3202367695391345,
+        1.3916653409677058,
+        1.9285714285714284,
+        -1.8755959009447176,
+    ]
+
+
+def test_default_params_for_local_test():
+    # Test to ensure the default params for local test is validated
+    with SI_unit_system:
+        param = SimulationParams()
+
+    param = services._store_project_length_unit(1 * u.m, param)
+    param_as_dict = param.model_dump(
+        exclude_none=True,
+        exclude={
+            "operating_condition": {"velocity_magnitude": True},
+            "private_attribute_asset_cache": {"registry": True},
+        },
+    )
+
+    with SI_unit_system:
+        SimulationParams(**param_as_dict)
+>>>>>>> ca84b079 (Add unit test for the default params used in local test (#981))
