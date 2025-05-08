@@ -6,7 +6,6 @@ on:
     branches: [ develop, release-candidate/* ]
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
-    branches: [ develop, release-candidate/* ]
   workflow_call:
 
 jobs:
