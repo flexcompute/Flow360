@@ -8,6 +8,7 @@ import pydantic as pd
 from pydantic import BeforeValidator
 from typing_extensions import Self
 from unyt import Unit, unyt_array
+
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.codegen import expr_to_code
 from flow360.component.simulation.blueprint.core import EvaluationContext
@@ -283,8 +284,9 @@ class Expression(Flow360BaseModel, Evaluable):
 
         return {"expression": expression}
 
-
-    def evaluate(self, context: EvaluationContext = None, strict: bool = True) -> Union[float, list[float], unyt_array]:
+    def evaluate(
+        self, context: EvaluationContext = None, strict: bool = True
+    ) -> Union[float, list[float], unyt_array]:
         if context is None:
             context = _global_ctx
         expr = expr_to_model(self.expression, context)
@@ -461,7 +463,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
-                serialized = SerializedValueOrExpression(typeName="expression")
+                serialized = SerializedValueOrExpression(type_name="expression")
 
                 serialized.expression = value.expression
 
@@ -478,7 +480,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
                     serialized.evaluated_units = str(evaluated.units.expr)
             else:
-                serialized = SerializedValueOrExpression(typeName="number")
+                serialized = SerializedValueOrExpression(type_name="number")
                 if isinstance(value, Number):
                     serialized.value = value
                 elif isinstance(value, unyt_array):

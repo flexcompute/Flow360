@@ -8,7 +8,6 @@ from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
-
 from unyt import unyt_array, unyt_quantity
 from unyt.exceptions import UnitParseError
 
