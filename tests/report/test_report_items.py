@@ -10,10 +10,6 @@ from pylatex import Document
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case, u
-from flow360.component.case import CaseMeta
-from flow360.component.resource_base import local_metadata_builder
-from flow360.component.utils import LocalResourceCache
-from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_doc import ReportDoc
@@ -36,11 +32,10 @@ from flow360.plugins.report.utils import (
     Delta,
     Expression,
     GetAttribute,
-    Variable,
     Grouper
 )
 
-from .report_testing_fixtures import *
+from tests.report.report_testing_fixtures import *
 
 @pytest.mark.parametrize(
     "value,expected",
@@ -1443,8 +1438,8 @@ def test_grouper_buckets_lambdas(cases):
 def test_chart2d_group_by_str(cases):
     chart = Chart2D(
         x="params/operating_condition/beta",
-        y=[DataItem(data="total_forces/CL", operations=[Average(0.1)]), 
-            DataItem(data="total_forces/CD", operations=[Average(0.1)])],
+        y=[DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]), 
+            DataItem(data="total_forces/CD", operations=[Average(fraction=0.1)])],
         section_title="test",
         fig_name="test",
         group_by="params/models/Fluid/turbulence_model_solver"
@@ -1509,8 +1504,8 @@ class TestWithMultipleCases:
         
         chart = Chart2D(
             x="params/operating_condition/beta",
-            y=[DataItem(data="total_forces/CL", operations=[Average(0.1)]), 
-               DataItem(data="total_forces/CD", operations=[Average(0.1)])],
+            y=[DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]), 
+               DataItem(data="total_forces/CD", operations=[Average(fraction=0.1)])],
             section_title="test",
             fig_name="test",
             group_by=grouper

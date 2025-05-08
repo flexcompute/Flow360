@@ -1396,7 +1396,7 @@ class Chart2D(BaseChart2D):
 
     x: Union[str, Delta]
     y: Union[str, Delta, DataItem, List[str], List[DataItem]]
-    group_by: Union[str, Grouper] = None
+    group_by: Optional[Union[str, Grouper]] = None
     include: Optional[
         Annotated[
             List[str],

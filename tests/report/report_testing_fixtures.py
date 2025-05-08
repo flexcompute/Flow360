@@ -187,7 +187,7 @@ def two_var_two_cases_plot_model(here, cases):
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture
 def cases_beta_sweep(cases, here):
     betas = [0, 2, 4, 6]
     turbulence_models = ["SpalartAllmaras", "kOmegaSST"]
@@ -208,10 +208,11 @@ def cases_beta_sweep(cases, here):
     for beta in betas:
         for turbulence_model in turbulence_models:
             for tag in tags:
-                new_case_id = f"case-{"SA1" if turbulence_model=="SpalartAllmaras" else "SST"}11111-beta{beta}-111-tag{tag}-111111111111"
+                new_case_id = f"case-{'SA1' if turbulence_model=='SpalartAllmaras' else 'SST'}11111-beta{beta}-111-tag{tag}-111111111111"
                 new_case_ids.append(new_case_id)
                 case_local_storage = os.path.join(here, "..", "data", new_case_id)
                 os.mkdir(case_local_storage)
+                os.mkdir(os.path.join(case_local_storage, "results"))
                 shutil.copyfile(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "results", "nonlinear_residual_v2.csv"), 
                                 os.path.join(case_local_storage, "results", "nonlinear_residual_v2.csv"))
                 shutil.copyfile(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "simulation.json"), 
@@ -219,8 +220,8 @@ def cases_beta_sweep(cases, here):
                 surface_forces = pd.read_csv(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "results", "surface_forces_v2.csv"), skipinitialspace=True)
                 total_forces = pd.read_csv(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "results", "total_forces_v2.csv"), skipinitialspace=True)
 
-                surface_forces_to_change = {*surface_forces} - {"physical_step", "pseudo_step"}
-                total_forces_to_change = {*total_forces} - {"physical_step", "pseudo_step"}
+                surface_forces_to_change = list({*surface_forces} - {"physical_step", "pseudo_step"})
+                total_forces_to_change = list({*total_forces} - {"physical_step", "pseudo_step"})
 
                 surface_forces[surface_forces_to_change] = surface_forces[surface_forces_to_change] * (1+(beta/10)) * tag_multiplier[tag]
                 total_forces[total_forces_to_change] = total_forces[total_forces_to_change] * (1+(beta/10)) * tag_multiplier[tag]
@@ -240,10 +241,10 @@ def cases_beta_sweep(cases, here):
                 case = Case.from_local_storage(os.path.join(here, "..", "data", new_case_id), case_meta)
                 new_cases.append(case)
 
-        yield new_cases
+    yield new_cases
 
-        for case_id in new_case_ids:
-            shutil.rmtree(os.path.join(here, "..", "data", new_case_id))
+    for case_id in new_case_ids:
+        shutil.rmtree(os.path.join(here, "..", "data", case_id))
 
 @pytest.fixture
 def cases_beta_sweep_example_expected_values(cases_beta_sweep):
@@ -273,7 +274,7 @@ def expected_y_data(cases_beta_sweep_example_expected_values):
     for beta in betas:
         for j, turbulence_model in enumerate(turbulence_models):
             for tag in tags:
-                case_id = f"case-{"SA1" if turbulence_model=="SpalartAllmaras" else "SST"}11111-beta{beta}-111-tag{tag}-111111111111"
+                case_id = f"case-{'SA1' if turbulence_model=='SpalartAllmaras' else 'SST'}11111-beta{beta}-111-tag{tag}-111111111111"
                 if tag in ["a", "b"]:
                     k = 0
                 else:

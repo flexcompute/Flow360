@@ -840,13 +840,13 @@ class Grouper(Flow360BaseModel):
     ....
     '''
     group_by: Union[str, List[str]]
-    buckets: Optional[Union[dict[str: List], List[dict[str: List]]]] = None
+    buckets: Optional[Union[dict[str, List], List[dict[str, List]]]] = None
 
     @pd.model_validator(mode="after")
     def _handle_singular_inputs(self):
         if not isinstance(self.group_by, List):
             self.group_by = [self.group_by]
-        if not isinstance(self.buckets, List):
+        if (not isinstance(self.buckets, List) and (self.buckets is not None)):
             self.buckets = [self.buckets]
 
     def initialize_arrays(self, cases, y_variables):
