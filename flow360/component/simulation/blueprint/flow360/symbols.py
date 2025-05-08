@@ -47,12 +47,9 @@ def _import_numpy(name: str) -> Any:
         return np
 
 
+# TODO: Rename the variables to conform to the snake case convention
 WHITELISTED_CALLABLES = {
-    "flow360.units": {
-        "prefix": "u.",
-        "callables": _unit_list(),
-        "evaluate": True
-    },
+    "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
     "flow360.control": {
         "prefix": "control.",
         "callables": [
@@ -100,7 +97,7 @@ WHITELISTED_CALLABLES = {
             "wallShearStress",
             "yPlus",
         ],
-        "evaluate": False
+        "evaluate": False,
     },
     "flow360.solution": {
         "prefix": "solution.",

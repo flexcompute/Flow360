@@ -8,7 +8,6 @@ import pydantic as pd
 from pydantic import BeforeValidator
 from typing_extensions import Self
 from unyt import Unit, unyt_array
-
 from flow360.component.simulation.blueprint import Evaluable, expression_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.blueprint.flow360 import resolver

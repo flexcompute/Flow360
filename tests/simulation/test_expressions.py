@@ -4,8 +4,7 @@ import numpy as np
 import pydantic as pd
 import pytest
 
-import flow360 as fl
-from flow360 import u
+from flow360 import control, solution, u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -352,7 +351,7 @@ def test_solver_builtin():
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=x * u.m + fl.kOmega * u.cm)
+    model = TestModel(field=x * u.m + solution.kOmega * u.cm)
 
     assert str(model.field) == "x * u.m + (solution.kOmega * u.cm)"
 
