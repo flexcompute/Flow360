@@ -1,45 +1,41 @@
-from math import isnan
-from pprint import pprint
 from typing import List
 
+import numpy as np
+import pydantic as pd
 import pytest
 
-from flow360.component.simulation.user_code import (
-    ValueOrExpression,
-    UserVariable,
-    Expression,
-)
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-
-import pydantic as pd
-from flow360 import u
-
 import flow360 as fl
-
+from flow360 import u
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import (
-    LengthType,
-    AngleType,
-    MassType,
-    TimeType,
     AbsoluteTemperatureType,
-    VelocityType,
-    AreaType,
-    ForceType,
-    PressureType,
-    DensityType,
-    ViscosityType,
-    PowerType,
-    MomentType,
+    AngleType,
     AngularVelocityType,
+    AreaType,
+    DensityType,
+    ForceType,
+    FrequencyType,
     HeatFluxType,
     HeatSourceType,
-    SpecificHeatCapacityType,
     InverseAreaType,
-    MassFlowRateType,
-    SpecificEnergyType,
-    FrequencyType,
-    ThermalConductivityType,
     InverseLengthType,
+    LengthType,
+    MassFlowRateType,
+    MassType,
+    MomentType,
+    PowerType,
+    PressureType,
+    SpecificEnergyType,
+    SpecificHeatCapacityType,
+    ThermalConductivityType,
+    TimeType,
+    VelocityType,
+    ViscosityType,
+)
+from flow360.component.simulation.user_code import (
+    Expression,
+    UserVariable,
+    ValueOrExpression,
 )
 
 
@@ -55,8 +51,11 @@ def test_variable_init():
     # Dimensioned value
     b = UserVariable(name="b", value=1 * u.m)
 
+    # Expression (possibly with other variable)
+    c = UserVariable(name="c", value=b + 1 * u.m)
+
     # A dictionary (can contain extra values - important for frontend)
-    c = UserVariable.model_validate({"name": "c", "value": 1, "extra": "foo"})
+    d = UserVariable.model_validate({"name": "d", "value": 1, "extra": "foo"})
 
 
 def test_expression_init():
@@ -368,22 +367,18 @@ def test_serializer():
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=x * u.m / u.s + 4 * x ** 2 * u.m / u.s)
+    model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s)
 
-    assert str(model.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert str(model.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
     serialized = model.model_dump(exclude_none=True)
 
-    print(model.model_dump_json(indent=2, exclude_none=True))
-
     assert serialized["field"]["type_name"] == "expression"
-    assert serialized["field"]["expression"] == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert serialized["field"]["expression"] == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
     model = TestModel(field=4 * u.m / u.s)
 
     serialized = model.model_dump(exclude_none=True)
-
-    print(model.model_dump_json(indent=2, exclude_none=True))
 
     assert serialized["field"]["type_name"] == "number"
     assert serialized["field"]["value"] == 4
@@ -400,24 +395,129 @@ def test_deserializer():
         "type_name": "expression",
         "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
         "evaluated_value": 68.0,
-        "evaluated_units": "m/s"
+        "evaluated_units": "m/s",
     }
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == '(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)'
+    assert str(deserialized.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
 
-    model = {
-        "type_name": "number",
-        "value": 4.0,
-        "units": "m/s"
-    }
+    model = {"type_name": "number", "value": 4.0, "units": "m/s"}
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == '4.0 m/s'
+    assert str(deserialized.field) == "4.0 m/s"
 
 
+def test_numpy_interop_scalars():
+    # Disclaimer - doesn't fully work yet with dimensioned types...
+
+    class ScalarModel(Flow360BaseModel):
+        scalar: ValueOrExpression[float] = pd.Field()
+
+    x = UserVariable(name="x", value=1)
+
+    # Since numpy arrays already give us the behavior we want there is no point
+    # to building our own vector arithmetic. We just add the symbols to the whitelist
+
+    # Using expression types inside numpy arrays works OK
+    a = np.array([x + 1, 0, x**2])
+    b = np.array([0, x / 2, 3])
+
+    c = np.linalg.norm(a + b)  # This yields an expression containing the inlined dot product...
+
+    # Sadly it seems like we cannot stop numpy from inlining some functions by
+    # implementing a specific method (like with trigonometic functions for example)
+
+    d = np.sin(c)  # This yields an expression
+    e = np.cos(c)  # This also yields an expression
+
+    model = ScalarModel(
+        scalar=np.arctan(d + e + 1)
+    )  # So we can later compose those into expressions further...
+
+    assert str(model.scalar) == (
+        "np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
+        "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
+        "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
+        "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)"
+    )
+
+    result = model.scalar.evaluate()
+
+    assert result == -0.1861456975646416
+
+    # Notice that when we inline some operations (like cross/dot product or norm, for example)
+    # we make the underlying generated string of the expression ugly...
+    #
+    # Luckily this is transparent to the user. When the user is defining expressions in python he does
+    # not have to worry about the internal string representation or the CUDA-generated code
+    # (for CUDA code inlining might actually probably be our best bet to reduce function calls...)
+    #
+    # Conversely, when we are dealing with frontend strings we can deal with non-inlined numpy functions
+    # because they are whitelisted by the blueprint parser:
+
+    # Let's simulate a frontend use case by parsing raw string input:
+
+    # The user defines some variables for convenience
+
+    a = UserVariable(name="a", value="np.array([x + 1, 0, x ** 2])")
+    b = UserVariable(name="b", value="np.array([0, x / 2, 3])")
+
+    c = UserVariable(name="c", value="np.linalg.norm(a + b)")
+
+    d = UserVariable(name="d", value="np.sin(c)")
+    e = UserVariable(name="e", value="np.cos(c)")
+
+    # Then he inputs the actual expression somewhere within
+    # simulation.json using the helper variables defined before
+
+    model = ScalarModel(scalar="np.arctan(d + e + 1)")
+
+    assert str(model.scalar) == "np.arctan(d + e + 1)"
+
+    result = model.scalar.evaluate()
+
+    assert result == -0.1861456975646416
+
+
+def test_numpy_interop_vectors():
+    # Disclaimer - doesn't fully work yet with dimensioned types...
+
+    Vec3 = tuple[float, float, float]
+
+    class VectorModel(Flow360BaseModel):
+        vector: ValueOrExpression[Vec3] = pd.Field()
+
+    x = UserVariable(name="x", value=np.array([2, 3, 4]))
+    y = UserVariable(name="y", value=2 * x)
+
+    model = VectorModel(vector=x**2 + y + np.array([1, 0, 0]))
+
+    assert str(model.vector) == "x ** 2 + y + np.array([1,0,0])"
+
+    result = model.vector.evaluate()
+
+    assert np.array_equal(result, np.array([9, 15, 24]))
+
+
+def test_subscript_access():
+    class ScalarModel(Flow360BaseModel):
+        scalar: ValueOrExpression[float] = pd.Field()
+
+    x = UserVariable(name="x", value=np.array([2, 3, 4]))
+
+    model = ScalarModel(scalar=x[0] + x[1] + x[2] + 1)
+
+    assert str(model.scalar) == "x[0] + (x[1]) + (x[2]) + 1"
+
+    assert model.scalar.evaluate() == 10
+
+    model = ScalarModel(scalar="x[0] + x[1] + x[2] + 1")
+
+    assert str(model.scalar) == "x[0] + x[1] + x[2] + 1"
+
+    assert model.scalar.evaluate() == 10
 
 
 def test_error_message():
@@ -430,26 +530,25 @@ def test_error_message():
         model = TestModel(field="1 + nonexisting * 1")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "Name 'nonexisting' is not defined" in validation_errors[0]["msg"]
-        
+
     try:
         model = TestModel(field="1 + x * 1")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "does not match (length)/(time) dimension" in validation_errors[0]["msg"]
-
 
     try:
         model = TestModel(field="1 * 1 +")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "invalid syntax" in validation_errors[0]["msg"]
@@ -462,7 +561,7 @@ def test_error_message():
         model = TestModel(field="1 * 1 +* 2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "invalid syntax" in validation_errors[0]["msg"]
@@ -475,7 +574,7 @@ def test_error_message():
         model = TestModel(field="1 * 1 + (2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
-        
+
         assert len(validation_errors) >= 1
         assert validation_errors[0]["type"] == "value_error"
         assert "unexpected EOF" in validation_errors[0]["msg"]
@@ -483,4 +582,3 @@ def test_error_message():
         assert "line" in validation_errors[0]["ctx"]
         assert "column" in validation_errors[0]["ctx"]
         assert validation_errors[0]["ctx"]["column"] == 11
-

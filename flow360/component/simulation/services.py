@@ -2,13 +2,14 @@
 
 # pylint: disable=duplicate-code
 import json
+import re
 from enum import Enum
+from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
-
-# Required for correct global scope initialization
-from flow360.component.simulation.solver_builtins import *
+from unyt import unyt_array, unyt_quantity
+from unyt.exceptions import UnitParseError
 
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
@@ -34,6 +35,9 @@ from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
 )
+
+# Required for correct global scope initialization
+from flow360.component.simulation.solver_builtins import *
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -51,6 +55,7 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
+from flow360.component.simulation.user_code import Expression, UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -767,3 +772,48 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
+
+
+def validate_expression(variables: list[dict], expressions: list[str]):
+    """
+    Validate all given expressions using the specified variable space (which is also validated)
+    """
+    errors = []
+    values = []
+    units = []
+
+    loc = ""
+
+    # Populate variable scope
+    for i in range(len(variables)):
+        variable = variables[i]
+        loc = f"variables/{i}"
+        try:
+            variable = UserVariable(name=variable["name"], value=variable["value"])
+            if variable and isinstance(variable.value, Expression):
+                _ = variable.value.evaluate()
+        except (ValueError, KeyError, NameError, UnitParseError) as e:
+            errors.append({"loc": loc, "msg": str(e)})
+
+    for i in range(len(expressions)):
+        expression = expressions[i]
+        loc = f"expressions/{i}"
+        value = None
+        unit = None
+        try:
+            expression_object = Expression(expression=expression)
+            result = expression_object.evaluate()
+            if isinstance(result, Number):
+                value = result
+            elif isinstance(result, unyt_array):
+                if result.size == 1:
+                    value = float(result.value)
+                else:
+                    value = tuple(result.value.tolist())
+                unit = str(result.units.expr)
+        except (ValueError, KeyError, NameError, UnitParseError) as e:
+            errors.append({"loc": loc, "msg": str(e)})
+        values.append(value)
+        units.append(unit)
+
+    return errors, values, units

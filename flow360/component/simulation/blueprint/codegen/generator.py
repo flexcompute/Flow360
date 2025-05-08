@@ -11,14 +11,7 @@ from ..core.expressions import (
     Tuple,
 )
 from ..core.function import Function
-from ..core.statements import (
-    Assign,
-    AugAssign,
-    ForLoop,
-    IfElse,
-    Return,
-    TupleUnpack,
-)
+from ..core.statements import Assign, AugAssign, ForLoop, IfElse, Return, TupleUnpack
 from ..utils.operators import BINARY_OPERATORS
 
 

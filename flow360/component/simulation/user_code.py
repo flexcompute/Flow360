@@ -1,20 +1,19 @@
 from __future__ import annotations
-from typing import get_origin, Generic, TypeVar, Optional, Iterable
 
-from pydantic import BeforeValidator
-from typing_extensions import Self
 import re
-
-from flow360.component.simulation.blueprint.flow360 import resolver
-from flow360.component.simulation.unit_system import *
-from flow360.component.simulation.blueprint.core import EvaluationContext
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.blueprint import expression_to_model
+from numbers import Number
+from typing import Generic, Iterable, Optional, TypeVar
 
 import pydantic as pd
-from numbers import Number
-from unyt import Unit, unyt_quantity, unyt_array
+from pydantic import BeforeValidator
+from typing_extensions import Self
+from unyt import Unit, unyt_array
 
+from flow360.component.simulation.blueprint import Evaluable, expression_to_model
+from flow360.component.simulation.blueprint.core import EvaluationContext
+from flow360.component.simulation.blueprint.flow360 import resolver
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.unit_system import *
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
@@ -35,18 +34,18 @@ def _split_keep_delimiters(input: str, delimiters: list) -> list:
     return [part for part in result if part != ""]
 
 
-def _convert_argument(other):
+def _convert_argument(value):
     parenthesize = False
     unit_delimiters = ["+", "-", "*", "/", "(", ")"]
-    if isinstance(other, Expression):
-        arg = other.expression
+    if isinstance(value, Expression):
+        arg = value.expression
         parenthesize = True
-    elif isinstance(other, Variable):
-        arg = other.name
-    elif isinstance(other, Number):
-        arg = str(other)
-    elif isinstance(other, Unit):
-        unit = str(other)
+    elif isinstance(value, Variable):
+        arg = value.name
+    elif isinstance(value, Number):
+        arg = str(value)
+    elif isinstance(value, Unit):
+        unit = str(value)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
         arg = ""
         for token in tokens:
@@ -55,28 +54,20 @@ def _convert_argument(other):
                 arg += token
             else:
                 arg += token
-    elif isinstance(other, unyt_quantity):
-        unit = str(other.units)
+    elif isinstance(value, unyt_array):
+        unit = str(value.units)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(other.value)} * "
+        arg = f"{str(value.value)} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
                 arg += token
             else:
                 arg += token
-    elif isinstance(other, unyt_array):
-        unit = str(other.units)
-        tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(other.value)} * "
-        for token in tokens:
-            if token not in unit_delimiters and not _is_number_string(token):
-                token = f"u.{token}"
-                arg += token
-            else:
-                arg += token
+    elif isinstance(value, np.ndarray):
+        arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
     else:
-        raise ValueError(f"Incompatible argument of type {type(other)}")
+        raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
 
 
@@ -85,15 +76,17 @@ class SerializedValueOrExpression(Flow360BaseModel):
     value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None, alias="evaluatedValue")
+    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(
+        None, alias="evaluatedValue"
+    )
     evaluated_units: Optional[str] = pd.Field(None, alias="evaluatedUnits")
 
 
 class Variable(Flow360BaseModel):
     name: str = pd.Field()
-    value: Union[list[float], float, unyt_quantity, unyt_array] = pd.Field()
+    value: ValueOrExpression[Any] = pd.Field()
 
-    model_config = pd.ConfigDict(validate_assignment=True, extra='allow')
+    model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
 
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -106,6 +99,9 @@ class Variable(Flow360BaseModel):
         return Expression(expression=f"{self.name} - {str_arg}")
 
     def __mul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} * {str_arg}")
@@ -150,6 +146,9 @@ class Variable(Flow360BaseModel):
         return Expression(expression=f"{str_arg} - {self.name}")
 
     def __rmul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} * {self.name}")
@@ -174,11 +173,36 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} ** {self.name}")
 
+    def __getitem__(self, item):
+        (arg, _) = _convert_argument(item)
+        return Expression(expression=f"{self.name}[{arg}]")
+
     def __str__(self):
         return self.name
 
     def __repr__(self):
         return f"Variable({self.name} = {self.value})"
+
+    def sqrt(self):
+        return Expression(expression=f"np.sqrt({self.expression})")
+
+    def sin(self):
+        return Expression(expression=f"np.sin({self.expression})")
+
+    def cos(self):
+        return Expression(expression=f"np.cos({self.expression})")
+
+    def tan(self):
+        return Expression(expression=f"np.tan({self.expression})")
+
+    def arcsin(self):
+        return Expression(expression=f"np.arcsin({self.expression})")
+
+    def arccos(self):
+        return Expression(expression=f"np.arccos({self.expression})")
+
+    def arctan(self):
+        return Expression(expression=f"np.arctan({self.expression})")
 
 
 class UserVariable(Variable):
@@ -187,6 +211,7 @@ class UserVariable(Variable):
     def update_context(cls, value):
         _global_ctx.set(value.name, value.value)
         _user_variables.add(value.name)
+        return value
 
 
 class SolverVariable(Variable):
@@ -194,14 +219,11 @@ class SolverVariable(Variable):
     @classmethod
     def update_context(cls, value):
         _global_ctx.set(value.name, value.value)
+        return value
 
 
 def _handle_syntax_error(se: SyntaxError, source: str):
-    caret = (
-        " " * (se.offset - 1) + "^"
-        if se.text and se.offset
-        else None
-    )
+    caret = " " * (se.offset - 1) + "^" if se.text and se.offset else None
     msg = f"{se.msg} at line {se.lineno}, column {se.offset}"
     if caret:
         msg += f"\n{se.text.rstrip()}\n{caret}"
@@ -223,8 +245,7 @@ def _handle_syntax_error(se: SyntaxError, source: str):
     )
 
 
-
-class Expression(Flow360BaseModel):
+class Expression(Flow360BaseModel, Evaluable):
     expression: str = pd.Field("")
 
     model_config = pd.ConfigDict(validate_assignment=True)
@@ -237,28 +258,35 @@ class Expression(Flow360BaseModel):
         elif isinstance(value, dict) and "expression" in value.keys():
             expression = value["expression"]
         elif isinstance(value, Expression):
-            expression = value.expression
+            expression = str(value)
         elif isinstance(value, Variable):
             expression = str(value)
+        elif isinstance(value, np.ndarray) and not isinstance(value, unyt_array):
+            expression = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
             )
             raise pd.ValidationError.from_exception_data("expression type error", [details])
-
         try:
             _ = expression_to_model(expression, _global_ctx)
         except SyntaxError as s_err:
             raise _handle_syntax_error(s_err, expression)
         except ValueError as v_err:
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
-            raise pd.ValidationError.from_exception_data("expression value error", [details])
+            raise pd.ValidationError.from_exception_data("Expression value error", [details])
 
         return {"expression": expression}
 
-    def evaluate(self, strict=True) -> float:
-        expr = expression_to_model(self.expression, _global_ctx)
-        result = expr.evaluate(_global_ctx, strict)
+    def evaluate(
+        self, context: EvaluationContext = None, strict: bool = True
+    ) -> Union[float, list[float], unyt_array]:
+        if context is None:
+            context = _global_ctx
+
+        expr = expression_to_model(self.expression, context)
+        result = expr.evaluate(context, strict)
+
         return result
 
     def user_variables(self):
@@ -283,6 +311,9 @@ class Expression(Flow360BaseModel):
         return Expression(expression=f"{self.expression} - {str_arg}")
 
     def __mul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"({self.expression}) * {str_arg}")
@@ -327,6 +358,9 @@ class Expression(Flow360BaseModel):
         return Expression(expression=f"{str_arg} - {self.expression}")
 
     def __rmul__(self, other):
+        if isinstance(other, Number) and other == 0:
+            return Expression(expression="0")
+
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} * ({self.expression})")
@@ -351,11 +385,36 @@ class Expression(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} ** ({self.expression})")
 
+    def __getitem__(self, item):
+        (arg, _) = _convert_argument(item)
+        return Expression(expression=f"({self.expression})[{arg}]")
+
     def __str__(self):
         return self.expression
 
     def __repr__(self):
         return f"Expression({self.expression})"
+
+    def sqrt(self):
+        return Expression(expression=f"np.sqrt({self.expression})")
+
+    def sin(self):
+        return Expression(expression=f"np.sin({self.expression})")
+
+    def cos(self):
+        return Expression(expression=f"np.cos({self.expression})")
+
+    def tan(self):
+        return Expression(expression=f"np.tan({self.expression})")
+
+    def arcsin(self):
+        return Expression(expression=f"np.arcsin({self.expression})")
+
+    def arccos(self):
+        return Expression(expression=f"np.arccos({self.expression})")
+
+    def arctan(self):
+        return Expression(expression=f"np.arctan({self.expression})")
 
 
 T = TypeVar("T")
@@ -367,28 +426,30 @@ class ValueOrExpression(Expression, Generic[T]):
             try:
                 result = value.evaluate(strict=False)
             except Exception as err:
-                raise ValueError(f'expression evaluation failed: {err}') from err
-
-            pd.TypeAdapter(internal_type).validate_python(result, strict=True)
-
+                raise ValueError(f"expression evaluation failed: {err}") from err
+            pd.TypeAdapter(internal_type).validate_python(result)
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
+            is_serialized = False
             try:
-                value = SerializedValueOrExpression.model_validate(value, strict=True)
+                value = SerializedValueOrExpression.model_validate(value)
+                is_serialized = True
+            except Exception as err:
+                pass
+
+            if is_serialized:
                 if value.type_name == "number":
                     if value.units is not None:
-                        return unyt_quantity(value.value, value.units)
+                        return unyt_array(value.value, value.units)
                     else:
                         return value.value
                 elif value.type_name == "expression":
                     return expr_type(expression=value.expression)
-            except Exception as err:
-                pass
-
-            return value
+            else:
+                return value
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
@@ -400,7 +461,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
-                elif isinstance(evaluated, unyt_quantity) or isinstance(evaluated, unyt_array):
+                elif isinstance(evaluated, unyt_array):
 
                     if evaluated.size == 1:
                         serialized.evaluated_value = float(evaluated.value)
@@ -412,7 +473,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 serialized = SerializedValueOrExpression(typeName="number")
                 if isinstance(value, Number):
                     serialized.value = value
-                elif isinstance(value, unyt_quantity) or isinstance(value, unyt_array):
+                elif isinstance(value, unyt_array):
 
                     if value.size == 1:
                         serialized.value = float(value.value)
@@ -422,8 +483,9 @@ class ValueOrExpression(Expression, Generic[T]):
                     serialized.units = str(value.units.expr)
 
             return serialized.model_dump(**info.__dict__)
-        
+
         union_type = Union[expr_type, internal_type]
+
         union_type = Annotated[union_type, PlainSerializer(_serializer)]
         union_type = Annotated[union_type, BeforeValidator(_deserialize)]
 

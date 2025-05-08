@@ -1,32 +1,14 @@
 import ast
 import inspect
 from collections.abc import Callable
-from typing import Any, Union, Optional
+from typing import Any, Optional, Union
 
 from ..core.context import EvaluationContext
-from ..core.expressions import (
-    BinOp,
-    UnaryOp,
-    CallModel,
-    Constant,
-    ListComp,
-    Name,
-    RangeCall,
-    Tuple,
-    Expression,
-)
-from ..core.expressions import (
-    List as ListExpr,
-)
+from ..core.expressions import BinOp, CallModel, Constant, Expression
+from ..core.expressions import List as ListExpr
+from ..core.expressions import ListComp, Name, RangeCall, Subscript, Tuple, UnaryOp
 from ..core.function import Function
-from ..core.statements import (
-    Assign,
-    AugAssign,
-    ForLoop,
-    IfElse,
-    Return,
-    TupleUnpack,
-)
+from ..core.statements import Assign, AugAssign, ForLoop, IfElse, Return, TupleUnpack
 
 
 def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
@@ -71,6 +53,13 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             op=type(node.ops[0]).__name__,
             left=parse_expr(node.left, ctx),
             right=parse_expr(node.comparators[0], ctx),
+        )
+
+    elif isinstance(node, ast.Subscript):
+        return Subscript(
+            value=parse_expr(node.value, ctx),
+            slice=parse_expr(node.slice, ctx),
+            ctx=type(node.ctx).__name__,
         )
 
     elif isinstance(node, ast.Call):

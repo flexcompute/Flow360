@@ -3,6 +3,7 @@ from typing import Annotated, Any, Literal, Union
 import pydantic as pd
 
 from .context import EvaluationContext
+from .types import Evaluable
 
 ExpressionType = Annotated[
     Union[
@@ -14,6 +15,7 @@ ExpressionType = Annotated[
         "Tuple",
         "List",
         "ListComp",
+        "Subscript",
     ],
     pd.Field(discriminator="type"),
 ]
@@ -31,14 +33,20 @@ class Expression(pd.BaseModel):
         raise NotImplementedError
 
 
-class Name(Expression):
+class Name(Expression, Evaluable):
     type: Literal["Name"] = "Name"
     id: str
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
         if strict and not context.can_evaluate(self.id):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
-        return context.get(self.id)
+        value = context.get(self.id)
+
+        # Recursively evaluate if the returned value is evaluable
+        if isinstance(value, Evaluable):
+            value = value.evaluate(context, strict)
+
+        return value
 
     def used_names(self) -> set[str]:
         return {self.id}
@@ -100,6 +108,28 @@ class BinOp(Expression):
         left = self.left.used_names()
         right = self.right.used_names()
         return left.union(right)
+
+
+class Subscript(Expression):
+
+    type: Literal["Subscript"] = "Subscript"
+    value: "ExpressionType"
+    slice: "ExpressionType"  # No proper slicing for now, only constants..
+    ctx: str  # Only load context
+
+    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
+        value = self.value.evaluate(context, strict)
+        item = self.slice.evaluate(context, strict)
+
+        if self.ctx == "Load":
+            return value[item]
+        elif self.ctx == "Store":
+            raise NotImplementedError("Subscripted writes are not supported yet")
+
+    def used_names(self) -> set[str]:
+        value = self.value.used_names()
+        item = self.slice.used_names()
+        return value.union(item)
 
 
 class RangeCall(Expression):
@@ -185,9 +215,9 @@ class CallModel(Expression):
         for arg in self.args:
             names = names.union(arg.used_names())
 
-        for (keyword, arg) in self.kwargs.items():
+        for keyword, arg in self.kwargs.items():
             names = names.union(arg.used_names())
-            
+
         return names
 
 
@@ -212,13 +242,13 @@ class List(Expression):
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> list:
         return [elem.evaluate(context, strict) for elem in self.elements]
-    
+
     def used_names(self) -> set[str]:
         names = set()
 
         for arg in self.elements:
             names = names.union(arg.used_names())
-            
+
         return names
 
 
