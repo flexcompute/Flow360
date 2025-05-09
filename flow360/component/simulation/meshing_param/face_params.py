@@ -19,6 +19,16 @@ from flow360.component.simulation.validation.validation_utils import (
 class SurfaceRefinement(Flow360BaseModel):
     """
     Setting for refining surface elements for given `Surface`.
+
+    Example
+    -------
+
+      >>> fl.SurfaceRefinement(
+      ...     faces=[geometry["face1"], geometry["face2"]],
+      ...     max_edge_length=0.001 * fl.u.m
+      ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field("Surface refinement")

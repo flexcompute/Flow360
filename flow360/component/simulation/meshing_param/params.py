@@ -193,7 +193,7 @@ class MeshingParams(Flow360BaseModel):
       ...     refinements=[
       ...         fl.SurfaceEdgeRefinement(
       ...             edges=[geometry["edge1"], geometry["edge2"]],
-      ...             method=fl.AngleBasedRefinement(8 * fl.u.deg)
+      ...             method=fl.AngleBasedRefinement(value=8 * fl.u.deg)
       ...         ),
       ...         fl.SurfaceRefinement(
       ...             faces=[geometry["face1"], geometry["face2"]],

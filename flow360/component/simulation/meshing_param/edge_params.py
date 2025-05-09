@@ -6,21 +6,18 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.single_attribute_base import (
-    SingleAttributeModel,
-)
 from flow360.component.simulation.primitives import Edge
 from flow360.component.simulation.unit_system import AngleType, LengthType
 
 
-class AngleBasedRefinement(SingleAttributeModel):
+class AngleBasedRefinement(Flow360BaseModel):
     """
     Surface edge refinement by specifying curvature resolution angle.
 
     Example
     -------
 
-      >>> fl.AngleBasedRefinement(8 * fl.u.deg)
+      >>> fl.AngleBasedRefinement(value=8 * fl.u.deg)
 
     ====
     """
@@ -29,14 +26,14 @@ class AngleBasedRefinement(SingleAttributeModel):
     value: AngleType = pd.Field()
 
 
-class HeightBasedRefinement(SingleAttributeModel):
+class HeightBasedRefinement(Flow360BaseModel):
     """
     Surface edge refinement by specifying first layer height of the anisotropic layers.
 
     Example
     -------
 
-      >>> fl.HeightBasedRefinement(1e-4 * fl.u.m)
+      >>> fl.HeightBasedRefinement(value=1e-4 * fl.u.m)
 
     ====
     """
@@ -46,14 +43,14 @@ class HeightBasedRefinement(SingleAttributeModel):
     value: LengthType.Positive = pd.Field()
 
 
-class AspectRatioBasedRefinement(SingleAttributeModel):
+class AspectRatioBasedRefinement(Flow360BaseModel):
     """
     Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells.
 
     Example
     -------
 
-      >>> fl.AspectRatioBasedRefinement(10)
+      >>> fl.AspectRatioBasedRefinement(value=10)
 
     ====
     """
@@ -86,7 +83,7 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
 
       >>> fl.SurfaceEdgeRefinement(
       ...     edges=[geometry["edge1"], geometry["edge2"]],
-      ...     method=fl.HeightBasedRefinement(1e-4)
+      ...     method=fl.HeightBasedRefinement(value=1e-4)
       ... )
 
     ====
