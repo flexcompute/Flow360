@@ -33,6 +33,7 @@ from flow360.plugins.report.utils import (
     Delta,
     Expression,
     GetAttribute,
+    Variable,
 )
 
 
@@ -979,9 +980,242 @@ def test_residuals(cases, residual_plot_model):
 
     plot_model = residuals.get_data([cases[0]], context)
 
+<<<<<<< HEAD
     assert plot_model.x_data == (np.array(residual_plot_model.x_data)[:, 1:]).tolist()
     assert plot_model.y_data == (np.array(residual_plot_model.y_data)[:, 1:]).tolist()
     assert plot_model.x_label == residual_plot_model.x_label
     assert plot_model.y_label == "residual values"
     assert plot_model.legend == residuals_sa
     # TODO: add case and test for residuals from SST
+=======
+    plot_model_SST = residuals.get_data([cases[2]], context)
+
+    plot_model_both = residuals.get_data([cases[0], cases[2]], context)
+
+    assert plot_model_SA.x_data == (np.array(residual_plot_model_SA.x_data)[:, 1:]).tolist()
+    assert plot_model_SA.y_data == (np.array(residual_plot_model_SA.y_data)[:, 1:]).tolist()
+    assert plot_model_SA.x_label == residual_plot_model_SA.x_label
+    assert plot_model_SA.y_label == "residual values"
+    assert plot_model_SA.legend == residuals_sa
+
+    assert plot_model_SST.x_data == (np.array(residual_plot_model_SST.x_data)[:, 1:]).tolist()
+    assert plot_model_SST.y_data == (np.array(residual_plot_model_SST.y_data)[:, 1:]).tolist()
+    assert plot_model_SST.x_label == residual_plot_model_SST.x_label
+    assert plot_model_SST.y_label == "residual values"
+    assert plot_model_SST.legend == residuals_sst
+
+    assert plot_model_both.x_data == (
+        (np.array(residual_plot_model_SA.x_data)[:, 1:]).tolist()
+        + (np.array(residual_plot_model_SST.x_data)[:, 1:]).tolist()
+    )
+    assert plot_model_both.y_data == (
+        (np.array(residual_plot_model_SA.y_data)[:, 1:]).tolist()
+        + (np.array(residual_plot_model_SST.y_data)[:, 1:]).tolist()
+    )
+    assert plot_model_both.x_label == residual_plot_model_SST.x_label
+    assert plot_model_both.y_label == "residual values"
+
+
+def test_multiple_point_variables_on_chart2d(cases, here):
+    loads = ["CL", "CD"]
+    context = ReportContext(cases=cases[:2])
+    chart = Chart2D(
+        x="params/operating_condition/beta",
+        y=[f"total_forces/averages/{load}" for load in loads],
+        section_title="Loads on beta",
+        fig_name="loads_beta",
+        show_grid=True,
+    )
+
+    plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    ys_to_plot = np.zeros((len(loads), 2))
+    xs_to_plot = np.zeros((len(loads), 2))
+
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+        to_avg = round(len(load_data) * 0.1)
+        xs_to_plot[:, idx0] = case.params.operating_condition.beta.value
+        for idx1, load in enumerate(loads):
+            ys_to_plot[idx1, idx0] = np.average(load_data[load].iloc[-to_avg:])
+
+    assert np.allclose(plot_model.x_data_as_np, xs_to_plot)
+    assert np.allclose(plot_model.y_data_as_np, ys_to_plot)
+    assert plot_model.x_label == "beta [degree]"
+    assert plot_model.y_label == "value"
+    assert plot_model.legend == loads
+
+
+def test_dataitem_point_variables_on_chart2d(cases, here):
+    loads_surf = ["totalCFy", "totalCFx"]
+    loads = ["CFy", "CFx"]
+
+    dataitems = [
+        DataItem(data=f"surface_forces/{load}", operations=[Average(fraction=0.2)])
+        for load in loads_surf
+    ]
+    context = ReportContext(cases=cases[:2])
+    chart = Chart2D(
+        x="params/operating_condition/beta",
+        y=dataitems,
+        section_title="Loads on beta",
+        fig_name="loads_beta",
+        show_grid=True,
+    )
+
+    plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    ys_to_plot = np.empty((len(loads), 2))
+    xs_to_plot = np.empty((len(loads), 2))
+
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+        to_avg = round(len(load_data) * 0.2)
+        xs_to_plot[:, idx0] = case.params.operating_condition.beta.value
+        for idx1, load in enumerate(loads):
+            ys_to_plot[idx1, idx0] = np.average(load_data[load].iloc[-to_avg:])
+
+    assert np.allclose(plot_model.x_data_as_np, xs_to_plot)
+    assert np.allclose(plot_model.y_data_as_np, ys_to_plot)
+    assert plot_model.x_label == "beta [degree]"
+    assert plot_model.y_label == "value"
+    assert plot_model.legend == loads_surf
+
+
+def test_dataitem_result_csv_compatibility(cases, here):
+    loads = ["CFy", "CFx"]
+
+    dataitems = [
+        DataItem(data=f"total_forces/{load}", operations=[Average(fraction=0.2)]) for load in loads
+    ]
+    context = ReportContext(cases=cases[:2])
+    chart = Chart2D(
+        x="params/operating_condition/beta",
+        y=dataitems,
+        section_title="Loads on beta",
+        fig_name="loads_beta",
+        show_grid=True,
+    )
+
+    plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    ys_to_plot = np.empty((len(loads), 2))
+    xs_to_plot = np.empty((len(loads), 2))
+
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.id, "results", "total_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+        to_avg = round(len(load_data) * 0.2)
+        xs_to_plot[:, idx0] = case.params.operating_condition.beta.value
+        for idx1, load in enumerate(loads):
+            ys_to_plot[idx1, idx0] = np.average(load_data[load].iloc[-to_avg:])
+
+    assert np.allclose(plot_model.x_data_as_np, xs_to_plot)
+    assert np.allclose(plot_model.y_data_as_np, ys_to_plot)
+    assert plot_model.x_label == "beta [degree]"
+    assert plot_model.y_label == "value"
+    assert plot_model.legend == loads
+
+
+@pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
+def test_transient_forces(here, cases_transient):
+    loads = ["CFx", "CFy"]
+    case_id = "case-444444444-444444-4444444444-44444444"
+
+    context = ReportContext(cases=[cases_transient[0]])
+
+    # expected data
+    data = pd.read_csv(
+        os.path.join(here, "..", "data", case_id, "results", "total_forces_v2.csv"),
+        skipinitialspace=True,
+    )
+
+    data["cumulative_pseudo_step"] = get_cumulative_pseudo_time_step(data["pseudo_step"])
+
+    data["time"] = data["physical_step"] * 0.1
+
+    loads_by_physical_step = [
+        get_last_time_step_values(data["pseudo_step"], data[load]) for load in loads
+    ]
+
+    chart_forces_pseudo = Chart2D(
+        x="total_forces/pseudo_step",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads pseudo",
+        fig_name="loads_pseudo",
+    )
+
+    chart_forces_physical = Chart2D(
+        x="total_forces/physical_step",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads physical",
+        fig_name="loads_physical",
+    )
+
+    chart_forces_time = Chart2D(
+        x="total_forces/time",
+        y=[f"total_forces/{load}" for load in loads],
+        section_title="Loads time",
+        fig_name="loads_time",
+    )
+
+    plot_model_pseudo = chart_forces_pseudo.get_data([cases_transient[0]], context)
+    plot_model_physical = chart_forces_physical.get_data([cases_transient[0]], context)
+    plot_model_time = chart_forces_time.get_data([cases_transient[0]], context)
+
+    assert plot_model_pseudo.x_data == [data["cumulative_pseudo_step"].to_list()] * len(loads)
+    assert plot_model_pseudo.y_data == [data[load].to_list() for load in loads]
+
+    assert plot_model_physical.x_data == [
+        get_last_time_step_values(data["pseudo_step"], data["physical_step"])
+    ] * len(loads)
+    assert plot_model_physical.y_data == loads_by_physical_step
+
+    assert plot_model_time.x_data == [
+        get_last_time_step_values(data["pseudo_step"], data["time"])
+    ] * len(loads)
+    assert plot_model_time.y_data == loads_by_physical_step
+
+
+def test_transient_residuals_pseudo(here, cases_transient):
+    residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
+    case_id = "case-444444444-444444-4444444444-44444444"
+
+    context = ReportContext(cases=[cases_transient[0]])
+
+    # expected data
+    data = pd.read_csv(
+        os.path.join(here, "..", "data", case_id, "results", "nonlinear_residual_v2.csv"),
+        skipinitialspace=True,
+    )
+
+    cum_ts = get_cumulative_pseudo_time_step(data["pseudo_step"])
+    data["cumulative_pseudo_step"] = cum_ts
+
+    residuals = NonlinearResiduals()
+
+    plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
+
+    assert plot_model_residuals.x_data == [(data["cumulative_pseudo_step"][1:]).to_list()] * len(
+        residuals_sa
+    )
+    assert plot_model_residuals.y_data == [(data[res][1:]).to_list() for res in residuals_sa]
+    assert plot_model_residuals.secondary_x_data is None
+
+    residuals = NonlinearResiduals(xlim=ManualLimit(lower=200, upper=380))
+
+    plot_model_residuals = residuals.get_data(cases=[cases_transient[0]], context=context)
+
+    assert np.allclose(
+        plot_model_residuals.secondary_x_data_as_np,
+        np.array([data["physical_step"][1:].to_numpy()] * len(residuals_sa)),
+    )
+>>>>>>> ca0309b4 (Allow for using DataItem as axis arguments in Chart2D (#972))

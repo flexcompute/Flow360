@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterable
 from typing import Annotated, List, Literal, Optional, Tuple, Union
 
 import matplotlib.image as mpimg
@@ -32,7 +33,6 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case, SimulationParams
-from flow360.component.results import case_results
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
     IsoSurfaceFieldNames,
@@ -976,7 +976,17 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             return True
         return False
 
-    def _is_multiline_data(self, x_data, y_data):
+    def _unpack_data_to_multiline(self, x_data: list, y_data: list):
+        if (
+            len(x_data) == 1
+            and isinstance(x_data[0], list)
+            and len(y_data) == 1
+            and isinstance(y_data[0], list)
+        ):
+            return x_data[0], y_data[0]
+        return x_data, y_data
+
+    def _is_multiline_data(self, x_data: list, y_data: list):
         return all(not isinstance(data, list) for data in x_data) and all(
             not isinstance(data, list) for data in y_data
         )
@@ -1154,6 +1164,8 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
 
+        x_data, y_data = self._unpack_data_to_multiline(x_data=x_data, y_data=y_data)
+
         legend = self._handle_legend(cases, x_data, y_data)
 
         style = self._handle_plot_style(x_data, y_data)
@@ -1277,12 +1289,38 @@ class Chart2D(BaseChart2D):
     """
 
     x: Union[str, Delta]
-    y: Union[str, Delta, List[str]]
-    include: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
+    y: Union[str, Delta, DataItem, List[str], List[DataItem]]
+    include: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = None
+    exclude: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = None
     background: Union[Literal["geometry"], None] = None
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
+
+    @pd.model_validator(mode="after")
+    def _handle_deprecated_include_exclude(self):
+        if (self.include is not None) or (self.exclude is not None):
+            self.x = DataItem(data=self.x, include=self.include, exclude=self.exclude)
+            if isinstance(self.y, List):
+                self.y = [
+                    DataItem(data=y, include=self.include, exclude=self.exclude) for y in self.y
+                ]
+            else:
+                self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
+        return self
 
     def get_requirements(self):
         """
@@ -1290,15 +1328,24 @@ class Chart2D(BaseChart2D):
         """
         return get_requirements_from_data_path([self.x, self.y])
 
+    # pylint: disable=no-member
     def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
+        for idx, (x_series, y_series) in enumerate(zip(x_data, y_data)):
+            united_array_x = unyt.unyt_array(x_series)
+            united_array_y = unyt.unyt_array(y_series)
+            if united_array_x.units != unyt.dimensionless:
+                x_data[idx] = united_array_x
+            if united_array_y.units != unyt.dimensionless:
+                y_data[idx] = united_array_y
+
         if self._check_dimensions_consistency(x_data) is True:
             x_unit = x_data[0].units
-            x_data = [data.value for data in x_data]
+            x_data = [data.value.tolist() for data in x_data]
             x_label += f" [{x_unit}]"
 
         if self._check_dimensions_consistency(y_data) is True:
             y_unit = y_data[0].units
-            y_data = [data.value for data in y_data]
+            y_data = [data.value.tolist() for data in y_data]
             if not isinstance(self.y, list):
                 y_label += f" [{y_unit}]"
 
@@ -1310,24 +1357,26 @@ class Chart2D(BaseChart2D):
             y_data = [float(data) for data in y_data]
             legend = None
         elif (len(self.y) > 1) and isinstance(self.y, list):
-            legend = []
-            for case in cases:
-                for y in self.y:
-                    if len(cases) > 1:
-                        legend.append(f"{case.name} - {path_variable_name(y)}")
-                    else:
-                        legend.append(f"{path_variable_name(y)}")
+            if len(cases) * len(self.y) != len(x_data):
+                legend = [path_variable_name(str(y)) for y in self.y]
+            else:
+                legend = []
+                for case in cases:
+                    for y in self.y:
+                        if len(cases) > 1:
+                            legend.append(f"{case.name} - {path_variable_name(str(y))}")
+                        else:
+                            legend.append(f"{path_variable_name(str(y))}")
         else:
             legend = [case.name for case in cases]
 
         return legend
 
-    # pylint: disable=too-many-locals
     def _load_data(self, cases):
         x_label = path_variable_name(self.x)
 
         if not isinstance(self.y, list):
-            y_label = path_variable_name(self.y)
+            y_label = path_variable_name(str(self.y))
             y_variables = [self.y]
         else:
             y_label = "value"
@@ -1335,29 +1384,40 @@ class Chart2D(BaseChart2D):
 
         x_data = []
         y_data = []
-        x_components = []
-        y_components = []
 
         for case in cases:
+<<<<<<< HEAD
             for y in y_variables:
                 x_data.append(data_from_path(case, self.x, cases))
                 y_data.append(data_from_path(case, y, cases))
                 x_components.append(path_variable_name(self.x))
                 y_components.append(path_variable_name(y))
+=======
+            filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
+                x_label in ["time", "physical_step"]
+            )
+            for var_idx, y in enumerate(y_variables):
+                x_data_point = data_from_path(
+                    case, self.x, cases, filter_physical_steps_only=filter_physical_steps
+                )
+                y_data_point = data_from_path(
+                    case, y, cases, filter_physical_steps_only=filter_physical_steps
+                )
+                if isinstance(x_data_point, Iterable) and isinstance(y_data_point, Iterable):
+                    x_data.append(x_data_point)
+                    y_data.append(y_data_point)
+                else:
+                    if len(x_data) <= var_idx:
+                        x_data.append([x_data_point])
+                        y_data.append([y_data_point])
+                    else:
+                        x_data[var_idx].append(x_data_point)
+                        y_data[var_idx].append(y_data_point)
+>>>>>>> ca0309b4 (Allow for using DataItem as axis arguments in Chart2D (#972))
 
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label
         )
-
-        for idx, (x_series, y_series, x_component, y_component) in enumerate(
-            zip(x_data, y_data, x_components, y_components)
-        ):
-            if isinstance(x_series, case_results.PerEntityResultCSVModel):
-                x_series.filter(include=self.include, exclude=self.exclude)
-                x_data[idx] = x_series.values[x_component]
-            if isinstance(y_series, case_results.PerEntityResultCSVModel):
-                y_series.filter(include=self.include, exclude=self.exclude)
-                y_data[idx] = y_series.values[y_component]
 
         return x_data, y_data, x_label, y_label
 
