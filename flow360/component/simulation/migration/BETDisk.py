@@ -71,7 +71,7 @@ def _parse_flow360_bet_disk_dict(
 
     cylinder_dict = {
         "name": (
-            f"bet_cylinder{bet_disk_index+1}"
+            f"bet_cylinder_{bet_disk_index+1}"
             if not bet_disk_name
             else f"bet_cylinder_{bet_disk_name}"
         ),
