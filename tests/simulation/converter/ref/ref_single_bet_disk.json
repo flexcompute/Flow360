@@ -439,7 +439,7 @@
                     "units": "cm",
                     "value": 0.0
                 },
-                "name": "bet_cylinder1",
+                "name": "bet_cylinder_MyBETDisk",
                 "outer_radius": {
                     "units": "cm",
                     "value": 150.0
@@ -458,7 +458,7 @@
         0.0
     ],
     "n_loading_nodes": 20,
-    "name": "BET disk",
+    "name": "MyBETDisk",
     "number_of_blades": 3,
     "omega": {
         "units": "rad/s",
@@ -496,7 +496,7 @@
                         "units": "cm",
                         "value": 0.0
                     },
-                    "name": "bet_cylinder1",
+                    "name": "bet_cylinder_MyBETDisk",
                     "outer_radius": {
                         "units": "cm",
                         "value": 150.0
@@ -514,7 +514,7 @@
         "initial_blade_direction": null,
         "length_unit": null,
         "n_loading_nodes": 20,
-        "name": "BET disk",
+        "name": "MyBETDisk",
         "number_of_blades": 3,
         "omega": {
             "value": 156.5352426717779,
