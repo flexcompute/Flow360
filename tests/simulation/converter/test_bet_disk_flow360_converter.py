@@ -80,6 +80,8 @@ def test_full_flow360_bet_convert():
 
     assert isinstance(list_of_disks, list)
     assert len(list_of_disks) == 2
+    assert list_of_disks[0].entities.stored_entities[0].name == "bet_cylinder1"
+    assert list_of_disks[1].entities.stored_entities[0].name == "bet_cylinder2"
     assert all([isinstance(item, BETDisk) for item in list_of_disks])
 
     with pytest.raises(
