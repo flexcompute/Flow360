@@ -114,7 +114,11 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
 
         self.post(
-            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            json={
+                "data": params.model_dump_json(exclude_none=True),
+                "type": "simulation",
+                "version": "",
+            },
             method="simulation/file",
         )
 
