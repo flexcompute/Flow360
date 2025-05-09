@@ -14,8 +14,8 @@ from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     register_entity_list,
 )
-from flow360.component.simulation.outputs.output_entities import PointArray2D
-from flow360.component.simulation.outputs.outputs import StreamlineOutput
+from flow360.component.simulation.outputs.output_entities import PointArray
+from flow360.component.simulation.outputs.outputs import ProbeOutput
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
@@ -837,25 +837,23 @@ def test_entity_registry_find_by_id():
 
 def test_same_name_and_type_entities_in_entity_registry():
     with u.SI_unit_system:
-        point_array_2d_1 = PointArray2D(
-            name="Parallelogram_streamline",
-            origin=(1.0, 0.0, 0.0) * u.m,
-            u_axis_vector=(0, 2.0, 2.0) * u.m,
-            v_axis_vector=(0, 1.0, 0) * u.m,
-            u_number_of_points=11,
-            v_number_of_points=20,
+        point_array_1 = PointArray(
+            name="point_array",
+            start=(0.0, 0.0, 0.0) * u.m,
+            end=(1.0, 0.0, 0.0) * u.m,
+            number_of_points=3,
         )
-        point_array_2d_2 = PointArray2D(
-            name="Parallelogram_streamline",
-            origin=(1.0, 0.0, 0.0) * u.m,
-            u_axis_vector=(0, 2.0, 2.0) * u.m,
-            v_axis_vector=(0, 1.0, 0) * u.m,
-            u_number_of_points=3,
-            v_number_of_points=4,
+        point_array_2 = PointArray(
+            name="point_array",
+            start=(0.0, 0.0, 0.0) * u.m,
+            end=(1.0, 0.0, 0.0) * u.m,
+            number_of_points=10,
         )
         params = SimulationParams(
             outputs=[
-                StreamlineOutput(entities=[point_array_2d_1, point_array_2d_2, point_array_2d_2])
+                ProbeOutput(
+                    entities=[point_array_1, point_array_2, point_array_2], output_fields="T"
+                )
             ]
         )
     used_entity_registry = params.used_entity_registry
