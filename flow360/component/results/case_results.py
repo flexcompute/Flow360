@@ -1,4 +1,4 @@
-""" Case results module"""
+"""Case results module"""
 
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ from ...cloud.s3_utils import (
 from ...exceptions import Flow360ValueError
 from ...log import log
 from ..simulation.conversion import unit_converter as unit_converter_v2
+from ..simulation.models.surface_models import BoundaryBase
 from ..simulation.simulation_params import SimulationParams
 from ..v1.conversions import unit_converter as unit_converter_v1
 from ..v1.flow360_params import Flow360Params
@@ -225,6 +226,54 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 
     def reload_data(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         return super().reload_data(filter_physical_steps_only, include_time)
+
+    def by_boundary_condition(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
+        """
+        Group entities by boundary condition's name and create a
+        SurfaceForcesGroupResultCSVModel
+        """
+
+        raw_values = {}
+        entity_groups = {}
+
+        for x_column in self._x_columns:
+            raw_values[x_column] = np.array(self.raw_values[x_column])
+        for model in params.models:
+            if not isinstance(model, BoundaryBase):
+                continue
+            boundary_name = model.name
+            if boundary_name is None:
+                boundary_name = model.type
+            if entity_groups.get(boundary_name) is None:
+                entity_groups[boundary_name] = []
+            entity_groups[boundary_name].extend(
+                [entity.name for entity in model.entities.stored_entities]
+            )
+
+        for name, entities in entity_groups.items():
+            self.filter(include=entities)
+            for variable in self._variables:
+                if f"total{variable}" not in raw_values:
+                    raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
+                    continue
+                raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
+
+        raw_values = {key: val.tolist() for key, val in raw_values.items()}
+
+        return SurfaceForcesGroupResultCSVModel.from_dict(data=raw_values, group=entity_groups)
+
+
+class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
+    """SurfaceForcesGroupResultCSVModel"""
+
+    remote_file_name: str = pd.Field(None, frozen=True)
+    entity_groups: Optional[dict] = pd.Field(None)
+
+    @classmethod
+    def from_dict(cls, data: dict, group: dict = None):
+        obj = super().from_dict(data)
+        obj.entity_groups = group
+        return obj
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
