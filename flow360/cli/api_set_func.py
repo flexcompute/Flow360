@@ -6,12 +6,25 @@ from flow360.cli.app import configure
 from flow360.log import log
 
 
-def configure_caller(apikey: str):
-    """Wrapper for configure to allow user using python scripts to configure flow360 with an apikey"""
+def configure_caller(apikey: str, environment: str = None, profile: str = "default") -> None:
+    """
+    Function interface for configuring the API key for flow360.
+
+    Parameters:
+        apikey (str): The API key to be configured.
+        environment (str, optional): The environment to use. Default is to set for production environment.
+        profile (str, optional): The profile name. Defaults to "default".
+
+    Returns:
+        None
+    """
     runner = CliRunner()
 
     # Construct CLI arguments as a list
-    args = ["--apikey", apikey]
+    args = ["--apikey", apikey, "--profile", profile]
+
+    if environment:
+        args += ["--env", environment]
 
     # Invoke the `configure` command
     result = runner.invoke(configure, args)

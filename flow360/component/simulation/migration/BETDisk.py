@@ -223,6 +223,7 @@ def read_all_v1_BETDisks(
             flow360_bet_disk_dict=item,
             mesh_unit=mesh_unit,
             freestream_temperature=freestream_temperature,
+            bet_disk_index=bet_disk_index,
         )
         bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
         bet_disk_index += 1

@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation import services
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
@@ -573,3 +574,21 @@ def test_transformation_matrix():
         1.9285714285714284,
         -1.8755959009447176,
     ]
+
+
+def test_default_params_for_local_test():
+    # Test to ensure the default params for local test is validated
+    with SI_unit_system:
+        param = SimulationParams()
+
+    param = services._store_project_length_unit(1 * u.m, param)
+    param_as_dict = param.model_dump(
+        exclude_none=True,
+        exclude={
+            "operating_condition": {"velocity_magnitude": True},
+            "private_attribute_asset_cache": {"registry": True},
+        },
+    )
+
+    with SI_unit_system:
+        SimulationParams(**param_as_dict)
