@@ -1482,21 +1482,21 @@ class Chart2D(BaseChart2D):
         return x_data, y_data, x_label, y_label
 
     def _handle_legend(self, cases, x_data, y_data):
+        if not self._is_series_data(cases[0]):
+            return self.group_by.arrange_legend()
+
         if self._is_multiline_data(x_data, y_data):
             x_data = [float(data) for data in x_data]
             y_data = [float(data) for data in y_data]
             legend = None
         elif (len(self.y) > 1) and isinstance(self.y, list):
-            if len(cases) * len(self.y) != len(x_data):
-                legend = [path_variable_name(str(y)) for y in self.y]
-            else:
-                legend = []
-                for case in cases:
-                    for y in self.y:
-                        if len(cases) > 1:
-                            legend.append(f"{case.name} - {path_variable_name(str(y))}")
-                        else:
-                            legend.append(f"{path_variable_name(str(y))}")
+            legend = []
+            for case in cases:
+                for y in self.y:
+                    if len(cases) > 1:
+                        legend.append(f"{case.name} - {path_variable_name(str(y))}")
+                    else:
+                        legend.append(f"{path_variable_name(str(y))}")
         else:
             legend = [case.name for case in cases]
 

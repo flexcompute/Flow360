@@ -901,6 +901,17 @@ class Grouper(Flow360BaseModel):
         x_data = [[] for _ in range(len(self._series_assignments))]
         y_data = [[] for _ in range(len(self._series_assignments))]
         return x_data, y_data
+    
+    def _is_in_bucket(self, bucket_criteria, attribute):
+        for criterion in bucket_criteria:
+            if attribute == criterion:
+                return True
+            if callable(criterion):
+                crit_result = criterion(attribute)
+                if isinstance(crit_result, bool):
+                    return crit_result
+                else:
+                    raise AttributeError(f"Bucket criterion must return bool, current returned is {type(crit_result)}.")
 
     def arrange_data(self, 
                      case, 
@@ -917,7 +928,7 @@ class Grouper(Flow360BaseModel):
                 attribute = data_from_path(case, category)
                 if bucket is not None:
                     for key, value in bucket.items():
-                        if attribute in value:
+                        if self._is_in_bucket(value, attribute):
                             point_attributes.append(key)
                 else:
                     point_attributes.append(attribute)

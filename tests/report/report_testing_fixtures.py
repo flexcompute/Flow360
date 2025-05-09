@@ -5,15 +5,21 @@ from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
 import numpy as np
 import shutil
 import pandas as pd
-from flow360 import Case
+from flow360 import Case, SimulationParams
 import pytest
 import os
 
 from flow360.plugins.report.report_items import PlotModel
 
+import flow360 as fl
+
 
 @pytest.fixture
 def here():
+    return os.path.dirname(os.path.abspath(__file__))
+
+@pytest.fixture(scope="class")
+def here_class():
     return os.path.dirname(os.path.abspath(__file__))
 
 
@@ -187,8 +193,8 @@ def two_var_two_cases_plot_model(here, cases):
     return PlotModel(x_data=x_data, y_data=y_data, x_label=x_label, y_label=y_label)
 
 
-@pytest.fixture
-def cases_beta_sweep(cases, here):
+@pytest.fixture(scope="class")
+def cases_beta_sweep(here_class):
     betas = [0, 2, 4, 6]
     turbulence_models = ["SpalartAllmaras", "kOmegaSST"]
     tags = ["a", "b", "c"]
@@ -199,7 +205,8 @@ def cases_beta_sweep(cases, here):
         "c": 2.0
     }
 
-    base_case_ids = {"SpalartAllmaras": cases[0].id, "kOmegaSST": cases[2].id}
+    base_case_ids = {"SpalartAllmaras": "case-11111111-1111-1111-1111-111111111111", 
+                     "kOmegaSST": "case-333333333-333333-3333333333-33333333"}
     vm_id = "vm-11111111-1111-1111-1111-111111111111"
 
     new_cases = []
@@ -210,15 +217,18 @@ def cases_beta_sweep(cases, here):
             for tag in tags:
                 new_case_id = f"case-{'SA1' if turbulence_model=='SpalartAllmaras' else 'SST'}11111-beta{beta}-111-tag{tag}-111111111111"
                 new_case_ids.append(new_case_id)
-                case_local_storage = os.path.join(here, "..", "data", new_case_id)
+                case_local_storage = os.path.join(here_class, "..", "data", new_case_id)
                 os.mkdir(case_local_storage)
                 os.mkdir(os.path.join(case_local_storage, "results"))
-                shutil.copyfile(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "results", "nonlinear_residual_v2.csv"), 
+                shutil.copyfile(os.path.join(here_class, "..", "data", base_case_ids[turbulence_model], "results", "nonlinear_residual_v2.csv"), 
                                 os.path.join(case_local_storage, "results", "nonlinear_residual_v2.csv"))
-                shutil.copyfile(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "simulation.json"), 
+                shutil.copyfile(os.path.join(here_class, "..", "data", base_case_ids[turbulence_model], "simulation.json"), 
                                 os.path.join(case_local_storage, "simulation.json"))
-                surface_forces = pd.read_csv(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "results", "surface_forces_v2.csv"), skipinitialspace=True)
-                total_forces = pd.read_csv(os.path.join(here, "..", "data", base_case_ids[turbulence_model], "results", "total_forces_v2.csv"), skipinitialspace=True)
+                params = SimulationParams(filename=os.path.join(case_local_storage, "simulation.json"))
+                params.operating_condition.beta = beta * fl.u.deg
+                params.to_file(os.path.join(case_local_storage, "simulation.json"))
+                surface_forces = pd.read_csv(os.path.join(here_class, "..", "data", base_case_ids[turbulence_model], "results", "surface_forces_v2.csv"), skipinitialspace=True)
+                total_forces = pd.read_csv(os.path.join(here_class, "..", "data", base_case_ids[turbulence_model], "results", "total_forces_v2.csv"), skipinitialspace=True)
 
                 surface_forces_to_change = list({*surface_forces} - {"physical_step", "pseudo_step"})
                 total_forces_to_change = list({*total_forces} - {"physical_step", "pseudo_step"})
@@ -238,15 +248,15 @@ def cases_beta_sweep(cases, here):
                     cloud_path_prefix="s3://flow360cases-v1/users/user-id",
                     tags=[tag]
                 )
-                case = Case.from_local_storage(os.path.join(here, "..", "data", new_case_id), case_meta)
+                case = Case.from_local_storage(os.path.join(here_class, "..", "data", new_case_id), case_meta)
                 new_cases.append(case)
 
     yield new_cases
 
     for case_id in new_case_ids:
-        shutil.rmtree(os.path.join(here, "..", "data", case_id))
+        shutil.rmtree(os.path.join(here_class, "..", "data", case_id))
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def cases_beta_sweep_example_expected_values(cases_beta_sweep):
     expected_values = pd.DataFrame(columns=["case_id", "CLtotal_avg_0.1", "CDtotal_avg_0.1", "CLtotal_avg_0.2", "CDtotal_avg_0.2"])
 
@@ -264,14 +274,14 @@ def cases_beta_sweep_example_expected_values(cases_beta_sweep):
 
     return expected_values
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def expected_y_data(cases_beta_sweep_example_expected_values):
     betas = [0, 2, 4, 6]
     turbulence_models = ["SpalartAllmaras", "kOmegaSST"]
     tags = ["a", "b", "c"]
 
-    cl_data = [[]] * 4
-    cd_data = [[]] * 4
+    cl_data = [[], [], [], []]
+    cd_data = [[], [], [], []]
 
     k = 0
     for beta in betas:
@@ -283,7 +293,7 @@ def expected_y_data(cases_beta_sweep_example_expected_values):
                 else:
                     k = 1
 
-            cl_data[j*2+ k] = cases_beta_sweep_example_expected_values.at[case_id, "CLtotal_avg_0.1"]
-            cd_data[j*2+ k] = cases_beta_sweep_example_expected_values.at[case_id, "CDtotal_avg_0.1"]
+                cl_data[j*2+ k].append(cases_beta_sweep_example_expected_values.at[case_id, "CLtotal_avg_0.1"])
+                cd_data[j*2+ k].append(cases_beta_sweep_example_expected_values.at[case_id, "CDtotal_avg_0.1"])
 
     return [*cl_data, *cd_data]

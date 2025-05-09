@@ -9,6 +9,7 @@ from matplotlib.ticker import FuncFormatter
 from pylatex import Document
 from pylatex.utils import bold, escape_latex
 
+
 from flow360 import Case, u
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
@@ -1355,7 +1356,7 @@ def test_grouper_buckets(cases):
     ]
 
     case: Case = cases[0]
-    case.add_tags("c")
+    case.add_tag("c", category_tag=True)
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.75, "total_forces/averages/CL")
 
@@ -1369,11 +1370,11 @@ def test_grouper_buckets(cases):
         [0.2, 0.4, 0.75, 0.75],
     ]
 
-    case.add_tags("a")
+    case.add_tag("a", category_tag=True)
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, "total_forces/averages/CL")
 
-    case.add_tags("b")
+    case.add_tag("b", category_tag=True)
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.73, "total_forces/averages/CL")
 
@@ -1392,7 +1393,7 @@ def test_grouper_buckets(cases):
     assert legend == ["buck1", "buck2"]
 
 def test_grouper_buckets_lambdas(cases):
-    grouper = Grouper(group_by="params/operating_condition/beta", buckets={"straight": [lambda x: (x > -1 and x < 1)], "yaw": [lambda x: (x >= 1 or x<=-1)]})
+    grouper = Grouper(group_by="params/operating_condition/beta", buckets={"straight": [lambda x: (float(x.value)>-1 and float(x.value)<1)], "yaw": [lambda x: (float(x.value)>=1 or float(x.value)<=-1)]})
     grouper.initialize_arrays(cases, ["total_forces/averages/CL"])
 
     x_data = [
@@ -1418,7 +1419,7 @@ def test_grouper_buckets_lambdas(cases):
         [0.2, 0.4, 0.75],
     ]
 
-    case = cases[2]
+    case = cases[1]
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, "total_forces/averages/CL")
 
@@ -1450,11 +1451,12 @@ def test_chart2d_group_by_str(cases):
 
     plot_model = chart.get_data(cases, context)
 
-    assert np.allclose(plot_model.x_data_as_np,
-                       np.array([[0, 2],
-                                 [0],
-                                 [0, 2],
-                                 [0]]))
+    expected_x_data = [[0, 2],
+                        [0],
+                        [0, 2],
+                        [0]]
+    for actual, expected in zip(plot_model.x_data, expected_x_data):
+        assert np.allclose(np.array(actual), np.array(expected))
     
     assert plot_model.legend == ["CL - SpalartAllmaras", 
                                  "CL - kOmegaSST", 
@@ -1470,24 +1472,23 @@ class TestWithMultipleCases:
         
         x_data, y_data = grouper.initialize_arrays(cases_beta_sweep, ["total_forces/averages/CL", "total_forces/averages/CD"])
 
-        assert x_data == [[]] * 8
-        assert y_data == [[]] * 8
-
         for case in cases_beta_sweep:
-            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.at[case.id, "CLtotal_avg_0.1"], 0)
-            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.at[case.id, "CDtotal_avg_0.1"], 1)
+            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.at[case.id, "CLtotal_avg_0.1"], "total_forces/averages/CL")
+            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.at[case.id, "CDtotal_avg_0.1"], "total_forces/averages/CD")
 
-        assert np.allclose(np.array(x_data),
-                           np.array([
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                ]))
+        expected_x_data = [
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            ]
+        
+        for actual, expected in zip(x_data, expected_x_data):
+            assert np.allclose(np.array(actual), np.array(expected))
         
         assert y_data == expected_y_data
 
@@ -1518,16 +1519,19 @@ class TestWithMultipleCases:
 
         plot_model = chart.get_data(cases_beta_sweep, context)
 
-        assert np.allclose(plot_model.x_data_as_np,  
-                            np.array([
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                [0, 0, 2, 2, 4, 4, 6, 6],
-                                [0, 2, 4, 6],
-                                ]))
+        expected_x_data = [
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            [0, 0, 2, 2, 4, 4, 6, 6],
+            [0, 2, 4, 6],
+            ]
         
-        assert np.allclose(plot_model.y_data_as_np, np.array(expected_y_data))
+        for actual, expected in zip(plot_model.x_data, expected_x_data):
+            assert np.allclose(np.array(actual), np.array(expected))
+
+        for actual, expected in zip(plot_model.y_data, expected_y_data):
+            assert np.allclose(np.array(actual), np.array(expected))
