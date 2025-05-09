@@ -27,12 +27,16 @@ from PIL import Image
 from pylatex import NoEscape, Package, Tabular
 
 from flow360 import Case
-from flow360.component.results import case_results
+from flow360.component.results import base_results, case_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
+<<<<<<< HEAD
 from flow360.component.volume_mesh import VolumeMeshV2
+=======
+from flow360.component.volume_mesh import VolumeMeshDownloadable, VolumeMeshV2
+>>>>>>> ca0309b4 (Allow for using DataItem as axis arguments in Chart2D (#972))
 from flow360.log import log
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -218,6 +222,63 @@ def split_path(path):
 
 
 # pylint: disable=too-many-return-statements
+def search_path(case: Case, component: str) -> Any:
+    """
+    Case starts as a `Case` object but changes as it recurses through the path components
+    """
+
+    # Check if component is an attribute
+    try:
+        return getattr(case, component)
+    except AttributeError:
+        pass
+
+    # Check if component is an attribute of case.results
+    # Convenience feature so the user doesn't have to include "results" in path
+    try:
+        return getattr(case.results, component)
+    except AttributeError:
+        pass
+
+    # Check if component is a key for a dictionary
+    try:
+        case = case[component]
+        # Have to test for int or str here otherwise...
+        if isinstance(case, (int, str)):
+            return case
+        # .. this raises a KeyError.
+        # This is a convenience that may be removed for if people want something other than the value
+        if "value" in case:
+            return case["value"]
+        return case
+    except TypeError:
+        pass
+
+    # Check if case is a list and interpret component as an int index
+    # E.g. in user defined functions
+    if isinstance(case, list):
+        try:
+            return case[int(component)]
+        except (ValueError, IndexError):
+            pass
+
+    # Check if case is a number
+    if isinstance(case, Number):
+        return case
+
+    # Check if component is a key of a value
+    try:
+        return case.values[component]
+    except KeyError as err:
+        raise ValueError(
+            f"Could not find path component: '{component}', available: {case.values.keys()}"
+        ) from err
+    except AttributeError:
+        log.warning(f"unknown value for path: {case=}, {component=}")
+
+    return None
+
+
 def data_from_path(
     case: Case, path: str, cases: list[Case] = None, case_by_case: bool = False
 ) -> Any:
@@ -265,6 +326,7 @@ def data_from_path(
     # Split path into components
     path_components = split_path(path)
 
+<<<<<<< HEAD
     def _search_path(case: Case, component: str) -> Any:
         """
         Case starts as a `Case` object but changes as it recurses through the path components
@@ -326,8 +388,50 @@ def data_from_path(
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
         case = _search_path(case, component)
+=======
+    # Case variable is slightly misleading as this is only a case on the first iteration
+    for component in path_components:
+        if component == "time":
+            case.reload_data(include_time=True)
+
+        if filter_physical_steps_only and (component == path_components[-1]):
+            case.reload_data(filter_physical_steps_only=True)
+
+        case = search_path(case, component)
+>>>>>>> ca0309b4 (Allow for using DataItem as axis arguments in Chart2D (#972))
 
     return case
+
+
+def results_from_path(
+    case, path
+) -> tuple[Union[base_results.ResultBaseModel, None], Union[str, None]]:
+    """
+    Returns the last ResultsBaseModel object on the path.
+
+    Parameters
+    ----------
+    path : str
+        The path string indicating the nested attributes or dictionary keys.
+
+    Returns
+    -------
+
+    returned_case, returned_component: tuple[Union[base_results.ResultBaseModel, None], Union[str, None]]
+        returned_case - the last ResultsBaseModel object on the path,
+        returned_component - component of the returned case or None if the case was a last part of the path
+
+    """
+    path_components = split_path(path)
+    returned_case = None
+    returned_component = None
+    for component in path_components:
+        returned_component = component
+        case = search_path(case, component)
+        if isinstance(case, base_results.ResultBaseModel):
+            returned_case = case
+            returned_component = None
+    return returned_case, returned_component
 
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
@@ -407,7 +511,7 @@ class Average(GenericOperation):
             if self.fraction is None:
                 raise NotImplementedError('Only "fraction" average method implemented.')
             averages = data.get_averages(average_fraction=self.fraction)
-            return data, cases, averages
+            return data, cases, averages[new_variable_name]
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
@@ -546,12 +650,12 @@ class Expression(GenericOperation):
         """
         log.debug(f"evaluating expression {self.expr}, {case.id=}")
 
-        if isinstance(data, case_results.SurfaceForcesResultCSVModel):
+        if isinstance(data, case_results.ResultCSVModel):
             df = self.evaluate_expression(
                 data.as_dataframe(), self.expr, variables, new_variable_name, case
             )
             data.update(df)
-            return data, cases, data.values
+            return data, cases, data.values[new_variable_name]
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
@@ -611,24 +715,12 @@ class DataItem(Flow360BaseModel):
             values["operations"] = [operations]
         return values
 
-    def _preprocess_data(self, case):
-        source = data_from_path(case, self.data)
+    def _preprocess_data(self, source, component):
 
-        if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            full_path = split_path(self.data)
+        if isinstance(source, case_results.ResultCSVModel):
             new_variable_name = "opr_" + uuid.uuid4().hex[:8]
-            variable_name = None
-            if len(full_path) == 1:
-                pass
-            elif len(full_path) == 2:
-                variable_name = full_path[-1]
-                self.operations.insert(0, Expression(expr=variable_name))
-            else:
-                raise ValueError(
-                    f"{self.__class__.__name__}, unknown input: data={self.data},"
-                    + " allowed single <source> or <source>/<variable>"
-                )
-
+            if component is not None:
+                self.operations.insert(0, Expression(expr=component))
             return source, new_variable_name
 
         raise NotImplementedError(
@@ -637,7 +729,7 @@ class DataItem(Flow360BaseModel):
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
         """
-        Calculates the delta between the specified case and the reference case.
+        Calculates the DataItem values based on specified operations.
 
         Parameters
         ----------
@@ -649,27 +741,23 @@ class DataItem(Flow360BaseModel):
         Returns
         -------
         float
-            The computed delta value between the case and reference case data.
-
-        Raises
-        ------
-        ValueError
-            If `ref_index` is out of bounds or `None`, indicating a missing reference.
+            The computed data array.
 
         """
 
-        source = data_from_path(case, self.data)
-        if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            if self.exclude is not None or self.include is not None:
-                source.filter(include=self.include, exclude=self.exclude)
+        source, component = results_from_path(case, self.data)
 
-            source, new_variable_name = self._preprocess_data(case)
+        if isinstance(source, base_results.ResultCSVModel):
+            if isinstance(source, case_results.PerEntityResultCSVModel):
+                if self.exclude is not None or self.include is not None:
+                    source.filter(include=self.include, exclude=self.exclude)
+            source, new_variable_name = self._preprocess_data(source=source, component=component)
             if len(self.operations) > 0:
                 for opr in self.operations:  # pylint: disable=not-an-iterable
                     source, cases, result = opr.calculate(
                         source, case, cases, self.variables, new_variable_name
                     )
-                return result[new_variable_name]
+                return result
 
             return source
 
