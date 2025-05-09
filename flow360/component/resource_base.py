@@ -286,7 +286,7 @@ class Flow360Resource(RestApi):
             raise Flow360RuntimeError(
                 f"Resource already have metadata {self._info}. Cannot assign."
             )
-
+      
     @classmethod
     def _from_meta(cls, meta):
         raise NotImplementedError(

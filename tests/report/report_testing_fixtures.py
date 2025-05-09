@@ -251,13 +251,16 @@ def cases_beta_sweep_example_expected_values(cases_beta_sweep):
     expected_values = pd.DataFrame(columns=["case_id", "CLtotal_avg_0.1", "CDtotal_avg_0.1", "CLtotal_avg_0.2", "CDtotal_avg_0.2"])
 
     for case in cases_beta_sweep:
-        expected_values["case_id"] = case.id
-        expected_values["CLtotal_avg_0.1"] = case.results.surface_forces.get_averages(0.1)["totalCL"]
-        expected_values["CLtotal_avg_0.2"] = case.results.surface_forces.get_averages(0.2)["totalCL"]
-        expected_values["CDtotal_avg_0.1"] = case.results.surface_forces.get_averages(0.1)["totalCD"]
-        expected_values["CDtotal_avg_0.2"] = case.results.surface_forces.get_averages(0.2)["totalCD"]
+        row = dict()
+        row["case_id"] = case.id
+        row["CLtotal_avg_0.1"] = case.results.surface_forces.get_averages(0.1)["totalCL"]
+        row["CLtotal_avg_0.2"] = case.results.surface_forces.get_averages(0.2)["totalCL"]
+        row["CDtotal_avg_0.1"] = case.results.surface_forces.get_averages(0.1)["totalCD"]
+        row["CDtotal_avg_0.2"] = case.results.surface_forces.get_averages(0.2)["totalCD"]
 
-    expected_values.set_index("case_id")
+        expected_values.loc[len(expected_values)] = row.copy()
+
+    expected_values = expected_values.set_index("case_id")
 
     return expected_values
 
@@ -280,7 +283,7 @@ def expected_y_data(cases_beta_sweep_example_expected_values):
                 else:
                     k = 1
 
-            cl_data[j*2+ k] = cases_beta_sweep_example_expected_values.loc[case_id, "totalCL"]
-            cd_data[j*2+ k] = cases_beta_sweep_example_expected_values.loc[case_id, "totalCD"]
+            cl_data[j*2+ k] = cases_beta_sweep_example_expected_values.at[case_id, "CLtotal_avg_0.1"]
+            cd_data[j*2+ k] = cases_beta_sweep_example_expected_values.at[case_id, "CDtotal_avg_0.1"]
 
     return [*cl_data, *cd_data]

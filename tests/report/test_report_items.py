@@ -1253,7 +1253,8 @@ def test_transient_residuals_pseudo(here, cases_transient):
 
 
 def test_grouper_basic(cases):
-    grouper = Grouper(group_by="params/models/Fluid/turbulence_model_solver")
+    grouper = Grouper(group_by="params/models/Fluid/turbulence_model_solver/type_name")
+    grouper.initialize_arrays(cases, ["total_forces/averages/CL"])
     case = cases[0]
     x_data = [
         [-4, -2, 0], # SA
@@ -1264,7 +1265,7 @@ def test_grouper_basic(cases):
         [0.2, 0.4, 0.75], # SST
     ]
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 1, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 1, "total_forces/averages/CL")
 
     assert x_data == [
         [-4, -2, 0, 2], # SA
@@ -1276,7 +1277,7 @@ def test_grouper_basic(cases):
         [0.2, 0.4, 0.75], # SST
     ]
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 4, 1.2, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 4, 1.2, "total_forces/averages/CL")
 
     assert x_data == [
         [-4, -2, 0, 2, 4], # SA
@@ -1288,62 +1289,61 @@ def test_grouper_basic(cases):
         [0.2, 0.4, 0.75], # SST
     ]
 
-    legend = grouper.arrange_legend(cases, ["cl"])
+    legend = grouper.arrange_legend()
 
     assert legend == ["SpalartAllmaras", "kOmegaSST"]
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 0, 0, 1)
+    x_data, y_data = grouper.initialize_arrays(cases, ["total_forces/averages/CL", "total_forces/averages/CD"])
+
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 0, 0, "total_forces/averages/CD")
 
     assert x_data == [
-        [-4, -2, 0, 2, 4], # var 0 - SA
-        [-5, -3, 0], # var 0 - SST
+        [], # var 0 - SA
+        [], # var 0 - SST
         [0], # var 1 - SA
-
+        [], # var 1 - SST
     ]
 
     assert y_data == [
-        [0.3, 0.5, 0.7, 1, 1.2], # var 0 - SA
-        [0.2, 0.4, 0.75], # var 0 - SST
+        [], # var 0 - SA
+        [], # var 0 - SST
         [0], # var 1 - SA
+        [], # var 1 - SST
     ]
 
-    x_data, y_data = grouper.arrange_data(cases[2], x_data, y_data, 0, 0.1, 1)
+    x_data, y_data = grouper.arrange_data(cases[2], x_data, y_data, 0, 0.1, "total_forces/averages/CD")
 
     assert x_data == [
-        [-4, -2, 0, 2, 4], # var 0 - SA
-        [-5, -3, 0], # var 0 - SST
+        [], # var 0 - SA
+        [], # var 0 - SST
         [0], # var 1 - SA
         [0], # var 1 - SST
-
     ]
 
     assert y_data == [
-        [0.3, 0.5, 0.7, 1, 1.2], # var 0 - SA
-        [0.2, 0.4, 0.75], # var 0 - SST
+        [], # var 0 - SA
+        [], # var 0 - SST
         [0], # var 1 - SA
         [0.1], # var 1 - SST
     ]
 
-    legend = grouper.arrange_legend(cases, ["cl, cd"])
+    legend = grouper.arrange_legend()
 
-    assert legend == ["cl - SpalartAllmaras", "cl - kOmegaSST", "cd - SpalartAllmaras", "cd - kOmegaSST"]
+    assert legend == ["CL - SpalartAllmaras", "CL - kOmegaSST", "CD - SpalartAllmaras", "CD - kOmegaSST"]
 
 
 def test_grouper_empty(cases):
-    grouper = Grouper(group_by="params/models/Fluid/turbulence_model_solver")
+    grouper = Grouper(group_by="params/models/Fluid/turbulence_model_solver/type_name")
 
-    x_data, y_data = grouper.initialize_arrays(cases, ["cl", "cd"])
+    x_data, y_data = grouper.initialize_arrays(cases, ["total_forces/averages/CL", "total_forces/averages/CD"])
 
-    assert x_data == [
-        [], [], [], []
-    ]
-
-    assert y_data == [
-        [], [], [], []
-    ]
+    assert x_data == [[], [], [], []]
+    assert y_data == [[], [], [], []]
 
 def test_grouper_buckets(cases):
     grouper = Grouper(group_by="info/tags/0", buckets={"buck1": ["a", "b"], "buck2": ["c"]})
+
+    grouper.initialize_arrays(cases, ["total_forces/averages/CL"])
     
     x_data = [
         [-4, -2, 0], # buck1
@@ -1355,9 +1355,9 @@ def test_grouper_buckets(cases):
     ]
 
     case: Case = cases[0]
-    case.info.tags.append["c"]
+    case.add_tags("c")
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.75, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.75, "total_forces/averages/CL")
 
     assert x_data == [
         [-4, -2, 0],
@@ -1369,13 +1369,13 @@ def test_grouper_buckets(cases):
         [0.2, 0.4, 0.75, 0.75],
     ]
 
-    case.info.tags[0] = "a"
+    case.add_tags("a")
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, "total_forces/averages/CL")
 
-    case.info.tags[0] = "b"
+    case.add_tags("b")
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.73, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.73, "total_forces/averages/CL")
 
     assert x_data == [
         [-4, -2, 0, 1, 2],
@@ -1387,13 +1387,14 @@ def test_grouper_buckets(cases):
         [0.2, 0.4, 0.75, 0.75],
     ]
 
-    legend = grouper.arrange_legend(cases, ["cd"])
+    legend = grouper.arrange_legend()
 
     assert legend == ["buck1", "buck2"]
 
 def test_grouper_buckets_lambdas(cases):
     grouper = Grouper(group_by="params/operating_condition/beta", buckets={"straight": [lambda x: (x > -1 and x < 1)], "yaw": [lambda x: (x >= 1 or x<=-1)]})
-    
+    grouper.initialize_arrays(cases, ["total_forces/averages/CL"])
+
     x_data = [
         [-4, -2, 0], # straight
         [-5, -3, 0], # yaw
@@ -1405,7 +1406,7 @@ def test_grouper_buckets_lambdas(cases):
 
     case = cases[0]
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.75, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.75, "total_forces/averages/CL")
 
     assert x_data == [
         [-4, -2, 0, 2],
@@ -1419,7 +1420,7 @@ def test_grouper_buckets_lambdas(cases):
 
     case = cases[2]
 
-    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, 0)
+    x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, "total_forces/averages/CL")
 
     assert x_data == [
         [-4, -2, 0, 2],
@@ -1431,7 +1432,7 @@ def test_grouper_buckets_lambdas(cases):
         [0.2, 0.4, 0.75, 0.72],
     ]
 
-    legend = grouper.arrange_legend(cases, ["cd"])
+    legend = grouper.arrange_legend()
 
     assert legend == ["straight", "yaw"]
 
@@ -1442,17 +1443,18 @@ def test_chart2d_group_by_str(cases):
             DataItem(data="total_forces/CD", operations=[Average(fraction=0.1)])],
         section_title="test",
         fig_name="test",
-        group_by="params/models/Fluid/turbulence_model_solver"
+        group_by="params/models/Fluid/turbulence_model_solver/type_name"
     )
 
     context = ReportContext(cases=cases)
 
     plot_model = chart.get_data(cases, context)
 
-    assert plot_model.x_data == [[0, 2],
+    assert np.allclose(plot_model.x_data_as_np,
+                       np.array([[0, 2],
                                  [0],
                                  [0, 2],
-                                 [0]]
+                                 [0]]))
     
     assert plot_model.legend == ["CL - SpalartAllmaras", 
                                  "CL - kOmegaSST", 
@@ -1463,43 +1465,44 @@ def test_chart2d_group_by_str(cases):
 class TestWithMultipleCases:
 
     def test_grouper_multi_level(self, cases_beta_sweep, cases_beta_sweep_example_expected_values, expected_y_data):
-        grouper = Grouper(group_by=["params/models/Fluid/turbulence_model_solver", "info/tags/0"],
+        grouper = Grouper(group_by=["params/models/Fluid/turbulence_model_solver/type_name", "info/tags/0"],
                           buckets=[None, {"buck1": ["a", "b"], "buck2": ["c"]}])
         
-        x_data, y_data = grouper.initialize_arrays(cases_beta_sweep, ["cl", "cd"])
+        x_data, y_data = grouper.initialize_arrays(cases_beta_sweep, ["total_forces/averages/CL", "total_forces/averages/CD"])
 
         assert x_data == [[]] * 8
         assert y_data == [[]] * 8
 
         for case in cases_beta_sweep:
-            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.loc[case.id, "totalCL"], 0)
-            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.loc[case.id, "totalCD"], 1)
+            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.at[case.id, "CLtotal_avg_0.1"], 0)
+            x_data, y_data = grouper.arrange_data(case, x_data, y_data, case.params.operating_condition.beta, cases_beta_sweep_example_expected_values.at[case.id, "CDtotal_avg_0.1"], 1)
 
-        assert x_data == [
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            [0, 0, 2, 2, 4, 4, 6, 6],
-            [0, 2, 4, 6],
-            ]
+        assert np.allclose(np.array(x_data),
+                           np.array([
+                                [0, 0, 2, 2, 4, 4, 6, 6],
+                                [0, 2, 4, 6],
+                                [0, 0, 2, 2, 4, 4, 6, 6],
+                                [0, 2, 4, 6],
+                                [0, 0, 2, 2, 4, 4, 6, 6],
+                                [0, 2, 4, 6],
+                                [0, 0, 2, 2, 4, 4, 6, 6],
+                                [0, 2, 4, 6],
+                                ]))
         
         assert y_data == expected_y_data
 
-        assert grouper.arrange_legend(cases_beta_sweep, ["cl", "cd"]) == ["cl - SpalartAllmaras - buck1",
-                                                                          "cl - SpalartAllmaras - buck2",
-                                                                          "cl - kOmegaSST - buck1",
-                                                                          "cl - kOmegaSST - buck2",
-                                                                          "cd - SpalartAllmaras - buck1",
-                                                                          "cd - SpalartAllmaras - buck2",
-                                                                          "cd - kOmegaSST - buck1",
-                                                                          "cd - kOmegaSST - buck2",]
+        assert grouper.arrange_legend() == ["CL - SpalartAllmaras - buck1",
+                                            "CL - SpalartAllmaras - buck2",
+                                            "CL - kOmegaSST - buck1",
+                                            "CL - kOmegaSST - buck2",
+                                            "CD - SpalartAllmaras - buck1",
+                                            "CD - SpalartAllmaras - buck2",
+                                            "CD - kOmegaSST - buck1",
+                                            "CD - kOmegaSST - buck2",]
 
 
     def test_chart2d_group_by_grouper(self, cases_beta_sweep, expected_y_data):
-        grouper = Grouper(group_by=["params/models/Fluid/turbulence_model_solver", "info/tags/0"],
+        grouper = Grouper(group_by=["params/models/Fluid/turbulence_model_solver/type_name", "info/tags/0"],
                     buckets=[None, {"buck1": ["a", "b"], "buck2": ["c"]}])
         
         chart = Chart2D(

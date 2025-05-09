@@ -260,13 +260,28 @@ def search_path(case: Case, component: str) -> Any:
     except TypeError:
         pass
 
-    # Check if case is a list and interpret component as an int index
+    # Check if case is a list
     # E.g. in user defined functions
     if isinstance(case, list):
+        for obj in case:
+            try:
+                if obj.name == component:
+                    return obj
+                if obj.type_name == component:
+                    return obj
+            except AttributeError:
+                pass
+
+            if type(obj).__name__ == component:
+                return obj
+
+        # interpret component as an int index
         try:
             return case[int(component)]
         except (ValueError, IndexError):
             pass
+
+        
 
     # Check if case is a number
     if isinstance(case, Number):
@@ -839,27 +854,95 @@ class Grouper(Flow360BaseModel):
     ----------
     ....
     '''
-    group_by: Union[str, List[str]]
-    buckets: Optional[Union[dict[str, List], List[dict[str, List]]]] = None
+    group_by: Union[str, List[str], None, List[None]]
+    buckets: Optional[Union[dict[str, List], 
+                            List[Union[dict[str, List], None]]]] = None
+    _series_assignments: List[List[str]] = pd.PrivateAttr(default=None)
 
     @pd.model_validator(mode="after")
     def _handle_singular_inputs(self):
-        if not isinstance(self.group_by, List):
+        if (not isinstance(self.group_by, List)):
             self.group_by = [self.group_by]
-        if (not isinstance(self.buckets, List) and (self.buckets is not None)):
-            self.buckets = [self.buckets]
+        if (not isinstance(self.buckets, List)):
+            self.buckets = [self.buckets] * len(self.group_by)
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_argument_lengths(self):
+        if (self.buckets is not None and len(self.group_by) != len(self.buckets)):
+            raise pd.ValidationError("group_by and buckets must be the same length. If a category should not be grouped into buckets enter None in the bucket's place.")
+        return self
+
+    def _get_possible_assignments(self, category, cases):
+        assignments = []
+        for case in cases:
+            assignment = data_from_path(case, category, cases)
+            if assignment not in assignments:
+                assignments.append(assignment)
+        return assignments
 
     def initialize_arrays(self, cases, y_variables):
-        x_data = []
-        y_data = []
+        self._series_assignments = [[path_variable_name(str(y))] for y in y_variables]
+        
+        if self.group_by != [None]:
+            for category, bucket in zip(self.group_by, self.buckets):
+                if bucket is not None:
+                    grouping_attributes = bucket.keys()
+                else:
+                    grouping_attributes = self._get_possible_assignments(category, cases)
+
+                new_assignments = []
+                for assignment in self._series_assignments:
+                    for attribute in grouping_attributes:
+                        new_assignments.append(assignment + [attribute])
+            
+                self._series_assignments = new_assignments
+
+        x_data = [[] for _ in range(len(self._series_assignments))]
+        y_data = [[] for _ in range(len(self._series_assignments))]
         return x_data, y_data
 
-    def arrange_data(self, case, x_data, y_data, x_data_point, y_data_point, y_variable_index):
-        # puts the data points into the right series
+    def arrange_data(self, 
+                     case, 
+                     x_data, 
+                     y_data, 
+                     x_data_point, 
+                     y_data_point, 
+                     y_variable):
+
+        point_attributes = [path_variable_name(str(y_variable))]
+
+        if self.group_by != [None]:
+            for category, bucket in zip(self.group_by, self.buckets):
+                attribute = data_from_path(case, category)
+                if bucket is not None:
+                    for key, value in bucket.items():
+                        if attribute in value:
+                            point_attributes.append(key)
+                else:
+                    point_attributes.append(attribute)
+
+        for idx, assignment in enumerate(self._series_assignments):
+            if point_attributes == assignment:
+                x_data[idx].append(x_data_point)
+                y_data[idx].append(y_data_point)
+                return x_data, y_data
+
         return x_data, y_data
 
-    def arrange_legend(self, cases, y_variables):
+    def arrange_legend(self):
         legend = []
+        assignments = self._series_assignments.copy()
+
+        assignments_array = np.array(assignments)
+        if np.all(assignments_array[:, 0] == assignments_array[0, 0]):
+            assignments = assignments_array[:, 1:].tolist()
+
+        if assignments is None: return None
+        
+        for assignment in assignments:
+            legend.append(" - ".join(assignment))
+
         return legend
 
 
