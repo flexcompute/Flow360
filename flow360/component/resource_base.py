@@ -301,7 +301,7 @@ class Flow360Resource(RestApi):
             self._info = self.meta_class(**self.get())
         return self._info
 
-    def add_tag(self, tag: str, category_tag: bool = False):
+    def add_tag(self, tag: str):
         """
         Adds tag to the resource locally.
 
