@@ -17,7 +17,7 @@ class AngleBasedRefinement(Flow360BaseModel):
     Example
     -------
 
-      >>> fl.AngleBasedRefinement(value=8 * fl.u.deg)
+      >>> fl.AngleBasedRefinement(value=8*fl.u.deg)
 
     ====
     """
