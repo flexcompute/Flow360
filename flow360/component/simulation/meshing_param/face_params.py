@@ -25,7 +25,7 @@ class SurfaceRefinement(Flow360BaseModel):
 
       >>> fl.SurfaceRefinement(
       ...     faces=[geometry["face1"], geometry["face2"]],
-      ...     max_edge_length=0.001 * fl.u.m
+      ...     max_edge_length=0.001*fl.u.m
       ... )
 
     ====
