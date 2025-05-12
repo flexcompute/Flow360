@@ -1369,6 +1369,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        job_tags: List[str] = [],
         **kwargs,
     ):
         """
@@ -1412,7 +1413,7 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
-            **kwargs,
+            job_tags=job_tags,
         )
         return surface_mesh
 
@@ -1426,6 +1427,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        job_tags: List[str] = [],
         **kwargs,
     ):
         """
@@ -1472,6 +1474,7 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            job_tags = job_tags,
             **kwargs,
         )
         return volume_mesh
@@ -1488,6 +1491,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        job_tags: List[str] = [],
         **kwargs,
     ):
         """
@@ -1526,6 +1530,7 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            job_tags=job_tags,
             **kwargs,
         )
         return case

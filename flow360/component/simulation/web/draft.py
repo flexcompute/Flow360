@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import json
-from typing import Literal, Union
+from typing import Literal, Union, Optional, List
 
 from flow360.cloud.flow360_requests import (
     DraftCreateRequest,
