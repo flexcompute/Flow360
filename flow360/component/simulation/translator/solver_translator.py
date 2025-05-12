@@ -1332,6 +1332,6 @@ def get_solver_json(
             else 1.0 / translated["freestream"]["Mach"]
         )
     if input_params.private_attribute_dict is not None:
-        translated["privateAttributeDict"] = input_params.private_attribute_dict
+        translated.update(input_params.private_attribute_dict)
 
     return translated
