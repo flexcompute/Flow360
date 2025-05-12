@@ -257,10 +257,9 @@ class MeshingParams(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) == {
-                    "RotationCylinder",
-                    "UniformRefinement",
-                }:
+                if len(entity_info["model_list"]) == 1 or sorted(
+                    entity_info["model_list"]
+                ) == sorted(["RotationCylinder", "UniformRefinement"]):
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue
 
