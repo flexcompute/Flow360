@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Generic, Iterable, Optional, TypeVar
+from typing import ClassVar, Generic, Iterable, Optional, TypeVar
 
 from pydantic import BeforeValidator
 from typing_extensions import Self
@@ -182,6 +182,9 @@ class Variable(Flow360BaseModel):
     def __repr__(self):
         return f"Variable({self.name} = {self.value})"
 
+    def __hash__(self):
+        return hash(self.name)
+
     def sqrt(self):
         return Expression(expression=f"np.sqrt({self.expression})")
 
@@ -275,6 +278,12 @@ class Expression(Flow360BaseModel, Evaluable):
     expression: str = pd.Field("")
 
     model_config = pd.ConfigDict(validate_assignment=True)
+
+    _serialized_format_only: ClassVar[bool] = False
+
+    @classmethod
+    def force_serialized_format(cls, value: bool):
+        cls._serialized_format_only = value
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -470,11 +479,15 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _deserialize(value) -> Self:
             is_serialized = False
-            try:
+            if Expression._serialized_format_only:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True
-            except Exception as err:
-                pass
+            else:
+                try:
+                    value = SerializedValueOrExpression.model_validate(value)
+                    is_serialized = True
+                except Exception as err:
+                    pass
 
             if is_serialized:
                 if value.type_name == "number":
