@@ -1219,13 +1219,13 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             else:
                 log.warning("Does not show physical step with multiple cases plotted.")
         return None, None
-    
+
     def _remove_empty_series(self, x_data, y_data, legend):
         to_pop = []
         for idx, x_series in enumerate(x_data):
             if not x_series:
                 to_pop.append(idx)
-        
+
         x_data = [series for series in x_data if series]
         y_data = [series for series in y_data if series]
         legend = [item for idx, item in enumerate(legend) if idx not in to_pop]
@@ -1443,7 +1443,7 @@ class Chart2D(BaseChart2D):
             else:
                 self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
         return self
-    
+
     @pd.model_validator(mode="after")
     def _create_grouper(self):
         if isinstance(self.group_by, str):
@@ -1501,17 +1501,15 @@ class Chart2D(BaseChart2D):
             legend = [case.name for case in cases]
 
         return legend
-    
+
     def _is_series_data(self, example_case):
-        x_data_point = data_from_path(
-            example_case, self.x, None
-        )
+        x_data_point = data_from_path(example_case, self.x, None)
         if isinstance(x_data_point, Iterable):
             if isinstance(x_data_point, unyt_quantity) and x_data_point.shape == ():
                 return False
             return True
         return False
-    
+
     def _load_series(self, cases, x_label, y_variables):
         x_data = []
         y_data = []
@@ -1520,12 +1518,14 @@ class Chart2D(BaseChart2D):
                 x_label in ["time", "physical_step"]
             )
             for y in y_variables:
-                x_data.append(data_from_path(
-                    case, self.x, cases, filter_physical_steps_only=filter_physical_steps
-                ))
-                y_data.append(data_from_path(
-                    case, y, cases, filter_physical_steps_only=filter_physical_steps
-                ))
+                x_data.append(
+                    data_from_path(
+                        case, self.x, cases, filter_physical_steps_only=filter_physical_steps
+                    )
+                )
+                y_data.append(
+                    data_from_path(case, y, cases, filter_physical_steps_only=filter_physical_steps)
+                )
 
         return x_data, y_data
 
@@ -1533,13 +1533,11 @@ class Chart2D(BaseChart2D):
         x_data, y_data = self.group_by.initialize_arrays(cases, y_variables)
         for case in cases:
             for y in y_variables:
-                x_data_point = data_from_path(
-                    case, self.x, cases
+                x_data_point = data_from_path(case, self.x, cases)
+                y_data_point = data_from_path(case, y, cases)
+                x_data, y_data = self.group_by.arrange_data(
+                    case, x_data, y_data, x_data_point, y_data_point, y
                 )
-                y_data_point = data_from_path(
-                    case, y, cases
-                )
-                x_data, y_data = self.group_by.arrange_data(case, x_data, y_data, x_data_point, y_data_point, y)
 
         return x_data, y_data
 
@@ -1552,37 +1550,11 @@ class Chart2D(BaseChart2D):
         else:
             y_label = "value"
             y_variables = self.y.copy()
-        
 
         if self._is_series_data(cases[0]):
             x_data, y_data = self._load_series(cases, x_label, y_variables)
         else:
             x_data, y_data = self._load_points(cases, y_variables)
-        
-
-        # for case in cases:
-        #     filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
-        #         x_label in ["time", "physical_step"]
-        #     )
-        #     for var_idx, y in enumerate(y_variables):
-        #         x_data_point = data_from_path(
-        #             case, self.x, cases, filter_physical_steps_only=filter_physical_steps
-        #         )
-        #         y_data_point = data_from_path(
-        #             case, y, cases, filter_physical_steps_only=filter_physical_steps
-        #         )
-        #         if isinstance(x_data_point, Iterable) and isinstance(y_data_point, Iterable):
-        #             x_data.append(x_data_point)
-        #             y_data.append(y_data_point)
-        #         else:
-        #             x_data, y_data = self.group_by.arrange_data(case, x_data, y_data, x_data_point, y_data_point, var_idx)
-
-                    # if len(x_data) <= var_idx:
-                    #     x_data.append([x_data_point])
-                    #     y_data.append([y_data_point])
-                    # else:
-                    #     x_data[var_idx].append(x_data_point)
-                    #     y_data[var_idx].append(y_data_point)
 
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label

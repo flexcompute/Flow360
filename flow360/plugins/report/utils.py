@@ -2,6 +2,7 @@
 report utils, utils.py
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import ast
@@ -227,7 +228,7 @@ def path_variable_name(path):
     return split_path(path)[-1]
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements,too-many-branches
 def search_path(case: Case, component: str) -> Any:
     """
     Case starts as a `Case` object but changes as it recurses through the path components
@@ -845,30 +846,33 @@ class Tabulary(Tabular):
 
 
 class Grouper(Flow360BaseModel):
-    '''
+    """
     Class for objects responsible for grouping data into series in Chart2D objects.
 
     Parameters
     ----------
     ....
-    '''
+    """
+
     group_by: Union[str, List[str], None, List[None]]
-    buckets: Optional[Union[dict[str, List], 
-                            List[Union[dict[str, List], None]]]] = None
+    buckets: Optional[Union[dict[str, List], List[Union[dict[str, List], None]]]] = None
     _series_assignments: List[List[str]] = pd.PrivateAttr(default=None)
 
     @pd.model_validator(mode="after")
     def _handle_singular_inputs(self):
-        if (not isinstance(self.group_by, List)):
+        if not isinstance(self.group_by, List):
             self.group_by = [self.group_by]
-        if (not isinstance(self.buckets, List)):
+        if not isinstance(self.buckets, List):
             self.buckets = [self.buckets] * len(self.group_by)
         return self
 
     @pd.model_validator(mode="after")
     def _check_argument_lengths(self):
-        if (self.buckets is not None and len(self.group_by) != len(self.buckets)):
-            raise pd.ValidationError("group_by and buckets must be the same length. If a category should not be grouped into buckets enter None in the bucket's place.")
+        if self.buckets is not None and len(self.group_by) != len(self.buckets):
+            raise pd.ValidationError(
+                "group_by and buckets must be the same length. "
+                + "If a category should not be grouped into buckets enter None in the bucket's place."
+            )
         return self
 
     def _get_possible_assignments(self, category, cases):
@@ -880,8 +884,11 @@ class Grouper(Flow360BaseModel):
         return assignments
 
     def initialize_arrays(self, cases, y_variables):
+        """
+        Initializes data structures for x_data and y_data.
+        """
         self._series_assignments = [[path_variable_name(str(y))] for y in y_variables]
-        
+
         if self.group_by != [None]:
             for category, bucket in zip(self.group_by, self.buckets):
                 if bucket is not None:
@@ -893,14 +900,15 @@ class Grouper(Flow360BaseModel):
                 for assignment in self._series_assignments:
                     for attribute in grouping_attributes:
                         new_assignments.append(assignment + [attribute])
-            
+
                 self._series_assignments = new_assignments
 
         x_data = [[] for _ in range(len(self._series_assignments))]
         y_data = [[] for _ in range(len(self._series_assignments))]
         return x_data, y_data
-    
-    def _is_in_bucket(self, bucket_criteria, attribute):
+
+    # pylint: disable=inconsistent-return-statements
+    def _is_in_bucket(self, bucket_criteria, attribute) -> bool:
         for criterion in bucket_criteria:
             if attribute == criterion:
                 return True
@@ -908,16 +916,15 @@ class Grouper(Flow360BaseModel):
                 crit_result = criterion(attribute)
                 if isinstance(crit_result, bool):
                     return crit_result
-                else:
-                    raise AttributeError(f"Bucket criterion must return bool, current returned is {type(crit_result)}.")
+                raise AttributeError(
+                    f"Bucket criterion must return bool, current returned is {type(crit_result)}."
+                )
 
-    def arrange_data(self, 
-                     case, 
-                     x_data, 
-                     y_data, 
-                     x_data_point, 
-                     y_data_point, 
-                     y_variable):
+    # pylint: disable=too-many-arguments
+    def arrange_data(self, case, x_data, y_data, x_data_point, y_data_point, y_variable):
+        """
+        Sorts the data into appropriate series based on the case.
+        """
 
         point_attributes = [path_variable_name(str(y_variable))]
 
@@ -940,6 +947,9 @@ class Grouper(Flow360BaseModel):
         return x_data, y_data
 
     def arrange_legend(self):
+        """
+        Creates the legend for the defined grouping.
+        """
         legend = []
         assignments = self._series_assignments.copy()
 
@@ -947,8 +957,9 @@ class Grouper(Flow360BaseModel):
         if np.all(assignments_array[:, 0] == assignments_array[0, 0]):
             assignments = assignments_array[:, 1:].tolist()
 
-        if assignments is None: return None
-        
+        if assignments is None:
+            return None
+
         for assignment in assignments:
             legend.append(" - ".join(assignment))
 
