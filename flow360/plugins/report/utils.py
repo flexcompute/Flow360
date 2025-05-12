@@ -705,6 +705,15 @@ class DataItem(Flow360BaseModel):
             values["operations"] = [operations]
         return values
 
+    @pd.model_validator(mode="after")
+    def _check_for_averages(self):
+        components = split_path(self.data)
+        if "averages" in components:
+            self.operations.insert(0, Average(fraction=0.1))
+            components.remove("averages")
+            self.data = "/".join(components)
+        return self
+
     def _preprocess_data(self, source, component):
 
         if isinstance(source, case_results.ResultCSVModel):
@@ -738,9 +747,14 @@ class DataItem(Flow360BaseModel):
         source, component = results_from_path(case, self.data)
 
         if isinstance(source, base_results.ResultCSVModel):
-            if isinstance(source, case_results.PerEntityResultCSVModel):
-                if self.exclude is not None or self.include is not None:
+            if self.exclude is not None or self.include is not None:
+                if isinstance(source, case_results.PerEntityResultCSVModel):
                     source.filter(include=self.include, exclude=self.exclude)
+                else:
+                    raise AttributeError(
+                        "Include and exclude can be used only with some data types,"
+                        + " such as surface forces or slicing force distributions."
+                    )
             source, new_variable_name = self._preprocess_data(source=source, component=component)
             if len(self.operations) > 0:
                 for opr in self.operations:  # pylint: disable=not-an-iterable
@@ -840,41 +854,41 @@ def generate_colorbar_from_image(
     is_log_scale=False,
 ):  # pylint: disable=too-many-arguments,too-many-locals
     """
-    Generate a color bar image from an existing PNG file with ticks and labels.
+        Generate a color bar image from an existing PNG file with ticks and labels.
 
-    This function reads a colormap from a provided PNG file (a horizontal strip of
-    colors), and overlays ticks and labels according to the specified value limits
-    and scale type (linear or logarithmic).
+        This function reads a colormap from a provided PNG file (a horizontal strip of
+        colors), and overlays ticks and labels according to the specified value limits
+        and scale type (linear or logarithmic).
+    '
+        For a linear scale, matplotlib automatically chooses the number and format of
+        ticks. For a log scale, a twin axis is used for proper tick placement without
+        distorting the color distribution.
 
-    For a linear scale, matplotlib automatically chooses the number and format of
-    ticks. For a log scale, a twin axis is used for proper tick placement without
-    distorting the color distribution.
+        Parameters
+        ----------
+        image_filename : str
+            Path to the colormap PNG file (horizontal strip).
+        limits : tuple of float
+            A tuple (min_value, max_value) specifying the data range.
+            If `is_log_scale` is True, `max_value` must be greater than 0.
+        field_name : str
+            The field name for the label.
+        output_filename : str
+            The output filename for the resulting image with ticks.
+        height_px : int
+            The height in pixels for the color bar image.
+        is_log_scale : bool
+            If True, use a log scale axis for ticks and minor ticks.
 
-    Parameters
-    ----------
-    image_filename : str
-        Path to the colormap PNG file (horizontal strip).
-    limits : tuple of float
-        A tuple (min_value, max_value) specifying the data range.
-        If `is_log_scale` is True, `max_value` must be greater than 0.
-    field_name : str
-        The field name for the label.
-    output_filename : str
-        The output filename for the resulting image with ticks.
-    height_px : int
-        The height in pixels for the color bar image.
-    is_log_scale : bool
-        If True, use a log scale axis for ticks and minor ticks.
+        Returns
+        -------
+        None
+            The resulting image is saved to `output_filename`.
 
-    Returns
-    -------
-    None
-        The resulting image is saved to `output_filename`.
-
-    Notes
-    -----
-    - On a log scale, the main colorbar axis remains linear to avoid deforming
-      the color distribution. A twin axis is used solely for log-scale labeling.
+        Notes
+        -----
+        - On a log scale, the main colorbar axis remains linear to avoid deforming
+          the color distribution. A twin axis is used solely for log-scale labeling.
     """
 
     img = Image.open(image_filename)

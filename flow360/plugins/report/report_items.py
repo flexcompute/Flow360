@@ -1377,10 +1377,10 @@ class Chart2D(BaseChart2D):
 
     Parameters
     ----------
-    x : Union[str, Delta]
-        The data source for the x-axis, which can be a string path or a `Delta` object.
-    y : Union[str, Delta, List[str]]
-        The data source for the y-axis, which can be a string path or their list or a `Delta` object.
+    x : Union[DataItem, Delta, str]
+        The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
+    y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+        The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
     type_name : Literal["Chart2D"], default="Chart2D"
@@ -1393,8 +1393,8 @@ class Chart2D(BaseChart2D):
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
     """
 
-    x: Union[str, Delta]
-    y: Union[str, Delta, DataItem, List[str], List[DataItem]]
+    x: Union[DataItem, Delta, str]
+    y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
     include: Optional[
         Annotated[
             List[str],
@@ -1418,13 +1418,29 @@ class Chart2D(BaseChart2D):
     @pd.model_validator(mode="after")
     def _handle_deprecated_include_exclude(self):
         if (self.include is not None) or (self.exclude is not None):
-            self.x = DataItem(data=self.x, include=self.include, exclude=self.exclude)
-            if isinstance(self.y, List):
-                self.y = [
-                    DataItem(data=y, include=self.include, exclude=self.exclude) for y in self.y
-                ]
+            if not isinstance(self.x, DataItem):
+                self.x = DataItem(data=self.x, include=self.include, exclude=self.exclude)
             else:
-                self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
+                self.x.include = self.include
+                self.x.exclude = self.exclude
+            if isinstance(self.y, List):
+                new_y = []
+                for y in self.y:
+                    if not isinstance(self.y, DataItem):
+                        new_y.append(
+                            DataItem(data=self.y, include=self.include, exclude=self.exclude)
+                        )
+                    else:
+                        y.include = self.include
+                        y.exclude = self.exclude
+                        new_y.append(y)
+                self.y = new_y
+            else:
+                if not isinstance(self.y, DataItem):
+                    self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
+                else:
+                    self.y.include = self.include
+                    self.y.exclude = self.exclude
         return self
 
     def get_requirements(self):
@@ -1463,7 +1479,7 @@ class Chart2D(BaseChart2D):
             x_data = [float(data) for data in x_data]
             y_data = [float(data) for data in y_data]
             legend = None
-        elif (len(self.y) > 1) and isinstance(self.y, list):
+        elif isinstance(self.y, list) and (len(self.y) > 1):
             if len(cases) * len(self.y) != len(x_data):
                 legend = [path_variable_name(str(y)) for y in self.y]
             else:
@@ -1480,7 +1496,7 @@ class Chart2D(BaseChart2D):
         return legend
 
     def _load_data(self, cases):
-        x_label = path_variable_name(self.x)
+        x_label = path_variable_name(str(self.x))
 
         if not isinstance(self.y, list):
             y_label = path_variable_name(str(self.y))

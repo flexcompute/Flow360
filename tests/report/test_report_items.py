@@ -1429,3 +1429,45 @@ def test_transient_residuals_pseudo(here, cases_transient):
         plot_model_residuals.secondary_x_data_as_np,
         np.array([data["physical_step"][1:].to_numpy()] * len(residuals_sa)),
     )
+
+
+def test_include_exclude(here, cases):
+    chart = Chart2D(
+        x="surface_forces/averages/totalCD",
+        y="surface_forces/averages/totalCL",
+        section_title="CL/CD",
+        fig_name="clcd",
+        include=["blk-1/BODY"],
+    )
+
+    context = ReportContext(cases=cases[:2])
+
+    plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    expected_xs = []
+    expected_ys = []
+
+    # expected data
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.id, "results", "surface_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+        to_avg = round(len(load_data) * 0.1)
+
+        expected_xs.append(np.average(load_data["blk-1/BODY_CD"].iloc[-to_avg:]))
+        expected_ys.append(np.average(load_data["blk-1/BODY_CL"].iloc[-to_avg:]))
+
+    assert np.allclose(np.array(expected_xs), plot_model.x_data_as_np)
+    assert np.allclose(np.array(expected_ys), plot_model.y_data_as_np)
+
+    chart = Chart2D(
+        x="total_forces/averages/CD",
+        y="total_forces/averages/CL",
+        section_title="CL/CD",
+        fig_name="clcd",
+        include=["blk-1/BODY"],
+    )
+
+    with pytest.raises(AttributeError):
+        plot_model = chart.get_data(cases=cases[:2], context=context)
