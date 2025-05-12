@@ -301,21 +301,6 @@ class Flow360Resource(RestApi):
             self._info = self.meta_class(**self.get())
         return self._info
 
-    def add_tag(self, tag: str):
-        """
-        Adds tag to the resource locally.
-
-        Parameters
-        ----------
-        tag: str
-            Tag to add, if tag is already present it will be moved to the end of the tags list
-        category_tag: Optional[bool]
-            Whether to set the tag as the category tag (insert as the first tag)
-        """
-        if tag in self.get_info().tags:
-            self.get_info().tags.remove(tag)
-        self.get_info().tags.insert(0, tag)
-
     @property
     def info(self) -> AssetMetaBaseModel:
         """
