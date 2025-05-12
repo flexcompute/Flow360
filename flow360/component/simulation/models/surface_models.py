@@ -36,14 +36,7 @@ from flow360.component.simulation.unit_system import (
     MassFlowRateType,
     PressureType,
 )
-<<<<<<< HEAD
-from flow360.component.simulation.validation_utils import (
-=======
-from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
-)
 from flow360.component.simulation.validation.validation_utils import (
->>>>>>> 2658d6f4 ([FLPY-12] Fixed the duplicate entity check logic and allow entity reuse between RotationCylinder and UniformRefinement (#1031))
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
 )
