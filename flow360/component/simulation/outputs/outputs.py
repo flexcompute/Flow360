@@ -39,7 +39,7 @@ from flow360.component.simulation.validation.validation_context import (
     CASE,
     get_validation_levels,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
 

@@ -3,8 +3,14 @@ validation utility functions
 """
 
 from functools import wraps
+from typing import get_args
 
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.entity_info import DraftEntityTypes
+from flow360.component.simulation.primitives import (
+    Surface,
+    _SurfaceEntityBase,
+    _VolumeEntityBase,
+)
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -101,3 +107,44 @@ def check_deleted_surface_pair(value):
             )
 
     return value
+
+
+class EntityUsageMap:  # pylint:disable=too-few-public-methods
+    """
+    A customized dict to store the entity name and its usage.
+    {"$EntityID": [$UsedInWhatModel]}
+    """
+
+    def __init__(self):
+        self.dict_entity = {"Surface": {}, "Volume": {}}
+
+    @classmethod
+    def _get_entity_key(cls, entity) -> str:
+        """
+        Get unique identifier for the entity.
+        """
+        draft_entity_types = get_args(get_args(DraftEntityTypes)[0])
+        if isinstance(entity, draft_entity_types):
+            return entity.private_attribute_id
+        return entity.name
+
+    def add_entity_usage(self, entity, model_type):
+        """
+        Add the entity usage to the dictionary.
+        """
+        entity_type = None
+        if isinstance(entity, _SurfaceEntityBase):
+            entity_type = "Surface"
+        elif isinstance(entity, _VolumeEntityBase):
+            entity_type = "Volume"
+        else:
+            raise ValueError(
+                f"[Internal Error] Entity `{entity.name}` in the {model_type} model "
+                f"cannot be registered as a valid Surface or Volume entity."
+            )
+        entity_key = self._get_entity_key(entity=entity)
+        entity_log = self.dict_entity[entity_type].get(
+            entity_key, {"entity_name": entity.name, "model_list": []}
+        )
+        entity_log["model_list"].append(model_type)
+        self.dict_entity[entity_type][entity_key] = entity_log

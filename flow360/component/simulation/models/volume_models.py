@@ -58,7 +58,7 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
 )
 
