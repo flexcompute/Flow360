@@ -1234,6 +1234,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool,
         use_geometry_AI: bool,
         raise_on_error: bool,
+        tags: List[str],
         **kwargs,
     ):
         """
@@ -1259,6 +1260,8 @@ class Project(pd.BaseModel):
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the target asset.
 
         Returns
         -------
@@ -1308,6 +1311,13 @@ class Project(pd.BaseModel):
         start_from = kwargs.get("start_from", None)
         job_tags = kwargs.get("job_tags", None)
 
+        all_tags = []
+
+        if tags is not None:
+            all_tags += tags
+        if job_tags is not None:
+            all_tags += job_tags
+
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
@@ -1316,7 +1326,7 @@ class Project(pd.BaseModel):
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
             interpolation_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
-            tags=job_tags,
+            tags=all_tags,
         ).submit()
 
         draft.update_simulation_params(params)
@@ -1369,6 +1379,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        tags: List[str] = None,
         **kwargs,
     ):
         """
@@ -1390,6 +1401,8 @@ class Project(pd.BaseModel):
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the generated surface mesh.
 
         Raises
         ------
@@ -1412,6 +1425,7 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            tags=tags,
             **kwargs,
         )
         return surface_mesh
@@ -1426,6 +1440,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        tags: List[str] = None,
         **kwargs,
     ):
         """
@@ -1447,6 +1462,8 @@ class Project(pd.BaseModel):
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the generated volume mesh.
 
         Raises
         ------
@@ -1472,6 +1489,7 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            tags=tags,
             **kwargs,
         )
         return volume_mesh
@@ -1488,6 +1506,7 @@ class Project(pd.BaseModel):
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        tags: List[str] = None,
         **kwargs,
     ):
         """
@@ -1513,6 +1532,8 @@ class Project(pd.BaseModel):
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the case.
         """
         self._check_initialized()
         case = self._run(
@@ -1526,6 +1547,7 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            tags=tags,
             **kwargs,
         )
         return case

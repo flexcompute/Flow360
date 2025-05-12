@@ -1489,7 +1489,7 @@ class Chart2D(BaseChart2D):
             x_data = [float(data) for data in x_data]
             y_data = [float(data) for data in y_data]
             legend = None
-        elif (len(self.y) > 1) and isinstance(self.y, list):
+        elif isinstance(self.y, list) and (len(self.y) > 1):
             legend = []
             for case in cases:
                 for y in self.y:

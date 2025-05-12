@@ -281,8 +281,6 @@ def search_path(case: Case, component: str) -> Any:
         except (ValueError, IndexError):
             pass
 
-        
-
     # Check if case is a number
     if isinstance(case, Number):
         return case
