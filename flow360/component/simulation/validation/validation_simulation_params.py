@@ -95,7 +95,9 @@ def _check_duplicate_entities_in_models(params):
     if models:
         for model in models:
             if hasattr(model, "entities"):
-                for entity in model.entities.stored_entities:
+                # pylint: disable = protected-access
+                expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+                for entity in expanded_entities:
                     dict_entity = register_single_entity(entity, model.type, dict_entity)
 
     error_msg = ""

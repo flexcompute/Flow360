@@ -21,7 +21,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.utils import validate_type
-from flow360.exceptions import Flow360WebError
+from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
 
 
@@ -119,7 +119,11 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
 
         self.post(
-            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            json={
+                "data": params.model_dump_json(exclude_none=True),
+                "type": "simulation",
+                "version": "",
+            },
             method="simulation/file",
         )
 
@@ -176,7 +180,9 @@ class Draft(Flow360Resource):
                 log.error(
                     f"Failure detail: {formatting_validation_errors(ast.literal_eval(detailed_error))}"
                 )
-            except json.decoder.JSONDecodeError:
+            except (json.decoder.JSONDecodeError, TypeError):
                 # No detail given.
-                log.error("An unexpected error has occurred. Please contact customer support.")
+                raise Flow360RuntimeError(
+                    "An unexpected error has occurred. Please contact customer support."
+                ) from None
         raise RuntimeError("Submission not successful.")
