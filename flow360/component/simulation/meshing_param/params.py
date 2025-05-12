@@ -20,7 +20,6 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -29,6 +28,7 @@ from flow360.component.simulation.validation.validation_context import (
     ContextField,
     get_validation_info,
 )
+from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 RefinementTypes = Annotated[
     Union[
@@ -221,48 +221,65 @@ class MeshingParams(Flow360BaseModel):
         return v
 
     @pd.model_validator(mode="after")
-    def _check_no_reused_cylinder(self) -> Self:
+    def _check_no_reused_volume_entities(self) -> Self:
         """
-        Check that the RoatatoinCylinder, AxisymmetricRefinement, and UniformRefinement
-        do not share the same cylinder.
+        Meshing entities reuse check.
+        +------------------------+------------------------+------------------------+------------------------+
+        |                        | RotationCylinder       | AxisymmetricRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+------------------------+
+        | RotationCylinder       |          NO            |           --           |           --           |
+        +------------------------+------------------------+------------------------+------------------------+
+        | AxisymmetricRefinement |          NO            |           NO           |           --           |
+        +------------------------+------------------------+------------------------+------------------------+
+        | UniformRefinement      |          YES           |           NO           |           NO           |
+        +------------------------+------------------------+------------------------+------------------------+
+
         """
 
-        class CylinderUsageMap(dict):
-            """A customized dict to store the cylinder name and its usage."""
+        usage = EntityUsageMap()
 
-            def __setitem__(self, key, value):
-                if key in self:
-                    if self[key] != value:
-                        raise ValueError(
-                            f"The same cylinder named `{key}` is used in both {self[key]} and {value}."
-                        )
-                    raise ValueError(
-                        f"The cylinder named `{key}` is used multiple times in {value}."
-                    )
-                super().__setitem__(key, value)
-
-        cylinder_name_to_usage_map = CylinderUsageMap()
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
             if isinstance(volume_zone, RotationCylinder):
                 # pylint: disable=protected-access
-                for cylinder in [
-                    item
+                _ = [
+                    usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
-                    if isinstance(item, Cylinder)
-                ]:
-                    cylinder_name_to_usage_map[cylinder.name] = RotationCylinder.model_fields[
-                        "type"
-                    ].default
+                ]
 
         for refinement in self.refinements if self.refinements is not None else []:
             if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
                 # pylint: disable=protected-access
-                for cylinder in [
-                    item
+                _ = [
+                    usage.add_entity_usage(item, refinement.refinement_type)
                     for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
-                    if isinstance(item, Cylinder)
-                ]:
-                    cylinder_name_to_usage_map[cylinder.name] = refinement.refinement_type
+                ]
+
+        error_msg = ""
+        for entity_type, entity_model_map in usage.dict_entity.items():
+            for entity_info in entity_model_map.values():
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) == {
+                    "RotationCylinder",
+                    "UniformRefinement",
+                }:
+                    # RotationCylinder and UniformRefinement are allowed to be used together
+                    continue
+
+                model_set = set(entity_info["model_list"])
+                if len(model_set) == 1:
+                    error_msg += (
+                        f"{entity_type} entity `{entity_info['entity_name']}` "
+                        + f"is used multiple times in `{model_set.pop()}`."
+                    )
+                else:
+                    model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
+                    error_msg += (
+                        f"Using {entity_type} entity `{entity_info['entity_name']}` "
+                        + f"in {model_string} at the same time is not allowed."
+                    )
+
+        if error_msg:
+            raise ValueError(error_msg)
+
         return self
 
     @property
