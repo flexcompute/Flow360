@@ -33,7 +33,7 @@ class HeightBasedRefinement(Flow360BaseModel):
     Example
     -------
 
-      >>> fl.HeightBasedRefinement(value=1e-4 * fl.u.m)
+      >>> fl.HeightBasedRefinement(value=1e-4*fl.u.m)
 
     ====
     """
