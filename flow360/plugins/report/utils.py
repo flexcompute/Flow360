@@ -711,7 +711,7 @@ class DataItem(Flow360BaseModel):
     def _check_for_averages(self):
         components = split_path(self.data)
         if "averages" in components:
-            self.operations.insert(0, Average(fraction=0.1))
+            self.operations.append(Average(fraction=0.1))
             components.remove("averages")
             self.data = "/".join(components)
         return self

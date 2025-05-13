@@ -1488,8 +1488,9 @@ def test_in_path_averages(here, cases):
                         operations=[Expression(expr="CL*beta")], 
                         variables=[Variable(name="beta", data="params/operating_condition/beta")])
     
-    assert dataitem.operations[0] == Average(fraction=0.1)
-    assert dataitem.operations[1] == Expression(expr="CL*beta")
+    
+    assert dataitem.operations[0] == Expression(expr="CL*beta")
+    assert dataitem.operations[1] == Average(fraction=0.1)
 
     cl_beta = dataitem.calculate(case=cases[1], cases=cases)
 
@@ -1501,8 +1502,8 @@ def test_in_path_averages(here, cases):
 
     cl_beta_expected = np.average(load_data["CL"].iloc[-to_avg:]) * 2
 
-    assert dataitem.operations[1] == Average(fraction=0.1)
-    assert dataitem.operations[2] == Expression(expr="CL*beta")
+    assert dataitem.operations[2] == Average(fraction=0.1)
+    assert dataitem.operations[1] == Expression(expr="CL*beta")
 
     assert np.allclose(cl_beta, cl_beta_expected)
 
