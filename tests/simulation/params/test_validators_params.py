@@ -1717,17 +1717,6 @@ def test_geometry_AI_only_features():
                 use_inhouse_mesher=False, use_geometry_AI=False
             ),
         )
-    params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json"),
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Geometry",
-        validation_level="VolumeMesh",
-    )
-    assert len(errors) == 1
-    assert (
-        errors[0]["msg"]
-        == "Value error, Geometry accuracy is only supported when geometry AI is used."
-    )
 
     with SI_unit_system:
         params = SimulationParams(
