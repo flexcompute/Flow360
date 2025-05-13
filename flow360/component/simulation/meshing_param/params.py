@@ -156,9 +156,6 @@ class MeshingDefaults(Flow360BaseModel):
         if validation_info is None:
             return value
 
-        if value is not None and not validation_info.use_geometry_AI:
-            raise ValueError("Geometry accuracy is only supported when geometry AI is used.")
-
         if value is None and validation_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
