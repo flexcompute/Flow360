@@ -31,7 +31,7 @@ class UniformRefinement(Flow360BaseModel):
 
       >>> fl.UniformRefinement(
       ...     entities=[cylinder, box],
-      ...     spacing=1 * fl.u.cm
+      ...     spacing=1*fl.u.cm
       ... )
 
     ====
@@ -75,8 +75,8 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
       >>> fl.AxisymmetricRefinement(
       ...     entities=[cylinder],
       ...     spacing_axial=1e-4,
-      ...     spacing_radial=0.3 * fl.u.cm,
-      ...     spacing_circumferential=5 * fl.u.mm
+      ...     spacing_radial=0.3*fl.u.cm,
+      ...     spacing_circumferential=5*fl.u.mm
       ... )
 
     ====
@@ -101,9 +101,9 @@ class RotationCylinder(CylindricalRefinementBase):
 
       >>> fl.RotationCylinder(
       ...     name="RotationCylinder",
-      ...     spacing_axial=0.5 * fl.u.m,
-      ...     spacing_circumferential=0.3 * fl.u.m,
-      ...     spacing_radial=1.5 * fl.u.m,
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
       ...     entities=cylinder
       ... )
 
@@ -226,7 +226,7 @@ class UserDefinedFarfield(Flow360BaseModel):
     Example
     -------
 
-      >>> fl.UserDefinedFarfield("InnerChannel")
+      >>> fl.UserDefinedFarfield(name="InnerChannel")
 
     ====
     """

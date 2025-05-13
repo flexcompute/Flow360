@@ -55,11 +55,11 @@ class MeshingDefaults(Flow360BaseModel):
     -------
 
       >>> fl.MeshingDefaults(
-      ...     surface_max_edge_length=1 * fl.u.m,
+      ...     surface_max_edge_length=1*fl.u.m,
       ...     surface_edge_growth_rate=1.2,
-      ...     curvature_resolution_angle=12 * fl.u.deg,
+      ...     curvature_resolution_angle=12*fl.u.deg,
       ...     boundary_layer_growth_rate=1.1,
-      ...     boundary_layer_first_layer_thickness=1e-5 * fl.u.m
+      ...     boundary_layer_first_layer_thickness=1e-5*fl.u.m
       ... )
 
     ====
@@ -186,22 +186,22 @@ class MeshingParams(Flow360BaseModel):
 
       >>> fl.MeshingParams(
       ...     defaults=fl.MeshingDefaults(
-      ...         surface_max_edge_length=1 * fl.u.m,
-      ...         boundary_layer_first_layer_thickness=1e-5 * fl.u.m
+      ...         surface_max_edge_length=1*fl.u.m,
+      ...         boundary_layer_first_layer_thickness=1e-5*fl.u.m
       ...     ),
       ...     volume_zones=[farfield],
       ...     refinements=[
       ...         fl.SurfaceEdgeRefinement(
       ...             edges=[geometry["edge1"], geometry["edge2"]],
-      ...             method=fl.AngleBasedRefinement(value=8 * fl.u.deg)
+      ...             method=fl.AngleBasedRefinement(value=8*fl.u.deg)
       ...         ),
       ...         fl.SurfaceRefinement(
       ...             faces=[geometry["face1"], geometry["face2"]],
-      ...             max_edge_length=0.001 * fl.u.m
+      ...             max_edge_length=0.001*fl.u.m
       ...         ),
       ...         fl.UniformRefinement(
       ...             entities=[cylinder, box],
-      ...             spacing=1 * fl.u.cm
+      ...             spacing=1*fl.u.cm
       ...         )
       ...     ]
       ... )
