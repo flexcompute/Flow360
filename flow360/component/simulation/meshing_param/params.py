@@ -50,6 +50,19 @@ VolumeZonesTypes = Annotated[
 class MeshingDefaults(Flow360BaseModel):
     """
     Default/global settings for meshing parameters.
+
+    Example
+    -------
+
+      >>> fl.MeshingDefaults(
+      ...     surface_max_edge_length=1*fl.u.m,
+      ...     surface_edge_growth_rate=1.2,
+      ...     curvature_resolution_angle=12*fl.u.deg,
+      ...     boundary_layer_growth_rate=1.1,
+      ...     boundary_layer_first_layer_thickness=1e-5*fl.u.m
+      ... )
+
+    ====
     """
 
     # pylint: disable=no-member
@@ -167,6 +180,33 @@ class MeshingDefaults(Flow360BaseModel):
 class MeshingParams(Flow360BaseModel):
     """
     Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
+
+    Example
+    -------
+
+      >>> fl.MeshingParams(
+      ...     defaults=fl.MeshingDefaults(
+      ...         surface_max_edge_length=1*fl.u.m,
+      ...         boundary_layer_first_layer_thickness=1e-5*fl.u.m
+      ...     ),
+      ...     volume_zones=[farfield],
+      ...     refinements=[
+      ...         fl.SurfaceEdgeRefinement(
+      ...             edges=[geometry["edge1"], geometry["edge2"]],
+      ...             method=fl.AngleBasedRefinement(value=8*fl.u.deg)
+      ...         ),
+      ...         fl.SurfaceRefinement(
+      ...             faces=[geometry["face1"], geometry["face2"]],
+      ...             max_edge_length=0.001*fl.u.m
+      ...         ),
+      ...         fl.UniformRefinement(
+      ...             entities=[cylinder, box],
+      ...             spacing=1*fl.u.cm
+      ...         )
+      ...     ]
+      ... )
+
+    ====
     """
 
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
