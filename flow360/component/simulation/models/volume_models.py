@@ -65,7 +65,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
 )
 
