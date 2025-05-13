@@ -4,7 +4,6 @@ validation for SimulationParams
 
 from typing import get_args
 
-from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -21,10 +20,6 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageOutputTypes,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import (
-    _SurfaceEntityBase,
-    _VolumeEntityBase,
-)
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -32,6 +27,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
     get_validation_levels,
 )
+from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 
 def _check_consistency_wall_function_and_surface_output(v):
@@ -63,56 +59,32 @@ def _check_consistency_wall_function_and_surface_output(v):
 
 
 def _check_duplicate_entities_in_models(params):
+    if not params.models:
+        return params
+
     models = params.models
+    usage = EntityUsageMap()
 
-    dict_entity = {"Surface": {}, "Volume": {}}
-
-    def _get_entity_key(entity):
-        draft_entity_types = get_args(get_args(DraftEntityTypes)[0])
-        if isinstance(entity, draft_entity_types):
-            return entity.private_attribute_id
-        return entity.name
-
-    def register_single_entity(entity, model_type, dict_entity):
-        entity_type = None
-        if isinstance(entity, _SurfaceEntityBase):
-            entity_type = "Surface"
-        elif isinstance(entity, _VolumeEntityBase):
-            entity_type = "Volume"
-        else:
-            raise ValueError(
-                f"[Internal Error] Entity `{entity.name}` in the {model_type} model "
-                f"cannot be registered as a valid Surface or Volume entity."
-            )
-        entity_key = _get_entity_key(entity=entity)
-        entity_log = dict_entity[entity_type].get(
-            entity_key, {"entity_name": entity.name, "model_list": []}
-        )
-        entity_log["model_list"].append(model_type)
-        dict_entity[entity_type][entity_key] = entity_log
-        return dict_entity
-
-    if models:
-        for model in models:
-            if hasattr(model, "entities"):
-                # pylint: disable = protected-access
-                expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
-                for entity in expanded_entities:
-                    dict_entity = register_single_entity(entity, model.type, dict_entity)
+    for model in models:
+        if hasattr(model, "entities"):
+            # pylint: disable = protected-access
+            expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            for entity in expanded_entities:
+                usage.add_entity_usage(entity, model.type)
 
     error_msg = ""
-    for entity_type, entity_model_map in dict_entity.items():
+    for entity_type, entity_model_map in usage.dict_entity.items():
         for entity_info in entity_model_map.values():
             if len(entity_info["model_list"]) > 1:
                 model_set = set(entity_info["model_list"])
                 model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
                 model_string += " models.\n" if len(model_set) > 1 else " model.\n"
                 error_msg += (
-                    f"{entity_type} entity `{entity_info['entity_name']}` appears "
-                    f"multiple times in {model_string}"
+                    f"{entity_type} entity `{entity_info['entity_name']}` "
+                    + f"appears multiple times in {model_string}"
                 )
 
-    if error_msg != "":
+    if error_msg:
         raise ValueError(error_msg)
 
     return params

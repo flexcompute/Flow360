@@ -39,7 +39,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
 )
