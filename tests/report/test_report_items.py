@@ -39,6 +39,8 @@ from flow360.plugins.report.utils import (
     Variable,
 )
 
+from flow360.exceptions import Flow360ValidationError
+
 
 @pytest.fixture
 def here():
@@ -1471,3 +1473,36 @@ def test_include_exclude(here, cases):
 
     with pytest.raises(AttributeError):
         plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    with pytest.raises(Flow360ValidationError):
+        chart = Chart2D(
+            x=Delta(data="surface_forces/averages/totalCD"),
+            y="surface_forces/averages/totalCL",
+            section_title="CL/CD",
+            fig_name="clcd",
+            include=["blk-1/BODY"],
+        )
+
+def test_in_path_averages(here, cases):
+    dataitem = DataItem(data="total_forces/averages/CL", 
+                        operations=[Expression(expr="CL*beta")], 
+                        variables=[Variable(name="beta", data="params/operating_condition/beta")])
+    
+    assert dataitem.operations[0] == Average(fraction=0.1)
+    assert dataitem.operations[1] == Expression(expr="CL*beta")
+
+    cl_beta = dataitem.calculate(case=cases[1], cases=cases)
+
+    load_data = pd.read_csv(
+        os.path.join(here, "..", "data", cases[1].id, "results", "total_forces_v2.csv"),
+        skipinitialspace=True,
+    )
+    to_avg = round(len(load_data) * 0.1)
+
+    cl_beta_expected = np.average(load_data["CL"].iloc[-to_avg:]) * 2
+
+    assert dataitem.operations[1] == Average(fraction=0.1)
+    assert dataitem.operations[2] == Expression(expr="CL*beta")
+
+    assert np.allclose(cl_beta, cl_beta_expected)
+

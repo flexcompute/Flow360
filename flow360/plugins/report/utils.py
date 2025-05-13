@@ -22,6 +22,8 @@ import pydantic as pd
 from matplotlib.ticker import LogFormatterSciNotation
 from PIL import Image
 
+from pandas import DataFrame
+
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
@@ -830,7 +832,9 @@ class Delta(Flow360BaseModel):
 
 # pylint: disable=too-few-public-methods
 class Tabulary(Tabular):
-    """The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex"""
+    """
+    The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex
+    """
 
     packages = [Package("tabulary")]
 
@@ -854,41 +858,41 @@ def generate_colorbar_from_image(
     is_log_scale=False,
 ):  # pylint: disable=too-many-arguments,too-many-locals
     """
-        Generate a color bar image from an existing PNG file with ticks and labels.
+    Generate a color bar image from an existing PNG file with ticks and labels.
 
-        This function reads a colormap from a provided PNG file (a horizontal strip of
-        colors), and overlays ticks and labels according to the specified value limits
-        and scale type (linear or logarithmic).
-    '
-        For a linear scale, matplotlib automatically chooses the number and format of
-        ticks. For a log scale, a twin axis is used for proper tick placement without
-        distorting the color distribution.
+    This function reads a colormap from a provided PNG file (a horizontal strip of
+    colors), and overlays ticks and labels according to the specified value limits
+    and scale type (linear or logarithmic).
 
-        Parameters
-        ----------
-        image_filename : str
-            Path to the colormap PNG file (horizontal strip).
-        limits : tuple of float
-            A tuple (min_value, max_value) specifying the data range.
-            If `is_log_scale` is True, `max_value` must be greater than 0.
-        field_name : str
-            The field name for the label.
-        output_filename : str
-            The output filename for the resulting image with ticks.
-        height_px : int
-            The height in pixels for the color bar image.
-        is_log_scale : bool
-            If True, use a log scale axis for ticks and minor ticks.
+    For a linear scale, matplotlib automatically chooses the number and format of
+    ticks. For a log scale, a twin axis is used for proper tick placement without
+    distorting the color distribution.
 
-        Returns
-        -------
-        None
-            The resulting image is saved to `output_filename`.
+    Parameters
+    ----------
+    image_filename : str
+        Path to the colormap PNG file (horizontal strip).
+    limits : tuple of float
+        A tuple (min_value, max_value) specifying the data range.
+        If `is_log_scale` is True, `max_value` must be greater than 0.
+    field_name : str
+        The field name for the label.
+    output_filename : str
+        The output filename for the resulting image with ticks.
+    height_px : int
+        The height in pixels for the color bar image.
+    is_log_scale : bool
+        If True, use a log scale axis for ticks and minor ticks.
 
-        Notes
-        -----
-        - On a log scale, the main colorbar axis remains linear to avoid deforming
-          the color distribution. A twin axis is used solely for log-scale labeling.
+    Returns
+    -------
+    None
+        The resulting image is saved to `output_filename`.
+
+    Notes
+    -----
+    - On a log scale, the main colorbar axis remains linear to avoid deforming
+        the color distribution. A twin axis is used solely for log-scale labeling.
     """
 
     img = Image.open(image_filename)

@@ -88,6 +88,8 @@ from flow360.plugins.report.uvf_shutter import (
     make_shutter_context,
 )
 
+from flow360.exceptions import Flow360ValidationError
+
 here = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -1417,31 +1419,35 @@ class Chart2D(BaseChart2D):
 
     @pd.model_validator(mode="after")
     def _handle_deprecated_include_exclude(self):
-        if (self.include is not None) or (self.exclude is not None):
-            if not isinstance(self.x, DataItem):
-                self.x = DataItem(data=self.x, include=self.include, exclude=self.exclude)
-            else:
-                self.x.include = self.include
-                self.x.exclude = self.exclude
+        include = self.include 
+        exclude = self.exclude
+        if (include is not None) or (exclude is not None):
+            self.include = None
+            self.exclude = None
+            self.x = self._overload_include_exclude(include, exclude, self.x)
             if isinstance(self.y, List):
-                new_y = []
-                for y in self.y:
-                    if not isinstance(self.y, DataItem):
-                        new_y.append(
-                            DataItem(data=self.y, include=self.include, exclude=self.exclude)
-                        )
-                    else:
-                        y.include = self.include
-                        y.exclude = self.exclude
-                        new_y.append(y)
-                self.y = new_y
-            else:
-                if not isinstance(self.y, DataItem):
-                    self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
-                else:
-                    self.y.include = self.include
-                    self.y.exclude = self.exclude
+                new_value = []
+                for data_variable in self.y:
+                    new_value.append(self._overload_include_exclude(include, exclude, data_variable))
+                self.y = new_value
+            else: 
+                self.y = self._overload_include_exclude(include, exclude, self.y)
         return self
+            
+    
+    @classmethod
+    def _overload_include_exclude(cls, include, exclude, data_variable):
+        if isinstance(data_variable, Delta):
+            raise Flow360ValidationError("Delta can not be used with exclude/include options. " +
+                                     "Specify the Delta data using DataItem.")
+        if not isinstance(data_variable, DataItem):
+            data_variable = DataItem(data=data_variable, include=include, exclude=exclude)
+        else:
+            data_variable.include = include
+            data_variable.exclude = exclude
+        return data_variable
+            
+        
 
     def get_requirements(self):
         """
