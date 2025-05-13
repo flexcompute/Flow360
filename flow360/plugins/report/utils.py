@@ -660,6 +660,8 @@ class DataItem(Flow360BaseModel):
     The `DataItem` class retrieves data from a specified path within a `Case` and allows for:
      - Excluding specific boundaries (if applicable).
      - Applying one or more post-processing operations (e.g., mathematical expressions, averaging).
+       Averaging should be applied as a last expression, accessing variables through /averages path will
+       automaticly append an averaging operation to the objects operations.
      - Introducing additional variables for use in these operations.
 
     Parameters
