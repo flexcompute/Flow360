@@ -97,15 +97,6 @@ class AssetMetaBaseModel(pd.BaseModel):
             value = None
         return value
 
-    @property
-    def category_tag(self):
-        """
-        Returns the first tag.
-        """
-        if self.tags:
-            return self.tags[0]
-        return None
-
     # pylint: disable=missing-class-docstring,too-few-public-methods
     class Config:
         extra = pd.Extra.allow
@@ -157,15 +148,6 @@ class AssetMetaBaseModelV2(pd_v2.BaseModel):
         if value == "None":
             value = None
         return value
-
-    @property
-    def category_tag(self):
-        """
-        Returns the first tag.
-        """
-        if self.tags:
-            return self.tags[0]  # pylint: disable=unsubscriptable-object
-        return None
 
 
 # pylint: disable=redefined-builtin
@@ -318,24 +300,6 @@ class Flow360Resource(RestApi):
         if self._info is None or force:
             self._info = self.meta_class(**self.get())
         return self._info
-
-    def add_tag(self, tag: str, category_tag: bool = False):
-        """
-        Adds tag to the resource.
-
-        Parameters
-        ----------
-        tag: str
-            Tag to add, if tag is already present it will be moved to the end of the tags list
-        category_tag: Optional[bool]
-            Whether to set the tag as the category tag (insert as the first tag)
-        """
-        if tag in self.get_info().tags:
-            self.get_info().tags.remove(tag)
-        if category_tag:
-            self.get_info().tags.insert(0, tag)
-        else:
-            self.get_info().tags.append(tag)
 
     @property
     def info(self) -> AssetMetaBaseModel:

@@ -1367,7 +1367,7 @@ def test_grouper_buckets(cases):
     ]
 
     case: Case = cases[0]
-    case.add_tag("c", category_tag=True)
+    case.info.tags.insert(0, "c")
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.75, "total_forces/averages/CL")
 
@@ -1381,11 +1381,11 @@ def test_grouper_buckets(cases):
         [0.2, 0.4, 0.75, 0.75],
     ]
 
-    case.add_tag("a", category_tag=True)
+    case.info.tags.insert(0, "a")
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 1, 0.72, "total_forces/averages/CL")
 
-    case.add_tag("b", category_tag=True)
+    case.info.tags.insert(0, "b")
 
     x_data, y_data = grouper.arrange_data(case, x_data, y_data, 2, 0.73, "total_forces/averages/CL")
 
