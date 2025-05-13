@@ -89,33 +89,6 @@ def snake_to_camel(string: str) -> str:
     return camel_case_string
 
 
-def camel_to_snake(string: str) -> str:
-    """
-    Convert a camelCase string to snake_case.
-
-    This function takes a camelCase string as input and converts it to snake_case.
-    It inserts underscores before each uppercase letter (except the first character)
-    and converts all characters to lowercase.
-
-    Parameters:
-    string (str): The input string in camelCase format.
-
-    Returns:
-    str: The converted string in snake_case format.
-
-    Example:
-    >>> camel_to_snake("exampleCamelCase")
-    'example_camel_case'
-    """
-    snake_case_string = ""
-    for char in string:
-        if char.isupper():
-            snake_case_string += "_" + char.lower()
-        else:
-            snake_case_string += char
-    return snake_case_string
-
-
 class Conflicts(pd.BaseModel):
     """
     Wrapper for handling fields that cannot be specified simultaneously
@@ -195,8 +168,7 @@ class Flow360BaseModel(pd.BaseModel):
         # pylint: disable=fixme
         # TODO: Remove alias_generator since it is only for translator
         alias_generator=pd.AliasGenerator(
-            serialization_alias=snake_to_camel,
-            validation_alias=camel_to_snake,
+            alias=snake_to_camel,
         ),
     )
 

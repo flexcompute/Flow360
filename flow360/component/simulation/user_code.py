@@ -58,7 +58,7 @@ def _convert_argument(value):
     elif isinstance(value, unyt_array):
         unit = str(value.units)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(value.value)} * "
+        arg = f"{_convert_argument(value.value)[0]} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
@@ -66,7 +66,10 @@ def _convert_argument(value):
             else:
                 arg += token
     elif isinstance(value, np.ndarray):
-        arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+        if value.ndim == 0:
+            arg = str(value)
+        else:
+            arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
     else:
         raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
@@ -297,7 +300,12 @@ class Expression(Flow360BaseModel, Evaluable):
         elif isinstance(value, Variable):
             expression = str(value)
         elif isinstance(value, np.ndarray) and not isinstance(value, unyt_array):
-            expression = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+            if value.ndim == 0:
+                expression = str(value)
+            else:
+                expression = (
+                    f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+                )
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
