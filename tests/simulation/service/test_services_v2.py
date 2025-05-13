@@ -1065,11 +1065,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-<<<<<<< HEAD
-        "type": "99.99.99 > 25.5.0b5",
-=======
         "type": "99.99.99 > 25.5.0",
->>>>>>> 02ed491f (Bump to 25.5.0 (#1039))
         "loc": [],
         "msg": "The cloud `SimulationParam` is too new for your local Python client. "
         "Errors may occur since forward compatibility is limited.",
@@ -1083,11 +1079,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-<<<<<<< HEAD
-        "type": "99.99.99 > 25.5.0b5",
-=======
         "type": "99.99.99 > 25.5.0",
->>>>>>> 02ed491f (Bump to 25.5.0 (#1039))
         "loc": [],
         "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
         "ctx": {},
