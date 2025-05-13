@@ -46,6 +46,7 @@ from flow360.component.simulation.unit_system import (
     is_flow360_unit,
     unyt_quantity,
 )
+from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
@@ -87,8 +88,6 @@ from flow360.plugins.report.uvf_shutter import (
     TopCamera,
     make_shutter_context,
 )
-
-from flow360.exceptions import Flow360ValidationError
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -1419,7 +1418,7 @@ class Chart2D(BaseChart2D):
 
     @pd.model_validator(mode="after")
     def _handle_deprecated_include_exclude(self):
-        include = self.include 
+        include = self.include
         exclude = self.exclude
         if (include is not None) or (exclude is not None):
             self.include = None
@@ -1428,26 +1427,27 @@ class Chart2D(BaseChart2D):
             if isinstance(self.y, List):
                 new_value = []
                 for data_variable in self.y:
-                    new_value.append(self._overload_include_exclude(include, exclude, data_variable))
+                    new_value.append(
+                        self._overload_include_exclude(include, exclude, data_variable)
+                    )
                 self.y = new_value
-            else: 
+            else:
                 self.y = self._overload_include_exclude(include, exclude, self.y)
         return self
-            
-    
+
     @classmethod
     def _overload_include_exclude(cls, include, exclude, data_variable):
         if isinstance(data_variable, Delta):
-            raise Flow360ValidationError("Delta can not be used with exclude/include options. " +
-                                     "Specify the Delta data using DataItem.")
+            raise Flow360ValidationError(
+                "Delta can not be used with exclude/include options. "
+                + "Specify the Delta data using DataItem."
+            )
         if not isinstance(data_variable, DataItem):
             data_variable = DataItem(data=data_variable, include=include, exclude=exclude)
         else:
             data_variable.include = include
             data_variable.exclude = exclude
         return data_variable
-            
-        
 
     def get_requirements(self):
         """

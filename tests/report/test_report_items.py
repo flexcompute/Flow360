@@ -14,6 +14,7 @@ from flow360.component.case import CaseMeta
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.utils import LocalResourceCache
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
+from flow360.exceptions import Flow360ValidationError
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_doc import ReportDoc
@@ -38,8 +39,6 @@ from flow360.plugins.report.utils import (
     GetAttribute,
     Variable,
 )
-
-from flow360.exceptions import Flow360ValidationError
 
 
 @pytest.fixture
@@ -1483,12 +1482,14 @@ def test_include_exclude(here, cases):
             include=["blk-1/BODY"],
         )
 
+
 def test_in_path_averages(here, cases):
-    dataitem = DataItem(data="total_forces/averages/CL", 
-                        operations=[Expression(expr="CL*beta")], 
-                        variables=[Variable(name="beta", data="params/operating_condition/beta")])
-    
-    
+    dataitem = DataItem(
+        data="total_forces/averages/CL",
+        operations=[Expression(expr="CL*beta")],
+        variables=[Variable(name="beta", data="params/operating_condition/beta")],
+    )
+
     assert dataitem.operations[0] == Expression(expr="CL*beta")
     assert dataitem.operations[1] == Average(fraction=0.1)
 
@@ -1506,4 +1507,3 @@ def test_in_path_averages(here, cases):
     assert dataitem.operations[1] == Expression(expr="CL*beta")
 
     assert np.allclose(cl_beta, cl_beta_expected)
-

@@ -22,8 +22,6 @@ import pydantic as pd
 from matplotlib.ticker import LogFormatterSciNotation
 from PIL import Image
 
-from pandas import DataFrame
-
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
