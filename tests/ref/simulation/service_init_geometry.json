@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "version": "25.5.0b5",
+=======
+  "version": "25.5.0",
+>>>>>>> 02ed491f (Bump to 25.5.0 (#1039))
   "unit_system": {
     "name": "SI"
   },
