@@ -43,6 +43,7 @@ from flow360.component.simulation.unit_system import (
     is_flow360_unit,
     unyt_quantity,
 )
+from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
@@ -973,6 +974,258 @@ class Chart2D(Chart):
             ylim=ylim,
         )
 
+<<<<<<< HEAD
+=======
+    def _get_figures(self, cases, context: ReportContext):
+        file_names = []
+        case_by_case, data_storage = context.case_by_case, context.data_storage
+        cbc_str = "_cbc_" if case_by_case else "_"
+        if self.separate_plots:
+            for case in cases:
+                file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".pdf")
+                data = self.get_data([case], context)
+                fig = data.get_plot()
+                fig.savefig(file_name, format="pdf", bbox_inches="tight")
+                file_names.append(file_name)
+                plt.close()
+
+        else:
+            file_name = os.path.join(data_storage, self.fig_name + cbc_str + "all_cases" + ".pdf")
+            data = self.get_data(cases, context)
+            fig = data.get_plot()
+            fig.savefig(file_name, format="pdf", bbox_inches="tight")
+            file_names.append(file_name)
+            plt.close()
+
+        return file_names, data.x_label, data.y_label
+
+    # pylint: disable=too-many-return-statements
+    def _handle_2d_caption(
+        self, case: Case = None, x_lab: str = None, y_lab: str = None, case_number: int = None
+    ):
+        """
+        Handle captions for Chart2D.
+        """
+
+        if self.caption == "":
+            if self.items_in_row is not None:
+                return f"{bold(y_lab)} against {bold(x_lab)}."
+            if self.separate_plots is True:
+                return f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+            if self.select_indices is not None:
+                return f"{bold(y_lab)} against {bold(x_lab)} for {bold('selected cases')}."
+            return f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
+        if self.separate_plots is True:
+            if isinstance(self.caption, List):
+                return escape_latex(self.caption[case_number])
+            if isinstance(self.caption, PatternCaption):
+                return escape_latex(self.caption.resolve(case))
+        return self.caption
+
+    # pylint: disable=too-many-arguments,too-many-locals
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
+        """
+        Returns doc item for chart.
+        """
+        self._handle_new_page(context.doc)
+        self._handle_grid_input(context.cases)
+        self._handle_title(context.doc, context.section_func)
+        cases = self._filter_input_cases(context.cases, context.case_by_case)
+        self._check_caption_validity(cases)
+
+        file_names, x_lab, y_lab = self._get_figures(cases, context)
+
+        if self.items_in_row is not None:
+            caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
+            self._add_row_figure(context.doc, file_names, caption, [case.name for case in cases])
+        else:
+            if self.separate_plots is True:
+                for case_number, (case, file_name) in enumerate(zip(cases, file_names)):
+                    caption = NoEscape(
+                        self._handle_2d_caption(
+                            case=case, x_lab=x_lab, y_lab=y_lab, case_number=case_number
+                        )
+                    )
+                    self._add_figure(context.doc, file_name, caption)
+            else:
+                caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
+                self._add_figure(context.doc, file_names[-1], caption)
+
+        context.doc.append(NoEscape(r"\FloatBarrier"))
+        context.doc.append(NoEscape(r"\clearpage"))
+
+
+class Chart2D(BaseChart2D):
+    """
+    Represents a 2D chart within a report, plotting x and y data.
+
+    Parameters
+    ----------
+    x : Union[DataItem, Delta, str]
+        The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
+    y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+        The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
+    background : Union[Literal["geometry"], None], optional
+        Background type for the chart; set to "geometry" or None.
+    type_name : Literal["Chart2D"], default="Chart2D"
+        Specifies the type of report item as "Chart2D"; this field is immutable.
+    include : Optional[List[str]]
+        List of boundaries to include in data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
+    exclude : Optional[List[str]]
+        List of boundaries to exclude from data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
+    """
+
+    x: Union[DataItem, Delta, str]
+    y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+    include: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = None
+    exclude: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = None
+    background: Union[Literal["geometry"], None] = None
+    _requirements: List[str] = [_requirements_mapping["total_forces"]]
+    type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
+
+    @pd.model_validator(mode="after")
+    def _handle_deprecated_include_exclude(self):
+        include = self.include
+        exclude = self.exclude
+        if (include is not None) or (exclude is not None):
+            self.include = None
+            self.exclude = None
+            self.x = self._overload_include_exclude(include, exclude, self.x)
+            if isinstance(self.y, List):
+                new_value = []
+                for data_variable in self.y:
+                    new_value.append(
+                        self._overload_include_exclude(include, exclude, data_variable)
+                    )
+                self.y = new_value
+            else:
+                self.y = self._overload_include_exclude(include, exclude, self.y)
+        return self
+
+    @classmethod
+    def _overload_include_exclude(cls, include, exclude, data_variable):
+        if isinstance(data_variable, Delta):
+            raise Flow360ValidationError(
+                "Delta can not be used with exclude/include options. "
+                + "Specify the Delta data using DataItem."
+            )
+        if not isinstance(data_variable, DataItem):
+            data_variable = DataItem(data=data_variable, include=include, exclude=exclude)
+        else:
+            data_variable.include = include
+            data_variable.exclude = exclude
+        return data_variable
+
+    def get_requirements(self):
+        """
+        Returns requirements for this item.
+        """
+        if isinstance(self.y, list):
+            return get_requirements_from_data_path([self.x, *self.y])
+        return get_requirements_from_data_path([self.x, self.y])
+
+    # pylint: disable=no-member
+    def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
+        for idx, (x_series, y_series) in enumerate(zip(x_data, y_data)):
+            united_array_x = unyt.unyt_array(x_series)
+            united_array_y = unyt.unyt_array(y_series)
+            if united_array_x.units != unyt.dimensionless:
+                x_data[idx] = united_array_x
+            if united_array_y.units != unyt.dimensionless:
+                y_data[idx] = united_array_y
+
+        if self._check_dimensions_consistency(x_data) is True:
+            x_unit = x_data[0].units
+            x_data = [data.value.tolist() for data in x_data]
+            x_label += f" [{x_unit}]"
+
+        if self._check_dimensions_consistency(y_data) is True:
+            y_unit = y_data[0].units
+            y_data = [data.value.tolist() for data in y_data]
+            if not isinstance(self.y, list):
+                y_label += f" [{y_unit}]"
+
+        return x_data, y_data, x_label, y_label
+
+    def _handle_legend(self, cases, x_data, y_data):
+        if self._is_multiline_data(x_data, y_data):
+            x_data = [float(data) for data in x_data]
+            y_data = [float(data) for data in y_data]
+            legend = None
+        elif isinstance(self.y, list) and (len(self.y) > 1):
+            if len(cases) * len(self.y) != len(x_data):
+                legend = [path_variable_name(str(y)) for y in self.y]
+            else:
+                legend = []
+                for case in cases:
+                    for y in self.y:
+                        if len(cases) > 1:
+                            legend.append(f"{case.name} - {path_variable_name(str(y))}")
+                        else:
+                            legend.append(f"{path_variable_name(str(y))}")
+        else:
+            legend = [case.name for case in cases]
+
+        return legend
+
+    def _load_data(self, cases):
+        x_label = path_variable_name(str(self.x))
+
+        if not isinstance(self.y, list):
+            y_label = path_variable_name(str(self.y))
+            y_variables = [self.y]
+        else:
+            y_label = "value"
+            y_variables = self.y.copy()
+
+        x_data = []
+        y_data = []
+
+        for case in cases:
+            filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
+                x_label in ["time", "physical_step"]
+            )
+            for var_idx, y in enumerate(y_variables):
+                x_data_point = data_from_path(
+                    case, self.x, cases, filter_physical_steps_only=filter_physical_steps
+                )
+                y_data_point = data_from_path(
+                    case, y, cases, filter_physical_steps_only=filter_physical_steps
+                )
+                if isinstance(x_data_point, Iterable) and isinstance(y_data_point, Iterable):
+                    x_data.append(x_data_point)
+                    y_data.append(y_data_point)
+                else:
+                    if len(x_data) <= var_idx:
+                        x_data.append([x_data_point])
+                        y_data.append([y_data_point])
+                    else:
+                        x_data[var_idx].append(x_data_point)
+                        y_data[var_idx].append(y_data_point)
+
+        x_data, y_data, x_label, y_label = self._handle_data_with_units(
+            x_data, y_data, x_label, y_label
+        )
+
+        return x_data, y_data, x_label, y_label
+
+>>>>>>> 74d54440 (Fix validation error while using deprecated include/exclude Chart2D (#1029))
     def _get_background_chart(self, x_data):
         if self.background == "geometry":
             dimension = np.amax(x_data[0]) - np.amin(x_data[0])
