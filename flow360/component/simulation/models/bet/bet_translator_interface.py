@@ -941,7 +941,7 @@ def parse_xrotor_file(xrotor_file_content):
 
     if (float(version) < 7.54) or (float(version) > 7.69):
         log.warning(
-            "The XROTOR translator was prepred for file versions between 7.54 and 7.69,"
+            "The XROTOR translator was prepared for file versions between 7.54 and 7.69,"
             + f" your version is {version}, errors may occur."
         )
 
