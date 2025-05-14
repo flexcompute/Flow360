@@ -1068,7 +1068,9 @@ def read_xrotor_file(xrotor_file_content: str):
         values = next(line_iter).split()
         line_num += 1
         check_num_values(values, line_num, 4)
-        xrotor_input_dict["dcldastall"][i] = float(values[0])
+        xrotor_input_dict["dcldastall"][i] = abs(
+            float(values[0])
+        )  # make it absolute value to make sure it is positive
         xrotor_input_dict["dclstall"][i] = float(values[1])
         xrotor_input_dict["mcrit"][i] = float(values[3])
 
