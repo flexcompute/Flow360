@@ -24,6 +24,7 @@ from flow360.plugins.report.report_items import (
     TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem
+from flow360.version import __solver_version__
 
 
 def csv_reader(
@@ -63,8 +64,6 @@ def generate_report(
     freestream_surfaces = ["fluid/farfield"]
 
     exclude = freestream_surfaces
-
-    SOLVER_VERSION = "report-25.5.0"
 
     top_camera = TopCamera(pan_target=(3.5, 0, -0.5), dimension=15, dimension_dir="height")
     bottom_camera = BottomCamera(pan_target=(3.5, 0, -0.5), dimension=15, dimension_dir="height")
