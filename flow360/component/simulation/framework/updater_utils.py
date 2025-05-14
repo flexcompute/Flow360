@@ -1,9 +1,12 @@
 """Utiliy functions for updater"""
 
 import re
+from functools import wraps
 from numbers import Number
 
 import numpy as np
+
+from flow360.version import __version__
 
 PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
 
@@ -104,3 +107,26 @@ class Flow360Version:
 
     def __str__(self):
         return f"{self.major}.{self.minor}.{self.patch}"
+
+
+def deprecation_reminder(version: str):
+    """
+    If your_package.__version__ > version, raise.
+    Otherwise, do nothing special.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            current = Flow360Version(__version__)
+            target = Flow360Version(version)
+            if current > target:
+                raise ValueError(
+                    f"[INTERNAL] This validator or function is detecting deprecated schema that should have been"
+                    f" removed since {version}. Please deprecate the schema and remove related checks."
+                )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
