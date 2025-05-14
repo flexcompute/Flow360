@@ -16,6 +16,11 @@ from flow360.component.simulation.unit_system import (
 
 from ...exceptions import Flow360ConfigurationError
 
+<<<<<<< HEAD
+=======
+LIQUID_IMAGINARY_FREESTREAM_MACH = 0.05
+
+>>>>>>> 2cc7a657 ([FLPY-14] Change the liquid Mach to 0.05 and add private_attribute_dict in simulation params (#1054))
 
 def get_from_dict_by_key_list(key_list, data_dict):
     """

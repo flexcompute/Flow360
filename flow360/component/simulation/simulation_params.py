@@ -279,6 +279,7 @@ class SimulationParams(_ParamModelBase):
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
+    private_attribute_dict: Optional[dict] = pd.Field(None)
 
     # pylint: disable=arguments-differ
     def _preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
