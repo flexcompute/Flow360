@@ -581,19 +581,21 @@ def test_error_message():
 
 def test_solver_translation():
     class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[float] = pd.Field()
+        field: ValueOrExpression[AreaType] = pd.Field()
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=(x // 3) ** 2)
+    model = TestModel(field=(x * u.m * u.m // 3) + (x**2) * u.m**2)
 
     assert isinstance(model.field, Expression)
-    assert model.field.evaluate() == 1
-    assert str(model.field) == "(x // 3) ** 2"
+    assert model.field.evaluate() == 17 * u.m**2
+    assert str(model.field) == "((x * u.m) * u.m) // 3 + ((x ** 2) * u.m**2)"
 
     solver_code = model.field.to_solver_code()
 
-    assert solver_code == "pow(floor(x / 3), 2)"
+    # Unit symbols are stripped and unsupported
+    # operators are changed into their C++ equivalents
+    assert solver_code == "(floor(x / 3) + pow(x, 2))"
 
 
 def test_cyclic_dependencies():

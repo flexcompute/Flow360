@@ -375,8 +375,7 @@ class Expression(Flow360BaseModel, Evaluable):
 
     def to_solver_code(self):
         expr = expr_to_model(self.expression, _global_ctx)
-        source = expr_to_code(expr, TargetSyntax.CPP, _solver_variables)
-        # TODO: What do we do with dimensioned expressions? We need to replace all units by their conversion factors.
+        source = expr_to_code(expr, TargetSyntax.CPP, _solver_variables, "u.*")
         return source
 
     def __hash__(self):
