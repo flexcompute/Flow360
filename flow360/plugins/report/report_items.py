@@ -109,6 +109,7 @@ class Settings(Flow360BaseModel):
     """
 
     dpi: Optional[pd.PositiveInt] = 300
+    dump_table_csv: Optional[pd.StrictBool] = False
 
 
 class ReportItem(Flow360BaseModel):
@@ -407,6 +408,10 @@ class Table(ReportItem):
 
                 table.add_row(formatted)
                 table.add_hline()
+
+        if settings is not None and settings.dump_table_csv:
+            df = self.to_dataframe(context=context)
+            df.to_csv(f"{self.section_title}.csv", index=False)
 
 
 class PatternCaption(Flow360BaseModel):
