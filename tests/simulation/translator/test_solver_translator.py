@@ -576,6 +576,11 @@ def test_liquid_simulation_translation():
                 material=Water(name="my_water", density=1.1 * 10**3 * u.kg / u.m**3),
             ),
             models=[
+                Fluid(
+                    navier_stokes_solver=NavierStokesSolver(
+                        low_mach_preconditioner=True,
+                    )
+                ),
                 Wall(entities=Surface(name="fluid/body")),
                 Freestream(entities=Surface(name="fluid/farfield")),
             ],
