@@ -16,7 +16,7 @@ from flow360.component.simulation.unit_system import (
 
 from ...exceptions import Flow360ConfigurationError
 
-LIQUID_IMAGINARY_FREESTREAM_MACH = 0.2
+LIQUID_IMAGINARY_FREESTREAM_MACH = 0.05
 
 
 def get_from_dict_by_key_list(key_list, data_dict):
