@@ -665,8 +665,8 @@ def check_num_values(values_list, line_num, numelts):
     if isinstance(numelts, int):
         numelts = [numelts]
 
-    for numlet in numelts:
-        if len(values_list) == numlet:
+    for numelt in numelts:
+        if len(values_list) == numelt:
             return
     raise Flow360ValueError(
         f"wrong number of items for line #{line_num}: {values_list}. "
@@ -942,7 +942,7 @@ def parse_xrotor_file(xrotor_file_content):
     if (float(version) < 7.54) or (float(version) > 7.69):
         log.warning(
             "The XROTOR translator was prepred for file versions between 7.54 and 7.69,"
-            + f" your version is {version} errors may occur."
+            + f" your version is {version}, errors may occur."
         )
 
     xrotor_input_dict = {}
@@ -992,7 +992,9 @@ def parse_xrotor_file(xrotor_file_content):
     xrotor_input_dict["cdmin"] = [0] * n_aero_sections
     xrotor_input_dict["clcdmin"] = [0] * n_aero_sections
     xrotor_input_dict["dcddcl2"] = [0] * n_aero_sections
-    xrotor_input_dict["dcddcm2"] = [0] * n_aero_sections
+    xrotor_input_dict["dcddcm2"] = [
+        0
+    ] * n_aero_sections  # currently unused by BET translator but we are recording it in case we need it in the future.
 
     for i in range(n_aero_sections):
         comment_line = next(line_iter).upper().split()
