@@ -505,7 +505,7 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
-def process_output_fields_for_udf(input_params):
+def process_output_fields_for_udf(input_params: SimulationParams):
     """
     Process all output fields from different output types and generate additional
     UserDefinedFields for dimensioned fields.
@@ -526,6 +526,9 @@ def process_output_fields_for_udf(input_params):
         for output in input_params.outputs:
             if hasattr(output, "output_fields") and output.output_fields:
                 all_field_names.update(output.output_fields.items)
+
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        all_field_names.add("velocity_magnitude")
 
     # Generate UDFs for dimensioned fields
     generated_udfs = []
