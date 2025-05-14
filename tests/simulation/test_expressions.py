@@ -598,3 +598,18 @@ def test_solver_translation():
     solver_code = model.field.to_solver_code()
 
     assert solver_code == "pow(floor(x / 3), 2)"
+
+
+def test_cyclic_dependencies():
+    x = UserVariable(name="x", value=4)
+    y = UserVariable(name="y", value=x)
+
+    # If we try to create a cyclic dependency we throw a validation error
+    # The error contains info about the cyclic dependency, so here its x -> y -> x
+    with pytest.raises(pd.ValidationError):
+        x.value = y
+
+    x = UserVariable(name="x", value=4)
+
+    with pytest.raises(pd.ValidationError):
+        x.value = x
