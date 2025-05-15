@@ -31,7 +31,9 @@ from ...cloud.s3_utils import (
 from ...exceptions import Flow360ValueError
 from ...log import log
 from ..simulation.conversion import unit_converter as unit_converter_v2
+from ..simulation.entity_info import GeometryEntityInfo
 from ..simulation.models.surface_models import BoundaryBase
+from ..simulation.primitives import GeometryBodyGroup, Surface
 from ..simulation.simulation_params import SimulationParams
 from ..v1.conversions import unit_converter as unit_converter_v1
 from ..v1.flow360_params import Flow360Params
@@ -260,6 +262,54 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 
         raw_values = {key: val.tolist() for key, val in raw_values.items()}
 
+        return SurfaceForcesGroupResultCSVModel.from_dict(data=raw_values, group=entity_groups)
+
+    def by_body_group(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
+        """
+        Group entities by body group's name and create a
+        SurfaceForcesGroupResultCSVModel
+        """
+        if not isinstance(
+            params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+        ):
+            raise Flow360ValueError()
+
+        raw_values = {}
+        entity_groups = {}
+
+        for x_column in self._x_columns:
+            raw_values[x_column] = np.array(self.raw_values[x_column])
+
+        entity_info = params.private_attribute_asset_cache.project_entity_info
+        registry = entity_info.get_registry(None)
+        body_groups = registry.find_by_type(GeometryBodyGroup)
+        surfaces = registry.find_by_type(Surface)
+
+        body_id_to_surface = {}
+        for surface in surfaces:
+            body_id = surface.private_attribute_sub_components[0].split("_")[0]
+            if body_id_to_surface.get(body_id) is None:
+                body_id_to_surface[body_id] = [surface.name]
+                continue
+            body_id_to_surface[body_id].append(surface.name)
+
+        entity_groups = {}
+        for body_group in body_groups:
+            for body_id in body_group.private_attribute_sub_components:
+                if entity_groups.get(body_group.name) is None:
+                    entity_groups[body_group.name] = body_id_to_surface[body_id]
+                    continue
+                entity_groups[body_group.name].extend(body_id_to_surface[body_id])
+
+        for name, entities in entity_groups.items():
+            self.filter(include=entities)
+            for variable in self._variables:
+                if f"total{variable}" not in raw_values:
+                    raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
+                    continue
+                raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
+
+        raw_values = {key: val.tolist() for key, val in raw_values.items()}
         return SurfaceForcesGroupResultCSVModel.from_dict(data=raw_values, group=entity_groups)
 
 
