@@ -374,8 +374,25 @@ class Expression(Flow360BaseModel, Evaluable):
         return names
 
     def to_solver_code(self):
+        def translate_symbol(name):
+            if name in _solver_variables:
+                return _solver_variables[name]
+
+            # TODO: This is an example - units are being converted
+            #       to a scalar conversion factor instead of being
+            #       stripped altogether. Right now assumes MKS system
+            #       but we could do more advanced conversion here after
+            #       Ben's changes.
+            match = re.fullmatch("u\\.(.+)", name)
+            if match:
+                unit_name = match.group(1)
+                unit = Unit(unit_name)
+                return str(unit.base_value)
+
+            return name
+
         expr = expr_to_model(self.expression, _global_ctx)
-        source = expr_to_code(expr, TargetSyntax.CPP, _solver_variables, "u.*")
+        source = expr_to_code(expr, TargetSyntax.CPP, translate_symbol)
         return source
 
     def __hash__(self):

@@ -1,6 +1,5 @@
 import functools
-import re
-from typing import Any
+from typing import Any, Callable
 
 from ..core.expressions import (
     BinOp,
@@ -47,11 +46,10 @@ def _empty(syntax):
 
 
 @check_syntax_type
-def _name(expr, remap, name_filter):
-    if name_filter and re.fullmatch(name_filter, expr.id):
-        return ""
-    else:
-        return expr.id if expr.id not in remap else remap[expr.id]
+def _name(expr, name_translator):
+    if name_translator:
+        return name_translator(expr.id)
+    return expr.id
 
 
 @check_syntax_type
@@ -62,37 +60,18 @@ def _constant(expr):
 
 
 @check_syntax_type
-def _unary_op(expr, syntax, remap, name_filter):
+def _unary_op(expr, syntax, name_translator):
     op_info = UNARY_OPERATORS[expr.op]
 
-    arg = expr_to_code(expr.operand, syntax, remap, name_filter)
-
-    if not arg:
-        return ""
+    arg = expr_to_code(expr.operand, syntax, name_translator)
 
     return f"{op_info.symbol}{arg}"
 
 
 @check_syntax_type
-def _binary_op(expr, syntax, remap, name_filter):
-    left = expr_to_code(expr.left, syntax, remap, name_filter)
-    right = expr_to_code(expr.right, syntax, remap, name_filter)
-
-    allowed_operators = ["Add", "Sub", "Mult", "Div", "FloorDiv", "Mod", "Pow"]
-
-    if (not left or not right) and expr.op not in allowed_operators:
-        raise ValueError(f"Operator {expr.op} arguments did not evaluate to a valid string")
-
-    if not left and not right:
-        return ""
-    elif not right:
-        return left
-    elif not left:
-        # Since those operations are not commutative
-        # we cannot treat returning rvalue as neutral
-        if expr.op in ["Mod", "Pow", "Sub", "Div", "FloorDiv"]:
-            return ""
-        return right
+def _binary_op(expr, syntax, name_translator):
+    left = expr_to_code(expr.left, syntax, name_translator)
+    right = expr_to_code(expr.right, syntax, name_translator)
 
     if syntax == TargetSyntax.CPP:
         # Special case handling for operators not directly supported in CPP syntax, requires #include <cmath>
@@ -108,31 +87,27 @@ def _binary_op(expr, syntax, remap, name_filter):
 
 
 @check_syntax_type
-def _range_call(expr, syntax, remap, name_filter):
+def _range_call(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
-        arg = expr_to_code(expr.arg, syntax, remap, name_filter)
-        if not arg:
-            raise ValueError("Range call argument does not evaluate to a valid string")
+        arg = expr_to_code(expr.arg, syntax, name_translator)
         return f"range({arg})"
 
     raise ValueError("Range calls are only supported for Python target syntax")
 
 
 @check_syntax_type
-def _call_model(expr, syntax, remap, name_filter):
+def _call_model(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
         args = []
         for arg in expr.args:
-            val_str = expr_to_code(arg, syntax, remap, name_filter)
-            if not val_str:
-                raise ValueError("Function argument did not evaluate to a valid string")
+            val_str = expr_to_code(arg, syntax, name_translator)
             args.append(val_str)
         args_str = ", ".join(args)
         kwargs_parts = []
         for k, v in expr.kwargs.items():
             if v is None:
                 continue
-            val_str = expr_to_code(v, syntax, remap, name_filter)
+            val_str = expr_to_code(v, syntax, name_translator)
             if not val_str or val_str.isspace():
                 continue
             kwargs_parts.append(f"{k}={val_str}")
@@ -143,9 +118,7 @@ def _call_model(expr, syntax, remap, name_filter):
     elif syntax == TargetSyntax.CPP:
         args = []
         for arg in expr.args:
-            val_str = expr_to_code(arg, syntax, remap, name_filter)
-            if not val_str:
-                raise ValueError("Function argument did not evaluate to a valid string")
+            val_str = expr_to_code(arg, syntax, name_translator)
             args.append(val_str)
         args_str = ", ".join(args)
         if expr.kwargs:
@@ -154,10 +127,8 @@ def _call_model(expr, syntax, remap, name_filter):
 
 
 @check_syntax_type
-def _tuple(expr, syntax, remap, name_filter):
-    elements = [expr_to_code(e, syntax, remap, name_filter) for e in expr.elements]
-    if not all(elements):
-        raise ValueError("List element did not evaluate to a valid string")
+def _tuple(expr, syntax, name_translator):
+    elements = [expr_to_code(e, syntax, name_translator) for e in expr.elements]
 
     if syntax == TargetSyntax.PYTHON:
         if len(expr.elements) == 0:
@@ -174,10 +145,8 @@ def _tuple(expr, syntax, remap, name_filter):
 
 
 @check_syntax_type
-def _list(expr, syntax, remap, name_filter):
-    elements = [expr_to_code(e, syntax, remap, name_filter) for e in expr.elements]
-    if not all(elements):
-        raise ValueError("List element did not evaluate to a valid string")
+def _list(expr, syntax, name_translator):
+    elements = [expr_to_code(e, syntax, name_translator) for e in expr.elements]
 
     if syntax == TargetSyntax.PYTHON:
         if len(expr.elements) == 0:
@@ -190,18 +159,11 @@ def _list(expr, syntax, remap, name_filter):
         return f"{{{', '.join(elements)}}}"
 
 
-def _list_comp(expr, syntax, remap, name_filter):
+def _list_comp(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
-        element = expr_to_code(expr.element, syntax, remap, name_filter)
-        target = expr_to_code(expr.target, syntax, remap, name_filter)
-        iterator = expr_to_code(expr.iter, syntax, remap, name_filter)
-
-        if not element:
-            raise ValueError("List comprehension element does not evaluate to a valid string")
-        if not target:
-            raise ValueError("List comprehension target does not evaluate to a valid string")
-        if not iterator:
-            raise ValueError("List comprehension iterator does not evaluate to a valid string")
+        element = expr_to_code(expr.element, syntax, name_translator)
+        target = expr_to_code(expr.target, syntax, name_translator)
+        iterator = expr_to_code(expr.iter, syntax, name_translator)
 
         return f"[{element} for {target} in {iterator}]"
 
@@ -211,8 +173,7 @@ def _list_comp(expr, syntax, remap, name_filter):
 def expr_to_code(
     expr: Any,
     syntax: TargetSyntax = TargetSyntax.PYTHON,
-    remap: dict[str, str] = None,
-    name_filter: str = None,
+    name_translator: Callable[[str], str] = None,
 ) -> str:
     """Convert an expression model back to source code."""
     if expr is None:
@@ -220,31 +181,31 @@ def expr_to_code(
 
     # Names and constants are language-agnostic (apart from symbol remaps)
     if isinstance(expr, Name):
-        return _name(expr, remap, name_filter)
+        return _name(expr, name_translator)
 
     elif isinstance(expr, Constant):
         return _constant(expr)
 
     elif isinstance(expr, UnaryOp):
-        return _unary_op(expr, syntax, remap, name_filter)
+        return _unary_op(expr, syntax, name_translator)
 
     elif isinstance(expr, BinOp):
-        return _binary_op(expr, syntax, remap, name_filter)
+        return _binary_op(expr, syntax, name_translator)
 
     elif isinstance(expr, RangeCall):
-        return _range_call(expr, syntax, remap, name_filter)
+        return _range_call(expr, syntax, name_translator)
 
     elif isinstance(expr, CallModel):
-        return _call_model(expr, syntax, remap, name_filter)
+        return _call_model(expr, syntax, name_translator)
 
     elif isinstance(expr, Tuple):
-        return _tuple(expr, syntax, remap, name_filter)
+        return _tuple(expr, syntax, name_translator)
 
     elif isinstance(expr, List):
-        return _list(expr, syntax, remap, name_filter)
+        return _list(expr, syntax, name_translator)
 
     elif isinstance(expr, ListComp):
-        return _list_comp(expr, syntax, remap, name_filter)
+        return _list_comp(expr, syntax, name_translator)
 
     else:
         raise ValueError(f"Unsupported expression type: {type(expr)}")

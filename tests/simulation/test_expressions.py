@@ -585,17 +585,15 @@ def test_solver_translation():
 
     x = UserVariable(name="x", value=4)
 
-    model = TestModel(field=(x * u.m * u.m // 3) + (x**2) * u.m**2)
+    model = TestModel(field=((x * u.m * u.m) + (x**2) * u.cm**2) // 3)
 
     assert isinstance(model.field, Expression)
-    assert model.field.evaluate() == 17 * u.m**2
-    assert str(model.field) == "((x * u.m) * u.m) // 3 + ((x ** 2) * u.m**2)"
+    assert model.field.evaluate() == 1 * u.m**2
+    assert str(model.field) == "((x * u.m) * u.m + ((x ** 2) * u.cm**2)) // 3"
 
     solver_code = model.field.to_solver_code()
 
-    # Unit symbols are stripped and unsupported
-    # operators are changed into their C++ equivalents
-    assert solver_code == "(floor(x / 3) + pow(x, 2))"
+    assert solver_code == "floor((((x * 1.0) * 1.0) + (pow(x, 2) * pow(0.01, 2))) / 3)"
 
 
 def test_cyclic_dependencies():
