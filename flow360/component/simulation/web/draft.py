@@ -121,6 +121,15 @@ class Draft(Flow360Resource):
         params_dict = params.model_dump()
         if params_dict.get("private_attribute_dict") is None:
             params_dict.pop("private_attribute_dict")
+        if params_dict.get("models"):
+            for idx, model in enumerate(params_dict["models"]):
+                if (
+                    model.get("turbulence_model_solver") is not None
+                    and model["turbulence_model_solver"].get("hybrid_model") is None
+                ):
+                    params_dict["models"][idx]["turbulence_model_solver"].pop("hybrid_model", None)
+                    break
+        log.warning(json.dumps(params_dict))
         self.post(
             json={"data": json.dumps(params_dict), "type": "simulation", "version": ""},
             method="simulation/file",
