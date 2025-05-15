@@ -1044,19 +1044,19 @@ def get_solver_json(
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
         if isinstance(model, Fluid):
-            if model.navier_stokes_solver.low_mach_preconditioner:
-                if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
-                    model.navier_stokes_solver.low_mach_preconditioner_threshold = (
-                        input_params.operating_condition.mach
-                    )
-            translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
-            if translated["navierStokesSolver"]["lowMachPreconditioner"] is False and isinstance(
-                op, LiquidOperatingCondition
+            if isinstance(op, LiquidOperatingCondition):
+                model.navier_stokes_solver.low_mach_preconditioner = True
+                model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                    LIQUID_IMAGINARY_FREESTREAM_MACH
+                )
+            if (
+                model.navier_stokes_solver.low_mach_preconditioner
+                and model.navier_stokes_solver.low_mach_preconditioner_threshold is None
             ):
-                translated["navierStokesSolver"]["lowMachPreconditioner"] = True
-                translated["navierStokesSolver"][
-                    "lowMachPreconditionerThreshold"
-                ] = LIQUID_IMAGINARY_FREESTREAM_MACH
+                model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                    input_params.operating_condition.mach
+                )
+            translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
@@ -1331,5 +1331,7 @@ def get_solver_json(
             if "MachRef" in translated["freestream"].keys()
             else 1.0 / translated["freestream"]["Mach"]
         )
+    if input_params.private_attribute_dict is not None:
+        translated.update(input_params.private_attribute_dict)
 
     return translated
