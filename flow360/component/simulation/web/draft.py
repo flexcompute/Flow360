@@ -118,8 +118,11 @@ class Draft(Flow360Resource):
     def update_simulation_params(self, params):
         """update the SimulationParams of the draft"""
 
+        params_dict = params.model_dump()
+        if params_dict.get("private_attribute_dict") is None:
+            params_dict.pop("private_attribute_dict")
         self.post(
-            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            json={"data": json.dumps(params_dict), "type": "simulation", "version": ""},
             method="simulation/file",
         )
 
