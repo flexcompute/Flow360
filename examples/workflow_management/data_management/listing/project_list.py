@@ -14,5 +14,5 @@ fl.Project.show_remote("Simple Airplane")
 #             Surface Mesh count: 1
 #             Volume Mesh count:  1
 #             Case count:         1
-#...
-# [14:14:18] INFO: Total number of matching projects on the cloud: 6 
+# ...
+# [14:14:18] INFO: Total number of matching projects on the cloud: 6
