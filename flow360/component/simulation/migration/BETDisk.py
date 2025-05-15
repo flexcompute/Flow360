@@ -174,7 +174,7 @@ def read_single_v1_BETDisk(
     >>> from flow360.component.simulation.migration import BETDisk
     ... param = BETDisk.read_single_v1_BETDisk(
     ...     file_path="BET_Flow360.json",
-    ...     mesh_unit=u.m,
+    ...     mesh_unit=fl.u.m,
     ...     freestream_temperature = 288.15 * fl.u.K,
     ...     bet_disk_name: str = "BETDisk"
     ... )
