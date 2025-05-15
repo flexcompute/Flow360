@@ -1,7 +1,0 @@
-{
-    "boundaries": {
-        "noSlipWalls": [
-            "fluid/body"
-        ]
-    }
-}
