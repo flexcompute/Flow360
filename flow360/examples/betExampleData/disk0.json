@@ -1069,20 +1069,6 @@
         "value": 133.97401803472948
     },
     "private_attribute_constructor": "default",
-    "private_attribute_input_cache": {
-        "angle_unit": null,
-        "blade_line_chord": null,
-        "chord_ref": null,
-        "entities": null,
-        "file": null,
-        "initial_blade_direction": null,
-        "length_unit": null,
-        "mesh_unit": null,
-        "n_loading_nodes": null,
-        "number_of_blades": null,
-        "omega": null,
-        "rotation_direction_rule": null
-    },
     "reynolds_numbers": [
         1.0,
         1000.0,
