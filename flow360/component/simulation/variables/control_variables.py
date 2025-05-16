@@ -1,7 +1,9 @@
+from flow360 import u
 from flow360.component.simulation.user_code import SolverVariable
 
+# TODO: This is an example to illustrate translator features, switch for correct values later...
 MachRef = SolverVariable(
-    name="control.MachRef", value=float("NaN")
+    name="control.MachRef", value=float("NaN") * u.m / u.s, solver_name="machRef"
 )  # Reference mach specified by the user
 Tref = SolverVariable(name="control.Tref", value=float("NaN"))  # Temperature specified by the user
 t = SolverVariable(name="control.t", value=float("NaN"))  # Physical time
