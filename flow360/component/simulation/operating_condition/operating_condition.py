@@ -497,6 +497,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         """
         Computes length_unit based Reynolds number.
         :math:`Re = \\rho_{\\infty} \\cdot U_{infty} \\cdot L_{grid}/\\mu_{\\infty}` where
+
         - :math:`\\rho_{\\infty}` is the freestream fluid density.
         - :math:`U_{infty}` is the freestream velocity magnitude.
         - :math:`L_{grid}` is physical length represented by unit length in the given mesh/geometry file.
