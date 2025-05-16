@@ -487,7 +487,7 @@ def test_updater_to_25_4_1():
     assert params_new["meshing"]["defaults"]["geometry_accuracy"]["units"] == "m"
 
 
-def test_updater_to_25_4_1():
+def test_updater_to_25_5_2():
     with open("../data/simulation/simulation_pre_25_5_2.json", "r") as fp:
         params = json.load(fp)
 
