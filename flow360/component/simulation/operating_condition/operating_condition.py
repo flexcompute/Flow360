@@ -496,10 +496,10 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def flow360_reynolds_number(self, length_unit: LengthType.Positive):
         """
         Computes length_unit based Reynolds number.
-        :math:`Re = \\rho_{\\infty} \\cdot U_{infty} \\cdot L_{grid}/\\mu_{\\infty}` where
+        :math:`Re = \\rho_{\\infty} \\cdot U_{\\infty} \\cdot L_{grid}/\\mu_{\\infty}` where
 
         - :math:`\\rho_{\\infty}` is the freestream fluid density.
-        - :math:`U_{infty}` is the freestream velocity magnitude.
+        - :math:`U_{\\infty}` is the freestream velocity magnitude.
         - :math:`L_{grid}` is physical length represented by unit length in the given mesh/geometry file.
         - :math:`\\mu_{\\infty}` is the dynamic eddy viscosity of the fluid of freestream.
 
