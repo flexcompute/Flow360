@@ -378,7 +378,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     @pd.validate_call
     def from_mach_reynolds(
         cls,
-        mach: pd.NonNegativeFloat,
+        mach: pd.PositiveFloat,
         reynolds: pd.PositiveFloat,
         project_length_unit: LengthType.Positive,
         alpha: Optional[AngleType] = 0 * u.deg,
@@ -496,10 +496,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def flow360_reynolds_number(self, length_unit: LengthType.Positive):
         """
         Computes length_unit based Reynolds number.
-        :math:`Re = \\rho_{\\infty} \\cdot U_{ref} \\cdot L_{grid}/\\mu_{\\infty}` where
-        - :math:`rho_{\\infty}` is the freestream fluid density.
-        - :math:`U_{ref}` is the reference velocity magnitude or freestream velocity magnitude if reference
-          velocity magnitude is not set.
+        :math:`Re = \\rho_{\\infty} \\cdot U_{infty} \\cdot L_{grid}/\\mu_{\\infty}` where
+        - :math:`\\rho_{\\infty}` is the freestream fluid density.
+        - :math:`U_{infty}` is the freestream velocity magnitude.
         - :math:`L_{grid}` is physical length represented by unit length in the given mesh/geometry file.
         - :math:`\\mu_{\\infty}` is the dynamic eddy viscosity of the fluid of freestream.
 
@@ -508,14 +507,10 @@ class AerospaceCondition(MultiConstructorBaseModel):
         length_unit : LengthType.Positive
             Physical length represented by unit length in the given mesh/geometry file.
         """
-        reference_velocity = (
-            self.reference_velocity_magnitude
-            if self.reference_velocity_magnitude
-            else self.velocity_magnitude
-        )
+
         return (
             self.thermal_state.density
-            * reference_velocity
+            * self.velocity_magnitude
             * length_unit
             / self.thermal_state.dynamic_viscosity
         ).value
