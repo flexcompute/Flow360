@@ -46,6 +46,7 @@ from flow360.component.simulation.unit_system import (
     is_flow360_unit,
     unyt_quantity,
 )
+from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
@@ -1377,10 +1378,10 @@ class Chart2D(BaseChart2D):
 
     Parameters
     ----------
-    x : Union[str, Delta]
-        The data source for the x-axis, which can be a string path or a `Delta` object.
-    y : Union[str, Delta, List[str]]
-        The data source for the y-axis, which can be a string path or their list or a `Delta` object.
+    x : Union[DataItem, Delta, str]
+        The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
+    y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+        The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
     type_name : Literal["Chart2D"], default="Chart2D"
@@ -1393,8 +1394,8 @@ class Chart2D(BaseChart2D):
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
     """
 
-    x: Union[str, Delta]
-    y: Union[str, Delta, DataItem, List[str], List[DataItem]]
+    x: Union[DataItem, Delta, str]
+    y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
     include: Optional[
         Annotated[
             List[str],
@@ -1417,15 +1418,36 @@ class Chart2D(BaseChart2D):
 
     @pd.model_validator(mode="after")
     def _handle_deprecated_include_exclude(self):
-        if (self.include is not None) or (self.exclude is not None):
-            self.x = DataItem(data=self.x, include=self.include, exclude=self.exclude)
+        include = self.include
+        exclude = self.exclude
+        if (include is not None) or (exclude is not None):
+            self.include = None
+            self.exclude = None
+            self.x = self._overload_include_exclude(include, exclude, self.x)
             if isinstance(self.y, List):
-                self.y = [
-                    DataItem(data=y, include=self.include, exclude=self.exclude) for y in self.y
-                ]
+                new_value = []
+                for data_variable in self.y:
+                    new_value.append(
+                        self._overload_include_exclude(include, exclude, data_variable)
+                    )
+                self.y = new_value
             else:
-                self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
+                self.y = self._overload_include_exclude(include, exclude, self.y)
         return self
+
+    @classmethod
+    def _overload_include_exclude(cls, include, exclude, data_variable):
+        if isinstance(data_variable, Delta):
+            raise Flow360ValidationError(
+                "Delta can not be used with exclude/include options. "
+                + "Specify the Delta data using DataItem."
+            )
+        if not isinstance(data_variable, DataItem):
+            data_variable = DataItem(data=data_variable, include=include, exclude=exclude)
+        else:
+            data_variable.include = include
+            data_variable.exclude = exclude
+        return data_variable
 
     def get_requirements(self):
         """
@@ -1463,7 +1485,7 @@ class Chart2D(BaseChart2D):
             x_data = [float(data) for data in x_data]
             y_data = [float(data) for data in y_data]
             legend = None
-        elif (len(self.y) > 1) and isinstance(self.y, list):
+        elif isinstance(self.y, list) and (len(self.y) > 1):
             if len(cases) * len(self.y) != len(x_data):
                 legend = [path_variable_name(str(y)) for y in self.y]
             else:
@@ -1480,7 +1502,7 @@ class Chart2D(BaseChart2D):
         return legend
 
     def _load_data(self, cases):
-        x_label = path_variable_name(self.x)
+        x_label = path_variable_name(str(self.x))
 
         if not isinstance(self.y, list):
             y_label = path_variable_name(str(self.y))

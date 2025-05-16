@@ -576,6 +576,11 @@ def test_liquid_simulation_translation():
                 material=Water(name="my_water", density=1.1 * 10**3 * u.kg / u.m**3),
             ),
             models=[
+                Fluid(
+                    navier_stokes_solver=NavierStokesSolver(
+                        low_mach_preconditioner=True,
+                    )
+                ),
                 Wall(entities=Surface(name="fluid/body")),
                 Freestream(entities=Surface(name="fluid/farfield")),
             ],
@@ -599,7 +604,7 @@ def test_liquid_simulation_translation():
                     ],
                     spec=AngleExpression(
                         "-180/pi * atan(2 * 3.00 * 20.00 * 2.00/180*pi * "
-                        "cos(2.00/180*pi * sin(0.05877271 * t_seconds)) * cos(0.05877271 * t_seconds) / 50.00) +"
+                        "cos(2.00/180*pi * sin(0.05877271 * t_seconds)) * cos(0.05877271 * t_seconds) / 200.00) +"
                         " 2 * 2.00 * sin(0.05877271 * t_seconds) - 2.00 * sin(0.05877271 * t_seconds)"
                     ),
                     rotating_reference_frame_model=False,
@@ -608,7 +613,7 @@ def test_liquid_simulation_translation():
             time_stepping=Unsteady(steps=100, step_size=0.4),
         )
         # Derivation:
-        # Solver speed of sound = 10m/s / 0.2 = 50m/s
-        # Flow360 time to seconds = 1m/(50m/s) = 0.02 s
-        # t_seconds = (0.02 s * t)
+        # Solver speed of sound = 10m/s / 0.05 = 200m/s
+        # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
+        # t_seconds = (0.005 s * t)
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
