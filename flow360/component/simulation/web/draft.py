@@ -129,7 +129,7 @@ class Draft(Flow360Resource):
                     params_dict["models"][idx]["turbulence_model_solver"].pop("hybrid_model", None)
                     break
         self.post(
-            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            json={"data": json.dumps(params_dict), "type": "simulation", "version": ""},
             method="simulation/file",
         )
 
