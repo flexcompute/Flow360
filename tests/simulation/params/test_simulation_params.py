@@ -364,7 +364,7 @@ def test_mach_reynolds_op_cond():
         project_length_unit=u.m,
         reference_mach=0.4,
     )
-    assertions.assertAlmostEqual(condition.thermal_state.density.value, 0.6572616596801923)
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = AerospaceCondition.from_mach_reynolds(

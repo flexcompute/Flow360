@@ -438,9 +438,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
 
         material = Air()
 
-        velocity = (
-            mach if reference_mach is None else reference_mach
-        ) * material.get_speed_of_sound(temperature)
+        velocity = mach * material.get_speed_of_sound(temperature)
 
         density = (
             reynolds
