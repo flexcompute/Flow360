@@ -1,4 +1,3 @@
-import json
 from typing import List
 
 import numpy as np
@@ -304,10 +303,10 @@ def test_vector_types():
         direction: ValueOrExpression[LengthType.Direction] = pd.Field()
         moment: ValueOrExpression[LengthType.Moment] = pd.Field()
 
-    x = UserVariable(name="x", value=[1, 0, 0])
-    y = UserVariable(name="y", value=[0, 0, 0])
-    z = UserVariable(name="z", value=[1, 0, 0, 0])
-    w = UserVariable(name="w", value=[1, 1, 1])
+    x = UserVariable(name="x", value=np.array([1, 0, 0]))
+    y = UserVariable(name="y", value=np.array([0, 0, 0]))
+    z = UserVariable(name="z", value=np.array([1, 0, 0, 0]))
+    w = UserVariable(name="w", value=np.array([1, 1, 1]))
 
     model = TestModel(
         vector=y * u.m, axis=x * u.m, array=z * u.m, direction=x * u.m, moment=w * u.m
@@ -636,4 +635,4 @@ def test_auto_alias():
     model_2 = TestModel(field=aliased)
 
     assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
-    assert str(model_2.field)== "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"

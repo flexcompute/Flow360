@@ -84,9 +84,44 @@ class SerializedValueOrExpression(Flow360BaseModel):
     evaluated_units: Optional[str] = pd.Field(None)
 
 
+# This is a wrapper to allow using ndarrays with pydantic models
+class NdArray(np.ndarray):
+    def __repr__(self):
+        return f"NdArray(shape={self.shape}, dtype={self.dtype})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any):
+        if isinstance(value, np.ndarray):
+            return value
+        raise ValueError(f"Cannot convert {type(value)} to NdArray")
+
+
+# This is a wrapper to allow using unyt arrays with pydantic models
+class UnytArray(unyt_array):
+    def __repr__(self):
+        return f"UnytArray({str(self)})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any):
+        if isinstance(value, unyt_array):
+            return value
+        raise ValueError(f"Cannot convert {type(value)} to UnytArray")
+
+
+AnyNumericType = Union[float, UnytArray, NdArray]
+
+
 class Variable(Flow360BaseModel):
     name: str = pd.Field()
-    value: ValueOrExpression[Any] = pd.Field()
+    value: ValueOrExpression[AnyNumericType] = pd.Field()
 
     model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
 
@@ -281,12 +316,6 @@ class Expression(Flow360BaseModel, Evaluable):
     expression: str = pd.Field("")
 
     model_config = pd.ConfigDict(validate_assignment=True)
-
-    _serialized_format_only: ClassVar[bool] = False
-
-    @classmethod
-    def force_serialized_format(cls, value: bool):
-        cls._serialized_format_only = value
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -487,15 +516,12 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _deserialize(value) -> Self:
             is_serialized = False
-            if Expression._serialized_format_only:
+
+            try:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True
-            else:
-                try:
-                    value = SerializedValueOrExpression.model_validate(value)
-                    is_serialized = True
-                except Exception as err:
-                    pass
+            except Exception as err:
+                pass
 
             if is_serialized:
                 if value.type_name == "number":

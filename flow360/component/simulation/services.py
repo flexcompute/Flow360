@@ -345,9 +345,6 @@ def validate_model(
     validation_warnings = None
     validated_param = None
 
-    if validated_by in [ValidationCalledBy.SERVICE, ValidationCalledBy.PIPELINE]:
-        Expression.force_serialized_format(True)
-
     params_as_dict = clean_unrelated_setting_from_params_dict(params_as_dict, root_item_type)
 
     # The final validation levels will be the intersection of the requested levels and the levels available
@@ -383,9 +380,6 @@ def validate_model(
         validation_errors = _insert_forward_compatibility_notice(
             validation_errors, params_as_dict, validated_by
         )
-
-    if validated_by in [ValidationCalledBy.SERVICE, ValidationCalledBy.PIPELINE]:
-        Expression.force_serialized_format(False)
 
     return validated_param, validation_errors, validation_warnings
 
