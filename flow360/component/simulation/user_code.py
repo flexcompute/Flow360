@@ -373,21 +373,18 @@ class Expression(Flow360BaseModel, Evaluable):
 
         return names
 
-    def to_solver_code(self):
+    def to_solver_code(self, params):
         def translate_symbol(name):
             if name in _solver_variables:
                 return _solver_variables[name]
 
-            # TODO: This is an example - units are being converted
-            #       to a scalar conversion factor instead of being
-            #       stripped altogether. Right now assumes MKS system
-            #       but we could do more advanced conversion here after
-            #       Ben's changes.
             match = re.fullmatch("u\\.(.+)", name)
+
             if match:
                 unit_name = match.group(1)
                 unit = Unit(unit_name)
-                return str(unit.base_value)
+                conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
+                return str(conversion_factor)
 
             return name
 

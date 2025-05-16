@@ -4,8 +4,19 @@ import numpy as np
 import pydantic as pd
 import pytest
 
-from flow360 import control, solution, u
+from flow360 import (
+    HeatEquationInitialCondition,
+    SimulationParams,
+    Solid,
+    Unsteady,
+    solution,
+    u,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.models.material import aluminum
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
+from flow360.component.simulation.primitives import GenericVolume, Surface
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -24,6 +35,7 @@ from flow360.component.simulation.unit_system import (
     MomentType,
     PowerType,
     PressureType,
+    SI_unit_system,
     SpecificEnergyType,
     SpecificHeatCapacityType,
     ThermalConductivityType,
@@ -580,20 +592,51 @@ def test_error_message():
 
 
 def test_solver_translation():
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[AreaType] = pd.Field()
+    timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
+    solid_model = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=aluminum,
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10"),
+    )
+    surface_output_with_residual_heat_solver = SurfaceOutput(
+        name="surface",
+        surfaces=[Surface(name="noSlipWall")],
+        write_single_file=True,
+        output_fields=["residualHeatSolver"],
+    )
 
-    x = UserVariable(name="x", value=4)
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[solid_model],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1 * u.m),
+        )
 
-    model = TestModel(field=((x * u.m * u.m) + (x**2) * u.cm**2) // 3)
+        x = UserVariable(name="x", value=4)
 
-    assert isinstance(model.field, Expression)
-    assert model.field.evaluate() == 1 * u.m**2
-    assert str(model.field) == "((x * u.m) * u.m + ((x ** 2) * u.cm**2)) // 3"
+        # This will be a field in simulation params...
+        expression = Expression.model_validate(((x * u.m * u.m) + (x**2) * u.cm**2) // 3)
 
-    solver_code = model.field.to_solver_code()
+        # Then during solver submission we will call...
+        solver_code = expression.to_solver_code(params=params)
 
-    assert solver_code == "floor((((x * 1.0) * 1.0) + (pow(x, 2) * pow(0.01, 2))) / 3)"
+        assert solver_code == "floor((((x * 1.0) * 1.0) + (pow(x, 2) * pow(0.01, 2))) / 3)"
+
+        # If we scale the project_length_unit x2 the conversion factor is two times smaller..
+        params = SimulationParams(
+            models=[solid_model],
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+            private_attribute_asset_cache=AssetCache(project_length_unit=2 * u.m),
+        )
+
+        # Then during solver submission we will call...
+        solver_code = expression.to_solver_code(params=params)
+
+        assert solver_code == "floor((((x * 0.5) * 0.5) + (pow(x, 2) * pow(0.005, 2))) / 3)"
 
 
 def test_cyclic_dependencies():
