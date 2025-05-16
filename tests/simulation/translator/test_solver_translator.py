@@ -522,16 +522,20 @@ def test_boundaries():
                     name="inflow-1",
                     total_temperature=300 * u.K,
                     surfaces=Surface(name="boundary_name_A"),
+                    velocity_direction=(1, 0, 0),
                     spec=TotalPressure(
                         value=operating_condition.thermal_state.pressure * 0.9,
-                        velocity_direction=(1, 0, 0),
                     ),
                 ),
                 Inflow(
                     name="inflow-2",
                     total_temperature=300 * u.K,
                     surfaces=Surface(name="boundary_name_B"),
-                    spec=MassFlowRate(value=mass_flow_rate, ramp_steps=10),
+                    velocity_direction=(0, 1, 0),
+                    spec=MassFlowRate(
+                        value=mass_flow_rate,
+                        ramp_steps=10,
+                    ),
                 ),
                 Outflow(
                     name="outflow-1",

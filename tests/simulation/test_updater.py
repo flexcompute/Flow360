@@ -487,6 +487,20 @@ def test_updater_to_25_4_1():
     assert params_new["meshing"]["defaults"]["geometry_accuracy"]["units"] == "m"
 
 
+def test_updater_to_25_4_1():
+    with open("../data/simulation/simulation_pre_25_5_2.json", "r") as fp:
+        params = json.load(fp)
+
+    params_new = updater(
+        version_from=f"25.5.1",
+        version_to=f"25.5.2",
+        params_as_dict=params,
+    )
+
+    assert params_new["models"][3]["velocity_direction"] == [1, 0, 0]
+    assert "velocity_direction" not in params_new["models"][3]["spec"]
+
+
 def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0
     with open("../data/simulation/simulation_24_11_0.json", "r") as fp:

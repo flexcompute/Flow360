@@ -4,11 +4,20 @@
             "type": "SubsonicInflow",
             "totalTemperatureRatio": 1.0411244143675171,
             "totalPressureRatio": 0.9,
-            "velocityDirection": [1.0,0.0,0.0]
+            "velocityDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
         },
         "boundary_name_B": {
             "type": "MassInflow",
             "totalTemperatureRatio": 1.0411244143675171,
+            "velocityDirection": [
+                0.0,
+                1.0,
+                0.0
+            ],
             "massFlowRate": 0.2,
             "rampSteps": 10
         },
@@ -25,25 +34,25 @@
             "type": "SubsonicOutflowMach",
             "MachNumber": 0.3
         },
-        "boundary_name_G" : {
-            "type" : "NoSlipWall",
-            "wallVelocityModel" : {
-            "type" : "SlaterPorousBleed",
-            "staticPressureRatio" :  0.8165514936615943,
-            "porosity" : 0.49,
-            "activationStep" : 20
+        "boundary_name_G": {
+            "type": "NoSlipWall",
+            "wallVelocityModel": {
+                "type": "SlaterPorousBleed",
+                "staticPressureRatio": 0.8165514936615943,
+                "porosity": 0.49,
+                "activationStep": 20
             },
-            "heatFlux" : 0.0,
-            "roughnessHeight" : 0.0
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0
         },
-        "boundary_name_I" : {
-            "type" : "NoSlipWall",
+        "boundary_name_I": {
+            "type": "NoSlipWall",
             "velocity": [
-                "0.0 * (z - 3.0) - 0.030773317581937965 * (y - 2.0)", 
-                "0.030773317581937965 * (x - 1.0) - 0.0 * (z - 3.0)", 
+                "0.0 * (z - 3.0) - 0.030773317581937965 * (y - 2.0)",
+                "0.030773317581937965 * (x - 1.0) - 0.0 * (z - 3.0)",
                 "0.0 * (y - 2.0) - 0.0 * (x - 1.0)"
             ],
-            "heatFlux": 0.0, 
+            "heatFlux": 0.0,
             "roughnessHeight": 0.0
         }
     },
@@ -96,7 +105,7 @@
     "turbulenceModelSolver": {
         "CFLMultiplier": 2.0,
         "DDES": false,
-        "ZDES": false,  
+        "ZDES": false,
         "absoluteTolerance": 1e-08,
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",

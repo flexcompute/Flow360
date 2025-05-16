@@ -132,11 +132,6 @@ class TotalPressure(Flow360BaseModel):
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field(description="The total pressure value.")
-    velocity_direction: Optional[Axis] = pd.Field(
-        None,
-        description="Direction of the incoming flow. Must be a unit vector pointing "
-        + "into the volume. If unspecified, the direction will be normal to the surface.",
-    )
 
 
 class Pressure(SingleAttributeModel):
@@ -520,9 +515,9 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       >>> fl.Inflow(
       ...     entities=[geometry["inflow"]],
       ...     total_temperature=300 * fl.u.K,
+      ...     velocity_direction = (1, 0, 0),
       ...     spec=fl.TotalPressure(
       ...         value = 1.028e6 * fl.u.Pa,
-      ...         velocity_direction = (1, 0, 0),
       ...     ),
       ... )
 
@@ -531,6 +526,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       >>> fl.Inflow(
       ...     entities=[volume_mesh["fluid/inflow"]],
       ...     total_temperature=300 * fl.u.K,
+      ...     velocity_direction = (1, 0, 0),
       ...     spec=fl.MassFlowRate(
       ...         value = 123 * fl.u.lb / fl.u.s,
       ...         ramp_steps = 10,
@@ -555,6 +551,11 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     # pylint: disable=no-member
     total_temperature: AbsoluteTemperatureType = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
+    )
+    velocity_direction: Optional[Axis] = pd.Field(
+        None,
+        description="Direction of the incoming flow. Must be a unit vector pointing "
+        + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
     spec: Union[TotalPressure, MassFlowRate] = pd.Field(
         discriminator="type_name",

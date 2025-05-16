@@ -1584,9 +1584,9 @@ def test_validate_liquid_operating_condition():
                 Inflow(
                     entities=[all_boundaries[-1]],
                     total_temperature=300 * u.K,
+                    velocity_direction=(1, 0, 0),
                     spec=TotalPressure(
                         value=1.028e6 * u.Pa,
-                        velocity_direction=(1, 0, 0),
                     ),
                 )
             ],
