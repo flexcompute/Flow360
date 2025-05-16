@@ -119,9 +119,8 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
 
         params_dict = params.model_dump()
-        if params_dict.get("private_attribute_dict") is None:
-            params_dict.pop("private_attribute_dict")
         if params_dict.get("models"):
+            # Remove hybrid_model:None to avoid triggering front end display activated toggle.
             for idx, model in enumerate(params_dict["models"]):
                 if (
                     model.get("turbulence_model_solver") is not None
@@ -130,7 +129,7 @@ class Draft(Flow360Resource):
                     params_dict["models"][idx]["turbulence_model_solver"].pop("hybrid_model", None)
                     break
         self.post(
-            json={"data": json.dumps(params_dict), "type": "simulation", "version": ""},
+            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
             method="simulation/file",
         )
 
