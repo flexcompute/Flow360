@@ -385,7 +385,7 @@ class GeometryEntityInfo(EntityInfoModel):
                     body_group_tag = self.body_group_tag
 
                 internal_registry = self._group_entity_by_tag(
-                    "body", self.body_group_tag, registry=internal_registry
+                    "body", body_group_tag, registry=internal_registry
                 )
         return internal_registry
 

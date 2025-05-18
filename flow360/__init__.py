@@ -133,6 +133,9 @@ from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     Transformation,
 )
+from flow360.component.simulation.user_code import (
+    UserVariable
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
