@@ -230,9 +230,11 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
     def reload_data(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         return super().reload_data(filter_physical_steps_only, include_time)
 
-    def _create_surface_forces_group(self, entity_groups: Dict[str, List[str]]):
+    def _create_surface_forces_group(
+        self, entity_groups: Dict[str, List[str]]
+    ) -> SurfaceForcesGroupResultCSVModel:
         """
-        Create the surface forces group csv model for the given entity groups.
+        Create the SurfaceForcesGroupResultCSVModel for the given entity groups.
         """
         for x_column in self._x_columns:
             raw_values[x_column] = np.array(self.raw_values[x_column])
@@ -264,7 +266,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
             entity_groups[boundary_name].extend(
                 [entity.name for entity in model.entities.stored_entities]
             )
-        return self._create_surface_forces_group(entity_groups)
+        return self._create_surface_forces_group(entity_groups=entity_groups)
 
     def by_body_group(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
         """
@@ -274,10 +276,12 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
         if not isinstance(
             params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
         ):
-            raise Flow360ValueError()
+            raise Flow360ValueError(
+                "Group surface forces by body group is only supported for case starting from geometry."
+            )
         entity_info = params.private_attribute_asset_cache.project_entity_info
         entity_groups = entity_info.get_body_group_to_face_group_name_map()
-        return self._create_surface_forces_group(entity_groups)
+        return self._create_surface_forces_group(entity_groups=entity_groups)
 
 
 class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
