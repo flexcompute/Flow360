@@ -31,7 +31,6 @@ from flow360.component.project_utils import (
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.services import get_default_report_config
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -49,7 +48,7 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
-from flow360.plugins.report.report import ReportTemplate
+from flow360.plugins.report.report import get_default_report_template
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -1360,10 +1359,8 @@ class Project(pd.BaseModel):
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
 
         if target == "Case":
-            report_config = get_default_report_config()
-            ReportTemplate(**report_config).create_in_cloud(
-                name="ResultSummary", cases=[destination_obj]
-            )
+            report_template = get_default_report_template()
+            report_template.create_in_cloud(name="ResultSummary", cases=[destination_obj])
 
         if not run_async:
             destination_obj.wait()
