@@ -48,7 +48,7 @@ def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if len(list1) != len(list2):
         return False
 
-    if list1 and not isinstance(list1[0], dict):
+    if list1 and not any(isinstance(item, dict) for item in list1):
         list1, list2 = sorted(list1), sorted(list2)
 
     for item1, item2 in zip(list1, list2):
