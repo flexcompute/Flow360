@@ -1361,7 +1361,9 @@ class Project(pd.BaseModel):
         if isinstance(destination_obj, Case):
             report_template = get_default_report_template()
             report_template.create_in_cloud(
-                name="ResultSummary", cases=[destination_obj], solver_version=solver_version
+                name="ResultSummary",
+                cases=[destination_obj],
+                solver_version=solver_version if solver_version else self.solver_version,
             )
 
         if not run_async:
