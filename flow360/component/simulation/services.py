@@ -55,11 +55,10 @@ from flow360.component.simulation.validation.validation_context import (
     ValidationContext,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
-from flow360.version import __version__
-
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import Settings, Table
 from flow360.plugins.report.utils import Average, DataItem
+from flow360.version import __version__
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -771,25 +770,10 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
 
 
 def get_default_report_config() -> dict:
+    """
+    Returns default report config for result summary.
+    """
     avg = Average(fraction=0.1)
-    CL = DataItem(
-        data="surface_forces/totalCL", title="CL", operations=avg
-    )
-    CD = DataItem(
-        data="surface_forces/totalCD", title="CD", operations=avg
-    )
-    CFy = DataItem(
-        data="surface_forces/totalCFy", title="CFy", operations=avg
-    )
-    CMx = DataItem(
-        data="surface_forces/totalCMx", title="CMx", operations=avg
-    )
-    CMy = DataItem(
-        data="surface_forces/totalCMy", title="CMy", operations=avg
-    )
-    CMz = DataItem(
-        data="surface_forces/totalCMz", title="CMz", operations=avg
-    )
 
     data = [
         "volume_mesh/bounding_box/length",
@@ -797,12 +781,12 @@ def get_default_report_config() -> dict:
         "volume_mesh/bounding_box/width",
         "params/reference_geometry/moment_length",
         "params/reference_geometry/area",
-        CL,
-        CD,
-        CFy,
-        CMx,
-        CMy,
-        CMz,
+        DataItem(data="surface_forces/totalCL", title="CL", operations=avg),
+        DataItem(data="surface_forces/totalCD", title="CD", operations=avg),
+        DataItem(data="surface_forces/totalCFy", title="CFy", operations=avg),
+        DataItem(data="surface_forces/totalCMx", title="CMx", operations=avg),
+        DataItem(data="surface_forces/totalCMy", title="CMy", operations=avg),
+        DataItem(data="surface_forces/totalCMz", title="CMz", operations=avg),
     ]
 
     headers = [
@@ -819,8 +803,8 @@ def get_default_report_config() -> dict:
         "CMz",
     ]
     formatter = [".4f" for _ in data]
-    table = Table(
-        data=data, section_title="result_summary", headers=headers, formatter=formatter
+    table = Table(data=data, section_title="result_summary", headers=headers, formatter=formatter)
+    report_dict = ReportTemplate(items=[table], settings=Settings(dump_table_csv=True)).model_dump(
+        exclude_none=True
     )
-    report_dict = ReportTemplate(items=[table], settings=Settings(dump_table_csv=True)).model_dump(exclude_none=True)
     return report_dict

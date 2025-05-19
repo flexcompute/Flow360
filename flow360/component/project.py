@@ -14,7 +14,6 @@ import typing_extensions
 from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
-from flow360.plugins.report.report import ReportTemplate
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
@@ -50,6 +49,7 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
+from flow360.plugins.report.report import ReportTemplate
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -1277,6 +1277,7 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
+        # pylint: disable=too-many-branches
         if use_beta_mesher is None:
             if use_geometry_AI is True:
                 log.info("Beta mesher is enabled to use Geometry AI.")
@@ -1360,7 +1361,9 @@ class Project(pd.BaseModel):
 
         if target == "Case":
             report_config = get_default_report_config()
-            ReportTemplate(**report_config).create_in_cloud(name = "ResultSummary", cases=[destination_obj])
+            ReportTemplate(**report_config).create_in_cloud(
+                name="ResultSummary", cases=[destination_obj]
+            )
 
         if not run_async:
             destination_obj.wait()
