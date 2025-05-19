@@ -57,6 +57,10 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
 
+from flow360.plugins.report.report import ReportTemplate
+from flow360.plugins.report.report_items import Settings, Table
+from flow360.plugins.report.utils import Average, DataItem
+
 unit_system_map = {
     "SI": SI_unit_system,
     "CGS": CGS_unit_system,
@@ -764,3 +768,59 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
+
+
+def get_default_report_config() -> dict:
+    avg = Average(fraction=0.1)
+    CL = DataItem(
+        data="surface_forces/totalCL", title="CL", operations=avg
+    )
+    CD = DataItem(
+        data="surface_forces/totalCD", title="CD", operations=avg
+    )
+    CFy = DataItem(
+        data="surface_forces/totalCFy", title="CFy", operations=avg
+    )
+    CMx = DataItem(
+        data="surface_forces/totalCMx", title="CMx", operations=avg
+    )
+    CMy = DataItem(
+        data="surface_forces/totalCMy", title="CMy", operations=avg
+    )
+    CMz = DataItem(
+        data="surface_forces/totalCMz", title="CMz", operations=avg
+    )
+
+    data = [
+        "volume_mesh/bounding_box/length",
+        "volume_mesh/bounding_box/height",
+        "volume_mesh/bounding_box/width",
+        "params/reference_geometry/moment_length",
+        "params/reference_geometry/area",
+        CL,
+        CD,
+        CFy,
+        CMx,
+        CMy,
+        CMz,
+    ]
+
+    headers = [
+        "OAL",
+        "OAH",
+        "OAW",
+        "Reference Length",
+        "Reference Area",
+        "CL",
+        "CD",
+        "CFy",
+        "CMx",
+        "CMy",
+        "CMz",
+    ]
+    formatter = [".4f" for _ in data]
+    table = Table(
+        data=data, section_title="result_summary", headers=headers, formatter=formatter
+    )
+    report_dict = ReportTemplate(items=[table], settings=Settings(dump_table_csv=True)).model_dump(exclude_none=True)
+    return report_dict

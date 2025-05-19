@@ -14,6 +14,7 @@ import typing_extensions
 from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
+from flow360.plugins.report.report import ReportTemplate
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
@@ -31,6 +32,7 @@ from flow360.component.project_utils import (
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.services import get_default_report_config
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -1355,6 +1357,10 @@ class Project(pd.BaseModel):
         destination_obj = target.from_cloud(destination_id)
 
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
+
+        if target == "Case":
+            report_config = get_default_report_config()
+            ReportTemplate(**report_config).create_in_cloud(name = "ResultSummary", cases=[destination_obj])
 
         if not run_async:
             destination_obj.wait()
