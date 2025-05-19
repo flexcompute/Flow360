@@ -11,9 +11,9 @@ import pydantic as pd
 # pylint: disable=import-error
 from pylatex import Section, Subsection
 
-from flow360 import Case
 from flow360.cloud.flow360_requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
+from flow360.component.case import Case
 from flow360.component.interfaces import ReportInterface
 from flow360.component.resource_base import AssetMetaBaseModel, Flow360Resource
 from flow360.component.simulation.framework.base_model import Flow360BaseModel

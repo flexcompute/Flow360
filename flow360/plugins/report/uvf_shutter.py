@@ -15,8 +15,8 @@ from urllib.parse import urljoin
 
 import pydantic as pd
 
-from flow360 import Env
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.environment import Env
 from flow360.exceptions import (
     Flow360RuntimeError,
     Flow360WebError,
