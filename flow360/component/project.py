@@ -1358,9 +1358,11 @@ class Project(pd.BaseModel):
 
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
 
-        if target == "Case":
+        if isinstance(destination_obj, Case):
             report_template = get_default_report_template()
-            report_template.create_in_cloud(name="ResultSummary", cases=[destination_obj])
+            report_template.create_in_cloud(
+                name="ResultSummary", cases=[destination_obj], solver_version=solver_version
+            )
 
         if not run_async:
             destination_obj.wait()
