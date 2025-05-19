@@ -131,6 +131,9 @@ class ReportDraft:
             solver_version=solver_version,
         )
         resp = cls._webapi.post(json=request.dict())
+        print("AAAAAAAAAAAAAAAAAA",resp)
+        from flow360.log import log
+        log.info(f"Report draft response: {resp}")
         return Report(resp["id"])
 
 
