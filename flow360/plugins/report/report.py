@@ -342,7 +342,6 @@ def get_default_report_summary_template() -> ReportTemplate:
         DataItem(data="surface_forces/totalCMy", title="CMy", operations=avg),
         DataItem(data="surface_forces/totalCMz", title="CMz", operations=avg),
     ]
-
     headers = [
         "OAL",
         "OAH",
@@ -356,6 +355,5 @@ def get_default_report_summary_template() -> ReportTemplate:
         "CMy",
         "CMz",
     ]
-    formatter = [".e" for _ in data]
-    table = Table(data=data, section_title="result_summary", headers=headers, formatter=formatter)
+    table = Table(data=data, section_title="result_summary", headers=headers)
     return ReportTemplate(items=[table], settings=Settings(dump_table_csv=True))

@@ -90,17 +90,17 @@
             ],
             "type_name": "Table",
             "formatter": [
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e",
-                ".e"
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
             ]
         }
     ],
