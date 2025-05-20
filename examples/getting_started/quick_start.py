@@ -4,13 +4,11 @@ from matplotlib.pyplot import show
 import flow360 as fl
 from flow360.examples import Airplane
 
-fl.environment.dev.active()
-
 # Step 1: Create a new project from a predefined geometry file in the Airplane example
 # This initializes a project with the specified geometry and assigns it a name.
 project = fl.Project.from_geometry(
     Airplane.geometry,
-    name="Python Project (Expressions E2E)",
+    name="Python Project (Geometry, from file)",
 )
 geo = project.geometry  # Access the geometry of the project
 
@@ -25,8 +23,6 @@ with fl.SI_unit_system:
     # Define an automated far-field boundary condition for the simulation
     far_field_zone = fl.AutomatedFarfield()
 
-    x = fl.UserVariable(name="x", value=1)
-
     # Set up the main simulation parameters
     params = fl.SimulationParams(
         # Meshing parameters, including boundary layer and maximum edge length
@@ -38,7 +34,7 @@ with fl.SI_unit_system:
             volume_zones=[far_field_zone],  # Apply the automated far-field boundary condition
         ),
         # Reference geometry parameters for the simulation (e.g., center of pressure)
-        reference_geometry=fl.ReferenceGeometry(area=x * fl.u.m**2),
+        reference_geometry=fl.ReferenceGeometry(),
         # Operating conditions: setting speed and angle of attack for the simulation
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=100,  # Velocity of 100 m/s

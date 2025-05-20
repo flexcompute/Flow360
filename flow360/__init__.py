@@ -276,4 +276,5 @@ __all__ = [
     "StreamlineOutput",
     "Transformation",
     "WallRotation",
+    "UserVariable",
 ]
