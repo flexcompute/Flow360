@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 import numpy as np
@@ -50,6 +51,11 @@ from flow360.component.simulation.user_code import (
     UserVariable,
     ValueOrExpression,
 )
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 def test_variable_init():
@@ -580,17 +586,18 @@ def test_error_message():
         assert validation_errors[0]["ctx"]["column"] == 8
 
     try:
-        model = TestModel(field="1 * 1 + (2")
+        TestModel(field="1 * 1 + (2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
-        assert len(validation_errors) >= 1
+        assert len(validation_errors) == 2
         assert validation_errors[0]["type"] == "value_error"
-        assert "unexpected EOF" in validation_errors[0]["msg"]
-        assert "1 * 1 + (2" in validation_errors[0]["msg"]
+        assert validation_errors[1]["type"] == "value_error"
+        assert "'(' was never closed at" in validation_errors[0]["msg"]
+        assert "TokenError('EOF in multi-line statement', (2, 0))" in validation_errors[1]["msg"]
         assert "line" in validation_errors[0]["ctx"]
         assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 11
+        assert validation_errors[0]["ctx"]["column"] == 9
 
 
 def test_solver_translation():
@@ -685,3 +692,16 @@ def test_auto_alias():
 
     assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
     assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+
+
+def test_variable_space_init():
+    # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
+    with open("data/variables.json", "r+") as fh:
+        data = json.load(fh)
+
+    with SI_unit_system:
+        params = SimulationParams.model_validate(data)
+
+    evaluated = params.reference_geometry.area.evaluate()
+
+    assert evaluated == 1.0 * u.m**2

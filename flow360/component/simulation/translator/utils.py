@@ -7,6 +7,8 @@ import json
 from collections import OrderedDict
 from typing import Union
 
+import numpy as np
+
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
@@ -15,6 +17,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code import Expression
 from flow360.component.simulation.utils import is_exact_instance
 
 
@@ -138,6 +141,36 @@ def remove_units_in_dict(input_dict):
         return new_dict
     if isinstance(input_dict, list):
         return [remove_units_in_dict(item) for item in input_dict]
+    return input_dict
+
+
+def inline_expressions_in_dict(input_dict, input_params):
+    if isinstance(input_dict, dict):
+        new_dict = {}
+        if "expression" in input_dict.keys():
+            expression = Expression(expression=input_dict["expression"])
+            evaluated = expression.evaluate(strict=False)
+            converted = input_params.convert_unit(evaluated, "flow360").v
+            new_dict = converted
+            return new_dict
+        for key, value in input_dict.items():
+            # For number-type fields the schema should match dimensioned unit fields
+            # so remove_units_in_dict should handle them correctly...
+            if isinstance(value, dict) and "expression" in value.keys():
+                expression = Expression(expression=value["expression"])
+                evaluated = expression.evaluate(strict=False)
+                converted = input_params.convert_unit(evaluated, "flow360").v
+                if isinstance(converted, np.ndarray):
+                    if converted.ndim == 0:
+                        converted = float(converted)
+                    else:
+                        converted = converted.tolist()
+                new_dict[key] = converted
+            else:
+                new_dict[key] = inline_expressions_in_dict(value, input_params)
+        return new_dict
+    if isinstance(input_dict, list):
+        return [inline_expressions_in_dict(item, input_params) for item in input_dict]
     return input_dict
 
 

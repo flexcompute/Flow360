@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, Iterable, List, Optional, Union
 
 import pydantic as pd
 
@@ -60,6 +60,7 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
     unyt_quantity,
 )
+from flow360.component.simulation.user_code import UserVariable
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -194,6 +195,12 @@ class _ParamModelBase(Flow360BaseModel):
 
         unit_system = model_dict.get("unit_system")
 
+        # This is ugly but needed beacuse overloading __init__ nullfies all before validators of SimulationParams...
+        # TODO: Move this to a before field_validator when __init__ is not overloaded
+        cache_key = "private_attribute_asset_cache"
+        if cache_key in model_dict:
+            SimulationParams.initialize_variable_space(model_dict[cache_key])
+
         with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
             super().__init__(**model_dict)
 
@@ -203,6 +210,13 @@ class _ParamModelBase(Flow360BaseModel):
         """
         # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
+
+        # This is ugly but needed beacuse overloading __init__ nullfies all before validators of SimulationParams...
+        # TODO: Move this to a before field_validator when __init__ is not overloaded
+        cache_key = "private_attribute_asset_cache"
+        if cache_key in kwargs:
+            SimulationParams.initialize_variable_space(kwargs[cache_key])
+
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
@@ -365,6 +379,14 @@ class SimulationParams(_ParamModelBase):
             value.units.registry = flow360_conv_system.registry  # pylint: disable=no-member
             converted = value.in_base(unit_system=target_system)
         return converted
+
+    # A bit ugly but we have no way of forcing validator call order so this is a workaround
+    @classmethod
+    def initialize_variable_space(cls, value):
+        if "project_variables" in value and isinstance(value["project_variables"], Iterable):
+            for variable_dict in value["project_variables"]:
+                UserVariable(name=variable_dict["name"], value=variable_dict["value"])
+        return value
 
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")

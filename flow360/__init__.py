@@ -145,6 +145,7 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.user_code import UserVariable
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -275,4 +276,5 @@ __all__ = [
     "StreamlineOutput",
     "Transformation",
     "WallRotation",
+    "UserVariable",
 ]

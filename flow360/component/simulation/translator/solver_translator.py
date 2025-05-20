@@ -74,6 +74,7 @@ from flow360.component.simulation.translator.utils import (
     convert_tuples_to_lists,
     get_global_setting_from_first_instance,
     has_instance_in_list,
+    inline_expressions_in_dict,
     preprocess_input,
     remove_units_in_dict,
     replace_dict_key,
@@ -977,7 +978,10 @@ def get_solver_json(
     translated = {}
     ##:: Step 1: Get geometry:
     if input_params.reference_geometry:
-        geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
+        geometry = inline_expressions_in_dict(
+            dump_dict(input_params.reference_geometry), input_params
+        )
+        geometry = remove_units_in_dict(geometry)
         translated["geometry"] = {}
         if input_params.reference_geometry.area is not None:
             translated["geometry"]["refArea"] = geometry["area"]
