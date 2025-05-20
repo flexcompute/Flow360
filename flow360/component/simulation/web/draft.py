@@ -23,6 +23,7 @@ from flow360.component.resource_base import (
 from flow360.component.utils import validate_type
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
+from flow360.component.simulation.framework.updater_utils import deprecation_reminder
 
 
 class DraftDraft(ResourceDraft):
@@ -118,6 +119,19 @@ class Draft(Flow360Resource):
     def update_simulation_params(self, params):
         """update the SimulationParams of the draft"""
 
+        @deprecation_reminder(version="25.5.2")
+        def remove_none_inflow_velocity_direction_for_forward_compatibility(params_dict):
+            """
+            If None `velocity_direction` is found in root level of `Inflow` then pop the key so that forward compatibility is kept within 25.5 release.
+            """
+            if params_dict.get("models"):
+                for idx, model in enumerate(params_dict["models"]):
+                    if model.get("type") != "Inflow":
+                        continue
+                    if model.get("velocity_direction") is None:
+                        params_dict["models"][idx].pop("velocity_direction")
+            return params_dict
+
         params_dict = params.model_dump()
         if params_dict.get("models"):
             # Remove hybrid_model:None to avoid triggering front end display activated toggle.
@@ -128,6 +142,9 @@ class Draft(Flow360Resource):
                 ):
                     params_dict["models"][idx]["turbulence_model_solver"].pop("hybrid_model", None)
                     break
+        params_dict = remove_none_inflow_velocity_direction_for_forward_compatibility(
+            params_dict=params_dict
+        )
         self.post(
             json={"data": json.dumps(params_dict), "type": "simulation", "version": ""},
             method="simulation/file",
