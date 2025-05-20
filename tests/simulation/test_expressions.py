@@ -586,17 +586,18 @@ def test_error_message():
         assert validation_errors[0]["ctx"]["column"] == 8
 
     try:
-        model = TestModel(field="1 * 1 + (2")
+        TestModel(field="1 * 1 + (2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
-        assert len(validation_errors) >= 1
+        assert len(validation_errors) == 2
         assert validation_errors[0]["type"] == "value_error"
-        assert "unexpected EOF" in validation_errors[0]["msg"]
-        assert "1 * 1 + (2" in validation_errors[0]["msg"]
+        assert validation_errors[1]["type"] == "value_error"
+        assert "'(' was never closed at" in validation_errors[0]["msg"]
+        assert "TokenError('EOF in multi-line statement', (2, 0))" in validation_errors[1]["msg"]
         assert "line" in validation_errors[0]["ctx"]
         assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 11
+        assert validation_errors[0]["ctx"]["column"] == 9
 
 
 def test_solver_translation():
