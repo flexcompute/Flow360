@@ -217,7 +217,7 @@ def TurbulenceQuantities(
     viscosity_ratio : >= 0
         The ratio between the turbulent viscosity and freestream laminar
         viscosity. Applicable to both :class:`~flow360.KOmegaSST` and
-        `~flow360.SpalartAllmaras`. Its value will be converted to
+        :class:`~flow360.SpalartAllmaras`. Its value will be converted to
         :py:attr:`modifiedTurbulentViscosityRatio` when using
         SpalartAllmaras model.
     modified_viscosity_ratio : >= 0

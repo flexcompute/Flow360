@@ -730,15 +730,19 @@ def check_num_values(values_list, line_num, numelts):
     Attributes
     ----------
     values: list
-    numelts:  int
+    numelts:  int, list[int]
     return: None, raises an exception if the error condition is met
     """
+    if isinstance(numelts, int):
+        numelts = [numelts]
 
-    if not len(values_list) == numelts:
-        raise Flow360ValueError(
-            f"wrong number of items for line #%i: {values_list}. We were expecting %i numbers and got %i"
-            % (line_num, len(values_list), numelts)
-        )
+    for numelt in numelts:
+        if len(values_list) == numelt:
+            return
+    raise Flow360ValueError(
+        f"wrong number of items for line #{line_num}: {values_list}. "
+        + f"We were expecting {' or '.join([str(num) for num in numelts])} numbers and got {len(values_list)}"
+    )
 
 
 # pylint: disable=too-many-statements
@@ -1041,6 +1045,9 @@ def read_xrotor_file(xrotor_file_content: str):
     xrotor_input_dict["cdmin"] = [0] * n_aero_sections
     xrotor_input_dict["clcdmin"] = [0] * n_aero_sections
     xrotor_input_dict["dcddcl2"] = [0] * n_aero_sections
+    xrotor_input_dict["dcddcm2"] = [
+        0
+    ] * n_aero_sections  # currently unused by BET translator but we are recording it in case we need it in the future.
 
     for i in range(n_aero_sections):
         comment_line = next(line_iter).upper().split()
@@ -1079,10 +1086,12 @@ def read_xrotor_file(xrotor_file_content: str):
         check_comment(comment_line, line_num, 4)
         values = next(line_iter).split()
         line_num += 1
-        check_num_values(values, line_num, 3)
+        check_num_values(values, line_num, [3, 4])
         xrotor_input_dict["cdmin"][i] = float(values[0])
         xrotor_input_dict["clcdmin"][i] = float(values[1])
         xrotor_input_dict["dcddcl2"][i] = float(values[2])
+        if len(values) == 4:
+            xrotor_input_dict["dcddcm2"][i] = float(values[3])
 
         comment_line = next(line_iter).upper().split()
         line_num += 1
@@ -1154,7 +1163,7 @@ def parse_xrotor_dfdc_geometry_file(geometry_file_content, file_format: Literal[
     lines = geometry_file_content.split("\n")
     line_iter = iter(lines)
 
-    top_line = next(line_iter)
+    top_line: str = next(line_iter)
     line_num += 1
 
     if top_line.find(file_format.upper()) == -1:
@@ -1162,6 +1171,14 @@ def parse_xrotor_dfdc_geometry_file(geometry_file_content, file_format: Literal[
 
     if file_format == "dfdc":
         return read_dfdc_file(dfdc_file_content=geometry_file_content)
+
+    version = top_line.split(":")[1].strip()
+
+    if (float(version) < 7.54) or (float(version) > 7.69):
+        log.warning(
+            "The XROTOR translator was prepared for file versions between 7.54 and 7.69,"
+            + f" your version is {version}, errors may occur."
+        )
 
     return read_xrotor_file(xrotor_file_content=geometry_file_content)
 

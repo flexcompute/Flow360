@@ -231,7 +231,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     @property
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
-        return self.velocity_magnitude / self.thermal_state.speed_of_sound
+        return (self.velocity_magnitude / self.thermal_state.speed_of_sound).value
 
     @pd.field_validator("thermal_state", mode="after")
     @classmethod
