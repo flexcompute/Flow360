@@ -4,8 +4,21 @@ import numpy as np
 import pydantic as pd
 import pytest
 
-from flow360 import control, solution, u
+from flow360 import (
+    HeatEquationInitialCondition,
+    LiquidOperatingCondition,
+    SimulationParams,
+    Solid,
+    Unsteady,
+    control,
+    solution,
+    u,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.models.material import Water, aluminum
+from flow360.component.simulation.outputs.outputs import SurfaceOutput
+from flow360.component.simulation.primitives import GenericVolume, Surface
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -24,6 +37,7 @@ from flow360.component.simulation.unit_system import (
     MomentType,
     PowerType,
     PressureType,
+    SI_unit_system,
     SpecificEnergyType,
     SpecificHeatCapacityType,
     ThermalConductivityType,
@@ -580,20 +594,55 @@ def test_error_message():
 
 
 def test_solver_translation():
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[float] = pd.Field()
+    timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
+    solid_model = Solid(
+        volumes=[GenericVolume(name="CHTSolid")],
+        material=aluminum,
+        volumetric_heat_source="0",
+        initial_condition=HeatEquationInitialCondition(temperature="10"),
+    )
+    surface_output_with_residual_heat_solver = SurfaceOutput(
+        name="surface",
+        surfaces=[Surface(name="noSlipWall")],
+        write_single_file=True,
+        output_fields=["residualHeatSolver"],
+    )
+    water = Water(
+        name="h2o", density=1000 * u.kg / u.m**3, dynamic_viscosity=0.001 * u.kg / u.m / u.s
+    )
+    liquid_operating_condition = LiquidOperatingCondition(
+        velocity_magnitude=50 * u.m / u.s,
+        reference_velocity_magnitude=100 * u.m / u.s,
+        material=water,
+    )
 
-    x = UserVariable(name="x", value=4)
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[solid_model],
+            operating_condition=liquid_operating_condition,
+            time_stepping=timestepping_unsteady,
+            outputs=[surface_output_with_residual_heat_solver],
+            private_attribute_asset_cache=AssetCache(project_length_unit=2 * u.m),
+        )
 
-    model = TestModel(field=(x // 3) ** 2)
+        x = UserVariable(name="x", value=4)
+        y = UserVariable(name="y", value=x + 1)
 
-    assert isinstance(model.field, Expression)
-    assert model.field.evaluate() == 1
-    assert str(model.field) == "(x // 3) ** 2"
+        # Showcased features:
+        expression = Expression.model_validate(x * u.m**2)
 
-    solver_code = model.field.to_solver_code()
+        # 1. Units are converted to flow360 unit system using the provided params (1m**2 -> 0.25 because of length unit)
+        # 2. User variables are inlined (for numeric value types)
+        assert expression.to_solver_code(params) == "(4.0 * pow(0.5, 2))"
 
-    assert solver_code == "pow(floor(x / 3), 2)"
+        # 3. User variables are inlined (for expression value types)
+        expression = Expression.model_validate(y * u.m**2)
+        assert expression.to_solver_code(params) == "((4.0 + 1) * pow(0.5, 2))"
+
+        # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
+        expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
+        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 125.0) + machRef)"
 
 
 def test_cyclic_dependencies():

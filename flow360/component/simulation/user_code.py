@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Generic, Iterable, Optional, TypeVar
+from typing import ClassVar, Generic, Iterable, Optional, TypeVar
 
 from pydantic import BeforeValidator
 from typing_extensions import Self
@@ -35,15 +35,10 @@ def _split_keep_delimiters(input: str, delimiters: list) -> list:
     return [part for part in result if part != ""]
 
 
-def _convert_argument(value):
-    parenthesize = False
+def _convert_numeric(value):
+    arg = None
     unit_delimiters = ["+", "-", "*", "/", "(", ")"]
-    if isinstance(value, Expression):
-        arg = value.expression
-        parenthesize = True
-    elif isinstance(value, Variable):
-        arg = value.name
-    elif isinstance(value, Number):
+    if isinstance(value, Number):
         arg = str(value)
     elif isinstance(value, Unit):
         unit = str(value)
@@ -70,7 +65,19 @@ def _convert_argument(value):
             arg = str(value)
         else:
             arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
-    else:
+    return arg
+
+
+def _convert_argument(value):
+    parenthesize = False
+    arg = _convert_numeric(value)
+    if isinstance(value, Expression):
+        arg = value.expression
+        parenthesize = True
+    elif isinstance(value, Variable):
+        arg = value.name
+
+    if not arg:
         raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
 
@@ -373,10 +380,30 @@ class Expression(Flow360BaseModel, Evaluable):
 
         return names
 
-    def to_solver_code(self):
+    def to_solver_code(self, params):
+        def translate_symbol(name):
+            if name in _solver_variables:
+                return _solver_variables[name]
+
+            if name in _user_variables:
+                value = _global_ctx.get(name)
+                if isinstance(value, Expression):
+                    return f"{value.to_solver_code(params)}"
+                else:
+                    return _convert_numeric(value)
+
+            match = re.fullmatch("u\\.(.+)", name)
+
+            if match:
+                unit_name = match.group(1)
+                unit = Unit(unit_name)
+                conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
+                return str(conversion_factor)
+
+            return name
+
         expr = expr_to_model(self.expression, _global_ctx)
-        source = expr_to_code(expr, TargetSyntax.CPP, _solver_variables)
-        # TODO: What do we do with dimensioned expressions? We need to replace all units by their conversion factors.
+        source = expr_to_code(expr, TargetSyntax.CPP, translate_symbol)
         return source
 
     def __hash__(self):
@@ -516,6 +543,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _deserialize(value) -> Self:
             is_serialized = False
+
             try:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True

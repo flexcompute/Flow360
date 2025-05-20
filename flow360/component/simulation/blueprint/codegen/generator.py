@@ -1,5 +1,5 @@
 import functools
-from typing import Any
+from typing import Any, Callable
 
 from ..core.expressions import (
     BinOp,
@@ -46,8 +46,10 @@ def _empty(syntax):
 
 
 @check_syntax_type
-def _name(expr, remap):
-    return expr.id if expr.id not in remap else remap[expr.id]
+def _name(expr, name_translator):
+    if name_translator:
+        return name_translator(expr.id)
+    return expr.id
 
 
 @check_syntax_type
@@ -58,43 +60,54 @@ def _constant(expr):
 
 
 @check_syntax_type
-def _unary_op(expr, syntax, remap):
+def _unary_op(expr, syntax, name_translator):
     op_info = UNARY_OPERATORS[expr.op]
-    return f"{op_info.symbol}{expr_to_code(expr.operand, syntax, remap)}"
+
+    arg = expr_to_code(expr.operand, syntax, name_translator)
+
+    return f"{op_info.symbol}{arg}"
 
 
 @check_syntax_type
-def _binary_op(expr, syntax, remap):
+def _binary_op(expr, syntax, name_translator):
+    left = expr_to_code(expr.left, syntax, name_translator)
+    right = expr_to_code(expr.right, syntax, name_translator)
+
     if syntax == TargetSyntax.CPP:
         # Special case handling for operators not directly supported in CPP syntax, requires #include <cmath>
         if expr.op == "FloorDiv":
-            return f"floor({expr_to_code(expr.left, syntax, remap)} / {expr_to_code(expr.right, syntax, remap)})"
+            return f"floor({left} / {right})"
         if expr.op == "Pow":
-            return f"pow({expr_to_code(expr.left, syntax, remap)}, {expr_to_code(expr.right, syntax, remap)})"
+            return f"pow({left}, {right})"
         if expr.op == "Is":
-            return f"&{expr_to_code(expr.left, syntax, remap)} == &{expr_to_code(expr.right, syntax, remap)}"
+            return f"&{left} == &{right}"
 
     op_info = BINARY_OPERATORS[expr.op]
-    return f"({expr_to_code(expr.left, syntax, remap)} {op_info.symbol} {expr_to_code(expr.right, syntax, remap)})"
+    return f"({left} {op_info.symbol} {right})"
 
 
 @check_syntax_type
-def _range_call(expr, syntax, remap):
+def _range_call(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
-        return f"range({expr_to_code(expr.arg, syntax, remap)})"
+        arg = expr_to_code(expr.arg, syntax, name_translator)
+        return f"range({arg})"
 
     raise ValueError("Range calls are only supported for Python target syntax")
 
 
 @check_syntax_type
-def _call_model(expr, syntax, remap):
+def _call_model(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
-        args_str = ", ".join(expr_to_code(arg, syntax, remap) for arg in expr.args)
+        args = []
+        for arg in expr.args:
+            val_str = expr_to_code(arg, syntax, name_translator)
+            args.append(val_str)
+        args_str = ", ".join(args)
         kwargs_parts = []
         for k, v in expr.kwargs.items():
             if v is None:
                 continue
-            val_str = expr_to_code(v, syntax, remap)
+            val_str = expr_to_code(v, syntax, name_translator)
             if not val_str or val_str.isspace():
                 continue
             kwargs_parts.append(f"{k}={val_str}")
@@ -103,51 +116,64 @@ def _call_model(expr, syntax, remap):
         all_args = ", ".join(x for x in [args_str, kwargs_str] if x)
         return f"{expr.func_qualname}({all_args})"
     elif syntax == TargetSyntax.CPP:
-        args_str = ", ".join(expr_to_code(arg, syntax, remap) for arg in expr.args)
+        args = []
+        for arg in expr.args:
+            val_str = expr_to_code(arg, syntax, name_translator)
+            args.append(val_str)
+        args_str = ", ".join(args)
         if expr.kwargs:
             raise ValueError("Named arguments are not supported in C++ syntax")
         return f"{expr.func_qualname}({args_str})"
 
 
 @check_syntax_type
-def _tuple(expr, syntax, remap):
+def _tuple(expr, syntax, name_translator):
+    elements = [expr_to_code(e, syntax, name_translator) for e in expr.elements]
+
     if syntax == TargetSyntax.PYTHON:
         if len(expr.elements) == 0:
             return "()"
         elif len(expr.elements) == 1:
-            return f"({expr_to_code(expr.elements[0], syntax, remap)},)"
-        return f"({', '.join(expr_to_code(e, syntax, remap) for e in expr.elements)})"
+            return f"({elements[0]},)"
+        return f"({', '.join(elements)})"
     elif syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
             return "{}"
         elif len(expr.elements) == 1:
-            return f"{{{expr_to_code(expr.elements[0], syntax, remap)}}}"
-        return f"{{{', '.join(expr_to_code(e, syntax, remap) for e in expr.elements)}}}"
+            return f"{{{elements[0]}}}"
+        return f"{{{', '.join(elements)}}}"
 
 
 @check_syntax_type
-def _list(expr, syntax, remap):
+def _list(expr, syntax, name_translator):
+    elements = [expr_to_code(e, syntax, name_translator) for e in expr.elements]
+
     if syntax == TargetSyntax.PYTHON:
-        if not expr.elements:
+        if len(expr.elements) == 0:
             return "[]"
-        elements = [expr_to_code(e, syntax, remap) for e in expr.elements]
         elements_str = ", ".join(elements)
         return f"[{elements_str}]"
     elif syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
             return "{}"
-        return f"{{{', '.join(expr_to_code(e, syntax, remap) for e in expr.elements)}}}"
+        return f"{{{', '.join(elements)}}}"
 
 
-def _list_comp(expr, syntax, remap):
+def _list_comp(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
-        return f"[{expr_to_code(expr.element, syntax, remap)} for {expr.target, syntax, remap} in {expr_to_code(expr.iter, syntax, remap)}]"
+        element = expr_to_code(expr.element, syntax, name_translator)
+        target = expr_to_code(expr.target, syntax, name_translator)
+        iterator = expr_to_code(expr.iter, syntax, name_translator)
+
+        return f"[{element} for {target} in {iterator}]"
 
     raise ValueError("List comprehensions are only supported for Python target syntax")
 
 
 def expr_to_code(
-    expr: Any, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
+    expr: Any,
+    syntax: TargetSyntax = TargetSyntax.PYTHON,
+    name_translator: Callable[[str], str] = None,
 ) -> str:
     """Convert an expression model back to source code."""
     if expr is None:
@@ -155,31 +181,31 @@ def expr_to_code(
 
     # Names and constants are language-agnostic (apart from symbol remaps)
     if isinstance(expr, Name):
-        return _name(expr, remap)
+        return _name(expr, name_translator)
 
     elif isinstance(expr, Constant):
         return _constant(expr)
 
     elif isinstance(expr, UnaryOp):
-        return _unary_op(expr, syntax, remap)
+        return _unary_op(expr, syntax, name_translator)
 
     elif isinstance(expr, BinOp):
-        return _binary_op(expr, syntax, remap)
+        return _binary_op(expr, syntax, name_translator)
 
     elif isinstance(expr, RangeCall):
-        return _range_call(expr, syntax, remap)
+        return _range_call(expr, syntax, name_translator)
 
     elif isinstance(expr, CallModel):
-        return _call_model(expr, syntax, remap)
+        return _call_model(expr, syntax, name_translator)
 
     elif isinstance(expr, Tuple):
-        return _tuple(expr, syntax, remap)
+        return _tuple(expr, syntax, name_translator)
 
     elif isinstance(expr, List):
-        return _list(expr, syntax, remap)
+        return _list(expr, syntax, name_translator)
 
     elif isinstance(expr, ListComp):
-        return _list_comp(expr, syntax, remap)
+        return _list_comp(expr, syntax, name_translator)
 
     else:
         raise ValueError(f"Unsupported expression type: {type(expr)}")
