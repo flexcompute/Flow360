@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 import numpy as np
@@ -19,6 +20,7 @@ from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.services import validate_model, ValidationCalledBy
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -50,6 +52,11 @@ from flow360.component.simulation.user_code import (
     UserVariable,
     ValueOrExpression,
 )
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 def test_variable_init():
@@ -685,3 +692,16 @@ def test_auto_alias():
 
     assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
     assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+
+
+def test_variable_space_init():
+    # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
+    with open("data/variables.json", "r+") as fh:
+        data = json.load(fh)
+
+    with SI_unit_system:
+        params = SimulationParams.model_validate(data)
+
+    evaluated = params.reference_geometry.area.evaluate()
+
+    assert evaluated == 1.0 * u.m**2

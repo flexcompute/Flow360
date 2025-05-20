@@ -154,6 +154,8 @@ def inline_expressions_in_dict(input_dict, input_params):
             new_dict = converted
             return new_dict
         for key, value in input_dict.items():
+            # For number-type fields the schema should match dimensioned unit fields
+            # so remove_units_in_dict should handle them correctly...
             if isinstance(value, dict) and "expression" in value.keys():
                 expression = Expression(expression=value["expression"])
                 evaluated = expression.evaluate(strict=False)

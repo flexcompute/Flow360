@@ -38,9 +38,7 @@ with fl.SI_unit_system:
             volume_zones=[far_field_zone],  # Apply the automated far-field boundary condition
         ),
         # Reference geometry parameters for the simulation (e.g., center of pressure)
-        reference_geometry=fl.ReferenceGeometry(
-            area=x * fl.u.m ** 2
-        ),
+        reference_geometry=fl.ReferenceGeometry(area=x * fl.u.m**2),
         # Operating conditions: setting speed and angle of attack for the simulation
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=100,  # Velocity of 100 m/s
