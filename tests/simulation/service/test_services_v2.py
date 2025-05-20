@@ -1066,7 +1066,11 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
+<<<<<<< HEAD
         "type": f"99.99.99 > {__version__}",
+=======
+        "type": "99.99.99 > 25.5.1",
+>>>>>>> 79b65a9b ([FL-852] Add Velocity direction specification for Inflow with Mass Flow specified (#1052))
         "loc": [],
         "msg": "The cloud `SimulationParam` is too new for your local Python client. "
         "Errors may occur since forward compatibility is limited.",
@@ -1080,7 +1084,11 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
+<<<<<<< HEAD
         "type": f"99.99.99 > {__version__}",
+=======
+        "type": "99.99.99 > 25.5.1",
+>>>>>>> 79b65a9b ([FL-852] Add Velocity direction specification for Inflow with Mass Flow specified (#1052))
         "loc": [],
         "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
         "ctx": {},

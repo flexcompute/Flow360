@@ -25,7 +25,13 @@ UPDATE_MAP = [
     ("25.2.0", "25.2.1", _no_update),
     ("25.2.1", "25.2.2", _no_update),
     ("25.2.2", "25.2.3", _no_update),
+<<<<<<< HEAD
     ("25.2.3", "25.2.6", _no_update),
+=======
+    ("25.2.3", "25.4.0", _no_update),
+    ("25.4.0", "25.4.1", _no_update),
+    ("25.4.1", "25.5.1", _no_update),
+>>>>>>> 79b65a9b ([FL-852] Add Velocity direction specification for Inflow with Mass Flow specified (#1052))
 ]
 
 

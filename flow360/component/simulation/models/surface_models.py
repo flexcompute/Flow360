@@ -15,6 +15,7 @@ from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
 )
 from flow360.component.simulation.framework.unique_list import UniqueItemList
+from flow360.component.simulation.framework.updater_utils import deprecation_reminder
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantitiesType,
 )
@@ -44,6 +45,7 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+from flow360.log import log
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -120,7 +122,6 @@ class TotalPressure(Flow360BaseModel):
 
     >>> fl.TotalPressure(
     ...     value = 1.04e6 * fl.u.Pa,
-    ...     velocity_direction = (1, 0, 0),
     ... )
 
     ====
@@ -134,6 +135,18 @@ class TotalPressure(Flow360BaseModel):
         description="Direction of the incoming flow. Must be a unit vector pointing "
         + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
+
+    @pd.model_validator(mode="after")
+    @deprecation_reminder(version="25.5.2")
+    def check_deprecate_velocity_direction(self):
+        """Check if duplicate velocity_direction set up exists."""
+        # pylint: disable=unsupported-membership-test
+        if "velocity_direction" in self.model_fields_set:
+            log.warning(
+                "Specifying `velocity_direction` in `TotalPressure` will be deprecated in the "
+                + "next (25.5.2) Python client release. Please specify it directly under `Inflow`."
+            )
+        return self
 
 
 class Pressure(SingleAttributeModel):
@@ -470,8 +483,8 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       ...     total_temperature=300 * fl.u.K,
       ...     spec=fl.TotalPressure(
       ...         value = 1.028e6 * fl.u.Pa,
-      ...         velocity_direction = (1, 0, 0),
       ...     ),
+      ...     velocity_direction = (1, 0, 0),
       ... )
 
     - Define inflow boundary condition with mass flow rate:
@@ -483,6 +496,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       ...         value = 123 * fl.u.lb / fl.u.s,
       ...         ramp_steps = 10,
       ...     ),
+      ...     velocity_direction = (1, 0, 0),
       ... )
 
     - Define inflow boundary condition with turbulence quantities:
@@ -508,6 +522,27 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         discriminator="type_name",
         description="Specify the total pressure or the mass flow rate at the `Inflow` boundary.",
     )
+    velocity_direction: Optional[Axis] = pd.Field(
+        None,
+        description="Direction of the incoming flow. Must be a unit vector pointing "
+        + "into the volume. If unspecified, the direction will be normal to the surface.",
+    )
+
+    @pd.model_validator(mode="after")
+    @deprecation_reminder(version="25.5.2")
+    def check_duplicate_velocity_direction_setup(self):
+        """Check if duplicate velocity_direction set up exists."""
+
+        if (
+            self.velocity_direction
+            and isinstance(self.spec, TotalPressure)
+            and self.spec.velocity_direction
+        ):
+            raise ValueError(
+                "Duplicate `velocity_direction` setup found in `TotalPressure` and `Inflow`, "
+                "please set `velocity_direction` in `Inflow`."
+            )
+        return self
 
 
 class SlipWall(BoundaryBase):
