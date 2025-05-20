@@ -635,4 +635,4 @@ def test_auto_alias():
     model_2 = TestModel(field=aliased)
 
     assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
-    assert str(model_2.field)== "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"

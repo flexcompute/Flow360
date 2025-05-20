@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import ClassVar, Generic, Iterable, Optional, TypeVar
+from typing import Generic, Iterable, Optional, TypeVar
 
 from pydantic import BeforeValidator
 from typing_extensions import Self
@@ -516,7 +516,6 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _deserialize(value) -> Self:
             is_serialized = False
-
             try:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True
