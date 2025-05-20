@@ -168,7 +168,7 @@ class Flow360BaseModel(pd.BaseModel):
         # pylint: disable=fixme
         # TODO: Remove alias_generator since it is only for translator
         alias_generator=pd.AliasGenerator(
-            serialization_alias=snake_to_camel,
+            alias=snake_to_camel,
         ),
     )
 

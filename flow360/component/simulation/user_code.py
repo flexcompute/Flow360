@@ -58,7 +58,7 @@ def _convert_argument(value):
     elif isinstance(value, unyt_array):
         unit = str(value.units)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{str(value.value)} * "
+        arg = f"{_convert_argument(value.value)[0]} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
@@ -66,7 +66,10 @@ def _convert_argument(value):
             else:
                 arg += token
     elif isinstance(value, np.ndarray):
-        arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+        if value.ndim == 0:
+            arg = str(value)
+        else:
+            arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
     else:
         raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
@@ -81,9 +84,44 @@ class SerializedValueOrExpression(Flow360BaseModel):
     evaluated_units: Optional[str] = pd.Field(None)
 
 
+# This is a wrapper to allow using ndarrays with pydantic models
+class NdArray(np.ndarray):
+    def __repr__(self):
+        return f"NdArray(shape={self.shape}, dtype={self.dtype})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any):
+        if isinstance(value, np.ndarray):
+            return value
+        raise ValueError(f"Cannot convert {type(value)} to NdArray")
+
+
+# This is a wrapper to allow using unyt arrays with pydantic models
+class UnytArray(unyt_array):
+    def __repr__(self):
+        return f"UnytArray({str(self)})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any):
+        if isinstance(value, unyt_array):
+            return value
+        raise ValueError(f"Cannot convert {type(value)} to UnytArray")
+
+
+AnyNumericType = Union[float, UnytArray, NdArray]
+
+
 class Variable(Flow360BaseModel):
     name: str = pd.Field()
-    value: ValueOrExpression[Any] = pd.Field()
+    value: ValueOrExpression[AnyNumericType] = pd.Field()
 
     model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
 
@@ -181,6 +219,9 @@ class Variable(Flow360BaseModel):
 
     def __repr__(self):
         return f"Variable({self.name} = {self.value})"
+
+    def __hash__(self):
+        return hash(self.name)
 
     def sqrt(self):
         return Expression(expression=f"np.sqrt({self.expression})")
@@ -288,7 +329,12 @@ class Expression(Flow360BaseModel, Evaluable):
         elif isinstance(value, Variable):
             expression = str(value)
         elif isinstance(value, np.ndarray) and not isinstance(value, unyt_array):
-            expression = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+            if value.ndim == 0:
+                expression = str(value)
+            else:
+                expression = (
+                    f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+                )
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}

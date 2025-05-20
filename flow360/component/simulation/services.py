@@ -2,15 +2,13 @@
 
 # pylint: disable=duplicate-code
 import json
-import re
 from enum import Enum
 from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pydantic as pd
-from unyt import unyt_array, unyt_quantity
-from unyt.exceptions import UnitParseError
+from unyt import unyt_array
 
 # Required for correct global scope initialization
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
@@ -410,7 +408,9 @@ def clean_unrelated_setting_from_params_dict(params: dict, root_item_type: str) 
     return params
 
 
-def handle_generic_exception(err: Exception, validation_errors: Optional[list]) -> list:
+def handle_generic_exception(
+    err: Exception, validation_errors: Optional[list], loc_prefix: Optional[list[str]] = None
+) -> list:
     """
     Handles generic exceptions during validation, adding to validation errors.
 
@@ -420,6 +420,8 @@ def handle_generic_exception(err: Exception, validation_errors: Optional[list]) 
         The exception caught during validation.
     validation_errors : list or None
         Current list of validation errors, may be None.
+    loc_prefix : list or None
+        Prefix of the location of the generic error to help locate the issue
 
     Returns
     -------
@@ -432,7 +434,7 @@ def handle_generic_exception(err: Exception, validation_errors: Optional[list]) 
     validation_errors.append(
         {
             "type": err.__class__.__name__.lower().replace("error", "_error"),
-            "loc": ["unknown"],
+            "loc": ["unknown"] if loc_prefix is None else loc_prefix,
             "msg": str(err),
             "ctx": {},
         }
@@ -791,17 +793,19 @@ def validate_expression(variables: list[dict], expressions: list[str]):
     # Populate variable scope
     for i in range(len(variables)):
         variable = variables[i]
-        loc = f"variables/{i}"
+        loc_hint = ["variables", str(i)]
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
             if variable and isinstance(variable.value, Expression):
                 _ = variable.value.evaluate(strict=False)
-        except (ValueError, KeyError, NameError, UnitParseError) as e:
-            errors.append({"loc": loc, "msg": str(e)})
+        except pd.ValidationError as err:
+            errors.extend(err.errors())
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            handle_generic_exception(err, errors, loc_hint)
 
     for i in range(len(expressions)):
         expression = expressions[i]
-        loc = f"expressions/{i}"
+        loc_hint = ["expressions", str(i)]
         value = None
         unit = None
         try:
@@ -822,8 +826,10 @@ def validate_expression(variables: list[dict], expressions: list[str]):
                     value = float(result[0])
                 else:
                     value = tuple(result.tolist())
-        except (ValueError, KeyError, NameError, UnitParseError) as e:
-            errors.append({"loc": loc, "msg": str(e)})
+        except pd.ValidationError as err:
+            errors.extend(err.errors())
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            handle_generic_exception(err, errors, loc_hint)
         values.append(value)
         units.append(unit)
 

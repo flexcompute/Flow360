@@ -303,10 +303,10 @@ def test_vector_types():
         direction: ValueOrExpression[LengthType.Direction] = pd.Field()
         moment: ValueOrExpression[LengthType.Moment] = pd.Field()
 
-    x = UserVariable(name="x", value=[1, 0, 0])
-    y = UserVariable(name="y", value=[0, 0, 0])
-    z = UserVariable(name="z", value=[1, 0, 0, 0])
-    w = UserVariable(name="w", value=[1, 1, 1])
+    x = UserVariable(name="x", value=np.array([1, 0, 0]))
+    y = UserVariable(name="y", value=np.array([0, 0, 0]))
+    z = UserVariable(name="z", value=np.array([1, 0, 0, 0]))
+    w = UserVariable(name="w", value=np.array([1, 1, 1]))
 
     model = TestModel(
         vector=y * u.m, axis=x * u.m, array=z * u.m, direction=x * u.m, moment=w * u.m
@@ -409,8 +409,6 @@ def test_deserializer():
 
 
 def test_numpy_interop_scalars():
-    # Disclaimer - doesn't fully work yet with dimensioned types...
-
     class ScalarModel(Flow360BaseModel):
         scalar: ValueOrExpression[float] = pd.Field()
 
@@ -481,8 +479,6 @@ def test_numpy_interop_scalars():
 
 
 def test_numpy_interop_vectors():
-    # Disclaimer - doesn't fully work yet with dimensioned types...
-
     Vec3 = tuple[float, float, float]
 
     class VectorModel(Flow360BaseModel):
@@ -613,3 +609,30 @@ def test_cyclic_dependencies():
 
     with pytest.raises(pd.ValidationError):
         x.value = x
+
+
+def test_auto_alias():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[VelocityType] = pd.Field()
+
+    x = UserVariable(name="x", value=4)
+
+    unaliased = {
+        "type_name": "expression",
+        "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
+        "evaluated_value": 68.0,
+        "evaluated_units": "m/s",
+    }
+
+    aliased = {
+        "typeName": "expression",
+        "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
+        "evaluatedValue": 68.0,
+        "evaluatedUnits": "m/s",
+    }
+
+    model_1 = TestModel(field=unaliased)
+    model_2 = TestModel(field=aliased)
+
+    assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
