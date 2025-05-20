@@ -122,8 +122,9 @@ def deprecation_reminder(version: str):
             target = Flow360Version(version)
             if current > target:
                 raise ValueError(
-                    f"[INTERNAL] This validator or function is detecting deprecated schema that should have been"
-                    f" removed since {version}. Please deprecate the schema and remove related checks."
+                    f"[INTERNAL] This validator or function is detecting/handling deprecated schema that was"
+                    f" scheduled to be removed since {version}. "
+                    "Please deprecate the schema now, write updater and remove related checks."
                 )
             return func(*args, **kwargs)
 

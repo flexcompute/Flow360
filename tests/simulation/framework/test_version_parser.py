@@ -84,8 +84,8 @@ def test_deprecation_reminder():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[INTERNAL] This validator or function is detecting deprecated schema that"
-            + " should have been removed since 20.1.2. Please deprecate the schema and remove related checks."
+            "[INTERNAL] This validator or function is detecting/handling deprecated schema that was scheduled "
+            "to be removed since 20.1.2. Please deprecate the schema now, write updater and remove related checks."
         ),
     ):
         SomeModel(field_a=123)
