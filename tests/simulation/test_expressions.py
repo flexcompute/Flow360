@@ -20,7 +20,6 @@ from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import GenericVolume, Surface
-from flow360.component.simulation.services import validate_model, ValidationCalledBy
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
