@@ -1264,6 +1264,4 @@ def test_get_default_report_config_json():
     report_config_dict = services.get_default_report_config()
     with open("ref/default_report_config.json", "r") as fp:
         ref_dict = json.load(fp)
-    print(report_config_dict)
-    print(ref_dict)
     assert compare_values(report_config_dict, ref_dict)

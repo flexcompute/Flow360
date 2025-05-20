@@ -323,7 +323,7 @@ class ReportTemplate(Flow360BaseModel):
         report_doc.generate_pdf(os.path.join(data_storage, filename))
 
 
-def get_default_report_template() -> ReportTemplate:
+def get_default_report_summary_template() -> ReportTemplate:
     """
     Returns default report template for result summary.
     """
@@ -356,6 +356,6 @@ def get_default_report_template() -> ReportTemplate:
         "CMy",
         "CMz",
     ]
-    formatter = [".4f" for _ in data]
+    formatter = [".e" for _ in data]
     table = Table(data=data, section_title="result_summary", headers=headers, formatter=formatter)
     return ReportTemplate(items=[table], settings=Settings(dump_table_csv=True))

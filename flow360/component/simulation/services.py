@@ -55,7 +55,7 @@ from flow360.component.simulation.validation.validation_context import (
     ValidationContext,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
-from flow360.plugins.report.report import get_default_report_template
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
 
 unit_system_map = {
@@ -775,6 +775,6 @@ def get_default_report_config() -> dict:
     dict
         default report config
     """
-    return get_default_report_template().model_dump(
+    return get_default_report_summary_template().model_dump(
         exclude_none=True,
     )

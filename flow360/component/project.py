@@ -48,7 +48,7 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
-from flow360.plugins.report.report import get_default_report_template
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -1358,14 +1358,6 @@ class Project(pd.BaseModel):
 
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
 
-        if isinstance(destination_obj, Case):
-            report_template = get_default_report_template()
-            report_template.create_in_cloud(
-                name="ResultSummary",
-                cases=[destination_obj],
-                solver_version=solver_version if solver_version else self.solver_version,
-            )
-
         if not run_async:
             destination_obj.wait()
 
@@ -1559,5 +1551,11 @@ class Project(pd.BaseModel):
             raise_on_error=raise_on_error,
             tags=tags,
             **kwargs,
+        )
+        report_template = get_default_report_summary_template()
+        report_template.create_in_cloud(
+            name="ResultSummary",
+            cases=[case],
+            solver_version=solver_version if solver_version else self.solver_version,
         )
         return case
