@@ -20,10 +20,10 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation.framework.updater_utils import deprecation_reminder
 from flow360.component.utils import validate_type
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
-from flow360.component.simulation.framework.updater_utils import deprecation_reminder
 
 
 class DraftDraft(ResourceDraft):
@@ -122,7 +122,8 @@ class Draft(Flow360Resource):
         @deprecation_reminder(version="25.5.2")
         def remove_none_inflow_velocity_direction_for_forward_compatibility(params_dict):
             """
-            If None `velocity_direction` is found in root level of `Inflow` then pop the key so that forward compatibility is kept within 25.5 release.
+            If None `velocity_direction` is found in root level of `Inflow` then
+            pop the key so that forward compatibility is kept within 25.5 release.
             """
             if params_dict.get("models"):
                 for idx, model in enumerate(params_dict["models"]):
