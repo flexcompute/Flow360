@@ -109,6 +109,7 @@ class Settings(Flow360BaseModel):
         If not specified, defaults to 300.
     """
 
+    #pylint: disable=fixme
     # TODO: Create a setting class for each type of report items.
     dpi: Optional[pd.PositiveInt] = 300
     dump_table_csv: Optional[pd.StrictBool] = False
