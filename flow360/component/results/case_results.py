@@ -236,6 +236,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
         """
         Create the SurfaceForcesGroupResultCSVModel for the given entity groups.
         """
+        raw_values = {}
         for x_column in self._x_columns:
             raw_values[x_column] = np.array(self.raw_values[x_column])
         for name, entities in entity_groups.items():

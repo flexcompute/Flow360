@@ -460,17 +460,14 @@ class GeometryEntityInfo(EntityInfoModel):
                 body_group_in_this_face_group.add(owning_body)
             if len(body_group_in_this_face_group) > 1:
                 raise ValueError(
-                    f"Face group '{fact_group_name}' contains faces belonging to multiple bodies: "
-                    f"{list(body_group_in_this_face_group)}. Constraint violated."
+                    f"Face group '{fact_group_name}' contains faces belonging to multiple body groups: "
+                    f"{list(body_group_in_this_face_group)}. "
+                    "The mapping between body and face groups cannot be created."
                 )
 
             if len(body_group_in_this_face_group) == 1:
                 owning_body = list(body_group_in_this_face_group)[0]
                 body_group_name_to_face_group_name[owning_body].append(fact_group_name)
-            # elif len(body_group_in_this_face_group) == 0:
-            #     print(
-            #         f"Warning: Face group '{fact_group_name}' contains no faces and will be skipped."
-            #     )
 
         return body_group_name_to_face_group_name
 

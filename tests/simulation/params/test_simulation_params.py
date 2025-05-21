@@ -557,6 +557,7 @@ def test_geometry_entity_info_get_body_group_to_face_group_name_map():
         }.items()
     )
 
+
 def test_transformation_matrix():
     with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
         geometry_entity_info_dict = json.load(fp)
