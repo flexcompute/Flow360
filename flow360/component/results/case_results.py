@@ -248,6 +248,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
                 raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
 
         raw_values = {key: val.tolist() for key, val in raw_values.items()}
+        entity_groups = {key: sorted(val) for key, val in entity_groups.items()}
 
         return SurfaceForcesGroupResultCSVModel.from_dict(data=raw_values, group=entity_groups)
 

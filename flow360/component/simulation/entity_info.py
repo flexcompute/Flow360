@@ -461,7 +461,7 @@ class GeometryEntityInfo(EntityInfoModel):
             if len(body_group_in_this_face_group) > 1:
                 raise ValueError(
                     f"Face group '{fact_group_name}' contains faces belonging to multiple body groups: "
-                    f"{list(body_group_in_this_face_group)}. "
+                    f"{list(sorted(body_group_in_this_face_group))}. "
                     "The mapping between body and face groups cannot be created."
                 )
 
