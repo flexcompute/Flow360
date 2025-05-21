@@ -1,6 +1,6 @@
 from typing import Any, Optional
 
-from .resolver import CallableResolver
+from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 
 
 class ReturnValue(Exception):

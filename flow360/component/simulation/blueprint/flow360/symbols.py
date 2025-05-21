@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..core.resolver import CallableResolver
+from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 
 
 def _unit_list():
@@ -18,28 +18,12 @@ def _unit_list():
 
 
 def _import_flow360(name: str) -> Any:
-    # import flow360 as fl
-
     """Import and return a flow360 callable"""
-    # if name == "fl":
-    #     return fl
 
     if name == "u":
         from flow360.component.simulation import units as u
 
         return u
-
-    if name == "control":
-        from flow360.component.simulation.variables import control_variables as control
-
-        return control
-
-    if name == "solution":
-        from flow360.component.simulation.variables import (
-            solution_variables as solution,
-        )
-
-        return solution
 
 
 def _import_numpy(name: str) -> Any:

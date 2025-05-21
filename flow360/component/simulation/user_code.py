@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import re
-from typing import Generic, Iterable, Optional, TypeVar
+from numbers import Number
+from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar, Union
 
-from pydantic import BeforeValidator
+import numpy as np
+import pydantic as pd
+from pydantic import BeforeValidator, PlainSerializer
+from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
 from unyt import Unit, unyt_array
 
@@ -13,7 +17,6 @@ from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.blueprint.flow360.symbols import resolver
 from flow360.component.simulation.blueprint.utils.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.unit_system import *
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
@@ -256,6 +259,7 @@ class UserVariable(Variable):
     @pd.model_validator(mode="after")
     @classmethod
     def update_context(cls, value):
+        """Auto updating context when new variable is declared"""
         _global_ctx.set(value.name, value.value)
         _user_variables.add(value.name)
         return value
@@ -263,6 +267,7 @@ class UserVariable(Variable):
     @pd.model_validator(mode="after")
     @classmethod
     def check_dependencies(cls, value):
+        """Validator for ensuring no cyclic dependency."""
         visited = set()
         stack = [(value.name, [value.name])]
         while stack:
@@ -284,11 +289,14 @@ class UserVariable(Variable):
 
 
 class SolverVariable(Variable):
+    """Solver variable whose value are only known at run time."""
+
     solver_name: Optional[str] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     @classmethod
     def update_context(cls, value):
+        """Auto updating context when new variable is declared"""
         _global_ctx.set(value.name, value.value)
         _solver_variables[value.name] = (
             value.solver_name if value.solver_name is not None else value.name
@@ -320,6 +328,16 @@ def _handle_syntax_error(se: SyntaxError, source: str):
 
 
 class Expression(Flow360BaseModel, Evaluable):
+    """
+    A symbolic, validated representation of a mathematical expression.
+
+    This model wraps a string-based expression, ensures its syntax and semantics
+    against the global evaluation context, and provides methods to:
+      - evaluate its numeric/unyt result (`evaluate`)
+      - list user-defined variables it references (`user_variables` / `user_variable_names`)
+      - emit C++ solver code (`to_solver_code`)
+    """
+
     expression: str = pd.Field("")
 
     model_config = pd.ConfigDict(validate_assignment=True)
@@ -350,7 +368,7 @@ class Expression(Flow360BaseModel, Evaluable):
         try:
             expr_to_model(expression, _global_ctx)
         except SyntaxError as s_err:
-            raise _handle_syntax_error(s_err, expression)
+            _handle_syntax_error(s_err, expression)
         except ValueError as v_err:
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
             raise pd.ValidationError.from_exception_data("Expression value error", [details])
@@ -360,6 +378,7 @@ class Expression(Flow360BaseModel, Evaluable):
     def evaluate(
         self, context: EvaluationContext = None, strict: bool = True
     ) -> Union[float, np.ndarray, unyt_array]:
+        """Evaluate this expression against the given context."""
         if context is None:
             context = _global_ctx
         expr = expr_to_model(self.expression, context)
@@ -367,6 +386,7 @@ class Expression(Flow360BaseModel, Evaluable):
         return result
 
     def user_variables(self):
+        """Get list of user variables used in expression."""
         expr = expr_to_model(self.expression, _global_ctx)
         names = expr.used_names()
         names = [name for name in names if name in _user_variables]
@@ -374,6 +394,7 @@ class Expression(Flow360BaseModel, Evaluable):
         return [UserVariable(name=name, value=_global_ctx.get(name)) for name in names]
 
     def user_variable_names(self):
+        """Get list of user variable names used in expression."""
         expr = expr_to_model(self.expression, _global_ctx)
         names = expr.used_names()
         names = [name for name in names if name in _user_variables]
@@ -381,6 +402,8 @@ class Expression(Flow360BaseModel, Evaluable):
         return names
 
     def to_solver_code(self, params):
+        """Convert to solver readable code."""
+
         def translate_symbol(name):
             if name in _solver_variables:
                 return _solver_variables[name]
@@ -389,8 +412,7 @@ class Expression(Flow360BaseModel, Evaluable):
                 value = _global_ctx.get(name)
                 if isinstance(value, Expression):
                     return f"{value.to_solver_code(params)}"
-                else:
-                    return _convert_numeric(value)
+                return _convert_numeric(value)
 
             match = re.fullmatch("u\\.(.+)", name)
 
@@ -499,30 +521,38 @@ class Expression(Flow360BaseModel, Evaluable):
         return Expression(expression=f"({self.expression})[{arg}]")
 
     def __str__(self):
+        # pylint:disable=invalid-str-returned
         return self.expression
 
     def __repr__(self):
         return f"Expression({self.expression})"
 
     def sqrt(self):
+        """Element-wise square root of this expression."""
         return Expression(expression=f"np.sqrt({self.expression})")
 
     def sin(self):
+        """Element-wise sine of this expression (in radians)."""
         return Expression(expression=f"np.sin({self.expression})")
 
     def cos(self):
+        """Element-wise cosine of this expression (in radians)."""
         return Expression(expression=f"np.cos({self.expression})")
 
     def tan(self):
+        """Element-wise tangent of this expression (in radians)."""
         return Expression(expression=f"np.tan({self.expression})")
 
     def arcsin(self):
+        """Element-wise inverse sine (arcsin) of this expression."""
         return Expression(expression=f"np.arcsin({self.expression})")
 
     def arccos(self):
+        """Element-wise inverse cosine (arccos) of this expression."""
         return Expression(expression=f"np.arccos({self.expression})")
 
     def arctan(self):
+        """Element-wise inverse tangent (arctan) of this expression."""
         return Expression(expression=f"np.arctan({self.expression})")
 
 
@@ -530,13 +560,15 @@ T = TypeVar("T")
 
 
 class ValueOrExpression(Expression, Generic[T]):
-    def __class_getitem__(cls, internal_type):
+    """Model accepting both value and expressions"""
+
+    def __class_getitem__(cls, typevar_values):
         def _internal_validator(value: Expression):
             try:
                 result = value.evaluate(strict=False)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
-            pd.TypeAdapter(internal_type).validate_python(result)
+            pd.TypeAdapter(typevar_values).validate_python(result)
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
@@ -547,19 +579,17 @@ class ValueOrExpression(Expression, Generic[T]):
             try:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True
-            except Exception:
+            except Exception:  # pylint:disable=broad-exception-caught
                 pass
 
             if is_serialized:
                 if value.type_name == "number":
                     if value.units is not None:
                         return unyt_array(value.value, value.units)
-                    else:
-                        return value.value
-                elif value.type_name == "expression":
+                    return value.value
+                if value.type_name == "expression":
                     return expr_type(expression=value.expression)
-            else:
-                return value
+            return value
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
@@ -594,7 +624,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
             return serialized.model_dump(**info.__dict__)
 
-        union_type = Union[expr_type, internal_type]
+        union_type = Union[expr_type, typevar_values]
 
         union_type = Annotated[union_type, PlainSerializer(_serializer)]
         union_type = Annotated[union_type, BeforeValidator(_deserialize)]
