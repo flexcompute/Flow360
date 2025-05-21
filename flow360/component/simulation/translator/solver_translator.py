@@ -889,6 +889,8 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
             boundary = {**boundary, **model.private_attribute_dict}
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
+        if model.velocity_direction is not None:
+            boundary["velocityDirection"] = list(model_dict["velocityDirection"])
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             boundary["totalPressureRatio"] = (
