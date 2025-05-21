@@ -18,24 +18,26 @@ def _unit_list():
 
 
 def _import_flow360(name: str) -> Any:
-    import flow360 as fl
+    # import flow360 as fl
 
     """Import and return a flow360 callable"""
-    if name == "fl":
-        return fl
+    # if name == "fl":
+    #     return fl
 
     if name == "u":
-        from flow360 import u
+        from flow360.component.simulation import units as u
 
         return u
 
     if name == "control":
-        from flow360 import control
+        from flow360.component.simulation.variables import control_variables as control
 
         return control
 
     if name == "solution":
-        from flow360 import solution
+        from flow360.component.simulation.variables import (
+            solution_variables as solution,
+        )
 
         return solution
 

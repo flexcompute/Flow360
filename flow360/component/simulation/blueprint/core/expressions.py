@@ -6,6 +6,7 @@ from .context import EvaluationContext
 from .types import Evaluable
 
 ExpressionType = Annotated[
+    # pylint: disable=duplicate-code
     Union[
         "Name",
         "Constant",

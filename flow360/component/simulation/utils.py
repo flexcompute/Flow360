@@ -57,34 +57,3 @@ def is_instance_of_type_in_union(obj, typ) -> bool:
 
     # Otherwise, do a normal isinstance check.
     return isinstance(obj, typ)
-
-
-class UnknownFloat(float):
-    def __new__(cls):
-        return super().__new__(cls, float("nan"))
-
-    def __repr__(self):
-        return "UnknownFloat()"
-
-    def __str__(self):
-        return "unknown"
-
-    def _return_unknown(self, *args):
-        return UnknownFloat()
-
-    __add__ = __radd__ = __sub__ = __rsub__ = _return_unknown
-    __mul__ = __rmul__ = __truediv__ = __rtruediv__ = _return_unknown
-    __floordiv__ = __rfloordiv__ = __mod__ = __rmod__ = _return_unknown
-    __pow__ = __rpow__ = _return_unknown
-    __neg__ = __pos__ = __abs__ = _return_unknown
-
-    def __eq__(self, other):
-        return False
-
-    def __ne__(self, other):
-        return True
-
-    __lt__ = __le__ = __gt__ = __ge__ = _return_unknown
-
-    def __bool__(self):
-        return False

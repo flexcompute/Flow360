@@ -1,3 +1,5 @@
+"""Solution variables of Flow360"""
+
 from flow360.component.simulation.user_code import SolverVariable
 
 mut = SolverVariable(name="solution.mut", value=float("NaN"))  # Turbulent viscosity

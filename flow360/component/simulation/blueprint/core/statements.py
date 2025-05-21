@@ -7,6 +7,7 @@ from .expressions import ExpressionType
 
 # Forward declaration of type
 StatementType = Annotated[
+    # pylint: disable=duplicate-code
     Union[
         "Assign",
         "AugAssign",

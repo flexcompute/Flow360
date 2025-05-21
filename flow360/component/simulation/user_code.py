@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import ClassVar, Generic, Iterable, Optional, TypeVar
+from typing import Generic, Iterable, Optional, TypeVar
 
 from pydantic import BeforeValidator
 from typing_extensions import Self
@@ -10,7 +10,7 @@ from unyt import Unit, unyt_array
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.codegen import expr_to_code
 from flow360.component.simulation.blueprint.core import EvaluationContext
-from flow360.component.simulation.blueprint.flow360 import resolver
+from flow360.component.simulation.blueprint.flow360.symbols import resolver
 from flow360.component.simulation.blueprint.utils.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import *
@@ -547,7 +547,7 @@ class ValueOrExpression(Expression, Generic[T]):
             try:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True
-            except Exception as err:
+            except Exception:
                 pass
 
             if is_serialized:
