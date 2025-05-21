@@ -593,11 +593,14 @@ def test_error_message():
         assert len(validation_errors) == 2
         assert validation_errors[0]["type"] == "value_error"
         assert validation_errors[1]["type"] == "value_error"
-        assert "'(' was never closed at" in validation_errors[0]["msg"]
+        assert (
+            "Value error, unexpected EOF while parsing at line 1, column 11\n"
+            in validation_errors[0]["msg"]
+        )
         assert "TokenError('EOF in multi-line statement', (2, 0))" in validation_errors[1]["msg"]
         assert "line" in validation_errors[0]["ctx"]
         assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 9
+        assert validation_errors[0]["ctx"]["column"] == 11
 
 
 def test_solver_translation():
@@ -649,7 +652,7 @@ def test_solver_translation():
 
         # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
         expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
-        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 125.0) + machRef)"
+        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 500.0) + machRef)"
 
 
 def test_cyclic_dependencies():

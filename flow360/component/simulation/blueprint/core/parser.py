@@ -1,14 +1,37 @@
+"""Python code parser using the AST module"""
+
+# pylint: disable=too-many-return-statements, too-many-branches
+
 import ast
 import inspect
 from collections.abc import Callable
-from typing import Any, Optional, Union
+from typing import Any, Union
 
-from ..core.context import EvaluationContext
-from ..core.expressions import BinOp, CallModel, Constant, Expression
-from ..core.expressions import List as ListExpr
-from ..core.expressions import ListComp, Name, RangeCall, Subscript, Tuple, UnaryOp
-from ..core.function import Function
-from ..core.statements import Assign, AugAssign, ForLoop, IfElse, Return, TupleUnpack
+from flow360.component.simulation.blueprint.core.context import EvaluationContext
+from flow360.component.simulation.blueprint.core.expressions import (
+    BinOp,
+    CallModel,
+    Constant,
+    Expression,
+)
+from flow360.component.simulation.blueprint.core.expressions import List as ListExpr
+from flow360.component.simulation.blueprint.core.expressions import (
+    ListComp,
+    Name,
+    RangeCall,
+    Subscript,
+    Tuple,
+    UnaryOp,
+)
+from flow360.component.simulation.blueprint.core.function import Function
+from flow360.component.simulation.blueprint.core.statements import (
+    Assign,
+    AugAssign,
+    ForLoop,
+    IfElse,
+    Return,
+    TupleUnpack,
+)
 
 
 def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
@@ -16,13 +39,12 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
     if isinstance(node, ast.Name):
         return Name(id=node.id)
 
-    elif isinstance(node, ast.Constant):
+    if isinstance(node, ast.Constant):
         if hasattr(node, "value"):
             return Constant(value=node.value)
-        else:
-            return Constant(value=node.s)
+        return Constant(value=node.s)
 
-    elif isinstance(node, ast.Attribute):
+    if isinstance(node, ast.Attribute):
         # Handle attribute access (e.g., td.inf)
         parts = []
         current = node
@@ -33,20 +55,19 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             parts.append(current.id)
             # Create a Name node with the full qualified name
             return Name(id=".".join(reversed(parts)))
-        else:
-            raise ValueError(f"Unsupported attribute access: {ast.dump(node)}")
+        raise ValueError(f"Unsupported attribute access: {ast.dump(node)}")
 
-    elif isinstance(node, ast.UnaryOp):
+    if isinstance(node, ast.UnaryOp):
         return UnaryOp(op=type(node.op).__name__, operand=parse_expr(node.operand, ctx))
 
-    elif isinstance(node, ast.BinOp):
+    if isinstance(node, ast.BinOp):
         return BinOp(
             op=type(node.op).__name__,
             left=parse_expr(node.left, ctx),
             right=parse_expr(node.right, ctx),
         )
 
-    elif isinstance(node, ast.Compare):
+    if isinstance(node, ast.Compare):
         if len(node.ops) > 1 or len(node.comparators) > 1:
             raise ValueError("Only single comparisons are supported")
         return BinOp(
@@ -55,14 +76,14 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             right=parse_expr(node.comparators[0], ctx),
         )
 
-    elif isinstance(node, ast.Subscript):
+    if isinstance(node, ast.Subscript):
         return Subscript(
             value=parse_expr(node.value, ctx),
             slice=parse_expr(node.slice, ctx),
             ctx=type(node.ctx).__name__,
         )
 
-    elif isinstance(node, ast.Call):
+    if isinstance(node, ast.Call):
         if isinstance(node.func, ast.Name) and node.func.id == "range" and len(node.args) == 1:
             return RangeCall(arg=parse_expr(node.args[0], ctx))
 
@@ -98,13 +119,13 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             kwargs=kwargs,
         )
 
-    elif isinstance(node, ast.Tuple):
+    if isinstance(node, ast.Tuple):
         return Tuple(elements=[parse_expr(elt, ctx) for elt in node.elts])
 
-    elif isinstance(node, ast.List):
+    if isinstance(node, ast.List):
         return ListExpr(elements=[parse_expr(elt, ctx) for elt in node.elts])
 
-    elif isinstance(node, ast.ListComp):
+    if isinstance(node, ast.ListComp):
         if len(node.generators) != 1:
             raise ValueError("Only single-generator list comprehensions are supported")
         gen = node.generators[0]
@@ -118,8 +139,7 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             iter=parse_expr(gen.iter, ctx),
         )
 
-    else:
-        raise ValueError(f"Unsupported expression type: {type(node)}")
+    raise ValueError(f"Unsupported expression type: {type(node)}")
 
 
 def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
@@ -131,19 +151,18 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
 
         if isinstance(target, ast.Name):
             return Assign(target=target.id, value=parse_expr(node.value, ctx))
-        elif isinstance(target, ast.Tuple):
+        if isinstance(target, ast.Tuple):
             if not all(isinstance(elt, ast.Name) for elt in target.elts):
                 raise ValueError("Only simple names supported in tuple unpacking")
             targets = [elt.id for elt in target.elts]
             if isinstance(node.value, ast.Tuple):
                 values = [parse_expr(val, ctx) for val in node.value.elts]
                 return TupleUnpack(targets=targets, values=values)
-            else:
-                return TupleUnpack(targets=targets, values=[parse_expr(node.value, ctx)])
-        else:
-            raise ValueError(f"Unsupported assignment target: {type(target)}")
+            return TupleUnpack(targets=targets, values=[parse_expr(node.value, ctx)])
 
-    elif isinstance(node, ast.AugAssign):
+        raise ValueError(f"Unsupported assignment target: {type(target)}")
+
+    if isinstance(node, ast.AugAssign):
         if not isinstance(node.target, ast.Name):
             raise ValueError("Only simple names supported in augmented assignment")
         return AugAssign(
@@ -152,18 +171,18 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
             value=parse_expr(node.value, ctx),
         )
 
-    elif isinstance(node, ast.Expr):
+    if isinstance(node, ast.Expr):
         # For expression statements, we use "_" as a dummy target
         return Assign(target="_", value=parse_expr(node.value, ctx))
 
-    elif isinstance(node, ast.If):
+    if isinstance(node, ast.If):
         return IfElse(
             condition=parse_expr(node.test, ctx),
             body=[parse_stmt(stmt, ctx) for stmt in node.body],
             orelse=[parse_stmt(stmt, ctx) for stmt in node.orelse] if node.orelse else [],
         )
 
-    elif isinstance(node, ast.For):
+    if isinstance(node, ast.For):
         if not isinstance(node.target, ast.Name):
             raise ValueError("Only simple names supported as loop targets")
         return ForLoop(
@@ -172,27 +191,24 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
             body=[parse_stmt(stmt, ctx) for stmt in node.body],
         )
 
-    elif isinstance(node, ast.Return):
+    if isinstance(node, ast.Return):
         if node.value is None:
             raise ValueError("Return statements must have a value")
         return Return(value=parse_expr(node.value, ctx))
 
-    else:
-        raise ValueError(f"Unsupported statement type: {type(node)}")
+    raise ValueError(f"Unsupported statement type: {type(node)}")
 
 
 def function_to_model(
     source: Union[str, Callable[..., Any]],
-    ctx: Optional[EvaluationContext] = None,
+    ctx: EvaluationContext,
 ) -> Function:
     """Parse a Python function definition into our intermediate representation.
 
     Args:
         source: Either a function object or a string containing the function definition
-        ctx: Optional evaluation context
+        ctx: Evaluation context
     """
-    if ctx is None:
-        ctx = EvaluationContext()
 
     # Convert function object to source string if needed
     if callable(source) and not isinstance(source, str):

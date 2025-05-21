@@ -12,10 +12,9 @@ from typing_extensions import Self
 from unyt import Unit, unyt_array
 
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
-from flow360.component.simulation.blueprint.codegen import expr_to_code
-from flow360.component.simulation.blueprint.core import EvaluationContext
+from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
+from flow360.component.simulation.blueprint.core.types import TargetSyntax
 from flow360.component.simulation.blueprint.flow360.symbols import resolver
-from flow360.component.simulation.blueprint.utils.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)

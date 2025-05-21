@@ -43,6 +43,7 @@ class CallableResolver:
         self._allowed_modules[name] = module
 
     def can_evaluate(self, qualname: str) -> bool:
+        """Check if the name is not blacklisted for evaluation by the resolver"""
         return qualname not in self._evaluation_blacklist
 
     def get_callable(self, qualname: str) -> Callable[..., Any]:

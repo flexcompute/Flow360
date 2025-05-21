@@ -145,6 +145,7 @@ def remove_units_in_dict(input_dict):
 
 
 def inline_expressions_in_dict(input_dict, input_params):
+    """Inline all expressions in the provided dict to their evaluated values"""
     if isinstance(input_dict, dict):
         new_dict = {}
         if "expression" in input_dict.keys():

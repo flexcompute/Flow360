@@ -1,8 +1,10 @@
+"""Operator info for the parser module"""
+
+# pylint: disable=too-few-public-methods
+
 import operator
 from collections.abc import Callable
 from typing import Any, Union
-
-from .types import TargetSyntax
 
 
 class OpInfo:

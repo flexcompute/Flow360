@@ -1,7 +1,10 @@
-import functools
+"""Code generator for the blueprint module, supports python and C++ syntax for now"""
+
+# pylint: disable=too-many-return-statements
+
 from typing import Any, Callable
 
-from ..core.expressions import (
+from flow360.component.simulation.blueprint.core.expressions import (
     BinOp,
     CallModel,
     Constant,
@@ -12,10 +15,20 @@ from ..core.expressions import (
     Tuple,
     UnaryOp,
 )
-from ..core.function import Function
-from ..core.statements import Assign, AugAssign, ForLoop, IfElse, Return, TupleUnpack
-from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS
-from ..utils.types import TargetSyntax
+from flow360.component.simulation.blueprint.core.function import Function
+from flow360.component.simulation.blueprint.core.statements import (
+    Assign,
+    AugAssign,
+    ForLoop,
+    IfElse,
+    Return,
+    TupleUnpack,
+)
+from flow360.component.simulation.blueprint.core.types import TargetSyntax
+from flow360.component.simulation.blueprint.utils.operators import (
+    BINARY_OPERATORS,
+    UNARY_OPERATORS,
+)
 
 
 def _indent(code: str, level: int = 1) -> str:
@@ -24,42 +37,29 @@ def _indent(code: str, level: int = 1) -> str:
     return "\n".join(spaces + line if line else line for line in code.split("\n"))
 
 
-def check_syntax_type(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        result = func(*args, **kwargs)
-        if result is None:
-            raise ValueError(
-                f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
-            )
-        return result
-
-    return wrapper
-
-
-@check_syntax_type
 def _empty(syntax):
     if syntax == TargetSyntax.PYTHON:
         return "None"
-    elif syntax == TargetSyntax.CPP:
+    if syntax == TargetSyntax.CPP:
         return "nullptr"
 
+    raise ValueError(
+        f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
+    )
 
-@check_syntax_type
+
 def _name(expr, name_translator):
     if name_translator:
         return name_translator(expr.id)
     return expr.id
 
 
-@check_syntax_type
 def _constant(expr):
     if isinstance(expr.value, str):
         return f"'{expr.value}'"
     return str(expr.value)
 
 
-@check_syntax_type
 def _unary_op(expr, syntax, name_translator):
     op_info = UNARY_OPERATORS[expr.op]
 
@@ -68,7 +68,6 @@ def _unary_op(expr, syntax, name_translator):
     return f"{op_info.symbol}{arg}"
 
 
-@check_syntax_type
 def _binary_op(expr, syntax, name_translator):
     left = expr_to_code(expr.left, syntax, name_translator)
     right = expr_to_code(expr.right, syntax, name_translator)
@@ -86,7 +85,6 @@ def _binary_op(expr, syntax, name_translator):
     return f"({left} {op_info.symbol} {right})"
 
 
-@check_syntax_type
 def _range_call(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
         arg = expr_to_code(expr.arg, syntax, name_translator)
@@ -95,7 +93,6 @@ def _range_call(expr, syntax, name_translator):
     raise ValueError("Range calls are only supported for Python target syntax")
 
 
-@check_syntax_type
 def _call_model(expr, syntax, name_translator):
     if syntax == TargetSyntax.PYTHON:
         args = []
@@ -115,7 +112,7 @@ def _call_model(expr, syntax, name_translator):
         kwargs_str = ", ".join(kwargs_parts)
         all_args = ", ".join(x for x in [args_str, kwargs_str] if x)
         return f"{expr.func_qualname}({all_args})"
-    elif syntax == TargetSyntax.CPP:
+    if syntax == TargetSyntax.CPP:
         args = []
         for arg in expr.args:
             val_str = expr_to_code(arg, syntax, name_translator)
@@ -125,26 +122,32 @@ def _call_model(expr, syntax, name_translator):
             raise ValueError("Named arguments are not supported in C++ syntax")
         return f"{expr.func_qualname}({args_str})"
 
+    raise ValueError(
+        f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
+    )
 
-@check_syntax_type
+
 def _tuple(expr, syntax, name_translator):
     elements = [expr_to_code(e, syntax, name_translator) for e in expr.elements]
 
     if syntax == TargetSyntax.PYTHON:
         if len(expr.elements) == 0:
             return "()"
-        elif len(expr.elements) == 1:
+        if len(expr.elements) == 1:
             return f"({elements[0]},)"
         return f"({', '.join(elements)})"
-    elif syntax == TargetSyntax.CPP:
+    if syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
             return "{}"
-        elif len(expr.elements) == 1:
+        if len(expr.elements) == 1:
             return f"{{{elements[0]}}}"
         return f"{{{', '.join(elements)}}}"
 
+    raise ValueError(
+        f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
+    )
 
-@check_syntax_type
+
 def _list(expr, syntax, name_translator):
     elements = [expr_to_code(e, syntax, name_translator) for e in expr.elements]
 
@@ -153,10 +156,14 @@ def _list(expr, syntax, name_translator):
             return "[]"
         elements_str = ", ".join(elements)
         return f"[{elements_str}]"
-    elif syntax == TargetSyntax.CPP:
+    if syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
             return "{}"
         return f"{{{', '.join(elements)}}}"
+
+    raise ValueError(
+        f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
+    )
 
 
 def _list_comp(expr, syntax, name_translator):
@@ -183,45 +190,44 @@ def expr_to_code(
     if isinstance(expr, Name):
         return _name(expr, name_translator)
 
-    elif isinstance(expr, Constant):
+    if isinstance(expr, Constant):
         return _constant(expr)
 
-    elif isinstance(expr, UnaryOp):
+    if isinstance(expr, UnaryOp):
         return _unary_op(expr, syntax, name_translator)
 
-    elif isinstance(expr, BinOp):
+    if isinstance(expr, BinOp):
         return _binary_op(expr, syntax, name_translator)
 
-    elif isinstance(expr, RangeCall):
+    if isinstance(expr, RangeCall):
         return _range_call(expr, syntax, name_translator)
 
-    elif isinstance(expr, CallModel):
+    if isinstance(expr, CallModel):
         return _call_model(expr, syntax, name_translator)
 
-    elif isinstance(expr, Tuple):
+    if isinstance(expr, Tuple):
         return _tuple(expr, syntax, name_translator)
 
-    elif isinstance(expr, List):
+    if isinstance(expr, List):
         return _list(expr, syntax, name_translator)
 
-    elif isinstance(expr, ListComp):
+    if isinstance(expr, ListComp):
         return _list_comp(expr, syntax, name_translator)
 
-    else:
-        raise ValueError(f"Unsupported expression type: {type(expr)}")
+    raise ValueError(f"Unsupported expression type: {type(expr)}")
 
 
 def stmt_to_code(
     stmt: Any, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
 ) -> str:
+    """Convert a statement model back to source code."""
     if syntax == TargetSyntax.PYTHON:
-        """Convert a statement model back to source code."""
         if isinstance(stmt, Assign):
             if stmt.target == "_":  # Expression statement
                 return expr_to_code(stmt.value)
             return f"{stmt.target} = {expr_to_code(stmt.value, syntax, remap)}"
 
-        elif isinstance(stmt, AugAssign):
+        if isinstance(stmt, AugAssign):
             op_map = {
                 "Add": "+=",
                 "Sub": "-=",
@@ -231,7 +237,7 @@ def stmt_to_code(
             op_str = op_map.get(stmt.op, f"{stmt.op}=")
             return f"{stmt.target} {op_str} {expr_to_code(stmt.value, syntax, remap)}"
 
-        elif isinstance(stmt, IfElse):
+        if isinstance(stmt, IfElse):
             code = [f"if {expr_to_code(stmt.condition)}:"]
             code.append(_indent("\n".join(stmt_to_code(s, syntax, remap) for s in stmt.body)))
             if stmt.orelse:
@@ -239,25 +245,24 @@ def stmt_to_code(
                 code.append(_indent("\n".join(stmt_to_code(s, syntax, remap) for s in stmt.orelse)))
             return "\n".join(code)
 
-        elif isinstance(stmt, ForLoop):
+        if isinstance(stmt, ForLoop):
             code = [f"for {stmt.target} in {expr_to_code(stmt.iter)}:"]
             code.append(_indent("\n".join(stmt_to_code(s, syntax, remap) for s in stmt.body)))
             return "\n".join(code)
 
-        elif isinstance(stmt, Return):
+        if isinstance(stmt, Return):
             return f"return {expr_to_code(stmt.value, syntax, remap)}"
 
-        elif isinstance(stmt, TupleUnpack):
+        if isinstance(stmt, TupleUnpack):
             targets = ", ".join(stmt.targets)
             if len(stmt.values) == 1:
                 # Single expression that evaluates to a tuple
                 return f"{targets} = {expr_to_code(stmt.values[0], syntax, remap)}"
-            else:
-                # Multiple expressions
-                values = ", ".join(expr_to_code(v, syntax, remap) for v in stmt.values)
-                return f"{targets} = {values}"
-        else:
-            raise ValueError(f"Unsupported statement type: {type(stmt)}")
+            # Multiple expressions
+            values = ", ".join(expr_to_code(v, syntax, remap) for v in stmt.values)
+            return f"{targets} = {values}"
+
+        raise ValueError(f"Unsupported statement type: {type(stmt)}")
 
     raise NotImplementedError("Statement translation is not available for other syntax types yet")
 
@@ -265,9 +270,8 @@ def stmt_to_code(
 def model_to_function(
     func: Function, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
 ) -> str:
+    """Convert a Function model back to source code."""
     if syntax == TargetSyntax.PYTHON:
-        """Convert a Function model back to source code."""
-        # Build the function signature
         args_with_defaults = []
         for arg in func.args:
             if arg in func.defaults:

@@ -1,3 +1,5 @@
+"""Data models and evaluator functions for full Python function definitions"""
+
 from typing import Any
 
 import pydantic as pd
@@ -18,21 +20,18 @@ class Function(pd.BaseModel):
     defaults: dict[str, Any]
     body: list[StatementType]
 
-    def __call__(self, *call_args: Any) -> Any:
-        # Create empty context first
-        context = EvaluationContext()
-
+    def __call__(self, context: EvaluationContext, *call_args: Any) -> Any:
         # Add default values
         for arg_name, default_val in self.defaults.items():
-            context.set(arg_name, default_val)
+            self.context.set(arg_name, default_val)
 
         # Add call arguments
         for arg_name, arg_val in zip(self.args, call_args, strict=False):
-            context.set(arg_name, arg_val)
+            self.context.set(arg_name, arg_val)
 
         try:
             for stmt in self.body:
-                stmt.evaluate(context)
+                stmt.evaluate(self.context)
         except ReturnValue as rv:
             return rv.value
 

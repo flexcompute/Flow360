@@ -15,6 +15,8 @@ from .expressions import (
     Tuple,
 )
 from .function import Function
+from .generator import expr_to_code, model_to_function, stmt_to_code
+from .parser import function_to_model
 from .statements import (
     Assign,
     AugAssign,
@@ -25,7 +27,7 @@ from .statements import (
     StatementType,
     TupleUnpack,
 )
-from .types import Evaluable
+from .types import Evaluable, TargetSyntax
 
 
 def _model_rebuild() -> None:
@@ -101,4 +103,9 @@ __all__ = [
     "Function",
     "EvaluationContext",
     "ReturnValue",
+    "Evaluable",
+    "expr_to_code",
+    "stmt_to_code",
+    "model_to_function",
+    "function_to_model",
 ]

@@ -381,9 +381,10 @@ class SimulationParams(_ParamModelBase):
             converted = value.in_base(unit_system=target_system)
         return converted
 
-    # A bit ugly but we have no way of forcing validator call order so this is a workaround
+    # We have no way forcing validator call order so this is a workaround
     @classmethod
     def initialize_variable_space(cls, value):
+        """Load all user variables from private attributes when a simulation params object is initialized"""
         if "project_variables" in value and isinstance(value["project_variables"], Iterable):
             for variable_dict in value["project_variables"]:
                 UserVariable(name=variable_dict["name"], value=variable_dict["value"])
@@ -393,7 +394,7 @@ class SimulationParams(_ParamModelBase):
     @pd.field_validator("models", mode="after")
     @classmethod
     def apply_default_fluid_settings(cls, v):
-        """apply default Fluid() settings if not found in models"""
+        """Apply default Fluid() settings if not found in models"""
         if v is None:
             v = []
         assert isinstance(v, list)
