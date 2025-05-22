@@ -594,13 +594,12 @@ def test_error_message():
         assert validation_errors[0]["type"] == "value_error"
         assert validation_errors[1]["type"] == "value_error"
         assert (
-            "Value error, unexpected EOF while parsing at line 1, column 11\n"
-            in validation_errors[0]["msg"]
+            "Value error, '(' was never closed at line 1, column 9" in validation_errors[0]["msg"]
         )
         assert "TokenError('EOF in multi-line statement', (2, 0))" in validation_errors[1]["msg"]
         assert "line" in validation_errors[0]["ctx"]
         assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 11
+        assert validation_errors[0]["ctx"]["column"] == 9
 
 
 def test_solver_translation():

@@ -21,6 +21,7 @@
             "units": "m"
         },
         "area": {
+            "type_name":"number",
             "value": 1.0,
             "units": "m**2"
         }
@@ -264,6 +265,7 @@
             "units": "m"
         },
         "use_inhouse_mesher": false,
-        "use_geometry_AI": false
+        "use_geometry_AI": false,
+        "project_variables":[]
     }
 }
