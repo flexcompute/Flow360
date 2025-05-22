@@ -1,3 +1,5 @@
+"""This module allows users to write serializable, evaluable symbolic code for use in simulation params"""
+
 from __future__ import annotations
 
 import re
@@ -19,7 +21,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
-_solver_variables: dict[str, str] = dict()
+_solver_variables: dict[str, str] = {}
 
 
 def _is_number_string(s: str) -> bool:
@@ -30,10 +32,10 @@ def _is_number_string(s: str) -> bool:
         return False
 
 
-def _split_keep_delimiters(input: str, delimiters: list) -> list:
+def _split_keep_delimiters(value: str, delimiters: list) -> list:
     escaped_delimiters = [re.escape(d) for d in delimiters]
     pattern = f"({'|'.join(escaped_delimiters)})"
-    result = re.split(pattern, input)
+    result = re.split(pattern, value)
     return [part for part in result if part != ""]
 
 
@@ -85,6 +87,8 @@ def _convert_argument(value):
 
 
 class SerializedValueOrExpression(Flow360BaseModel):
+    """Serialized frontend-compatible format of an arbitrary value/expression field"""
+
     type_name: Union[Literal["number"], Literal["expression"]] = pd.Field(None)
     value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
@@ -95,15 +99,19 @@ class SerializedValueOrExpression(Flow360BaseModel):
 
 # This is a wrapper to allow using ndarrays with pydantic models
 class NdArray(np.ndarray):
+    """NdArray wrapper to enable pydantic compatibility"""
+
     def __repr__(self):
         return f"NdArray(shape={self.shape}, dtype={self.dtype})"
 
+    # pylint: disable=unused-argument
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type, handler):
         return core_schema.no_info_plain_validator_function(cls.validate)
 
     @classmethod
     def validate(cls, value: Any):
+        """Minimal validator for pydantic compatibility"""
         if isinstance(value, np.ndarray):
             return value
         raise ValueError(f"Cannot convert {type(value)} to NdArray")
@@ -111,15 +119,19 @@ class NdArray(np.ndarray):
 
 # This is a wrapper to allow using unyt arrays with pydantic models
 class UnytArray(unyt_array):
+    """UnytArray wrapper to enable pydantic compatibility"""
+
     def __repr__(self):
         return f"UnytArray({str(self)})"
 
+    # pylint: disable=unused-argument
     @classmethod
     def __get_pydantic_core_schema__(cls, source_type, handler):
         return core_schema.no_info_plain_validator_function(cls.validate)
 
     @classmethod
     def validate(cls, value: Any):
+        """Minimal validator for pydantic compatibility"""
         if isinstance(value, unyt_array):
             return value
         raise ValueError(f"Cannot convert {type(value)} to UnytArray")
@@ -129,6 +141,8 @@ AnyNumericType = Union[float, UnytArray, NdArray]
 
 
 class Variable(Flow360BaseModel):
+    """Base class representing a symbolic variable"""
+
     name: str = pd.Field()
     value: ValueOrExpression[AnyNumericType] = pd.Field()
 
@@ -224,6 +238,7 @@ class Variable(Flow360BaseModel):
         return Expression(expression=f"{self.name}[{arg}]")
 
     def __str__(self):
+        # pylint:disable=invalid-str-returned
         return self.name
 
     def __repr__(self):
@@ -233,28 +248,37 @@ class Variable(Flow360BaseModel):
         return hash(self.name)
 
     def sqrt(self):
+        """Square root, required for numpy interop"""
         return Expression(expression=f"np.sqrt({self.expression})")
 
     def sin(self):
+        """Sine, required for numpy interop"""
         return Expression(expression=f"np.sin({self.expression})")
 
     def cos(self):
+        """Cosine, required for numpy interop"""
         return Expression(expression=f"np.cos({self.expression})")
 
     def tan(self):
+        """Tangent, required for numpy interop"""
         return Expression(expression=f"np.tan({self.expression})")
 
     def arcsin(self):
+        """Arcsine, required for numpy interop"""
         return Expression(expression=f"np.arcsin({self.expression})")
 
     def arccos(self):
+        """Arccosine, required for numpy interop"""
         return Expression(expression=f"np.arccos({self.expression})")
 
     def arctan(self):
+        """Arctangent, required for numpy interop"""
         return Expression(expression=f"np.arctan({self.expression})")
 
 
 class UserVariable(Variable):
+    """Class representing a user-defined symbolic variable"""
+
     @pd.model_validator(mode="after")
     @classmethod
     def update_context(cls, value):
@@ -288,7 +312,7 @@ class UserVariable(Variable):
 
 
 class SolverVariable(Variable):
-    """Solver variable whose value are only known at run time."""
+    """Class representing a pre-defined symbolic variable that cannot be evaluated at client runtime"""
 
     solver_name: Optional[str] = pd.Field(None)
 
