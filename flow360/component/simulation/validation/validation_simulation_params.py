@@ -4,7 +4,13 @@ validation for SimulationParams
 
 from typing import get_args
 
-from flow360.component.simulation.models.solver_numerics import NoneSolver
+from flow360.component.simulation.models.solver_numerics import (
+    KOmegaSST,
+    KOmegaSSTModelConstants,
+    NoneSolver,
+    SpalartAllmaras,
+    SpalartAllmarasModelConstants,
+)
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
@@ -224,26 +230,61 @@ def _check_unsteadiness_to_use_hybrid_model(v):
 
     return v
 
+
 def _check_hybrid_model_to_use_zonal_enforcement(v):
     models = v.models
-    if models:
-        for model in models:
-            if isinstance(model, Fluid):
-                turbulence_model_solver = model.turbulence_model_solver
-                if not isinstance(turbulence_model_solver, NoneSolver):
-                    if turbulence_model_solver.controls is not None:
-                        for control in controls:
-                            if control.enforcement is not None and turbulence_model_solver.hybrid_model is  None:
-                                raise ValueError("Must be running in hybrid RANS-LES mode to apply zonal turbulence enforcement.")
+    if not models:
+        return v
+
+    for model in models:
+        if isinstance(model, Fluid):
+            turbulence_model_solver = model.turbulence_model_solver
+            if not isinstance(turbulence_model_solver, NoneSolver):
+                if turbulence_model_solver.controls is None:
+                    continue
+                for control in turbulence_model_solver.controls:
+                    if (
+                        control.enforcement is not None
+                        and turbulence_model_solver.hybrid_model is None
+                    ):
+                        raise ValueError(
+                            "Must be running in hybrid RANS-LES mode to "
+                            "apply zonal turbulence enforcement."
+                        )
+
+    return v
+
 
 def _check_zonal_modeling_constants_consistency(v):
     models = v.models
-    if models:
-        for model in models:
-            if isinstance(model, Fluid):
-                turbulence_model_solver = model.turbulence_model_solver
-                if not isinstance(turbulence_model_solver, NoneSolver):
-                    
+    if not models:
+        return v
+
+    for model in models:
+        if isinstance(model, Fluid):
+            turbulence_model_solver = model.turbulence_model_solver
+            if isinstance(turbulence_model_solver, NoneSolver):
+                continue
+            if turbulence_model_solver.controls is not None:
+                for control in turbulence_model_solver.controls:
+                    if control.modeling_constants is None:
+                        continue
+                    if not isinstance(
+                        control.modeling_constants, SpalartAllmarasModelConstants
+                    ) and isinstance(turbulence_model_solver, SpalartAllmaras):
+                        raise ValueError(
+                            "Turbulence model is SpalartAllmaras, but controls.modeling"
+                            "_constants is of a conflicting class."
+                        )
+                    if not isinstance(
+                        control.modeling_constants, KOmegaSSTModelConstants
+                    ) and isinstance(turbulence_model_solver, KOmegaSST):
+                        raise ValueError(
+                            "Turbulence model is KOmegaSST, but controls.modeling_constants"
+                            " is of a conflicting class."
+                        )
+    return v
+
 
 def _check_cht_solver_settings(params):
     has_heat_transfer = False

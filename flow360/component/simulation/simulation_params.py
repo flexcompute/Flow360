@@ -77,12 +77,14 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
+    _check_hybrid_model_to_use_zonal_enforcement,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
+    _check_zonal_modeling_constants_consistency,
 )
 from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
@@ -445,6 +447,16 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_hybrid_model(self):
         """Only allow hybrid RANS-LES output field for unsteady simulations"""
         return _check_unsteadiness_to_use_hybrid_model(self)
+
+    @pd.model_validator(mode="after")
+    def check_hybrid_model_to_use_zonal_enforcement(self):
+        """Only allow LES/RANS zonal enforcement in hybrid RANS-LES mode"""
+        return _check_hybrid_model_to_use_zonal_enforcement(self)
+
+    @pd.model_validator(mode="after")
+    def check_zonal_modeling_constants_consistency(self):
+        """Only allow zonal model constants consistent with turbulence model"""
+        return _check_zonal_modeling_constants_consistency(self)
 
     @pd.model_validator(mode="after")
     def check_unsteadiness_to_use_aero_acoustics(self):

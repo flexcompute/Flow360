@@ -962,6 +962,7 @@ def get_navier_stokes_initial_condition(
         initial_condition_dict[key] = raw_dict[key]
     return initial_condition_dict
 
+
 def rename_modeling_constants(modeling_constants):
     if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
         replace_dict_key(modeling_constants, "CDES", "C_DES")
@@ -991,7 +992,7 @@ def rename_modeling_constants(modeling_constants):
         replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
 
     modeling_constants.pop("typeName")  # Not read by solver
-    
+
 
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
@@ -1135,7 +1136,6 @@ def get_solver_json(
                         if control_modeling_constants is not None:
                             rename_modeling_constants(control_modeling_constants)
                             control["modelConstants"] = control.pop("modelingConstants")
-
 
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
