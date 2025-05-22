@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Dict, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union, List
 
 import numpy as np
 import pydantic as pd
@@ -22,7 +22,7 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.primitives import Box, GenericVolume
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -169,7 +169,7 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     C_t4: NonNegativeFloat = pd.Field(0.5)
     C_min_rd: NonNegativeFloat = pd.Field(10.0)
 
-
+    
 class KOmegaSSTModelConstants(Flow360BaseModel):
     """
     :class:`KOmegaSSTModelConstants` class specifies the constants of the SST k-omega model.
@@ -201,6 +201,42 @@ TurbulenceModelConstants = Annotated[
     pd.Field(discriminator="type_name"),
 ]
 
+
+class TurbulenceModelControls(Flow360BaseModel):
+    """
+    :class:`TurbulenceModelControls` class specifies modeling constants and enforces turbulence model
+    behavior on a zonal basis, as defined by mesh entities or boxes in space. These controls 
+    supersede the global turbulence model solver settings. 
+    
+    Example
+    ______
+    >>> fl.TurbulenceModelControls(modeling_constants=fl.SpalartAllmarasConstants(C_w2 = 2.718),
+                                   model_enforcement='RANS',
+                                   entities = [volume_mesh["block-1"],
+                                              fl.Box.from_principal_axes(
+                                                 name="box",
+                                                 axes=[(0,1,0), (0,0,1)],
+                                                 center=(0, 0, 0) * fl.u.m,
+                                                 size=(0.2,0.3,2) * fl.u.m)]
+                                  )  
+    """
+
+    modeling_constants: Optional[TurbulenceModelConstants] = pd.Field(None,
+        description="A class of `SpalartAllmarasModelConstants` or `KOmegaSSTModelConstants`  used to " +
+            "specify constants in specific regions of the domain.")
+
+    enforcement: Optional[Literal["RANS", "LES"]] = pd.Field(
+        None, description="Force RANS or LES mode in a specific control region.")
+                                                                   
+    
+    entities: EntityList[GenericVolume, Box] = pd.Field(
+        alias="volumes",
+        description="The entity in which to apply the `TurbulenceMOdelControls``. "
+        + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
+        + "The axes of entity must be specified to serve as the the principle axes of the "
+        + "`TurbulenceModelControls` region.",
+    )
+    
 
 class DetachedEddySimulation(Flow360BaseModel):
     """
@@ -294,6 +330,10 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
     rotation_correction: bool = pd.Field(
         False, description="Rotation correction for the turbulence model."
     )
+
+    controls: Optional[List[TurbulenceModelControls]] = pd.Field(
+        None, strict=True, description="List of control zones to enforce specific turbulence modelconstants " +
+        "and behavior.")
 
 
 class KOmegaSST(TurbulenceModelSolver):
