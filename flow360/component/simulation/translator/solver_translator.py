@@ -542,8 +542,6 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     if isinstance(input_params.operating_condition, LiquidOperatingCondition):
         all_field_names.add("velocity_magnitude")
 
-    print("all_field_names", all_field_names)
-
     # Generate UDFs for dimensioned fields
     generated_udfs = []
     for field_name in all_field_names:
