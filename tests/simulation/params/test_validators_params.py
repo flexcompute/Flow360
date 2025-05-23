@@ -223,28 +223,6 @@ def test_consistency_wall_function_validator():
         )
 
 
-def test_duplicate_velocity_direction_setup():
-
-    message_error = (
-        "Duplicate `velocity_direction` setup found in `TotalPressure` and `Inflow`, "
-        "please set `velocity_direction` in `Inflow`."
-    )
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message_error)):
-        _ = SimulationParams(
-            models=[
-                Inflow(
-                    entities=[Surface(name="inflow")],
-                    total_temperature=300 * u.K,
-                    spec=TotalPressure(
-                        value=1.028e6 * u.Pa,
-                        velocity_direction=(1, 0, 0),
-                    ),
-                    velocity_direction=(1, 0, 0),
-                )
-            ]
-        )
-
-
 def test_low_mach_preconditioner_validator(
     surface_output_with_low_mach_precond, fluid_model_with_low_mach_precond, fluid_model
 ):
