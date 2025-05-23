@@ -346,7 +346,7 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
 
     @pd.model_validator(mode="after")
     def _check_zonal_modeling_constants_consistency(self) -> Self:
-        if isinstance(self, NoneSolver) or self.controls is None:
+        if self.controls is None:
             return self
 
         for index, control in enumerate(self.controls):
