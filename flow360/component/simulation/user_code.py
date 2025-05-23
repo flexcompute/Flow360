@@ -8,7 +8,7 @@ from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar
 
 import numpy as np
 import pydantic as pd
-from pydantic import BeforeValidator, PlainSerializer
+from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
 from unyt import Unit, unyt_array
@@ -585,7 +585,7 @@ T = TypeVar("T")
 class ValueOrExpression(Expression, Generic[T]):
     """Model accepting both value and expressions"""
 
-    def __class_getitem__(cls, typevar_values):
+    def __class_getitem__(cls, typevar_values):  # pylint:disable=too-many-statements
         def _internal_validator(value: Expression):
             try:
                 result = value.evaluate(strict=False)
@@ -597,22 +597,34 @@ class ValueOrExpression(Expression, Generic[T]):
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
-            is_serialized = False
+            def _validation_attempt_(input_value):
+                deserialized = None
+                try:
+                    deserialized = SerializedValueOrExpression.model_validate(input_value)
+                except:  # pylint:disable=bare-except
+                    pass
+                return deserialized
 
-            try:
-                value = SerializedValueOrExpression.model_validate(value)
-                is_serialized = True
-            except Exception:  # pylint:disable=broad-exception-caught
-                pass
+            ###
+            deserialized = None
+            if isinstance(value, dict) and "type_name" not in value:
+                # Deserializing legacy simulation.json where there is only "units" + "value"
+                deserialized = _validation_attempt_({**value, "type_name": "number"})
+            else:
+                deserialized = _validation_attempt_(value)
+            if deserialized is None:
+                # All validation attempt failed
+                deserialized = value
+            else:
+                if deserialized.type_name == "number":
+                    if deserialized.units is not None:
+                        # Note: Flow360 unyt_array could not be constructed here.
+                        return unyt_array(deserialized.value, deserialized.units)
+                    return deserialized.value
+                if deserialized.type_name == "expression":
+                    return expr_type(expression=deserialized.expression)
 
-            if is_serialized:
-                if value.type_name == "number":
-                    if value.units is not None:
-                        return unyt_array(value.value, value.units)
-                    return value.value
-                if value.type_name == "expression":
-                    return expr_type(expression=value.expression)
-            return value
+            return deserialized
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
@@ -647,9 +659,24 @@ class ValueOrExpression(Expression, Generic[T]):
 
             return serialized.model_dump(**info.__dict__)
 
-        union_type = Union[expr_type, typevar_values]
+        def _get_discriminator_value(v: Any) -> str:
+            # Note: This is ran after deserializer
+            if isinstance(v, SerializedValueOrExpression):
+                return v.type_name
+            if isinstance(v, dict):
+                return v.get("typeName") if v.get("typeName") else v.get("type_name")
+            if isinstance(v, (Expression, Variable, str)):
+                return "expression"
+            if isinstance(v, (Number, unyt_array, np.ndarray)):
+                return "number"
+            raise KeyError("Unknown expression input type: ", v, v.__class__.__name__)
 
-        union_type = Annotated[union_type, PlainSerializer(_serializer)]
-        union_type = Annotated[union_type, BeforeValidator(_deserialize)]
-
+        union_type = Annotated[
+            Union[
+                Annotated[expr_type, Tag("expression")], Annotated[typevar_values, Tag("number")]
+            ],
+            Discriminator(_get_discriminator_value),
+            BeforeValidator(_deserialize),
+            PlainSerializer(_serializer),
+        ]
         return union_type

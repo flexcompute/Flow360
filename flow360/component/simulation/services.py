@@ -362,6 +362,8 @@ def validate_model(
 
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
+        SimulationParams.initialize_variable_space(updated_param_as_dict)
+
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             validated_param = SimulationParams(file_content=updated_param_as_dict)

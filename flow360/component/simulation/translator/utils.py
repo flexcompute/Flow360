@@ -123,7 +123,6 @@ def remove_units_in_dict(input_dict):
     def _is_unyt_or_unyt_like_obj(value):
         return "value" in value.keys() and "units" in value.keys()
 
-    unit_keys = {"value", "units"}
     if isinstance(input_dict, dict):
         new_dict = {}
         if _is_unyt_or_unyt_like_obj(input_dict):
