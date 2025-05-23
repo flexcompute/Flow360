@@ -26,8 +26,13 @@ from PIL import Image
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
+<<<<<<< HEAD
 from flow360 import Case
 from flow360.component.results import case_results
+=======
+from flow360.component.case import Case
+from flow360.component.results import base_results, case_results
+>>>>>>> a541a4bf ([FL-728] Add Default Report Config for Report Summary Table (#1074))
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,

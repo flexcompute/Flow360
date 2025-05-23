@@ -526,6 +526,16 @@ class MockResponseProjectPatchDraftSubmit(MockResponse):
         return res
 
 
+class MockResponseReportSubmit(MockResponse):
+    """response for report_template.create_in_cloud's meta json"""
+
+    @staticmethod
+    def json():
+        with open(os.path.join(here, "data/mock_webapi/report_meta_resp.json")) as fh:
+            res = json.load(fh)
+        return res
+
+
 GET_RESPONSE_MAP = {
     "/volumemeshes/00112233-4455-6677-8899-aabbccddeeff": MockResponseVolumeMesh,
     "/volumemeshes/00000000-0000-0000-0000-000000000000": MockResponseVolumeMesh,
@@ -574,6 +584,7 @@ POST_RESPONSE_MAP = {
     "/v2/drafts/vm-7c3681cd-8c6c-4db7-a62c-1742d825e9d3/run": MockResponseProjectVolumeMesh,
     "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/simulation/file": MockResponseProjectCaseForkSimConfig,
     "/v2/drafts/case-84d4604e-f3cd-4c6b-8517-92a80a3346d3/run": MockResponseProjectCaseFork,
+    "/v2/report": MockResponseReportSubmit,
 }
 
 

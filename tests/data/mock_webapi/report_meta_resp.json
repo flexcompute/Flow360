@@ -1,0 +1,17 @@
+{
+    "data": {
+        "userId": "AIDAU77I6BZ2QYZLLVSRW",
+        "id": "rep-00508a80-2566-45bf-9572-56228a3161fd",
+        "status": "submitted",
+        "name": "ResultSummary",
+        "resources": [
+            {
+                "type": "Case",
+                "id": "case-f813742a-61d3-497c-8447-3ac8b0c997f1",
+                "rawData": null
+            }
+        ],
+        "createdAt": "2025-05-19T18:30:51.476347Z",
+        "updatedAt": "2025-05-19T18:30:51.476347Z"
+    }
+}
