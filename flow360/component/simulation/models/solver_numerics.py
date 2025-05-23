@@ -209,16 +209,20 @@ class TurbulenceModelControls(Flow360BaseModel):
     supersede the global turbulence model solver settings.
 
     Example
-    ______
-    >>> fl.TurbulenceModelControls(modeling_constants=fl.SpalartAllmarasConstants(C_w2 = 2.718),
-                                   enforcement='RANS',
-                                   entities = [volume_mesh["block-1"],
-                                              fl.Box.from_principal_axes(
-                                                 name="box",
-                                                 axes=[(0,1,0), (0,0,1)],
-                                                 center=(0, 0, 0) * fl.u.m,
-                                                 size=(0.2,0.3,2) * fl.u.m)]
-                                  )
+    _______
+    >>> fl.TurbulenceModelControls(
+    ...     modeling_constants=fl.SpalartAllmarasConstants(C_w2=2.718),
+    ...     enforcement="RANS",
+    ...     entities=[
+    ...         volume_mesh["block-1"],
+    ...         fl.Box.from_principal_axes(
+    ...             name="box",
+    ...             axes=[(0, 1, 0), (0, 0, 1)],
+    ...             center=(0, 0, 0) * fl.u.m,
+    ...             size=(0.2, 0.3, 2) * fl.u.m,
+    ...         ),
+    ...     ],
+    ... )
     """
 
     modeling_constants: Optional[TurbulenceModelConstants] = pd.Field(
@@ -335,8 +339,8 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
 
     controls: Optional[List[TurbulenceModelControls]] = pd.Field(
         None,
-        strict=True,
-        description="List of control zones to enforce specific turbulence modelconstants "
+        strict=True,  # Note: To ensure propoer err msg when none-list is fed.
+        description="List of control zones to enforce specific turbulence model constants "
         + "and behavior.",
     )
 
