@@ -964,6 +964,7 @@ def get_navier_stokes_initial_condition(
 
 
 def rename_modeling_constants(modeling_constants):
+    """Rename the modeling constants to what the solver reads"""
     if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
         replace_dict_key(modeling_constants, "CDES", "C_DES")
         replace_dict_key(modeling_constants, "CD", "C_d")
@@ -992,6 +993,17 @@ def rename_modeling_constants(modeling_constants):
         replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
 
     modeling_constants.pop("typeName")  # Not read by solver
+
+
+def update_controls_modeling_constants(controls, translated):
+    """Upading the modelingConstants entries for each control"""
+    if controls is not None:
+        for control in translated["turubluenceModelSolver"]["controls"]:
+            control_modeling_constants = control.get("modelingConstants", None)
+            if control_modeling_constants is None:
+                continue
+            rename_modeling_constants(control_modeling_constants)
+            control["modelConstants"] = control.pop("modelingConstants")
 
 
 # pylint: disable=too-many-statements
@@ -1130,12 +1142,9 @@ def get_solver_json(
                     translated["turbulenceModelSolver"]["ZDES"] = False
                     translated["turbulenceModelSolver"]["gridSizeForLES"] = "maxEdgeLength"
 
-                if model.turbulence_model_solver.controls is not None:
-                    for control in translated["turbulenceModelSolver"]["controls"]:
-                        control_modeling_constants = control.get("modelingConstants", None)
-                        if control_modeling_constants is not None:
-                            rename_modeling_constants(control_modeling_constants)
-                            control["modelConstants"] = control.pop("modelingConstants")
+                update_controls_modeling_constants(
+                    model.turbulence_model_solver.controls, translated
+                )
 
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object

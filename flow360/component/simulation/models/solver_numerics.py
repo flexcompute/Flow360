@@ -344,6 +344,31 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
         + "and behavior.",
     )
 
+    @pd.model_validator(mode="after")
+    def _check_zonal_modeling_constants_consistency(self) -> Self:
+        if isinstance(self, NoneSolver) or self.controls is None:
+            return self
+
+        for index, control in enumerate(self.controls):
+            if control.modeling_constants is None:
+                continue
+            if not isinstance(
+                control.modeling_constants, SpalartAllmarasModelConstants
+            ) and isinstance(self, SpalartAllmaras):
+                raise ValueError(
+                    "Turbulence model is SpalartAllmaras, but controls.modeling"
+                    "_constants is of a conflicting class "
+                    "in control region {}.".format(index)
+                )
+            if not isinstance(control.modeling_constants, KOmegaSSTModelConstants) and isinstance(
+                self, KOmegaSST
+            ):
+                raise ValueError(
+                    "Turbulence model is KOmegaSST, but controls.modeling_constants"
+                    " is of a conflicting class in control region{}.".format(index)
+                )
+        return self
+
 
 class KOmegaSST(TurbulenceModelSolver):
     """

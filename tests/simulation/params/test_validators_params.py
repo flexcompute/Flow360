@@ -20,7 +20,9 @@ from flow360.component.simulation.meshing_param.volume_params import AutomatedFa
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
+    KOmegaSST,
     KOmegaSSTModelConstants,
+    SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
     TurbulenceModelControls,
@@ -362,7 +364,7 @@ def test_hybrid_model_to_use_zonal_enforcement(fluid_model, fluid_model_with_hyb
         TurbulenceModelControls(enforcement="RANS", entities=[GenericVolume(name="block-1")])
     ]
 
-    message = "Must be running in hybrid RANS-LES mode to apply zonal turbulence enforcement."
+    message = "Control region 0 must be running in hybrid RANS-LES mode to apply zonal turbulence enforcement."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(
             models=[fluid_model],
@@ -388,19 +390,30 @@ def test_zonal_modeling_constants_consistency(fluid_model_with_hybrid_model):
 
     assert params
 
-    fluid_model_with_hybrid_model.turbulence_model_solver.controls = [
-        TurbulenceModelControls(
-            enforcement="LES",
-            modeling_constants=KOmegaSSTModelConstants(),
-            entities=[GenericVolume(name="block-1")],
-        )
-    ]
-
-    message = "Turbulence model is SpalartAllmaras, but controls.modeling_constants is of a conflicting class."
+    message = "Turbulence model is SpalartAllmaras, but controls.modeling_constants is of a "
+    "conflicting class in control region 0."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        SimulationParams(
-            models=[fluid_model_with_hybrid_model],
-            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        TurbulenceModelSolver = SpalartAllmaras(
+            controls=[
+                TurbulenceModelControls(
+                    enforcement="LES",
+                    modeling_constants=KOmegaSSTModelConstants(),
+                    entities=[GenericVolume(name="block-1")],
+                )
+            ]
+        )
+
+    message = "Turbulence model is KOmegaSST, but controls.modeling_constants is of a "
+    "conflicting class in control region 0."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        TurbulenceModelSolver = KOmegaSST(
+            controls=[
+                TurbulenceModelControls(
+                    enforcement="LES",
+                    modeling_constants=SpalartAllmarasModelConstants(),
+                    entities=[GenericVolume(name="block-1")],
+                )
+            ]
         )
 
 
