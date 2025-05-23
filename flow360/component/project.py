@@ -48,6 +48,7 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -1197,6 +1198,20 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
+<<<<<<< HEAD
+=======
+        # pylint: disable=too-many-branches
+        if use_beta_mesher is None:
+            if use_geometry_AI is True:
+                log.info("Beta mesher is enabled to use Geometry AI.")
+                use_beta_mesher = True
+            else:
+                use_beta_mesher = False
+
+        if use_geometry_AI is True and use_beta_mesher is False:
+            raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
+
+>>>>>>> a541a4bf ([FL-728] Add Default Report Config for Report Summary Table (#1074))
         params = set_up_params_for_uploading(
             params=params,
             root_asset=self._root_asset,
@@ -1422,5 +1437,11 @@ class Project(pd.BaseModel):
             use_beta_mesher=use_beta_mesher,
             raise_on_error=raise_on_error,
             **kwargs,
+        )
+        report_template = get_default_report_summary_template()
+        report_template.create_in_cloud(
+            name="ResultSummary",
+            cases=[case],
+            solver_version=solver_version if solver_version else self.solver_version,
         )
         return case

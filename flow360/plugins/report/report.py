@@ -11,9 +11,9 @@ import pydantic as pd
 # pylint: disable=import-error
 from pylatex import Section, Subsection
 
-from flow360 import Case
 from flow360.cloud.flow360_requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
+from flow360.component.case import Case
 from flow360.component.interfaces import ReportInterface
 from flow360.component.resource_base import AssetMetaBaseModel, Flow360Resource
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -31,6 +31,8 @@ from flow360.plugins.report.report_items import (
     Table,
 )
 from flow360.plugins.report.utils import (
+    Average,
+    DataItem,
     RequirementItem,
     get_requirements_from_data_path,
 )
@@ -318,3 +320,39 @@ class ReportTemplate(Flow360BaseModel):
                             item.get_doc_item(case_context, self.settings)
 
         report_doc.generate_pdf(os.path.join(data_storage, filename))
+
+
+def get_default_report_summary_template() -> ReportTemplate:
+    """
+    Returns default report template for result summary.
+    """
+    avg = Average(fraction=0.1)
+
+    data = [
+        "volume_mesh/bounding_box/length",
+        "volume_mesh/bounding_box/height",
+        "volume_mesh/bounding_box/width",
+        "params/reference_geometry/moment_length",
+        "params/reference_geometry/area",
+        DataItem(data="surface_forces/totalCL", title="CL", operations=avg),
+        DataItem(data="surface_forces/totalCD", title="CD", operations=avg),
+        DataItem(data="surface_forces/totalCFy", title="CFy", operations=avg),
+        DataItem(data="surface_forces/totalCMx", title="CMx", operations=avg),
+        DataItem(data="surface_forces/totalCMy", title="CMy", operations=avg),
+        DataItem(data="surface_forces/totalCMz", title="CMz", operations=avg),
+    ]
+    headers = [
+        "OAL",
+        "OAH",
+        "OAW",
+        "Reference Length",
+        "Reference Area",
+        "CL",
+        "CD",
+        "CFy",
+        "CMx",
+        "CMy",
+        "CMz",
+    ]
+    table = Table(data=data, section_title="result_summary", headers=headers)
+    return ReportTemplate(items=[table], settings=Settings(dump_table_csv=True))

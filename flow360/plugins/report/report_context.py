@@ -9,7 +9,7 @@ import pydantic as pd
 # pylint: disable=import-error
 from pylatex import Document, Section, Subsection
 
-from flow360 import Case
+from flow360.component.case import Case
 
 
 class ReportContext(pd.BaseModel):

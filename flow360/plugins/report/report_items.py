@@ -30,14 +30,23 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 # pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
 
+<<<<<<< HEAD
 from flow360 import Case, SimulationParams
 from flow360.component.results import case_results
+=======
+from flow360.component.case import Case
+>>>>>>> a541a4bf ([FL-728] Add Default Report Config for Report Summary Table (#1074))
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
     IsoSurfaceFieldNames,
     SurfaceFieldNames,
     get_unit_for_field,
 )
+<<<<<<< HEAD
+=======
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+>>>>>>> a541a4bf ([FL-728] Add Default Report Config for Report Summary Table (#1074))
 from flow360.component.simulation.unit_system import (
     DimensionedTypes,
     is_flow360_unit,
@@ -104,7 +113,10 @@ class Settings(Flow360BaseModel):
         If not specified, defaults to 300.
     """
 
+    # pylint: disable=fixme
+    # TODO: Create a setting class for each type of report items.
     dpi: Optional[pd.PositiveInt] = 300
+    dump_table_csv: Optional[pd.StrictBool] = False
 
 
 class ReportItem(Flow360BaseModel):
@@ -403,6 +415,10 @@ class Table(ReportItem):
 
                 table.add_row(formatted)
                 table.add_hline()
+
+        if settings is not None and settings.dump_table_csv:
+            df = self.to_dataframe(context=context)
+            df.to_csv(f"{self.section_title}.csv", index=False)
 
 
 class Chart(ReportItem):
