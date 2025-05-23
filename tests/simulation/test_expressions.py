@@ -598,10 +598,10 @@ def test_error_message():
 
     assert len(validation_errors) == 1
     assert validation_errors[0]["type"] == "value_error"
-    assert "Value error, '(' was never closed at line 1, column 9" in validation_errors[0]["msg"]
+    assert "Value error, '(' was never closed at line 1, column " in validation_errors[0]["msg"]
     assert "line" in validation_errors[0]["ctx"]
     assert "column" in validation_errors[0]["ctx"]
-    assert validation_errors[0]["ctx"]["column"] == 9
+    assert validation_errors[0]["ctx"]["column"] in (9, 11)  # Python 3.9 report error on col 11
 
 
 def test_solver_translation():
