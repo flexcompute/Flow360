@@ -358,14 +358,14 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
                 raise ValueError(
                     "Turbulence model is SpalartAllmaras, but controls.modeling"
                     "_constants is of a conflicting class "
-                    "in control region {}.".format(index)
+                    f"in control region {index}."
                 )
             if not isinstance(control.modeling_constants, KOmegaSSTModelConstants) and isinstance(
                 self, KOmegaSST
             ):
                 raise ValueError(
                     "Turbulence model is KOmegaSST, but controls.modeling_constants"
-                    " is of a conflicting class in control region{}.".format(index)
+                    f" is of a conflicting class in control region {index}."
                 )
         return self
 

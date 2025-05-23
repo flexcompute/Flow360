@@ -242,8 +242,8 @@ def _check_hybrid_model_to_use_zonal_enforcement(v):
                         and turbulence_model_solver.hybrid_model is None
                     ):
                         raise ValueError(
-                            "Control region {} must be running in hybrid RANS-LES mode to "
-                            "apply zonal turbulence enforcement.".format(index)
+                            f"Control region {index} must be running in hybrid RANS-LES mode to "
+                            "apply zonal turbulence enforcement."
                         )
 
     return v
