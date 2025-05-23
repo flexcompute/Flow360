@@ -26,7 +26,7 @@ from PIL import Image
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
-from flow360 import Case
+from flow360.component.case import Case
 from flow360.component.results import base_results, case_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
