@@ -77,6 +77,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
+    _check_hybrid_model_to_use_zonal_enforcement,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
@@ -423,6 +424,11 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_hybrid_model(self):
         """Only allow hybrid RANS-LES output field for unsteady simulations"""
         return _check_unsteadiness_to_use_hybrid_model(self)
+
+    @pd.model_validator(mode="after")
+    def check_hybrid_model_to_use_zonal_enforcement(self):
+        """Only allow LES/RANS zonal enforcement in hybrid RANS-LES mode"""
+        return _check_hybrid_model_to_use_zonal_enforcement(self)
 
     @pd.model_validator(mode="after")
     def check_unsteadiness_to_use_aero_acoustics(self):
