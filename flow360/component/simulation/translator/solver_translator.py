@@ -996,7 +996,7 @@ def rename_modeling_constants(modeling_constants):
 def update_controls_modeling_constants(controls, translated):
     """Upading the modelingConstants entries for each control"""
     if controls is not None:
-        for control in translated["turubluenceModelSolver"]["controls"]:
+        for control in translated["turbulenceModelSolver"]["controls"]:
             control_modeling_constants = control.get("modelingConstants", None)
             if control_modeling_constants is None:
                 continue
