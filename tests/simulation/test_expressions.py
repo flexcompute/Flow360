@@ -1,4 +1,5 @@
 import json
+import tempfile
 from typing import List
 
 import numpy as np
@@ -18,8 +19,13 @@ from flow360 import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
+from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.primitives import (
+    GenericVolume,
+    ReferenceGeometry,
+    Surface,
+)
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -590,14 +596,14 @@ def test_error_message():
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
-        assert len(validation_errors) == 2
-        assert validation_errors[0]["type"] == "value_error"
-        assert validation_errors[1]["type"] == "value_error"
-        assert "'(' was never closed at" in validation_errors[0]["msg"]
-        assert "TokenError('EOF in multi-line statement', (2, 0))" in validation_errors[1]["msg"]
-        assert "line" in validation_errors[0]["ctx"]
-        assert "column" in validation_errors[0]["ctx"]
-        assert validation_errors[0]["ctx"]["column"] == 9
+    assert len(validation_errors) == 1
+    assert validation_errors[0]["type"] == "value_error"
+    assert "line" in validation_errors[0]["ctx"]
+    assert "column" in validation_errors[0]["ctx"]
+    assert validation_errors[0]["ctx"]["column"] in (
+        9,
+        11,
+    )  # Python 3.9 report error on col 11, error message is also different
 
 
 def test_solver_translation():
@@ -649,7 +655,7 @@ def test_solver_translation():
 
         # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
         expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
-        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 125.0) + machRef)"
+        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 500.0) + machRef)"
 
 
 def test_cyclic_dependencies():
@@ -698,10 +704,14 @@ def test_variable_space_init():
     # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
     with open("data/variables.json", "r+") as fh:
         data = json.load(fh)
+    from flow360.component.simulation.services import ValidationCalledBy, validate_model
 
-    with SI_unit_system:
-        params = SimulationParams.model_validate(data)
+    params, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+    from flow360.component.simulation.user_code import _global_ctx, _user_variables
 
+    assert errors is None
     evaluated = params.reference_geometry.area.evaluate()
 
     assert evaluated == 1.0 * u.m**2

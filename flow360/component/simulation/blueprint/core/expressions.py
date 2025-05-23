@@ -1,11 +1,16 @@
+"""Data models and evaluator functions for rvalue expression elements"""
+
+import abc
 from typing import Annotated, Any, Literal, Union
 
 import pydantic as pd
 
+from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS
 from .context import EvaluationContext
 from .types import Evaluable
 
 ExpressionType = Annotated[
+    # pylint: disable=duplicate-code
     Union[
         "Name",
         "Constant",
@@ -21,19 +26,29 @@ ExpressionType = Annotated[
 ]
 
 
-class Expression(pd.BaseModel):
+class Expression(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
     """
-    Base class for expressions (like x > 3, range(n), etc.).
-    """
+    Base class for expressions (like `x > 3`, `range(n)`, etc.).
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        raise NotImplementedError
+    Subclasses must implement the `evaluate` and `used_names` methods
+    to support context-based evaluation and variable usage introspection.
+    """
 
     def used_names(self) -> set[str]:
+        """
+        Return a set of variable names used by the expression.
+
+        Returns:
+            set[str]: A set of strings representing variable names used in the expression.
+        """
         raise NotImplementedError
 
 
-class Name(Expression, Evaluable):
+class Name(Expression):
+    """
+    Expression representing a name qualifier
+    """
+
     type: Literal["Name"] = "Name"
     id: str
 
@@ -53,6 +68,10 @@ class Name(Expression, Evaluable):
 
 
 class Constant(Expression):
+    """
+    Expression representing a constant numeric value
+    """
+
     type: Literal["Constant"] = "Constant"
     value: Any
 
@@ -64,13 +83,15 @@ class Constant(Expression):
 
 
 class UnaryOp(Expression):
+    """
+    Expression representing a unary operation
+    """
+
     type: Literal["UnaryOp"] = "UnaryOp"
     op: str
     operand: "ExpressionType"
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        from ..utils.operators import UNARY_OPERATORS
-
         operand_val = self.operand.evaluate(context, strict)
 
         if self.op not in UNARY_OPERATORS:
@@ -84,8 +105,7 @@ class UnaryOp(Expression):
 
 class BinOp(Expression):
     """
-    For simplicity, we use the operator's class name as a string
-    (e.g. 'Add', 'Sub', 'Gt', etc.).
+    Expression representing a binary operation
     """
 
     type: Literal["BinOp"] = "BinOp"
@@ -94,8 +114,6 @@ class BinOp(Expression):
     right: "ExpressionType"
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        from ..utils.operators import BINARY_OPERATORS
-
         left_val = self.left.evaluate(context, strict)
         right_val = self.right.evaluate(context, strict)
 
@@ -111,6 +129,9 @@ class BinOp(Expression):
 
 
 class Subscript(Expression):
+    """
+    Expression representing an iterable object subscript
+    """
 
     type: Literal["Subscript"] = "Subscript"
     value: "ExpressionType"
@@ -123,8 +144,10 @@ class Subscript(Expression):
 
         if self.ctx == "Load":
             return value[item]
-        elif self.ctx == "Store":
+        if self.ctx == "Store":
             raise NotImplementedError("Subscripted writes are not supported yet")
+
+        raise ValueError(f"Invalid subscript context {self.ctx}")
 
     def used_names(self) -> set[str]:
         value = self.value.used_names()
@@ -163,21 +186,6 @@ class CallModel(Expression):
     kwargs: dict[str, "ExpressionType"] = {}
 
     def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        """Evaluate the function call in the given context.
-
-        Handles both direct function calls and method calls by properly resolving
-        the function qualname through the context and whitelisting system.
-
-        Args:
-            context: The execution context containing variable bindings
-
-        Returns:
-            The result of the function call
-
-        Raises:
-            ValueError: If the function is not allowed or evaluation fails
-            AttributeError: If an intermediate attribute access fails
-        """
         try:
             # Split into parts for attribute traversal
             parts = self.func_qualname.split(".")
@@ -215,7 +223,7 @@ class CallModel(Expression):
         for arg in self.args:
             names = names.union(arg.used_names())
 
-        for keyword, arg in self.kwargs.items():
+        for _, arg in self.kwargs.items():
             names = names.union(arg.used_names())
 
         return names

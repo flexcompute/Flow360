@@ -88,7 +88,7 @@ class ReferenceGeometry(Flow360BaseModel):
     moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."
     )
-    area: Optional[ValueOrExpression[AreaType]] = pd.Field(
+    area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
         None, description="The reference area of the geometry."
     )
 

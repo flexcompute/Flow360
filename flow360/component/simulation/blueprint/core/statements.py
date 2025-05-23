@@ -1,12 +1,16 @@
+"""Data models and evaluator functions for single-line Python statements"""
+
 from typing import Annotated, Literal, Union
 
 import pydantic as pd
 
 from .context import EvaluationContext, ReturnValue
 from .expressions import ExpressionType
+from .types import Evaluable
 
 # Forward declaration of type
 StatementType = Annotated[
+    # pylint: disable=duplicate-code
     Union[
         "Assign",
         "AugAssign",
@@ -19,12 +23,12 @@ StatementType = Annotated[
 ]
 
 
-class Statement(pd.BaseModel):
+class Statement(pd.BaseModel, Evaluable):
     """
     Base class for statements (like 'if', 'for', assignments, etc.).
     """
 
-    def evaluate(self, context: EvaluationContext) -> None:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
         raise NotImplementedError
 
 
@@ -37,8 +41,8 @@ class Assign(Statement):
     target: str
     value: ExpressionType
 
-    def evaluate(self, context: EvaluationContext) -> None:
-        context.set(self.target, self.value.evaluate(context))
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+        context.set(self.target, self.value.evaluate(context, strict))
 
 
 class AugAssign(Statement):
@@ -52,9 +56,9 @@ class AugAssign(Statement):
     op: str
     value: ExpressionType
 
-    def evaluate(self, context: EvaluationContext) -> None:
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
         old_val = context.get(self.target)
-        increment = self.value.evaluate(context)
+        increment = self.value.evaluate(context, strict)
         if self.op == "Add":
             context.set(self.target, old_val + increment)
         elif self.op == "Sub":
@@ -81,13 +85,13 @@ class IfElse(Statement):
     body: list["StatementType"]
     orelse: list["StatementType"]
 
-    def evaluate(self, context: EvaluationContext) -> None:
-        if self.condition.evaluate(context):
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+        if self.condition.evaluate(context, strict):
             for stmt in self.body:
-                stmt.evaluate(context)
+                stmt.evaluate(context, strict)
         else:
             for stmt in self.orelse:
-                stmt.evaluate(context)
+                stmt.evaluate(context, strict)
 
 
 class ForLoop(Statement):
@@ -102,12 +106,12 @@ class ForLoop(Statement):
     iter: ExpressionType
     body: list["StatementType"]
 
-    def evaluate(self, context: EvaluationContext) -> None:
-        iterable = self.iter.evaluate(context)
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+        iterable = self.iter.evaluate(context, strict)
         for item in iterable:
             context.set(self.target, item)
             for stmt in self.body:
-                stmt.evaluate(context)
+                stmt.evaluate(context, strict)
 
 
 class Return(Statement):
@@ -119,8 +123,8 @@ class Return(Statement):
     type: Literal["Return"] = "Return"
     value: ExpressionType
 
-    def evaluate(self, context: EvaluationContext) -> None:
-        val = self.value.evaluate(context)
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+        val = self.value.evaluate(context, strict)
         raise ReturnValue(val)
 
 
@@ -131,7 +135,7 @@ class TupleUnpack(Statement):
     targets: list[str]
     values: list[ExpressionType]
 
-    def evaluate(self, context: EvaluationContext) -> None:
-        evaluated_values = [val.evaluate(context) for val in self.values]
-        for target, value in zip(self.targets, evaluated_values, strict=False):
+    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+        evaluated_values = [val.evaluate(context, strict) for val in self.values]
+        for target, value in zip(self.targets, evaluated_values):
             context.set(target, value)

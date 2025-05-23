@@ -195,12 +195,6 @@ class _ParamModelBase(Flow360BaseModel):
 
         unit_system = model_dict.get("unit_system")
 
-        # This is ugly but needed beacuse overloading __init__ nullfies all before validators of SimulationParams...
-        # TODO: Move this to a before field_validator when __init__ is not overloaded
-        cache_key = "private_attribute_asset_cache"
-        if cache_key in model_dict:
-            SimulationParams.initialize_variable_space(model_dict[cache_key])
-
         with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
             super().__init__(**model_dict)
 
@@ -210,12 +204,6 @@ class _ParamModelBase(Flow360BaseModel):
         """
         # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
-
-        # This is ugly but needed beacuse overloading __init__ nullfies all before validators of SimulationParams...
-        # TODO: Move this to a before field_validator when __init__ is not overloaded
-        cache_key = "private_attribute_asset_cache"
-        if cache_key in kwargs:
-            SimulationParams.initialize_variable_space(kwargs[cache_key])
 
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
@@ -381,11 +369,17 @@ class SimulationParams(_ParamModelBase):
             converted = value.in_base(unit_system=target_system)
         return converted
 
-    # A bit ugly but we have no way of forcing validator call order so this is a workaround
+    # We have no way forcing validator call order so this is a workaround
     @classmethod
-    def initialize_variable_space(cls, value):
-        if "project_variables" in value and isinstance(value["project_variables"], Iterable):
-            for variable_dict in value["project_variables"]:
+    def initialize_variable_space(cls, value: dict):
+        """Load all user variables from private attributes when a simulation params object is initialized"""
+        if "private_attribute_asset_cache" not in value.keys():
+            return value
+        asset_cache: dict = value["private_attribute_asset_cache"]
+        if "project_variables" not in asset_cache.keys():
+            return value
+        if isinstance(asset_cache["project_variables"], Iterable):
+            for variable_dict in asset_cache["project_variables"]:
                 UserVariable(name=variable_dict["name"], value=variable_dict["value"])
         return value
 
@@ -393,7 +387,7 @@ class SimulationParams(_ParamModelBase):
     @pd.field_validator("models", mode="after")
     @classmethod
     def apply_default_fluid_settings(cls, v):
-        """apply default Fluid() settings if not found in models"""
+        """Apply default Fluid() settings if not found in models"""
         if v is None:
             v = []
         assert isinstance(v, list)

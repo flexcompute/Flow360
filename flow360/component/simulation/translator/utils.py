@@ -119,10 +119,13 @@ def convert_tuples_to_lists(input_dict):
 
 def remove_units_in_dict(input_dict):
     """Remove units from a dimensioned value."""
-    unit_keys = {"value", "units"}
+
+    def _is_unyt_or_unyt_like_obj(value):
+        return "value" in value.keys() and "units" in value.keys()
+
     if isinstance(input_dict, dict):
         new_dict = {}
-        if input_dict.keys() == unit_keys:
+        if _is_unyt_or_unyt_like_obj(input_dict):
             new_dict = input_dict["value"]
             if input_dict["units"].startswith("flow360_") is False:
                 raise ValueError(
@@ -130,7 +133,7 @@ def remove_units_in_dict(input_dict):
                 )
             return new_dict
         for key, value in input_dict.items():
-            if isinstance(value, dict) and value.keys() == unit_keys:
+            if isinstance(value, dict) and _is_unyt_or_unyt_like_obj(input_dict):
                 if value["units"].startswith("flow360_") is False:
                     raise ValueError(
                         f"[Internal Error] Unit {value['units']} is not non-dimensionalized."
@@ -145,6 +148,7 @@ def remove_units_in_dict(input_dict):
 
 
 def inline_expressions_in_dict(input_dict, input_params):
+    """Inline all expressions in the provided dict to their evaluated values"""
     if isinstance(input_dict, dict):
         new_dict = {}
         if "expression" in input_dict.keys():

@@ -52,6 +52,7 @@ class AssetCache(Flow360BaseModel):
 
 
 def find_instances(obj, target_type):
+    """Recursively find items of target_type within a python object"""
     stack = [obj]
     seen_ids = set()
     results = set()
@@ -80,7 +81,7 @@ def find_instances(obj, target_type):
         elif hasattr(current, "__iter__") and not isinstance(current, (str, bytes)):
             try:
                 stack.extend(iter(current))
-            except Exception:
+            except Exception:  # pylint: disable=broad-exception-caught
                 pass  # skip problematic iterables
 
     return list(results)

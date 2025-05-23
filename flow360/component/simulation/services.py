@@ -362,6 +362,8 @@ def validate_model(
 
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
+        SimulationParams.initialize_variable_space(updated_param_as_dict)
+
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             validated_param = SimulationParams(file_content=updated_param_as_dict)
@@ -782,6 +784,7 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
     return updated_params_as_dict, errors
 
 
+# pylint: disable=too-many-branches
 def validate_expression(variables: list[dict], expressions: list[str]):
     """
     Validate all given expressions using the specified variable space (which is also validated)
@@ -791,8 +794,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
     units = []
 
     # Populate variable scope
-    for i in range(len(variables)):
-        variable = variables[i]
+    for i, variable in enumerate(variables):
         loc_hint = ["variables", str(i)]
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
@@ -803,8 +805,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         except Exception as err:  # pylint: disable=broad-exception-caught
             handle_generic_exception(err, errors, loc_hint)
 
-    for i in range(len(expressions)):
-        expression = expressions[i]
+    for i, expression in enumerate(expressions):
         loc_hint = ["expressions", str(i)]
         value = None
         unit = None

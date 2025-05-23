@@ -1,7 +1,9 @@
-from flow360 import u
+"""Control variables of Flow360"""
+
+from flow360.component.simulation import units as u
 from flow360.component.simulation.user_code import SolverVariable
 
-# TODO: This is an example to illustrate translator features, switch for correct values later...
+# pylint:disable=no-member
 MachRef = SolverVariable(
     name="control.MachRef", value=float("NaN") * u.m / u.s, solver_name="machRef"
 )  # Reference mach specified by the user

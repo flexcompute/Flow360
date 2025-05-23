@@ -1,53 +1,36 @@
+"""Resolver and symbols data for Flow360 python client"""
+
 from __future__ import annotations
 
 from typing import Any
 
-from ..core.resolver import CallableResolver
+import numpy as np
+import unyt
+
+from flow360.component.simulation import units as u
+from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 
 
 def _unit_list():
-    import unyt
-
     unit_symbols = set()
 
-    for key, value in unyt.unit_symbols.__dict__.items():
+    for _, value in unyt.unit_symbols.__dict__.items():
         if isinstance(value, (unyt.unyt_quantity, unyt.Unit)):
             unit_symbols.add(str(value))
 
     return list(unit_symbols)
 
 
-def _import_flow360(name: str) -> Any:
-    import flow360 as fl
-
-    """Import and return a flow360 callable"""
-    if name == "fl":
-        return fl
-
-    if name == "u":
-        from flow360 import u
-
-        return u
-
-    if name == "control":
-        from flow360 import control
-
-        return control
-
-    if name == "solution":
-        from flow360 import solution
-
-        return solution
+def _import_units(_: str) -> Any:
+    """Import and return allowed flow360 callables"""
+    return u
 
 
-def _import_numpy(name: str) -> Any:
-    import numpy as np
-
-    if name == "np":
-        return np
+def _import_numpy(_: str) -> Any:
+    """Import and return allowed numpy callables"""
+    return np
 
 
-# TODO: Rename the variables to conform to the snake case convention
 WHITELISTED_CALLABLES = {
     "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
     "flow360.control": {
@@ -148,13 +131,27 @@ WHITELISTED_CALLABLES = {
         ],
         "evaluate": False,
     },
+    "numpy": {
+        "prefix": "np.",
+        "callables": [
+            "array",
+            "sin",
+            "tan",
+            "arcsin",
+            "arccos",
+            "arctan",
+            "dot",
+            "cross",
+            "sqrt",
+        ],
+        "evaluate": True,
+    },
 }
 
 # Define allowed modules
-ALLOWED_MODULES = {"flow360", "fl", "np"}
+ALLOWED_MODULES = {"u", "np", "control", "solution"}
 
 ALLOWED_CALLABLES = {
-    "fl": None,
     **{
         f"{group['prefix']}{name}": None
         for group in WHITELISTED_CALLABLES.values()
@@ -172,7 +169,7 @@ EVALUATION_BLACKLIST = {
 }
 
 IMPORT_FUNCTIONS = {
-    ("fl", "u"): _import_flow360,
+    "u": _import_units,
     "np": _import_numpy,
 }
 
