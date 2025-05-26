@@ -46,7 +46,7 @@ ignore=tests, flow360/examples
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
-ignore-paths=tests, flow360/examples, flow360/component/simulation/user_story_examples, flow360/component/results, flow360/component/v1
+ignore-paths=tests, flow360/examples,  flow360/component/v1
 
 # Files or directories matching the regex patterns are skipped. The regex
 # matches against base names, not paths. The default value ignores Emacs file

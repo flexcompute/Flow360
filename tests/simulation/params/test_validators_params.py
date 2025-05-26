@@ -20,7 +20,12 @@ from flow360.component.simulation.meshing_param.volume_params import AutomatedFa
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
+    KOmegaSST,
+    KOmegaSSTModelConstants,
+    SpalartAllmaras,
+    SpalartAllmarasModelConstants,
     TransitionModelSolver,
+    TurbulenceModelControls,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -316,6 +321,78 @@ def test_hybrid_model_for_unsteady_validator(
     # Invalid simulation params (using hybrid model for steady simulations)
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         SimulationParams(models=[fluid_model_with_hybrid_model])
+
+
+def test_hybrid_model_to_use_zonal_enforcement(fluid_model, fluid_model_with_hybrid_model):
+
+    fluid_model_with_hybrid_model.turbulence_model_solver.controls = [
+        TurbulenceModelControls(enforcement="RANS", entities=[GenericVolume(name="block-1")])
+    ]
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+    assert params
+
+    fluid_model.turbulence_model_solver.controls = [
+        TurbulenceModelControls(enforcement="RANS", entities=[GenericVolume(name="block-1")])
+    ]
+
+    message = "Control region 0 must be running in hybrid RANS-LES mode to apply zonal turbulence enforcement."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            models=[fluid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+
+def test_zonal_modeling_constants_consistency(fluid_model_with_hybrid_model):
+    fluid_model_with_hybrid_model.turbulence_model_solver.controls = [
+        TurbulenceModelControls(
+            enforcement="RANS",
+            modeling_constants=SpalartAllmarasModelConstants(),
+            entities=[GenericVolume(name="block-1")],
+        )
+    ]
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+    assert params
+
+    message = "Turbulence model is SpalartAllmaras, but controls.modeling_constants is of a "
+    "conflicting class in control region 0."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        TurbulenceModelSolver = SpalartAllmaras(
+            controls=[
+                TurbulenceModelControls(
+                    enforcement="LES",
+                    modeling_constants=KOmegaSSTModelConstants(),
+                    entities=[GenericVolume(name="block-1")],
+                )
+            ]
+        )
+
+    message = "Turbulence model is KOmegaSST, but controls.modeling_constants is of a "
+    "conflicting class in control region 0."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        TurbulenceModelSolver = KOmegaSST(
+            controls=[
+                TurbulenceModelControls(
+                    enforcement="LES",
+                    modeling_constants=SpalartAllmarasModelConstants(),
+                    entities=[GenericVolume(name="block-1")],
+                )
+            ]
+        )
 
 
 def test_cht_solver_settings_validator(
@@ -1586,8 +1663,8 @@ def test_validate_liquid_operating_condition():
                     total_temperature=300 * u.K,
                     spec=TotalPressure(
                         value=1.028e6 * u.Pa,
-                        velocity_direction=(1, 0, 0),
                     ),
+                    velocity_direction=(1, 0, 0),
                 )
             ],
             private_attribute_asset_cache=asset_cache,

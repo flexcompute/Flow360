@@ -1,6 +1,13 @@
+import re
+
+import pydantic as pd
 import pytest
 
-from flow360.component.simulation.framework.updater_utils import Flow360Version
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater_utils import (
+    Flow360Version,
+    deprecation_reminder,
+)
 
 
 def test_init_valid_version():
@@ -63,3 +70,22 @@ def test_comparison():
     assert v1 < v3
     assert v1 != v2
     assert v2 != v3
+
+
+def test_deprecation_reminder():
+    class SomeModel(Flow360BaseModel):
+        field_a: int = 1
+
+        @pd.model_validator(mode="after")
+        @deprecation_reminder("20.1.2")
+        def _deprecation_validator(self):
+            return self
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "[INTERNAL] This validator or function is detecting/handling deprecated schema that was scheduled "
+            "to be removed since 20.1.2. Please deprecate the schema now, write updater and remove related checks."
+        ),
+    ):
+        SomeModel(field_a=123)

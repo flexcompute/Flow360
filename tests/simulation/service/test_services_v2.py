@@ -1065,7 +1065,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": "99.99.99 > 25.5.0",
+        "type": "99.99.99 > 25.6.0b1",
         "loc": [],
         "msg": "The cloud `SimulationParam` is too new for your local Python client. "
         "Errors may occur since forward compatibility is limited.",
@@ -1079,7 +1079,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": "99.99.99 > 25.5.0",
+        "type": "99.99.99 > 25.6.0b1",
         "loc": [],
         "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
         "ctx": {},
@@ -1258,3 +1258,10 @@ def test_unit_conversion_front_end_compatibility():
                 f"Unit {unit_system_dimension_string} (A.K.A {field_name}) is not supported by the front-end.",
                 "Please ensure front end team is aware of this new unit and add its support.",
             )
+
+
+def test_get_default_report_config_json():
+    report_config_dict = services.get_default_report_config()
+    with open("ref/default_report_config.json", "r") as fp:
+        ref_dict = json.load(fp)
+    assert compare_values(report_config_dict, ref_dict, ignore_keys=["formatter"])
