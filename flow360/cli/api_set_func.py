@@ -25,13 +25,18 @@ def configure_caller(apikey: str, environment: str = None, profile: str = "defau
     args = ["--apikey", apikey, "--profile", profile]
 
     if environment:
-        args += ["--env", environment]
+        if environment.lower() in ("dev", "uat"):
+            args += ["--" + environment.lower()]
+        elif environment.lower() == "prod":
+            args += []
+        else:
+            args += ["--env", environment]
 
     # Invoke the `configure` command
     result = runner.invoke(configure, args)
 
     if result.exit_code != 0:
-        log.info("Error:" + result.output)
+        log.error(result.output if result.output else str(result.exception))
     else:
         log.info("Configuration successful.")
         user_config.UserConfig = user_config.BasicUserConfig()  # Reload
