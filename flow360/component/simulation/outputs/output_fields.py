@@ -405,7 +405,7 @@ def _distribute_shared_output_fields(solver_values: dict, item_names: str):
 
 def append_component_to_output_fields(output_fields: List[str]) -> List[str]:
     """
-    If "velocity" or "vorticity" is in the list, append their respective components
+    If "velocity" or "vorticity" is in the list, append their respective magnitude in output
 
     Parameters:
     -----------
