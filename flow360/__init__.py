@@ -50,6 +50,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
+    TurbulenceModelControls,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -248,6 +249,7 @@ __all__ = [
     "Box",
     "GenericReferenceCondition",
     "TransitionModelSolver",
+    "TurbulenceModelControls",
     "Pressure",
     "TotalPressure",
     "Rotational",

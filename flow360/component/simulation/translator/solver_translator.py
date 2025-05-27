@@ -973,6 +973,49 @@ def get_navier_stokes_initial_condition(
     return initial_condition_dict
 
 
+def rename_modeling_constants(modeling_constants):
+    """Rename the modeling constants to what the solver reads"""
+    if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
+        replace_dict_key(modeling_constants, "CDES", "C_DES")
+        replace_dict_key(modeling_constants, "CD", "C_d")
+        replace_dict_key(modeling_constants, "CCb1", "C_cb1")
+        replace_dict_key(modeling_constants, "CCb2", "C_cb2")
+        replace_dict_key(modeling_constants, "CSigma", "C_sigma")
+        replace_dict_key(modeling_constants, "CV1", "C_v1")
+        replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
+        replace_dict_key(modeling_constants, "CW2", "C_w2")
+        replace_dict_key(modeling_constants, "CT3", "C_t3")
+        replace_dict_key(modeling_constants, "CT4", "C_t4")
+        replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
+
+    if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
+        replace_dict_key(modeling_constants, "CDES1", "C_DES1")
+        replace_dict_key(modeling_constants, "CDES2", "C_DES2")
+        replace_dict_key(modeling_constants, "CD1", "C_d1")
+        replace_dict_key(modeling_constants, "CD2", "C_d2")
+        replace_dict_key(modeling_constants, "CSigmaK1", "C_sigma_k1")
+        replace_dict_key(modeling_constants, "CSigmaK2", "C_sigma_k2")
+        replace_dict_key(modeling_constants, "CSigmaOmega1", "C_sigma_omega1")
+        replace_dict_key(modeling_constants, "CSigmaOmega2", "C_sigma_omega2")
+        replace_dict_key(modeling_constants, "CAlpha1", "C_alpha1")
+        replace_dict_key(modeling_constants, "CBeta1", "C_beta1")
+        replace_dict_key(modeling_constants, "CBeta2", "C_beta2")
+        replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
+
+    modeling_constants.pop("typeName")  # Not read by solver
+
+
+def update_controls_modeling_constants(controls, translated):
+    """Upading the modelingConstants entries for each control"""
+    if controls is not None:
+        for control in translated["turbulenceModelSolver"]["controls"]:
+            control_modeling_constants = control.get("modelingConstants", None)
+            if control_modeling_constants is None:
+                continue
+            rename_modeling_constants(control_modeling_constants)
+            control["modelConstants"] = control.pop("modelingConstants")
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -1086,34 +1129,7 @@ def get_solver_json(
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
-                if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
-                    replace_dict_key(modeling_constants, "CDES", "C_DES")
-                    replace_dict_key(modeling_constants, "CD", "C_d")
-                    replace_dict_key(modeling_constants, "CCb1", "C_cb1")
-                    replace_dict_key(modeling_constants, "CCb2", "C_cb2")
-                    replace_dict_key(modeling_constants, "CSigma", "C_sigma")
-                    replace_dict_key(modeling_constants, "CV1", "C_v1")
-                    replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
-                    replace_dict_key(modeling_constants, "CW2", "C_w2")
-                    replace_dict_key(modeling_constants, "CT3", "C_t3")
-                    replace_dict_key(modeling_constants, "CT4", "C_t4")
-                    replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
-
-                if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
-                    replace_dict_key(modeling_constants, "CDES1", "C_DES1")
-                    replace_dict_key(modeling_constants, "CDES2", "C_DES2")
-                    replace_dict_key(modeling_constants, "CD1", "C_d1")
-                    replace_dict_key(modeling_constants, "CD2", "C_d2")
-                    replace_dict_key(modeling_constants, "CSigmaK1", "C_sigma_k1")
-                    replace_dict_key(modeling_constants, "CSigmaK2", "C_sigma_k2")
-                    replace_dict_key(modeling_constants, "CSigmaOmega1", "C_sigma_omega1")
-                    replace_dict_key(modeling_constants, "CSigmaOmega2", "C_sigma_omega2")
-                    replace_dict_key(modeling_constants, "CAlpha1", "C_alpha1")
-                    replace_dict_key(modeling_constants, "CBeta1", "C_beta1")
-                    replace_dict_key(modeling_constants, "CBeta2", "C_beta2")
-                    replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
-
-                modeling_constants.pop("typeName")  # Not read by solver
+                rename_modeling_constants(modeling_constants)
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
@@ -1135,6 +1151,10 @@ def get_solver_json(
                     translated["turbulenceModelSolver"]["DDES"] = False
                     translated["turbulenceModelSolver"]["ZDES"] = False
                     translated["turbulenceModelSolver"]["gridSizeForLES"] = "maxEdgeLength"
+
+                update_controls_modeling_constants(
+                    model.turbulence_model_solver.controls, translated
+                )
 
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
