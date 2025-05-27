@@ -58,6 +58,8 @@ from flow360.component.simulation.user_code import (
     ValueOrExpression,
 )
 
+import unyt
+
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
@@ -709,9 +711,20 @@ def test_variable_space_init():
     params, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
     )
-    from flow360.component.simulation.user_code import _global_ctx, _user_variables
 
     assert errors is None
     evaluated = params.reference_geometry.area.evaluate()
 
     assert evaluated == 1.0 * u.m**2
+
+
+def test_unyt_operator_runtime_overloading():
+    x = UserVariable(name="x", value=10 * u.m + solution.coordinate * u.m)
+
+    with pytest.raises(ValueError):
+        x.value.evaluate()
+
+    y = UserVariable(name="y", value=solution.coordinate * u.m + 10 * u.m)
+
+    with pytest.raises(ValueError):
+        y.value.evaluate()

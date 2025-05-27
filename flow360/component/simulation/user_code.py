@@ -24,6 +24,41 @@ _user_variables: set[str] = set()
 _solver_variables: dict[str, str] = {}
 
 
+def __soft_fail_add__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__add__(self, other)
+    else:
+        return NotImplemented
+
+
+def __soft_fail_sub__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__sub__(self, other)
+    else:
+        return NotImplemented
+
+
+def __soft_fail_mul__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__mul__(self, other)
+    else:
+        return NotImplemented
+
+
+def __soft_fail_truediv__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__truediv__(self, other)
+    else:
+        return NotImplemented
+
+
+unyt_array.__add__ = __soft_fail_add__
+unyt_array.__sub__ = __soft_fail_sub__
+unyt_array.__mul__ = __soft_fail_mul__
+unyt_array.__truediv__ = __soft_fail_truediv__
+# Possibly other operators too..?
+
+
 def _is_number_string(s: str) -> bool:
     try:
         float(s)
