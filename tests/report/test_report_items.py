@@ -34,9 +34,22 @@ from flow360.plugins.report.utils import (
     Expression,
     GetAttribute,
     Grouper,
-    Variable
+    Variable,
 )
-from tests.report.report_testing_fixtures import *
+from tests.report.report_testing_fixtures import (
+    cases,
+    cases_beta_sweep,
+    cases_beta_sweep_example_expected_values,
+    cases_transient,
+    expected_y_data,
+    get_cumulative_pseudo_time_step,
+    get_last_time_step_values,
+    here,
+    here_class,
+    residual_plot_model_SA,
+    residual_plot_model_SST,
+    two_var_two_cases_plot_model,
+)
 
 
 @pytest.mark.parametrize(
@@ -1582,6 +1595,8 @@ class TestWithMultipleCases:
 
         for actual, expected in zip(plot_model.y_data, expected_y_data):
             assert np.allclose(np.array(actual), np.array(expected))
+
+
 def test_include_exclude(here, cases):
     chart = Chart2D(
         x="surface_forces/averages/totalCD",

@@ -1406,6 +1406,8 @@ class Chart2D(BaseChart2D):
         The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
     y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
         The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
+    group_by : Optional[Union[str, Grouper]]
+        A grouper object or a string leading to the data by which the grouping should be done.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
     type_name : Literal["Chart2D"], default="Chart2D"
@@ -1465,7 +1467,7 @@ class Chart2D(BaseChart2D):
         if isinstance(self.group_by, str):
             self.group_by = Grouper(group_by=self.group_by)
         return self
-    
+
     @classmethod
     def _overload_include_exclude(cls, include, exclude, data_variable):
         if isinstance(data_variable, Delta):
