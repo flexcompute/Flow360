@@ -450,7 +450,6 @@ class GeometryEntityInfo(EntityInfoModel):
             for face_id in face_ids:
                 owning_body = face_to_body_group.get(face_id)
                 if owning_body is None:
-                    # A face in a face group was not found in any body group
                     raise ValueError(
                         f"Face ID '{face_id}' found in face group '{boundary_name}' "
                         "but not found in any body group."

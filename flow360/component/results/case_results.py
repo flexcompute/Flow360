@@ -256,7 +256,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
         """
         Group entities by boundary condition's name and create a
         SurfaceForcesGroupResultCSVModel.
-        Forces from different boundaries but with the same type and name will be summed togther.
+        Forces from different boundaries but with the same type and name will be summed together.
         """
 
         entity_groups = defaultdict(list)
@@ -264,8 +264,6 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
             if not isinstance(model, BoundaryBase):
                 continue
             boundary_name = model.name if model.name is not None else model.type
-            if boundary_name is None:
-                boundary_name = model.type
             entity_groups[boundary_name].extend(
                 [entity.name for entity in model.entities.stored_entities]
             )
@@ -298,8 +296,8 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     """SurfaceForcesGroupResultCSVModel"""
 
-    remote_file_name: str = pd.Field(None, frozen=True, description="Not used dummpy field.")
-    entity_groups: dict = pd.Field(None, description="The subcomponents of each entity group.")
+    remote_file_name: str = pd.Field(None, frozen=True, description="Not used dummy field.")
+    entity_groups: dict = pd.Field(None, description="The sub-components of each entity group.")
 
     @classmethod
     def from_dict(cls, data: dict, group: dict):
