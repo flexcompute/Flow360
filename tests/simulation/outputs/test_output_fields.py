@@ -111,7 +111,7 @@ def test_generate_field_pressure_no_unit(simulation_params):
     """Test generating UDF expression for pressure fields."""
 
     result = generate_predefined_udf("pressure", simulation_params)
-    expected = "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];"
+    expected = "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];"
     assert result == expected
 
 
@@ -121,7 +121,7 @@ def test_generate_field_udf_pressure(simulation_params):
     result = generate_predefined_udf("pressure_pa", simulation_params)
     expected = (
         "double pressure;double gamma = 1.4;"
-        "pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];"
+        "pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];"
         "pressure_pa = pressure * 141855.012726525;"
     )
     assert result == expected
