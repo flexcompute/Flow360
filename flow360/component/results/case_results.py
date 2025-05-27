@@ -242,7 +242,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
         for name, entities in entity_groups.items():
             self.filter(include=entities)
             for variable in self._variables:
-                if f"total{variable}" not in raw_values:
+                if f"{name}_{variable}" not in raw_values:
                     raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
                     continue
                 raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
@@ -255,14 +255,15 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
     def by_boundary_condition(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
         """
         Group entities by boundary condition's name and create a
-        SurfaceForcesGroupResultCSVModel
+        SurfaceForcesGroupResultCSVModel.
+        Forces from different boundaries but with the same type and name will be summed togther.
         """
 
         entity_groups = defaultdict(list)
         for model in params.models:
             if not isinstance(model, BoundaryBase):
                 continue
-            boundary_name = model.name
+            boundary_name = model.name if model.name is not None else model.type
             if boundary_name is None:
                 boundary_name = model.type
             entity_groups[boundary_name].extend(
@@ -282,6 +283,14 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
                 "Group surface forces by body group is only supported for case starting from geometry."
             )
         entity_info = params.private_attribute_asset_cache.project_entity_info
+        if (
+            not hasattr(entity_info, "body_attribute_names")
+            or "groupByBodyId" not in entity_info.face_attribute_names
+        ):
+            raise Flow360ValueError(
+                "The geometry in this case does not contain the necessary body group information, "
+                "please upgrade the project to the latest version and re-run the case."
+            )
         entity_groups = entity_info.get_body_group_to_face_group_name_map()
         return self._create_surface_forces_group(entity_groups=entity_groups)
 
@@ -289,7 +298,7 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     """SurfaceForcesGroupResultCSVModel"""
 
-    remote_file_name: str = pd.Field(None, frozen=True)
+    remote_file_name: str = pd.Field(None, frozen=True, description="Not used dummpy field.")
     entity_groups: Optional[dict] = pd.Field(None)
 
     @classmethod
