@@ -19,6 +19,8 @@ from flow360.component.results.base_results import (
     ResultTarGZModel,
 )
 from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
@@ -31,10 +33,6 @@ from flow360.component.v1.conversions import unit_converter as unit_converter_v1
 from flow360.component.v1.flow360_params import Flow360Params
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
-
-from flow360.component.simulation.models.surface_models import BoundaryBase
-from flow360.component.simulation.simulation_params import SimulationParams
-
 
 # pylint:disable=invalid-name
 _PSEUDO_STEP = "pseudo_step"
@@ -293,6 +291,7 @@ class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     entity_groups: dict = pd.Field(None, description="The sub-components of each entity group.")
 
     @classmethod
+    # pylint: disable=arguments-differ
     def from_dict(cls, data: dict, group: dict):
         obj = super().from_dict(data)
         obj.entity_groups = group
