@@ -1,21 +1,27 @@
-""" Case results module"""
+"""Case results module"""
 
 from __future__ import annotations
 
-import os
 import re
-import shutil
-import tempfile
-import time
-import uuid
+from collections import defaultdict
 from enum import Enum
-from itertools import chain, product
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
-import pandas
 import pydantic as pd
 
+from flow360.cloud.s3_utils import CloudFileNotFoundError
+from flow360.component.results.base_results import (
+    _PHYSICAL_STEP,
+    PerEntityResultCSVModel,
+    ResultBaseModel,
+    ResultCSVModel,
+    ResultTarGZModel,
+)
+from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.models.surface_models import BoundaryBase
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
     ForceType,
@@ -23,25 +29,12 @@ from flow360.component.simulation.unit_system import (
     PowerType,
     is_flow360_unit,
 )
+from flow360.component.v1.conversions import unit_converter as unit_converter_v1
+from flow360.component.v1.flow360_params import Flow360Params
+from flow360.exceptions import Flow360ValueError
+from flow360.log import log
 
-from ...cloud.s3_utils import (
-    CloudFileNotFoundError,
-    get_local_filename_and_create_folders,
-)
-from ...exceptions import Flow360ValueError
-from ...log import log
-from ..simulation.conversion import unit_converter as unit_converter_v2
-from ..simulation.simulation_params import SimulationParams
-from ..v1.conversions import unit_converter as unit_converter_v1
-from ..v1.flow360_params import Flow360Params
-from .base_results import (
-    _PHYSICAL_STEP,
-    PerEntityResultCSVModel,
-    ResultBaseModel,
-    ResultCSVModel,
-    ResultTarGZModel,
-)
-
+# pylint:disable=invalid-name
 _PSEUDO_STEP = "pseudo_step"
 _CL = "CL"
 _CD = "CD"
@@ -137,11 +130,13 @@ class ResultsDownloaderSettings(pd.BaseModel):
 
 
 class TimeSeriesResultCSVModel(ResultCSVModel):
+    """Base CSV model for time series results"""
 
     _x_columns: List[str] = [_PHYSICAL_STEP, _PSEUDO_STEP]
 
     @property
     def x_columns(self):
+        """Get x column"""
         return self._x_columns
 
 
@@ -225,6 +220,83 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 
     def reload_data(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         return super().reload_data(filter_physical_steps_only, include_time)
+
+    def _create_surface_forces_group(
+        self, entity_groups: Dict[str, List[str]]
+    ) -> SurfaceForcesGroupResultCSVModel:
+        """
+        Create the SurfaceForcesGroupResultCSVModel for the given entity groups.
+        """
+        raw_values = {}
+        for x_column in self._x_columns:
+            raw_values[x_column] = np.array(self.raw_values[x_column])
+        for name, entities in entity_groups.items():
+            self.filter(include=entities)
+            for variable in self._variables:
+                if f"{name}_{variable}" not in raw_values:
+                    raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
+                    continue
+                raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
+
+        raw_values = {key: val.tolist() for key, val in raw_values.items()}
+        entity_groups = {key: sorted(val) for key, val in entity_groups.items()}
+
+        return SurfaceForcesGroupResultCSVModel.from_dict(data=raw_values, group=entity_groups)
+
+    def by_boundary_condition(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
+        """
+        Group entities by boundary condition's name and create a
+        SurfaceForcesGroupResultCSVModel.
+        Forces from different boundaries but with the same type and name will be summed together.
+        """
+
+        entity_groups = defaultdict(list)
+        for model in params.models:
+            if not isinstance(model, BoundaryBase):
+                continue
+            boundary_name = model.name if model.name is not None else model.type
+            entity_groups[boundary_name].extend(
+                [entity.name for entity in model.entities.stored_entities]
+            )
+        return self._create_surface_forces_group(entity_groups=entity_groups)
+
+    def by_body_group(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
+        """
+        Group entities by body group's name and create a
+        SurfaceForcesGroupResultCSVModel
+        """
+        if not isinstance(
+            params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+        ):
+            raise Flow360ValueError(
+                "Group surface forces by body group is only supported for case starting from geometry."
+            )
+        entity_info = params.private_attribute_asset_cache.project_entity_info
+        if (
+            not hasattr(entity_info, "body_attribute_names")
+            or "groupByBodyId" not in entity_info.face_attribute_names
+        ):
+            raise Flow360ValueError(
+                "The geometry in this case does not contain the necessary body group information, "
+                "please upgrade the project to the latest version and re-run the case."
+            )
+        entity_groups = entity_info.get_body_group_to_face_group_name_map()
+        return self._create_surface_forces_group(entity_groups=entity_groups)
+
+
+class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
+    """SurfaceForcesGroupResultCSVModel"""
+
+    remote_file_name: str = pd.Field(None, frozen=True)  # Unused dummy field
+    _entity_groups: dict = pd.PrivateAttr()
+
+    @classmethod
+    # pylint: disable=arguments-differ
+    def from_dict(cls, data: dict, group: dict):
+        obj = super().from_dict(data)
+        # pylint: disable=protected-access
+        obj._entity_groups = group
+        return obj
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
@@ -315,7 +387,10 @@ class MonitorsResultModel(ResultTarGZModel):
 
         if len(self._monitor_names) == 0:
             pattern = CaseDownloadable.MONITOR_PATTERN.value
-            file_list = [file["fileName"] for file in self.get_download_file_list_method()]
+            file_list = [
+                file["fileName"]
+                for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+            ]
             for filename in file_list:
                 if filename.startswith("results/"):
                     filename = filename.split("results/")[1]
@@ -394,7 +469,10 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
 
         if len(self._udd_names) == 0:
             pattern = CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value
-            file_list = [file["fileName"] for file in self.get_download_file_list_method()]
+            file_list = [
+                file["fileName"]
+                for file in self.get_download_file_list_method()  # pylint:disable=not-callable
+            ]
             for filename in file_list:
                 if filename.startswith("results/"):
                     filename = filename.split("results/")[1]
@@ -408,7 +486,9 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
 
         return self._udd_names
 
-    def download(self, to_folder: str = ".", overwrite: bool = False):
+    def download(
+        self, to_folder: str = ".", overwrite: bool = False
+    ):  # pylint:disable=arguments-differ
         """
         Download all udd files to the specified location.
 
@@ -493,7 +573,7 @@ class _DimensionedCSVResultModel(pd.BaseModel):
         if is_flow360_unit(component):
             converted = component.in_base(base, flow360_conv_system)
         else:
-            component.units.registry = flow360_conv_system.registry
+            component.units.registry = flow360_conv_system.registry  # pylint:disable=no-member
             converted = component.in_base(unit_system=base)
         log.debug(f"      converted to: {converted}")
         return converted
@@ -577,7 +657,7 @@ class OptionallyDownloadableResultCSVModel(ResultCSVModel):
                 to_file=to_file, to_folder=to_folder, overwrite=overwrite, log_error=False, **kwargs
             )
         except CloudFileNotFoundError as err:
-            if self._is_downloadable() is False:
+            if self._is_downloadable() is False:  # pylint:disable=not-callable
                 log.warning(self._err_msg)
             else:
                 log.error(
@@ -618,7 +698,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
         """
 
         if params is None:
-            params = self._get_params_method()
+            params = self._get_params_method()  # pylint:disable=not-callable
         disk_names = np.unique(
             [v.split("_")[0] for v in self.values.keys() if v.startswith("Disk")]
         )
@@ -725,7 +805,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         """
 
         if params is None:
-            params = self._get_params_method()
+            params = self._get_params_method()  # pylint:disable=not-callable
         disk_names = np.unique(
             [v.split("_")[0] for v in self.values.keys() if v.startswith("Disk")]
         )

@@ -225,6 +225,30 @@ def _check_unsteadiness_to_use_hybrid_model(v):
     return v
 
 
+def _check_hybrid_model_to_use_zonal_enforcement(v):
+    models = v.models
+    if not models:
+        return v
+
+    for model in models:
+        if isinstance(model, Fluid):
+            turbulence_model_solver = model.turbulence_model_solver
+            if not isinstance(turbulence_model_solver, NoneSolver):
+                if turbulence_model_solver.controls is None:
+                    continue
+                for index, control in enumerate(turbulence_model_solver.controls):
+                    if (
+                        control.enforcement is not None
+                        and turbulence_model_solver.hybrid_model is None
+                    ):
+                        raise ValueError(
+                            f"Control region {index} must be running in hybrid RANS-LES mode to "
+                            "apply zonal turbulence enforcement."
+                        )
+
+    return v
+
+
 def _check_cht_solver_settings(params):
     has_heat_transfer = False
 

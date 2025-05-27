@@ -67,6 +67,7 @@ from flow360.exceptions import (
     Flow360TranslationError,
     Flow360ValueError,
 )
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
 
 unit_system_map = {
@@ -884,3 +885,16 @@ def translate_xfoil_c81_bet_disk(
         # Expected exceptions
         errors.append(str(e))
     return bet_dict_list, errors
+
+
+def get_default_report_config() -> dict:
+    """
+    Get the default report config
+    Returns
+    -------
+    dict
+        default report config
+    """
+    return get_default_report_summary_template().model_dump(
+        exclude_none=True,
+    )
