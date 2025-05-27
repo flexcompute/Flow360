@@ -23,7 +23,19 @@ from flow360.component.simulation.validation.validation_utils import (
 
 
 class UniformRefinement(Flow360BaseModel):
-    """Uniform spacing refinement inside specified region of mesh."""
+    """
+    Uniform spacing refinement inside specified region of mesh.
+
+    Example
+    -------
+
+      >>> fl.UniformRefinement(
+      ...     entities=[cylinder, box],
+      ...     spacing=1*fl.u.cm
+      ... )
+
+    ====
+    """
 
     name: Optional[str] = pd.Field("Uniform refinement")
     refinement_type: Literal["UniformRefinement"] = pd.Field("UniformRefinement", frozen=True)
@@ -56,6 +68,18 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     - :class:`AxisymmetricRefinement` can be used for resolving the strong flow gradient
        along the axial direction for the actuator or BET disks.
     - The spacings along the axial, radial and circumferential directions can be adjusted independently.
+
+    Example
+    -------
+
+      >>> fl.AxisymmetricRefinement(
+      ...     entities=[cylinder],
+      ...     spacing_axial=1e-4,
+      ...     spacing_radial=0.3*fl.u.cm,
+      ...     spacing_circumferential=5*fl.u.mm
+      ... )
+
+    ====
     """
 
     name: Optional[str] = pd.Field("Axisymmetric refinement")
@@ -71,6 +95,19 @@ class RotationCylinder(CylindricalRefinementBase):
     - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
     - Users could create a donut-shape :class:`RotationCylinder` and put their stationary centerbody in the middle.
     - This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
+
+    Example
+    -------
+
+      >>> fl.RotationCylinder(
+      ...     name="RotationCylinder",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=cylinder
+      ... )
+
+    ====
     """
 
     # Note: Please refer to
@@ -133,6 +170,13 @@ class RotationCylinder(CylindricalRefinementBase):
 class AutomatedFarfield(Flow360BaseModel):
     """
     Settings for automatic farfield volume zone generation.
+
+    Example
+    -------
+
+      >>> fl.AutomatedFarfield(name="Farfield", method="auto")
+
+    ====
     """
 
     type: Literal["AutomatedFarfield"] = pd.Field("AutomatedFarfield", frozen=True)
@@ -178,6 +222,13 @@ class UserDefinedFarfield(Flow360BaseModel):
     Setting for user defined farfield zone generation.
     This means the "farfield" boundaries are coming from the supplied geometry file
     and meshing will take place inside this "geometry".
+
+    Example
+    -------
+
+      >>> fl.UserDefinedFarfield(name="InnerChannel")
+
+    ====
     """
 
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)

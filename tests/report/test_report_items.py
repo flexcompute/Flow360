@@ -10,6 +10,7 @@ from pylatex import Document
 from pylatex.utils import bold, escape_latex
 
 from flow360 import Case, u
+from flow360.exceptions import Flow360ValidationError
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_doc import ReportDoc
@@ -33,6 +34,7 @@ from flow360.plugins.report.utils import (
     Expression,
     GetAttribute,
     Grouper,
+    Variable
 )
 from tests.report.report_testing_fixtures import *
 
@@ -1580,3 +1582,80 @@ class TestWithMultipleCases:
 
         for actual, expected in zip(plot_model.y_data, expected_y_data):
             assert np.allclose(np.array(actual), np.array(expected))
+def test_include_exclude(here, cases):
+    chart = Chart2D(
+        x="surface_forces/averages/totalCD",
+        y="surface_forces/averages/totalCL",
+        section_title="CL/CD",
+        fig_name="clcd",
+        include=["blk-1/BODY"],
+    )
+
+    context = ReportContext(cases=cases[:2])
+
+    plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    expected_xs = []
+    expected_ys = []
+
+    # expected data
+    for idx0, case in enumerate(cases[:2]):
+        load_data = pd.read_csv(
+            os.path.join(here, "..", "data", case.id, "results", "surface_forces_v2.csv"),
+            skipinitialspace=True,
+        )
+        to_avg = round(len(load_data) * 0.1)
+
+        expected_xs.append(np.average(load_data["blk-1/BODY_CD"].iloc[-to_avg:]))
+        expected_ys.append(np.average(load_data["blk-1/BODY_CL"].iloc[-to_avg:]))
+
+    assert np.allclose(np.array(expected_xs), plot_model.x_data_as_np)
+    assert np.allclose(np.array(expected_ys), plot_model.y_data_as_np)
+
+    chart = Chart2D(
+        x="total_forces/averages/CD",
+        y="total_forces/averages/CL",
+        section_title="CL/CD",
+        fig_name="clcd",
+        include=["blk-1/BODY"],
+    )
+
+    with pytest.raises(AttributeError):
+        plot_model = chart.get_data(cases=cases[:2], context=context)
+
+    with pytest.raises(Flow360ValidationError):
+        chart = Chart2D(
+            x=Delta(data="surface_forces/averages/totalCD"),
+            y="surface_forces/averages/totalCL",
+            section_title="CL/CD",
+            fig_name="clcd",
+            include=["blk-1/BODY"],
+        )
+
+
+def test_in_path_averages(here, cases):
+    dataitem = DataItem(
+        data="total_forces/averages/CL",
+        operations=[Expression(expr="CL*beta")],
+        variables=[Variable(name="beta", data="params/operating_condition/beta")],
+    )
+
+    assert dataitem.operations[0] == Expression(expr="CL*beta")
+    assert dataitem.operations[1] == Average(fraction=0.1)
+
+    cl_beta = dataitem.calculate(case=cases[1], cases=cases)
+
+    load_data = pd.read_csv(
+        os.path.join(here, "..", "data", cases[1].id, "results", "total_forces_v2.csv"),
+        skipinitialspace=True,
+    )
+    to_avg = round(len(load_data) * 0.1)
+
+    cl_beta_expected = (
+        np.average(load_data["CL"].iloc[-to_avg:]) * cases[1].params.operating_condition.beta.value
+    )
+
+    assert dataitem.operations[2] == Average(fraction=0.1)
+    assert dataitem.operations[1] == Expression(expr="CL*beta")
+
+    assert np.allclose(cl_beta, cl_beta_expected)

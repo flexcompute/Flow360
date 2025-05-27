@@ -2,9 +2,9 @@
     "freestream": {
         "alphaAngle": 5.0,
         "betaAngle": 2.0,
-        "Mach": 0.2,
+        "Mach": 0.05,
         "Temperature": -1,
-        "muRef": 1.821818181818182e-08
+        "muRef": 4.554545454545455e-09
     },
     "timeStepping": {
         "CFL": {
@@ -17,7 +17,7 @@
         "physicalSteps": 100,
         "orderOfAccuracy": 2,
         "maxPseudoSteps": 20,
-        "timeStepSize": 20.0
+        "timeStepSize": 80.0
     },
     "navierStokesSolver": {
         "absoluteTolerance": 1e-10,
@@ -34,7 +34,7 @@
         "lowMachPreconditioner": true,
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "lowMachPreconditionerThreshold": 0.2,
+        "lowMachPreconditionerThreshold": 0.05,
         "modelType": "Compressible",
         "equationEvalFrequency": 1
     },
@@ -96,7 +96,7 @@
     ],
     "usingLiquidAsMaterial": true,
     "outputRescale": {
-        "velocityScale": 5.0
+        "velocityScale": 20.0
     },
     "volumeZones": {
         "zone_zone_1": {
@@ -111,7 +111,7 @@
                     0.01,
                     0.01
                 ],
-                "thetaRadians": "-180/pi * atan(2 * 3.00 * 20.00 * 2.00/180*pi * cos(2.00/180*pi * sin(0.05877271 * (0.02 * t))) * cos(0.05877271 * (0.02 * t)) / 50.00) + 2 * 2.00 * sin(0.05877271 * (0.02 * t)) - 2.00 * sin(0.05877271 * (0.02 * t))"
+                "thetaRadians": "-180/pi * atan(2 * 3.00 * 20.00 * 2.00/180*pi * cos(2.00/180*pi * sin(0.05877271 * (0.005 * t))) * cos(0.05877271 * (0.005 * t)) / 200.00) + 2 * 2.00 * sin(0.05877271 * (0.005 * t)) - 2.00 * sin(0.05877271 * (0.005 * t))"
             },
             "modelType": "FluidDynamics",
             "isRotatingReferenceFrame": false

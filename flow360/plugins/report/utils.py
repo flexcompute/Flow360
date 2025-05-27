@@ -27,7 +27,7 @@ from PIL import Image
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
-from flow360 import Case
+from flow360.component.case import Case
 from flow360.component.results import base_results, case_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
@@ -674,6 +674,8 @@ class DataItem(Flow360BaseModel):
     The `DataItem` class retrieves data from a specified path within a `Case` and allows for:
      - Excluding specific boundaries (if applicable).
      - Applying one or more post-processing operations (e.g., mathematical expressions, averaging).
+       Averaging should be applied as the last expression, accessing variables through `/averages` in path will
+       automatically append an averaging operation to the object's operations.
      - Introducing additional variables for use in these operations.
 
     Parameters
@@ -719,6 +721,15 @@ class DataItem(Flow360BaseModel):
             values["operations"] = [operations]
         return values
 
+    @pd.model_validator(mode="after")
+    def _check_for_averages(self):
+        components = split_path(self.data)
+        if "averages" in components:
+            self.operations.append(Average(fraction=0.1))
+            components.remove("averages")
+            self.data = "/".join(components)
+        return self
+
     def _preprocess_data(self, source, component):
 
         if isinstance(source, case_results.ResultCSVModel):
@@ -752,9 +763,14 @@ class DataItem(Flow360BaseModel):
         source, component = results_from_path(case, self.data)
 
         if isinstance(source, base_results.ResultCSVModel):
-            if isinstance(source, case_results.PerEntityResultCSVModel):
-                if self.exclude is not None or self.include is not None:
+            if self.exclude is not None or self.include is not None:
+                if isinstance(source, case_results.PerEntityResultCSVModel):
                     source.filter(include=self.include, exclude=self.exclude)
+                else:
+                    raise AttributeError(
+                        "Include and exclude can be used only with some data types,"
+                        + " such as surface forces or slicing force distributions."
+                    )
             source, new_variable_name = self._preprocess_data(source=source, component=component)
             if len(self.operations) > 0:
                 for opr in self.operations:  # pylint: disable=not-an-iterable
@@ -830,7 +846,9 @@ class Delta(Flow360BaseModel):
 
 # pylint: disable=too-few-public-methods
 class Tabulary(Tabular):
-    """The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex"""
+    """
+    The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex
+    """
 
     packages = [Package("tabulary")]
 
@@ -1009,7 +1027,7 @@ def generate_colorbar_from_image(
     Notes
     -----
     - On a log scale, the main colorbar axis remains linear to avoid deforming
-      the color distribution. A twin axis is used solely for log-scale labeling.
+        the color distribution. A twin axis is used solely for log-scale labeling.
     """
 
     img = Image.open(image_filename)

@@ -14,7 +14,7 @@ from flow360.plugins.report.report_items import (
 from flow360.plugins.report.utils import Average, DataItem, Delta
 from flow360.version import __solver_version__
 
-project_id = "prj-75356e9e-49fc-442e-9183-473f117b6fab"  # if running for the first time
+project_id = None  # if running for the first time
 
 # then replace it with your project ID to avoid re-creation of projects. You can find project ID on web GUI:
 # project_id = "prj-...."

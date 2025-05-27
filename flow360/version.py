@@ -2,5 +2,5 @@
 version
 """
 
-__version__ = "25.5.0b4"
-__solver_version__ = "release-25.5"
+__version__ = "25.6.0b1"
+__solver_version__ = "release-25.6"

@@ -33,19 +33,21 @@ from pylatex import Command, Document, Figure, NewPage, NoEscape, SubFigure
 # pylint: disable=import-error
 from pylatex.utils import bold, escape_latex
 
-from flow360 import Case, SimulationParams
+from flow360.component.case import Case
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.outputs.output_fields import (
     IsoSurfaceFieldNames,
     SurfaceFieldNames,
     get_unit_for_field,
 )
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.unit_system import (
     DimensionedTypes,
     is_flow360_unit,
     unyt_quantity,
 )
+from flow360.exceptions import Flow360ValidationError
 from flow360.log import log
 from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
@@ -108,7 +110,10 @@ class Settings(Flow360BaseModel):
         If not specified, defaults to 300.
     """
 
+    # pylint: disable=fixme
+    # TODO: Create a setting class for each type of report items.
     dpi: Optional[pd.PositiveInt] = 300
+    dump_table_csv: Optional[pd.StrictBool] = False
 
 
 class ReportItem(Flow360BaseModel):
@@ -407,6 +412,10 @@ class Table(ReportItem):
 
                 table.add_row(formatted)
                 table.add_hline()
+
+        if settings is not None and settings.dump_table_csv:
+            df = self.to_dataframe(context=context)
+            df.to_csv(f"{self.section_title}.csv", index=False)
 
 
 class PatternCaption(Flow360BaseModel):
@@ -1393,10 +1402,10 @@ class Chart2D(BaseChart2D):
 
     Parameters
     ----------
-    x : Union[str, Delta]
-        The data source for the x-axis, which can be a string path or a `Delta` object.
-    y : Union[str, Delta, List[str]]
-        The data source for the y-axis, which can be a string path or their list or a `Delta` object.
+    x : Union[DataItem, Delta, str]
+        The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
+    y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+        The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
     type_name : Literal["Chart2D"], default="Chart2D"
@@ -1409,8 +1418,8 @@ class Chart2D(BaseChart2D):
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
     """
 
-    x: Union[str, Delta]
-    y: Union[str, Delta, DataItem, List[str], List[DataItem]]
+    x: Union[DataItem, Delta, str]
+    y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
     group_by: Optional[Union[str, Grouper]] = Grouper(group_by=None)
     include: Optional[
         Annotated[
@@ -1434,14 +1443,21 @@ class Chart2D(BaseChart2D):
 
     @pd.model_validator(mode="after")
     def _handle_deprecated_include_exclude(self):
-        if (self.include is not None) or (self.exclude is not None):
-            self.x = DataItem(data=self.x, include=self.include, exclude=self.exclude)
+        include = self.include
+        exclude = self.exclude
+        if (include is not None) or (exclude is not None):
+            self.include = None
+            self.exclude = None
+            self.x = self._overload_include_exclude(include, exclude, self.x)
             if isinstance(self.y, List):
-                self.y = [
-                    DataItem(data=y, include=self.include, exclude=self.exclude) for y in self.y
-                ]
+                new_value = []
+                for data_variable in self.y:
+                    new_value.append(
+                        self._overload_include_exclude(include, exclude, data_variable)
+                    )
+                self.y = new_value
             else:
-                self.y = DataItem(data=self.y, include=self.include, exclude=self.exclude)
+                self.y = self._overload_include_exclude(include, exclude, self.y)
         return self
 
     @pd.model_validator(mode="after")
@@ -1449,6 +1465,20 @@ class Chart2D(BaseChart2D):
         if isinstance(self.group_by, str):
             self.group_by = Grouper(group_by=self.group_by)
         return self
+    
+    @classmethod
+    def _overload_include_exclude(cls, include, exclude, data_variable):
+        if isinstance(data_variable, Delta):
+            raise Flow360ValidationError(
+                "Delta can not be used with exclude/include options. "
+                + "Specify the Delta data using DataItem."
+            )
+        if not isinstance(data_variable, DataItem):
+            data_variable = DataItem(data=data_variable, include=include, exclude=exclude)
+        else:
+            data_variable.include = include
+            data_variable.exclude = exclude
+        return data_variable
 
     def get_requirements(self):
         """
@@ -1542,7 +1572,7 @@ class Chart2D(BaseChart2D):
         return x_data, y_data
 
     def _load_data(self, cases):
-        x_label = path_variable_name(self.x)
+        x_label = path_variable_name(str(self.x))
 
         if not isinstance(self.y, list):
             y_label = path_variable_name(str(self.y))

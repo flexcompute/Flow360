@@ -2,9 +2,9 @@
     "freestream": {
         "alphaAngle": 5.0,
         "betaAngle": 2.0,
-        "Mach": 0.2,
+        "Mach": 0.05,
         "Temperature": -1,
-        "muRef": 1.821818181818182e-08
+        "muRef": 4.554545454545455e-09
     },
     "timeStepping": {
         "CFL": {
@@ -34,7 +34,7 @@
         "lowMachPreconditioner": true,
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "lowMachPreconditionerThreshold": 0.2,
+        "lowMachPreconditionerThreshold": 0.05,
         "modelType": "Compressible",
         "equationEvalFrequency": 1
     },
@@ -96,6 +96,6 @@
     ],
     "usingLiquidAsMaterial": true,
     "outputRescale": {
-        "velocityScale": 5.0
+        "velocityScale": 20.0
     }
 }

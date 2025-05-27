@@ -20,7 +20,7 @@ This script will:
 import os
 
 import pandas as pd
-from sweep_launch_report import generate_report
+from sweep_launch_report import csv_reader, generate_report
 
 import flow360 as fl
 from flow360 import u
@@ -94,14 +94,14 @@ def launch_sweep(params, project, mesh_object, dir_path):
     df.to_csv(csv_path, index=False)
 
     # For example let's vary alpha:
-    alphas = [-10, 12] * u.deg
+    alphas = [-10, -5, 0, 5, 10, 12, 14] * u.deg
 
     cases_params = []
     for i, alpha_angle in enumerate(alphas):
         # modify the alpha
         params.operating_condition.alpha = alpha_angle
 
-        case = project.run_case(params=params, name=f"{alpha_angle}_case ")
+        case = project.run_case(params=params, name=f"alpha_{alpha_angle.value}_case")
         data = {
             "case_id": case.id,
             "alpha(deg)": params.operating_condition.alpha.value,
@@ -137,7 +137,7 @@ def launch_sweep(params, project, mesh_object, dir_path):
     df = df_data.join(df_forces)
     df.to_csv(csv_path, index=False, mode="a")
 
-    return case_list
+    return csv_path
 
 
 ######################################################################################################################
@@ -247,6 +247,10 @@ def main():
     # Option 1b: If you want to upload a CAD geometry and create a new project.
     # project = project_from_geometry()
 
+    # Option 1c: if you want to run from an existing project.
+    # project = fl.Project.from_cloud(
+    #     'prj-XXXXXXXXXXX')  # where prj-XXXXXXXXXX is an ID that can be saved from a previously created project or read off the WEBUI
+
     vm = project.volume_mesh
     # If the project has more then one mesh then use hte line below to choose a specific mesh instead.
     # vm = project.get_volume_mesh(asset_id='vm-XXXXXXXXXXXXXXX')
@@ -261,11 +265,10 @@ def main():
     # Step3: Launch the cases and save the relevant data.
     models = assign_boundary_conditions(project)
     params = make_run_params(vm, models)
-    cases = launch_sweep(params, project, vm, dir_name)
+    csv_path = launch_sweep(params, project, vm, dir_name)
 
     generate_report(
-        cases,
-        params,
+        *csv_reader(csv_path),
         include_geometry=True,
         include_general_tables=True,
         include_residuals=True,
@@ -273,6 +276,7 @@ def main():
         include_forces_moments_table=True,
         include_forces_moments_charts=True,
         include_forces_moments_alpha_charts=True,
+        include_forces_moments_beta_charts=True,
         include_cf_vec=True,
         include_cp=True,
         include_yplus=True,

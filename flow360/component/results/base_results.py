@@ -1,4 +1,4 @@
-""" Base results module"""
+"""Base results module"""
 
 from __future__ import annotations
 
@@ -15,13 +15,13 @@ import numpy as np
 import pandas
 import pydantic as pd
 
-from ...cloud.s3_utils import (
+from flow360.cloud.s3_utils import (
     CloudFileNotFoundError,
     get_local_filename_and_create_folders,
 )
-from ...log import log
-from ..simulation.simulation_params import SimulationParams
-from ..v1.flow360_params import Flow360Params
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.v1.flow360_params import Flow360Params
+from flow360.log import log
 
 # pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()
@@ -47,8 +47,7 @@ def _find_by_pattern(all_items: list, pattern):
         regex_pattern = f"^{pattern}$"  # Exact match if no '*'
 
     regex = re.compile(regex_pattern)
-    # pylint: disable=no-member
-    matched_items.extend(filter(lambda x: regex.match(x), all_items))
+    matched_items.extend(filter(regex.match, all_items))
     return matched_items
 
 
@@ -156,7 +155,7 @@ class ResultBaseModel(pd.BaseModel):
         overwrite : bool, optional
             Flag indicating whether to overwrite existing files.
         """
-
+        # pylint:disable=not-callable
         self._download_method(
             self._remote_path(), to_file=to_file, to_folder=to_folder, overwrite=overwrite
         )
@@ -229,6 +228,7 @@ class ResultCSVModel(ResultBaseModel):
 
     @classmethod
     def from_dict(cls, data: dict):
+        """Load from data dictionary"""
         obj = cls()
         obj._raw_values = data
         return obj
@@ -302,7 +302,7 @@ class ResultCSVModel(ResultBaseModel):
 
         else:
             if overwrite is True or self.local_file_name is None:
-                self._download_method(
+                self._download_method(  # pylint:disable = not-callable
                     self._remote_path(),
                     to_file=to_file,
                     to_folder=to_folder,
@@ -327,6 +327,7 @@ class ResultCSVModel(ResultBaseModel):
         return res_str
 
     def update(self, df: pandas.DataFrame):
+        """Update containing value to the given DataFrame"""
         self._values = df.to_dict("list")
 
     @property
@@ -431,17 +432,18 @@ class ResultCSVModel(ResultBaseModel):
             return False
 
     def include_time(self):
+        """Set the option to include time in the data"""
         if self._is_physical_time_series_data() is False:
             raise ValueError(
                 "Physical time can be included only for physical time series data (unsteady simulations)"
             )
 
-        params = self._get_params_method()
+        params = self._get_params_method()  # pylint:disable = not-callable
         if isinstance(params, Flow360Params):
             try:
                 step_size = params.time_stepping.time_step_size
             except KeyError:
-                raise ValueError(
+                raise ValueError(  # pylint:disable=raise-missing-from
                     "Cannot find time step size for this simulation. Check flow360.json file."
                 )
 
@@ -449,7 +451,7 @@ class ResultCSVModel(ResultBaseModel):
             try:
                 step_size = params.time_stepping.step_size
             except KeyError:
-                raise ValueError(
+                raise ValueError(  # pylint:disable=raise-missing-from
                     "Cannot find time step size for this simulation. Check simulation.json."
                 )
         else:
@@ -479,7 +481,7 @@ class ResultCSVModel(ResultBaseModel):
         try:
             physical_step = df[_PHYSICAL_STEP]
         except KeyError:
-            raise ValueError(
+            raise ValueError(  # pylint:disable=raise-missing-from
                 "Filtering physical steps is only available for results with physical_step column."
             )
         iter_mask = np.diff(physical_step)
@@ -493,6 +495,7 @@ class ResultCSVModel(ResultBaseModel):
         return selected_fraction.mean()
 
     def get_averages(self, average_fraction):
+        """Computes the average of data"""
         df = self.as_dataframe()
         return self._average_last_fraction(df, average_fraction)
 
@@ -541,6 +544,8 @@ class ResultTarGZModel(ResultBaseModel):
 
 
 class PerEntityResultCSVModel(ResultCSVModel):
+    """CSV base model for data associated with entities"""
+
     _variables: List[str] = []
     _x_columns: List[str] = []
     _filter_when_zero = []
@@ -557,7 +562,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
             Dictionary containing the current data.
         """
         if self._values is None:
-            super().values
+            _ = super().values
             self._filtered_sum()
         return super().values
 
