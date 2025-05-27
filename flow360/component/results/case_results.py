@@ -287,14 +287,15 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
 class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     """SurfaceForcesGroupResultCSVModel"""
 
-    remote_file_name: str = pd.Field(None, frozen=True, description="Not used dummy field.")
-    entity_groups: dict = pd.Field(None, description="The sub-components of each entity group.")
+    remote_file_name: str = pd.Field(None, frozen=True)  # Unused dummy field
+    _entity_groups: dict = pd.PrivateAttr()
 
     @classmethod
     # pylint: disable=arguments-differ
     def from_dict(cls, data: dict, group: dict):
         obj = super().from_dict(data)
-        obj.entity_groups = group
+        # pylint: disable=protected-access
+        obj._entity_groups = group
         return obj
 
 

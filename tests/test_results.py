@@ -561,7 +561,7 @@ def test_surface_forces_result(mock_id, mock_response):
 
     def compare_surface_force_groups(surface_forces, surface_forces_group):
         surface_forces_group_df = surface_forces_group.as_dataframe()
-        for groupName, faces in surface_forces_group.entity_groups.items():
+        for groupName, faces in surface_forces_group._entity_groups.items():
             surface_forces.filter(include=faces)
             total_force_faces_df = surface_forces.as_dataframe()
             for force_name in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]:
@@ -575,14 +575,16 @@ def test_surface_forces_result(mock_id, mock_response):
         "Freestream": ["farfield"],
         "Slip wall": ["boundary1"],
     }
-    assert compare_dicts(surface_forces_by_boundary.entity_groups, ref_entity_group_by_boundary)
+    assert compare_dicts(surface_forces_by_boundary._entity_groups, ref_entity_group_by_boundary)
     compare_surface_force_groups(surface_forces, surface_forces_by_boundary)
 
     surface_forces_by_body_group = surface_forces.by_body_group(params=params)
     ref_entity_group_by_body_group = {
         "two_boxes_conflict.csm": ["boundary1", "boundary2", "boundary3"]
     }
-    assert compare_dicts(surface_forces_by_body_group.entity_groups, ref_entity_group_by_body_group)
+    assert compare_dicts(
+        surface_forces_by_body_group._entity_groups, ref_entity_group_by_body_group
+    )
     compare_surface_force_groups(surface_forces, surface_forces_by_body_group)
 
     entity_info._group_entity_by_tag("body", "bodyId")
