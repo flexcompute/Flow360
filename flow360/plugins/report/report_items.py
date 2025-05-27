@@ -1542,16 +1542,6 @@ class Chart2D(BaseChart2D):
             return True
         return False
 
-    def _load_data(self, cases):
-        x_label = path_variable_name(str(self.x))
-
-        if not isinstance(self.y, list):
-            y_label = path_variable_name(str(self.y))
-            y_variables = [self.y]
-        else:
-            y_label = "value"
-            y_variables = self.y.copy()
-
     def _load_series(self, cases, x_label, y_variables):
         x_data = []
         y_data = []
