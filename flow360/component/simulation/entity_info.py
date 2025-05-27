@@ -1,6 +1,7 @@
 """Deserializer for entity info retrieved from asset metadata pipeline."""
 
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
@@ -179,6 +180,61 @@ class GeometryEntityInfo(EntityInfoModel):
 
         _search_and_replace(self.grouped_faces, param_entity_registry)
         _search_and_replace(self.grouped_edges, param_entity_registry)
+
+    def get_body_group_to_face_group_name_map(self) -> dict[str, list[str]]:
+        """
+        Returns bodyId to file name mapping.
+        """
+
+        # pylint: disable=too-many-locals
+        def create_group_to_sub_component_mapping(group):
+            mapping = defaultdict(list)
+            for item in group:
+                mapping[item.private_attribute_id].extend(item.private_attribute_sub_components)
+            return mapping
+
+        body_group_to_body = create_group_to_sub_component_mapping(
+            self._get_list_of_entities(entity_type_name="body", attribute_name=self.body_group_tag)
+        )
+        boundary_to_face = create_group_to_sub_component_mapping(
+            self._get_list_of_entities(entity_type_name="face", attribute_name=self.face_group_tag)
+        )
+        face_group_by_body_id_to_face = create_group_to_sub_component_mapping(
+            self._get_list_of_entities(entity_type_name="face", attribute_name="groupByBodyId")
+        )
+
+        body_group_to_face = defaultdict(list)
+        for body_group, body_ids in body_group_to_body.items():
+            for body_id in body_ids:
+                body_group_to_face[body_group].extend(face_group_by_body_id_to_face[body_id])
+
+        face_to_body_group = {}
+        for body_group_name, face_ids in body_group_to_face.items():
+            for face_id in face_ids:
+                face_to_body_group[face_id] = body_group_name
+
+        body_group_to_boundary = defaultdict(list)
+        for boundary_name, face_ids in boundary_to_face.items():
+            body_group_in_this_face_group = set()
+            for face_id in face_ids:
+                owning_body = face_to_body_group.get(face_id)
+                if owning_body is None:
+                    raise ValueError(
+                        f"Face ID '{face_id}' found in face group '{boundary_name}' "
+                        "but not found in any body group."
+                    )
+                body_group_in_this_face_group.add(owning_body)
+            if len(body_group_in_this_face_group) > 1:
+                raise ValueError(
+                    f"Face group '{boundary_name}' contains faces belonging to multiple body groups: "
+                    f"{list(sorted(body_group_in_this_face_group))}. "
+                    "The mapping between body and face groups cannot be created."
+                )
+
+            owning_body = list(body_group_in_this_face_group)[0]
+            body_group_to_boundary[owning_body].append(boundary_name)
+
+        return body_group_to_boundary
 
 
 class VolumeMeshEntityInfo(EntityInfoModel):
