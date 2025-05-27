@@ -299,10 +299,10 @@ class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     """SurfaceForcesGroupResultCSVModel"""
 
     remote_file_name: str = pd.Field(None, frozen=True, description="Not used dummpy field.")
-    entity_groups: Optional[dict] = pd.Field(None)
+    entity_groups: dict = pd.Field(None, description="The subcomponents of each entity group.")
 
     @classmethod
-    def from_dict(cls, data: dict, group: dict = None):
+    def from_dict(cls, data: dict, group: dict):
         obj = super().from_dict(data)
         obj.entity_groups = group
         return obj
