@@ -140,4 +140,47 @@ class PointArray(_PointEntityBase):
     # pylint: disable=no-member
     start: LengthType.Point = pd.Field(description="The starting point of the line.")
     end: LengthType.Point = pd.Field(description="The end point of the line.")
+<<<<<<< HEAD
     number_of_points: int = pd.Field(gt=2, description="Number of points along the line.")
+=======
+    number_of_points: int = pd.Field(ge=2, description="Number of points along the line.")
+
+
+class PointArray2D(_PointEntityBase):
+    """
+    :class:`PointArray2D` class for defining multiple equally spaced points along the u and
+    v axes of a parallelogram.
+
+
+    Example
+    -------
+    Define :class:`PointArray2D` with points equally distributed on a parallelogram with
+    origin (1.0, 0.0, 0.0) * fl.u.m. There are 7 equally spaced points along the parallelogram's u-axis
+    of (0.5, 1.0, 0.2) * fl.u.m and 10 equally spaced points along the its v-axis of
+    (0.1, 0, 1) * fl.u.m.
+
+    Both the starting and end points are included in the :class:`PointArray`.
+
+    >>> fl.PointArray2D(
+    ...     name="Parallelogram_1",
+    ...     origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...     u_axis_vector=(0.5, 1.0, 0.2) * fl.u.m,
+    ...     v_axis_vector=(0.1, 0, 1) * fl.u.m,
+    ...     u_number_of_points=7,
+    ...     v_number_of_points=10
+    ... )
+
+    ====
+    """
+
+    private_attribute_entity_type_name: Literal["PointArray2D"] = pd.Field(
+        "PointArray2D", frozen=True
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+    # pylint: disable=no-member
+    origin: LengthType.Point = pd.Field(description="The corner of the parallelogram.")
+    u_axis_vector: LengthType.Axis = pd.Field(description="The scaled u-axis of the parallelogram.")
+    v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
+    u_number_of_points: int = pd.Field(ge=2, description="The number of points along the u axis.")
+    v_number_of_points: int = pd.Field(ge=2, description="The number of points along the v axis.")
+>>>>>>> 061c7e54 (changed PointArray from gt to ge 2 (#1096))
