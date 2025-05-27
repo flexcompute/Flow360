@@ -2,7 +2,7 @@
 
 from click.testing import CliRunner
 
-import flow360.user_config as user_config
+from flow360 import user_config
 from flow360.cli.app import configure
 from flow360.log import log
 

@@ -2,7 +2,7 @@
 Security related functions.
 """
 
-import flow360.user_config as user_config
+from flow360 import user_config
 from flow360.environment import Env
 
 
