@@ -2,6 +2,7 @@
 
 from click.testing import CliRunner
 
+import flow360.user_config as user_config
 from flow360.cli.app import configure
 from flow360.log import log
 
@@ -33,3 +34,4 @@ def configure_caller(apikey: str, environment: str = None, profile: str = "defau
         log.info("Error:" + result.output)
     else:
         log.info("Configuration successful.")
+        user_config.UserConfig = user_config.BasicUserConfig()  # Reload

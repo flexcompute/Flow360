@@ -2,8 +2,8 @@
 Security related functions.
 """
 
-from ..environment import Env
-from ..user_config import UserConfig
+import flow360.user_config as user_config
+from flow360.environment import Env
 
 
 def api_key():
@@ -12,5 +12,5 @@ def api_key():
     :return:
     """
 
-    apikey = UserConfig.apikey(Env.current)
+    apikey = user_config.UserConfig.apikey(Env.current)
     return apikey
