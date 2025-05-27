@@ -276,22 +276,24 @@ _FIELD_TYPE_INFO = {
 
 # Predefined UDF expressions
 PREDEFINED_UDF_EXPRESSIONS = {
-    "velocity": "velocity[0] = primitiveVars[1];"
-    + "velocity[1] = primitiveVars[2];"
-    + "velocity[2] = primitiveVars[3];",
+    "velocity": "velocity[0] = primitiveVars[1] * velocityScale;"
+    + "velocity[1] = primitiveVars[2] * velocityScale;"
+    + "velocity[2] = primitiveVars[3] * velocityScale;",
     "velocity_magnitude": "double velocity[3];"
     + "velocity[0] = primitiveVars[1];"
     + "velocity[1] = primitiveVars[2];"
     + "velocity[2] = primitiveVars[3];"
-    + "velocity_magnitude = magnitude(velocity);",
-    "velocity_x": "velocity_x = primitiveVars[1];",
-    "velocity_y": "velocity_y = primitiveVars[2];",
-    "velocity_z": "velocity_z = primitiveVars[3];",
-    "pressure": "pressure = primitiveVars[4];",
-    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = magnitude(wallShearStress);",
-    "vorticity_x": "vorticity_x = gradPrimitive[3][1] - gradPrimitive[2][2];",
-    "vorticity_y": "vorticity_y = gradPrimitive[1][2] - gradPrimitive[3][0];",
-    "vorticity_z": "vorticity_z = gradPrimitive[2][0] - gradPrimitive[1][1];",
+    + "velocity_magnitude = magnitude(velocity) * velocityScale;",
+    "velocity_x": "velocity_x = primitiveVars[1] * velocityScale;",
+    "velocity_y": "velocity_y = primitiveVars[2] * velocityScale;",
+    "velocity_z": "velocity_z = primitiveVars[3] * velocityScale;",
+    "pressure": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? "
+    + "(primitiveVars[4] - 1 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
+    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = "
+    + "magnitude(wallShearStress) * (velocityScale * velocityScale);",
+    "vorticity_x": "vorticity_x = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;",
+    "vorticity_y": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
+    "vorticity_z": "vorticity_z = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
 }
 
 
