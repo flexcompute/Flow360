@@ -166,6 +166,7 @@
             "primitiveVars",
             "residualNavierStokes",
             "vorticity",
+            "vorticityMagnitude",
             "solutionTurbulence",
             "mutRatio",
             "solutionTransition"
@@ -181,7 +182,7 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[],
+    "userDefinedFields": [],
     "usingLiquidAsMaterial": false,
     "outputRescale": {
         "velocityScale": 1.0

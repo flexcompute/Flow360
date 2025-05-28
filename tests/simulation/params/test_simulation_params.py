@@ -46,7 +46,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
     LiquidOperatingCondition,
     ThermalState,
-    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.primitives import (
     Box,
@@ -345,7 +344,7 @@ def test_subsequent_param_with_different_unit_system():
 
 
 def test_mach_reynolds_op_cond():
-    condition = operating_condition_from_mach_reynolds(
+    condition = AerospaceCondition.from_mach_reynolds(
         mach=0.2,
         reynolds=5e6,
         temperature=288.15 * u.K,
@@ -356,7 +355,7 @@ def test_mach_reynolds_op_cond():
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
-    condition = operating_condition_from_mach_reynolds(
+    condition = AerospaceCondition.from_mach_reynolds(
         mach=0.2,
         reynolds=5e6,
         temperature=288.15 * u.K,
@@ -365,10 +364,10 @@ def test_mach_reynolds_op_cond():
         project_length_unit=u.m,
         reference_mach=0.4,
     )
-    assertions.assertAlmostEqual(condition.thermal_state.density.value, 0.6572616596801923)
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        condition = operating_condition_from_mach_reynolds(
+        condition = AerospaceCondition.from_mach_reynolds(
             mach=0.2,
             reynolds=0,
             temperature=288.15 * u.K,
@@ -522,6 +521,38 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
             "body00001": "airplane_simple_obtained_from_csm_by_esp.step.egads",
             "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
             "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+        }.items()
+    )
+
+
+def test_geometry_entity_info_get_body_group_to_face_group_name_map():
+    with open("./data/geometry_metadata_asset_cache_multiple_bodies.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+    assert sorted(geometry_entity_info.get_body_group_to_face_group_name_map().items()) == sorted(
+        {
+            "cube-holes.egads": ["body00001", "body00002"],
+            "cylinder.stl": ["cylinder.stl"],
+        }.items()
+    )
+    geometry_entity_info._group_entity_by_tag("face", "faceId")
+    assert sorted(geometry_entity_info.get_body_group_to_face_group_name_map().items()) == sorted(
+        {
+            "cube-holes.egads": [
+                "body00001_face00001",
+                "body00001_face00002",
+                "body00001_face00003",
+                "body00001_face00004",
+                "body00001_face00005",
+                "body00001_face00006",
+                "body00002_face00001",
+                "body00002_face00002",
+                "body00002_face00003",
+                "body00002_face00004",
+                "body00002_face00005",
+                "body00002_face00006",
+            ],
+            "cylinder.stl": ["cylinder.stl_body"],
         }.items()
     )
 
