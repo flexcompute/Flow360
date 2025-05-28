@@ -926,8 +926,8 @@ class StreamlineOutput(Flow360BaseModel):
     Example
     -------
 
-    Define a :class:`StreamlineOutput` with streaptraces originating from points, lines (PointArray), and
-    parallelograms (PointArray2D).
+    Define a :class:`StreamlineOutput` with streaptraces originating from points,
+    lines (:class:`~flow360.PointArray`), and parallelograms (:class:`~flow360.PointArray2D`).
 
     - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
     - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
@@ -972,10 +972,10 @@ class StreamlineOutput(Flow360BaseModel):
     entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
         alias="streamline_points",
         description="List of monitored :class:`~flow360.Point`/"
-        + ":class:`~flow360.PointArray`/:class:`~flow360.Point`"
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointArray2D` "
         + "entities belonging to this "
         + "streamline group. :class:`~flow360.PointArray` "
-        + "is used to define streamline originating along a line."
+        + "is used to define streamline originating along a line. "
         + ":class:`~flow360.PointArray2D` "
         + "is used to define streamline originating from a parallelogram.",
     )
