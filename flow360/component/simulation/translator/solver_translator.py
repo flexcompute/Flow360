@@ -45,7 +45,11 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray,
     PointArray2D,
 )
-from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
+from flow360.component.simulation.outputs.output_fields import (
+    PREDEFINED_UDF_EXPRESSIONS,
+    append_component_to_output_fields,
+    generate_predefined_udf,
+)
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -232,7 +236,7 @@ def translate_output_fields(
     ],
 ):
     """Get output fields"""
-    return {"outputFields": output_model.output_fields.items}
+    return {"outputFields": append_component_to_output_fields(output_model.output_fields.items)}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
@@ -352,9 +356,11 @@ def translate_volume_output(
     # Get outputFields
     volume_output.update(
         {
-            "outputFields": get_global_setting_from_first_instance(
-                output_params, volume_output_class, "output_fields"
-            ).model_dump()["items"],
+            "outputFields": append_component_to_output_fields(
+                get_global_setting_from_first_instance(
+                    output_params, volume_output_class, "output_fields"
+                ).model_dump()["items"]
+            ),
         }
     )
     return volume_output
@@ -525,7 +531,13 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     if input_params.outputs:
         for output in input_params.outputs:
             if hasattr(output, "output_fields") and output.output_fields:
-                all_field_names.update(output.output_fields.items)
+                all_field_names.update(
+                    append_component_to_output_fields(output.output_fields.items)
+                )
+            if isinstance(output, IsosurfaceOutput):
+                for isosurface in output.entities.items:
+                    if isosurface.field in PREDEFINED_UDF_EXPRESSIONS:
+                        all_field_names.add(isosurface.field)
 
     if isinstance(input_params.operating_condition, LiquidOperatingCondition):
         all_field_names.add("velocity_magnitude")
