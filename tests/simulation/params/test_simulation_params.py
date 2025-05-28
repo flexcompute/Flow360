@@ -525,6 +525,38 @@ def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
     )
 
 
+def test_geometry_entity_info_get_body_group_to_face_group_name_map():
+    with open("./data/geometry_metadata_asset_cache_multiple_bodies.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+    assert sorted(geometry_entity_info.get_body_group_to_face_group_name_map().items()) == sorted(
+        {
+            "cube-holes.egads": ["body00001", "body00002"],
+            "cylinder.stl": ["cylinder.stl"],
+        }.items()
+    )
+    geometry_entity_info._group_entity_by_tag("face", "faceId")
+    assert sorted(geometry_entity_info.get_body_group_to_face_group_name_map().items()) == sorted(
+        {
+            "cube-holes.egads": [
+                "body00001_face00001",
+                "body00001_face00002",
+                "body00001_face00003",
+                "body00001_face00004",
+                "body00001_face00005",
+                "body00001_face00006",
+                "body00002_face00001",
+                "body00002_face00002",
+                "body00002_face00003",
+                "body00002_face00004",
+                "body00002_face00005",
+                "body00002_face00006",
+            ],
+            "cylinder.stl": ["cylinder.stl_body"],
+        }.items()
+    )
+
+
 def test_transformation_matrix():
     with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
         geometry_entity_info_dict = json.load(fp)
