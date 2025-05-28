@@ -67,6 +67,7 @@
                 "outputFields": [
                     "primitiveVars",
                     "vorticity",
+                    "vorticityMagnitude",
                     "T",
                     "s",
                     "Cp",

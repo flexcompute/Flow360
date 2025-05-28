@@ -69,6 +69,7 @@
                 "outputFields": [
                     "primitiveVars",
                     "vorticity",
+                    "vorticityMagnitude",
                     "T",
                     "s",
                     "Cp",
@@ -184,5 +185,14 @@
         "v": "v",
         "w": "w"
     },
+<<<<<<< HEAD
     "userDefinedFields": []
 }
+=======
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
+}
+>>>>>>> fc5020f5 ([SCFD-5478][SCFD-5477][SCFD-5476][SCFD-5174] Velocity and Vorticity component (#1085))

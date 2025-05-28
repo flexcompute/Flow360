@@ -43,7 +43,7 @@ def volume_output_config():
             frequency=1,
             frequency_offset=2,
             output_format="both",
-            output_fields=["primitiveVars", "betMetrics", "qcriterion"],
+            output_fields=["primitiveVars", "betMetrics", "qcriterion", "velocity", "vorticity"],
         ),
         {
             "animationFrequency": 1,
@@ -51,7 +51,15 @@ def volume_output_config():
             "animationFrequencyTimeAverage": -1,
             "animationFrequencyTimeAverageOffset": 0,
             "computeTimeAverages": False,
-            "outputFields": ["primitiveVars", "betMetrics", "qcriterion"],
+            "outputFields": [
+                "primitiveVars",
+                "betMetrics",
+                "qcriterion",
+                "velocity",
+                "velocity_magnitude",
+                "vorticity",
+                "vorticityMagnitude",
+            ],
             "outputFormat": "paraview,tecplot",
             "startAverageIntegrationStep": -1,
         },
@@ -65,7 +73,7 @@ def avg_volume_output_config():
             frequency=11,
             frequency_offset=12,
             output_format="both",
-            output_fields=["primitiveVars", "betMetrics", "qcriterion"],
+            output_fields=["primitiveVars", "betMetrics", "qcriterion", "velocity", "vorticity"],
             start_step=1,
         ),
         {
@@ -74,7 +82,15 @@ def avg_volume_output_config():
             "animationFrequencyTimeAverage": 11,
             "animationFrequencyTimeAverageOffset": 12,
             "computeTimeAverages": True,
-            "outputFields": ["primitiveVars", "betMetrics", "qcriterion"],
+            "outputFields": [
+                "primitiveVars",
+                "betMetrics",
+                "qcriterion",
+                "velocity",
+                "velocity_magnitude",
+                "vorticity",
+                "vorticityMagnitude",
+            ],
             "outputFormat": "paraview,tecplot",
             "startAverageIntegrationStep": 1,
         },
@@ -116,7 +132,15 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
             "animationFrequencyTimeAverage": 11,
             "animationFrequencyTimeAverageOffset": 12,
             "computeTimeAverages": True,
-            "outputFields": ["primitiveVars", "betMetrics", "qcriterion"],
+            "outputFields": [
+                "primitiveVars",
+                "betMetrics",
+                "qcriterion",
+                "velocity",
+                "velocity_magnitude",
+                "vorticity",
+                "vorticityMagnitude",
+            ],
             "outputFormat": "paraview,tecplot",
             "startAverageIntegrationStep": 1,
         }
@@ -139,7 +163,7 @@ def surface_output_config():
                 entities=[Surface(name="surface11"), Surface(name="surface22")],
                 frequency=123,
                 frequency_offset=321,
-                output_fields=["T"],
+                output_fields=["T", "velocity", "vorticity"],
                 output_format="tecplot",
             ),
         ],
@@ -154,9 +178,25 @@ def surface_output_config():
             "startAverageIntegrationStep": -1,
             "surfaces": {
                 "surface1": {"outputFields": ["Cp"]},
-                "surface11": {"outputFields": ["T"]},
+                "surface11": {
+                    "outputFields": [
+                        "T",
+                        "velocity",
+                        "velocity_magnitude",
+                        "vorticity",
+                        "vorticityMagnitude",
+                    ]
+                },
                 "surface2": {"outputFields": ["Cp"]},
-                "surface22": {"outputFields": ["T"]},
+                "surface22": {
+                    "outputFields": [
+                        "T",
+                        "velocity",
+                        "velocity_magnitude",
+                        "vorticity",
+                        "vorticityMagnitude",
+                    ]
+                },
             },
             "writeSingleFile": False,
         },
@@ -207,9 +247,25 @@ def test_surface_output(
         "startAverageIntegrationStep": -1,
         "surfaces": {
             "surface1": {"outputFields": ["Cp"]},
-            "surface11": {"outputFields": ["T"]},
+            "surface11": {
+                "outputFields": [
+                    "T",
+                    "velocity",
+                    "velocity_magnitude",
+                    "vorticity",
+                    "vorticityMagnitude",
+                ]
+            },
             "surface2": {"outputFields": ["Cp"]},
-            "surface22": {"outputFields": ["T"]},
+            "surface22": {
+                "outputFields": [
+                    "T",
+                    "velocity",
+                    "velocity_magnitude",
+                    "vorticity",
+                    "vorticityMagnitude",
+                ]
+            },
             "surface3": {"outputFields": ["T"]},
         },
         "writeSingleFile": False,
@@ -234,7 +290,7 @@ def sliceoutput_config():
                         origin=(0.12, 0.13, 0.14) * u.m,
                     ),
                 ],
-                output_fields=["Cp"],
+                output_fields=["Cp", "velocity", "vorticity", "vorticityMagnitude"],
                 frequency=33,
                 frequency_offset=22,
                 output_format="tecplot",
@@ -279,12 +335,24 @@ def sliceoutput_config():
                     "sliceOrigin": [6.12, 6.13, 6.14],
                 },
                 "slice10": {
-                    "outputFields": ["Cp"],
+                    "outputFields": [
+                        "Cp",
+                        "velocity",
+                        "velocity_magnitude",
+                        "vorticity",
+                        "vorticityMagnitude",
+                    ],
                     "sliceNormal": [0.0, 1.0, 0.0],
                     "sliceOrigin": [0.02, 0.03, 0.04],
                 },
                 "slice20": {
-                    "outputFields": ["Cp"],
+                    "outputFields": [
+                        "Cp",
+                        "velocity",
+                        "velocity_magnitude",
+                        "vorticity",
+                        "vorticityMagnitude",
+                    ],
                     "sliceNormal": [0.6, 0.8, 0.0],
                     "sliceOrigin": [0.12, 0.13, 0.14],
                 },
@@ -321,6 +389,16 @@ def isosurface_output_config():
                         name="isosurface 14",
                         iso_value=20.431,
                         field="qcriterion",
+                    ),
+                    Isosurface(
+                        name="isosurface 15",
+                        iso_value=0.1,
+                        field="velocity_x",
+                    ),
+                    Isosurface(
+                        name="isosurface 16",
+                        iso_value=0.2,
+                        field="vorticity_z",
                     ),
                 ],
                 output_fields=["Cp"],
@@ -370,6 +448,16 @@ def isosurface_output_config():
                     "outputFields": ["Cp"],
                     "surfaceField": "qcriterion",
                     "surfaceFieldMagnitude": 20.431,
+                },
+                "isosurface 15": {
+                    "outputFields": ["Cp"],
+                    "surfaceField": "velocity_x",
+                    "surfaceFieldMagnitude": 0.1,
+                },
+                "isosurface 16": {
+                    "outputFields": ["Cp"],
+                    "surfaceField": "vorticity_z",
+                    "surfaceFieldMagnitude": 0.2,
                 },
             },
             "outputFields": [],
@@ -1058,6 +1146,11 @@ def test_dimensioned_output_fields_translation():
                     entities=[Slice(name="my_slice", origin=[0, 0, 0], normal=(0, 1, 0))],
                     output_fields=["my_field"],
                 ),
+                IsosurfaceOutput(
+                    name="my_isosurface",
+                    entities=Isosurface(name="my_isosurface", iso_value=0.5, field="vorticity_y"),
+                    output_fields=["my_field"],
+                ),
             ],
             user_defined_fields=[
                 UserDefinedField(
@@ -1164,6 +1257,10 @@ def test_dimensioned_output_fields_translation():
             {
                 "name": "my_field",
                 "expression": "1+1",
+            },
+            {
+                "expression": "vorticity_y = gradPrimitive[1][2] - gradPrimitive[3][0];",
+                "name": "vorticity_y",
             },
         ]
     }

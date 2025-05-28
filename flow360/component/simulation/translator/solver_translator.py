@@ -36,8 +36,24 @@ from flow360.component.simulation.models.volume_models import (
     Rotation,
     Solid,
 )
+<<<<<<< HEAD
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
+=======
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
+)
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+)
+from flow360.component.simulation.outputs.output_fields import (
+    PREDEFINED_UDF_EXPRESSIONS,
+    append_component_to_output_fields,
+    generate_predefined_udf,
+)
+>>>>>>> fc5020f5 ([SCFD-5478][SCFD-5477][SCFD-5476][SCFD-5174] Velocity and Vorticity component (#1085))
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -222,7 +238,7 @@ def translate_output_fields(
     ],
 ):
     """Get output fields"""
-    return {"outputFields": output_model.output_fields.items}
+    return {"outputFields": append_component_to_output_fields(output_model.output_fields.items)}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
@@ -342,9 +358,11 @@ def translate_volume_output(
     # Get outputFields
     volume_output.update(
         {
-            "outputFields": get_global_setting_from_first_instance(
-                output_params, volume_output_class, "output_fields"
-            ).model_dump()["items"],
+            "outputFields": append_component_to_output_fields(
+                get_global_setting_from_first_instance(
+                    output_params, volume_output_class, "output_fields"
+                ).model_dump()["items"]
+            ),
         }
     )
     return volume_output
@@ -515,7 +533,13 @@ def process_output_fields_for_udf(input_params):
     if input_params.outputs:
         for output in input_params.outputs:
             if hasattr(output, "output_fields") and output.output_fields:
-                all_field_names.update(output.output_fields.items)
+                all_field_names.update(
+                    append_component_to_output_fields(output.output_fields.items)
+                )
+            if isinstance(output, IsosurfaceOutput):
+                for isosurface in output.entities.items:
+                    if isosurface.field in PREDEFINED_UDF_EXPRESSIONS:
+                        all_field_names.add(isosurface.field)
 
     # Generate UDFs for dimensioned fields
     generated_udfs = []
