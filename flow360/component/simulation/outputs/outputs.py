@@ -896,6 +896,74 @@ class AeroAcousticOutput(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
 
+<<<<<<< HEAD
+=======
+class StreamlineOutput(Flow360BaseModel):
+    """
+    :class:`StreamlineOutput` class for calculating streamlines.
+    Stramtraces are computed upwind and downwind, and may originate from a single point,
+    from a line, or from points evenly distributed across a parallelogram.
+
+    Example
+    -------
+
+    Define a :class:`StreamlineOutput` with streaptraces originating from points,
+    lines (:class:`~flow360.PointArray`), and parallelograms (:class:`~flow360.PointArray2D`).
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+      including both starting and end points.
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+      orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
+      with 20 points along the v direction.
+
+    >>> fl.StreamlineOutput(
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_streamline",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...         fl.PointArray2D(
+    ...             name="Parallelogram_streamline",
+    ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
+    ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
+    ...             u_number_of_points=11,
+    ...             v_number_of_points=20
+    ...         )
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Streamline output", description="Name of the `StreamlineOutput`."
+    )
+    entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
+        alias="streamline_points",
+        description="List of monitored :class:`~flow360.Point`/"
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointArray2D` "
+        + "entities belonging to this "
+        + "streamline group. :class:`~flow360.PointArray` "
+        + "is used to define streamline originating along a line. "
+        + ":class:`~flow360.PointArray2D` "
+        + "is used to define streamline originating from a parallelogram.",
+    )
+    output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+
+
+>>>>>>> cb5942be (Fix docstring for streamline output (#1106))
 OutputTypes = Annotated[
     Union[
         SurfaceOutput,
