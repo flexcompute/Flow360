@@ -1418,6 +1418,21 @@ class Chart2D(BaseChart2D):
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
+
+    Example
+    -------
+
+    -  Create a chart of CL for an alpha sweep case, different turbulence models
+
+    >>> Chart2D(
+    ...     x="params/operating_condition/beta",
+    ...     y=DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]),
+    ...     section_title="CL vs alpha",
+    ...     fig_name="cl_vs_alpha",
+    ...     group_by=Grouper(group_by="params/models/Fluid/turbulence_model_solver/type_name"),
+    ... )
+
+    ====
     """
 
     x: Union[DataItem, Delta, str]
@@ -1514,7 +1529,7 @@ class Chart2D(BaseChart2D):
         return x_data, y_data, x_label, y_label
 
     def _handle_legend(self, cases, x_data, y_data):
-        if not self._is_series_data(cases[0]):
+        if not self._is_series_data(cases[0], self.x):
             return self.group_by.arrange_legend()
 
         if self._is_multiline_data(x_data, y_data):
@@ -1534,13 +1549,22 @@ class Chart2D(BaseChart2D):
 
         return legend
 
-    def _is_series_data(self, example_case):
-        x_data_point = data_from_path(example_case, self.x, None)
-        if isinstance(x_data_point, Iterable):
-            if isinstance(x_data_point, unyt_quantity) and x_data_point.shape == ():
+    def _is_series_data(self, example_case, variable):
+        data_point = data_from_path(example_case, variable, None)
+        if isinstance(data_point, Iterable):
+            if isinstance(data_point, unyt_quantity) and data_point.shape == ():
                 return False
             return True
         return False
+
+    def _validate_variable_format(self, example_case, x_variable, y_variables):
+        series = self._is_series_data(example_case, x_variable)
+
+        for y in y_variables:
+            if series != self._is_series_data(example_case, y):
+                raise AttributeError(
+                    "Variables incompatible - cannot plot point and series data on the same plot."
+                )
 
     def _load_series(self, cases, x_label, y_variables):
         x_data = []
@@ -1583,7 +1607,9 @@ class Chart2D(BaseChart2D):
             y_label = "value"
             y_variables = self.y.copy()
 
-        if self._is_series_data(cases[0]):
+        self._validate_variable_format(cases[0], self.x, y_variables)
+
+        if self._is_series_data(cases[0], self.x):
             x_data, y_data = self._load_series(cases, x_label, y_variables)
         else:
             x_data, y_data = self._load_points(cases, y_variables)

@@ -865,7 +865,7 @@ class Tabulary(Tabular):
 
 class Grouper(Flow360BaseModel):
     """
-    Class for objects responsible for grouping data into series in Chart2D objects.
+    Class for objects responsible for grouping data into series in Chart2D.
 
     Parameters
     ----------
@@ -874,7 +874,20 @@ class Grouper(Flow360BaseModel):
         by which the grouping should be done.
     buckets: Optional[Union[dict[str, List], List[Union[dict[str, List], None]]]]
         Dictionaries where key represenst the name of the group and the value is the list of values,
-        that belong to the group. If all the values should be unique, enter None.
+        that belong to the group. If all the values should be unique, enter None for the corresponding bucket.
+
+    Example
+    -------
+    - Data will be grouped by each turbulence model and then by the first tag,
+        if the first tag is "a" or "b" the data point will be assigned to group "bucket0",
+        if the first tag is "c" the data point will be assigned to "bucket1"
+
+    >>> Grouper(
+    ...     group_by=["params/models/Fluid/turbulence_model_solver/type_name", "info/tags/0"],
+    ...     buckets=[None, {"bucket0": ["a", "b"], "bucket1": ["c"]}],
+    ... )
+
+    ====
     """
 
     group_by: Union[str, List[str], None, List[None]]

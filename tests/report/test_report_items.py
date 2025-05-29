@@ -1674,3 +1674,20 @@ def test_in_path_averages(here, cases):
     assert dataitem.operations[1] == Expression(expr="CL*beta")
 
     assert np.allclose(cl_beta, cl_beta_expected)
+
+
+def test_data_format_check(cases):
+    chart = Chart2D(
+        x="params/operating_condition/beta",
+        y=[
+            DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]),
+            DataItem(data="total_forces/pseudo_step"),
+        ],
+        section_title="test",
+        fig_name="test",
+    )
+
+    context = ReportContext(cases=cases)
+
+    with pytest.raises(AttributeError):
+        plot_model = chart.get_data(cases=cases, context=context)
