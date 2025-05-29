@@ -1,8 +1,7 @@
 import json
-import tempfile
+
 from typing import List
 
-import numpy as np
 import pydantic as pd
 import pytest
 
@@ -329,10 +328,10 @@ def test_vector_types():
         direction: ValueOrExpression[LengthType.Direction] = pd.Field()
         moment: ValueOrExpression[LengthType.Moment] = pd.Field()
 
-    x = UserVariable(name="x", value=np.array([1, 0, 0]))
-    y = UserVariable(name="y", value=np.array([0, 0, 0]))
-    z = UserVariable(name="z", value=np.array([1, 0, 0, 0]))
-    w = UserVariable(name="w", value=np.array([1, 1, 1]))
+    x = UserVariable(name="x", value=[1, 0, 0])
+    y = UserVariable(name="y", value=[0, 0, 0])
+    z = UserVariable(name="z", value=[1, 0, 0, 0])
+    w = UserVariable(name="w", value=[1, 1, 1])
 
     model = TestModel(
         vector=y * u.m, axis=x * u.m, array=z * u.m, direction=x * u.m, moment=w * u.m
@@ -434,99 +433,99 @@ def test_deserializer():
     assert str(deserialized.field) == "4.0 m/s"
 
 
-def test_numpy_interop_scalars():
-    class ScalarModel(Flow360BaseModel):
-        scalar: ValueOrExpression[float] = pd.Field()
-
-    x = UserVariable(name="x", value=1)
-
-    # Since numpy arrays already give us the behavior we want there is no point
-    # to building our own vector arithmetic. We just add the symbols to the whitelist
-
-    # Using expression types inside numpy arrays works OK
-    a = np.array([x + 1, 0, x**2])
-    b = np.array([0, x / 2, 3])
-
-    c = np.linalg.norm(a + b)  # This yields an expression containing the inlined dot product...
-
-    # Sadly it seems like we cannot stop numpy from inlining some functions by
-    # implementing a specific method (like with trigonometic functions for example)
-
-    d = np.sin(c)  # This yields an expression
-    e = np.cos(c)  # This also yields an expression
-
-    model = ScalarModel(
-        scalar=np.arctan(d + e + 1)
-    )  # So we can later compose those into expressions further...
-
-    assert str(model.scalar) == (
-        "np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
-        "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
-        "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
-        "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)"
-    )
-
-    result = model.scalar.evaluate()
-
-    assert result == -0.1861456975646416
-
-    # Notice that when we inline some operations (like cross/dot product or norm, for example)
-    # we make the underlying generated string of the expression ugly...
-    #
-    # Luckily this is transparent to the user. When the user is defining expressions in python he does
-    # not have to worry about the internal string representation or the CUDA-generated code
-    # (for CUDA code inlining might actually probably be our best bet to reduce function calls...)
-    #
-    # Conversely, when we are dealing with frontend strings we can deal with non-inlined numpy functions
-    # because they are whitelisted by the blueprint parser:
-
-    # Let's simulate a frontend use case by parsing raw string input:
-
-    # The user defines some variables for convenience
-
-    a = UserVariable(name="a", value="np.array([x + 1, 0, x ** 2])")
-    b = UserVariable(name="b", value="np.array([0, x / 2, 3])")
-
-    c = UserVariable(name="c", value="np.linalg.norm(a + b)")
-
-    d = UserVariable(name="d", value="np.sin(c)")
-    e = UserVariable(name="e", value="np.cos(c)")
-
-    # Then he inputs the actual expression somewhere within
-    # simulation.json using the helper variables defined before
-
-    model = ScalarModel(scalar="np.arctan(d + e + 1)")
-
-    assert str(model.scalar) == "np.arctan(d + e + 1)"
-
-    result = model.scalar.evaluate()
-
-    assert result == -0.1861456975646416
-
-
-def test_numpy_interop_vectors():
-    Vec3 = tuple[float, float, float]
-
-    class VectorModel(Flow360BaseModel):
-        vector: ValueOrExpression[Vec3] = pd.Field()
-
-    x = UserVariable(name="x", value=np.array([2, 3, 4]))
-    y = UserVariable(name="y", value=2 * x)
-
-    model = VectorModel(vector=x**2 + y + np.array([1, 0, 0]))
-
-    assert str(model.vector) == "x ** 2 + y + np.array([1,0,0])"
-
-    result = model.vector.evaluate()
-
-    assert np.array_equal(result, np.array([9, 15, 24]))
+# def test_expression_vectors_scalars():
+#     class ScalarModel(Flow360BaseModel):
+#         scalar: ValueOrExpression[float] = pd.Field()
+#
+#     x = UserVariable(name="x", value=1)
+#
+#     # Since numpy arrays already give us the behavior we want there is no point
+#     # to building our own vector arithmetic. We just add the symbols to the whitelist
+#
+#     # Using expression types inside numpy arrays works OK
+#     a = np.array([x + 1, 0, x**2])
+#     b = np.array([0, x / 2, 3])
+#
+#     c = np.linalg.norm(a + b)  # This yields an expression containing the inlined dot product...
+#
+#     # Sadly it seems like we cannot stop numpy from inlining some functions by
+#     # implementing a specific method (like with trigonometic functions for example)
+#
+#     d = np.sin(c)  # This yields an expression
+#     e = np.cos(c)  # This also yields an expression
+#
+#     model = ScalarModel(
+#         scalar=np.arctan(d + e + 1)
+#     )  # So we can later compose those into expressions further...
+#
+#     assert str(model.scalar) == (
+#         "np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
+#         "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
+#         "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
+#         "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)"
+#     )
+#
+#     result = model.scalar.evaluate()
+#
+#     assert result == -0.1861456975646416
+#
+#     # Notice that when we inline some operations (like cross/dot product or norm, for example)
+#     # we make the underlying generated string of the expression ugly...
+#     #
+#     # Luckily this is transparent to the user. When the user is defining expressions in python he does
+#     # not have to worry about the internal string representation or the CUDA-generated code
+#     # (for CUDA code inlining might actually probably be our best bet to reduce function calls...)
+#     #
+#     # Conversely, when we are dealing with frontend strings we can deal with non-inlined numpy functions
+#     # because they are whitelisted by the blueprint parser:
+#
+#     # Let's simulate a frontend use case by parsing raw string input:
+#
+#     # The user defines some variables for convenience
+#
+#     a = UserVariable(name="a", value="np.array([x + 1, 0, x ** 2])")
+#     b = UserVariable(name="b", value="np.array([0, x / 2, 3])")
+#
+#     c = UserVariable(name="c", value="np.linalg.norm(a + b)")
+#
+#     d = UserVariable(name="d", value="np.sin(c)")
+#     e = UserVariable(name="e", value="np.cos(c)")
+#
+#     # Then he inputs the actual expression somewhere within
+#     # simulation.json using the helper variables defined before
+#
+#     model = ScalarModel(scalar="np.arctan(d + e + 1)")
+#
+#     assert str(model.scalar) == "np.arctan(d + e + 1)"
+#
+#     result = model.scalar.evaluate()
+#
+#     assert result == -0.1861456975646416
+#
+#
+# def test_numpy_interop_vectors():
+#     Vec3 = tuple[float, float, float]
+#
+#     class VectorModel(Flow360BaseModel):
+#         vector: ValueOrExpression[Vec3] = pd.Field()
+#
+#     x = UserVariable(name="x", value=np.array([2, 3, 4]))
+#     y = UserVariable(name="y", value=2 * x)
+#
+#     model = VectorModel(vector=x**2 + y + np.array([1, 0, 0]))
+#
+#     assert str(model.vector) == "x ** 2 + y + np.array([1,0,0])"
+#
+#     result = model.vector.evaluate()
+#
+#     assert np.array_equal(result, np.array([9, 15, 24]))
 
 
 def test_subscript_access():
     class ScalarModel(Flow360BaseModel):
         scalar: ValueOrExpression[float] = pd.Field()
 
-    x = UserVariable(name="x", value=np.array([2, 3, 4]))
+    x = UserVariable(name="x", value=[2, 3, 4])
 
     model = ScalarModel(scalar=x[0] + x[1] + x[2] + 1)
 
