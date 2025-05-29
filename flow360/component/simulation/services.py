@@ -809,6 +809,17 @@ def _serialize_unit_in_dict(data):
     return data
 
 
+def _validate_unit_string(unit_str: str, unit_type: Union[AngleType, LengthType]) -> bool:
+    """
+    Validate the unit string from request against the specified unit type.
+    """
+    try:
+        unit_dict = json.loads(unit_str)
+        return unit_type.validate(unit_dict)
+    except json.JSONDecodeError:
+        return unit_type.validate(unit_str)
+
+
 def translate_dfdc_xrotor_bet_disk(
     *,
     geometry_file_content: str,
@@ -824,8 +835,8 @@ def translate_dfdc_xrotor_bet_disk(
     errors = []
     bet_dict_list = []
     try:
-        length_unit = LengthType.validate(length_unit)
-        angle_unit = AngleType.validate(angle_unit)
+        length_unit = _validate_unit_string(length_unit, LengthType)
+        angle_unit = _validate_unit_string(angle_unit, AngleType)
         bet_disk_dict = translate_xrotor_dfdc_to_bet_dict(
             geometry_file_content=geometry_file_content,
             length_unit=length_unit,
@@ -855,8 +866,8 @@ def translate_xfoil_c81_bet_disk(
     errors = []
     bet_dict_list = []
     try:
-        length_unit = LengthType.validate(length_unit)
-        angle_unit = AngleType.validate(angle_unit)
+        length_unit = _validate_unit_string(length_unit, LengthType)
+        angle_unit = _validate_unit_string(angle_unit, AngleType)
         polar_file_name_list = generate_polar_file_name_list(
             geometry_file_content=geometry_file_content
         )
