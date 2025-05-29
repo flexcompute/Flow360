@@ -6,7 +6,6 @@ import re
 from numbers import Number
 from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar, Union
 
-import numpy as np
 import pydantic as pd
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
@@ -57,18 +56,15 @@ def _convert_numeric(value):
     elif isinstance(value, unyt_array):
         unit = str(value.units)
         tokens = _split_keep_delimiters(unit, unit_delimiters)
-        arg = f"{_convert_argument(value.value)[0]} * "
+        arg = f"{_convert_argument(value.value.tolist())[0]} * "
         for token in tokens:
             if token not in unit_delimiters and not _is_number_string(token):
                 token = f"u.{token}"
                 arg += token
             else:
                 arg += token
-    elif isinstance(value, np.ndarray):
-        if value.ndim == 0:
-            arg = str(value)
-        else:
-            arg = f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
+    elif isinstance(value, list):
+        arg = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
     return arg
 
 
@@ -80,7 +76,6 @@ def _convert_argument(value):
         parenthesize = True
     elif isinstance(value, Variable):
         arg = value.name
-
     if not arg:
         raise ValueError(f"Incompatible argument of type {type(value)}")
     return arg, parenthesize
@@ -95,26 +90,6 @@ class SerializedValueOrExpression(Flow360BaseModel):
     expression: Optional[str] = pd.Field(None)
     evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
     evaluated_units: Optional[str] = pd.Field(None)
-
-
-# This is a wrapper to allow using ndarrays with pydantic models
-class NdArray(np.ndarray):
-    """NdArray wrapper to enable pydantic compatibility"""
-
-    def __repr__(self):
-        return f"NdArray(shape={self.shape}, dtype={self.dtype})"
-
-    # pylint: disable=unused-argument
-    @classmethod
-    def __get_pydantic_core_schema__(cls, source_type, handler):
-        return core_schema.no_info_plain_validator_function(cls.validate)
-
-    @classmethod
-    def validate(cls, value: Any):
-        """Minimal validator for pydantic compatibility"""
-        if isinstance(value, np.ndarray):
-            return value
-        raise ValueError(f"Cannot convert {type(value)} to NdArray")
 
 
 # This is a wrapper to allow using unyt arrays with pydantic models
@@ -137,7 +112,7 @@ class UnytArray(unyt_array):
         raise ValueError(f"Cannot convert {type(value)} to UnytArray")
 
 
-AnyNumericType = Union[float, UnytArray, NdArray]
+AnyNumericType = Union[float, UnytArray, list]
 
 
 class Variable(Flow360BaseModel):
@@ -247,34 +222,6 @@ class Variable(Flow360BaseModel):
     def __hash__(self):
         return hash(self.name)
 
-    def sqrt(self):
-        """Square root, required for numpy interop"""
-        return Expression(expression=f"np.sqrt({self.expression})")
-
-    def sin(self):
-        """Sine, required for numpy interop"""
-        return Expression(expression=f"np.sin({self.expression})")
-
-    def cos(self):
-        """Cosine, required for numpy interop"""
-        return Expression(expression=f"np.cos({self.expression})")
-
-    def tan(self):
-        """Tangent, required for numpy interop"""
-        return Expression(expression=f"np.tan({self.expression})")
-
-    def arcsin(self):
-        """Arcsine, required for numpy interop"""
-        return Expression(expression=f"np.arcsin({self.expression})")
-
-    def arccos(self):
-        """Arccosine, required for numpy interop"""
-        return Expression(expression=f"np.arccos({self.expression})")
-
-    def arctan(self):
-        """Arctangent, required for numpy interop"""
-        return Expression(expression=f"np.arctan({self.expression})")
-
 
 class UserVariable(Variable):
     """Class representing a user-defined symbolic variable"""
@@ -376,13 +323,8 @@ class Expression(Flow360BaseModel, Evaluable):
             expression = str(value)
         elif isinstance(value, Variable):
             expression = str(value)
-        elif isinstance(value, np.ndarray) and not isinstance(value, unyt_array):
-            if value.ndim == 0:
-                expression = str(value)
-            else:
-                expression = (
-                    f"np.array([{','.join([_convert_argument(item)[0] for item in value])}])"
-                )
+        elif isinstance(value, list):
+            expression = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
         else:
             details = InitErrorDetails(
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
@@ -400,7 +342,7 @@ class Expression(Flow360BaseModel, Evaluable):
 
     def evaluate(
         self, context: EvaluationContext = None, strict: bool = True
-    ) -> Union[float, np.ndarray, unyt_array]:
+    ) -> Union[float, list, unyt_array]:
         """Evaluate this expression against the given context."""
         if context is None:
             context = _global_ctx
@@ -550,34 +492,6 @@ class Expression(Flow360BaseModel, Evaluable):
     def __repr__(self):
         return f"Expression({self.expression})"
 
-    def sqrt(self):
-        """Element-wise square root of this expression."""
-        return Expression(expression=f"np.sqrt({self.expression})")
-
-    def sin(self):
-        """Element-wise sine of this expression (in radians)."""
-        return Expression(expression=f"np.sin({self.expression})")
-
-    def cos(self):
-        """Element-wise cosine of this expression (in radians)."""
-        return Expression(expression=f"np.cos({self.expression})")
-
-    def tan(self):
-        """Element-wise tangent of this expression (in radians)."""
-        return Expression(expression=f"np.tan({self.expression})")
-
-    def arcsin(self):
-        """Element-wise inverse sine (arcsin) of this expression."""
-        return Expression(expression=f"np.arcsin({self.expression})")
-
-    def arccos(self):
-        """Element-wise inverse cosine (arccos) of this expression."""
-        return Expression(expression=f"np.arccos({self.expression})")
-
-    def arctan(self):
-        """Element-wise inverse tangent (arctan) of this expression."""
-        return Expression(expression=f"np.arctan({self.expression})")
-
 
 T = TypeVar("T")
 
@@ -667,7 +581,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 return v.get("typeName") if v.get("typeName") else v.get("type_name")
             if isinstance(v, (Expression, Variable, str)):
                 return "expression"
-            if isinstance(v, (Number, unyt_array, np.ndarray)):
+            if isinstance(v, (Number, unyt_array, list)):
                 return "number"
             raise KeyError("Unknown expression input type: ", v, v.__class__.__name__)
 
