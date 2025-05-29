@@ -50,6 +50,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
+    TurbulenceModelControls,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -99,7 +100,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     GenericReferenceCondition,
     LiquidOperatingCondition,
     ThermalState,
-    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
@@ -251,13 +251,13 @@ __all__ = [
     "Box",
     "GenericReferenceCondition",
     "TransitionModelSolver",
+    "TurbulenceModelControls",
     "Pressure",
     "TotalPressure",
     "Rotational",
     "Mach",
     "MassFlowRate",
     "UserDefinedField",
-    "operating_condition_from_mach_reynolds",
     "VolumeMesh",
     "SurfaceMesh",
     "UserDefinedFarfield",

@@ -64,6 +64,7 @@ from flow360.component.simulation.validation.validation_context import (
     ValidationContext,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
 
 # Required for correct global scope initialization
@@ -835,3 +836,16 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         units.append(unit)
 
     return errors, values, units
+
+
+def get_default_report_config() -> dict:
+    """
+    Get the default report config
+    Returns
+    -------
+    dict
+        default report config
+    """
+    return get_default_report_summary_template().model_dump(
+        exclude_none=True,
+    )

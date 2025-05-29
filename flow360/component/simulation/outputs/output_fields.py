@@ -90,6 +90,9 @@ CommonFieldNames = Literal[
     "pressure",
     "vorticity",
     "vorticityMagnitude",
+    "vorticity_x",
+    "vorticity_y",
+    "vorticity_z",
     "wallDistance",
     "numericalDissipationFactor",
     "residualHeatSolver",
@@ -175,6 +178,13 @@ IsoSurfaceFieldNames = Literal[
     "mut",
     "nuHat",
     "vorticityMagnitude",
+    "vorticity_x",
+    "vorticity_y",
+    "vorticity_z",
+    "velocity_magnitude",
+    "velocity_x",
+    "velocity_y",
+    "velocity_z",
 ]
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
@@ -253,23 +263,37 @@ _FIELD_TYPE_INFO = {
     "pressure": {
         "type": FIELD_TYPE_SCALAR,
     },
+    "vorticity_x": {
+        "type": FIELD_TYPE_SCALAR,
+    },
+    "vorticity_y": {
+        "type": FIELD_TYPE_SCALAR,
+    },
+    "vorticity_z": {
+        "type": FIELD_TYPE_SCALAR,
+    },
 }
 
 # Predefined UDF expressions
 PREDEFINED_UDF_EXPRESSIONS = {
-    "velocity": "velocity[0] = primitiveVars[1];"
-    + "velocity[1] = primitiveVars[2];"
-    + "velocity[2] = primitiveVars[3];",
+    "velocity": "velocity[0] = primitiveVars[1] * velocityScale;"
+    + "velocity[1] = primitiveVars[2] * velocityScale;"
+    + "velocity[2] = primitiveVars[3] * velocityScale;",
     "velocity_magnitude": "double velocity[3];"
     + "velocity[0] = primitiveVars[1];"
     + "velocity[1] = primitiveVars[2];"
     + "velocity[2] = primitiveVars[3];"
-    + "velocity_magnitude = magnitude(velocity);",
-    "velocity_x": "velocity_x = primitiveVars[1];",
-    "velocity_y": "velocity_y = primitiveVars[2];",
-    "velocity_z": "velocity_z = primitiveVars[3];",
-    "pressure": "pressure = primitiveVars[4];",
-    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = magnitude(wallShearStress);",
+    + "velocity_magnitude = magnitude(velocity) * velocityScale;",
+    "velocity_x": "velocity_x = primitiveVars[1] * velocityScale;",
+    "velocity_y": "velocity_y = primitiveVars[2] * velocityScale;",
+    "velocity_z": "velocity_z = primitiveVars[3] * velocityScale;",
+    "pressure": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? "
+    + "(primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
+    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = "
+    + "magnitude(wallShearStress) * (velocityScale * velocityScale);",
+    "vorticity_x": "vorticity_x = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;",
+    "vorticity_y": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
+    "vorticity_z": "vorticity_z = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
 }
 
 
@@ -377,3 +401,27 @@ def _distribute_shared_output_fields(solver_values: dict, item_names: str):
                     item.output_fields = []
                 if field not in item.output_fields:
                     item.output_fields.append(field)
+
+
+def append_component_to_output_fields(output_fields: List[str]) -> List[str]:
+    """
+    If "velocity" or "vorticity" is in the list, append their respective magnitude in output
+
+    Parameters:
+    -----------
+    output_fields : List[str]
+        The list of output fields to modify.
+
+    Returns:
+    --------
+    List[str]
+        The modified list of output fields with the component appended.
+    """
+    output_fields_with_component = []
+    for field in output_fields:
+        output_fields_with_component.append(field)
+        if field == "velocity" and "velocity_magnitude" not in output_fields:
+            output_fields_with_component.append("velocity_magnitude")
+        if field == "vorticity" and "vorticityMagnitude" not in output_fields:
+            output_fields_with_component.append("vorticityMagnitude")
+    return output_fields_with_component

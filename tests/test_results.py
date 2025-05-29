@@ -14,6 +14,10 @@ from flow360 import log
 from flow360.component.results.base_results import _filter_headers_by_prefix
 from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
+from flow360.component.simulation.framework.updater_utils import (
+    compare_dicts,
+    compare_values,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -545,3 +549,47 @@ def test_y_sectional_results(mock_id, mock_response):
     )
     assert set(y_slicing.values.keys()) == set(all_headers)
     assert y_slicing.as_dataframe().shape[0] == 140
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_surface_forces_result(mock_id, mock_response):
+    case = fl.Case(id="case-63fd6b73-cbd5-445c-aec6-e62eca4467e6")
+    params = case.params
+    entity_info = params.private_attribute_asset_cache.project_entity_info
+    surface_forces = case.results.surface_forces
+    surface_forces_by_boundary = surface_forces.by_boundary_condition(params=params)
+
+    def compare_surface_force_groups(surface_forces, surface_forces_group):
+        surface_forces_group_df = surface_forces_group.as_dataframe()
+        for groupName, faces in surface_forces_group._entity_groups.items():
+            surface_forces.filter(include=faces)
+            total_force_faces_df = surface_forces.as_dataframe()
+            for force_name in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]:
+                assert compare_values(
+                    total_force_faces_df.iloc[-1][f"total{force_name}"],
+                    surface_forces_group_df.iloc[-1][f"{groupName}_{force_name}"],
+                )
+
+    ref_entity_group_by_boundary = {
+        "Wall": ["boundary2", "boundary3"],
+        "Freestream": ["farfield"],
+        "Slip wall": ["boundary1"],
+    }
+    assert compare_dicts(surface_forces_by_boundary._entity_groups, ref_entity_group_by_boundary)
+    compare_surface_force_groups(surface_forces, surface_forces_by_boundary)
+
+    surface_forces_by_body_group = surface_forces.by_body_group(params=params)
+    ref_entity_group_by_body_group = {
+        "two_boxes_conflict.csm": ["boundary1", "boundary2", "boundary3"]
+    }
+    assert compare_dicts(
+        surface_forces_by_body_group._entity_groups, ref_entity_group_by_body_group
+    )
+    compare_surface_force_groups(surface_forces, surface_forces_by_body_group)
+
+    entity_info._group_entity_by_tag("body", "bodyId")
+    with pytest.raises(
+        ValueError,
+        match=r"Face group 'boundary2' contains faces belonging to multiple body groups: \['body00001', 'body00002'\]. The mapping between body and face groups cannot be created.",
+    ):
+        surface_forces.by_body_group(params=params)
