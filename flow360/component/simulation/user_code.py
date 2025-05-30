@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from numbers import Number
 from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar, Union
@@ -492,6 +493,17 @@ class Expression(Flow360BaseModel, Evaluable):
     def __repr__(self):
         return f"Expression({self.expression})"
 
+    def as_vector(self):
+        """Parse the expression(str) and if possible, return list of `Expression` instances"""
+        tree = ast.parse(self.expression, mode="eval")
+
+        if isinstance(tree.body, ast.List):
+            result = [ast.unparse(elt) for elt in tree.body.elts]
+        else:
+            return None
+
+        return [Expression.model_validate(item) for item in result]
+
 
 T = TypeVar("T")
 
@@ -541,6 +553,7 @@ class ValueOrExpression(Expression, Generic[T]):
             return deserialized
 
         def _serializer(value, info) -> dict:
+            print(">>> Inside serializer: value = ", value)
             if isinstance(value, Expression):
                 serialized = SerializedValueOrExpression(type_name="expression")
 

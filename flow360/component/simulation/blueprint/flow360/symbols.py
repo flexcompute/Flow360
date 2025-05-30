@@ -9,6 +9,7 @@ import unyt
 
 from flow360.component.simulation import units as u
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
+from flow360.component.simulation.blueprint.functions import vector_functions
 
 
 def _unit_list():
@@ -24,6 +25,10 @@ def _unit_list():
 def _import_units(_: str) -> Any:
     """Import and return allowed flow360 callables"""
     return u
+
+
+def _import_functions(_):
+    return vector_functions
 
 
 WHITELISTED_CALLABLES = {
@@ -131,7 +136,7 @@ WHITELISTED_CALLABLES = {
 }
 
 # Define allowed modules
-ALLOWED_MODULES = {"u", "np", "control", "solution"}
+ALLOWED_MODULES = {"u", "fl", "control", "solution"}
 
 ALLOWED_CALLABLES = {
     **{
@@ -150,8 +155,10 @@ EVALUATION_BLACKLIST = {
     },
 }
 
+# Note:  Keys of IMPORT_FUNCTIONS needs to be consistent with ALLOWED_MODULES
 IMPORT_FUNCTIONS = {
     "u": _import_units,
+    "fl": _import_functions,
 }
 
 resolver = CallableResolver(

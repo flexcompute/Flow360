@@ -42,6 +42,11 @@ coordinate = SolverVariable(
     value=[float("NaN"), float("NaN"), float("NaN")] * u.m,
 )  # Grid coordinates
 
+velocity = SolverVariable(
+    name="solution.velocity",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
+)
+
 bet_thrust = SolverVariable(
     name="solution.bet_thrust", value=float("NaN")
 )  # Thrust force for BET disk
