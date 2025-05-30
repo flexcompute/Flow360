@@ -12,6 +12,7 @@ from flow360.component.simulation.blueprint.core.expressions import (
     ListComp,
     Name,
     RangeCall,
+    Subscript,
     Tuple,
     UnaryOp,
 )
@@ -177,6 +178,10 @@ def _list_comp(expr, syntax, name_translator):
     raise ValueError("List comprehensions are only supported for Python target syntax")
 
 
+def _subscript(expr, syntax, name_translator):
+    return f"{expr.value.id}[{expr.slice.value}]"
+
+
 def expr_to_code(
     expr: Any,
     syntax: TargetSyntax = TargetSyntax.PYTHON,
@@ -213,6 +218,9 @@ def expr_to_code(
 
     if isinstance(expr, ListComp):
         return _list_comp(expr, syntax, name_translator)
+
+    if isinstance(expr, Subscript):
+        return _subscript(expr, syntax, name_translator)
 
     raise ValueError(f"Unsupported expression type: {type(expr)}")
 

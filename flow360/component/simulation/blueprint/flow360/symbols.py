@@ -26,12 +26,9 @@ def _import_units(_: str) -> Any:
     return u
 
 
-def _import_numpy(_: str) -> Any:
-    """Import and return allowed numpy callables"""
-    return np
-
-
 WHITELISTED_CALLABLES = {
+    # TODO: Move functions into blueprint.
+    "flow360_math_functions": {"prefix": "fl.", "callables": ["cross"], "evaluate": True},
     "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
     "flow360.control": {
         "prefix": "control.",
@@ -131,21 +128,6 @@ WHITELISTED_CALLABLES = {
         ],
         "evaluate": False,
     },
-    "numpy": {
-        "prefix": "np.",
-        "callables": [
-            "array",
-            "sin",
-            "tan",
-            "arcsin",
-            "arccos",
-            "arctan",
-            "dot",
-            "cross",
-            "sqrt",
-        ],
-        "evaluate": True,
-    },
 }
 
 # Define allowed modules
@@ -153,24 +135,23 @@ ALLOWED_MODULES = {"u", "np", "control", "solution"}
 
 ALLOWED_CALLABLES = {
     **{
-        f"{group['prefix']}{name}": None
+        f"{group['prefix']}{callable}": None
         for group in WHITELISTED_CALLABLES.values()
-        for name in group["callables"]
+        for callable in group["callables"]
     },
 }
 
 EVALUATION_BLACKLIST = {
     **{
-        f"{group['prefix']}{name}": None
+        f"{group['prefix']}{callable}": None
         for group in WHITELISTED_CALLABLES.values()
-        for name in group["callables"]
+        for callable in group["callables"]
         if not group["evaluate"]
     },
 }
 
 IMPORT_FUNCTIONS = {
     "u": _import_units,
-    "np": _import_numpy,
 }
 
 resolver = CallableResolver(

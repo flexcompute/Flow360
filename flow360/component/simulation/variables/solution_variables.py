@@ -1,5 +1,7 @@
 """Solution variables of Flow360"""
 
+import unyt as u
+
 from flow360.component.simulation.user_code import SolverVariable
 
 mut = SolverVariable(name="solution.mut", value=float("NaN"))  # Turbulent viscosity
@@ -34,7 +36,11 @@ solutionHeatSolver = SolverVariable(
 residualHeatSolver = SolverVariable(
     name="solution.residualHeatSolver", value=float("NaN")
 )  # Residual for heat equation
-coordinate = SolverVariable(name="solution.coordinate", value=float("NaN"))  # Grid coordinates
+
+coordinate = SolverVariable(
+    name="solution.coordinate",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.m,
+)  # Grid coordinates
 
 bet_thrust = SolverVariable(
     name="solution.bet_thrust", value=float("NaN")

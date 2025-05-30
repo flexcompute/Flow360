@@ -20,7 +20,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
-_solver_variables: dict[str, str] = {}
+_solver_variable_name_map: dict[str, str] = {}
 
 
 def _is_number_string(s: str) -> bool:
@@ -268,7 +268,7 @@ class SolverVariable(Variable):
     def update_context(cls, value):
         """Auto updating context when new variable is declared"""
         _global_ctx.set(value.name, value.value)
-        _solver_variables[value.name] = (
+        _solver_variable_name_map[value.name] = (
             value.solver_name if value.solver_name is not None else value.name
         )
         return value
@@ -370,8 +370,8 @@ class Expression(Flow360BaseModel, Evaluable):
         """Convert to solver readable code."""
 
         def translate_symbol(name):
-            if name in _solver_variables:
-                return _solver_variables[name]
+            if name in _solver_variable_name_map:
+                return _solver_variable_name_map[name]
 
             if name in _user_variables:
                 value = _global_ctx.get(name)

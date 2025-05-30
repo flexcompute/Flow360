@@ -9,6 +9,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
+from flow360.component.simulation.blueprint.functions.vector_functions import cross
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -277,4 +278,5 @@ __all__ = [
     "Transformation",
     "WallRotation",
     "UserVariable",
+    "cross",
 ]
