@@ -873,7 +873,7 @@ class Grouper(Flow360BaseModel):
         The path to the data attribute (or paths to attributes in case of multi-level grouping)
         by which the grouping should be done.
     buckets: Optional[Union[dict[str, List], List[Union[dict[str, List], None]]]]
-        Dictionaries where key represenst the name of the group and the value is the list of values,
+        Dictionaries where key represents the name of the group and value is the list of values,
         that belong to the group. If all the values should be unique, enter None for the corresponding bucket.
 
     Example
