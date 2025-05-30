@@ -153,6 +153,7 @@ class MeshingDefaults(Flow360BaseModel):
         if validation_info is None:
             return value
 
+        # pylint:disable = unsubscriptable-object
         if (
             value != cls.model_fields["planar_face_tolerance"].default
             and not validation_info.is_beta_mesher
