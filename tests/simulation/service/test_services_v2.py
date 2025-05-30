@@ -977,7 +977,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -996,7 +996,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -1015,7 +1015,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.7/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(

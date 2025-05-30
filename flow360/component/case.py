@@ -854,7 +854,7 @@ class CaseResultsModel(pd.BaseModel):
         if not isinstance(self.case, Case):
             raise TypeError("case must be of type Case")
 
-        for field_name in self.model_fields:
+        for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 # pylint: disable=protected-access,no-member
@@ -892,7 +892,7 @@ class CaseResultsModel(pd.BaseModel):
             "user_defined_dynamics": self.case.has_user_defined_dynamics,
         }
 
-        for field_name in self.model_fields:
+        for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 function = has_function_map.get(field_name, lambda: True)
@@ -1067,7 +1067,7 @@ class CaseResultsModel(pd.BaseModel):
         keep_remote_structure : bool, optional
             When true, remote folder structure is assumed to be preserved, otherwise flat structure, by default False
         """
-        for field_name in self.model_fields:
+        for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 if keep_remote_structure is True:

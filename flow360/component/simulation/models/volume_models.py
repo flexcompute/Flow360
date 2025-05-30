@@ -173,6 +173,21 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
 
+<<<<<<< HEAD
+=======
+    @pd.field_validator("rho", "u", "v", "w", "p", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+
+        # pylint:disable = unsubscriptable-object
+        if value != cls.model_fields[info.field_name].get_default():
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
+
+>>>>>>> 672a2d8a (Bump Pydantic to >=2.8 (#878))
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
     type_name: Literal["NavierStokesModifiedRestartSolution"] = pd.Field(

@@ -370,7 +370,7 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
         params.reference_geometry = default_reference_geometry
         return params
 
-    for field in params.reference_geometry.model_fields:
+    for field in params.reference_geometry.__class__.model_fields:
         if getattr(params.reference_geometry, field) is None:
             setattr(params.reference_geometry, field, getattr(default_reference_geometry, field))
 
