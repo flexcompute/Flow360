@@ -53,6 +53,7 @@ from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
     DataItem,
     Delta,
+    Grouper,
     OperationTypes,
     Tabulary,
     _requirements_mapping,
@@ -1228,6 +1229,18 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
                 log.warning("Does not show physical step with multiple cases plotted.")
         return None, None
 
+    def _remove_empty_series(self, x_data, y_data, legend):
+        to_pop = []
+        for idx, x_series in enumerate(x_data):
+            if not x_series:
+                to_pop.append(idx)
+
+        x_data = [series for series in x_data if series]
+        y_data = [series for series in y_data if series]
+        legend = [item for idx, item in enumerate(legend) if idx not in to_pop]
+
+        return x_data, y_data, legend
+
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
         Loads and processes data for creating a 2D plot model.
@@ -1273,6 +1286,9 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
         x_data, y_data = self._unpack_data_to_multiline(x_data=x_data, y_data=y_data)
 
         legend = self._handle_legend(cases, x_data, y_data)
+
+        if not self._is_multiline_data(x_data, y_data):
+            x_data, y_data, legend = self._remove_empty_series(x_data, y_data, legend)
 
         style = self._handle_plot_style(x_data, y_data)
 
@@ -1390,6 +1406,8 @@ class Chart2D(BaseChart2D):
         The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
     y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
         The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
+    group_by : Optional[Union[str, Grouper]]
+        A grouper object or a string leading to the data by which the grouping should be done.
     background : Union[Literal["geometry"], None], optional
         Background type for the chart; set to "geometry" or None.
     type_name : Literal["Chart2D"], default="Chart2D"
@@ -1400,10 +1418,26 @@ class Chart2D(BaseChart2D):
     exclude : Optional[List[str]]
         List of boundaries to exclude from data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
+
+    Example
+    -------
+
+    -  Create a chart of CL for an alpha sweep case, different turbulence models
+
+    >>> Chart2D(
+    ...     x="params/operating_condition/beta",
+    ...     y=DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]),
+    ...     section_title="CL vs alpha",
+    ...     fig_name="cl_vs_alpha",
+    ...     group_by=Grouper(group_by="params/models/Fluid/turbulence_model_solver/type_name"),
+    ... )
+
+    ====
     """
 
     x: Union[DataItem, Delta, str]
     y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+    group_by: Optional[Union[str, Grouper]] = Grouper(group_by=None)
     include: Optional[
         Annotated[
             List[str],
@@ -1441,6 +1475,12 @@ class Chart2D(BaseChart2D):
                 self.y = new_value
             else:
                 self.y = self._overload_include_exclude(include, exclude, self.y)
+        return self
+
+    @pd.model_validator(mode="after")
+    def _create_grouper(self):
+        if isinstance(self.group_by, str):
+            self.group_by = Grouper(group_by=self.group_by)
         return self
 
     @classmethod
@@ -1489,25 +1529,73 @@ class Chart2D(BaseChart2D):
         return x_data, y_data, x_label, y_label
 
     def _handle_legend(self, cases, x_data, y_data):
+        if not self._is_series_data(cases[0], self.x):
+            return self.group_by.arrange_legend()
+
         if self._is_multiline_data(x_data, y_data):
             x_data = [float(data) for data in x_data]
             y_data = [float(data) for data in y_data]
             legend = None
         elif isinstance(self.y, list) and (len(self.y) > 1):
-            if len(cases) * len(self.y) != len(x_data):
-                legend = [path_variable_name(str(y)) for y in self.y]
-            else:
-                legend = []
-                for case in cases:
-                    for y in self.y:
-                        if len(cases) > 1:
-                            legend.append(f"{case.name} - {path_variable_name(str(y))}")
-                        else:
-                            legend.append(f"{path_variable_name(str(y))}")
+            legend = []
+            for case in cases:
+                for y in self.y:
+                    if len(cases) > 1:
+                        legend.append(f"{case.name} - {path_variable_name(str(y))}")
+                    else:
+                        legend.append(f"{path_variable_name(str(y))}")
         else:
             legend = [case.name for case in cases]
 
         return legend
+
+    def _is_series_data(self, example_case, variable):
+        data_point = data_from_path(example_case, variable, None)
+        if isinstance(data_point, Iterable):
+            if isinstance(data_point, unyt_quantity) and data_point.shape == ():
+                return False
+            return True
+        return False
+
+    def _validate_variable_format(self, example_case, x_variable, y_variables):
+        series = self._is_series_data(example_case, x_variable)
+
+        for y in y_variables:
+            if series != self._is_series_data(example_case, y):
+                raise AttributeError(
+                    "Variables incompatible - cannot plot point and series data on the same plot."
+                )
+
+    def _load_series(self, cases, x_label, y_variables):
+        x_data = []
+        y_data = []
+        for case in cases:
+            filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
+                x_label in ["time", "physical_step"]
+            )
+            for y in y_variables:
+                x_data.append(
+                    data_from_path(
+                        case, self.x, cases, filter_physical_steps_only=filter_physical_steps
+                    )
+                )
+                y_data.append(
+                    data_from_path(case, y, cases, filter_physical_steps_only=filter_physical_steps)
+                )
+
+        return x_data, y_data
+
+    def _load_points(self, cases, y_variables):
+        x_data, y_data = self.group_by.initialize_arrays(cases, y_variables)
+        for case in cases:
+            for y in y_variables:
+                x_data_point = data_from_path(case, self.x, cases)
+                y_data_point = data_from_path(case, y, cases)
+                x_data, y_data = self.group_by.arrange_data(
+                    case, x_data, y_data, x_data_point, y_data_point, y
+                )
+
+        return x_data, y_data
 
     def _load_data(self, cases):
         x_label = path_variable_name(str(self.x))
@@ -1519,30 +1607,12 @@ class Chart2D(BaseChart2D):
             y_label = "value"
             y_variables = self.y.copy()
 
-        x_data = []
-        y_data = []
+        self._validate_variable_format(cases[0], self.x, y_variables)
 
-        for case in cases:
-            filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
-                x_label in ["time", "physical_step"]
-            )
-            for var_idx, y in enumerate(y_variables):
-                x_data_point = data_from_path(
-                    case, self.x, cases, filter_physical_steps_only=filter_physical_steps
-                )
-                y_data_point = data_from_path(
-                    case, y, cases, filter_physical_steps_only=filter_physical_steps
-                )
-                if isinstance(x_data_point, Iterable) and isinstance(y_data_point, Iterable):
-                    x_data.append(x_data_point)
-                    y_data.append(y_data_point)
-                else:
-                    if len(x_data) <= var_idx:
-                        x_data.append([x_data_point])
-                        y_data.append([y_data_point])
-                    else:
-                        x_data[var_idx].append(x_data_point)
-                        y_data[var_idx].append(y_data_point)
+        if self._is_series_data(cases[0], self.x):
+            x_data, y_data = self._load_series(cases, x_label, y_variables)
+        else:
+            x_data, y_data = self._load_points(cases, y_variables)
 
         x_data, y_data, x_label, y_label = self._handle_data_with_units(
             x_data, y_data, x_label, y_label
