@@ -2,13 +2,42 @@
 
 import os
 from math import cos, inf, pi, sin, sqrt
+from typing import Literal
 
 import numpy as np
 from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
+
+
+# pylint: disable=too-many-arguments
+def set_up_bet_dict_with_user_inputs(
+    bet_disk,
+    name,
+    rotation_direction_rule,
+    initial_blade_direction,
+    blade_line_chord,
+    omega,
+    chord_ref,
+    n_loading_nodes,
+    entities,
+    number_of_blades=None,
+):
+    """Set up the remaining BET settings from user input. Returns the dictionary of BET disk."""
+    bet_disk["name"] = name
+    bet_disk["entities"] = entities.stored_entities
+    bet_disk["omega"] = omega
+    bet_disk["chord_ref"] = chord_ref
+    bet_disk["n_loading_nodes"] = n_loading_nodes
+    bet_disk["rotation_direction_rule"] = rotation_direction_rule
+    bet_disk["initial_blade_direction"] = initial_blade_direction
+    bet_disk["blade_line_chord"] = blade_line_chord
+    if number_of_blades:
+        bet_disk["number_of_blades"] = number_of_blades
+    return bet_disk
 
 
 def get_file_content(file_path: str):
@@ -314,22 +343,23 @@ def read_in_c81_polar_csv(polar_file_content):
     return cl_alphas, cl_mach_nums, cl_values, cd_values
 
 
-def read_in_xfoil_data(bet_disk, xfoil_polar_files):
+def read_in_xfoil_polars(bet_disk: dict, polar_file_content_list: list, angle_unit: AngleType):
     """
     Read in the XFOIL polars and assigns the resulting values correctly into the BETDisk dictionary.
 
     Parameters
     ----------
     bet_disk: dictionary, contains required betdisk data
-    xfoil_polar_files: list of XFOIL polar files
+    polar_file_content_list: list of XFOIL polar file contents
+    angle_unit: AngleType, unit for angle of attack
 
     Attributes
     ----------
     return: dictionary
     """
-    if len(xfoil_polar_files) != len(bet_disk["sectional_radiuses"]):
+    if len(polar_file_content_list) != len(bet_disk["sectional_radiuses"]):
         raise Flow360ValueError(
-            f"Error: There is an error in the number of polar files ({len(xfoil_polar_files)}) "
+            f"Error: There is an error in the number of polar files ({len(polar_file_content_list)}) "
             + f'vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
@@ -343,10 +373,10 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
         secpol["lift_coeffs"] = []
         secpol["drag_coeffs"] = []
 
-        polar_files = xfoil_polar_files[sec_idx]
+        polar_file_contents = polar_file_content_list[sec_idx]
         mach_numbers_for_section = []
-        for polar_file in polar_files:
-            alpha_list, mach_num, cl_values, cd_values = parse_in_xfoil_polar(polar_file.content)
+        for polar_file_content in polar_file_contents:
+            alpha_list, mach_num, cl_values, cd_values = parse_in_xfoil_polar(polar_file_content)
             mach_numbers_for_section.append(float(mach_num))
             secpol["lift_coeffs"].append([cl_values])
             secpol["drag_coeffs"].append([cd_values])
@@ -359,41 +389,48 @@ def read_in_xfoil_data(bet_disk, xfoil_polar_files):
                 + f"Here sections {i} and {i+1} have the following sets of mach numbers: "
                 + f'{secpol["mach_numbers"][i]} and {secpol["mach_numbers"][i+1]}'
             )
-    bet_disk["alphas"] = alpha_list
+    bet_disk["alphas"] = alpha_list * angle_unit
     bet_disk["mach_numbers"] = mach_numbers[0]
 
     return bet_disk
 
 
 # pylint: disable=too-many-lines
-def read_in_c81_polars(bet_disk, c81_polar_files):
+def read_in_c81_polars(
+    bet_disk: dict,
+    c81_polar_file_contents: list,
+    c81_polar_file_extensions: list,
+    angle_unit: AngleType,
+):
     """
     Read in the C81 polars and assigns the resulting values correctly into the BETDisk dictionary.
 
     Parameters
     ----------
     bet_disk: dictionary, contains required betdisk data
-    c81_polar_files: list of C81 polar files
+    c81_polar_file_contents: list of C81 polar file contents
+    c81_polar_file_extensions: list of C81 polar file contents
+    angle_unit: AngleType, unit for angle of attack
 
     Attributes
     ----------
     return: dictionary
     """
-    if len(c81_polar_files) != len(bet_disk["sectional_radiuses"]):
+    if len(c81_polar_file_contents) != len(bet_disk["sectional_radiuses"]):
         raise Flow360ValueError(
-            f"Error: There is an error in the number of polar files ({len(c81_polar_files)}) "
+            f"Error: There is an error in the number of polar files ({len(c81_polar_file_contents)}) "
             + f'vs the number of sectional Radiuses ({len(bet_disk["sectionalRadiuses"])})'
         )
 
     bet_disk["sectional_polars"] = []
     for sec_idx, _ in enumerate(bet_disk["sectional_radiuses"]):
-        polar_file = c81_polar_files[sec_idx][0]
+        polar_file_content = c81_polar_file_contents[sec_idx][0]
 
-        if "csv" in polar_file.file_path:
-            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file.content)
+        if ".csv" == c81_polar_file_extensions[sec_idx].lower():
+            alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_csv(polar_file_content)
         else:
             alpha_list, mach_list, cl_list, cd_list = read_in_c81_polar_c81_format(
-                polar_file.content
+                polar_file_content
             )
         if "mach_numbers" in bet_disk.keys() and bet_disk["mach_numbers"] != mach_list:
             raise Flow360ValueError(
@@ -416,6 +453,7 @@ def read_in_c81_polars(bet_disk, c81_polar_files):
             secpol["lift_coeffs"].append([cl_list[mach]])
             secpol["drag_coeffs"].append([cd_list[mach]])
         bet_disk["sectional_polars"].append(secpol)
+    bet_disk["alphas"] *= angle_unit
 
     return bet_disk
 
@@ -432,8 +470,8 @@ def generate_xfoil_bet_json(
     n_loading_nodes,
     entities,
     number_of_blades,
-    angle_unit,
-    length_unit,
+    angle_unit: AngleType,
+    length_unit: LengthType,
     name,
 ):
     """
@@ -449,30 +487,28 @@ def generate_xfoil_bet_json(
     return: dictionary with BETDisk parameters
     """
 
-    bet_disk = {}
-
-    twist_vec, chord_vec, sectional_radiuses = parse_geometry_file(
-        geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
+    xfoil_polar_file_contents_list = [
+        [polar_file.content for polar_file in polar_files] for polar_files in xfoil_polar_file_list
+    ]
+    bet_disk = translate_xfoil_c81_to_bet_dict(
+        geometry_file_content=geometry_file_content,
+        polar_file_contents_list=xfoil_polar_file_contents_list,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+        file_format="xfoil",
     )
-    bet_disk["name"] = name
-    bet_disk["entities"] = entities.stored_entities
-    bet_disk["omega"] = omega
-    bet_disk["chord_ref"] = chord_ref
-    bet_disk["n_loading_nodes"] = n_loading_nodes
-    bet_disk["rotation_direction_rule"] = rotation_direction_rule
-    bet_disk["initial_blade_direction"] = initial_blade_direction
-    bet_disk["blade_line_chord"] = blade_line_chord
-    bet_disk["number_of_blades"] = number_of_blades
-    bet_disk["radius"] = sectional_radiuses[-1]
-    bet_disk["sectional_radiuses"] = sectional_radiuses
-    bet_disk["twists"] = twist_vec
-    bet_disk["chords"] = chord_vec
-    bet_disk = read_in_xfoil_data(bet_disk, xfoil_polar_file_list)
-    bet_disk["reynolds_numbers"] = generate_reynolds()
-    bet_disk["alphas"] *= angle_unit
-    bet_disk["sectional_radiuses"] *= length_unit
-    bet_disk.pop("radius", None)
-
+    bet_disk = set_up_bet_dict_with_user_inputs(
+        bet_disk=bet_disk,
+        name=name,
+        entities=entities,
+        omega=omega,
+        chord_ref=chord_ref,
+        n_loading_nodes=n_loading_nodes,
+        rotation_direction_rule=rotation_direction_rule,
+        initial_blade_direction=initial_blade_direction,
+        blade_line_chord=blade_line_chord,
+        number_of_blades=number_of_blades,
+    )
     return bet_disk
 
 
@@ -496,7 +532,6 @@ def generate_polar_file_name_list(geometry_file_content: str) -> list[list[str]]
         try:
             split_line = line.split(",")
             polar_files.append([file.strip() for file in split_line[1:] if file.strip()])
-            print("> polar_files = ", polar_files)
             line = next(line_iter).strip("\n")
         except Exception as error:
             raise Flow360ValueError(
@@ -505,7 +540,9 @@ def generate_polar_file_name_list(geometry_file_content: str) -> list[list[str]]
     return polar_files
 
 
-def parse_geometry_file(geometry_file_content: str, length_unit, angle_unit):
+def parse_c81_xfoil_geometry_file(
+    geometry_file_content: str, length_unit: LengthType, angle_unit: AngleType
+) -> dict:
     """
     Read in the geometry file. This file is a csv containing the filenames
     of the polar definition files along with the twist and chord definitions.
@@ -530,6 +567,8 @@ def parse_geometry_file(geometry_file_content: str, length_unit, angle_unit):
     ----------
     return: tuple of lists
     """
+
+    bet_disk = {}
 
     lines = geometry_file_content.split("\n")
     line_iter = iter(lines)
@@ -578,7 +617,46 @@ def parse_geometry_file(geometry_file_content: str, length_unit, angle_unit):
         twist_vec.append({"radius": rad * length_unit, "twist": tw * angle_unit})
         chord_vec.append({"radius": rad * length_unit, "chord": ch * length_unit})
 
-    return twist_vec, chord_vec, sectional_radiuses
+    bet_disk["sectional_radiuses"] = sectional_radiuses
+    bet_disk["twists"] = twist_vec
+    bet_disk["chords"] = chord_vec
+
+    bet_disk["reynolds_numbers"] = generate_reynolds()
+    bet_disk["sectional_radiuses"] *= length_unit
+    bet_disk.pop("radius", None)
+
+    return bet_disk
+
+
+def translate_xfoil_c81_to_bet_dict(
+    geometry_file_content: str,
+    polar_file_contents_list: list,
+    length_unit: LengthType,
+    angle_unit: AngleType,
+    file_format: Literal["xfoil", "c81"],
+    polar_file_extensions=None,
+) -> dict:
+    """
+    Take in a geometry input file of xfoil or c81 format and create a flow360 BET input dictionary.
+    required to get the polars along with the geometry twist and chord definition.
+
+    Attributes
+    ----------
+    geometry_file_content: string, content of the config file.
+    polar_file_contents_list: list[str], list of polar files' content
+    bet_disk: dictionary, contains required BETDisk data
+    return: dictionary with BETDisk parameters
+    """
+    bet_disk = parse_c81_xfoil_geometry_file(
+        geometry_file_content=geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
+    )
+    if file_format == "xfoil":
+        bet_disk = read_in_xfoil_polars(bet_disk, polar_file_contents_list, angle_unit)
+    else:
+        bet_disk = read_in_c81_polars(
+            bet_disk, polar_file_contents_list, polar_file_extensions, angle_unit
+        )
+    return bet_disk
 
 
 def generate_c81_bet_json(
@@ -591,8 +669,8 @@ def generate_c81_bet_json(
     chord_ref,
     n_loading_nodes,
     entities,
-    angle_unit,
-    length_unit,
+    angle_unit: AngleType,
+    length_unit: LengthType,
     number_of_blades,
     name,
 ):
@@ -609,30 +687,33 @@ def generate_c81_bet_json(
     return: dictionary with BETDisk parameters
     """
 
-    twist_vec, chord_vec, sectional_radiuses = parse_geometry_file(
-        geometry_file_content=geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
+    c81_polar_file_contents_list = [
+        [polar_file.content for polar_file in polar_files] for polar_files in c81_polar_file_list
+    ]
+    c81_polar_file_extensions = [
+        ".csv" if ".csv" in polar_files[0].file_path else ".c81"
+        for polar_files in c81_polar_file_list
+    ]
+    bet_disk = translate_xfoil_c81_to_bet_dict(
+        geometry_file_content=geometry_file_content,
+        polar_file_contents_list=c81_polar_file_contents_list,
+        polar_file_extensions=c81_polar_file_extensions,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+        file_format="c81",
     )
-
-    bet_disk = {}
-    bet_disk["name"] = name
-    bet_disk["entities"] = entities.stored_entities
-    bet_disk["omega"] = omega
-    bet_disk["chord_ref"] = chord_ref
-    bet_disk["n_loading_nodes"] = n_loading_nodes
-    bet_disk["rotation_direction_rule"] = rotation_direction_rule
-    bet_disk["initial_blade_direction"] = initial_blade_direction
-    bet_disk["blade_line_chord"] = blade_line_chord
-    bet_disk["number_of_blades"] = number_of_blades
-    bet_disk["radius"] = sectional_radiuses[-1]
-    bet_disk["sectional_radiuses"] = sectional_radiuses
-    bet_disk["twists"] = twist_vec
-    bet_disk["chords"] = chord_vec
-    bet_disk = read_in_c81_polars(bet_disk, c81_polar_file_list)
-    bet_disk["reynolds_numbers"] = generate_reynolds()
-    bet_disk["alphas"] *= angle_unit
-    bet_disk["sectional_radiuses"] *= length_unit
-    bet_disk.pop("radius", None)
-
+    bet_disk = set_up_bet_dict_with_user_inputs(
+        bet_disk=bet_disk,
+        name=name,
+        entities=entities,
+        omega=omega,
+        chord_ref=chord_ref,
+        n_loading_nodes=n_loading_nodes,
+        rotation_direction_rule=rotation_direction_rule,
+        initial_blade_direction=initial_blade_direction,
+        blade_line_chord=blade_line_chord,
+        number_of_blades=number_of_blades,
+    )
     return bet_disk
 
 
@@ -863,15 +944,16 @@ def read_dfdc_file(dfdc_file_content: str):
     return dfdc_input_dict
 
 
-# pylint: disable=too-many-statements
-def parse_xrotor_file(xrotor_file_content):
+def read_xrotor_file(xrotor_file_content: str):
     """
     Read in the provided XROTOR file.
     Does rudimentary checks to make sure the file is truly in the XROTOR format.
 
     Attributes
     ----------
-    input: xrotor_file_content: string
+    input:
+        xrotor_file_content: string
+        file_format: string, the file format of the geometry file
     returns: dictionary
 
     XROTOR file description
@@ -922,33 +1004,14 @@ def parse_xrotor_file(xrotor_file_content):
       Ubody: (unused) Nacelle perturbation axial  velocity
     """
 
-    line_num = 0
-
     lines = xrotor_file_content.split("\n")
     line_iter = iter(lines)
 
-    top_line: str = next(line_iter)
-    line_num += 1
-    if top_line.find("DFDC") == 0:
-        return read_dfdc_file(xrotor_file_content)
-
-    if top_line.find("XROTOR") == -1:
-        raise Flow360ValueError(
-            "This input XROTOR file does not seem to be a valid XROTOR input file"
-        )
-
-    version = top_line.split(":")[1].strip()
-
-    if (float(version) < 7.54) or (float(version) > 7.69):
-        log.warning(
-            "The XROTOR translator was prepared for file versions between 7.54 and 7.69,"
-            + f" your version is {version}, errors may occur."
-        )
-
     xrotor_input_dict = {}
-
-    next(line_iter)
-    line_num += 1
+    line_num = 0
+    for i in range(2):
+        next(line_iter)
+    line_num += 2
     comment_line = next(line_iter).upper().split()
     line_num += 1
     check_comment(comment_line, line_num, 5)
@@ -1090,6 +1153,44 @@ def parse_xrotor_file(xrotor_file_content):
     xrotor_input_dict["RPM"] = xrotor_input_dict["omegaDim"] * 30 / pi
     xrotor_input_dict["inputType"] = "xrotor"
     return xrotor_input_dict
+
+
+# pylint: disable=too-many-statements
+def parse_xrotor_dfdc_geometry_file(
+    geometry_file_content: str, file_format: Literal["xrotor", "dfdc"]
+):
+    """
+    parse the provided XROTOR/DFDC file
+    Does rudimentary checks to make sure the file is truly in the XROTOR/DFDC format.
+
+    Attributes
+    ----------
+    input:
+        geometry_file_content: string
+        file_format: string, the file format of the geometry file
+    returns: dictionary
+    """
+
+    lines = geometry_file_content.split("\n")
+    line_iter = iter(lines)
+
+    top_line: str = next(line_iter)
+
+    if top_line.find(file_format.upper()) == -1:
+        raise Flow360ValueError(f"This input file is not a valid {file_format.upper()} input file")
+
+    if file_format == "dfdc":
+        return read_dfdc_file(dfdc_file_content=geometry_file_content)
+
+    version = top_line.split(":")[1].strip()
+
+    if (float(version) < 7.54) or (float(version) > 7.69):
+        log.warning(
+            "The XROTOR translator was prepared for file versions between 7.54 and 7.69,"
+            + f" your version is {version}, errors may occur."
+        )
+
+    return read_xrotor_file(xrotor_file_content=geometry_file_content)
 
 
 def float_range(start, stop, step=1):
@@ -1335,7 +1436,7 @@ def calc_cl_cd(xrotor_dict, alphas, mach_num, nrR_station):
     msq = mach_num**2
 
     if msq > 1.0:
-        print("CLFUNC: Local Mach^2 number limited to 0.99, was ", msq)
+        log.warning("CLFUNC: Local Mach^2 number limited to 0.99, was ", msq)
         msq = 0.99
 
     pg = 1.0 / sqrt(1.0 - msq)
@@ -1430,44 +1531,28 @@ def get_polar(xrotor_dict, alphas, machs, rR_station):
     return secpol
 
 
-def generate_xrotor_bet_json(
-    xrotor_file_content,
-    rotation_direction_rule,
-    initial_blade_direction,
-    blade_line_chord,
-    omega,
-    chord_ref,
-    n_loading_nodes,
-    entities,
-    angle_unit,
-    length_unit,
-    name,
-):
+def translate_xrotor_dfdc_to_bet_dict(
+    geometry_file_content: str,
+    length_unit: LengthType,
+    angle_unit: AngleType,
+    file_format: Literal["xrotor", "dfdc"],
+) -> dict:
     """
-    Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
-
-    DFDC and XROTOR come from the same family of CFD codes. They are both written by Mark Drela over at MIT.
+    Takes in an XROTOR or DFDC input file and translates it into a BET input dictionary.
+    The translated dictionary needs other user inputs to build a complete BETDisk class
 
     Attributes
     ----------
-    geometry_file_content: string, path to the XROTOR file
-    bet_disk: dictionary, contains required BETDisk data
-    length_unit: float, grid unit length with units
-    return: dictionary with BETDisk parameters
+    geometry_file_content: string, path to the XROTOR/DFDC file
+    bet_disk: dictionary, contains the BETDisk data
+    length_unit: LengthType, grid unit length with units
+    angle_unit: AngleType, unit for the angle of attack
+    return: dictionary with BETDisk parameters from XROTOR/DFDC input file only
     """
 
-    xrotor_dict = parse_xrotor_file(xrotor_file_content)
+    xrotor_dict = parse_xrotor_dfdc_geometry_file(geometry_file_content, file_format)
 
     bet_disk = {}
-
-    bet_disk["name"] = name
-    bet_disk["entities"] = entities.stored_entities
-    bet_disk["omega"] = omega
-    bet_disk["chord_ref"] = chord_ref
-    bet_disk["n_loading_nodes"] = n_loading_nodes
-    bet_disk["rotation_direction_rule"] = rotation_direction_rule
-    bet_disk["initial_blade_direction"] = initial_blade_direction
-    bet_disk["blade_line_chord"] = blade_line_chord
     bet_disk["number_of_blades"] = xrotor_dict["nBlades"]
     # pylint: disable=no-member
     bet_disk["radius"] = xrotor_dict["rad"] * u.m / length_unit
@@ -1493,8 +1578,8 @@ def generate_xrotor_bet_json(
     return bet_disk
 
 
-def generate_dfdc_bet_json(
-    dfdc_file_content,
+def generate_xrotor_bet_json(
+    xrotor_file_content,
     rotation_direction_rule,
     initial_blade_direction,
     blade_line_chord,
@@ -1502,12 +1587,12 @@ def generate_dfdc_bet_json(
     chord_ref,
     n_loading_nodes,
     entities,
-    angle_unit,
-    length_unit,
+    angle_unit: AngleType,
+    length_unit: LengthType,
     name,
-):
+) -> dict:
     """
-    Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
+    Takes in a XROTOR input file and translates it into a flow360 BET input dictionary.
 
     DFDC and XROTOR come from the same family of CFD codes. They are both written by Mark Drela over at MIT.
 
@@ -1518,16 +1603,67 @@ def generate_dfdc_bet_json(
     length_unit: float, grid unit length with units
     return: dictionary with BETDisk parameters
     """
-    return generate_xrotor_bet_json(
-        xrotor_file_content=dfdc_file_content,
-        rotation_direction_rule=rotation_direction_rule,
-        initial_blade_direction=initial_blade_direction,
-        blade_line_chord=blade_line_chord,
+
+    bet_disk = translate_xrotor_dfdc_to_bet_dict(
+        geometry_file_content=xrotor_file_content,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+        file_format="xrotor",
+    )
+    bet_disk = set_up_bet_dict_with_user_inputs(
+        bet_disk=bet_disk,
+        name=name,
+        entities=entities,
         omega=omega,
         chord_ref=chord_ref,
         n_loading_nodes=n_loading_nodes,
-        entities=entities,
-        angle_unit=angle_unit,
-        length_unit=length_unit,
-        name=name,
+        rotation_direction_rule=rotation_direction_rule,
+        initial_blade_direction=initial_blade_direction,
+        blade_line_chord=blade_line_chord,
     )
+    return bet_disk
+
+
+def generate_dfdc_bet_json(
+    dfdc_file_content,
+    rotation_direction_rule,
+    initial_blade_direction,
+    blade_line_chord,
+    omega,
+    chord_ref,
+    n_loading_nodes,
+    entities,
+    angle_unit: AngleType,
+    length_unit: LengthType,
+    name,
+) -> dict:
+    """
+    Takes in a DFDC input file and translates it into a flow360 BET input dictionary.
+
+    DFDC and XROTOR come from the same family of CFD codes. They are both written by Mark Drela over at MIT.
+
+    Attributes
+    ----------
+    geometry_file_content: string, path to the XROTOR file
+    bet_disk: dictionary, contains required BETDisk data
+    length_unit: float, grid unit length with units
+    return: dictionary with BETDisk parameters
+    """
+    bet_disk = translate_xrotor_dfdc_to_bet_dict(
+        geometry_file_content=dfdc_file_content,
+        length_unit=length_unit,
+        angle_unit=angle_unit,
+        file_format="dfdc",
+    )
+    bet_disk = set_up_bet_dict_with_user_inputs(
+        bet_disk=bet_disk,
+        name=name,
+        entities=entities,
+        omega=omega,
+        chord_ref=chord_ref,
+        n_loading_nodes=n_loading_nodes,
+        rotation_direction_rule=rotation_direction_rule,
+        initial_blade_direction=initial_blade_direction,
+        blade_line_chord=blade_line_chord,
+    )
+    return bet_disk
