@@ -28,7 +28,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.project_utils import VolumeMeshFile
+from flow360.component.utils import VolumeMeshFile
 from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
 from flow360.component.v1.meshing.params import VolumeMeshingParams
 from flow360.exceptions import (
@@ -53,7 +53,6 @@ from .resource_base import (
 )
 from .results.base_results import PerEntityResultCSVModel
 from .simulation.entity_info import VolumeMeshEntityInfo
-from .simulation.framework.entity_registry import EntityRegistry
 from .simulation.primitives import GenericVolume, Surface
 from .simulation.web.asset_base import AssetBase
 from .types import COMMENTS
@@ -806,6 +805,7 @@ class VolumeMeshStatusV2(Enum):
     UPLOADED = "uploaded"
     COMPLETED = "completed"
     PENDING = "pending"
+    GENERATING = "generating"
 
     def is_final(self):
         """
@@ -1096,8 +1096,6 @@ class VolumeMeshV2(AssetBase):
         ----------
         id : str
             ID of the volume mesh resource in the cloud
-        root_item_entity_info_type :
-        override the default entity info type
 
         Returns
         -------
@@ -1168,37 +1166,10 @@ class VolumeMeshV2(AssetBase):
             tags=tags,
         )
 
-    def _populate_registry(self):
-        if hasattr(self, "_entity_info") is False or self._entity_info is None:
-            raise Flow360ValueError("The entity info object does not exist")
-
-        if not isinstance(self._entity_info, VolumeMeshEntityInfo):
-            raise Flow360ValueError(
-                "Entity info is of invalid type for a "
-                f"volume mesh object {type(self._entity_info)}"
-            )
-
-        # Initialize the local registry
-        self.internal_registry = EntityRegistry()
-
-        # Populate boundaries
-        for boundary in self._entity_info.boundaries:
-            self.internal_registry.register(boundary)
-
-        for zone in self._entity_info.zones:
-            self.internal_registry.register(zone)
-
-    def _check_registry(self):
-        if not hasattr(self, "internal_registry") or self.internal_registry is None:
-            if hasattr(self, "_entity_info") and self._entity_info is not None:
-                self._populate_registry()
-                return
-
-            raise Flow360ValueError(
-                "The entity info registry has not been populated. "
-                "Currently entity info is populated only when loading "
-                "an asset from the cloud using the from_cloud method "
-            )
+    # pylint: disable=useless-parent-delegation
+    def get_default_settings(self, simulation_dict: dict):
+        """Get the default volume mesh settings from the simulation dict"""
+        return super().get_default_settings(simulation_dict)
 
     @cached_property
     def stats(self) -> VolumeMeshStats:
@@ -1240,7 +1211,9 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the volume mesh
         """
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(
+            internal_registry=self.internal_registry
+        )
 
         return [
             surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
@@ -1256,7 +1229,9 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of zone names contained within the volume mesh
         """
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(
+            internal_registry=self.internal_registry
+        )
 
         return [
             volume.name
@@ -1278,7 +1253,9 @@ class VolumeMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(
+            internal_registry=self.internal_registry
+        )
 
         return self.internal_registry.find_by_naming_pattern(
             key, enforce_output_as_list=False, error_when_no_match=True

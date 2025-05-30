@@ -25,9 +25,6 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
-    GeometryFiles,
-    SurfaceMeshFile,
-    VolumeMeshFile,
     formatting_validation_errors,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
@@ -41,6 +38,9 @@ from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
+    GeometryFiles,
+    SurfaceMeshFile,
+    VolumeMeshFile,
     get_short_asset_id,
     parse_datetime,
     wrapstring,
@@ -48,6 +48,7 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
@@ -719,7 +720,7 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        files : Union[str, list[str]]
+        files : Union[str, list[str]] (positional argument only)
             Geometry file paths.
         name : str, optional
             Name of the project (default is None).
@@ -785,7 +786,7 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file : str
+        file : str (positional argument only)
             Surface mesh file path. For UGRID file the mapbc
             file needs to be renamed with the same prefix under same folder.
         name : str, optional
@@ -853,7 +854,7 @@ class Project(pd.BaseModel):
 
         Parameters
         ----------
-        file : str
+        file : str (positional argument only)
             Volume mesh file path. For UGRID file the mapbc
             file needs to be renamed with the same prefix under same folder.
         name : str, optional
@@ -975,8 +976,49 @@ class Project(pd.BaseModel):
         )
 
     @classmethod
-    @pd.validate_call
-    def from_cloud(cls, project_id: str):
+    def _get_user_requested_entity_info(
+        cls,
+        *,
+        current_project_id: str,
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+    ):
+        """
+        Get the entity info requested by the users when they specify `new_run_from` when calling
+        Project.from_cloud()
+        """
+
+        user_requested_entity_info = None
+        if new_run_from is None:
+            return user_requested_entity_info
+
+        if new_run_from.project_id is None:
+            # Can only happen to case created using V1 interface.
+            raise ValueError(
+                "The supplied case resource for `new_run_from` was created using old interface and "
+                "cannot be used as the starting point of a new run."
+            )
+        if current_project_id != new_run_from.project_id:
+            raise ValueError(
+                "The supplied cloud resource for `new_run_from` does not belong to the project."
+            )
+
+        if isinstance(new_run_from, Case):
+            user_requested_entity_info = new_run_from.get_simulation_params()
+        if isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
+            user_requested_entity_info = new_run_from.params
+
+        return user_requested_entity_info
+
+    @classmethod
+    @pd.validate_call(
+        config={"arbitrary_types_allowed": True}  # Geometry etc do not have validate() defined
+    )
+    def from_cloud(
+        cls,
+        project_id: str,
+        *,
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+    ):
         """
         Loads a project from the cloud.
 
@@ -984,6 +1026,14 @@ class Project(pd.BaseModel):
         ----------
         project_id : str
             ID of the project.
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]]
+            The cloud resource that the current run should be based on.
+            The root asset will use entity settings (grouping, transformation etc) from this resource.
+            This results in the same behavior when user clicks New run on webUI.
+            By default this will be the root asset (what user uploaded) of the project.
+
+            TODO: We can add 'last' as one option to automatically start
+            from the latest created asset within the project.
 
         Returns
         -------
@@ -1010,12 +1060,30 @@ class Project(pd.BaseModel):
         meta = ProjectMeta(**info)
         root_asset = None
         root_type = meta.root_item_type
+
+        if (
+            new_run_from is not None
+            and isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, Case)) is False
+        ):
+            # Should have been caught by the validate_call?
+            raise ValueError(
+                "The supplied `new_run_from` is not valid. Please check the function description for more details."
+            )
+
+        entity_info_param = cls._get_user_requested_entity_info(
+            current_project_id=project_info.asset_id, new_run_from=new_run_from
+        )
+
         if root_type == RootType.GEOMETRY:
-            root_asset = Geometry.from_cloud(meta.root_item_id)
+            root_asset = Geometry.from_cloud(meta.root_item_id, entity_info_param=entity_info_param)
         elif root_type == RootType.SURFACE_MESH:
-            root_asset = SurfaceMeshV2.from_cloud(meta.root_item_id)
+            root_asset = SurfaceMeshV2.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param
+            )
         elif root_type == RootType.VOLUME_MESH:
-            root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
+            root_asset = VolumeMeshV2.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param
+            )
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_info.asset_id}")
         project = Project(
@@ -1161,10 +1229,13 @@ class Project(pd.BaseModel):
         target: AssetOrResource,
         draft_name: str,
         fork_from: Case,
+        interpolate_to_mesh: VolumeMeshV2,
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        use_geometry_AI: bool,
         raise_on_error: bool,
+        tags: List[str],
         **kwargs,
     ):
         """
@@ -1178,12 +1249,20 @@ class Project(pd.BaseModel):
             The target asset or resource to run the simulation against.
         draft_name : str, optional
             The name of the draft to create for the simulation run (default is None).
-        fork : bool, optional
-            Indicates if the simulation should fork the existing case (default is False).
+        fork_from : Case, optional
+            The parent case to fork from if fork (default is None).
+        interpolate_to_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpolate parent case's results to this mesh before running solver.
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the target asset.
 
         Returns
         -------
@@ -1197,11 +1276,23 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
+        # pylint: disable=too-many-branches
+        if use_beta_mesher is None:
+            if use_geometry_AI is True:
+                log.info("Beta mesher is enabled to use Geometry AI.")
+                use_beta_mesher = True
+            else:
+                use_beta_mesher = False
+
+        if use_geometry_AI is True and use_beta_mesher is False:
+            raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
+
         params = set_up_params_for_uploading(
             params=params,
             root_asset=self._root_asset,
             length_unit=self.length_unit,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
         )
 
         params, errors = validate_params_with_context(
@@ -1222,6 +1313,13 @@ class Project(pd.BaseModel):
         start_from = kwargs.get("start_from", None)
         job_tags = kwargs.get("job_tags", None)
 
+        all_tags = []
+
+        if tags is not None:
+            all_tags += tags
+        if job_tags is not None:
+            all_tags += job_tags
+
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
@@ -1229,7 +1327,8 @@ class Project(pd.BaseModel):
             source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
-            tags=job_tags,
+            interpolation_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
+            tags=all_tags,
         ).submit()
 
         draft.update_simulation_params(params)
@@ -1239,6 +1338,7 @@ class Project(pd.BaseModel):
                 target,
                 source_item_type=source_item_type,
                 use_beta_mesher=use_beta_mesher,
+                use_geometry_AI=use_geometry_AI,
                 start_from=start_from,
             )
         except RuntimeError as exception:
@@ -1254,14 +1354,7 @@ class Project(pd.BaseModel):
             }
         )
 
-        if target is SurfaceMeshV2 or target is VolumeMeshV2:
-            # Intermediate asset and we should enforce it to contain the entity info from root item.
-            # pylint: disable=protected-access
-            destination_obj = target.from_cloud(
-                destination_id, root_item_entity_info_type=self._root_asset._entity_info_class
-            )
-        else:
-            destination_obj = target.from_cloud(destination_id)
+        destination_obj = target.from_cloud(destination_id)
 
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
 
@@ -1285,8 +1378,10 @@ class Project(pd.BaseModel):
         name: str = "SurfaceMesh",
         run_async: bool = True,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        tags: List[str] = None,
         **kwargs,
     ):
         """
@@ -1302,8 +1397,14 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the generated surface mesh.
 
         Raises
         ------
@@ -1321,9 +1422,12 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=None,
+            interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            tags=tags,
             **kwargs,
         )
         return surface_mesh
@@ -1335,8 +1439,10 @@ class Project(pd.BaseModel):
         name: str = "VolumeMesh",
         run_async: bool = True,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        tags: List[str] = None,
         **kwargs,
     ):
         """
@@ -1352,8 +1458,14 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the generated volume mesh.
 
         Raises
         ------
@@ -1374,9 +1486,12 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=None,
+            interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            tags=tags,
             **kwargs,
         )
         return volume_mesh
@@ -1388,9 +1503,12 @@ class Project(pd.BaseModel):
         name: str = "Case",
         run_async: bool = True,
         fork_from: Optional[Case] = None,
+        interpolate_to_mesh: Optional[VolumeMeshV2] = None,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
+        tags: List[str] = None,
         **kwargs,
     ):
         """
@@ -1406,10 +1524,18 @@ class Project(pd.BaseModel):
             Whether to run the case asynchronously (default is True).
         fork_from : Case, optional
             Which Case we should fork from (if fork).
+        interpolate_to_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpolate parent case results to this mesh before running solver.
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
             Option to raise if submission error occurs (default is False)
+        tags: List[str], optional
+            A list of tags to add to the case.
         """
         self._check_initialized()
         case = self._run(
@@ -1418,9 +1544,18 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=fork_from,
+            interpolate_to_mesh=interpolate_to_mesh,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
+            tags=tags,
             **kwargs,
+        )
+        report_template = get_default_report_summary_template()
+        report_template.create_in_cloud(
+            name="ResultSummary",
+            cases=[case],
+            solver_version=solver_version if solver_version else self.solver_version,
         )
         return case

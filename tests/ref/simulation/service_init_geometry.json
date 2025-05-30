@@ -1,5 +1,5 @@
 {
-  "version": "25.4.0b1",
+  "version": "25.6.0b1",
   "unit_system": {
     "name": "SI"
   },
@@ -13,8 +13,7 @@
         "value": 12.0
       },
       "surface_edge_growth_rate": 1.2,
-      "planar_face_tolerance": 1e-6,
-      "geometry_relative_accuracy": 1e-06
+      "planar_face_tolerance": 1e-6
     },
   "refinements": [],
   "volume_zones": [

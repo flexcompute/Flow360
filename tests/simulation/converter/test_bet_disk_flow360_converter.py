@@ -24,11 +24,15 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
         file_path="./data/single_flow360_bet_disk.json",
         mesh_unit=1 * u.cm,
         freestream_temperature=288.15 * u.K,
+        bet_disk_name="MyBETDisk",
     )
     assert isinstance(disk, BETDisk)
     disk = disk.model_dump_json()
     disk = json.loads(disk)
     del disk["entities"]["stored_entities"][0]["private_attribute_id"]
+    del disk["private_attribute_input_cache"]["entities"]["stored_entities"][0][
+        "private_attribute_id"
+    ]
     with open("./ref/ref_single_bet_disk.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
     if debug:
@@ -50,7 +54,7 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The supplied Flow360 input for BETDisk hsa invalid format. Details: 'axisOfRotation'."
+            "The supplied Flow360 input for BETDisk has invalid format. Details: 'axisOfRotation'."
         ),
     ):
         # Wrong usage by supplying incorrect schema json
@@ -61,7 +65,9 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
 
         try:
             read_single_v1_BETDisk(
-                file_path=temp_file_name, mesh_unit=1 * u.cm, freestream_temperature=288.15 * u.K
+                file_path=temp_file_name,
+                mesh_unit=1 * u.cm,
+                freestream_temperature=288.15 * u.K,
             )
         finally:
             os.remove(temp_file_name)
@@ -77,6 +83,10 @@ def test_full_flow360_bet_convert():
 
     assert isinstance(list_of_disks, list)
     assert len(list_of_disks) == 2
+    assert list_of_disks[0].name == "BETDisk_1"
+    assert list_of_disks[1].name == "BETDisk_2"
+    assert list_of_disks[0].entities.stored_entities[0].name == "bet_cylinder_1"
+    assert list_of_disks[1].entities.stored_entities[0].name == "bet_cylinder_2"
     assert all([isinstance(item, BETDisk) for item in list_of_disks])
 
     with pytest.raises(

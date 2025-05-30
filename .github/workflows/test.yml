@@ -3,9 +3,10 @@ name: unit testing
 on:
   workflow_dispatch:
   push:
-    branches: [ develop, main, release-candidate/*, BenY/OrganizingAndDocumentation ]
+    branches: [ develop, release-candidate/* ]
   pull_request:
-    branches: [ develop, main, release-candidate/*, BenY/OrganizingAndDocumentation ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: [ develop, release-candidate/* ]
   workflow_call:
 
 jobs:

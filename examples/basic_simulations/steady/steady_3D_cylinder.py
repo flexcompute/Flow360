@@ -11,7 +11,7 @@ geo.show_available_groupings()
 geo.group_faces_by_tag("faceId")
 
 with fl.SI_unit_system:
-    farfield = fl.AutomatedFarfield(name="Farfield")
+    farfield = fl.AutomatedFarfield()
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
@@ -37,20 +37,18 @@ with fl.SI_unit_system:
                 turbulence_model_solver=fl.NoneSolver(),
             ),
             fl.Wall(
-                name="NoSlipWall",
                 surfaces=[
                     geo["*"],
                 ],
             ),
-            fl.Freestream(name="Freestream", surfaces=farfield.farfield),
+            fl.Freestream(surfaces=farfield.farfield),
         ],
         outputs=[
             fl.SurfaceOutput(
-                name="SurfaceOutput",
                 output_fields=["Cp", "Cf", "CfVec", "yPlus", "nodeForcesPerUnitArea"],
                 surfaces=[geo["*"]],
             ),
-            fl.VolumeOutput(name="VolumeOutput", output_fields=["primitiveVars", "qcriterion"]),
+            fl.VolumeOutput(output_fields=["primitiveVars", "qcriterion"]),
         ],
     )
 

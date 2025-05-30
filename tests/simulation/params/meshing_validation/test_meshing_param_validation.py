@@ -51,7 +51,7 @@ def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
             )
 
 
-def test_limit_cylinder_entity_name_length_in_rotataion_cylinder():
+def test_limit_cylinder_entity_name_length_in_rotation_cylinder():
     with pytest.raises(
         pd.ValidationError,
         match=r"The name \(very_long_cylinder_name\) of `Cylinder` entity in `RotationCylinder`"
@@ -86,7 +86,7 @@ def test_limit_cylinder_entity_name_length_in_rotataion_cylinder():
 def test_reuse_of_same_cylinder():
     with pytest.raises(
         pd.ValidationError,
-        match=r"The same cylinder named `I am reused` is used in both RotationCylinder and UniformRefinement.",
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationCylinder` at the same time is not allowed.",
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -110,13 +110,51 @@ def test_reuse_of_same_cylinder():
                         ),
                         AutomatedFarfield(),
                     ],
-                    refinements=[UniformRefinement(entities=[cylinder], spacing=0.1)],
+                    refinements=[
+                        AxisymmetricRefinement(
+                            entities=[cylinder],
+                            spacing_axial=0.1,
+                            spacing_radial=0.2,
+                            spacing_circumferential=0.3,
+                        )
+                    ],
                 )
             )
 
+    with CGS_unit_system:
+        cylinder = Cylinder(
+            name="Okay to reuse",
+            outer_radius=1,
+            height=12,
+            axis=(0, 1, 0),
+            center=(0, 5, 0),
+        )
+        SimulationParams(
+            meshing=MeshingParams(
+                volume_zones=[
+                    RotationCylinder(
+                        entities=[cylinder],
+                        spacing_axial=20,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20,
+                        enclosed_entities=[
+                            Surface(name="hub"),
+                        ],
+                    ),
+                    AutomatedFarfield(),
+                ],
+                refinements=[
+                    UniformRefinement(
+                        entities=[cylinder],
+                        spacing=0.1,
+                    )
+                ],
+            )
+        )
+
     with pytest.raises(
         pd.ValidationError,
-        match=r"The same cylinder named `I am reused` is used in both UniformRefinement and AxisymmetricRefinement.",
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -136,6 +174,27 @@ def test_reuse_of_same_cylinder():
                             spacing_radial=0.1,
                             spacing_circumferential=0.1,
                         ),
+                    ],
+                )
+            )
+
+    with pytest.raises(
+        pd.ValidationError,
+        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    ):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=MeshingParams(
+                    refinements=[
+                        UniformRefinement(entities=[cylinder], spacing=0.1),
+                        UniformRefinement(entities=[cylinder], spacing=0.2),
                     ],
                 )
             )

@@ -31,7 +31,6 @@ with fl.SI_unit_system:
         ),
         outputs=[
             fl.VolumeOutput(
-                name="VolumeOutput",
                 output_fields=[
                     "primitiveVars",
                     "T",
@@ -42,7 +41,6 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="SurfaceOutput",
                 surfaces=volume_mesh["*"],
                 output_fields=[
                     "primitiveVars",
@@ -74,8 +72,8 @@ with fl.SI_unit_system:
                 volumes=rotation_zone,
                 spec=fl.AngularVelocity(600 * fl.u.rpm),
             ),
-            fl.Freestream(surfaces=volume_mesh["farField/farField"], name="Freestream"),
-            fl.Wall(surfaces=volume_mesh["innerRotating/blade"], name="NoSlipWall"),
+            fl.Freestream(surfaces=volume_mesh["farField/farField"]),
+            fl.Wall(surfaces=volume_mesh["innerRotating/blade"]),
         ],
     )
 

@@ -460,6 +460,7 @@ class Case(CaseBase, Flow360Resource):
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
         param, errors, _ = services.validate_model(
             params_as_dict=params_as_dict,
+            validated_by=services.ValidationCalledBy.LOCAL,
             root_item_type=None,
             validation_level=None,
         )
@@ -534,11 +535,16 @@ class Case(CaseBase, Flow360Resource):
         raise Flow360RuntimeError("Case does not have parent case.")
 
     @property
-    def info(self) -> CaseMeta:
+    def info(self) -> CaseMetaV2:
         """
         returns metadata info for case
         """
         return super().info
+
+    @property
+    def project_id(self) -> Optional[str]:
+        """Returns the project id of the case if case was run with V2 interface."""
+        return self.info.project_id
 
     @property
     def volume_mesh(self) -> "VolumeMeshV2":

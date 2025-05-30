@@ -14,6 +14,8 @@ from flow360.component.simulation.framework.param_utils import (
     AssetCache,
     register_entity_list,
 )
+from flow360.component.simulation.outputs.output_entities import PointArray2D
+from flow360.component.simulation.outputs.outputs import StreamlineOutput
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
@@ -22,7 +24,10 @@ from flow360.component.simulation.primitives import (
     Surface,
     _SurfaceEntityBase,
 )
-from flow360.component.simulation.simulation_params import _ParamModelBase
+from flow360.component.simulation.simulation_params import (
+    SimulationParams,
+    _ParamModelBase,
+)
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
 from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.conftest import AssetBase
@@ -441,7 +446,9 @@ def test_by_reference_registry(my_cylinder2):
             assert entity.height == 131 * u.m
 
     # [Registry] Internal changes --> External
-    my_cylinder2_ref = registry.find_single_entity_by_name("zone/Cylinder2")
+    my_cylinder2_ref = registry.find_by_naming_pattern(
+        pattern="zone/Cylinder2", enforce_output_as_list=False
+    )
     my_cylinder2_ref.height = 132 * u.m
     assert my_cylinder2.height == 132 * u.m
 
@@ -650,7 +657,9 @@ def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_me
     my_cylinder1.center = (3, 2, 1) * u.m
     used_entity_registry = EntityRegistry()
     register_entity_list(my_param1, used_entity_registry)
-    my_cylinder1_ref = used_entity_registry.find_single_entity_by_name("zone/Cylinder1")
+    my_cylinder1_ref = used_entity_registry.find_by_naming_pattern(
+        pattern="zone/Cylinder1", enforce_output_as_list=False
+    )
     assert all(my_cylinder1_ref.center == [3, 2, 1] * u.m)
 
 
@@ -664,7 +673,9 @@ def test_registry_replacing_existing_entity(my_volume_mesh_with_interface):
         center=(1, 2, 3) * u.m,
     )
     backup = deepcopy(
-        my_volume_mesh_with_interface.internal_registry.find_single_entity_by_name("innerZone")
+        my_volume_mesh_with_interface.internal_registry.find_by_naming_pattern(
+            pattern="innerZone", enforce_output_as_list=False
+        )
     )
     assert my_volume_mesh_with_interface.internal_registry.contains(backup)
 
@@ -822,6 +833,33 @@ def test_entity_registry_find_by_id():
             )
             == original_item
         )
+
+
+def test_same_name_and_type_entities_in_entity_registry():
+    with u.SI_unit_system:
+        point_array_2d_1 = PointArray2D(
+            name="Parallelogram_streamline",
+            origin=(1.0, 0.0, 0.0) * u.m,
+            u_axis_vector=(0, 2.0, 2.0) * u.m,
+            v_axis_vector=(0, 1.0, 0) * u.m,
+            u_number_of_points=11,
+            v_number_of_points=20,
+        )
+        point_array_2d_2 = PointArray2D(
+            name="Parallelogram_streamline",
+            origin=(1.0, 0.0, 0.0) * u.m,
+            u_axis_vector=(0, 2.0, 2.0) * u.m,
+            v_axis_vector=(0, 1.0, 0) * u.m,
+            u_number_of_points=3,
+            v_number_of_points=4,
+        )
+        params = SimulationParams(
+            outputs=[
+                StreamlineOutput(entities=[point_array_2d_1, point_array_2d_2, point_array_2d_2])
+            ]
+        )
+    used_entity_registry = params.used_entity_registry
+    assert len(used_entity_registry.find_by_naming_pattern("*")) == 2
 
 
 ##:: ---------------- Entity specific validations ----------------

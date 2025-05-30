@@ -20,7 +20,12 @@ from flow360.component.simulation.meshing_param.volume_params import AutomatedFa
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
+    KOmegaSST,
+    KOmegaSSTModelConstants,
+    SpalartAllmaras,
+    SpalartAllmarasModelConstants,
     TransitionModelSolver,
+    TurbulenceModelControls,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -73,7 +78,7 @@ from flow360.component.simulation.primitives import (
     Surface,
     _SurfaceIssueEnums,
 )
-from flow360.component.simulation.services import validate_model
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -318,6 +323,78 @@ def test_hybrid_model_for_unsteady_validator(
         SimulationParams(models=[fluid_model_with_hybrid_model])
 
 
+def test_hybrid_model_to_use_zonal_enforcement(fluid_model, fluid_model_with_hybrid_model):
+
+    fluid_model_with_hybrid_model.turbulence_model_solver.controls = [
+        TurbulenceModelControls(enforcement="RANS", entities=[GenericVolume(name="block-1")])
+    ]
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+    assert params
+
+    fluid_model.turbulence_model_solver.controls = [
+        TurbulenceModelControls(enforcement="RANS", entities=[GenericVolume(name="block-1")])
+    ]
+
+    message = "Control region 0 must be running in hybrid RANS-LES mode to apply zonal turbulence enforcement."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            models=[fluid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+
+def test_zonal_modeling_constants_consistency(fluid_model_with_hybrid_model):
+    fluid_model_with_hybrid_model.turbulence_model_solver.controls = [
+        TurbulenceModelControls(
+            enforcement="RANS",
+            modeling_constants=SpalartAllmarasModelConstants(),
+            entities=[GenericVolume(name="block-1")],
+        )
+    ]
+
+    # Valid simulation params
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[fluid_model_with_hybrid_model],
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+        )
+
+    assert params
+
+    message = "Turbulence model is SpalartAllmaras, but controls.modeling_constants is of a "
+    "conflicting class in control region 0."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        TurbulenceModelSolver = SpalartAllmaras(
+            controls=[
+                TurbulenceModelControls(
+                    enforcement="LES",
+                    modeling_constants=KOmegaSSTModelConstants(),
+                    entities=[GenericVolume(name="block-1")],
+                )
+            ]
+        )
+
+    message = "Turbulence model is KOmegaSST, but controls.modeling_constants is of a "
+    "conflicting class in control region 0."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        TurbulenceModelSolver = KOmegaSST(
+            controls=[
+                TurbulenceModelControls(
+                    enforcement="LES",
+                    modeling_constants=SpalartAllmarasModelConstants(),
+                    entities=[GenericVolume(name="block-1")],
+                )
+            ]
+        )
+
+
 def test_cht_solver_settings_validator(
     fluid_model,
 ):
@@ -496,6 +573,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -525,6 +603,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -558,6 +637,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -592,6 +672,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -633,6 +714,7 @@ def test_BC_geometry():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -832,7 +914,7 @@ def test_duplicate_entities_in_models():
         private_attribute_id="3",
     )
     volume_model1 = Solid(
-        volumes=[entity_generic_volume],
+        volumes=[entity_generic_volume, entity_generic_volume],
         material=aluminum,
         volumetric_heat_source="0",
     )
@@ -1391,6 +1473,7 @@ def test_deleted_surfaces():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -1421,6 +1504,7 @@ def test_deleted_surfaces():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="All",
     )
@@ -1479,6 +1563,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1547,6 +1632,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1577,14 +1663,15 @@ def test_validate_liquid_operating_condition():
                     total_temperature=300 * u.K,
                     spec=TotalPressure(
                         value=1.028e6 * u.Pa,
-                        velocity_direction=(1, 0, 0),
                     ),
+                    velocity_direction=(1, 0, 0),
                 )
             ],
             private_attribute_asset_cache=asset_cache,
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1611,6 +1698,7 @@ def test_validate_liquid_operating_condition():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level="All",
     )
@@ -1641,6 +1729,7 @@ def test_beta_mesher_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
@@ -1662,6 +1751,7 @@ def test_beta_mesher_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
@@ -1681,6 +1771,7 @@ def test_beta_mesher_only_features():
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
         )
     params, errors, _ = validate_model(
+        validated_by=ValidationCalledBy.LOCAL,
         params_as_dict=params.model_dump(mode="json"),
         root_item_type="Geometry",
         validation_level="VolumeMesh",
@@ -1696,7 +1787,7 @@ def test_geometry_AI_only_features():
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-4, geometry_relative_accuracy=1e-5
+                    boundary_layer_first_layer_thickness=1e-4, geometry_accuracy=1e-5 * u.m
                 ),
             ),
             private_attribute_asset_cache=AssetCache(
@@ -1705,13 +1796,34 @@ def test_geometry_AI_only_features():
         )
     params, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
     assert len(errors) == 1
     assert (
         errors[0]["msg"]
-        == "Value error, Geometry relative accuracy is only supported when geometry AI is used."
+        == "Value error, Geometry accuracy is only supported when geometry AI is used."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(boundary_layer_first_layer_thickness=1e-4),
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, use_geometry_AI=True
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"] == "Value error, Geometry accuracy is required when geometry AI is used."
     )
 
 
@@ -1738,6 +1850,7 @@ def test_redefined_user_defined_fields():
         )
 
     params, errors, _ = validate_model(
+        validated_by=ValidationCalledBy.LOCAL,
         params_as_dict=params.model_dump(mode="json"),
         root_item_type="VolumeMesh",
         validation_level="Case",
@@ -1747,3 +1860,24 @@ def test_redefined_user_defined_fields():
         "Value error, User defined field variable name: pressure conflicts with pre-defined field names."
         " Please consider renaming this user defined field variable."
     )
+
+
+def test_check_duplicate_isosurface_names():
+
+    isosurface_qcriterion = Isosurface(name="qcriterion", field="qcriterion", iso_value=0.1)
+    message = "The name `qcriterion` is reserved for the autovis isosurface from solver, please rename the isosurface."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            outputs=[IsosurfaceOutput(isosurfaces=[isosurface_qcriterion], output_fields=["Mach"])],
+        )
+
+    isosurface1 = Isosurface(name="isosurface1", field="qcriterion", iso_value=0.1)
+    isosurface2 = Isosurface(name="isosurface1", field="Mach", iso_value=0.2)
+    message = f"Another isosurface with name: `{isosurface2.name}` already exists, please rename the isosurface."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            outputs=[
+                IsosurfaceOutput(isosurfaces=[isosurface1], output_fields=["Mach"]),
+                IsosurfaceOutput(isosurfaces=[isosurface2], output_fields=["pressure"]),
+            ],
+        )

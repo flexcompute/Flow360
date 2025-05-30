@@ -2,7 +2,7 @@ import flow360 as fl
 
 project = fl.Project.from_cloud("PROJECT_ID_HERE")
 
-parent_case = fl.Case.from_cloud("PARENT_CASE_ID_HERE")
+parent_case = fl.Case(id="PARENT_CASE_ID_HERE")
 
 param: fl.SimulationParams = parent_case.params
 

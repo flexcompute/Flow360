@@ -139,13 +139,17 @@ class _S3STSToken(BaseModel):
         :return:
         """
         # pylint: disable=no-member
-        return boto3.client(
-            "s3",
-            region_name=Env.current.aws_region,
-            aws_access_key_id=self.user_credential.access_key_id,
-            aws_secret_access_key=self.user_credential.secret_access_key,
-            aws_session_token=self.user_credential.session_token,
-        )
+        kwargs = {
+            "region_name": Env.current.aws_region,
+            "aws_access_key_id": self.user_credential.access_key_id,
+            "aws_secret_access_key": self.user_credential.secret_access_key,
+            "aws_session_token": self.user_credential.session_token,
+        }
+
+        if Env.current.s3_endpoint_url is not None:
+            kwargs["endpoint_url"] = Env.current.s3_endpoint_url
+
+        return boto3.client("s3", **kwargs)
 
     def is_expired(self):
         """
@@ -407,4 +411,4 @@ class S3TransferType(Enum):
         )
 
 
-_s3_sts_tokens: [str, _S3STSToken] = {}
+_s3_sts_tokens: dict[str, _S3STSToken] = {}

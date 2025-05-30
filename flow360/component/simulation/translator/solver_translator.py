@@ -45,7 +45,11 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray,
     PointArray2D,
 )
-from flow360.component.simulation.outputs.output_fields import generate_predefined_udf
+from flow360.component.simulation.outputs.output_fields import (
+    PREDEFINED_UDF_EXPRESSIONS,
+    append_component_to_output_fields,
+    generate_predefined_udf,
+)
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
@@ -232,7 +236,7 @@ def translate_output_fields(
     ],
 ):
     """Get output fields"""
-    return {"outputFields": output_model.output_fields.items}
+    return {"outputFields": append_component_to_output_fields(output_model.output_fields.items)}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
@@ -352,9 +356,11 @@ def translate_volume_output(
     # Get outputFields
     volume_output.update(
         {
-            "outputFields": get_global_setting_from_first_instance(
-                output_params, volume_output_class, "output_fields"
-            ).model_dump()["items"],
+            "outputFields": append_component_to_output_fields(
+                get_global_setting_from_first_instance(
+                    output_params, volume_output_class, "output_fields"
+                ).model_dump()["items"]
+            ),
         }
     )
     return volume_output
@@ -505,7 +511,7 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
-def process_output_fields_for_udf(input_params):
+def process_output_fields_for_udf(input_params: SimulationParams):
     """
     Process all output fields from different output types and generate additional
     UserDefinedFields for dimensioned fields.
@@ -525,7 +531,16 @@ def process_output_fields_for_udf(input_params):
     if input_params.outputs:
         for output in input_params.outputs:
             if hasattr(output, "output_fields") and output.output_fields:
-                all_field_names.update(output.output_fields.items)
+                all_field_names.update(
+                    append_component_to_output_fields(output.output_fields.items)
+                )
+            if isinstance(output, IsosurfaceOutput):
+                for isosurface in output.entities.items:
+                    if isosurface.field in PREDEFINED_UDF_EXPRESSIONS:
+                        all_field_names.add(isosurface.field)
+
+    if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+        all_field_names.add("velocity_magnitude")
 
     # Generate UDFs for dimensioned fields
     generated_udfs = []
@@ -882,15 +897,17 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
         elif isinstance(model.heat_spec, HeatFlux):
             boundary["heatFlux"] = model_dict["heatSpec"]["value"]
         boundary["roughnessHeight"] = model_dict["roughnessHeight"]
+        if model.private_attribute_dict is not None:
+            boundary = {**boundary, **model.private_attribute_dict}
     elif isinstance(model, Inflow):
         boundary["totalTemperatureRatio"] = model_dict["totalTemperature"]
+        if model.velocity_direction is not None:
+            boundary["velocityDirection"] = list(model_dict["velocityDirection"])
         if isinstance(model.spec, TotalPressure):
             boundary["type"] = "SubsonicInflow"
             boundary["totalPressureRatio"] = (
                 model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
             )
-            if model.spec.velocity_direction is not None:
-                boundary["velocityDirection"] = list(model_dict["spec"]["velocityDirection"])
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassInflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
@@ -954,6 +971,49 @@ def get_navier_stokes_initial_condition(
             continue
         initial_condition_dict[key] = raw_dict[key]
     return initial_condition_dict
+
+
+def rename_modeling_constants(modeling_constants):
+    """Rename the modeling constants to what the solver reads"""
+    if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
+        replace_dict_key(modeling_constants, "CDES", "C_DES")
+        replace_dict_key(modeling_constants, "CD", "C_d")
+        replace_dict_key(modeling_constants, "CCb1", "C_cb1")
+        replace_dict_key(modeling_constants, "CCb2", "C_cb2")
+        replace_dict_key(modeling_constants, "CSigma", "C_sigma")
+        replace_dict_key(modeling_constants, "CV1", "C_v1")
+        replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
+        replace_dict_key(modeling_constants, "CW2", "C_w2")
+        replace_dict_key(modeling_constants, "CT3", "C_t3")
+        replace_dict_key(modeling_constants, "CT4", "C_t4")
+        replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
+
+    if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
+        replace_dict_key(modeling_constants, "CDES1", "C_DES1")
+        replace_dict_key(modeling_constants, "CDES2", "C_DES2")
+        replace_dict_key(modeling_constants, "CD1", "C_d1")
+        replace_dict_key(modeling_constants, "CD2", "C_d2")
+        replace_dict_key(modeling_constants, "CSigmaK1", "C_sigma_k1")
+        replace_dict_key(modeling_constants, "CSigmaK2", "C_sigma_k2")
+        replace_dict_key(modeling_constants, "CSigmaOmega1", "C_sigma_omega1")
+        replace_dict_key(modeling_constants, "CSigmaOmega2", "C_sigma_omega2")
+        replace_dict_key(modeling_constants, "CAlpha1", "C_alpha1")
+        replace_dict_key(modeling_constants, "CBeta1", "C_beta1")
+        replace_dict_key(modeling_constants, "CBeta2", "C_beta2")
+        replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
+
+    modeling_constants.pop("typeName")  # Not read by solver
+
+
+def update_controls_modeling_constants(controls, translated):
+    """Upading the modelingConstants entries for each control"""
+    if controls is not None:
+        for control in translated["turbulenceModelSolver"]["controls"]:
+            control_modeling_constants = control.get("modelingConstants", None)
+            if control_modeling_constants is None:
+                continue
+            rename_modeling_constants(control_modeling_constants)
+            control["modelConstants"] = control.pop("modelingConstants")
 
 
 # pylint: disable=too-many-statements
@@ -1042,19 +1102,19 @@ def get_solver_json(
     ##:: Step 6: Get solver settings and initial condition
     for model in input_params.models:
         if isinstance(model, Fluid):
-            if model.navier_stokes_solver.low_mach_preconditioner:
-                if model.navier_stokes_solver.low_mach_preconditioner_threshold is None:
-                    model.navier_stokes_solver.low_mach_preconditioner_threshold = (
-                        input_params.operating_condition.mach
-                    )
-            translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
-            if translated["navierStokesSolver"]["lowMachPreconditioner"] is False and isinstance(
-                op, LiquidOperatingCondition
+            if isinstance(op, LiquidOperatingCondition):
+                model.navier_stokes_solver.low_mach_preconditioner = True
+                model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                    LIQUID_IMAGINARY_FREESTREAM_MACH
+                )
+            if (
+                model.navier_stokes_solver.low_mach_preconditioner
+                and model.navier_stokes_solver.low_mach_preconditioner_threshold is None
             ):
-                translated["navierStokesSolver"]["lowMachPreconditioner"] = True
-                translated["navierStokesSolver"][
-                    "lowMachPreconditionerThreshold"
-                ] = LIQUID_IMAGINARY_FREESTREAM_MACH
+                model.navier_stokes_solver.low_mach_preconditioner_threshold = (
+                    input_params.operating_condition.mach
+                )
+            translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
             replace_dict_key(
@@ -1072,34 +1132,7 @@ def get_solver_json(
             replace_dict_key(translated["turbulenceModelSolver"], "typeName", "modelType")
             modeling_constants = translated["turbulenceModelSolver"].get("modelingConstants", None)
             if modeling_constants is not None:
-                if modeling_constants.get("typeName", None) == "SpalartAllmarasConsts":
-                    replace_dict_key(modeling_constants, "CDES", "C_DES")
-                    replace_dict_key(modeling_constants, "CD", "C_d")
-                    replace_dict_key(modeling_constants, "CCb1", "C_cb1")
-                    replace_dict_key(modeling_constants, "CCb2", "C_cb2")
-                    replace_dict_key(modeling_constants, "CSigma", "C_sigma")
-                    replace_dict_key(modeling_constants, "CV1", "C_v1")
-                    replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
-                    replace_dict_key(modeling_constants, "CW2", "C_w2")
-                    replace_dict_key(modeling_constants, "CT3", "C_t3")
-                    replace_dict_key(modeling_constants, "CT4", "C_t4")
-                    replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
-
-                if modeling_constants.get("typeName", None) == "kOmegaSSTConsts":
-                    replace_dict_key(modeling_constants, "CDES1", "C_DES1")
-                    replace_dict_key(modeling_constants, "CDES2", "C_DES2")
-                    replace_dict_key(modeling_constants, "CD1", "C_d1")
-                    replace_dict_key(modeling_constants, "CD2", "C_d2")
-                    replace_dict_key(modeling_constants, "CSigmaK1", "C_sigma_k1")
-                    replace_dict_key(modeling_constants, "CSigmaK2", "C_sigma_k2")
-                    replace_dict_key(modeling_constants, "CSigmaOmega1", "C_sigma_omega1")
-                    replace_dict_key(modeling_constants, "CSigmaOmega2", "C_sigma_omega2")
-                    replace_dict_key(modeling_constants, "CAlpha1", "C_alpha1")
-                    replace_dict_key(modeling_constants, "CBeta1", "C_beta1")
-                    replace_dict_key(modeling_constants, "CBeta2", "C_beta2")
-                    replace_dict_key(modeling_constants, "CBetaStar", "C_beta_star")
-
-                modeling_constants.pop("typeName")  # Not read by solver
+                rename_modeling_constants(modeling_constants)
                 translated["turbulenceModelSolver"]["modelConstants"] = translated[
                     "turbulenceModelSolver"
                 ].pop("modelingConstants")
@@ -1121,6 +1154,10 @@ def get_solver_json(
                     translated["turbulenceModelSolver"]["DDES"] = False
                     translated["turbulenceModelSolver"]["ZDES"] = False
                     translated["turbulenceModelSolver"]["gridSizeForLES"] = "maxEdgeLength"
+
+                update_controls_modeling_constants(
+                    model.turbulence_model_solver.controls, translated
+                )
 
             if not isinstance(model.transition_model_solver, NoneSolver):
                 # baseline dictionary dump for transition model object
@@ -1329,5 +1366,7 @@ def get_solver_json(
             if "MachRef" in translated["freestream"].keys()
             else 1.0 / translated["freestream"]["Mach"]
         )
+    if input_params.private_attribute_dict is not None:
+        translated.update(input_params.private_attribute_dict)
 
     return translated

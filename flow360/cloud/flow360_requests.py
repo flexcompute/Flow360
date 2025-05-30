@@ -177,6 +177,8 @@ class DraftCreateRequest(Flow360RequestsV2):
     ] = pd.Field()
     solver_version: str = pd.Field()
     fork_case: bool = pd.Field()
+    interpolation_volume_mesh_id: Optional[str] = pd.Field(None)
+    interpolation_case_id: Optional[str] = pd.Field(None)
     tags: Optional[List[str]] = pd.Field(None)
 
     @pd_v2.field_validator("name", mode="after")
@@ -198,6 +200,7 @@ class DraftRunRequest(Flow360RequestsV2):
 
     up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
     use_in_house: bool = pd.Field()
+    use_gai: bool = pd.Field()
     force_creation_config: Optional[ForceCreationConfig] = pd.Field(
         None,
     )

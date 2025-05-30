@@ -181,8 +181,8 @@
                         "value": 31.999999999999886
                     },
                     "reference_viscosity": {
-                        "units": "lb/(ft*s)",
-                        "value": 1.1530987613393938e-05
+                        "units": "lbf*s/ft**2",
+                        "value": 3.583940514408562e-07
                     }
                 },
                 "name": "air",
@@ -268,8 +268,8 @@
                             "value": 31.999999999999886
                         },
                         "reference_viscosity": {
-                            "units": "lb/(ft*s)",
-                            "value": 1.1530987613393938e-05
+                            "units": "lbf*s/ft**2",
+                            "value": 3.583940514408562e-07
                         }
                     },
                     "name": "air",
@@ -309,8 +309,8 @@
                         "value": 31.999999999999886
                     },
                     "reference_viscosity": {
-                        "units": "lb/(ft*s)",
-                        "value": 1.1530987613393938e-05
+                        "units": "lbf*s/ft**2",
+                        "value": 3.583940514408562e-07
                     }
                 },
                 "name": "air",

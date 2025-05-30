@@ -1,5 +1,7 @@
 import flow360 as fl
-from flow360 import log, u
+from flow360 import u
+from flow360.examples import DrivAer
+from flow360.log import log
 from flow360.plugins.report.report import ReportTemplate
 from flow360.plugins.report.report_items import (
     BottomCamera,
@@ -19,43 +21,118 @@ from flow360.plugins.report.report_items import (
     TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
-from flow360.user_config import UserConfig
+from flow360.version import __solver_version__
 
-log.set_logging_level("DEBUG")
-UserConfig.set_profile("auto_test_1")
+DrivAer.get_files()
 
+project = fl.Project.from_volume_mesh(
+    DrivAer.mesh_filename,
+    name="Automotive DrivAer",
+)
 
-fl.Env.preprod.active()
+vm = project.volume_mesh
 
-case1 = fl.Case("case-ae75de95-bc8d-4f12-8607-6fec7763d36a")
-case2 = fl.Case("case-713d66b6-4fc5-49ed-a5ea-2850d0d8d2bb")
-case3 = fl.Case("case-1c8f54e9-c3cb-415f-bd58-54a37b4baaca")
+log.info("Volume mesh contains the following boundaries:")
+for boundary in vm.boundary_names:
+    log.info("Boundary: " + boundary)
 
+freestream_surfaces = ["blk-1/WT_side1", "blk-1/WT_side2", "blk-1/WT_inlet", "blk-1/WT_outlet"]
+slip_wall_surfaces = ["blk-1/WT_ceiling", "blk-1/WT_ground_front", "blk-1/WT_ground"]
+wall_surfaces = list(set(vm.boundary_names) - set(freestream_surfaces) - set(slip_wall_surfaces))
 
-cases = [case1, case2, case3]
-freestream_surfaces = ["24", "25"]
-slip_wall_surfaces = ["27", "28", "29", "30", "58"]
-exclude = ["26", "33", "57", "59"]
-size = "225M"
+cases = []
 
-# # dev:
-# fl.Env.dev.active()
-# case1 = fl.Case("case-1e3f910e-337b-4e69-a313-0a42cefef7dc")  # // 0 Cpt, wall shear stress,
-# case2 = fl.Case("case-f71193a2-0ce1-40b5-a087-c456fcf0bb21")  # // 2
-# case3 = fl.Case("case-4dc6f67a-1bce-4152-b523-5822e09ce122")  # // 4
+for beta in [0, 5, 10]:
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(
+            meshing=None,
+            reference_geometry=fl.ReferenceGeometry(area=2.17, moment_length=2.7862),
+            operating_condition=fl.AerospaceCondition(velocity_magnitude=40, beta=beta * u.deg),
+            models=[
+                fl.Wall(surfaces=[vm[i] for i in wall_surfaces], use_wall_function=True),
+                fl.Freestream(
+                    surfaces=[vm[i] for i in freestream_surfaces],
+                ),
+                fl.SlipWall(
+                    surfaces=[vm[i] for i in slip_wall_surfaces],
+                ),
+            ],
+            user_defined_fields=[
+                fl.UserDefinedField(
+                    name="Cpx",
+                    expression="double prel = primitiveVars[4] - pressureFreestream;"
+                    + "double PressureForce_X = prel * nodeNormals[0]; "
+                    + "Cpx = PressureForce_X / (0.5 * MachRef * MachRef) / magnitude(nodeNormals);",
+                ),
+            ],
+            outputs=[
+                fl.SurfaceOutput(
+                    surfaces=vm["*"],
+                    output_fields=[
+                        "Cp",
+                        "Cf",
+                        "yPlus",
+                        "CfVec",
+                        "primitiveVars",
+                        "wall_shear_stress_magnitude",
+                        "Cpx",
+                    ],
+                ),
+                fl.SliceOutput(
+                    entities=[
+                        *[
+                            fl.Slice(
+                                name=f"slice_y_{name}",
+                                normal=(0, 1, 0),
+                                origin=(0, y, 0),
+                            )
+                            for name, y in zip(
+                                ["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8]
+                            )
+                        ],
+                        *[
+                            fl.Slice(
+                                name=f"slice_z_{name}",
+                                normal=(0, 0, 1),
+                                origin=(0, 0, z),
+                            )
+                            for name, z in zip(
+                                ["neg0_2", "0", "0_2", "0_4", "0_6", "0_8"],
+                                [-0.2, 0, 0.2, 0.4, 0.6, 0.8],
+                            )
+                        ],
+                    ],
+                    output_fields=["velocity", "velocity_x", "velocity_y", "velocity_z"],
+                ),
+                fl.IsosurfaceOutput(
+                    output_fields=["Cp", "Mach"],
+                    isosurfaces=[
+                        fl.Isosurface(
+                            name="isosurface-cpt",
+                            iso_value=-1,
+                            field="Cpt",
+                        ),
+                    ],
+                ),
+                fl.ProbeOutput(
+                    entities=[fl.Point(name="point1", location=(10, 0, 1))],
+                    output_fields=["velocity"],
+                ),
+            ],
+        )
 
+    case_new = project.run_case(params=params, name=f"DrivAer 5.7M - beta={beta}")
 
-# cases = [case1]
-# freestream_surfaces = ["blk-1/WT_side1", "blk-1/WT_side2", "blk-1/WT_inlet", "blk-1/WT_outlet"]
-# slip_wall_surfaces = ["blk-1/WT_ceiling", "blk-1/WT_ground_front", "blk-1/WT_ground"]
-# exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
-# size = "5.7M"
+    cases.append(case_new)
 
+# wait until all cases finish running
+for case in cases:
+    case.wait()
+
+exclude = ["blk-1/WT_ground_close", "blk-1/WT_ground_patch"]
+size = "5.7M"
 
 exclude += freestream_surfaces + slip_wall_surfaces
-
-SOLVER_VERSION = "reportPipeline-24.10.13"
-
 
 top_camera = TopCamera(pan_target=(1.5, 0, 0), dimension=5, dimension_dir="width")
 top_camera_slice = TopCamera(pan_target=(2.5, 0, 0), dimension=8, dimension_dir="width")
@@ -84,7 +161,6 @@ cameras_geo = [
     rear_right_bottom_camera,
 ]
 
-
 limits_cp = [(-1, 1), (-1, 1), (-1, 1), (-0.3, 0), (-0.3, 0), (-1, 1), (-1, 1), (-1, 1)]
 cameras_cp = [
     front_camera,
@@ -96,7 +172,6 @@ cameras_cp = [
     front_left_bottom_camera,
     rear_right_bottom_camera,
 ]
-
 
 avg = Average(fraction=0.1)
 CD = DataItem(data="surface_forces/totalCD", exclude=exclude, title="CD", operations=avg)
@@ -157,7 +232,6 @@ statistical_table = Table(
     ],
 )
 
-
 geometry_screenshots = [
     Chart3D(
         section_title="Geometry",
@@ -170,7 +244,6 @@ geometry_screenshots = [
     )
     for i, camera in enumerate(cameras_geo)
 ]
-
 cpt_screenshots = [
     Chart3D(
         section_title="Isosurface, Cpt=-1",
@@ -183,7 +256,6 @@ cpt_screenshots = [
     )
     for camera in cameras_cp
 ]
-
 cfvec_screenshots = [
     Chart3D(
         section_title="CfVec",
@@ -199,24 +271,6 @@ cfvec_screenshots = [
     )
     for camera in cameras_cp
 ]
-
-
-y_slices_screenshots = [
-    Chart3D(
-        section_title=f"Slice velocity y={y}",
-        items_in_row=2,
-        force_new_page=True,
-        show="slices",
-        include=[f"slice_y_{name}"],
-        field="velocity",
-        limits=(0 * u.m / u.s, 50 * u.m / u.s),
-        camera=side_camera_slice,
-        fig_name=f"slice_y_{name}",
-    )
-    for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
-]
-
-
 y_slices_lic_screenshots = [
     Chart3D(
         section_title=f"Slice velocity LIC y={y}",
@@ -232,7 +286,35 @@ y_slices_lic_screenshots = [
     )
     for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
 ]
-
+y_slices_screenshots = [
+    Chart3D(
+        section_title=f"Slice velocity y={y}",
+        items_in_row=2,
+        force_new_page=True,
+        show="slices",
+        include=[f"slice_y_{name}"],
+        field="velocity",
+        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        camera=side_camera_slice,
+        fig_name=f"slice_y_{name}",
+    )
+    for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
+]
+y_slices_lic_screenshots = [
+    Chart3D(
+        section_title=f"Slice velocity LIC y={y}",
+        items_in_row=2,
+        force_new_page=True,
+        show="slices",
+        include=[f"slice_y_{name}"],
+        field="velocityVec",
+        mode="lic",
+        limits=(0 * u.m / u.s, 50 * u.m / u.s),
+        camera=side_camera_slice,
+        fig_name=f"slice_y_vec_{name}",
+    )
+    for name, y in zip(["0", "0_2", "0_4", "0_6", "0_8"], [0, 0.2, 0.4, 0.6, 0.8])
+]
 z_slices_screenshots = [
     Chart3D(
         section_title=f"Slice velocity z={z}",
@@ -247,7 +329,6 @@ z_slices_screenshots = [
     )
     for name, z in zip(["neg0_2", "0", "0_2", "0_4", "0_6", "0_8"], [-0.2, 0, 0.2, 0.4, 0.6, 0.8])
 ]
-
 y_plus_screenshots = [
     Chart3D(
         section_title="y+",
@@ -287,7 +368,6 @@ cpx_screenshots = [
     )
     for i, camera in enumerate(cameras_cp)
 ]
-
 wall_shear_screenshots = [
     Chart3D(
         section_title="Wall shear stress magnitude",
@@ -324,13 +404,13 @@ report = ReportTemplate(
             focus_x=(1 / 3, 1),
         ),
         *geometry_screenshots,
-        *cpt_screenshots,
-        *y_slices_screenshots,
-        # *y_slices_lic_screenshots,
-        *z_slices_screenshots,
-        *y_plus_screenshots,
         *cp_screenshots,
         *cpx_screenshots,
+        *cpt_screenshots,
+        *y_slices_screenshots,
+        *y_slices_lic_screenshots,
+        *z_slices_screenshots,
+        *y_plus_screenshots,
         *wall_shear_screenshots,
     ],
     settings=Settings(dpi=150),
@@ -339,7 +419,7 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     f"{size}-{len(cases)}cases-slices-using-groups-Cpt, Cpx, wallShear, dpi=default",
     cases,
-    solver_version=SOLVER_VERSION,
+    solver_version=__solver_version__,
 )
 
 report.wait()

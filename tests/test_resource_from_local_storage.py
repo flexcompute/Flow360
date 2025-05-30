@@ -4,10 +4,20 @@ from typing import List, Optional
 import pydantic as pd
 import pytest
 
+import flow360.component.simulation.units as u
 from flow360 import log
 from flow360.component.case import Case, CaseMeta
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.models.volume_models import (
+    AngleExpression,
+    PorousMedium,
+    Rotation,
+)
+from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
 from flow360.component.utils import LocalResourceCache
 from flow360.component.volume_mesh import VolumeMeshMetaV2, VolumeMeshV2
@@ -46,6 +56,91 @@ class ResourceData(pd.BaseModel):
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+def pre_upload_change_reflection_vm(volume_mesh: VolumeMeshV2):
+    # Test Volume Mesh
+
+    with SI_unit_system:
+        volume_mesh["blk-1"].axis = (3, 0, 4)
+        volume_mesh["blk-1"].center = (3, 0, 4)
+        my_box = Box(
+            name="my_box_default",
+            center=(1, 2, 3),
+            size=(2, 2, 3),
+            angle_of_rotation=20 * u.deg,
+            axis_of_rotation=(1, 0, 0),
+        )
+        params = SimulationParams(
+            models=[
+                Rotation(volumes=[volume_mesh["blk-1"]], spec=AngleExpression("123*t")),
+                PorousMedium(
+                    volumes=my_box,
+                    darcy_coefficient=(1, 1, 1),
+                    forchheimer_coefficient=(0.1, 0.1, 0.2),
+                ),
+            ]
+        )
+    new_param = set_up_params_for_uploading(
+        root_asset=volume_mesh,
+        length_unit=1 * u.m,
+        params=params,
+        use_beta_mesher=False,
+        use_geometry_AI=False,
+    )
+    recorded_zone = new_param.private_attribute_asset_cache.project_entity_info.zones[0]
+    assert recorded_zone.axis == (0.6, 0.0, 0.8)
+    assert (recorded_zone.center == (3, 0.0, 4) * u.m).all()
+    assert my_box in new_param.private_attribute_asset_cache.project_entity_info.draft_entities
+
+
+def pre_upload_change_reflection_geo(geometry: Geometry):
+    # Test Volume Mesh
+    geometry.group_bodies_by_tag("groupByFile")
+    geometry.group_faces_by_tag("faceName")
+    with SI_unit_system:
+        # Renaming
+        geometry.rename_surfaces("fuselage", "main_boundary")
+        geometry.rename_body_groups("my_file.csm", "main_body")
+        geometry["main_body"].transformation.scale = (1, 2, 3)
+        my_box = Box(
+            name="my_box_default",
+            center=(1, 2, 3),
+            size=(2, 2, 3),
+            angle_of_rotation=20 * u.deg,
+            axis_of_rotation=(1, 0, 0),
+        )
+        params = SimulationParams(
+            models=[
+                PorousMedium(
+                    volumes=my_box,
+                    darcy_coefficient=(1, 1, 1),
+                    forchheimer_coefficient=(0.1, 0.1, 0.2),
+                ),
+            ]
+        )
+    new_param = set_up_params_for_uploading(
+        root_asset=geometry,
+        length_unit=1 * u.m,
+        params=params,
+        use_beta_mesher=False,
+        use_geometry_AI=False,
+    )
+    assert new_param.private_attribute_asset_cache.project_entity_info.face_group_tag == "faceName"
+    assert (
+        new_param.private_attribute_asset_cache.project_entity_info.body_group_tag == "groupByFile"
+    )
+    assert (
+        new_param.private_attribute_asset_cache.project_entity_info.grouped_faces[0][1].name
+        == "main_boundary"
+    )
+    assert (
+        new_param.private_attribute_asset_cache.project_entity_info.grouped_bodies[1][0].name
+        == "main_body"
+    )
+    assert new_param.private_attribute_asset_cache.project_entity_info.grouped_bodies[1][
+        0
+    ].transformation.scale == (1, 2, 3)
 
 
 def test_resources_from_local_storage_geo():
@@ -181,6 +276,7 @@ def test_resources_from_local_storage_geo():
             ),
         )
         cache.add(vm)
+        pre_upload_change_reflection_vm(volume_mesh=vm)
 
         sm_meta = case_meta.path.surface_mesh
         if sm_meta is not None:
@@ -210,6 +306,7 @@ def test_resources_from_local_storage_geo():
                     )
                 ),
             )
+            pre_upload_change_reflection_geo(geometry=geo)
             cache.add(geo)
 
     cases = [cache[case.id] for case in resource_data.cases]

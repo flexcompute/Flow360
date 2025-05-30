@@ -1,8 +1,11 @@
 import copy
 import json
+import os
+import re
 from enum import Enum
 
 import pytest
+import toml
 
 from flow360.component.simulation.framework.updater import (
     VERSION_MILESTONES,
@@ -10,7 +13,7 @@ from flow360.component.simulation.framework.updater import (
     updater,
 )
 from flow360.component.simulation.framework.updater_utils import Flow360Version
-from flow360.component.simulation.services import validate_model
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.validation.validation_context import ALL
 from flow360.version import __version__
 
@@ -18,6 +21,24 @@ from flow360.version import __version__
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+def test_version_consistency():
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+    pyproject_path = os.path.join(project_root, "pyproject.toml")
+
+    # Load the pyproject.toml file
+    with open(pyproject_path, "r") as f:
+        config = toml.load(f)
+
+    # Extract the version value from the pyproject.toml under [tool.poetry]
+    pyproject_version = config["tool"]["poetry"]["version"]
+
+    # Assert the version in pyproject.toml matches the internal __version__
+    assert pyproject_version == "v" + __version__, (
+        f"Version mismatch: pyproject.toml version is {pyproject_version}, "
+        f"but __version__ is {__version__}"
+    )
 
 
 def test_version_greater_than_highest_updater_version():
@@ -148,27 +169,22 @@ def test_updater_completeness():
     )
     assert res == [], "Case 11: crosses nothing => []"
 
-    # 12) from >99.11.3, to >99.11.3 => ValueError => []
-    with pytest.raises(
-        ValueError,
-        match=r"Input `SimulationParams` have higher version than all known versions and thus cannot be handled.",
-    ):
-        _find_update_path(
-            version_from=Flow360Version("99.11.4"),
-            version_to=Flow360Version("99.11.5"),
-            version_milestones=version_milestones,
-        )
+    # 12) from >99.11.3, to >99.11.3 => forward compatability mode
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.4"),
+        version_to=Flow360Version("99.11.5"),
+        version_milestones=version_milestones,
+    )
+    assert res == []
 
-    # 13) to < from => ValueError
-    with pytest.raises(
-        ValueError,
-        match=r"Input `SimulationParams` have higher version than the target version and thus cannot be handled.",
-    ):
-        _find_update_path(
-            version_from=Flow360Version("99.11.3"),
-            version_to=Flow360Version("99.11.2"),
-            version_milestones=version_milestones,
-        )
+    # 13) to < from => forward compatability mode
+
+    res = _find_update_path(
+        version_from=Flow360Version("99.11.3"),
+        version_to=Flow360Version("99.11.2"),
+        version_milestones=version_milestones,
+    )
+    assert res == []
 
     # 14) [more than 2 versions] to > max version
     version_milestones = [
@@ -268,6 +284,23 @@ def test_updater_to_24_11_7():
             1
         ]["private_attribute_id"]
     )
+
+    with open("../data/simulation/simulation_pre_24_11_1_symmetry.json", "r") as fp:
+        params_pre_24_11_1_symmetry = json.load(fp)
+
+    params_pre_24_11_1_symmetry = updater(
+        version_from="24.11.6", version_to="24.11.7", params_as_dict=params_pre_24_11_1_symmetry
+    )
+
+    updated_surface_1 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][1]
+    updated_surface_2 = params_pre_24_11_1_symmetry["private_attribute_asset_cache"][
+        "project_entity_info"
+    ]["ghost_entities"][2]
+
+    assert updated_surface_1["name"] == "symmetric-1"
+    assert updated_surface_2["name"] == "symmetric-2"
 
 
 def test_updater_to_25_2_0():
@@ -435,8 +468,81 @@ def test_updater_to_25_2_3():
     )
 
 
+def test_updater_to_25_4_1():
+    with open("../data/simulation/simulation_pre_25_4_1.json", "r") as fp:
+        params = json.load(fp)
+
+    geometry_relative_accuracy = params["meshing"]["defaults"]["geometry_relative_accuracy"]
+
+    params_new = updater(
+        version_from=f"25.4.0",
+        version_to=f"25.4.1",
+        params_as_dict=params,
+    )
+
+    assert (
+        params_new["meshing"]["defaults"]["geometry_accuracy"]["value"]
+        == geometry_relative_accuracy
+    )
+    assert params_new["meshing"]["defaults"]["geometry_accuracy"]["units"] == "m"
+
+
+def test_updater_to_25_6_0():
+    with open("../data/simulation/simulation_pre_25_6_0.json", "r") as fp:
+        params = json.load(fp)
+
+    def _update_to_25_6_0(pre_update_param_as_dict):
+        params_new = updater(
+            version_from=f"25.5.1",
+            version_to=f"25.6.0",
+            params_as_dict=pre_update_param_as_dict,
+        )
+        return params_new
+
+    def _ensure_validity(params):
+        params_new, _, _ = validate_model(
+            params_as_dict=params,
+            validated_by=ValidationCalledBy.LOCAL,
+            root_item_type="VolumeMesh",
+        )
+        assert params_new
+
+    pre_update_param_as_dict = copy.deepcopy(params)
+    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    assert params_new["models"][2]["velocity_direction"] == [0, -1, 0]
+    assert "velocity_direction" not in params_new["models"][2]["spec"]
+    _ensure_validity(params_new)
+
+    pre_update_param_as_dict = copy.deepcopy(params)
+    pre_update_param_as_dict["models"][2]["spec"]["velocity_direction"] = None
+    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    assert "velocity_direction" not in params_new["models"][2]
+    assert "velocity_direction" not in params_new["models"][2]["spec"]
+    _ensure_validity(params_new)
+
+    pre_update_param_as_dict = copy.deepcopy(params)
+    pre_update_param_as_dict["models"][2]["spec"].pop("velocity_direction")
+    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    assert "velocity_direction" not in params_new["models"][2]
+    assert "velocity_direction" not in params_new["models"][2]["spec"]
+    _ensure_validity(params_new)
+
+    pre_update_param_as_dict = copy.deepcopy(params)
+    pre_update_param_as_dict["models"][2]["spec"].pop("velocity_direction")
+    pre_update_param_as_dict["models"][2]["velocity_direction"] = [0, -1, 0]
+    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    assert params_new["models"][2]["velocity_direction"] == [0, -1, 0]
+    assert "velocity_direction" not in params_new["models"][2]["spec"]
+    _ensure_validity(params_new)
+
+
 def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0
     with open("../data/simulation/simulation_24_11_0.json", "r") as fp:
         params = json.load(fp)
-    validate_model(params_as_dict=params, root_item_type="VolumeMesh", validation_level=ALL)
+    validate_model(
+        params_as_dict=params,
+        root_item_type="VolumeMesh",
+        validated_by=ValidationCalledBy.LOCAL,
+        validation_level=ALL,
+    )

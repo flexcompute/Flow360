@@ -31,6 +31,32 @@ DISCRIMINATOR_NAMES = [
 ]
 
 
+def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup):
+    new_list = []
+    for i, item in enumerate(value):
+        # Extend the 'required_by' path with the current index.
+        new_required_by = required_by + [f"{i}"]
+        if isinstance(item, list):
+            # Recursively process nested lists.
+            new_list.append(
+                _preprocess_nested_list(item, new_required_by, params, exclude, registry_lookup)
+            )
+        elif isinstance(item, Flow360BaseModel):
+            # Process Flow360BaseModel instances.
+            new_list.append(
+                item.preprocess(
+                    params=params,
+                    required_by=new_required_by,
+                    exclude=exclude,
+                    registry_lookup=registry_lookup,
+                )
+            )
+        else:
+            # Return item unchanged if it doesn't need processing.
+            new_list.append(item)
+    return new_list
+
+
 def snake_to_camel(string: str) -> str:
     """
     Convert a snake_case string to camelCase.
@@ -631,13 +657,9 @@ class Flow360BaseModel(pd.BaseModel):
                     registry_lookup=registry_lookup,
                 )
             elif isinstance(value, list):
-                for i, item in enumerate(value):
-                    if isinstance(item, Flow360BaseModel):
-                        solver_values[property_name][i] = item.preprocess(
-                            params=params,
-                            required_by=[*required_by, loc_name, f"{i}"],
-                            exclude=exclude,
-                            registry_lookup=registry_lookup,
-                        )
+                # Use the helper to handle nested lists.
+                solver_values[property_name] = _preprocess_nested_list(
+                    value, [loc_name], params, exclude, registry_lookup
+                )
 
         return self.__class__(**solver_values)

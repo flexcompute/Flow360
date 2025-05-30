@@ -11,7 +11,7 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
 
@@ -19,9 +19,19 @@ from flow360.component.simulation.validation_utils import (
 class SurfaceRefinement(Flow360BaseModel):
     """
     Setting for refining surface elements for given `Surface`.
+
+    Example
+    -------
+
+      >>> fl.SurfaceRefinement(
+      ...     faces=[geometry["face1"], geometry["face2"]],
+      ...     max_edge_length=0.001*fl.u.m
+      ... )
+
+    ====
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Surface refinement")
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
@@ -40,9 +50,19 @@ class PassiveSpacing(Flow360BaseModel):
     """
     Passively control the mesh spacing either through adjecent `Surface`'s meshing
     setting or doing nothing to change existing surface mesh at all.
+
+    Example
+    -------
+
+      >>> fl.PassiveSpacing(
+      ...     faces=[geometry["face1"], geometry["face2"]],
+      ...     type="projected"
+      ... )
+
+    ====
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Passive spacing")
     type: Literal["projected", "unchanged"] = pd.Field(
         description="""
         1. When set to *projected*, turn off anisotropic layers growing for this `Surface`. 
@@ -65,9 +85,20 @@ class PassiveSpacing(Flow360BaseModel):
 class BoundaryLayer(Flow360BaseModel):
     """
     Setting for growing anisotropic layers orthogonal to the specified `Surface` (s).
+
+    Example
+    -------
+
+      >>> fl.BoundaryLayer(
+      ...     faces=[geometry["face1"], geometry["face2"]],
+      ...     first_layer_thickness=1e-5,
+      ...     growth_rate=1.15
+      ... )
+
+    ====
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Boundary layer refinement")
     refinement_type: Literal["BoundaryLayer"] = pd.Field("BoundaryLayer", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member

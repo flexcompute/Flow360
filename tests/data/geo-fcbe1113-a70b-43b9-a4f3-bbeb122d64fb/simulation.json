@@ -1,0 +1,1388 @@
+{
+    "version": "25.4.0b1",
+    "unit_system": {
+        "name": "SI"
+    },
+    "meshing": {
+        "refinement_factor": 1.0,
+        "gap_treatment_strength": 0.0,
+        "defaults": {
+            "surface_edge_growth_rate": 1.2,
+            "boundary_layer_growth_rate": 1.2,
+            "geometry_tolerance": 1e-06,
+            "curvature_resolution_angle": {
+                "value": 12.0,
+                "units": "degree"
+            }
+        },
+        "refinements": [],
+        "volume_zones": [
+            {
+                "type": "AutomatedFarfield",
+                "name": "Farfield",
+                "method": "auto"
+            }
+        ]
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "units": "m"
+        },
+        "moment_length": {
+            "value": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "units": "m"
+        },
+        "area": {
+            "value": 1.0,
+            "units": "m**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "default",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {},
+                "temperature": {
+                    "value": 288.15,
+                    "units": "K"
+                },
+                "density": {
+                    "value": 1.225,
+                    "units": "kg/m**3"
+                },
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {
+                            "value": 1.716e-05,
+                            "units": "Pa*s"
+                        },
+                        "reference_temperature": {
+                            "value": 273.15,
+                            "units": "K"
+                        },
+                        "effective_temperature": {
+                            "value": 110.4,
+                            "units": "K"
+                        }
+                    }
+                }
+            }
+        },
+        "alpha": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "density": {
+                "value": 1.225,
+                "units": "kg/m**3"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        }
+    },
+    "models": [
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_potential_issues": []
+                    }
+                ]
+            },
+            "name": "Wall",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0.0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "m"
+            }
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostSurface",
+                        "name": "farfield"
+                    }
+                ]
+            },
+            "name": "Freestream"
+        },
+        {
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 30
+                },
+                "CFL_multiplier": 1.0,
+                "kappa_MUSCL": -1.0,
+                "numerical_dissipation_factor": 1.0,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-08,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "CFL_multiplier": 2.0,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10.0
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 2000,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "max_relative_change": 1.0,
+            "convergence_limiting_factor": 0.25
+        }
+    },
+    "user_defined_fields": [],
+    "outputs": [
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "Surface output",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_potential_issues": []
+                    }
+                ]
+            },
+            "write_single_file": false,
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "yPlus",
+                    "Cf",
+                    "CfVec"
+                ]
+            },
+            "output_type": "SurfaceOutput"
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1.0,
+            "units": "m"
+        },
+        "use_inhouse_mesher": false,
+        "use_geometry_AI": false,
+        "project_entity_info": {
+            "draft_entities": [],
+            "ghost_entities": [
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostSphere",
+                    "private_attribute_id": "farfield",
+                    "name": "farfield",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0.8739013671875,
+                        -0.489715576171875,
+                        0.786285400390625
+                    ],
+                    "max_radius": 99887.74719238281
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-1",
+                    "name": "symmetric-1",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0.8739013671875,
+                        -998.6343994140625,
+                        0.786285400390625
+                    ],
+                    "max_radius": 1997.7549438476562,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-2",
+                    "name": "symmetric-2",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0.8739013671875,
+                        997.6549682617188,
+                        0.786285400390625
+                    ],
+                    "max_radius": 1997.7549438476562,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                }
+            ],
+            "type_name": "GeometryEntityInfo",
+            "body_ids": [
+                "airplane_translate_in_z_-5.stl",
+                "body00001",
+                "farfield_only_sphere_volume_mesh.lb8.ugrid"
+            ],
+            "body_attribute_names": [
+                "FCsource",
+                "bodyId",
+                "groupByFile"
+            ],
+            "grouped_bodies": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "airplane_simple_obtained_from_csm_by_esp.step",
+                        "name": "airplane_simple_obtained_from_csm_by_esp.step",
+                        "private_attribute_tag_key": "FCsource",
+                        "private_attribute_sub_components": [
+                            "body00001"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "airplane_translate_in_z_-5.stl",
+                        "name": "airplane_translate_in_z_-5.stl",
+                        "private_attribute_tag_key": "__standalone__",
+                        "private_attribute_sub_components": [
+                            "airplane_translate_in_z_-5.stl"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+                        "name": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+                        "private_attribute_tag_key": "__standalone__",
+                        "private_attribute_sub_components": [
+                            "farfield_only_sphere_volume_mesh.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "body00001",
+                        "name": "body00001",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "body00001"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "airplane_translate_in_z_-5.stl",
+                        "name": "airplane_translate_in_z_-5.stl",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "airplane_translate_in_z_-5.stl"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+                        "name": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "farfield_only_sphere_volume_mesh.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "airplane_simple_obtained_from_csm_by_esp.step",
+                        "name": "airplane_simple_obtained_from_csm_by_esp.step",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "body00001"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "airplane_translate_in_z_-5.stl",
+                        "name": "airplane_translate_in_z_-5.stl",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "airplane_translate_in_z_-5.stl"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+                        "name": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "farfield_only_sphere_volume_mesh.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        }
+                    }
+                ]
+            ],
+            "face_ids": [
+                "airplane_translate_in_z_-5.stl_body",
+                "body00001_face00001",
+                "body00001_face00002",
+                "body00001_face00003",
+                "body00001_face00004",
+                "body00001_face00005",
+                "body00001_face00006",
+                "body00001_face00007",
+                "body00001_face00008",
+                "body00001_face00009",
+                "body00001_face00010",
+                "body00001_face00011",
+                "body00001_face00012",
+                "body00001_face00013",
+                "body00001_face00014",
+                "farfield_only_sphere_volume_mesh.lb8.ugrid_1",
+                "farfield_only_sphere_volume_mesh.lb8.ugrid_2"
+            ],
+            "face_attribute_names": [
+                "faceId"
+            ],
+            "grouped_faces": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00001",
+                        "name": "body00001_face00001",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00001"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00002",
+                        "name": "body00001_face00002",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00002"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00003",
+                        "name": "body00001_face00003",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00003"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00004",
+                        "name": "body00001_face00004",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00004"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00005",
+                        "name": "body00001_face00005",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00005"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00006",
+                        "name": "body00001_face00006",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00006"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00007",
+                        "name": "body00001_face00007",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00007"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00008",
+                        "name": "body00001_face00008",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00008"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00009",
+                        "name": "body00001_face00009",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00009"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00010",
+                        "name": "body00001_face00010",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00010"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00011",
+                        "name": "body00001_face00011",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00011"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00012",
+                        "name": "body00001_face00012",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00012"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00013",
+                        "name": "body00001_face00013",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00013"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body00001_face00014",
+                        "name": "body00001_face00014",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body00001_face00014"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "airplane_translate_in_z_-5.stl_body",
+                        "name": "airplane_translate_in_z_-5.stl_body",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "airplane_translate_in_z_-5.stl_body"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "farfield_only_sphere_volume_mesh.lb8.ugrid_1",
+                        "name": "farfield_only_sphere_volume_mesh.lb8.ugrid_1",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "farfield_only_sphere_volume_mesh.lb8.ugrid_1"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "farfield_only_sphere_volume_mesh.lb8.ugrid_2",
+                        "name": "farfield_only_sphere_volume_mesh.lb8.ugrid_2",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "farfield_only_sphere_volume_mesh.lb8.ugrid_2"
+                        ],
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_color": null
+                    }
+                ]
+            ],
+            "edge_ids": [
+                "body00001_edge00001",
+                "body00001_edge00002",
+                "body00001_edge00003",
+                "body00001_edge00004",
+                "body00001_edge00006",
+                "body00001_edge00007",
+                "body00001_edge00008",
+                "body00001_edge00009",
+                "body00001_edge00011",
+                "body00001_edge00012",
+                "body00001_edge00013",
+                "body00001_edge00014",
+                "body00001_edge00015",
+                "body00001_edge00016",
+                "body00001_edge00017",
+                "body00001_edge00018",
+                "body00001_edge00019",
+                "body00001_edge00020",
+                "body00001_edge00021",
+                "body00001_edge00022",
+                "body00001_edge00023",
+                "body00001_edge00024",
+                "body00001_edge00025",
+                "body00001_edge00026",
+                "body00001_edge00027",
+                "body00001_edge00028",
+                "body00001_edge00030",
+                "body00001_edge00031",
+                "body00001_edge00032",
+                "body00001_edge00033"
+            ],
+            "edge_attribute_names": [
+                "edgeId"
+            ],
+            "grouped_edges": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00001",
+                        "name": "body00001_edge00001",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00001"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00002",
+                        "name": "body00001_edge00002",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00002"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00003",
+                        "name": "body00001_edge00003",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00003"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00004",
+                        "name": "body00001_edge00004",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00004"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00006",
+                        "name": "body00001_edge00006",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00006"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00007",
+                        "name": "body00001_edge00007",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00007"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00008",
+                        "name": "body00001_edge00008",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00008"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00009",
+                        "name": "body00001_edge00009",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00009"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00011",
+                        "name": "body00001_edge00011",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00011"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00012",
+                        "name": "body00001_edge00012",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00012"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00013",
+                        "name": "body00001_edge00013",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00013"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00014",
+                        "name": "body00001_edge00014",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00014"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00015",
+                        "name": "body00001_edge00015",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00015"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00016",
+                        "name": "body00001_edge00016",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00016"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00017",
+                        "name": "body00001_edge00017",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00017"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00018",
+                        "name": "body00001_edge00018",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00018"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00019",
+                        "name": "body00001_edge00019",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00019"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00020",
+                        "name": "body00001_edge00020",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00020"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00021",
+                        "name": "body00001_edge00021",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00021"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00022",
+                        "name": "body00001_edge00022",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00022"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00023",
+                        "name": "body00001_edge00023",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00023"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00024",
+                        "name": "body00001_edge00024",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00024"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00025",
+                        "name": "body00001_edge00025",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00025"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00026",
+                        "name": "body00001_edge00026",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00026"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00027",
+                        "name": "body00001_edge00027",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00027"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00028",
+                        "name": "body00001_edge00028",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00028"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00030",
+                        "name": "body00001_edge00030",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00030"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00031",
+                        "name": "body00001_edge00031",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00031"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00032",
+                        "name": "body00001_edge00032",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00032"
+                        ]
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "EdgeEntityType",
+                        "private_attribute_entity_type_name": "Edge",
+                        "private_attribute_id": "body00001_edge00033",
+                        "name": "body00001_edge00033",
+                        "private_attribute_tag_key": "edgeId",
+                        "private_attribute_sub_components": [
+                            "body00001_edge00033"
+                        ]
+                    }
+                ]
+            ],
+            "body_group_tag": null,
+            "face_group_tag": null,
+            "edge_group_tag": null
+        }
+    }
+}

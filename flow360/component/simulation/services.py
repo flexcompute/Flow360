@@ -2,11 +2,12 @@
 
 # pylint: disable=duplicate-code
 import json
-import re
+from enum import Enum
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 
+from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
@@ -14,21 +15,18 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
-# pylint: disable=unused-import
-from flow360.component.simulation.models.volume_models import (
-    BETDisk,  # For parse_model_dict
+# Following unused-import for supporting parse_model_dict
+from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
+    BETDisk,
 )
-from flow360.component.simulation.operating_condition.operating_condition import (
-    GenericReferenceCondition,  # For parse_model_dict
-)
-from flow360.component.simulation.operating_condition.operating_condition import (
-    ThermalState,  # For parse_model_dict
-)
-from flow360.component.simulation.operating_condition.operating_condition import (
+from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
     AerospaceCondition,
+    GenericReferenceCondition,
+    ThermalState,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box, Surface  # For parse_model_dict
+from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
+from flow360.component.simulation.primitives import Surface  # For parse_model_dict
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -50,16 +48,15 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.component.simulation.utils import (
-    get_unit_system_name_from_simulation_params_dict,
-    model_attribute_unlock,
-)
+from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
     ValidationContext,
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
+from flow360.plugins.report.report import get_default_report_summary_template
+from flow360.version import __version__
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -104,22 +101,28 @@ def init_unit_system(unit_system_name) -> UnitSystem:
     return unit_system
 
 
-def _store_project_length_unit(length_unit, params: SimulationParams):
-    if length_unit is not None:
+def _store_project_length_unit(project_length_unit, params: SimulationParams):
+    if project_length_unit is not None:
         # Store the length unit so downstream services/pipelines can use it
         # pylint: disable=fixme
         # TODO: client does not call this. We need to start using new webAPI for that
         with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
             # pylint: disable=assigning-non-slot,no-member
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
-            )
+            params.private_attribute_asset_cache.project_length_unit = project_length_unit
     return params
+
+
+def _get_default_reference_geometry(length_unit: LengthType):
+    return ReferenceGeometry(
+        area=1 * length_unit**2,
+        moment_center=(0, 0, 0) * length_unit,
+        moment_length=(1, 1, 1) * length_unit,
+    )
 
 
 def get_default_params(
     unit_system_name, length_unit, root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"]
-) -> SimulationParams:
+) -> dict:
     """
     Returns default parameters in a given unit system. The defaults are not correct SimulationParams object as they may
     contain empty required values. When generating default case settings:
@@ -133,17 +136,16 @@ def get_default_params(
 
     Returns
     -------
-    SimulationParams
-        Default parameters for Flow360 simulation.
+    dict
+        Default parameters for Flow360 simulation stored in a dictionary.
 
     """
 
     unit_system = init_unit_system(unit_system_name)
     dummy_value = 0.1
+    project_length_unit = LengthType.validate(length_unit)  # pylint: disable=no-member
     with unit_system:
-        reference_geometry = ReferenceGeometry(
-            area=1, moment_center=(0, 0, 0), moment_length=(1, 1, 1)
-        )
+        reference_geometry = _get_default_reference_geometry(project_length_unit)
         operating_condition = AerospaceCondition(velocity_magnitude=dummy_value)
         surface_output = SurfaceOutput(
             name="Surface output",
@@ -161,13 +163,17 @@ def get_default_params(
                 ),
                 operating_condition=operating_condition,
                 models=[
-                    Wall(name="Wall", surfaces=[Surface(name="*")]),
+                    Wall(
+                        name="Wall",
+                        surfaces=[Surface(name="*")],
+                        roughness_height=0 * project_length_unit,
+                    ),
                     Freestream(name="Freestream", surfaces=[automated_farfield.farfield]),
                 ],
                 outputs=[surface_output],
             )
 
-        params = _store_project_length_unit(length_unit, params)
+        params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
             exclude_none=True,
@@ -184,7 +190,9 @@ def get_default_params(
                 operating_condition=operating_condition,
                 models=[
                     Wall(
-                        name="Wall", surfaces=[Surface(name="placeholder1")]
+                        name="Wall",
+                        surfaces=[Surface(name="placeholder1")],
+                        roughness_height=0 * project_length_unit,
                     ),  # to make it consistent with geo
                     Freestream(
                         name="Freestream", surfaces=[Surface(name="placeholder2")]
@@ -196,7 +204,7 @@ def get_default_params(
         params.models[0].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
         params.models[1].entities.stored_entities = []  # pylint: disable=unsubscriptable-object
 
-        params = _store_project_length_unit(length_unit, params)
+        params = _store_project_length_unit(project_length_unit, params)
 
         return params.model_dump(
             exclude_none=True,
@@ -231,9 +239,69 @@ def _intersect_validation_levels(requested_levels, available_levels):
     return None
 
 
+class ValidationCalledBy(Enum):
+    """
+    Enum as indicator where `validate_model()` is called.
+    """
+
+    LOCAL = "Local"
+    SERVICE = "Service"
+    PIPELINE = "Pipeline"
+
+    def get_forward_compatibility_error_message(self, version_from: str, version_to: str):
+        """
+        Return error message string indicating that the forward compatability is not guaranteed.
+        """
+        error_suffix = " Errors may occur since forward compatibility is limited."
+        if self == ValidationCalledBy.LOCAL:
+            return {
+                "type": (f"{version_from} > {version_to}"),
+                "loc": [],
+                "msg": "The cloud `SimulationParam` is too new for your local Python client."
+                + error_suffix,
+                "ctx": {},
+            }
+        if self == ValidationCalledBy.SERVICE:
+            return {
+                "type": (f"{version_from} > {version_to}"),
+                "loc": [],
+                "msg": "Your `SimulationParams` is too new for the solver." + error_suffix,
+                "ctx": {},
+            }
+        if self == ValidationCalledBy.PIPELINE:
+            # These will only appear in log. Ideally we should not rely on pipelines
+            # to emit useful error messages. Or else the local/service validation is not doing their jobs properly.
+            return {
+                # pylint:disable = protected-access
+                "type": (f"{version_from} > {version_to}"),
+                "loc": [],
+                "msg": "[Internal] Your `SimulationParams` is too new for the solver."
+                + error_suffix,
+                "ctx": {},
+            }
+        return None
+
+
+def _insert_forward_compatibility_notice(
+    validation_errors: list,
+    params_as_dict: dict,
+    validated_by: ValidationCalledBy,
+    version_to: str = __version__,
+):
+    # If error occurs, inform user that the error message could due to failure in forward compatibility.
+    # pylint:disable=protected-access
+    version_from = SimulationParams._get_version_from_dict(model_dict=params_as_dict)
+    forward_compatibility_failure_error = validated_by.get_forward_compatibility_error_message(
+        version_from=version_from, version_to=version_to
+    )
+    validation_errors.insert(0, forward_compatibility_failure_error)
+    return validation_errors
+
+
 def validate_model(
     *,
     params_as_dict,
+    validated_by: ValidationCalledBy,
     root_item_type: Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
     validation_level: Union[
         Literal["SurfaceMesh", "VolumeMesh", "Case", "All"], list, None
@@ -246,6 +314,8 @@ def validate_model(
     ----------
     params_as_dict : dict
         The parameters dictionary to validate.
+    validated_by : ValidationCalledBy
+        Indicator of where the `validate_model` function is called. Allowing generation of helpful messages.
     root_item_type : Union[Literal["Geometry", "SurfaceMesh", "VolumeMesh"], None],
         The root item type for validation. If None then no context-aware validation is performed.
     validation_level : Literal["SurfaceMesh", "VolumeMesh", "Case", "All"] or a list of literals, optional
@@ -270,13 +340,20 @@ def validate_model(
     # We always assume we want to run case so that we can expose as many errors as possible
     available_levels = _determine_validation_level(up_to="Case", root_item_type=root_item_type)
     validation_levels_to_use = _intersect_validation_levels(validation_level, available_levels)
+    forward_compatibility_mode = False
+
     try:
-        params_as_dict = parse_model_dict(params_as_dict, globals())
         # pylint: disable=protected-access
-        updated_param_as_dict = SimulationParams._update_param_dict(params_as_dict)
+        # Note: Need to run updater first to accomodate possible schema change in input caches.
+        updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
+            params_as_dict
+        )
+
+        updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
+
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
-            validated_param = SimulationParams(file_content=params_as_dict)
+            validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught
@@ -284,6 +361,14 @@ def validate_model(
 
     if validation_errors is not None:
         validation_errors = validate_error_locations(validation_errors, params_as_dict)
+
+    if forward_compatibility_mode and validation_errors is not None:
+        # pylint: disable=fixme
+        # TODO: If forward compatibility issue found. Try to tell user how they can get around it.
+        # TODO: Recommend solver/python client version they should use instead.
+        validation_errors = _insert_forward_compatibility_notice(
+            validation_errors, params_as_dict, validated_by
+        )
 
     return validated_param, validation_errors, validation_warnings
 
@@ -563,6 +648,7 @@ def generate_process_json(
     # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
     params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.SERVICE,  # This is called only by web service currently.
         root_item_type=root_item_type,
         validation_level=validation_level,
     )
@@ -578,32 +664,62 @@ def generate_process_json(
 
 
 def _convert_unit_in_dict(
-    *, data: dict, target_unit_system: u.UnitSystem, delta_temperature_unit: u.Unit
+    *,
+    data: dict,
+    target_unit_system: Literal["SI", "Imperial", "CGS"],
+    is_delta_temperature: bool,
 ):
-    # Get angle unit from the input because we do not want to change it.
-    angle_unit = "degree" if re.search(r"\bdegree\b", data["units"]) else "rad"
-    target_unit_system["angle"] = angle_unit
+
+    def get_new_unit_as_string(
+        old_unit: u.Unit,
+        unit_system: Literal["SI", "Imperial", "CGS"],
+        is_delta_temperature: bool,
+    ) -> str:
+        dimension_str = (
+            str(old_unit.dimensions) if not is_delta_temperature else "(temperature_difference)"
+        )
+        assert (
+            dimension_str in supported_units_by_front_end
+        ), f"Unknown dimension found: {dimension_str}"
+
+        if isinstance(supported_units_by_front_end[dimension_str], list):
+            # This is a unit system agnostic dimension
+            for unit in supported_units_by_front_end[dimension_str]:
+                if u.Unit(unit) == old_unit:
+                    return unit
+            return supported_units_by_front_end[dimension_str][0]
+        return supported_units_by_front_end[dimension_str][unit_system]
+
+    def get_converted_value(original_value, old_unit, new_unit):
+        if isinstance(original_value, Collection):
+            new_value = []
+            for value in original_value:
+                value = (value * old_unit).to(new_unit).value
+                new_value.append(float(value))
+        else:
+            new_value = float((original_value * old_unit).to(new_unit).value)
+        return new_value
+
     old_unit = u.Unit(data["units"])
-    if str(old_unit) == str(u.Unit("delta_degC")) or str(old_unit) == str(u.Unit("delta_degC")):
-        # Special treatment for delta temperatures
-        new_unit = delta_temperature_unit
-    else:
-        new_unit = target_unit_system[old_unit.dimensions]
+    new_unit_str = get_new_unit_as_string(
+        old_unit, target_unit_system, is_delta_temperature=is_delta_temperature
+    )
+    new_unit = u.Unit(new_unit_str)
+    new_value = get_converted_value(data["value"], old_unit, new_unit)
 
-    if isinstance(data["value"], Collection):
-        new_value = []
-        for value in data["value"]:
-            value = (value * old_unit).to(new_unit).value
-            new_value.append(float(value))
-        data["value"] = new_value
-    else:
-        data["value"] = float((data["value"] * old_unit).to(new_unit).value)
-
-    data["units"] = str(new_unit.expr)
+    data["value"] = new_value
+    data["units"] = new_unit_str
     return data
 
 
-def _recursive_change_unit_system(*, data, target_unit_system, delta_temperature_unit) -> None:
+def change_unit_system(
+    *, data, target_unit_system: Literal["SI", "Imperial", "CGS"], current_key: str = None
+) -> None:
+    """
+    Recursively traverse a nested structure of dicts/lists.
+    If a dict has exactly the structure {'value': XX, 'units': XX},
+    Try to convert to the new unit system
+    """
 
     if isinstance(data, dict):
         # 1. Check if dict matches the desired pattern
@@ -611,51 +727,21 @@ def _recursive_change_unit_system(*, data, target_unit_system, delta_temperature
             data = _convert_unit_in_dict(
                 data=data,
                 target_unit_system=target_unit_system,
-                delta_temperature_unit=delta_temperature_unit,
+                is_delta_temperature=current_key == "temperature_offset",
             )
 
         # 2. Otherwise, recurse into each item in the dictionary
-        for _, val in data.items():
-            _recursive_change_unit_system(
+        for key, val in data.items():
+            change_unit_system(
                 data=val,
                 target_unit_system=target_unit_system,
-                delta_temperature_unit=delta_temperature_unit,
+                current_key=key,
             )
 
     elif isinstance(data, list):
         # Recurse into each item in the list
         for _, item in enumerate(data):
-            _recursive_change_unit_system(
-                data=item,
-                target_unit_system=target_unit_system,
-                delta_temperature_unit=delta_temperature_unit,
-            )
-
-
-def change_unit_system(*, data, new_unit_system: Literal["SI", "Imperial", "CGS"]):
-    """
-    Recursively traverse a nested structure of dicts/lists.
-    If a dict has exactly the structure {'value': XX, 'units': XX},
-    Try to convert to the new unit system
-    """
-    # Step 1: Get the new unit system that we want
-    if new_unit_system == "SI":
-        delta_temperature_unit = u.Unit("K")
-        target_unit_system = u.UnitSystem("__Converter", "m", "kg", "s")
-    elif new_unit_system == "Imperial":
-        delta_temperature_unit = u.Unit("delta_degF")
-        target_unit_system = u.UnitSystem("__Converter", "ft", "lb", "s", temperature_unit="degF")
-    elif new_unit_system == "CGS":
-        delta_temperature_unit = u.Unit("K")
-        target_unit_system = u.UnitSystem("__Converter", "cm", "g", "s")
-    else:
-        raise ValueError(f"Unknown input unit system: {new_unit_system}")
-
-    _recursive_change_unit_system(
-        data=data,
-        target_unit_system=target_unit_system,
-        delta_temperature_unit=delta_temperature_unit,
-    )
+            change_unit_system(data=item, target_unit_system=target_unit_system)
 
 
 def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):
@@ -666,10 +752,29 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
     updated_params_as_dict: dict = None
     try:
         # pylint:disable = protected-access
-        updated_params_as_dict = SimulationParams._update_param_dict(
+        updated_params_as_dict, input_has_higher_version = SimulationParams._update_param_dict(
             params_as_dict, target_python_api_version
         )
+        if input_has_higher_version:
+            raise ValueError(
+                f"[Internal] API misuse. Input version "
+                f"({SimulationParams._get_version_from_dict(model_dict=params_as_dict)}) is higher than "
+                f"requested target version ({target_python_api_version})."
+            )
     except (Flow360RuntimeError, ValueError, KeyError) as e:
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
+
+
+def get_default_report_config() -> dict:
+    """
+    Get the default report config
+    Returns
+    -------
+    dict
+        default report config
+    """
+    return get_default_report_summary_template().model_dump(
+        exclude_none=True,
+    )

@@ -2,6 +2,8 @@
 
 from typing import Any, List
 
+from flow360.version import __version__
+
 from .log import log
 
 
@@ -11,7 +13,7 @@ class Flow360Error(Exception):
     def __init__(self, message: str = None):
         """Log just the error message and then raise the Exception."""
         super().__init__(message)
-        log.error(message)
+        log.error(message + " [Flow360 client version: " + __version__ + "]")
 
 
 # pylint: disable=redefined-builtin

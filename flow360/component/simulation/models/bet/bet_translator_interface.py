@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 
 import flow360.component.simulation.units as u
 from flow360.exceptions import Flow360ValueError
+from flow360.log import log
 
 
 def get_file_content(file_path: str):
@@ -433,6 +434,7 @@ def generate_xfoil_bet_json(
     number_of_blades,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Take in a geometry input file along with the remaining required
@@ -452,6 +454,7 @@ def generate_xfoil_bet_json(
     twist_vec, chord_vec, sectional_radiuses = parse_geometry_file(
         geometry_file_content, length_unit=length_unit, angle_unit=angle_unit
     )
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -591,6 +594,7 @@ def generate_c81_bet_json(
     angle_unit,
     length_unit,
     number_of_blades,
+    name,
 ):
     """
     Take in a geometry input file along with the remaining required
@@ -610,6 +614,7 @@ def generate_c81_bet_json(
     )
 
     bet_disk = {}
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -654,15 +659,19 @@ def check_num_values(values_list, line_num, numelts):
     Attributes
     ----------
     values: list
-    numelts:  int
+    numelts:  int, list[int]
     return: None, raises an exception if the error condition is met
     """
+    if isinstance(numelts, int):
+        numelts = [numelts]
 
-    if not len(values_list) == numelts:
-        raise Flow360ValueError(
-            f"wrong number of items for line #%i: {values_list}. We were expecting %i numbers and got %i"
-            % (line_num, len(values_list), numelts)
-        )
+    for numelt in numelts:
+        if len(values_list) == numelt:
+            return
+    raise Flow360ValueError(
+        f"wrong number of items for line #{line_num}: {values_list}. "
+        + f"We were expecting {' or '.join([str(num) for num in numelts])} numbers and got {len(values_list)}"
+    )
 
 
 # pylint: disable=too-many-statements
@@ -918,7 +927,7 @@ def parse_xrotor_file(xrotor_file_content):
     lines = xrotor_file_content.split("\n")
     line_iter = iter(lines)
 
-    top_line = next(line_iter)
+    top_line: str = next(line_iter)
     line_num += 1
     if top_line.find("DFDC") == 0:
         return read_dfdc_file(xrotor_file_content)
@@ -926,6 +935,14 @@ def parse_xrotor_file(xrotor_file_content):
     if top_line.find("XROTOR") == -1:
         raise Flow360ValueError(
             "This input XROTOR file does not seem to be a valid XROTOR input file"
+        )
+
+    version = top_line.split(":")[1].strip()
+
+    if (float(version) < 7.54) or (float(version) > 7.69):
+        log.warning(
+            "The XROTOR translator was prepared for file versions between 7.54 and 7.69,"
+            + f" your version is {version}, errors may occur."
         )
 
     xrotor_input_dict = {}
@@ -975,6 +992,9 @@ def parse_xrotor_file(xrotor_file_content):
     xrotor_input_dict["cdmin"] = [0] * n_aero_sections
     xrotor_input_dict["clcdmin"] = [0] * n_aero_sections
     xrotor_input_dict["dcddcl2"] = [0] * n_aero_sections
+    xrotor_input_dict["dcddcm2"] = [
+        0
+    ] * n_aero_sections  # currently unused by BET translator but we are recording it in case we need it in the future.
 
     for i in range(n_aero_sections):
         comment_line = next(line_iter).upper().split()
@@ -1002,7 +1022,9 @@ def parse_xrotor_file(xrotor_file_content):
         values = next(line_iter).split()
         line_num += 1
         check_num_values(values, line_num, 4)
-        xrotor_input_dict["dcldastall"][i] = float(values[0])
+        xrotor_input_dict["dcldastall"][i] = abs(
+            float(values[0])
+        )  # make it absolute value to make sure it is positive
         xrotor_input_dict["dclstall"][i] = float(values[1])
         xrotor_input_dict["mcrit"][i] = float(values[3])
 
@@ -1011,10 +1033,12 @@ def parse_xrotor_file(xrotor_file_content):
         check_comment(comment_line, line_num, 4)
         values = next(line_iter).split()
         line_num += 1
-        check_num_values(values, line_num, 3)
+        check_num_values(values, line_num, [3, 4])
         xrotor_input_dict["cdmin"][i] = float(values[0])
         xrotor_input_dict["clcdmin"][i] = float(values[1])
         xrotor_input_dict["dcddcl2"][i] = float(values[2])
+        if len(values) == 4:
+            xrotor_input_dict["dcddcm2"][i] = float(values[3])
 
         comment_line = next(line_iter).upper().split()
         line_num += 1
@@ -1417,6 +1441,7 @@ def generate_xrotor_bet_json(
     entities,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
@@ -1435,6 +1460,7 @@ def generate_xrotor_bet_json(
 
     bet_disk = {}
 
+    bet_disk["name"] = name
     bet_disk["entities"] = entities.stored_entities
     bet_disk["omega"] = omega
     bet_disk["chord_ref"] = chord_ref
@@ -1478,6 +1504,7 @@ def generate_dfdc_bet_json(
     entities,
     angle_unit,
     length_unit,
+    name,
 ):
     """
     Takes in an XROTOR or DFDC input file and translates it into a flow360 BET input dictionary.
@@ -1502,4 +1529,5 @@ def generate_dfdc_bet_json(
         entities=entities,
         angle_unit=angle_unit,
         length_unit=length_unit,
+        name=name,
     )

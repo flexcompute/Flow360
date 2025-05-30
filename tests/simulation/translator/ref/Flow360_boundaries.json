@@ -10,7 +10,8 @@
             "type": "MassInflow",
             "totalTemperatureRatio": 1.0411244143675171,
             "massFlowRate": 0.2,
-            "rampSteps": 10
+            "rampSteps": 10,
+            "velocityDirection": [0.0,0.0,1.0]
         },
         "boundary_name_E": {
             "type": "SubsonicOutflowPressure",

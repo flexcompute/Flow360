@@ -11,10 +11,12 @@ import textwrap
 from enum import Enum
 from functools import wraps
 from tempfile import NamedTemporaryFile
-from typing import Literal, Optional
+from typing import List, Literal, Optional, Union
 
 import pydantic as pd
 import zstandard as zstd
+
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 from ..accounts_utils import Accounts
 from ..cloud.s3_utils import get_local_filename_and_create_folders
@@ -769,3 +771,157 @@ def _naming_pattern_handler(pattern: str) -> re.Pattern[str]:
 
     regex = re.compile(regex_pattern)
     return regex
+
+
+def _check_mapbc_existence(value):
+    parser = MeshNameParser(input_mesh_file=value)
+    if parser.is_ugrid():
+        mapbc_file_name = parser.get_associated_mapbc_filename()
+        if not os.path.isfile(mapbc_file_name):
+            log.warning(f"The mapbc file ({mapbc_file_name}) for {value} is not found")
+
+
+class InputFileModel(Flow360BaseModel):
+    """Base model for input files creating projects"""
+
+    file_names: Union[List[str], str] = pd.Field()
+
+    def _check_files_existence(self) -> None:
+        """
+        Check if the file exists or not.
+        """
+        if isinstance(self.file_names, List):
+            # pylint: disable = not-an-iterable
+            for file_name in self.file_names:
+                if not os.path.isfile(file_name):
+                    raise ValueError(f"File {file_name} does not exist.")
+        else:
+            if not os.path.isfile(self.file_names):
+                raise ValueError(f"File {self.file_names} does not exist.")
+
+
+class GeometryFiles(InputFileModel):
+    """Validation model to check if the given files are geometry files"""
+
+    type_name: Literal["GeometryFile"] = pd.Field("GeometryFile", frozen=True)
+    file_names: Union[List[str], str] = pd.Field()
+
+    @pd.field_validator("file_names", mode="after")
+    @classmethod
+    def _validate_files(cls, value):
+        supported_geometry_surfacemesh_file = SUPPORTED_GEOMETRY_FILE_PATTERNS + [
+            MeshFileFormat.UGRID.ext(),
+            MeshFileFormat.CGNS.ext(),
+            MeshFileFormat.STL.ext(),
+        ]
+
+        def _detect_and_validate_mapbc_file(value):
+            value_without_mapbc = []
+            potential_mapbc_files = []
+            mapbc_files = []
+            for file in value:
+                if match_file_pattern([".mapbc"], file):
+                    mapbc_files.append(os.path.basename(file))
+                    continue
+                value_without_mapbc.append(file)
+                mesh_parser = MeshNameParser(input_mesh_file=file)
+                if mesh_parser.is_ugrid():
+                    potential_mapbc_files.append(get_mapbc_from_ugrid(file))
+
+            for mapbc_file in mapbc_files:
+                if mapbc_file not in potential_mapbc_files:
+                    log.warning(
+                        f"Cannot find the ugrid file associated with the given mapbc file: '{mapbc_file}' so "
+                        f"this mapbc file will be ignored."
+                    )
+
+            return value_without_mapbc
+
+        def _validate_single_file(value=None):
+            """Validate a single file and both geometry and surface mesh files are accepted"""
+
+            if match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
+                return
+
+            try:
+                # pylint: disable=protected-access
+                SurfaceMeshFile._validate_files(value=value)
+            except ValueError as err:
+                raise ValueError(
+                    f"The given file: {value} is not a supported geometry or surface mesh file. "
+                    f"Allowed file suffixes are: {supported_geometry_surfacemesh_file}"
+                ) from err
+
+        if isinstance(value, str):
+            _validate_single_file(value)
+        else:  # list
+            value = _detect_and_validate_mapbc_file(value)
+            for file in value:
+                _validate_single_file(value=file)
+        return value
+
+    def _check_files_existence(self) -> None:
+        """
+        Check if the file exists or not. If it is ugrid file then check existence of mapbc file.
+        """
+        super()._check_files_existence()
+        # pylint: disable=not-an-iterable
+        for file_name in self.file_names:
+            _check_mapbc_existence(value=file_name)
+
+    @classmethod
+    def check_is_valid_geometry_file_format(cls, *, file_name: str):
+        """Check if the given file_name input is a proper geometry file."""
+        return match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, file_name)
+
+
+class SurfaceMeshFile(InputFileModel):
+    """Validation model to check if the given file is a surface mesh file"""
+
+    type_name: Literal["SurfaceMeshFile"] = pd.Field("SurfaceMeshFile", frozen=True)
+    file_names: str = pd.Field()
+
+    @pd.field_validator("file_names", mode="after")
+    @classmethod
+    def _validate_files(cls, value):
+        try:
+            parser = MeshNameParser(input_mesh_file=value)
+        except Exception as e:
+            raise ValueError(str(e)) from e
+        if parser.is_valid_surface_mesh() or parser.is_valid_volume_mesh():
+            # We support extracting surface mesh from volume mesh as well
+            return value
+        raise ValueError(
+            f"The given mesh file {value} is not a valid surface mesh file. "
+            f"Unsupported surface mesh file extensions: {parser.format.ext()}. "
+            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}, {MeshFileFormat.STL.ext()}]."
+        )
+
+    def _check_files_existence(self) -> None:
+        """
+        Check if the file exists or not. If it is ugrid file then check existence of mapbc file.
+        """
+        super()._check_files_existence()
+        _check_mapbc_existence(self.file_names)
+
+
+class VolumeMeshFile(InputFileModel):
+    """Validation model to check if the given file is a volume mesh file"""
+
+    type_name: Literal["VolumeMeshFile"] = pd.Field("VolumeMeshFile", frozen=True)
+    file_names: str = pd.Field()
+
+    @pd.field_validator("file_names", mode="after")
+    @classmethod
+    def _validate_files(cls, value):
+        try:
+            parser = MeshNameParser(input_mesh_file=value)
+        except Exception as e:
+            raise ValueError(str(e)) from e
+        if parser.is_valid_volume_mesh():
+            return value
+        raise ValueError(
+            f"The given mesh file {value} is not a valid volume mesh file. ",
+            f"Unsupported volume mesh file extensions: {parser.format.ext()}. "
+            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}].",
+        )

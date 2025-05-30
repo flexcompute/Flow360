@@ -92,7 +92,6 @@ with fl.SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(
-                name="fl.VolumeOutput",
                 output_format="tecplot",
                 output_fields=[
                     "primitiveVars",
@@ -109,7 +108,6 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="fl.SurfaceOutput",
                 surfaces=volume_mesh["*"],
                 output_format="both",
                 output_fields=[
@@ -122,7 +120,6 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SliceOutput(
-                name="fl.SliceOutput",
                 slices=[slice_inlet, slice_outlet, slice_trailing_edge, slice_wake],
                 output_format="both",
                 output_fields=["Cp", "primitiveVars", "T", "Mach", "gradW"],

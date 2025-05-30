@@ -14,7 +14,7 @@ geometry.group_faces_by_tag("faceName")
 geometry.group_edges_by_tag("edgeName")
 
 
-bet = json.loads(open(TutorialBETDisk.extra["disk0"]).read())
+bet = fl.BETDisk.from_file(TutorialBETDisk.extra["disk0"])
 
 with fl.SI_unit_system:
     cylinder1 = fl.Cylinder(
@@ -33,7 +33,7 @@ with fl.SI_unit_system:
         inner_radius=0,
         height=5,
     )
-    farfield = fl.AutomatedFarfield(name="farfield", method="auto")
+    farfield = fl.AutomatedFarfield()
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
@@ -93,7 +93,6 @@ with fl.SI_unit_system:
         ),
         outputs=[
             fl.VolumeOutput(
-                name="VolumeOutput",
                 output_fields=[
                     "primitiveVars",
                     "betMetrics",
@@ -101,7 +100,6 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="SurfaceOutput",
                 surfaces=geometry["*"],
                 output_fields=[
                     "primitiveVars",
@@ -117,10 +115,9 @@ with fl.SI_unit_system:
                     geometry["wing"],
                     geometry["tip"],
                 ],
-                name="wall",
             ),
-            fl.Freestream(surfaces=farfield.farfield, name="Freestream"),
-            fl.SlipWall(surfaces=farfield.symmetry_planes, name="slipwall"),
+            fl.Freestream(surfaces=farfield.farfield),
+            fl.SlipWall(surfaces=farfield.symmetry_planes),
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
                     absolute_tolerance=1e-12,
@@ -131,7 +128,7 @@ with fl.SI_unit_system:
                     equation_evaluation_frequency=1,
                 ),
             ),
-            fl.BETDisk(**bet),
+            bet,
         ],
     )
 

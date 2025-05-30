@@ -1,15 +1,18 @@
 import json
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation import services
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.entity_info import (
     GeometryEntityInfo,
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -43,7 +46,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     AerospaceCondition,
     LiquidOperatingCondition,
     ThermalState,
-    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.primitives import (
     Box,
@@ -59,6 +61,7 @@ from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_sy
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
+from flow360.component.simulation.utils import model_attribute_unlock
 from tests.utils import to_file_from_file_test
 
 assertions = unittest.TestCase("__init__")
@@ -341,8 +344,7 @@ def test_subsequent_param_with_different_unit_system():
 
 
 def test_mach_reynolds_op_cond():
-
-    condition = operating_condition_from_mach_reynolds(
+    condition = AerospaceCondition.from_mach_reynolds(
         mach=0.2,
         reynolds=5e6,
         temperature=288.15 * u.K,
@@ -353,8 +355,19 @@ def test_mach_reynolds_op_cond():
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
 
+    condition = AerospaceCondition.from_mach_reynolds(
+        mach=0.2,
+        reynolds=5e6,
+        temperature=288.15 * u.K,
+        alpha=2.0 * u.deg,
+        beta=0.0 * u.deg,
+        project_length_unit=u.m,
+        reference_mach=0.4,
+    )
+    assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
+
     with pytest.raises(ValueError, match="Input should be greater than 0"):
-        condition = operating_condition_from_mach_reynolds(
+        condition = AerospaceCondition.from_mach_reynolds(
             mach=0.2,
             reynolds=0,
             temperature=288.15 * u.K,
@@ -363,7 +376,6 @@ def test_mach_reynolds_op_cond():
 
 
 def test_mach_muref_op_cond():
-
     condition = operating_condition_from_mach_muref(
         mach=0.2,
         mu_ref=4e-8,
@@ -460,11 +472,11 @@ def test_persistent_entity_info_update_geometry():
     selected_edge_dict["name"] = "new_edge_name"
     brand_new_edge = Edge.model_validate(selected_edge_dict)
 
-    fake_param_entity_registry = EntityRegistry()
-    fake_param_entity_registry.register(brand_new_surface)
-    fake_param_entity_registry.register(brand_new_edge)
+    fake_asset_entity_registry = EntityRegistry()
+    fake_asset_entity_registry.register(brand_new_surface)
+    fake_asset_entity_registry.register(brand_new_edge)
 
-    geometry_info.update_persistent_entities(param_entity_registry=fake_param_entity_registry)
+    geometry_info.update_persistent_entities(asset_entity_registry=fake_asset_entity_registry)
 
     assert geometry_info.get_boundaries()[0].name == "new_surface_name"
     assert geometry_info._get_list_of_entities(entity_type_name="edge")[0].name == "new_edge_name"
@@ -483,10 +495,132 @@ def test_persistent_entity_info_update_volume_mesh():
     selected_zone_dict["center"] = {"units": "cm", "value": [1.2, 2.3, 3.4]}
     brand_new_zone = GenericVolume.model_validate(selected_zone_dict)
 
-    fake_param_entity_registry = EntityRegistry()
-    fake_param_entity_registry.register(brand_new_zone)
+    fake_asset_entity_registry = EntityRegistry()
+    fake_asset_entity_registry.register(brand_new_zone)
 
-    volume_mesh_info.update_persistent_entities(param_entity_registry=fake_param_entity_registry)
+    volume_mesh_info.update_persistent_entities(asset_entity_registry=fake_asset_entity_registry)
 
     assert volume_mesh_info.zones[0].axes == ((1, 0, 0), (0, 0, 1))
     assert all(volume_mesh_info.zones[0].center == [1.2, 2.3, 3.4] * u.cm)
+
+
+def test_geometry_entity_info_to_file_list_and_entity_to_file_map():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    assert geometry_entity_info._get_processed_file_list() == (
+        ["airplane_simple_obtained_from_csm_by_esp.step.egads"],
+        ["airplane_translate_in_z_-5.stl", "farfield_only_sphere_volume_mesh.lb8.ugrid"],
+    )
+
+    assert sorted(
+        geometry_entity_info._get_id_to_file_map(entity_type_name="body").items()
+    ) == sorted(
+        {
+            "body00001": "airplane_simple_obtained_from_csm_by_esp.step.egads",
+            "airplane_translate_in_z_-5.stl": "airplane_translate_in_z_-5.stl",
+            "farfield_only_sphere_volume_mesh.lb8.ugrid": "farfield_only_sphere_volume_mesh.lb8.ugrid",
+        }.items()
+    )
+
+
+def test_geometry_entity_info_get_body_group_to_face_group_name_map():
+    with open("./data/geometry_metadata_asset_cache_multiple_bodies.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+    assert sorted(geometry_entity_info.get_body_group_to_face_group_name_map().items()) == sorted(
+        {
+            "cube-holes.egads": ["body00001", "body00002"],
+            "cylinder.stl": ["cylinder.stl"],
+        }.items()
+    )
+    geometry_entity_info._group_entity_by_tag("face", "faceId")
+    assert sorted(geometry_entity_info.get_body_group_to_face_group_name_map().items()) == sorted(
+        {
+            "cube-holes.egads": [
+                "body00001_face00001",
+                "body00001_face00002",
+                "body00001_face00003",
+                "body00001_face00004",
+                "body00001_face00005",
+                "body00001_face00006",
+                "body00002_face00001",
+                "body00002_face00002",
+                "body00002_face00003",
+                "body00002_face00004",
+                "body00002_face00005",
+                "body00002_face00006",
+            ],
+            "cylinder.stl": ["cylinder.stl_body"],
+        }.items()
+    )
+
+
+def test_transformation_matrix():
+    with open("./data/geometry_metadata_asset_cache_mixed_file.json", "r") as fp:
+        geometry_entity_info_dict = json.load(fp)
+        geometry_entity_info = GeometryEntityInfo.model_validate(geometry_entity_info_dict)
+
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=geometry_entity_info,
+            ),
+        )
+    nondim_params = params._preprocess(mesh_unit=2 * u.m)
+    transformation_matrix = (
+        nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+            0
+        ].transformation.get_transformation_matrix()
+    )
+
+    assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
+    assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
+    assert np.isclose(
+        transformation_matrix @ np.array([8, 4.5, 4, 2]),
+        np.array([16.80178373, 106.60356745, 7.66369379]),
+    ).all()
+
+    # Test compute_transformation_matrices
+    with model_attribute_unlock(
+        nondim_params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
+    ):
+        nondim_params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
+
+    nondim_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    assert nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+        0
+    ].transformation.private_attribute_matrix == [
+        0.07142857142857151,
+        -1.3178531657602606,
+        2.2464245943316894,
+        6.587498011451558,
+        0.9446408685944161,
+        0.5714285714285716,
+        0.48393055997701245,
+        47.269644845691296,
+        -0.3202367695391345,
+        1.3916653409677058,
+        1.9285714285714284,
+        -1.8755959009447176,
+    ]
+
+
+def test_default_params_for_local_test():
+    # Test to ensure the default params for local test is validated
+    with SI_unit_system:
+        param = SimulationParams()
+
+    param = services._store_project_length_unit(1 * u.m, param)
+    param_as_dict = param.model_dump(
+        exclude_none=True,
+        exclude={
+            "operating_condition": {"velocity_magnitude": True},
+            "private_attribute_asset_cache": {"registry": True},
+        },
+    )
+
+    with SI_unit_system:
+        SimulationParams(**param_as_dict)

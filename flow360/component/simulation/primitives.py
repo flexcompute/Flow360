@@ -93,10 +93,73 @@ class ReferenceGeometry(Flow360BaseModel):
 
 
 class Transformation(Flow360BaseModel):
-    """Used in preprocess()/translator to meshing param for volume meshing interface"""
+    """Transformation that will be applied to a body group."""
 
-    axis_of_rotation: Optional[Axis] = pd.Field()
-    angle_of_rotation: Optional[AngleType] = pd.Field()
+    type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
+
+    origin: LengthType.Point = pd.Field(  # pylint:disable=no-member
+        (0, 0, 0) * u.m,  # pylint:disable=no-member
+        description="The origin for geometry transformation in the order of scale,"
+        " rotation and translation.",
+    )
+
+    axis_of_rotation: Axis = pd.Field((1, 0, 0))
+    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
+
+    scale: Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat] = pd.Field((1, 1, 1))
+
+    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
+
+    private_attribute_matrix: Optional[list[float]] = pd.Field(None)
+
+    def get_transformation_matrix(self) -> np.ndarray:
+        """
+        Find 3(row)x4(column) transformation matrix and store as row major.
+        Applies to vector of [x, y, z, 1] in project length unit.
+        """
+        # pylint:disable=no-member
+        error_msg = "[Internal] `{}` is dimensioned. Use get_transformation_matrix() after non-dimensionalization!"
+        assert str(self.origin.units) == "flow360_length_unit", error_msg.format("origin")
+        assert str(self.translation.units) == "flow360_length_unit", error_msg.format("translation")
+        origin_array = np.asarray(self.origin.value)
+        translation_array = np.asarray(self.translation.value)
+
+        axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
+        angle = self.angle_of_rotation.to("rad").v.item()
+
+        axis = axis / np.linalg.norm(axis)
+
+        rotation_scale_matrix = rotation_matrix_from_axis_and_angle(axis, angle) * np.array(
+            self.scale
+        )
+        final_translation = -rotation_scale_matrix @ origin_array + origin_array + translation_array
+
+        return np.hstack([rotation_scale_matrix, final_translation[:, np.newaxis]])
+
+
+class GeometryBodyGroup(EntityBase):
+    """
+    :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
+    """
+
+    private_attribute_registry_bucket_name: Literal["GeometryBodyGroupEntityType"] = (
+        "GeometryBodyGroupEntityType"
+    )
+    private_attribute_tag_key: str = pd.Field(
+        description="The tag/attribute string used to group bodies.",
+    )
+    private_attribute_entity_type_name: Literal["GeometryBodyGroup"] = pd.Field(
+        "GeometryBodyGroup", frozen=True
+    )
+    private_attribute_sub_components: List[str] = pd.Field(
+        description="A list of body IDs which constitutes the current body group"
+    )
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Color used for visualization"
+    )
+    transformation: Transformation = pd.Field(
+        Transformation(), description="The transformation performed on the body group"
+    )
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
@@ -293,7 +356,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
         center: LengthType.Point,
         size: LengthType.PositiveVector,
         axes: OrthogonalAxes,
-        **kwargs,
     ):
         """
         Construct box from principal axes
@@ -324,7 +386,6 @@ class Box(MultiConstructorBaseModel, _VolumeEntityBase):
             size=size,
             axis_of_rotation=tuple(axis),
             angle_of_rotation=angle * u.rad,
-            **kwargs,
         )
 
     @pd.model_validator(mode="after")
@@ -456,6 +517,9 @@ class Surface(_SurfaceEntityBase):
         description="Issues (not necessarily problems) found on this `Surface` after inspection by "
         "surface mesh / geometry pipeline. Used for determining the usability of the `Surface` instance"
         " under certain features and/or its existence.",
+    )
+    private_attribute_color: Optional[str] = pd.Field(
+        None, description="Color used for visualization"
     )
 
     # Note: private_attribute_id should not be `Optional` anymore.

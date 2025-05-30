@@ -50,6 +50,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
+    TurbulenceModelControls,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -68,6 +69,7 @@ from flow360.component.simulation.models.surface_models import (
     TotalPressure,
     Translational,
     Wall,
+    WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -98,7 +100,6 @@ from flow360.component.simulation.operating_condition.operating_condition import
     GenericReferenceCondition,
     LiquidOperatingCondition,
     ThermalState,
-    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
@@ -126,7 +127,12 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    ReferenceGeometry,
+    Transformation,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -242,13 +248,13 @@ __all__ = [
     "Box",
     "GenericReferenceCondition",
     "TransitionModelSolver",
+    "TurbulenceModelControls",
     "Pressure",
     "TotalPressure",
     "Rotational",
     "Mach",
     "MassFlowRate",
     "UserDefinedField",
-    "operating_condition_from_mach_reynolds",
     "VolumeMesh",
     "SurfaceMesh",
     "UserDefinedFarfield",
@@ -265,4 +271,6 @@ __all__ = [
     "Water",
     "PointArray2D",
     "StreamlineOutput",
+    "Transformation",
+    "WallRotation",
 ]

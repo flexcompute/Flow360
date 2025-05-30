@@ -94,30 +94,36 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
     params._update_param_with_actual_volume_mesh_meta(get_volume_mesh_metadata)
     my_reg = params.used_entity_registry
     assert isinstance(
-        my_reg.find_single_entity_by_name("rotating_zone"),
+        my_reg.find_by_naming_pattern(pattern="rotating_zone", enforce_output_as_list=False),
         Cylinder,
     )
     assert (
-        my_reg.find_single_entity_by_name(
-            "rotating_zone"
+        my_reg.find_by_naming_pattern(
+            pattern="rotating_zone", enforce_output_as_list=False
         ).private_attribute_zone_boundary_names.items
         == get_volume_mesh_metadata["zones"]["rotatingBlock-rotating_zone"]["boundaryNames"]
     )
     assert (
-        my_reg.find_single_entity_by_name("blade1").private_attribute_full_name
+        my_reg.find_by_naming_pattern(
+            pattern="blade1", enforce_output_as_list=False
+        ).private_attribute_full_name
         == "rotatingBlock-rotating_zone/blade1"
     )
     assert (
-        my_reg.find_single_entity_by_name("blade3").private_attribute_full_name
+        my_reg.find_by_naming_pattern(
+            pattern="blade3", enforce_output_as_list=False
+        ).private_attribute_full_name
         == "rotatingBlock-rotating_zone/blade3"
     )
     assert (
-        my_reg.find_single_entity_by_name("farfield").private_attribute_full_name
+        my_reg.find_by_naming_pattern(
+            pattern="farfield", enforce_output_as_list=False
+        ).private_attribute_full_name
         == "stationaryBlock/farfield"
     )
     assert (
-        my_reg.find_single_entity_by_name(
-            "__farfield_zone_name_not_properly_set_yet"
+        my_reg.find_by_naming_pattern(
+            pattern="__farfield_zone_name_not_properly_set_yet", enforce_output_as_list=False
         ).private_attribute_full_name
         == "stationaryBlock"
     )

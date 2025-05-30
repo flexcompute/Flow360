@@ -26,7 +26,7 @@ with fl.SI_unit_system:
     cylinder5 = fl.Cylinder(
         name="cylinder5", axis=[-1, 0, 0], center=[6.5, 0.5, 0], outer_radius=6.5, height=10
     )
-    farfield = fl.AutomatedFarfield(name="farfield", method="quasi-3d")
+    farfield = fl.AutomatedFarfield(method="quasi-3d")
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
@@ -90,10 +90,9 @@ with fl.SI_unit_system:
                 surfaces=[
                     geometry["*"],
                 ],
-                name="wall",
             ),
-            fl.Freestream(surfaces=farfield.farfield, name="Freestream"),
-            fl.SlipWall(surfaces=farfield.symmetry_planes, name="slipwall"),
+            fl.Freestream(surfaces=farfield.farfield),
+            fl.SlipWall(surfaces=farfield.symmetry_planes),
             fl.Fluid(
                 navier_stokes_solver=fl.NavierStokesSolver(
                     absolute_tolerance=1e-11,
@@ -109,7 +108,6 @@ with fl.SI_unit_system:
         ],
         outputs=[
             fl.VolumeOutput(
-                name="fl.VolumeOutput",
                 output_fields=[
                     "primitiveVars",
                     "vorticity",
@@ -122,7 +120,6 @@ with fl.SI_unit_system:
                 ],
             ),
             fl.SurfaceOutput(
-                name="fl.SurfaceOutput",
                 surfaces=geometry["*"],
                 output_fields=["primitiveVars", "Cp", "Cf", "CfVec", "yPlus"],
             ),

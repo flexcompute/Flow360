@@ -65,7 +65,7 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
 )
 
@@ -451,7 +451,7 @@ class ActuatorDisk(Flow360BaseModel):
         description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
     )
-    name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model.")
+    name: Optional[str] = pd.Field("Actuator disk", description="Name of the `ActuatorDisk` model.")
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
@@ -621,6 +621,7 @@ BETFileTypes = Annotated[
 class BETDiskCache(Flow360BaseModel):
     """[INTERNAL] Cache for BETDisk inputs"""
 
+    name: Optional[str] = None
     file: Optional[BETFileTypes] = None
     rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
     omega: Optional[AngularVelocityType.NonNegative] = None
@@ -629,7 +630,6 @@ class BETDiskCache(Flow360BaseModel):
     entities: Optional[EntityList[Cylinder]] = None
     angle_unit: Optional[AngleType] = None
     length_unit: Optional[LengthType.NonNegative] = None
-    mesh_unit: Optional[LengthType.NonNegative] = None
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
     blade_line_chord: Optional[LengthType.NonNegative] = None
@@ -673,7 +673,7 @@ class BETDisk(MultiConstructorBaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
+    name: Optional[str] = pd.Field("BET disk", description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     type_name: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
@@ -707,34 +707,42 @@ class BETDisk(MultiConstructorBaseModel):
         "inf",
         description="Dimensional distance between blade tip and solid bodies to "
         + "define a :ref:`tip loss factor <TipGap>`.",
+        frozen=True,
     )
     mach_numbers: List[pd.NonNegativeFloat] = pd.Field(
         description="Mach numbers associated with airfoil polars provided "
-        + "in :class:`BETDiskSectionalPolar`."
+        + "in :class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
     reynolds_numbers: List[pd.PositiveFloat] = pd.Field(
         description="Reynolds numbers associated with the airfoil polars "
-        + "provided in :class:`BETDiskSectionalPolar`."
+        + "provided in :class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
     alphas: AngleType.Array = pd.Field(
         description="Alphas associated with airfoil polars provided in "
-        + ":class:`BETDiskSectionalPolar`."
+        + ":class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
     twists: List[BETDiskTwist] = pd.Field(
         description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
-        + "function of radial location."
+        + "function of radial location.",
+        frozen=True,
     )
     chords: List[BETDiskChord] = pd.Field(
         description="A list of :class:`BETDiskChord` objects specifying the blade chord as a function "
-        + "of the radial location. "
+        + "of the radial location. ",
+        frozen=True,
     )
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
-        + ":py:attr:`sectional_radiuses`."
+        + ":py:attr:`sectional_radiuses`.",
+        frozen=True,
     )
     sectional_radiuses: LengthType.NonNegativeArray = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
-        + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
+        + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
 
     private_attribute_input_cache: BETDiskCache = BETDiskCache()
@@ -778,6 +786,26 @@ class BETDisk(MultiConstructorBaseModel):
         """validate dimension of 3d coefficients in polars"""
         return _check_bet_disk_3d_coefficients_in_polars(self)
 
+    @pd.field_validator(
+        "name",
+        "rotation_direction_rule",
+        "omega",
+        "chord_ref",
+        "n_loading_nodes",
+        "number_of_blades",
+        "entities",
+        "initial_blade_direction",
+        mode="after",
+    )
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(
+            info.data["private_attribute_input_cache"],
+            info.field_name,
+            value if info.field_name != "entities" else value.stored_entities,
+        )
+        return value
+
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
@@ -794,6 +822,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
 
@@ -859,6 +888,7 @@ class BETDisk(MultiConstructorBaseModel):
             angle_unit=angle_unit,
             length_unit=length_unit,
             number_of_blades=number_of_blades,
+            name=name,
         )
 
         return cls(**params)
@@ -878,6 +908,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
 
@@ -915,7 +946,7 @@ class BETDisk(MultiConstructorBaseModel):
         --------
         Create a BET disk with a DFDC file.
 
-        >>> param = fl.BETDisk.from_xrotor(
+        >>> param = fl.BETDisk.from_dfdc(
         ...     file=fl.DFDCFile(file_path="dfdc_xv15.case")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
@@ -923,7 +954,6 @@ class BETDisk(MultiConstructorBaseModel):
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder,
         ...     length_unit=fl.u.m,
-        ...     mesh_unit=fl.u.m,
         ...     angle_unit=fl.u.deg,
         ... )
         """
@@ -939,6 +969,7 @@ class BETDisk(MultiConstructorBaseModel):
             entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
+            name=name,
         )
 
         return cls(**params)
@@ -959,6 +990,7 @@ class BETDisk(MultiConstructorBaseModel):
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
 
@@ -1026,6 +1058,7 @@ class BETDisk(MultiConstructorBaseModel):
             angle_unit=angle_unit,
             length_unit=length_unit,
             number_of_blades=number_of_blades,
+            name=name,
         )
 
         return cls(**params)
@@ -1045,6 +1078,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
 
@@ -1105,6 +1139,7 @@ class BETDisk(MultiConstructorBaseModel):
             entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
+            name=name,
         )
 
         return cls(**params)
@@ -1146,7 +1181,7 @@ class Rotation(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Rotation` model.")
+    name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
     entities: EntityList[GenericVolume, Cylinder] = pd.Field(
         alias="volumes",
@@ -1230,7 +1265,7 @@ class PorousMedium(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model.")
+    name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
     entities: EntityList[GenericVolume, Box] = pd.Field(
         alias="volumes",

@@ -21,7 +21,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.utils import validate_type
-from flow360.exceptions import Flow360WebError
+from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
 
 
@@ -41,6 +41,7 @@ class DraftDraft(ResourceDraft):
         ],
         solver_version: str,
         fork_case: bool,
+        interpolation_volume_mesh_id: str,
         tags: list[str],
     ):
         self._request = DraftCreateRequest(
@@ -50,6 +51,8 @@ class DraftDraft(ResourceDraft):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            interpolation_volume_mesh_id=interpolation_volume_mesh_id,
+            interpolation_case_id=source_item_id if interpolation_volume_mesh_id else None,
             tags=tags,
         )
         ResourceDraft.__init__(self)
@@ -92,6 +95,7 @@ class Draft(Flow360Resource):
         ] = None,
         solver_version: str = None,
         fork_case: bool = None,
+        interpolation_volume_mesh_id: str = None,
         tags: list[str] = None,
     ) -> DraftDraft:
         """Create a new instance of DraftDraft"""
@@ -102,6 +106,7 @@ class Draft(Flow360Resource):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            interpolation_volume_mesh_id=interpolation_volume_mesh_id,
             tags=tags,
         )
 
@@ -114,7 +119,11 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
 
         self.post(
-            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            json={
+                "data": params.model_dump_json(exclude_none=True),
+                "type": "simulation",
+                "version": "",
+            },
             method="simulation/file",
         )
 
@@ -127,6 +136,7 @@ class Draft(Flow360Resource):
         self,
         target_asset: type,
         use_beta_mesher: bool,
+        use_geometry_AI: bool,  # pylint: disable=invalid-name
         source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
         start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
     ) -> str:
@@ -136,6 +146,8 @@ class Draft(Flow360Resource):
             # pylint: disable=protected-access
             if use_beta_mesher is True:
                 log.info("Selecting beta/in-house mesher for possible meshing tasks.")
+            if use_geometry_AI is True:
+                log.info("Using the Geometry AI surface mesher.")
             if start_from:
                 if start_from != target_asset._cloud_resource_type_name:
                     log.info(
@@ -151,6 +163,7 @@ class Draft(Flow360Resource):
                 source_item_type=source_item_type,
                 up_to=target_asset._cloud_resource_type_name,
                 use_in_house=use_beta_mesher,
+                use_gai=use_geometry_AI,
                 force_creation_config=force_creation_config,
             )
             run_response = self.post(
@@ -167,7 +180,9 @@ class Draft(Flow360Resource):
                 log.error(
                     f"Failure detail: {formatting_validation_errors(ast.literal_eval(detailed_error))}"
                 )
-            except json.decoder.JSONDecodeError:
+            except (json.decoder.JSONDecodeError, TypeError):
                 # No detail given.
-                log.error("An unexpected error has occurred. Please contact customer support.")
+                raise Flow360RuntimeError(
+                    "An unexpected error has occurred. Please contact customer support."
+                ) from None
         raise RuntimeError("Submission not successful.")

@@ -11,7 +11,7 @@ from flow360.component.simulation.primitives import Cylinder, GenericVolume, Sur
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
 
@@ -55,7 +55,9 @@ class UserDefinedDynamic(Flow360BaseModel):
 
     """
 
-    name: str = pd.Field(description="Name of the dynamics defined by the user.")
+    name: str = pd.Field(
+        "User defined dynamics", description="Name of the dynamics defined by the user."
+    )
     input_vars: List[str] = pd.Field(
         description="List of the inputs to define the user defined dynamics. For example :code:`CL`, :code:`CD`, "
         + ":code:`bet_NUM_torque`,  :code:`bet_NUM_thrust`, (NUM is the index of the BET disk starting from 0), "

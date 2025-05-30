@@ -181,7 +181,7 @@
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "kg/(m*s)",
+                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },
@@ -268,7 +268,7 @@
                             "value": 273.15
                         },
                         "reference_viscosity": {
-                            "units": "kg/(m*s)",
+                            "units": "Pa*s",
                             "value": 1.716e-05
                         }
                     },
@@ -309,7 +309,7 @@
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "kg/(m*s)",
+                        "units": "Pa*s",
                         "value": 1.716e-05
                     }
                 },

@@ -11,14 +11,32 @@ from flow360.component.simulation.unit_system import AngleType, LengthType
 
 
 class AngleBasedRefinement(Flow360BaseModel):
-    """Surface edge refinement by specifying curvature resolution angle."""
+    """
+    Surface edge refinement by specifying curvature resolution angle.
+
+    Example
+    -------
+
+      >>> fl.AngleBasedRefinement(value=8*fl.u.deg)
+
+    ====
+    """
 
     type: Literal["angle"] = pd.Field("angle", frozen=True)
     value: AngleType = pd.Field()
 
 
 class HeightBasedRefinement(Flow360BaseModel):
-    """Surface edge refinement by specifying first layer height of the anisotropic layers."""
+    """
+    Surface edge refinement by specifying first layer height of the anisotropic layers.
+
+    Example
+    -------
+
+      >>> fl.HeightBasedRefinement(value=1e-4*fl.u.m)
+
+    ====
+    """
 
     type: Literal["height"] = pd.Field("height", frozen=True)
     # pylint: disable=no-member
@@ -26,14 +44,32 @@ class HeightBasedRefinement(Flow360BaseModel):
 
 
 class AspectRatioBasedRefinement(Flow360BaseModel):
-    """Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells."""
+    """
+    Surface edge refinement by specifying maximum aspect ratio of the anisotropic cells.
+
+    Example
+    -------
+
+      >>> fl.AspectRatioBasedRefinement(value=10)
+
+    ====
+    """
 
     type: Literal["aspectRatio"] = pd.Field("aspectRatio", frozen=True)
     value: pd.PositiveFloat = pd.Field()
 
 
 class ProjectAnisoSpacing(Flow360BaseModel):
-    """Project the anisotropic spacing from neighboring faces to the edge."""
+    """
+    Project the anisotropic spacing from neighboring faces to the edge.
+
+    Example
+    -------
+
+      >>> fl.ProjectAnisoSpacing()
+
+    ====
+    """
 
     type: Literal["projectAnisoSpacing"] = pd.Field("projectAnisoSpacing", frozen=True)
 
@@ -41,9 +77,19 @@ class ProjectAnisoSpacing(Flow360BaseModel):
 class SurfaceEdgeRefinement(Flow360BaseModel):
     """
     Setting for growing anisotropic layers orthogonal to the specified `Edge` (s).
+
+    Example
+    -------
+
+      >>> fl.SurfaceEdgeRefinement(
+      ...     edges=[geometry["edge1"], geometry["edge2"]],
+      ...     method=fl.HeightBasedRefinement(value=1e-4)
+      ... )
+
+    ====
     """
 
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("Surface edge refinement")
     refinement_type: Literal["SurfaceEdgeRefinement"] = pd.Field(
         "SurfaceEdgeRefinement", frozen=True
     )

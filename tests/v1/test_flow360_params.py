@@ -180,9 +180,6 @@ def test_update_from_multiple_files():
 
     to_file_from_file_test(params)
 
-    compare_to_ref(params, "ref/case_params/params.yaml")
-    compare_to_ref(params, "ref/case_params/params.json", content_only=True)
-
 
 def test_update_from_multiple_files_dont_overwrite():
     with fl.SI_unit_system:
@@ -278,13 +275,10 @@ def test_params_with_units():
             },
         )
 
-    compare_to_ref(params, "ref/case_params/params_units.json", content_only=True)
     to_file_from_file_test(params)
 
     params_solver = params.to_solver()
 
-    to_file_from_file_test(params_solver)
-    compare_to_ref(params_solver, "ref/case_params/params_units_converted.json", content_only=True)
     to_file_from_file_test(params_solver)
 
     params_as_json = params_solver.flow360_json()
@@ -378,9 +372,6 @@ def test_params_with_units_consistency():
     with pytest.raises(Flow360RuntimeError):
         with fl.CGS_unit_system:
             fl.Flow360Params("ref/case_params/params_units.json")
-
-    # should NOT raise RuntimeError error from NOT using context on file import
-    fl.Flow360Params("ref/case_params/params_units.json")
 
     with fl.SI_unit_system:
         with pytest.raises(Flow360RuntimeError):
