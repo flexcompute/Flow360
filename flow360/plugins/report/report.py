@@ -3,7 +3,7 @@ Report generation interface
 """
 
 import os
-from typing import Callable, List, Optional, Set, Union
+from typing import Annotated, Callable, List, Optional, Set, Union
 
 import pydantic as pd
 
@@ -134,6 +134,12 @@ class ReportDraft:
         return Report(resp["id"])
 
 
+ReportItemTypes = Annotated[
+    Union[Summary, Inputs, Table, NonlinearResiduals, Chart2D, Chart3D],
+    pd.Field(discriminator="type_name"),
+]
+
+
 class ReportTemplate(Flow360BaseModel):
     """
     A model representing a report containing various components such as summaries, inputs, tables,
@@ -151,9 +157,7 @@ class ReportTemplate(Flow360BaseModel):
     """
 
     title: Optional[str] = None
-    items: List[Union[Summary, Inputs, Table, NonlinearResiduals, Chart2D, Chart3D]] = pd.Field(
-        discriminator="type_name"
-    )
+    items: List[ReportItemTypes] = pd.Field()
     include_case_by_case: bool = False
     settings: Optional[Settings] = Settings()
 
@@ -175,7 +179,7 @@ class ReportTemplate(Flow360BaseModel):
                         f"Duplicate fig_name '{fig_name}' found in item at index {idx}"
                     )
                 used_fig_names.add(fig_name)
-        # return model
+        return self
 
     # pylint: disable=protected-access
     def _generate_shutter_screenshots(self, context: ReportContext):

@@ -206,6 +206,7 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
         if validation_info is None or validation_info.using_liquid_as_material is False:
             return value
 
+        # pylint:disable = unsubscriptable-object
         if value != cls.model_fields[info.field_name].get_default():
             raise ValueError("Expression cannot be used when using liquid as simulation material.")
         return value
