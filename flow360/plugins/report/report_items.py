@@ -48,6 +48,7 @@ from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.utils import (
     DataItem,
     Delta,
+    Grouper,
     OperationTypes,
     Tabulary,
     _requirements_mapping,
@@ -908,6 +909,130 @@ class Chart2D(Chart):
         y_max = global_y_max + 0.25 * y_range
         return (y_min, y_max)
 
+<<<<<<< HEAD
+=======
+    def _calculate_ylimits(
+        self, x_series_list: List[List[float]], y_series_list: List[List[float]]
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Calculate ylim based on provided input.
+        """
+        ylim = self.ylim
+
+        if ylim is None:
+            return None
+
+        if isinstance(ylim, Tuple):
+            return ylim
+
+        if isinstance(ylim, ManualLimit):
+            y_range = (ylim.lower, ylim.upper)
+
+        elif isinstance(ylim, SubsetLimit):
+            start_frac, end_frac = ylim.subset
+
+            all_subset_y = self._calculate_subset(
+                x_series_list, y_series_list, start_frac, end_frac
+            )
+
+            if not all_subset_y:
+                return (None, None)
+
+            y_range = self._calculate_y_min_max(all_subset_y, ylim.type_name)
+
+        else:
+            if ylim.center_strategy == "last":
+                all_last_y = []
+                for ys in y_series_list:
+                    last_y = ys[-1]
+                    all_last_y.append(last_y)
+
+            else:
+                start_frac = 1 - ylim.center_fraction
+                end_frac = 1
+                all_last_y = self._calculate_subset(
+                    x_series_list, y_series_list, start_frac, end_frac
+                )
+
+            if not all_last_y:
+                return (None, None)
+
+            y_range = self._calculate_y_min_max(all_last_y, ylim.type_name)
+
+        return y_range
+
+    @abstractmethod
+    def _load_data(self, cases):
+        pass
+
+    @abstractmethod
+    def _handle_legend(self, cases, x_data, y_data):
+        pass
+
+    def _handle_plot_style(self, x_data, y_data):
+        if self._is_multiline_data(x_data, y_data):
+            style = "o-"
+        else:
+            style = "-"
+
+        return style
+
+    def _cumulate_pseudo_step(self, pseudo_steps):
+        cumulative = []
+        last = 0
+        for step in pseudo_steps:
+            if (step == 0) and cumulative:
+                last = cumulative[-1] + 1
+            cumulative.append(step + last)
+
+        return cumulative
+
+    def _handle_transient_pseudo_step(self, cases, x_data, x_label):
+        """
+        Converts pseudo_step to cumulative pseudo_step.
+        """
+        if x_label == "pseudo_step" and any(
+            isinstance(case.params.time_stepping, Unsteady) for case in cases
+        ):
+            for idx, x_series in enumerate(x_data):
+                x_data[idx] = self._cumulate_pseudo_step(x_series)
+
+    def _handle_secondary_x_axis(self, cases, x_data, x_lim, x_label):
+        """
+        Creates physical_step array to use on the secondary axis
+        when the primary axis is pseudo_step, and the number of physical_steps visible
+        within x axis limits is less or equal than 5.
+        """
+        if x_label == "pseudo_step" and any(
+            isinstance(case.params.time_stepping, Unsteady) for case in cases
+        ):
+            if len(cases) == 1:
+                path_to_physical_step = self.x.rstrip("pseudo_step") + "physical_step"
+                sec_x_data = data_from_path(cases[0], path_to_physical_step, [])
+                x_min = min(x_data[0])
+                x_max = max(x_data[0])
+                lower_idx = x_data[0].index(max(x_min, x_lim[0] if x_lim is not None else -np.inf))
+                upper_idx = x_data[0].index(min(x_max, x_lim[1] if x_lim is not None else np.inf))
+                physical_steps_to_show = sec_x_data[upper_idx] - sec_x_data[lower_idx]
+                if physical_steps_to_show <= 5:
+                    return [sec_x_data] * len(x_data), "physical_step"
+            else:
+                log.warning("Does not show physical step with multiple cases plotted.")
+        return None, None
+
+    def _remove_empty_series(self, x_data, y_data, legend):
+        to_pop = []
+        for idx, x_series in enumerate(x_data):
+            if not x_series:
+                to_pop.append(idx)
+
+        x_data = [series for series in x_data if series]
+        y_data = [series for series in y_data if series]
+        legend = [item for idx, item in enumerate(legend) if idx not in to_pop]
+
+        return x_data, y_data, legend
+
+>>>>>>> 1efb4eed (Added the possibility of data grouping in Chart2D  (#1025))
     def get_data(self, cases: List[Case], context: ReportContext) -> PlotModel:
         """
         Loads and processes data for creating a 2D plot model.
@@ -958,7 +1083,25 @@ class Chart2D(Chart):
             legend = [case.name for case in cases]
             style = "-"
 
+<<<<<<< HEAD
         ylim = self._calculate_focus_y_limits(x_data, y_data)
+=======
+        legend = self._handle_legend(cases, x_data, y_data)
+
+        if not self._is_multiline_data(x_data, y_data):
+            x_data, y_data, legend = self._remove_empty_series(x_data, y_data, legend)
+
+        style = self._handle_plot_style(x_data, y_data)
+
+        xlim = self._handle_xlimits()
+        ylim = self._calculate_ylimits(x_data, y_data)
+
+        self._handle_transient_pseudo_step(x_data=x_data, x_label=x_label, cases=cases)
+
+        secondary_x_data, seondary_x_label = self._handle_secondary_x_axis(
+            x_lim=xlim, x_data=x_data, x_label=x_label, cases=cases
+        )
+>>>>>>> 1efb4eed (Added the possibility of data grouping in Chart2D  (#1025))
 
         return PlotModel(
             x_data=x_data,
@@ -973,6 +1116,312 @@ class Chart2D(Chart):
             ylim=ylim,
         )
 
+<<<<<<< HEAD
+=======
+    def _get_figures(self, cases, context: ReportContext):
+        file_names = []
+        case_by_case, data_storage = context.case_by_case, context.data_storage
+        cbc_str = "_cbc_" if case_by_case else "_"
+        if self.separate_plots:
+            for case in cases:
+                file_name = os.path.join(data_storage, self.fig_name + cbc_str + case.id + ".pdf")
+                data = self.get_data([case], context)
+                fig = data.get_plot()
+                fig.savefig(file_name, format="pdf", bbox_inches="tight")
+                file_names.append(file_name)
+                plt.close()
+
+        else:
+            file_name = os.path.join(data_storage, self.fig_name + cbc_str + "all_cases" + ".pdf")
+            data = self.get_data(cases, context)
+            fig = data.get_plot()
+            fig.savefig(file_name, format="pdf", bbox_inches="tight")
+            file_names.append(file_name)
+            plt.close()
+
+        return file_names, data.x_label, data.y_label
+
+    # pylint: disable=too-many-return-statements
+    def _handle_2d_caption(
+        self, case: Case = None, x_lab: str = None, y_lab: str = None, case_number: int = None
+    ):
+        """
+        Handle captions for Chart2D.
+        """
+
+        if self.caption == "":
+            if self.items_in_row is not None:
+                return f"{bold(y_lab)} against {bold(x_lab)}."
+            if self.separate_plots is True:
+                return f"{bold(y_lab)} against {bold(x_lab)} for {bold(case.name)}."
+            if self.select_indices is not None:
+                return f"{bold(y_lab)} against {bold(x_lab)} for {bold('selected cases')}."
+            return f"{bold(y_lab)} against {bold(x_lab)} for {bold('all cases')}."
+        if self.separate_plots is True:
+            if isinstance(self.caption, List):
+                return escape_latex(self.caption[case_number])
+            if isinstance(self.caption, PatternCaption):
+                return escape_latex(self.caption.resolve(case))
+        return self.caption
+
+    # pylint: disable=too-many-arguments,too-many-locals
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
+        """
+        Returns doc item for chart.
+        """
+        self._handle_new_page(context.doc)
+        self._handle_grid_input(context.cases)
+        self._handle_title(context.doc, context.section_func)
+        cases = self._filter_input_cases(context.cases, context.case_by_case)
+        self._check_caption_validity(cases)
+
+        file_names, x_lab, y_lab = self._get_figures(cases, context)
+
+        if self.items_in_row is not None:
+            caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
+            self._add_row_figure(context.doc, file_names, caption, [case.name for case in cases])
+        else:
+            if self.separate_plots is True:
+                for case_number, (case, file_name) in enumerate(zip(cases, file_names)):
+                    caption = NoEscape(
+                        self._handle_2d_caption(
+                            case=case, x_lab=x_lab, y_lab=y_lab, case_number=case_number
+                        )
+                    )
+                    self._add_figure(context.doc, file_name, caption)
+            else:
+                caption = NoEscape(self._handle_2d_caption(x_lab=x_lab, y_lab=y_lab))
+                self._add_figure(context.doc, file_names[-1], caption)
+
+        context.doc.append(NoEscape(r"\FloatBarrier"))
+        context.doc.append(NoEscape(r"\clearpage"))
+
+
+class Chart2D(BaseChart2D):
+    """
+    Represents a 2D chart within a report, plotting x and y data.
+
+    Parameters
+    ----------
+    x : Union[DataItem, Delta, str]
+        The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object.
+    y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+        The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
+    group_by : Optional[Union[str, Grouper]]
+        A grouper object or a string leading to the data by which the grouping should be done.
+    background : Union[Literal["geometry"], None], optional
+        Background type for the chart; set to "geometry" or None.
+    type_name : Literal["Chart2D"], default="Chart2D"
+        Specifies the type of report item as "Chart2D"; this field is immutable.
+    include : Optional[List[str]]
+        List of boundaries to include in data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
+    exclude : Optional[List[str]]
+        List of boundaries to exclude from data. Applicable to:
+        x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
+
+    Example
+    -------
+
+    -  Create a chart of CL for an alpha sweep case, different turbulence models
+
+    >>> Chart2D(
+    ...     x="params/operating_condition/beta",
+    ...     y=DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]),
+    ...     section_title="CL vs alpha",
+    ...     fig_name="cl_vs_alpha",
+    ...     group_by=Grouper(group_by="params/models/Fluid/turbulence_model_solver/type_name"),
+    ... )
+
+    ====
+    """
+
+    x: Union[DataItem, Delta, str]
+    y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
+    group_by: Optional[Union[str, Grouper]] = Grouper(group_by=None)
+    include: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = None
+    exclude: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = None
+    background: Union[Literal["geometry"], None] = None
+    _requirements: List[str] = [_requirements_mapping["total_forces"]]
+    type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
+
+    @pd.model_validator(mode="after")
+    def _handle_deprecated_include_exclude(self):
+        include = self.include
+        exclude = self.exclude
+        if (include is not None) or (exclude is not None):
+            self.include = None
+            self.exclude = None
+            self.x = self._overload_include_exclude(include, exclude, self.x)
+            if isinstance(self.y, List):
+                new_value = []
+                for data_variable in self.y:
+                    new_value.append(
+                        self._overload_include_exclude(include, exclude, data_variable)
+                    )
+                self.y = new_value
+            else:
+                self.y = self._overload_include_exclude(include, exclude, self.y)
+        return self
+
+    @pd.model_validator(mode="after")
+    def _create_grouper(self):
+        if isinstance(self.group_by, str):
+            self.group_by = Grouper(group_by=self.group_by)
+        return self
+
+    @classmethod
+    def _overload_include_exclude(cls, include, exclude, data_variable):
+        if isinstance(data_variable, Delta):
+            raise Flow360ValidationError(
+                "Delta can not be used with exclude/include options. "
+                + "Specify the Delta data using DataItem."
+            )
+        if not isinstance(data_variable, DataItem):
+            data_variable = DataItem(data=data_variable, include=include, exclude=exclude)
+        else:
+            data_variable.include = include
+            data_variable.exclude = exclude
+        return data_variable
+
+    def get_requirements(self):
+        """
+        Returns requirements for this item.
+        """
+        if isinstance(self.y, list):
+            return get_requirements_from_data_path([self.x, *self.y])
+        return get_requirements_from_data_path([self.x, self.y])
+
+    # pylint: disable=no-member
+    def _handle_data_with_units(self, x_data, y_data, x_label, y_label):
+        for idx, (x_series, y_series) in enumerate(zip(x_data, y_data)):
+            united_array_x = unyt.unyt_array(x_series)
+            united_array_y = unyt.unyt_array(y_series)
+            if united_array_x.units != unyt.dimensionless:
+                x_data[idx] = united_array_x
+            if united_array_y.units != unyt.dimensionless:
+                y_data[idx] = united_array_y
+
+        if self._check_dimensions_consistency(x_data) is True:
+            x_unit = x_data[0].units
+            x_data = [data.value.tolist() for data in x_data]
+            x_label += f" [{x_unit}]"
+
+        if self._check_dimensions_consistency(y_data) is True:
+            y_unit = y_data[0].units
+            y_data = [data.value.tolist() for data in y_data]
+            if not isinstance(self.y, list):
+                y_label += f" [{y_unit}]"
+
+        return x_data, y_data, x_label, y_label
+
+    def _handle_legend(self, cases, x_data, y_data):
+        if not self._is_series_data(cases[0], self.x):
+            return self.group_by.arrange_legend()
+
+        if self._is_multiline_data(x_data, y_data):
+            x_data = [float(data) for data in x_data]
+            y_data = [float(data) for data in y_data]
+            legend = None
+        elif isinstance(self.y, list) and (len(self.y) > 1):
+            legend = []
+            for case in cases:
+                for y in self.y:
+                    if len(cases) > 1:
+                        legend.append(f"{case.name} - {path_variable_name(str(y))}")
+                    else:
+                        legend.append(f"{path_variable_name(str(y))}")
+        else:
+            legend = [case.name for case in cases]
+
+        return legend
+
+    def _is_series_data(self, example_case, variable):
+        data_point = data_from_path(example_case, variable, None)
+        if isinstance(data_point, Iterable):
+            if isinstance(data_point, unyt_quantity) and data_point.shape == ():
+                return False
+            return True
+        return False
+
+    def _validate_variable_format(self, example_case, x_variable, y_variables):
+        series = self._is_series_data(example_case, x_variable)
+
+        for y in y_variables:
+            if series != self._is_series_data(example_case, y):
+                raise AttributeError(
+                    "Variables incompatible - cannot plot point and series data on the same plot."
+                )
+
+    def _load_series(self, cases, x_label, y_variables):
+        x_data = []
+        y_data = []
+        for case in cases:
+            filter_physical_steps = isinstance(case.params.time_stepping, Unsteady) and (
+                x_label in ["time", "physical_step"]
+            )
+            for y in y_variables:
+                x_data.append(
+                    data_from_path(
+                        case, self.x, cases, filter_physical_steps_only=filter_physical_steps
+                    )
+                )
+                y_data.append(
+                    data_from_path(case, y, cases, filter_physical_steps_only=filter_physical_steps)
+                )
+
+        return x_data, y_data
+
+    def _load_points(self, cases, y_variables):
+        x_data, y_data = self.group_by.initialize_arrays(cases, y_variables)
+        for case in cases:
+            for y in y_variables:
+                x_data_point = data_from_path(case, self.x, cases)
+                y_data_point = data_from_path(case, y, cases)
+                x_data, y_data = self.group_by.arrange_data(
+                    case, x_data, y_data, x_data_point, y_data_point, y
+                )
+
+        return x_data, y_data
+
+    def _load_data(self, cases):
+        x_label = path_variable_name(str(self.x))
+
+        if not isinstance(self.y, list):
+            y_label = path_variable_name(str(self.y))
+            y_variables = [self.y]
+        else:
+            y_label = "value"
+            y_variables = self.y.copy()
+
+        self._validate_variable_format(cases[0], self.x, y_variables)
+
+        if self._is_series_data(cases[0], self.x):
+            x_data, y_data = self._load_series(cases, x_label, y_variables)
+        else:
+            x_data, y_data = self._load_points(cases, y_variables)
+
+        x_data, y_data, x_label, y_label = self._handle_data_with_units(
+            x_data, y_data, x_label, y_label
+        )
+
+        return x_data, y_data, x_label, y_label
+
+>>>>>>> 1efb4eed (Added the possibility of data grouping in Chart2D  (#1025))
     def _get_background_chart(self, x_data):
         if self.background == "geometry":
             dimension = np.amax(x_data[0]) - np.amin(x_data[0])
