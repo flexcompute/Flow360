@@ -169,6 +169,7 @@ class Flow360BaseModel(pd.BaseModel):
     )
 
     def __setattr__(self, name, value):
+        # pylint: disable=unsupported-membership-test,  unsubscriptable-object
         if name in self.__class__.model_fields:
             is_frozen = self.__class__.model_fields[name].frozen
             if is_frozen is not None and is_frozen is True:
@@ -241,6 +242,7 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def _get_field_context(cls, info, context_key):
         if info.field_name is not None:
+            # pylint:disable = unsubscriptable-object
             field_info = cls.model_fields[info.field_name]
             if isinstance(field_info.json_schema_extra, dict):
                 return field_info.json_schema_extra.get(context_key)
