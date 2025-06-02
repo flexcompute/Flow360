@@ -6,11 +6,11 @@ from flow360.component.simulation.blueprint.core.parser import (
     function_to_model,
 )
 
-from .core.function import BlueprintFunction
+from .core.function import FunctionNode
 from .core.types import Evaluable
 
 __all__ = [
-    "BlueprintFunction",
+    "FunctionNode",
     "Evaluable",
     "function_to_model",
     "model_to_function",

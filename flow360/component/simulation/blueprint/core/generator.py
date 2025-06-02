@@ -5,25 +5,25 @@
 from typing import Any, Callable
 
 from flow360.component.simulation.blueprint.core.expressions import (
-    BinOp,
-    CallModel,
-    Constant,
-    List,
-    ListComp,
-    Name,
-    RangeCall,
-    Subscript,
-    Tuple,
-    UnaryOp,
+    BinOpNode,
+    CallModelNode,
+    ConstantNode,
+    ListCompNode,
+    ListNode,
+    NameNode,
+    RangeCallNode,
+    SubscriptNode,
+    TupleNode,
+    UnaryOpNode,
 )
-from flow360.component.simulation.blueprint.core.function import BlueprintFunction
+from flow360.component.simulation.blueprint.core.function import FunctionNode
 from flow360.component.simulation.blueprint.core.statements import (
-    Assign,
-    AugAssign,
-    ForLoop,
-    IfElse,
-    Return,
-    TupleUnpack,
+    AssignNode,
+    AugAssignNode,
+    ForLoopNode,
+    IfElseNode,
+    ReturnNode,
+    TupleUnpackNode,
 )
 from flow360.component.simulation.blueprint.core.types import TargetSyntax
 from flow360.component.simulation.blueprint.utils.operators import (
@@ -192,34 +192,34 @@ def expr_to_code(
         return _empty(syntax)
 
     # Names and constants are language-agnostic (apart from symbol remaps)
-    if isinstance(expr, Name):
+    if isinstance(expr, NameNode):
         return _name(expr, name_translator)
 
-    if isinstance(expr, Constant):
+    if isinstance(expr, ConstantNode):
         return _constant(expr)
 
-    if isinstance(expr, UnaryOp):
+    if isinstance(expr, UnaryOpNode):
         return _unary_op(expr, syntax, name_translator)
 
-    if isinstance(expr, BinOp):
+    if isinstance(expr, BinOpNode):
         return _binary_op(expr, syntax, name_translator)
 
-    if isinstance(expr, RangeCall):
+    if isinstance(expr, RangeCallNode):
         return _range_call(expr, syntax, name_translator)
 
-    if isinstance(expr, CallModel):
+    if isinstance(expr, CallModelNode):
         return _call_model(expr, syntax, name_translator)
 
-    if isinstance(expr, Tuple):
+    if isinstance(expr, TupleNode):
         return _tuple(expr, syntax, name_translator)
 
-    if isinstance(expr, List):
+    if isinstance(expr, ListNode):
         return _list(expr, syntax, name_translator)
 
-    if isinstance(expr, ListComp):
+    if isinstance(expr, ListCompNode):
         return _list_comp(expr, syntax, name_translator)
 
-    if isinstance(expr, Subscript):
+    if isinstance(expr, SubscriptNode):
         return _subscript(expr, syntax, name_translator)
 
     raise ValueError(f"Unsupported expression type: {type(expr)}")
@@ -230,12 +230,12 @@ def stmt_to_code(
 ) -> str:
     """Convert a statement model back to source code."""
     if syntax == TargetSyntax.PYTHON:
-        if isinstance(stmt, Assign):
+        if isinstance(stmt, AssignNode):
             if stmt.target == "_":  # Expression statement
                 return expr_to_code(stmt.value)
             return f"{stmt.target} = {expr_to_code(stmt.value, syntax, remap)}"
 
-        if isinstance(stmt, AugAssign):
+        if isinstance(stmt, AugAssignNode):
             op_map = {
                 "Add": "+=",
                 "Sub": "-=",
@@ -245,7 +245,7 @@ def stmt_to_code(
             op_str = op_map.get(stmt.op, f"{stmt.op}=")
             return f"{stmt.target} {op_str} {expr_to_code(stmt.value, syntax, remap)}"
 
-        if isinstance(stmt, IfElse):
+        if isinstance(stmt, IfElseNode):
             code = [f"if {expr_to_code(stmt.condition)}:"]
             code.append(_indent("\n".join(stmt_to_code(s, syntax, remap) for s in stmt.body)))
             if stmt.orelse:
@@ -253,15 +253,15 @@ def stmt_to_code(
                 code.append(_indent("\n".join(stmt_to_code(s, syntax, remap) for s in stmt.orelse)))
             return "\n".join(code)
 
-        if isinstance(stmt, ForLoop):
+        if isinstance(stmt, ForLoopNode):
             code = [f"for {stmt.target} in {expr_to_code(stmt.iter)}:"]
             code.append(_indent("\n".join(stmt_to_code(s, syntax, remap) for s in stmt.body)))
             return "\n".join(code)
 
-        if isinstance(stmt, Return):
+        if isinstance(stmt, ReturnNode):
             return f"return {expr_to_code(stmt.value, syntax, remap)}"
 
-        if isinstance(stmt, TupleUnpack):
+        if isinstance(stmt, TupleUnpackNode):
             targets = ", ".join(stmt.targets)
             if len(stmt.values) == 1:
                 # Single expression that evaluates to a tuple
@@ -276,7 +276,7 @@ def stmt_to_code(
 
 
 def model_to_function(
-    func: BlueprintFunction,
+    func: FunctionNode,
     syntax: TargetSyntax = TargetSyntax.PYTHON,
     remap: dict[str, str] = None,
 ) -> str:

@@ -19,8 +19,6 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
-# Following unused-import for supporting parse_model_dict
-
 # pylint: disable=unused-import
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -50,7 +48,7 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.component.simulation.blueprint.flow360.expressions import Expression, UserVariable
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -60,6 +58,9 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
+
+# Following unused-import for supporting parse_model_dict
+
 
 # Required for correct global scope initialization
 

@@ -2,7 +2,7 @@
 
 import unyt as u
 
-from flow360.component.simulation.blueprint.flow360.expressions import SolverVariable
+from flow360.component.simulation.user_code.core.types import SolverVariable
 
 mut = SolverVariable(name="solution.mut", value=float("NaN"))  # Turbulent viscosity
 mu = SolverVariable(name="solution.mu", value=float("NaN"))  # Laminar viscosity

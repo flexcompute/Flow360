@@ -9,7 +9,7 @@ from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS
 from .context import EvaluationContext
 from .types import Evaluable
 
-ExpressionType = Annotated[
+ExpressionNodeType = Annotated[
     # pylint: disable=duplicate-code
     Union[
         "Name",
@@ -26,7 +26,7 @@ ExpressionType = Annotated[
 ]
 
 
-class BlueprintExpression(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
+class ExpressionNode(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
     """
     Base class for expressions (like `x > 3`, `range(n)`, etc.).
 
@@ -44,7 +44,7 @@ class BlueprintExpression(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class Name(BlueprintExpression):
+class NameNode(ExpressionNode):
     """
     Expression representing a name qualifier
     """
@@ -53,12 +53,19 @@ class Name(BlueprintExpression):
     id: str
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self,
+        context: EvaluationContext,
+        raise_error: bool = True,
+        force_evaluate: bool = True,
     ) -> Any:
         if raise_error and not context.can_evaluate(self.id):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
         if not force_evaluate and not context.can_evaluate(self.id):
-            return self
+            data_model = context.get_data_model(self.id)
+            if data_model:
+                return data_model.model_validate({"name": self.id, "value": context.get(self.id)})
+            else:
+                raise ValueError(f"Partially evaluable symbols need to possess a type annotation")
         value = context.get(self.id)
         # Recursively evaluate if the returned value is evaluable
         if isinstance(value, Evaluable):
@@ -69,7 +76,7 @@ class Name(BlueprintExpression):
         return {self.id}
 
 
-class Constant(BlueprintExpression):
+class ConstantNode(ExpressionNode):
     """
     Expression representing a constant numeric value
     """
@@ -78,7 +85,7 @@ class Constant(BlueprintExpression):
     value: Any
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> Any:  # noqa: ARG002
         return self.value
 
@@ -86,17 +93,17 @@ class Constant(BlueprintExpression):
         return set()
 
 
-class UnaryOp(BlueprintExpression):
+class UnaryOpNode(ExpressionNode):
     """
     Expression representing a unary operation
     """
 
     type: Literal["UnaryOp"] = "UnaryOp"
     op: str
-    operand: "ExpressionType"
+    operand: "ExpressionNodeType"
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> Any:
         operand_val = self.operand.evaluate(context, raise_error, force_evaluate)
 
@@ -109,18 +116,18 @@ class UnaryOp(BlueprintExpression):
         return self.operand.used_names()
 
 
-class BinOp(BlueprintExpression):
+class BinOpNode(ExpressionNode):
     """
     Expression representing a binary operation
     """
 
     type: Literal["BinOp"] = "BinOp"
-    left: "ExpressionType"
+    left: "ExpressionNodeType"
     op: str
-    right: "ExpressionType"
+    right: "ExpressionNodeType"
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> Any:
         left_val = self.left.evaluate(context, raise_error, force_evaluate)
         right_val = self.right.evaluate(context, raise_error, force_evaluate)
@@ -136,18 +143,18 @@ class BinOp(BlueprintExpression):
         return left.union(right)
 
 
-class Subscript(BlueprintExpression):
+class SubscriptNode(ExpressionNode):
     """
     Expression representing an iterable object subscript
     """
 
     type: Literal["Subscript"] = "Subscript"
-    value: "ExpressionType"
-    slice: "ExpressionType"  # No proper slicing for now, only constants..
+    value: "ExpressionNodeType"
+    slice: "ExpressionNodeType"  # No proper slicing for now, only constants..
     ctx: str  # Only load context
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> Any:
         value = self.value.evaluate(context, raise_error, force_evaluate)
         item = self.slice.evaluate(context, raise_error, force_evaluate)
@@ -165,16 +172,16 @@ class Subscript(BlueprintExpression):
         return value.union(item)
 
 
-class RangeCall(BlueprintExpression):
+class RangeCallNode(ExpressionNode):
     """
     Model for something like range(<expression>).
     """
 
     type: Literal["RangeCall"] = "RangeCall"
-    arg: "ExpressionType"
+    arg: "ExpressionNodeType"
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> range:
         return range(self.arg.evaluate(context, raise_error))
 
@@ -182,7 +189,7 @@ class RangeCall(BlueprintExpression):
         return self.arg.used_names()
 
 
-class CallModel(BlueprintExpression):
+class CallModelNode(ExpressionNode):
     """Represents a function or method call expression.
 
     This class handles both direct function calls and method calls through a fully qualified name.
@@ -194,11 +201,11 @@ class CallModel(BlueprintExpression):
 
     type: Literal["CallModel"] = "CallModel"
     func_qualname: str
-    args: list["ExpressionType"] = []
-    kwargs: dict[str, "ExpressionType"] = {}
+    args: list["ExpressionNodeType"] = []
+    kwargs: dict[str, "ExpressionNodeType"] = {}
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> Any:
         try:
             # Split into parts for attribute traversal
@@ -245,14 +252,14 @@ class CallModel(BlueprintExpression):
         return names
 
 
-class Tuple(BlueprintExpression):
+class TupleNode(ExpressionNode):
     """Model for tuple expressions."""
 
     type: Literal["Tuple"] = "Tuple"
-    elements: list["ExpressionType"]
+    elements: list["ExpressionNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> tuple:
         return tuple(elem.evaluate(context, raise_error, force_evaluate) for elem in self.elements)
 
@@ -260,14 +267,14 @@ class Tuple(BlueprintExpression):
         return self.arg.used_names()
 
 
-class List(BlueprintExpression):
+class ListNode(ExpressionNode):
     """Model for list expressions."""
 
     type: Literal["List"] = "List"
-    elements: list["ExpressionType"]
+    elements: list["ExpressionNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> list:
         return [elem.evaluate(context, raise_error, force_evaluate) for elem in self.elements]
 
@@ -280,16 +287,16 @@ class List(BlueprintExpression):
         return names
 
 
-class ListComp(BlueprintExpression):
+class ListCompNode(ExpressionNode):
     """Model for list comprehension expressions."""
 
     type: Literal["ListComp"] = "ListComp"
-    element: "ExpressionType"  # The expression to evaluate for each item
+    element: "ExpressionNodeType"  # The expression to evaluate for each item
     target: str  # The loop variable name
-    iter: "ExpressionType"  # The iterable expression
+    iter: "ExpressionNodeType"  # The iterable expression
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> list:
         result = []
         iterable = self.iter.evaluate(context, raise_error, force_evaluate)

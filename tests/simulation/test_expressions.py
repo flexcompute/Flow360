@@ -10,18 +10,14 @@ from flow360 import (
     SimulationParams,
     Solid,
     Unsteady,
-    control,
-    solution,
+    math,
     u,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import (
-    GenericVolume,
-    Surface,
-)
+from flow360.component.simulation.primitives import GenericVolume, Surface
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -48,11 +44,12 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from flow360.component.simulation.blueprint.flow360.expressions import (
+from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
     ValueOrExpression,
 )
+from flow360.component.simulation.user_code.variables import control, solution
 
 
 @pytest.fixture(autouse=True)
@@ -424,94 +421,6 @@ def test_deserializer():
     assert str(deserialized.field) == "4.0 m/s"
 
 
-# def test_expression_vectors_scalars():
-#     class ScalarModel(Flow360BaseModel):
-#         scalar: ValueOrExpression[float] = pd.Field()
-#
-#     x = UserVariable(name="x", value=1)
-#
-#     # Since numpy arrays already give us the behavior we want there is no point
-#     # to building our own vector arithmetic. We just add the symbols to the whitelist
-#
-#     # Using expression types inside numpy arrays works OK
-#     a = np.array([x + 1, 0, x**2])
-#     b = np.array([0, x / 2, 3])
-#
-#     c = np.linalg.norm(a + b)  # This yields an expression containing the inlined dot product...
-#
-#     # Sadly it seems like we cannot stop numpy from inlining some functions by
-#     # implementing a specific method (like with trigonometic functions for example)
-#
-#     d = np.sin(c)  # This yields an expression
-#     e = np.cos(c)  # This also yields an expression
-#
-#     model = ScalarModel(
-#         scalar=np.arctan(d + e + 1)
-#     )  # So we can later compose those into expressions further...
-#
-#     assert str(model.scalar) == (
-#         "np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
-#         "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
-#         "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
-#         "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)"
-#     )
-#
-#     result = model.scalar.evaluate()
-#
-#     assert result == -0.1861456975646416
-#
-#     # Notice that when we inline some operations (like cross/dot product or norm, for example)
-#     # we make the underlying generated string of the expression ugly...
-#     #
-#     # Luckily this is transparent to the user. When the user is defining expressions in python he does
-#     # not have to worry about the internal string representation or the CUDA-generated code
-#     # (for CUDA code inlining might actually probably be our best bet to reduce function calls...)
-#     #
-#     # Conversely, when we are dealing with frontend strings we can deal with non-inlined numpy functions
-#     # because they are whitelisted by the blueprint parser:
-#
-#     # Let's simulate a frontend use case by parsing raw string input:
-#
-#     # The user defines some variables for convenience
-#
-#     a = UserVariable(name="a", value="np.array([x + 1, 0, x ** 2])")
-#     b = UserVariable(name="b", value="np.array([0, x / 2, 3])")
-#
-#     c = UserVariable(name="c", value="np.linalg.norm(a + b)")
-#
-#     d = UserVariable(name="d", value="np.sin(c)")
-#     e = UserVariable(name="e", value="np.cos(c)")
-#
-#     # Then he inputs the actual expression somewhere within
-#     # simulation.json using the helper variables defined before
-#
-#     model = ScalarModel(scalar="np.arctan(d + e + 1)")
-#
-#     assert str(model.scalar) == "np.arctan(d + e + 1)"
-#
-#     result = model.scalar.evaluate()
-#
-#     assert result == -0.1861456975646416
-#
-#
-# def test_numpy_interop_vectors():
-#     Vec3 = tuple[float, float, float]
-#
-#     class VectorModel(Flow360BaseModel):
-#         vector: ValueOrExpression[Vec3] = pd.Field()
-#
-#     x = UserVariable(name="x", value=np.array([2, 3, 4]))
-#     y = UserVariable(name="y", value=2 * x)
-#
-#     model = VectorModel(vector=x**2 + y + np.array([1, 0, 0]))
-#
-#     assert str(model.vector) == "x ** 2 + y + np.array([1,0,0])"
-#
-#     result = model.vector.evaluate()
-#
-#     assert np.array_equal(result, np.array([9, 15, 24]))
-
-
 def test_subscript_access():
     class ScalarModel(Flow360BaseModel):
         scalar: ValueOrExpression[float] = pd.Field()
@@ -641,11 +550,11 @@ def test_solver_translation():
 
         # 3. User variables are inlined (for expression value types)
         expression = Expression.model_validate(y * u.m**2)
-        assert expression.to_solver_code(params) == "((4.0 + 1) * pow(0.5, 2))"
+        assert expression.to_solver_code(params) == "(5.0 * pow(0.5, 2))"
 
         # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
         expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
-        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 500.0) + machRef)"
+        assert expression.to_solver_code(params) == "(((5.0 * 0.5) / 500.0) + machRef)"
 
 
 def test_cyclic_dependencies():
@@ -704,3 +613,22 @@ def test_variable_space_init():
     evaluated = params.reference_geometry.area.evaluate()
 
     assert evaluated == 1.0 * u.m**2
+
+
+def test_cross_product():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[VelocityType] = pd.Field()
+
+    x = UserVariable(name="x", value=[1, 2, 3])
+
+    model = TestModel(field=math.cross(x, [3, 2, 1]) * u.m / u.s)
+    assert str(model.field) == "(([((x)[1]) * 1 - (((x)[2]) * 2),((x)[2]) * 3 - (((x)[0]) * 1),((x)[0]) * 2 - (((x)[1]) * 3)]) * u.m) / u.s"
+
+    result = model.field.evaluate()
+    assert (result == [-4, 8, -4] * u.m / u.s).all()
+
+    model = TestModel(field="math.cross(x, [3, 2, 1]) * u.m / u.s")
+    assert str(model.field) == "math.cross(x, [3, 2, 1]) * u.m / u.s"
+
+    result = model.field.evaluate()
+    assert (result == [-4, 8, -4] * u.m / u.s).all()

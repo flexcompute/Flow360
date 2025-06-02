@@ -6,207 +6,60 @@ import re
 from numbers import Number
 from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar, Union
 
+import numpy as np
 import pydantic as pd
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
-from unyt import Unit, unyt_array, unit_symbols
+from unyt import Unit, unyt_array
 
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
-from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 from flow360.component.simulation.blueprint.core.types import TargetSyntax
-
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-
-
-def _unit_list():
-    symbols = set()
-
-    for _, value in unit_symbols.__dict__.items():
-        if isinstance(value, (unyt_array, Unit)):
-            symbols.add(str(value))
-
-    return list(symbols)
-
-
-def _import_units(_) -> Any:
-    """Import and return allowed unit callables"""
-    from flow360.component.simulation import units as u
-    return u
-
-
-def _import_math(_) -> Any:
-    """Import and return allowed function callables"""
-    from flow360.component.simulation.blueprint.flow360.functions import math
-    return math
-
-
-def _import_control(_) -> Any:
-    """Import and return allowed control variable callables"""
-    from flow360.component.simulation.blueprint.flow360.variables import control
-    return control
-
-
-def _import_solution(_) -> Any:
-    """Import and return allowed solution variable callables"""
-    from flow360.component.simulation.blueprint.flow360.variables import solution
-    return solution
-
-
-WHITELISTED_CALLABLES = {
-    "flow360_math": {"prefix": "fn.", "callables": ["cross"], "evaluate": True},
-    "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
-    "flow360.control": {
-        "prefix": "control.",
-        "callables": [
-            "mut",
-            "mu",
-            "solutionNavierStokes",
-            "residualNavierStokes",
-            "solutionTurbulence",
-            "residualTurbulence",
-            "kOmega",
-            "nuHat",
-            "solutionTransition",
-            "residualTransition",
-            "solutionHeatSolver",
-            "residualHeatSolver",
-            "coordinate",
-            "physicalStep",
-            "pseudoStep",
-            "timeStepSize",
-            "alphaAngle",
-            "betaAngle",
-            "pressureFreestream",
-            "momentLengthX",
-            "momentLengthY",
-            "momentLengthZ",
-            "momentCenterX",
-            "momentCenterY",
-            "momentCenterZ",
-            "bet_thrust",
-            "bet_torque",
-            "bet_omega",
-            "CD",
-            "CL",
-            "forceX",
-            "forceY",
-            "forceZ",
-            "momentX",
-            "momentY",
-            "momentZ",
-            "nodeNormals",
-            "theta",
-            "omega",
-            "omegaDot",
-            "wallFunctionMetric",
-            "wallShearStress",
-            "yPlus",
-        ],
-        "evaluate": False,
-    },
-    "flow360.solution": {
-        "prefix": "solution.",
-        "callables": [
-            "mut",
-            "mu",
-            "solutionNavierStokes",
-            "residualNavierStokes",
-            "solutionTurbulence",
-            "residualTurbulence",
-            "kOmega",
-            "nuHat",
-            "solutionTransition",
-            "residualTransition",
-            "solutionHeatSolver",
-            "residualHeatSolver",
-            "coordinate",
-            "physicalStep",
-            "pseudoStep",
-            "timeStepSize",
-            "alphaAngle",
-            "betaAngle",
-            "pressureFreestream",
-            "momentLengthX",
-            "momentLengthY",
-            "momentLengthZ",
-            "momentCenterX",
-            "momentCenterY",
-            "momentCenterZ",
-            "bet_thrust",
-            "bet_torque",
-            "bet_omega",
-            "CD",
-            "CL",
-            "forceX",
-            "forceY",
-            "forceZ",
-            "momentX",
-            "momentY",
-            "momentZ",
-            "nodeNormals",
-            "theta",
-            "omega",
-            "omegaDot",
-            "wallFunctionMetric",
-            "wallShearStress",
-            "yPlus",
-        ],
-        "evaluate": False,
-    },
-}
-
-# Define allowed modules
-ALLOWED_MODULES = {"u", "fl", "control", "solution", "math"}
-
-ALLOWED_CALLABLES = {
-    **{
-        f"{group['prefix']}{callable}": None
-        for group in WHITELISTED_CALLABLES.values()
-        for callable in group["callables"]
-    },
-}
-
-EVALUATION_BLACKLIST = {
-    **{
-        f"{group['prefix']}{callable}": None
-        for group in WHITELISTED_CALLABLES.values()
-        for callable in group["callables"]
-        if not group["evaluate"]
-    },
-}
-
-# Note:  Keys of IMPORT_FUNCTIONS needs to be consistent with ALLOWED_MODULES
-IMPORT_FUNCTIONS = {
-    "u": _import_units,
-    "math": _import_math,
-    "control": _import_control,
-    "solution": _import_solution,
-}
-
-resolver = CallableResolver(
-    ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST
+from flow360.component.simulation.user_code.core.context import default_context
+from flow360.component.simulation.user_code.core.utils import (
+    handle_syntax_error,
+    is_number_string,
+    split_keep_delimiters,
 )
 
-_global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
 _solver_variable_name_map: dict[str, str] = {}
 
 
-def _is_number_string(s: str) -> bool:
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
+def __soft_fail_add__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__add__(self, other)
+    else:
+        return NotImplemented
 
 
-def _split_keep_delimiters(value: str, delimiters: list) -> list:
-    escaped_delimiters = [re.escape(d) for d in delimiters]
-    pattern = f"({'|'.join(escaped_delimiters)})"
-    result = re.split(pattern, value)
-    return [part for part in result if part != ""]
+def __soft_fail_sub__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__sub__(self, other)
+    else:
+        return NotImplemented
+
+
+def __soft_fail_mul__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__mul__(self, other)
+    else:
+        return NotImplemented
+
+
+def __soft_fail_truediv__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__truediv__(self, other)
+    else:
+        return NotImplemented
+
+
+unyt_array.__add__ = __soft_fail_add__
+unyt_array.__sub__ = __soft_fail_sub__
+unyt_array.__mul__ = __soft_fail_mul__
+unyt_array.__truediv__ = __soft_fail_truediv__
 
 
 def _convert_numeric(value):
@@ -216,20 +69,20 @@ def _convert_numeric(value):
         arg = str(value)
     elif isinstance(value, Unit):
         unit = str(value)
-        tokens = _split_keep_delimiters(unit, unit_delimiters)
+        tokens = split_keep_delimiters(unit, unit_delimiters)
         arg = ""
         for token in tokens:
-            if token not in unit_delimiters and not _is_number_string(token):
+            if token not in unit_delimiters and not is_number_string(token):
                 token = f"u.{token}"
                 arg += token
             else:
                 arg += token
     elif isinstance(value, unyt_array):
         unit = str(value.units)
-        tokens = _split_keep_delimiters(unit, unit_delimiters)
+        tokens = split_keep_delimiters(unit, unit_delimiters)
         arg = f"{_convert_argument(value.value.tolist())[0]} * "
         for token in tokens:
-            if token not in unit_delimiters and not _is_number_string(token):
+            if token not in unit_delimiters and not is_number_string(token):
                 token = f"u.{token}"
                 arg += token
             else:
@@ -401,7 +254,7 @@ class UserVariable(Variable):
     @classmethod
     def update_context(cls, value):
         """Auto updating context when new variable is declared"""
-        _global_ctx.set(value.name, value.value)
+        default_context.set(value.name, value.value)
         _user_variables.add(value.name)
         return value
 
@@ -413,7 +266,7 @@ class UserVariable(Variable):
         stack = [(value.name, [value.name])]
         while stack:
             (current_name, current_path) = stack.pop()
-            current_value = _global_ctx.get(current_name)
+            current_value = default_context.get(current_name)
             if isinstance(current_value, Expression):
                 used_names = current_value.user_variable_names()
                 if [name for name in used_names if name in current_path]:
@@ -438,34 +291,11 @@ class SolverVariable(Variable):
     @classmethod
     def update_context(cls, value):
         """Auto updating context when new variable is declared"""
-        _global_ctx.set(value.name, value.value)
+        default_context.set(value.name, value.value, SolverVariable)
         _solver_variable_name_map[value.name] = (
             value.solver_name if value.solver_name is not None else value.name
         )
         return value
-
-
-def _handle_syntax_error(se: SyntaxError, source: str):
-    caret = " " * (se.offset - 1) + "^" if se.text and se.offset else None
-    msg = f"{se.msg} at line {se.lineno}, column {se.offset}"
-    if caret:
-        msg += f"\n{se.text.rstrip()}\n{caret}"
-
-    raise pd.ValidationError.from_exception_data(
-        "expression_syntax",
-        [
-            InitErrorDetails(
-                type="value_error",
-                msg=se.msg,
-                input=source,
-                ctx={
-                    "line": se.lineno,
-                    "column": se.offset,
-                    "error": msg,
-                },
-            )
-        ],
-    )
 
 
 class Expression(Flow360BaseModel, Evaluable):
@@ -502,9 +332,9 @@ class Expression(Flow360BaseModel, Evaluable):
             )
             raise pd.ValidationError.from_exception_data("Expression type error", [details])
         try:
-            expr_to_model(expression, _global_ctx)
+            expr_to_model(expression, default_context)
         except SyntaxError as s_err:
-            _handle_syntax_error(s_err, expression)
+            handle_syntax_error(s_err, expression)
         except ValueError as v_err:
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
             raise pd.ValidationError.from_exception_data("Expression value error", [details])
@@ -519,22 +349,22 @@ class Expression(Flow360BaseModel, Evaluable):
     ) -> Union[float, list, unyt_array]:
         """Evaluate this expression against the given context."""
         if context is None:
-            context = _global_ctx
+            context = default_context
         expr = expr_to_model(self.expression, context)
         result = expr.evaluate(context, raise_error, force_evaluate)
         return result
 
     def user_variables(self):
         """Get list of user variables used in expression."""
-        expr = expr_to_model(self.expression, _global_ctx)
+        expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
         names = [name for name in names if name in _user_variables]
 
-        return [UserVariable(name=name, value=_global_ctx.get(name)) for name in names]
+        return [UserVariable(name=name, value=default_context.get(name)) for name in names]
 
     def user_variable_names(self):
         """Get list of user variable names used in expression."""
-        expr = expr_to_model(self.expression, _global_ctx)
+        expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
         names = [name for name in names if name in _user_variables]
 
@@ -547,12 +377,6 @@ class Expression(Flow360BaseModel, Evaluable):
             if name in _solver_variable_name_map:
                 return _solver_variable_name_map[name]
 
-            if name in _user_variables:
-                value = _global_ctx.get(name)
-                if isinstance(value, Expression):
-                    return f"{value.to_solver_code(params)}"
-                return _convert_numeric(value)
-
             match = re.fullmatch("u\\.(.+)", name)
 
             if match:
@@ -563,9 +387,14 @@ class Expression(Flow360BaseModel, Evaluable):
 
             return name
 
-        expr = expr_to_model(self.expression, _global_ctx)
-        source = expr_to_code(expr, TargetSyntax.CPP, translate_symbol)
-        return source
+        partial_result = self.evaluate(default_context, raise_error=False, force_evaluate=False)
+
+        if isinstance(partial_result, Expression):
+            expr = expr_to_model(partial_result.expression, default_context)
+        else:
+            expr = expr_to_model(_convert_numeric(partial_result), default_context)
+
+        return expr_to_code(expr, TargetSyntax.CPP, translate_symbol)
 
     def __hash__(self):
         return hash(self.expression)

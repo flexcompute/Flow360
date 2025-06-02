@@ -5,11 +5,11 @@ from typing import Annotated, Literal, Union
 import pydantic as pd
 
 from .context import EvaluationContext, ReturnValue
-from .expressions import ExpressionType
+from .expressions import ExpressionNodeType
 from .types import Evaluable
 
 # Forward declaration of type
-StatementType = Annotated[
+StatementNodeType = Annotated[
     # pylint: disable=duplicate-code
     Union[
         "Assign",
@@ -23,33 +23,33 @@ StatementType = Annotated[
 ]
 
 
-class BlueprintStatement(pd.BaseModel, Evaluable):
+class StatementNode(pd.BaseModel, Evaluable):
     """
     Base class for statements (like 'if', 'for', assignments, etc.).
     """
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         raise NotImplementedError
 
 
-class Assign(BlueprintStatement):
+class AssignNode(StatementNode):
     """
     Represents something like 'result = <expr>'.
     """
 
     type: Literal["Assign"] = "Assign"
     target: str
-    value: ExpressionType
+    value: ExpressionNodeType
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         context.set(self.target, self.value.evaluate(context, raise_error, force_evaluate))
 
 
-class AugAssign(BlueprintStatement):
+class AugAssignNode(StatementNode):
     """
     Represents something like 'result += <expr>'.
     The 'op' is again the operator class name (e.g. 'Add', 'Mult', etc.).
@@ -58,10 +58,10 @@ class AugAssign(BlueprintStatement):
     type: Literal["AugAssign"] = "AugAssign"
     target: str
     op: str
-    value: ExpressionType
+    value: ExpressionNodeType
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         old_val = context.get(self.target)
         increment = self.value.evaluate(context, raise_error, force_evaluate)
@@ -77,7 +77,7 @@ class AugAssign(BlueprintStatement):
             raise ValueError(f"Unsupported augmented assignment operator: {self.op}")
 
 
-class IfElse(BlueprintStatement):
+class IfElseNode(StatementNode):
     """
     Represents an if/else block:
     if condition:
@@ -87,12 +87,12 @@ class IfElse(BlueprintStatement):
     """
 
     type: Literal["IfElse"] = "IfElse"
-    condition: ExpressionType
-    body: list["StatementType"]
-    orelse: list["StatementType"]
+    condition: ExpressionNodeType
+    body: list["StatementNodeType"]
+    orelse: list["StatementNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         if self.condition.evaluate(context, raise_error, force_evaluate):
             for stmt in self.body:
@@ -102,7 +102,7 @@ class IfElse(BlueprintStatement):
                 stmt.evaluate(context, raise_error)
 
 
-class ForLoop(BlueprintStatement):
+class ForLoopNode(StatementNode):
     """
     Represents a for loop:
     for <target> in <iter>:
@@ -111,11 +111,11 @@ class ForLoop(BlueprintStatement):
 
     type: Literal["ForLoop"] = "ForLoop"
     target: str
-    iter: ExpressionType
-    body: list["StatementType"]
+    iter: ExpressionNodeType
+    body: list["StatementNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         iterable = self.iter.evaluate(context, raise_error, force_evaluate)
         for item in iterable:
@@ -124,34 +124,34 @@ class ForLoop(BlueprintStatement):
                 stmt.evaluate(context, raise_error, force_evaluate)
 
 
-class Return(BlueprintStatement):
+class ReturnNode(StatementNode):
     """
     Represents a return statement: return <expr>.
     We'll raise a custom exception to stop execution in the function.
     """
 
     type: Literal["Return"] = "Return"
-    value: ExpressionType
+    value: ExpressionNodeType
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         val = self.value.evaluate(context, raise_error, force_evaluate)
         raise ReturnValue(val)
 
 
-class TupleUnpack(BlueprintStatement):
+class TupleUnpackNode(StatementNode):
     """Model for tuple unpacking assignments."""
 
     type: Literal["TupleUnpack"] = "TupleUnpack"
     targets: list[str]
-    values: list[ExpressionType]
+    values: list[ExpressionNodeType]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> None:
         evaluated_values = [
-            val.evaluate(context, raise_error, force_evaluate, inlines) for val in self.values
+            val.evaluate(context, raise_error, force_evaluate) for val in self.values
         ]
         for target, value in zip(self.targets, evaluated_values):
             context.set(target, value)

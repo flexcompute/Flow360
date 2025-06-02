@@ -9,40 +9,40 @@ from typing import Any, Union
 
 from flow360.component.simulation.blueprint.core.context import EvaluationContext
 from flow360.component.simulation.blueprint.core.expressions import (
-    BinOp,
-    CallModel,
-    Constant,
-    BlueprintExpression,
+    BinOpNode,
+    CallModelNode,
+    ConstantNode,
+    ExpressionNode,
+    ListCompNode,
 )
-from flow360.component.simulation.blueprint.core.expressions import List as ListExpr
+from flow360.component.simulation.blueprint.core.expressions import ListNode as ListExpr
 from flow360.component.simulation.blueprint.core.expressions import (
-    ListComp,
-    Name,
-    RangeCall,
-    Subscript,
-    Tuple,
-    UnaryOp,
+    NameNode,
+    RangeCallNode,
+    SubscriptNode,
+    TupleNode,
+    UnaryOpNode,
 )
-from flow360.component.simulation.blueprint.core.function import BlueprintFunction
+from flow360.component.simulation.blueprint.core.function import FunctionNode
 from flow360.component.simulation.blueprint.core.statements import (
-    Assign,
-    AugAssign,
-    ForLoop,
-    IfElse,
-    Return,
-    TupleUnpack,
+    AssignNode,
+    AugAssignNode,
+    ForLoopNode,
+    IfElseNode,
+    ReturnNode,
+    TupleUnpackNode,
 )
 
 
 def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
     """Parse a Python AST expression into our intermediate representation."""
     if isinstance(node, ast.Name):
-        return Name(id=node.id)
+        return NameNode(id=node.id)
 
     if isinstance(node, ast.Constant):
         if hasattr(node, "value"):
-            return Constant(value=node.value)
-        return Constant(value=node.s)
+            return ConstantNode(value=node.value)
+        return ConstantNode(value=node.s)
 
     if isinstance(node, ast.Attribute):
         # Handle attribute access (e.g., td.inf)
@@ -54,14 +54,14 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
         if isinstance(current, ast.Name):
             parts.append(current.id)
             # Create a Name node with the full qualified name
-            return Name(id=".".join(reversed(parts)))
+            return NameNode(id=".".join(reversed(parts)))
         raise ValueError(f"Unsupported attribute access: {ast.dump(node)}")
 
     if isinstance(node, ast.UnaryOp):
-        return UnaryOp(op=type(node.op).__name__, operand=parse_expr(node.operand, ctx))
+        return UnaryOpNode(op=type(node.op).__name__, operand=parse_expr(node.operand, ctx))
 
     if isinstance(node, ast.BinOp):
-        return BinOp(
+        return BinOpNode(
             op=type(node.op).__name__,
             left=parse_expr(node.left, ctx),
             right=parse_expr(node.right, ctx),
@@ -70,14 +70,14 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
     if isinstance(node, ast.Compare):
         if len(node.ops) > 1 or len(node.comparators) > 1:
             raise ValueError("Only single comparisons are supported")
-        return BinOp(
+        return BinOpNode(
             op=type(node.ops[0]).__name__,
             left=parse_expr(node.left, ctx),
             right=parse_expr(node.comparators[0], ctx),
         )
 
     if isinstance(node, ast.Subscript):
-        return Subscript(
+        return SubscriptNode(
             value=parse_expr(node.value, ctx),
             slice=parse_expr(node.slice, ctx),
             ctx=type(node.ctx).__name__,
@@ -85,7 +85,7 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
 
     if isinstance(node, ast.Call):
         if isinstance(node.func, ast.Name) and node.func.id == "range" and len(node.args) == 1:
-            return RangeCall(arg=parse_expr(node.args[0], ctx))
+            return RangeCallNode(arg=parse_expr(node.args[0], ctx))
 
         # Build the full qualified name for the function
         if isinstance(node.func, ast.Name):
@@ -113,14 +113,14 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             if kw.arg is not None and kw.value is not None  # Ensure value is not None
         }
 
-        return CallModel(
+        return CallModelNode(
             func_qualname=func_name,
             args=args,
             kwargs=kwargs,
         )
 
     if isinstance(node, ast.Tuple):
-        return Tuple(elements=[parse_expr(elt, ctx) for elt in node.elts])
+        return TupleNode(elements=[parse_expr(elt, ctx) for elt in node.elts])
 
     if isinstance(node, ast.List):
         return ListExpr(elements=[parse_expr(elt, ctx) for elt in node.elts])
@@ -133,7 +133,7 @@ def parse_expr(node: ast.AST, ctx: EvaluationContext) -> Any:
             raise ValueError("Only simple targets in list comprehensions are supported")
         if gen.ifs:
             raise ValueError("If conditions in list comprehensions are not supported")
-        return ListComp(
+        return ListCompNode(
             element=parse_expr(node.elt, ctx),
             target=gen.target.id,
             iter=parse_expr(gen.iter, ctx),
@@ -150,22 +150,22 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
         target = node.targets[0]
 
         if isinstance(target, ast.Name):
-            return Assign(target=target.id, value=parse_expr(node.value, ctx))
+            return AssignNode(target=target.id, value=parse_expr(node.value, ctx))
         if isinstance(target, ast.Tuple):
             if not all(isinstance(elt, ast.Name) for elt in target.elts):
                 raise ValueError("Only simple names supported in tuple unpacking")
             targets = [elt.id for elt in target.elts]
             if isinstance(node.value, ast.Tuple):
                 values = [parse_expr(val, ctx) for val in node.value.elts]
-                return TupleUnpack(targets=targets, values=values)
-            return TupleUnpack(targets=targets, values=[parse_expr(node.value, ctx)])
+                return TupleUnpackNode(targets=targets, values=values)
+            return TupleUnpackNode(targets=targets, values=[parse_expr(node.value, ctx)])
 
         raise ValueError(f"Unsupported assignment target: {type(target)}")
 
     if isinstance(node, ast.AugAssign):
         if not isinstance(node.target, ast.Name):
             raise ValueError("Only simple names supported in augmented assignment")
-        return AugAssign(
+        return AugAssignNode(
             target=node.target.id,
             op=type(node.op).__name__,
             value=parse_expr(node.value, ctx),
@@ -173,10 +173,10 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
 
     if isinstance(node, ast.Expr):
         # For expression statements, we use "_" as a dummy target
-        return Assign(target="_", value=parse_expr(node.value, ctx))
+        return AssignNode(target="_", value=parse_expr(node.value, ctx))
 
     if isinstance(node, ast.If):
-        return IfElse(
+        return IfElseNode(
             condition=parse_expr(node.test, ctx),
             body=[parse_stmt(stmt, ctx) for stmt in node.body],
             orelse=[parse_stmt(stmt, ctx) for stmt in node.orelse] if node.orelse else [],
@@ -185,7 +185,7 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
     if isinstance(node, ast.For):
         if not isinstance(node.target, ast.Name):
             raise ValueError("Only simple names supported as loop targets")
-        return ForLoop(
+        return ForLoopNode(
             target=node.target.id,
             iter=parse_expr(node.iter, ctx),
             body=[parse_stmt(stmt, ctx) for stmt in node.body],
@@ -194,7 +194,7 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
     if isinstance(node, ast.Return):
         if node.value is None:
             raise ValueError("Return statements must have a value")
-        return Return(value=parse_expr(node.value, ctx))
+        return ReturnNode(value=parse_expr(node.value, ctx))
 
     raise ValueError(f"Unsupported statement type: {type(node)}")
 
@@ -202,7 +202,7 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
 def function_to_model(
     source: Union[str, Callable[..., Any]],
     ctx: EvaluationContext,
-) -> BlueprintFunction:
+) -> FunctionNode:
     """Parse a Python function definition into our intermediate representation.
 
     Args:
@@ -244,13 +244,13 @@ def function_to_model(
     # Parse the function body
     body = [parse_stmt(stmt, ctx) for stmt in func_def.body]
 
-    return BlueprintFunction(name=name, args=args, body=body, defaults=defaults)
+    return FunctionNode(name=name, args=args, body=body, defaults=defaults)
 
 
 def expr_to_model(
     source: str,
     ctx: EvaluationContext,
-) -> BlueprintExpression:
+) -> ExpressionNode:
     """Parse a Python rvalue expression
 
     Args:

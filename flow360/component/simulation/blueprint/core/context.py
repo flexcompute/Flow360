@@ -2,6 +2,8 @@
 
 from typing import Any, Optional
 
+import pydantic as pd
+
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 
 
@@ -37,6 +39,7 @@ class EvaluationContext:
                 the context with.
         """
         self._values = initial_values or {}
+        self._data_models = {}
         self._resolver = resolver
 
     def get(self, name: str, resolve: bool = True) -> Any:
@@ -69,15 +72,24 @@ class EvaluationContext:
                 raise NameError(f"Name '{name}' is not defined") from err
         return self._values[name]
 
-    def set(self, name: str, value: Any) -> None:
+    def get_data_model(self, name: str) -> Optional[pd.BaseModel]:
+        if name not in self._data_models:
+            return None
+        return self._data_models[name]
+
+    def set(self, name: str, value: Any, data_model: pd.BaseModel = None) -> None:
         """
         Assign a value to a name in the context.
 
         Args:
             name (str): The variable name to set.
             value (Any): The value to assign.
+            data_model (BaseModel, optional): The type of the associate with this entry
         """
         self._values[name] = value
+
+        if data_model:
+            self._data_models[name] = data_model
 
     def resolve(self, name):
         """
@@ -105,18 +117,6 @@ class EvaluationContext:
             bool: True if the name is allowed and resolvable, False otherwise.
         """
         return self._resolver.can_evaluate(name)
-
-    def inlined(self, name) -> bool:
-        """
-        Check if the function should be inlined during parsing.
-
-        Args:
-            name (str): The name to check.
-
-        Returns:
-            bool: True if the function needs inlining, False otherwise.
-        """
-        return self._resolver.inlined(name)
 
     def copy(self) -> "EvaluationContext":
         """

@@ -11,9 +11,10 @@ from .context import EvaluationContext
 
 class Evaluable(metaclass=abc.ABCMeta):
     """Base class for all classes that allow evaluation from their symbolic form"""
+
     @abc.abstractmethod
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool, force_evaluate: bool = False
+        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
     ) -> Any:
         """
         Evaluate the expression using the given context.
