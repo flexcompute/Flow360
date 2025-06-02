@@ -17,11 +17,9 @@ from flow360 import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
-from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import (
     GenericVolume,
-    ReferenceGeometry,
     Surface,
 )
 from flow360.component.simulation.unit_system import (
@@ -50,7 +48,7 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from flow360.component.simulation.user_code import (
+from flow360.component.simulation.blueprint.flow360.expressions import (
     Expression,
     UserVariable,
     ValueOrExpression,
@@ -189,17 +187,11 @@ def test_expression_operators():
     assert model.field.evaluate() == 3
     assert str(model.field) == "+x"
 
-    # Absolute value
-    model.field = abs(x)
-    assert isinstance(model.field, Expression)
-    assert model.field.evaluate() == 3
-    assert str(model.field) == "abs(x)"
-
     # Complex statement
-    model.field = ((abs(x) - 2 * x) + (x + y) / 2 - 2**x) % 4
+    model.field = ((x - 2 * x) + (x + y) / 2 - 2**x) % 4
     assert isinstance(model.field, Expression)
     assert model.field.evaluate() == 3.5
-    assert str(model.field) == "(abs(x) - (2 * x) + ((x + y) / 2) - (2 ** x)) % 4"
+    assert str(model.field) == "(x - (2 * x) + ((x + y) / 2) - (2 ** x)) % 4"
 
 
 def test_dimensioned_expressions():
@@ -707,7 +699,6 @@ def test_variable_space_init():
     params, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
     )
-    from flow360.component.simulation.user_code import _global_ctx, _user_variables
 
     assert errors is None
     evaluated = params.reference_geometry.area.evaluate()

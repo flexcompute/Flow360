@@ -18,7 +18,7 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code import UserVariable
+from flow360.component.simulation.blueprint.flow360.expressions import UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 
 

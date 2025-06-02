@@ -106,6 +106,18 @@ class EvaluationContext:
         """
         return self._resolver.can_evaluate(name)
 
+    def inlined(self, name) -> bool:
+        """
+        Check if the function should be inlined during parsing.
+
+        Args:
+            name (str): The name to check.
+
+        Returns:
+            bool: True if the function needs inlining, False otherwise.
+        """
+        return self._resolver.inlined(name)
+
     def copy(self) -> "EvaluationContext":
         """
         Create a copy of the current context.

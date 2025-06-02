@@ -22,7 +22,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
-from flow360.component.simulation.user_code import Expression
+from flow360.component.simulation.blueprint.flow360.expressions import Expression
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,

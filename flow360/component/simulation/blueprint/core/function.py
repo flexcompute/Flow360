@@ -8,7 +8,7 @@ from .context import EvaluationContext, ReturnValue
 from .statements import StatementType
 
 
-class Function(pd.BaseModel):
+class BlueprintFunction(pd.BaseModel):
     """
     Represents an entire function:
     def name(arg1, arg2, ...):

@@ -12,7 +12,7 @@ from flow360.component.simulation.blueprint.core.expressions import (
     BinOp,
     CallModel,
     Constant,
-    Expression,
+    BlueprintExpression,
 )
 from flow360.component.simulation.blueprint.core.expressions import List as ListExpr
 from flow360.component.simulation.blueprint.core.expressions import (
@@ -23,7 +23,7 @@ from flow360.component.simulation.blueprint.core.expressions import (
     Tuple,
     UnaryOp,
 )
-from flow360.component.simulation.blueprint.core.function import Function
+from flow360.component.simulation.blueprint.core.function import BlueprintFunction
 from flow360.component.simulation.blueprint.core.statements import (
     Assign,
     AugAssign,
@@ -202,7 +202,7 @@ def parse_stmt(node: ast.AST, ctx: EvaluationContext) -> Any:
 def function_to_model(
     source: Union[str, Callable[..., Any]],
     ctx: EvaluationContext,
-) -> Function:
+) -> BlueprintFunction:
     """Parse a Python function definition into our intermediate representation.
 
     Args:
@@ -244,13 +244,13 @@ def function_to_model(
     # Parse the function body
     body = [parse_stmt(stmt, ctx) for stmt in func_def.body]
 
-    return Function(name=name, args=args, body=body, defaults=defaults)
+    return BlueprintFunction(name=name, args=args, body=body, defaults=defaults)
 
 
 def expr_to_model(
     source: str,
     ctx: EvaluationContext,
-) -> Expression:
+) -> BlueprintExpression:
     """Parse a Python rvalue expression
 
     Args:

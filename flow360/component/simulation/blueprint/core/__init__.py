@@ -5,7 +5,7 @@ from .expressions import (
     BinOp,
     CallModel,
     Constant,
-    Expression,
+    BlueprintExpression,
     ExpressionType,
     List,
     ListComp,
@@ -14,7 +14,7 @@ from .expressions import (
     Subscript,
     Tuple,
 )
-from .function import Function
+from .function import BlueprintFunction
 from .generator import expr_to_code, model_to_function, stmt_to_code
 from .parser import function_to_model
 from .statements import (
@@ -23,7 +23,7 @@ from .statements import (
     ForLoop,
     IfElse,
     Return,
-    Statement,
+    BlueprintStatement,
     StatementType,
     TupleUnpack,
 )
@@ -53,7 +53,7 @@ def _model_rebuild() -> None:
         "TupleUnpack": TupleUnpack,
         "StatementType": StatementType,
         # Function type
-        "Function": Function,
+        "Function": BlueprintFunction,
     }
 
     # First update expression classes that only depend on ExpressionType
@@ -74,7 +74,7 @@ def _model_rebuild() -> None:
     TupleUnpack.model_rebuild(_types_namespace=namespace)
 
     # Finally update Function class
-    Function.model_rebuild(_types_namespace=namespace)
+    BlueprintFunction.model_rebuild(_types_namespace=namespace)
 
 
 # Update forward references
@@ -82,7 +82,7 @@ _model_rebuild()
 
 
 __all__ = [
-    "Expression",
+    "BlueprintExpression",
     "Name",
     "Constant",
     "BinOp",
@@ -92,7 +92,7 @@ __all__ = [
     "List",
     "ListComp",
     "ExpressionType",
-    "Statement",
+    "BlueprintStatement",
     "Assign",
     "AugAssign",
     "IfElse",
@@ -100,7 +100,7 @@ __all__ = [
     "Return",
     "TupleUnpack",
     "StatementType",
-    "Function",
+    "BlueprintFunction",
     "EvaluationContext",
     "ReturnValue",
     "Evaluable",

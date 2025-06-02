@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import ast
 import re
 from numbers import Number
 from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar, Union
@@ -11,13 +10,184 @@ import pydantic as pd
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
-from unyt import Unit, unyt_array
+from unyt import Unit, unyt_array, unit_symbols
 
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
+from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 from flow360.component.simulation.blueprint.core.types import TargetSyntax
-from flow360.component.simulation.blueprint.flow360.symbols import resolver
+
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+
+
+def _unit_list():
+    symbols = set()
+
+    for _, value in unit_symbols.__dict__.items():
+        if isinstance(value, (unyt_array, Unit)):
+            symbols.add(str(value))
+
+    return list(symbols)
+
+
+def _import_units(_) -> Any:
+    """Import and return allowed unit callables"""
+    from flow360.component.simulation import units as u
+    return u
+
+
+def _import_math(_) -> Any:
+    """Import and return allowed function callables"""
+    from flow360.component.simulation.blueprint.flow360.functions import math
+    return math
+
+
+def _import_control(_) -> Any:
+    """Import and return allowed control variable callables"""
+    from flow360.component.simulation.blueprint.flow360.variables import control
+    return control
+
+
+def _import_solution(_) -> Any:
+    """Import and return allowed solution variable callables"""
+    from flow360.component.simulation.blueprint.flow360.variables import solution
+    return solution
+
+
+WHITELISTED_CALLABLES = {
+    "flow360_math": {"prefix": "fn.", "callables": ["cross"], "evaluate": True},
+    "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
+    "flow360.control": {
+        "prefix": "control.",
+        "callables": [
+            "mut",
+            "mu",
+            "solutionNavierStokes",
+            "residualNavierStokes",
+            "solutionTurbulence",
+            "residualTurbulence",
+            "kOmega",
+            "nuHat",
+            "solutionTransition",
+            "residualTransition",
+            "solutionHeatSolver",
+            "residualHeatSolver",
+            "coordinate",
+            "physicalStep",
+            "pseudoStep",
+            "timeStepSize",
+            "alphaAngle",
+            "betaAngle",
+            "pressureFreestream",
+            "momentLengthX",
+            "momentLengthY",
+            "momentLengthZ",
+            "momentCenterX",
+            "momentCenterY",
+            "momentCenterZ",
+            "bet_thrust",
+            "bet_torque",
+            "bet_omega",
+            "CD",
+            "CL",
+            "forceX",
+            "forceY",
+            "forceZ",
+            "momentX",
+            "momentY",
+            "momentZ",
+            "nodeNormals",
+            "theta",
+            "omega",
+            "omegaDot",
+            "wallFunctionMetric",
+            "wallShearStress",
+            "yPlus",
+        ],
+        "evaluate": False,
+    },
+    "flow360.solution": {
+        "prefix": "solution.",
+        "callables": [
+            "mut",
+            "mu",
+            "solutionNavierStokes",
+            "residualNavierStokes",
+            "solutionTurbulence",
+            "residualTurbulence",
+            "kOmega",
+            "nuHat",
+            "solutionTransition",
+            "residualTransition",
+            "solutionHeatSolver",
+            "residualHeatSolver",
+            "coordinate",
+            "physicalStep",
+            "pseudoStep",
+            "timeStepSize",
+            "alphaAngle",
+            "betaAngle",
+            "pressureFreestream",
+            "momentLengthX",
+            "momentLengthY",
+            "momentLengthZ",
+            "momentCenterX",
+            "momentCenterY",
+            "momentCenterZ",
+            "bet_thrust",
+            "bet_torque",
+            "bet_omega",
+            "CD",
+            "CL",
+            "forceX",
+            "forceY",
+            "forceZ",
+            "momentX",
+            "momentY",
+            "momentZ",
+            "nodeNormals",
+            "theta",
+            "omega",
+            "omegaDot",
+            "wallFunctionMetric",
+            "wallShearStress",
+            "yPlus",
+        ],
+        "evaluate": False,
+    },
+}
+
+# Define allowed modules
+ALLOWED_MODULES = {"u", "fl", "control", "solution", "math"}
+
+ALLOWED_CALLABLES = {
+    **{
+        f"{group['prefix']}{callable}": None
+        for group in WHITELISTED_CALLABLES.values()
+        for callable in group["callables"]
+    },
+}
+
+EVALUATION_BLACKLIST = {
+    **{
+        f"{group['prefix']}{callable}": None
+        for group in WHITELISTED_CALLABLES.values()
+        for callable in group["callables"]
+        if not group["evaluate"]
+    },
+}
+
+# Note:  Keys of IMPORT_FUNCTIONS needs to be consistent with ALLOWED_MODULES
+IMPORT_FUNCTIONS = {
+    "u": _import_units,
+    "math": _import_math,
+    "control": _import_control,
+    "solution": _import_solution,
+}
+
+resolver = CallableResolver(
+    ALLOWED_CALLABLES, ALLOWED_MODULES, IMPORT_FUNCTIONS, EVALUATION_BLACKLIST
+)
 
 _global_ctx: EvaluationContext = EvaluationContext(resolver)
 _user_variables: set[str] = set()
@@ -342,13 +512,16 @@ class Expression(Flow360BaseModel, Evaluable):
         return {"expression": expression}
 
     def evaluate(
-        self, context: EvaluationContext = None, strict: bool = True
+        self,
+        context: EvaluationContext = None,
+        raise_error: bool = True,
+        force_evaluate: bool = True,
     ) -> Union[float, list, unyt_array]:
         """Evaluate this expression against the given context."""
         if context is None:
             context = _global_ctx
         expr = expr_to_model(self.expression, context)
-        result = expr.evaluate(context, strict)
+        result = expr.evaluate(context, raise_error, force_evaluate)
         return result
 
     def user_variables(self):
@@ -493,27 +666,6 @@ class Expression(Flow360BaseModel, Evaluable):
     def __repr__(self):
         return f"Expression({self.expression})"
 
-    def as_vector(self):
-        """Parse the expression (str) and if possible, return list of `Expression` instances"""
-        tree = ast.parse(self.expression, mode="eval")
-        if isinstance(tree.body, ast.List):
-            # Expression string with list syntax, like "[aa,bb,cc]"
-            result = [ast.unparse(elt) for elt in tree.body.elts]
-        else:
-            # Expression string with **evaluated result**
-            # being vector,like "[1,2,3]*u.m", "fl.cross(aa,bb)"
-
-            # TODO: This seems to be a deadlock, here we depend on
-            # string expression being properly (symbolically) evaluated.
-            # Hacking so at least "[1,2,3]*u.m" works
-            result = self.evaluate()
-            print(">>> result = ", result, type(result))
-            if isinstance(self, (list, unyt_array)):
-                return result
-            return None
-
-        return [Expression.model_validate(item) for item in result]
-
 
 T = TypeVar("T")
 
@@ -524,7 +676,7 @@ class ValueOrExpression(Expression, Generic[T]):
     def __class_getitem__(cls, typevar_values):  # pylint:disable=too-many-statements
         def _internal_validator(value: Expression):
             try:
-                result = value.evaluate(strict=False)
+                result = value.evaluate(raise_error=False)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
             pd.TypeAdapter(typevar_values).validate_python(result)
@@ -569,7 +721,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
                 serialized.expression = value.expression
 
-                evaluated = value.evaluate(strict=False)
+                evaluated = value.evaluate(raise_error=False)
 
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
@@ -596,7 +748,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
             return serialized.model_dump(**info.__dict__)
 
-        def _get_discriminator_value(v: Any) -> str:
+        def _discriminator(v: Any) -> str:
             # Note: This is ran after deserializer
             if isinstance(v, SerializedValueOrExpression):
                 return v.type_name
@@ -612,7 +764,7 @@ class ValueOrExpression(Expression, Generic[T]):
             Union[
                 Annotated[expr_type, Tag("expression")], Annotated[typevar_values, Tag("number")]
             ],
-            Discriminator(_get_discriminator_value),
+            Discriminator(_discriminator),
             BeforeValidator(_deserialize),
             PlainSerializer(_serializer),
         ]

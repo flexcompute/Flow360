@@ -16,7 +16,7 @@ from flow360.component.simulation.blueprint.core.expressions import (
     Tuple,
     UnaryOp,
 )
-from flow360.component.simulation.blueprint.core.function import Function
+from flow360.component.simulation.blueprint.core.function import BlueprintFunction
 from flow360.component.simulation.blueprint.core.statements import (
     Assign,
     AugAssign,
@@ -276,7 +276,9 @@ def stmt_to_code(
 
 
 def model_to_function(
-    func: Function, syntax: TargetSyntax = TargetSyntax.PYTHON, remap: dict[str, str] = None
+    func: BlueprintFunction,
+    syntax: TargetSyntax = TargetSyntax.PYTHON,
+    remap: dict[str, str] = None,
 ) -> str:
     """Convert a Function model back to source code."""
     if syntax == TargetSyntax.PYTHON:

@@ -1,7 +1,7 @@
 """Control variables of Flow360"""
 
 from flow360.component.simulation import units as u
-from flow360.component.simulation.user_code import SolverVariable
+from flow360.component.simulation.blueprint.flow360.expressions import SolverVariable
 
 # pylint:disable=no-member
 MachRef = SolverVariable(

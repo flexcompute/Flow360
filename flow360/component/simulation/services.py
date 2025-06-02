@@ -20,18 +20,12 @@ from flow360.component.simulation.meshing_param.volume_params import AutomatedFa
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
 # Following unused-import for supporting parse_model_dict
-from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
-    BETDisk,
-)
 
 # pylint: disable=unused-import
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
-    GenericReferenceCondition,
-    ThermalState,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
 from flow360.component.simulation.primitives import Surface  # For parse_model_dict
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -56,7 +50,7 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.component.simulation.user_code import Expression, UserVariable
+from flow360.component.simulation.blueprint.flow360.expressions import Expression, UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -800,7 +794,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
             if variable and isinstance(variable.value, Expression):
-                _ = variable.value.evaluate(strict=False)
+                _ = variable.value.evaluate(raise_error=False)
         except pd.ValidationError as err:
             errors.extend(err.errors())
         except Exception as err:  # pylint: disable=broad-exception-caught
@@ -812,7 +806,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         unit = None
         try:
             expression_object = Expression(expression=expression)
-            result = expression_object.evaluate(strict=False)
+            result = expression_object.evaluate(raise_error=False)
             if np.isnan(result):
                 pass
             elif isinstance(result, Number):

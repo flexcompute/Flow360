@@ -22,18 +22,6 @@ class CallableResolver:
         self._allowed_callables: dict[str, Callable[..., Any]] = {}
         self._allowed_modules: dict[str, Any] = {}
 
-        # Initialize with safe builtins
-        self._safe_builtins = {
-            "range": range,
-            "len": len,
-            "sum": sum,
-            "min": min,
-            "max": max,
-            "abs": abs,
-            "round": round,
-            # Add other safe builtins as needed
-        }
-
     def register_callable(self, name: str, func: Callable[..., Any]) -> None:
         """Register a callable for direct use."""
         self._allowed_callables[name] = func
@@ -62,10 +50,6 @@ class CallableResolver:
         # Check direct allowed callables
         if qualname in self._allowed_callables:
             return self._allowed_callables[qualname]
-
-        # Check safe builtins
-        if qualname in self._safe_builtins:
-            return self._safe_builtins[qualname]
 
         # Handle module attributes
         if "." in qualname:
