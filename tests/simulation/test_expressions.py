@@ -18,6 +18,7 @@ from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -601,9 +602,8 @@ def test_auto_alias():
 
 def test_variable_space_init():
     # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
-    with open("data/variables.json", "r+") as fh:
+    with open("data/simulation.json", "r+") as fh:
         data = json.load(fh)
-    from flow360.component.simulation.services import ValidationCalledBy, validate_model
 
     params, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
@@ -617,7 +617,7 @@ def test_variable_space_init():
 
 def test_cross_product():
     class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[VelocityType] = pd.Field()
+        field: ValueOrExpression[VelocityType.Vector] = pd.Field()
 
     x = UserVariable(name="x", value=[1, 2, 3])
 
@@ -632,3 +632,33 @@ def test_cross_product():
 
     result = model.field.evaluate()
     assert (result == [-4, 8, -4] * u.m / u.s).all()
+
+
+def test_vector_solver_variable_cross_product_translation():
+    with open("data/simulation.json", "r+") as fh:
+        data = json.load(fh)
+
+    params, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[LengthType.Vector] = pd.Field()
+
+    # From string
+    expr_1 = TestModel(field="math.cross([1, 2, 3], solution.coordinate)").field
+    assert str(expr_1) == "math.cross([1, 2, 3], solution.coordinate)"
+
+    # During solver translation both options are inlined the same way through partial evaluation
+    solver_1 = expr_1.to_solver_code(params)
+    print(solver_1)
+
+    # From python code
+    expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
+    assert str(expr_2) == "([2 * ((solution.coordinate)[2]) - (3 * ((solution.coordinate)[1])),3 * ((solution.coordinate)[0]) - (1 * ((solution.coordinate)[2])),1 * ((solution.coordinate)[1]) - (2 * ((solution.coordinate)[0]))]) * u.m"
+
+    # During solver translation both options are inlined the same way through partial evaluation
+    solver_2 = expr_2.to_solver_code(params)
+    print(solver_2) # <- TODO: This currently will break, because the overloaded unyt operators in types.py don't
+                    #          handle List[Expression]... We should do some sort of implicit conversion perhaps?
+

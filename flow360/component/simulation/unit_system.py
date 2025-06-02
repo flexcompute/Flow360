@@ -424,7 +424,7 @@ class _DimensionedType(metaclass=ABCMeta):
     # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
     @classmethod
-    def Constrained(cls, gt=None, ge=None, lt=None, le=None, allow_inf_nan=False):
+    def Constrained(cls, gt=None, ge=None, lt=None, le=None, allow_inf_nan=True):
         """
         Utility method to generate a dimensioned type with constraints based on the pydantic confloat
         """
@@ -524,7 +524,7 @@ class _DimensionedType(metaclass=ABCMeta):
                         value, vec_cls.type.dim, vec_cls.type.expect_delta_unit
                     )
 
-                    if kwargs.get("allow_inf_nan", False) is False:
+                    if kwargs.get("allow_inf_nan", True) is False:
                         value = _nan_inf_vector_validator(value)
 
                     value = _has_dimensions_validator(

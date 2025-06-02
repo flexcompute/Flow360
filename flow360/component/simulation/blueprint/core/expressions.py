@@ -3,6 +3,7 @@
 import abc
 from typing import Annotated, Any, Literal, Union
 
+import numpy as np
 import pydantic as pd
 
 from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS

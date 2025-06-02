@@ -41,6 +41,7 @@ class EvaluationContext:
         self._values = initial_values or {}
         self._data_models = {}
         self._resolver = resolver
+        self._aliases: dict[str, str] = {}
 
     def get(self, name: str, resolve: bool = True) -> Any:
         """
@@ -76,6 +77,12 @@ class EvaluationContext:
         if name not in self._data_models:
             return None
         return self._data_models[name]
+
+    def set_alias(self, name, alias) -> None:
+        self._aliases[name] = alias
+
+    def get_alias(self, name) -> Optional[str]:
+        return self._aliases.get(name)
 
     def set(self, name: str, value: Any, data_model: pd.BaseModel = None) -> None:
         """

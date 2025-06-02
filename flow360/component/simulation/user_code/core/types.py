@@ -25,8 +25,6 @@ from flow360.component.simulation.user_code.core.utils import (
 )
 
 _user_variables: set[str] = set()
-_solver_variable_name_map: dict[str, str] = {}
-
 
 def __soft_fail_add__(self, other):
     if not isinstance(other, Expression) and not isinstance(other, Variable):
@@ -109,10 +107,10 @@ class SerializedValueOrExpression(Flow360BaseModel):
     """Serialized frontend-compatible format of an arbitrary value/expression field"""
 
     type_name: Union[Literal["number"], Literal["expression"]] = pd.Field(None)
-    value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
+    value: Optional[Union[Number, list[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, Iterable[Number]]] = pd.Field(None)
+    evaluated_value: Optional[Union[Number, list[Number]]] = pd.Field(None)
     evaluated_units: Optional[str] = pd.Field(None)
 
 
@@ -292,9 +290,8 @@ class SolverVariable(Variable):
     def update_context(cls, value):
         """Auto updating context when new variable is declared"""
         default_context.set(value.name, value.value, SolverVariable)
-        _solver_variable_name_map[value.name] = (
-            value.solver_name if value.solver_name is not None else value.name
-        )
+        if value.solver_name:
+            default_context.set_alias(value.name, value.solver_name)
         return value
 
 
@@ -374,8 +371,10 @@ class Expression(Flow360BaseModel, Evaluable):
         """Convert to solver readable code."""
 
         def translate_symbol(name):
-            if name in _solver_variable_name_map:
-                return _solver_variable_name_map[name]
+            alias = default_context.get_alias(name)
+
+            if alias:
+                return alias
 
             match = re.fullmatch("u\\.(.+)", name)
 
@@ -514,37 +513,26 @@ class ValueOrExpression(Expression, Generic[T]):
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
-            def _validation_attempt_(input_value):
-                deserialized = None
-                try:
-                    deserialized = SerializedValueOrExpression.model_validate(input_value)
-                except:  # pylint:disable=bare-except
-                    pass
-                return deserialized
+            is_serialized = False
 
-            ###
-            deserialized = None
-            if isinstance(value, dict) and "type_name" not in value:
-                # Deserializing legacy simulation.json where there is only "units" + "value"
-                deserialized = _validation_attempt_({**value, "type_name": "number"})
-            else:
-                deserialized = _validation_attempt_(value)
-            if deserialized is None:
-                # All validation attempt failed
-                deserialized = value
-            else:
-                if deserialized.type_name == "number":
-                    if deserialized.units is not None:
-                        # Note: Flow360 unyt_array could not be constructed here.
-                        return unyt_array(deserialized.value, deserialized.units)
-                    return deserialized.value
-                if deserialized.type_name == "expression":
-                    return expr_type(expression=deserialized.expression)
+            try:
+                value = SerializedValueOrExpression.model_validate(value)
+                is_serialized = True
+            except Exception as err:
+                pass
 
-            return deserialized
+            if is_serialized:
+                if value.type_name == "number":
+                    if value.units is not None:
+                        return unyt_array(value.value, value.units)
+                    else:
+                        return value.value
+                elif value.type_name == "expression":
+                    return expr_type(expression=value.expression)
+            else:
+                return value
 
         def _serializer(value, info) -> dict:
-            print(">>> Inside serializer: value = ", value)
             if isinstance(value, Expression):
                 serialized = SerializedValueOrExpression(type_name="expression")
 
