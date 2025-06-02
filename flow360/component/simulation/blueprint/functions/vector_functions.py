@@ -7,7 +7,9 @@ from unyt import ucross, unyt_array
 
 # pow
 def cross(foo, bar):
-
+    """Customized Cross function to work with the `Expression` and Variables"""
+    # TODO: Move global import here to avoid circular import.
+    # Cannot find good way of breaking the circular import otherwise.
     from flow360.component.simulation.user_code import Expression, Variable
 
     if isinstance(foo, np.ndarray) and isinstance(bar, np.ndarray):

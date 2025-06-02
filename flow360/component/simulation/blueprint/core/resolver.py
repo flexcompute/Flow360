@@ -77,7 +77,6 @@ class CallableResolver:
                 if qualname in self._callable_builtins:
                     return obj
             # Try importing if it's a whitelisted callable
-            print(">> self._callable_builtins.keys(): ", self._callable_builtins.keys())
             if qualname in self._callable_builtins:
                 for names, import_func in self._import_builtins.items():
                     if module_name in names:
