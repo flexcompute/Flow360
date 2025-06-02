@@ -494,12 +494,22 @@ class Expression(Flow360BaseModel, Evaluable):
         return f"Expression({self.expression})"
 
     def as_vector(self):
-        """Parse the expression(str) and if possible, return list of `Expression` instances"""
+        """Parse the expression (str) and if possible, return list of `Expression` instances"""
         tree = ast.parse(self.expression, mode="eval")
-
         if isinstance(tree.body, ast.List):
+            # Expression string with list syntax, like "[aa,bb,cc]"
             result = [ast.unparse(elt) for elt in tree.body.elts]
         else:
+            # Expression string with **evaluated result**
+            # being vector,like "[1,2,3]*u.m", "fl.cross(aa,bb)"
+
+            # TODO: This seems to be a deadlock, here we depend on
+            # string expression being properly (symbolically) evaluated.
+            # Hacking so at least "[1,2,3]*u.m" works
+            result = self.evaluate()
+            print(">>> result = ", result, type(result))
+            if isinstance(self, (list, unyt_array)):
+                return result
             return None
 
         return [Expression.model_validate(item) for item in result]

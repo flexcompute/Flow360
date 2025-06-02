@@ -10,6 +10,7 @@ def cross(foo, bar):
     """Customized Cross function to work with the `Expression` and Variables"""
     # TODO: Move global import here to avoid circular import.
     # Cannot find good way of breaking the circular import otherwise.
+    print("input : \n", foo, "type = ", type(foo), "\n", bar, "type = ", type(bar), "\n")
     from flow360.component.simulation.user_code import Expression, Variable
 
     if isinstance(foo, np.ndarray) and isinstance(bar, np.ndarray):
@@ -30,12 +31,13 @@ def cross(foo, bar):
         if isinstance(baz, Variable):
             if isinstance(baz.value, Expression):
                 return _preprocess_input(baz.value)
+            # value
             baz_length = len(baz.value)
             baz = Expression(expression=str(baz))
         elif isinstance(baz, Expression):
             vector_form = baz.as_vector()
             if not vector_form:  # I am scalar expression.
-                raise ValueError("fl.cross() can not take in scalar expression.")
+                raise ValueError(f"fl.cross() can not take in scalar expression. {baz} was given")
 
             baz_length = len(vector_form)
             baz = vector_form
@@ -49,7 +51,14 @@ def cross(foo, bar):
     print("\n>>>> foo, foo_length = ", foo, foo_length)
     print(">>>> bar, bar_length = ", bar, bar_length)
     assert foo_length == bar_length, f"Different len {foo_length} vs {bar_length}"
-
+    print(
+        ">> HOW??? ",
+        [
+            bar[2] * foo[1] - bar[1] * foo[2],
+            bar[0] * foo[2] - bar[2] * foo[0],
+            bar[0] * foo[1] - bar[1] * foo[0],
+        ],
+    )
     if foo_length == 3:
         return Expression.model_validate(
             [
@@ -58,7 +67,7 @@ def cross(foo, bar):
                 bar[0] * foo[1] - bar[1] * foo[0],
             ]
         )
-    raise NotImplementedError()
+    raise NotImplementedError("len ==2 not implemented")
 
     # foo_processed = _preprocess(foo)
     # bar_processed = _preprocess(bar)

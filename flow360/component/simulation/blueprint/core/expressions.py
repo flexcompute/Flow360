@@ -52,14 +52,22 @@ class Name(Expression):
     type: Literal["Name"] = "Name"
     id: str
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
+    def evaluate(self, context: EvaluationContext, strict: bool, symbolic: bool = True) -> Any:
+        # TODO: Stop hardcoding the symbolic flag
         if strict and not context.can_evaluate(self.id):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
         value = context.get(self.id)
-
+        print("get value from name: ", value)
         # Recursively evaluate if the returned value is evaluable
         if isinstance(value, Evaluable):
+            print("IS an Evaluable, value type = ", type(value), " ", value, "|", self.id)
             value = value.evaluate(context, strict)
+        else:
+            from flow360.component.simulation.user_code import Variable
+
+            # Very ugly implementation
+            if self.id.startswith(("solution", "control")) and symbolic:
+                return Variable(name=self.id, value=[1, 2, 3])
 
         return value
 
