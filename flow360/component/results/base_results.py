@@ -491,9 +491,12 @@ class ResultCSVModel(ResultBaseModel):
 
     @classmethod
     def _average_last_fraction(cls, df, average_fraction):
-        columns_to_exlude = [_PSEUDO_STEP, _PHYSICAL_STEP, _TIME, _TIME_UNITS]
-        df_exclude_step = df.drop(columns=columns_to_exlude, errors="ignore")
-        selected_fraction = df_exclude_step.tail(int(len(df) * average_fraction))
+        columns_filtered = [
+            col
+            for col in df.columns
+            if col not in [_PSEUDO_STEP, _PHYSICAL_STEP, _TIME, _TIME_UNITS]
+        ]
+        selected_fraction = df[columns_filtered].tail(int(len(df) * average_fraction))
         return selected_fraction.mean()
 
     def get_averages(self, average_fraction):
