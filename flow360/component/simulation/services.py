@@ -19,11 +19,19 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
+# Following unused-import for supporting parse_model_dict
+from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
+    BETDisk,
+)
+
 # pylint: disable=unused-import
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
+    GenericReferenceCondition,
+    ThermalState,
 )
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
+from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
 from flow360.component.simulation.primitives import Surface  # For parse_model_dict
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
@@ -58,9 +66,6 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
-
-# Following unused-import for supporting parse_model_dict
-
 
 # Required for correct global scope initialization
 

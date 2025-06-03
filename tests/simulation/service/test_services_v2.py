@@ -146,7 +146,7 @@ def test_validate_error():
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
             "moment_length": {"value": 1.0, "units": "m"},
-            "area": {"value": 1.0, "units": "m**2"},
+            "area": {"value": 1.0, "units": "m**2", "type_name": "number"},
         },
         "time_stepping": {
             "type_name": "Steady",

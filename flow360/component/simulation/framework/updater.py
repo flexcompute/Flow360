@@ -189,6 +189,14 @@ def _to_25_6_0(params_as_dict):
             if velocity_direction:
                 model["velocity_direction"] = velocity_direction
 
+    # What version is this?
+    if "reference_geometry" in params_as_dict and "area" in params_as_dict["reference_geometry"]:
+        if (
+            params_as_dict["reference_geometry"]["area"] is not None
+            and "type_name" not in params_as_dict["reference_geometry"]["area"]
+        ):
+            params_as_dict["reference_geometry"]["area"]["type_name"] = "number"
+
     return params_as_dict
 
 
