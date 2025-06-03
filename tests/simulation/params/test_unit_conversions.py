@@ -175,8 +175,12 @@ def test_operations_on_units():
     replaced = (
         params.operating_condition.thermal_state.temperature.to("degC") - 25 * fl.u.degC
     ).to("K")
-    assertions.assertAlmostEqual(replaced.value, 263.15)
+    assertions.assertAlmostEqual(replaced.value, -10)
     assert str(replaced.units) == "K"
+
+    replaced = params.operating_condition.thermal_state.temperature.to("degC") - 25 * fl.u.degC
+    assertions.assertAlmostEqual(replaced.value, -10)
+    assert str(replaced.units.expr) == "delta_degC"  # unyt 3.0+
 
     replaced = params.operating_condition.thermal_state.density + 2 * fl.u.g / fl.u.cm**3
     assertions.assertAlmostEqual(replaced.value, 2001.2249999999997)
