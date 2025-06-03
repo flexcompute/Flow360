@@ -20,6 +20,7 @@ from flow360.component.results.base_results import (
 )
 from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )

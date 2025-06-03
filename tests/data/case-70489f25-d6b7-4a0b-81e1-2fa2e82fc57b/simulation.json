@@ -57,7 +57,6 @@
             "turbulence_model_solver": {
                 "CFL_multiplier": 2.0,
                 "absolute_tolerance": 1e-08,
-                "controls": null,
                 "equation_evaluation_frequency": 1,
                 "hybrid_model": {
                     "grid_size_for_LES": "maxEdgeLength",

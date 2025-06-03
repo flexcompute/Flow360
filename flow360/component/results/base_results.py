@@ -439,20 +439,20 @@ class ResultCSVModel(ResultBaseModel):
             )
 
         params = self._get_params_method()  # pylint:disable = not-callable
-        if isinstance(params, Flow360Params):
-            try:
-                step_size = params.time_stepping.time_step_size
-            except KeyError:
-                raise ValueError(  # pylint:disable=raise-missing-from
-                    "Cannot find time step size for this simulation. Check flow360.json file."
-                )
 
-        elif isinstance(params, SimulationParams):
+        if isinstance(params, SimulationParams):
             try:
                 step_size = params.time_stepping.step_size
             except KeyError:
                 raise ValueError(  # pylint:disable=raise-missing-from
                     "Cannot find time step size for this simulation. Check simulation.json."
+                )
+        elif isinstance(params, Flow360Params):
+            try:
+                step_size = params.time_stepping.time_step_size
+            except KeyError:
+                raise ValueError(  # pylint:disable=raise-missing-from
+                    "Cannot find time step size for this simulation. Check flow360.json file."
                 )
         else:
             raise ValueError(
