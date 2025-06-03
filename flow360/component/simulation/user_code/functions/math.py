@@ -15,7 +15,7 @@ def _convert_argument(value):
 
 
 def _extract_units(value):
-    units = 1 # Neutral element of multiplication
+    units = 1  # Neutral element of multiplication
 
     if isinstance(value, Expression):
         result = value.evaluate(raise_error=False)

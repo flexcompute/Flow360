@@ -26,6 +26,7 @@ from flow360.component.simulation.user_code.core.utils import (
 
 _user_variables: set[str] = set()
 
+
 def __soft_fail_add__(self, other):
     if not isinstance(other, Expression) and not isinstance(other, Variable):
         return np.ndarray.__add__(self, other)

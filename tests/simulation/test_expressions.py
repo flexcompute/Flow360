@@ -622,7 +622,10 @@ def test_cross_product():
     x = UserVariable(name="x", value=[1, 2, 3])
 
     model = TestModel(field=math.cross(x, [3, 2, 1]) * u.m / u.s)
-    assert str(model.field) == "(([((x)[1]) * 1 - (((x)[2]) * 2),((x)[2]) * 3 - (((x)[0]) * 1),((x)[0]) * 2 - (((x)[1]) * 3)]) * u.m) / u.s"
+    assert (
+        str(model.field)
+        == "(([((x)[1]) * 1 - (((x)[2]) * 2),((x)[2]) * 3 - (((x)[0]) * 1),((x)[0]) * 2 - (((x)[1]) * 3)]) * u.m) / u.s"
+    )
 
     result = model.field.evaluate()
     assert (result == [-4, 8, -4] * u.m / u.s).all()
@@ -655,10 +658,14 @@ def test_vector_solver_variable_cross_product_translation():
 
     # From python code
     expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
-    assert str(expr_2) == "([2 * ((solution.coordinate)[2]) - (3 * ((solution.coordinate)[1])),3 * ((solution.coordinate)[0]) - (1 * ((solution.coordinate)[2])),1 * ((solution.coordinate)[1]) - (2 * ((solution.coordinate)[0]))]) * u.m"
+    assert (
+        str(expr_2)
+        == "([2 * ((solution.coordinate)[2]) - (3 * ((solution.coordinate)[1])),3 * ((solution.coordinate)[0]) - (1 * ((solution.coordinate)[2])),1 * ((solution.coordinate)[1]) - (2 * ((solution.coordinate)[0]))]) * u.m"
+    )
 
     # During solver translation both options are inlined the same way through partial evaluation
     solver_2 = expr_2.to_solver_code(params)
-    print(solver_2) # <- TODO: This currently will break, because the overloaded unyt operators in types.py don't
-                    #          handle List[Expression]... We should do some sort of implicit conversion perhaps?
-
+    print(
+        solver_2
+    )  # <- TODO: This currently will break, because the overloaded unyt operators in types.py don't
+    #          handle List[Expression]... We should do some sort of implicit conversion perhaps?
