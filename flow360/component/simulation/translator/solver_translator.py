@@ -1049,8 +1049,8 @@ def get_solver_json(
     # check if all units are flow360:
     _ = remove_units_in_dict(dump_dict(op))
     translated["freestream"] = {
-        "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.model_fields else 0,
-        "betaAngle": op.beta.to("degree").v.item() if "beta" in op.model_fields else 0,
+        "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.__class__.model_fields else 0,
+        "betaAngle": op.beta.to("degree").v.item() if "beta" in op.__class__.model_fields else 0,
         "Mach": op.velocity_magnitude.v.item(),
         "Temperature": (
             op.thermal_state.temperature.to("K").v.item()
@@ -1064,7 +1064,10 @@ def get_solver_json(
             else op.material.dynamic_viscosity.v.item()
         ),
     }
-    if "reference_velocity_magnitude" in op.model_fields.keys() and op.reference_velocity_magnitude:
+    if (
+        "reference_velocity_magnitude" in op.__class__.model_fields.keys()
+        and op.reference_velocity_magnitude
+    ):
         translated["freestream"]["MachRef"] = op.reference_velocity_magnitude.v.item()
     op_acoustic_to_static_pressure_ratio = (
         (

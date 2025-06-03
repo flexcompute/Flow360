@@ -268,6 +268,7 @@ class WallRotation(Flow360BaseModel):
     axis: Axis = pd.Field(description="The axis of rotation.")
     angular_velocity: AngularVelocityType = pd.Field("The value of the angular velocity.")
     type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)
+    private_attribute_circle_mode: Optional[dict] = pd.Field(None)
 
 
 ##########################################

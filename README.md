@@ -54,7 +54,7 @@ Environment ``FLOW360_APIKEY`` variable takes precedence before Flow360 configur
 
 ## run examples
 - ``python examples/case_results.py``
-- You can also run examples without activating shell:\
+- You can also run examples without activating shell:
 ``poetry run python examples/case_results.py``
 
 ## check in

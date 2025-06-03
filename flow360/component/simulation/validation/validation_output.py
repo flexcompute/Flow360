@@ -47,7 +47,7 @@ def _check_output_fields(params):
             continue
         # Get allowed output fields items:
         natively_supported = extract_literal_values(
-            output.output_fields.model_fields["items"].annotation
+            output.output_fields.__class__.model_fields["items"].annotation
         )
         allowed_items = natively_supported + additional_fields
 
@@ -61,7 +61,9 @@ def _check_output_fields(params):
         if output.output_type == "IsosurfaceOutput":
             # using the 1st item's allowed field as all isosurface have same field definition
             allowed_items = (
-                extract_literal_values(output.entities.items[0].model_fields["field"].annotation)
+                extract_literal_values(
+                    output.entities.items[0].__class__.model_fields["field"].annotation
+                )
                 + additional_fields
             )
             for entity in output.entities.items:
