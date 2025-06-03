@@ -491,7 +491,7 @@ class _DimensionedType(metaclass=ABCMeta):
 
                 return schema
 
-            def validate(vec_cls, value, *args, **kwargs):
+            def validate(vec_cls, value, info, *args, **kwargs):
                 """additional validator for value"""
                 try:
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
@@ -524,7 +524,12 @@ class _DimensionedType(metaclass=ABCMeta):
                         value, vec_cls.type.dim, vec_cls.type.expect_delta_unit
                     )
 
-                    if kwargs.get("allow_inf_nan", False) is False:
+                    allow_inf_nan = kwargs.get("allow_inf_nan", False)
+
+                    if info.context and "allow_inf_nan" in info.context:
+                        allow_inf_nan = info.context.get("allow_inf_nan", False)
+
+                    if allow_inf_nan is False:
                         value = _nan_inf_vector_validator(value)
 
                     value = _has_dimensions_validator(
@@ -539,9 +544,9 @@ class _DimensionedType(metaclass=ABCMeta):
                     raise pd.ValidationError.from_exception_data("validation error", [details])
 
             def __get_pydantic_core_schema__(vec_cls, *args, **kwargs) -> pd.CoreSchema:
-                return core_schema.no_info_plain_validator_function(
-                    lambda *val_args: validate(vec_cls, *val_args)
-                )
+                def validate_with_info(value, info):
+                    return validate(vec_cls, value, info, *args, **kwargs)
+                return core_schema.with_info_plain_validator_function(validate_with_info)
 
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type

@@ -504,7 +504,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 result = value.evaluate(raise_error=False)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
-            pd.TypeAdapter(typevar_values).validate_python(result)
+            pd.TypeAdapter(typevar_values).validate_python(result, context={"allow_inf_nan": True})
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
