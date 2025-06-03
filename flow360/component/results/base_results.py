@@ -26,7 +26,7 @@ from ..v1.flow360_params import Flow360Params
 # pylint: disable=consider-using-with
 TMP_DIR = tempfile.TemporaryDirectory()
 
-
+_PSEUDO_STEP = "pseudo_step"
 _PHYSICAL_STEP = "physical_step"
 _TIME = "time"
 _TIME_UNITS = "time_units"
@@ -489,7 +489,12 @@ class ResultCSVModel(ResultBaseModel):
 
     @classmethod
     def _average_last_fraction(cls, df, average_fraction):
-        selected_fraction = df.tail(int(len(df) * average_fraction))
+        columns_filtered = [
+            col
+            for col in df.columns
+            if col not in [_PSEUDO_STEP, _PHYSICAL_STEP, _TIME, _TIME_UNITS]
+        ]
+        selected_fraction = df[columns_filtered].tail(int(len(df) * average_fraction))
         return selected_fraction.mean()
 
     def get_averages(self, average_fraction):

@@ -16,6 +16,22 @@ import numpy as np
 import pandas
 import pydantic as pd
 
+<<<<<<< HEAD
+=======
+from flow360.cloud.s3_utils import CloudFileNotFoundError
+from flow360.component.results.base_results import (
+    _PHYSICAL_STEP,
+    _PSEUDO_STEP,
+    PerEntityResultCSVModel,
+    ResultBaseModel,
+    ResultCSVModel,
+    ResultTarGZModel,
+)
+from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.models.surface_models import BoundaryBase
+from flow360.component.simulation.simulation_params import SimulationParams
+>>>>>>> e0129b48 (Exclude pseudo/time step related columns when computing the average of forces (#1116))
 from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
     ForceType,
@@ -24,6 +40,7 @@ from flow360.component.simulation.unit_system import (
     is_flow360_unit,
 )
 
+<<<<<<< HEAD
 from ...cloud.s3_utils import (
     CloudFileNotFoundError,
     get_local_filename_and_create_folders,
@@ -43,6 +60,9 @@ from .base_results import (
 )
 
 _PSEUDO_STEP = "pseudo_step"
+=======
+# pylint:disable=invalid-name
+>>>>>>> e0129b48 (Exclude pseudo/time step related columns when computing the average of forces (#1116))
 _CL = "CL"
 _CD = "CD"
 _CFx = "CFx"

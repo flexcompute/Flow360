@@ -11,7 +11,13 @@ import pytest
 import flow360.component.v1.units as u1
 import flow360.v1 as fl
 from flow360 import log
-from flow360.component.results.base_results import _filter_headers_by_prefix
+from flow360.component.results.base_results import (
+    _PHYSICAL_STEP,
+    _PSEUDO_STEP,
+    _TIME,
+    _TIME_UNITS,
+    _filter_headers_by_prefix,
+)
 from flow360.component.results.case_results import PerEntityResultCSVModel
 from flow360.component.simulation import units as u2
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -387,6 +393,20 @@ def test_filter():
             "totalB",
         ]
     )
+
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_average(mock_id, mock_response):
+    case = fl.Case(id="case-70489f25-d6b7-4a0b-81e1-2fa2e82fc57b")
+    surface_forces = case.results.surface_forces
+    data_df = surface_forces.as_dataframe()
+    data_avg_dict = surface_forces.averages
+
+    for key in [_PSEUDO_STEP, _PHYSICAL_STEP, _TIME, _TIME_UNITS]:
+        assert key not in data_avg_dict.keys()
+
+    for col in data_avg_dict.keys():
+        assert compare_values(data_avg_dict[col], data_df[col].tail(int(len(data_df) * 0.1)).mean())
 
 
 @pytest.mark.usefixtures("s3_download_override")
