@@ -3,7 +3,6 @@
 import abc
 from typing import Annotated, Any, Literal, Union
 
-import numpy as np
 import pydantic as pd
 
 from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS
@@ -65,8 +64,7 @@ class NameNode(ExpressionNode):
             data_model = context.get_data_model(self.id)
             if data_model:
                 return data_model.model_validate({"name": self.id, "value": context.get(self.id)})
-            else:
-                raise ValueError(f"Partially evaluable symbols need to possess a type annotation")
+            raise ValueError("Partially evaluable symbols need to possess a type annotation.")
         value = context.get(self.id)
         # Recursively evaluate if the returned value is evaluable
         if isinstance(value, Evaluable):

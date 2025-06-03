@@ -1,4 +1,5 @@
-import numpy as np
+""""""
+
 from unyt import unyt_array
 
 from flow360.component.simulation.user_code.core.types import Expression, Variable

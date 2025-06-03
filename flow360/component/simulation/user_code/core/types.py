@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from numbers import Number
-from typing import Annotated, Any, Generic, Iterable, Literal, Optional, TypeVar, Union
+from typing import Annotated, Any, Generic, Literal, Optional, TypeVar, Union
 
 import numpy as np
 import pydantic as pd
@@ -30,29 +30,25 @@ _user_variables: set[str] = set()
 def __soft_fail_add__(self, other):
     if not isinstance(other, Expression) and not isinstance(other, Variable):
         return np.ndarray.__add__(self, other)
-    else:
-        return NotImplemented
+    return NotImplemented
 
 
 def __soft_fail_sub__(self, other):
     if not isinstance(other, Expression) and not isinstance(other, Variable):
         return np.ndarray.__sub__(self, other)
-    else:
-        return NotImplemented
+    return NotImplemented
 
 
 def __soft_fail_mul__(self, other):
     if not isinstance(other, Expression) and not isinstance(other, Variable):
         return np.ndarray.__mul__(self, other)
-    else:
-        return NotImplemented
+    return NotImplemented
 
 
 def __soft_fail_truediv__(self, other):
     if not isinstance(other, Expression) and not isinstance(other, Variable):
         return np.ndarray.__truediv__(self, other)
-    else:
-        return NotImplemented
+    return NotImplemented
 
 
 unyt_array.__add__ = __soft_fail_add__
@@ -519,19 +515,17 @@ class ValueOrExpression(Expression, Generic[T]):
             try:
                 value = SerializedValueOrExpression.model_validate(value)
                 is_serialized = True
-            except Exception as err:
+            except Exception:  # pylint:disable=broad-exception-caught
                 pass
 
             if is_serialized:
                 if value.type_name == "number":
                     if value.units is not None:
                         return unyt_array(value.value, value.units)
-                    else:
-                        return value.value
-                elif value.type_name == "expression":
+                    return value.value
+                if value.type_name == "expression":
                     return expr_type(expression=value.expression)
-            else:
-                return value
+            return value
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):

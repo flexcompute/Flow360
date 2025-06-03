@@ -1,3 +1,5 @@
+"""Utility functions for the user code module"""
+
 import re
 
 import pydantic as pd
@@ -5,6 +7,7 @@ from pydantic_core import InitErrorDetails
 
 
 def is_number_string(s: str) -> bool:
+    """Check if the string represents a single scalar number"""
     try:
         float(s)
         return True
@@ -13,6 +16,7 @@ def is_number_string(s: str) -> bool:
 
 
 def split_keep_delimiters(value: str, delimiters: list) -> list:
+    """split string but keep the delimiters"""
     escaped_delimiters = [re.escape(d) for d in delimiters]
     pattern = f"({'|'.join(escaped_delimiters)})"
     result = re.split(pattern, value)
@@ -20,6 +24,7 @@ def split_keep_delimiters(value: str, delimiters: list) -> list:
 
 
 def handle_syntax_error(se: SyntaxError, source: str):
+    """Handle expression syntax error."""
     caret = " " * (se.offset - 1) + "^" if se.text and se.offset else None
     msg = f"{se.msg} at line {se.lineno}, column {se.offset}"
     if caret:

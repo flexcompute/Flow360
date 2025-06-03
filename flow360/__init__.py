@@ -277,5 +277,7 @@ __all__ = [
     "Transformation",
     "WallRotation",
     "UserVariable",
-    "cross",
+    "math",
+    "control",
+    "solution",
 ]

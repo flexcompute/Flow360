@@ -1,4 +1,8 @@
+"""Context handler module"""
+
 from typing import Any
+
+from unyt import Unit, unit_symbols, unyt_array
 
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
@@ -6,7 +10,6 @@ from flow360.component.simulation.blueprint.core.resolver import CallableResolve
 
 def _unit_list():
     """Import a list of available unit symbols from the unyt module"""
-    from unyt import Unit, unit_symbols, unyt_array
 
     symbols = set()
 
@@ -19,6 +22,7 @@ def _unit_list():
 
 def _import_units(_) -> Any:
     """Import and return allowed unit callables"""
+    # pylint:disable=import-outside-toplevel
     from flow360.component.simulation import units as u
 
     return u
@@ -26,6 +30,7 @@ def _import_units(_) -> Any:
 
 def _import_math(_) -> Any:
     """Import and return allowed function callables"""
+    # pylint:disable=import-outside-toplevel
     from flow360.component.simulation.user_code.functions import math
 
     return math
@@ -33,6 +38,7 @@ def _import_math(_) -> Any:
 
 def _import_control(_) -> Any:
     """Import and return allowed control variable callables"""
+    # pylint:disable=import-outside-toplevel
     from flow360.component.simulation.user_code.variables import control
 
     return control
@@ -40,6 +46,7 @@ def _import_control(_) -> Any:
 
 def _import_solution(_) -> Any:
     """Import and return allowed solution variable callables"""
+    # pylint:disable=import-outside-toplevel
     from flow360.component.simulation.user_code.variables import solution
 
     return solution

@@ -74,14 +74,17 @@ class EvaluationContext:
         return self._values[name]
 
     def get_data_model(self, name: str) -> Optional[pd.BaseModel]:
+        """Get the Validation model for the given name."""
         if name not in self._data_models:
             return None
         return self._data_models[name]
 
     def set_alias(self, name, alias) -> None:
+        """Set alias used for code generation."""
         self._aliases[name] = alias
 
     def get_alias(self, name) -> Optional[str]:
+        """Get alias used for code generation."""
         return self._aliases.get(name)
 
     def set(self, name: str, value: Any, data_model: pd.BaseModel = None) -> None:
