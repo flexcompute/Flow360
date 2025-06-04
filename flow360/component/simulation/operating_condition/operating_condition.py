@@ -426,6 +426,64 @@ class AerospaceCondition(MultiConstructorBaseModel):
         ).value
 
 
+<<<<<<< HEAD
+=======
+class LiquidOperatingCondition(Flow360BaseModel):
+    """
+    Operating condition for simulation of water as the only material.
+
+    Example
+    -------
+
+    >>> fl.LiquidOperatingCondition(
+    ...     velocity_magnitude=10 * fl.u.m / fl.u.s,
+    ...     alpha=-90 * fl.u.deg,
+    ...     beta=0 * fl.u.deg,
+    ...     material=fl.Water(name="Water"),
+    ...     reference_velocity_magnitude=5 * fl.u.m / fl.u.s,
+    ... )
+
+    ====
+    """
+
+    type_name: Literal["LiquidOperatingCondition"] = pd.Field(
+        "LiquidOperatingCondition", frozen=True
+    )
+    alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
+    beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
+    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
+        context=CASE,
+        description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
+        + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
+        frozen=True,
+    )
+    reference_velocity_magnitude: Optional[VelocityType.Positive] = CaseField(
+        None,
+        description="Reference velocity magnitude. Is required when :py:attr:`velocity_magnitude` is 0."
+        " Used as the velocity scale for nondimensionalization.",
+        frozen=True,
+    )
+    material: Water = pd.Field(
+        Water(name="Water"),
+        description="Type of liquid material used.",
+    )
+
+    @pd.model_validator(mode="after")
+    @context_validator(context=CASE)
+    def check_valid_reference_velocity(self) -> Self:
+        """Ensure reference velocity is provided when inflow velocity is 0."""
+        if (
+            self.velocity_magnitude is not None
+            and self.velocity_magnitude.value == 0
+            and self.reference_velocity_magnitude is None
+        ):
+            raise ValueError(
+                "Reference velocity magnitude must be provided when inflow velocity magnitude is 0."
+            )
+        return self
+
+
+>>>>>>> a94fa980 (Add examples for Liquid related classes (#1127) (#1128))
 # pylint: disable=fixme
 # TODO: AutomotiveCondition
 OperatingConditionTypes = Union[GenericReferenceCondition, AerospaceCondition]
