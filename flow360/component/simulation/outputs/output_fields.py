@@ -214,7 +214,7 @@ _FIELD_UNIT_MAPPING = {
     "velocity_magnitude_m_per_s": (u.m, "SI"), # Length
     "velocity_x_m_per_s": (u.kg / u.m**3, "SI"), # SI Density
     "velocity_y_m_per_s": (u.K, "SI"), # Temperature
-    "velocity_z_m_per_s": (u.W / u.s**2, "SI"), # Heat flux
+    "velocity_z_m_per_s": (u.W / u.m**2, "SI"), # Heat flux
     "pressure_pa": (u.N, "SI"), # Force
     "wall_shear_stress_magnitude_pa": (u.N * u.m, "SI"), # Moment
 }
