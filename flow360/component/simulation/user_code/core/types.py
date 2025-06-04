@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from numbers import Number
 from typing import Annotated, Any, Generic, Literal, Optional, TypeVar, Union
@@ -495,8 +496,14 @@ class Expression(Flow360BaseModel, Evaluable):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} ** ({self.expression})")
 
-    def __getitem__(self, item):
-        (arg, _) = _convert_argument(item)
+    def __getitem__(self, index):
+        (arg, _) = _convert_argument(index)
+
+        tree = ast.parse(self.expression, mode="eval")
+        if isinstance(tree.body, ast.List):
+            # Expression string with list syntax, like "[aa,bb,cc]"
+            result = [ast.unparse(elt) for elt in tree.body.elts]
+            return Expression.model_validate(result[int(arg)])
         return Expression(expression=f"({self.expression})[{arg}]")
 
     def __str__(self):

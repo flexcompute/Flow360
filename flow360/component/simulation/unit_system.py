@@ -191,7 +191,7 @@ def _list_of_unyt_quantity_to_unyt_array(value):
         return value
     if not all(isinstance(item, unyt_quantity) for item in value):
         return value
-    units = set([item.units for item in value])
+    units = {item.units for item in value}
     if not len(units) == 1:
         return value
     shared_unit = units.pop()

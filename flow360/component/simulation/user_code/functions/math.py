@@ -1,4 +1,6 @@
-""""""
+"""
+Math.h for Flow360 Expression system
+"""
 
 from typing import Any, Union
 

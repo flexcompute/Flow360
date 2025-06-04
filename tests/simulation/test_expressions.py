@@ -665,6 +665,12 @@ def test_vector_solver_variable_cross_product_translation():
 
 
 def test_cross_function_use_case():
+
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(project_length_unit=10 * u.m)
+        )
+
     print("\n1 Python mode\n")
     a = UserVariable(name="a", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
@@ -672,6 +678,10 @@ def test_cross_function_use_case():
         "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
         "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
         "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
     )
 
     print("\n1.1 Python mode but arg swapped\n")
@@ -681,6 +691,10 @@ def test_cross_function_use_case():
         "[((solution.coordinate[1]) * 1) * u.m - (((solution.coordinate[2]) * 2) * u.m),"
         "((solution.coordinate[2]) * 3) * u.m - (((solution.coordinate[0]) * 1) * u.m),"
         "((solution.coordinate[0]) * 2) * u.m - (((solution.coordinate[1]) * 3) * u.m)]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((solution.coordinate[1] * 1) * 0.1) - ((solution.coordinate[2] * 2) * 0.1)), (((solution.coordinate[2] * 3) * 0.1) - ((solution.coordinate[0] * 1) * 0.1)), (((solution.coordinate[0] * 2) * 0.1) - ((solution.coordinate[1] * 3) * 0.1))})"
     )
 
     print("\n2 Taking advantage of unyt as much as possible\n")
@@ -699,6 +713,10 @@ def test_cross_function_use_case():
         "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
         "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
     )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
 
     print("\n5 Recursive cross in Python mode\n")
     a.value = math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)
@@ -708,26 +726,22 @@ def test_cross_function_use_case():
         "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m),"
         "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)]"
     )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({((((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 3) * 0.1))})"
+    )
 
     print("\n6 Recursive cross in String mode\n")
     a.value = "math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)"
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    # This is extremely long because every use of the inner math.cross() is inlined...
-    assert str(res) == ("[(([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[1]) * 1 * u.m - ((([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[2]) * 2 * u.m),"
-                        "(([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[2]) * 3 * u.m - ((([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[0]) * 1 * u.m),"
-                        "(([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[0]) * 2 * u.m - ((([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[1]) * 3 * u.m)]")
+    assert (
+        str(res)
+        == "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - ((3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m),(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - ((2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m),(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - ((1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m)]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({((((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 3) * 0.1))})"
+    )
 
     print("\n7 Using other variabels in Python mode\n")
     b = UserVariable(name="b", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
@@ -738,19 +752,35 @@ def test_cross_function_use_case():
         "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m),"
         "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)]"
     )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({((((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 3) * 0.1))})"
+    )
 
     print("\n8 Using other constant variabels in Python mode\n")
     b.value = [3, 2, 1] * u.m
     a.value = math.cross(b, solution.coordinate)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert str(res) == ("[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]")
+    assert str(res) == (
+        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
 
     print("\n9 Using non-unyt_array\n")
     b.value = [3 * u.m, 2 * u.m, 1 * u.m]
     a.value = math.cross(b, solution.coordinate)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert str(res) == ("[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]")
+    assert str(res) == (
+        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
