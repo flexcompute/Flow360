@@ -185,6 +185,7 @@ InvalidOutputFieldsForLiquid = Literal[
     "residualTurbulence",
     "solutionNavierStokes",
     "T",
+    "Mach",
     "linearResidualNavierStokes",
     "linearResidualTurbulence",
     "linearResidualTransition",
