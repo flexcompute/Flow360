@@ -7,8 +7,12 @@ from __future__ import annotations
 from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
+import unyt as u
 
-from flow360.component.simulation.conversion import unit_converter
+from flow360.component.simulation.conversion import (
+    LIQUID_IMAGINARY_FREESTREAM_MACH,
+    unit_converter,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
@@ -52,10 +56,15 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
+    DensityType,
     DimensionedTypes,
     LengthType,
+    MassType,
+    TimeType,
     UnitSystem,
     UnitSystemType,
+    VelocityType,
     is_flow360_unit,
     unit_system_manager,
     unyt_quantity,
@@ -532,6 +541,70 @@ class SimulationParams(_ParamModelBase):
                     pass
 
         return registry
+
+    @property
+    def base_length(self) -> LengthType:
+        """Get base length unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        return self.private_attribute_asset_cache.project_length_unit.to("m")
+
+    @property
+    def base_temperature(self) -> AbsoluteTemperatureType:
+        """Get base temperature unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        if self.operating_condition.type_name == "LiquidOperatingCondition":
+            # Temperature in this condition has no effect because the thermal features will be disabled.
+            # Also the viscosity will be constant.
+            # pylint:disable = no-member
+            return 273 * u.K
+        return self.operating_condition.thermal_state.temperature.to("K")
+
+    @property
+    def base_velocity(self) -> VelocityType:
+        """Get base velocity unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        if self.operating_condition.type_name == "LiquidOperatingCondition":
+            # Provides an imaginary "speed of sound"
+            # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
+            # To ensure incompressible range.
+            if self.operating_condition.velocity_magnitude.value != 0:
+                return (
+                    self.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+                ).to("m/s")
+            return (
+                self.operating_condition.reference_velocity_magnitude
+                / LIQUID_IMAGINARY_FREESTREAM_MACH
+            ).to("m/s")
+        return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
+
+    @property
+    def base_density(self) -> DensityType:
+        """Get base density unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        if self.operating_condition.type_name == "LiquidOperatingCondition":
+            return self.operating_condition.material.density.to("kg/m**3")
+        return self.operating_condition.thermal_state.density.to("kg/m**3")
+
+    @property
+    def base_mass(self) -> MassType:
+        """Get base mass unit for non-dimensionalization"""
+        return self.base_density * self.base_length**3
+
+    @property
+    def base_time(self) -> TimeType:
+        """Get base time unit for non-dimensionalization"""
+        return self.base_length / self.base_velocity
+
+    @property
+    def flow360_unit_system(self) -> u.UnitSystem:
+        """Get the unit system for non-dimensionalization"""
+        return u.UnitSystem(
+            name="flow360_nondim",
+            length_unit=self.base_length,
+            mass_unit=self.base_mass,
+            time_unit=self.base_time,
+            temperature_unit=self.base_temperature,
+        )
 
     @property
     def used_entity_registry(self) -> EntityRegistry:

@@ -136,34 +136,22 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
 
     def get_base_length():
         require(["private_attribute_asset_cache", "project_length_unit"], required_by, params)
-        base_length = params.private_attribute_asset_cache.project_length_unit.to("m").v.item()
+        base_length = params.base_length.v.item()
         return base_length
 
     def get_base_temperature():
-        if params.operating_condition.type_name == "LiquidOperatingCondition":
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
             # Temperature in this condition has no effect because the thermal features will be disabled.
             # Also the viscosity will be constant.
             # pylint:disable = no-member
-            return 273 * u.K
-        require(["operating_condition", "thermal_state", "temperature"], required_by, params)
-        base_temperature = params.operating_condition.thermal_state.temperature.to("K").v.item()
+            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_temperature = params.base_temperature.v.item()
         return base_temperature
 
     def get_base_velocity():
-        if params.operating_condition.type_name == "LiquidOperatingCondition":
-            # Provides an imaginary "speed of sound"
-            # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
-            # To ensure incompressible range.
-            if params.operating_condition.velocity_magnitude.value != 0:
-                return (
-                    params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
-                )
-            return (
-                params.operating_condition.reference_velocity_magnitude
-                / LIQUID_IMAGINARY_FREESTREAM_MACH
-            )
-        require(["operating_condition", "thermal_state", "temperature"], required_by, params)
-        base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_velocity = params.base_velocity.v.item()
         return base_velocity
 
     def get_base_time():
@@ -179,11 +167,9 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
         return base_angular_velocity
 
     def get_base_density():
-        if params.operating_condition.type_name == "LiquidOperatingCondition":
-            return params.operating_condition.material.density
-        require(["operating_condition", "thermal_state", "density"], required_by, params)
-        base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
-
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            require(["operating_condition", "thermal_state", "density"], required_by, params)
+        base_density = params.base_density.v.item()
         return base_density
 
     def get_base_viscosity():
@@ -261,6 +247,10 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
     if dimension == u.dimensions.length:
         base_length = get_base_length()
         flow360_conversion_unit_system.base_length = base_length
+
+    elif dimension == u.dimensions.mass:
+        base_mass = params.base_mass
+        flow360_conversion_unit_system.base_mass = base_mass
 
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
