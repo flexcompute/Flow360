@@ -14,7 +14,9 @@ def _convert_argument(value):
 
     # If the argument is a Variable, convert it to an expression
     if isinstance(value, Variable):
-        return Expression.model_validate(value).evaluate(raise_error=False, force_evaluate=False)
+        return Expression.model_validate(value).evaluate(
+            raise_on_non_evaluable=False, force_evaluate=False
+        )
 
     return value
 

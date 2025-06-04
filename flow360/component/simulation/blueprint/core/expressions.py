@@ -12,15 +12,15 @@ from .types import Evaluable
 ExpressionNodeType = Annotated[
     # pylint: disable=duplicate-code
     Union[
-        "Name",
-        "Constant",
-        "BinOp",
-        "RangeCall",
-        "CallModel",
-        "Tuple",
-        "List",
-        "ListComp",
-        "Subscript",
+        "NameNode",
+        "ConstantNode",
+        "BinOpNode",
+        "RangeCallNode",
+        "CallModelNode",
+        "TupleNode",
+        "ListNode",
+        "ListCompNode",
+        "SubscriptNode",
     ],
     pd.Field(discriminator="type"),
 ]
@@ -55,10 +55,10 @@ class NameNode(ExpressionNode):
     def evaluate(
         self,
         context: EvaluationContext,
-        raise_error: bool = True,
+        raise_on_non_evaluable: bool = True,
         force_evaluate: bool = True,
     ) -> Any:
-        if raise_error and not context.can_evaluate(self.id):
+        if raise_on_non_evaluable and not context.can_evaluate(self.id):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
         if not force_evaluate and not context.can_evaluate(self.id):
             data_model = context.get_data_model(self.id)
@@ -68,7 +68,7 @@ class NameNode(ExpressionNode):
         value = context.get(self.id)
         # Recursively evaluate if the returned value is evaluable
         if isinstance(value, Evaluable):
-            value = value.evaluate(context, raise_error, force_evaluate)
+            value = value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         return value
 
     def used_names(self) -> set[str]:
@@ -84,7 +84,10 @@ class ConstantNode(ExpressionNode):
     value: Any
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> Any:  # noqa: ARG002
         return self.value
 
@@ -102,9 +105,12 @@ class UnaryOpNode(ExpressionNode):
     operand: "ExpressionNodeType"
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> Any:
-        operand_val = self.operand.evaluate(context, raise_error, force_evaluate)
+        operand_val = self.operand.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
         if self.op not in UNARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
@@ -126,10 +132,13 @@ class BinOpNode(ExpressionNode):
     right: "ExpressionNodeType"
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> Any:
-        left_val = self.left.evaluate(context, raise_error, force_evaluate)
-        right_val = self.right.evaluate(context, raise_error, force_evaluate)
+        left_val = self.left.evaluate(context, raise_on_non_evaluable, force_evaluate)
+        right_val = self.right.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
         if self.op not in BINARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
@@ -153,10 +162,13 @@ class SubscriptNode(ExpressionNode):
     ctx: str  # Only load context
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> Any:
-        value = self.value.evaluate(context, raise_error, force_evaluate)
-        item = self.slice.evaluate(context, raise_error, force_evaluate)
+        value = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
+        item = self.slice.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
         if self.ctx == "Load":
             return value[item]
@@ -180,9 +192,12 @@ class RangeCallNode(ExpressionNode):
     arg: "ExpressionNodeType"
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> range:
-        return range(self.arg.evaluate(context, raise_error))
+        return range(self.arg.evaluate(context, raise_on_non_evaluable))
 
     def used_names(self) -> set[str]:
         return self.arg.used_names()
@@ -204,7 +219,10 @@ class CallModelNode(ExpressionNode):
     kwargs: dict[str, "ExpressionNodeType"] = {}
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> Any:
         try:
             # Split into parts for attribute traversal
@@ -225,9 +243,12 @@ class CallModelNode(ExpressionNode):
                 func = getattr(base, parts[-1])
 
             # Evaluate arguments
-            args = [arg.evaluate(context, raise_error, force_evaluate) for arg in self.args]
+            args = [
+                arg.evaluate(context, raise_on_non_evaluable, force_evaluate) for arg in self.args
+            ]
             kwargs = {
-                k: v.evaluate(context, raise_error, force_evaluate) for k, v in self.kwargs.items()
+                k: v.evaluate(context, raise_on_non_evaluable, force_evaluate)
+                for k, v in self.kwargs.items()
             }
 
             return func(*args, **kwargs)
@@ -258,9 +279,14 @@ class TupleNode(ExpressionNode):
     elements: list["ExpressionNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> tuple:
-        return tuple(elem.evaluate(context, raise_error, force_evaluate) for elem in self.elements)
+        return tuple(
+            elem.evaluate(context, raise_on_non_evaluable, force_evaluate) for elem in self.elements
+        )
 
     def used_names(self) -> set[str]:
         return self.arg.used_names()
@@ -273,9 +299,14 @@ class ListNode(ExpressionNode):
     elements: list["ExpressionNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> list:
-        return [elem.evaluate(context, raise_error, force_evaluate) for elem in self.elements]
+        return [
+            elem.evaluate(context, raise_on_non_evaluable, force_evaluate) for elem in self.elements
+        ]
 
     def used_names(self) -> set[str]:
         names = set()
@@ -295,15 +326,18 @@ class ListCompNode(ExpressionNode):
     iter: "ExpressionNodeType"  # The iterable expression
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> list:
         result = []
-        iterable = self.iter.evaluate(context, raise_error, force_evaluate)
+        iterable = self.iter.evaluate(context, raise_on_non_evaluable, force_evaluate)
         for item in iterable:
             # Create a new context for each iteration with the target variable
             iter_context = context.copy()
             iter_context.set(self.target, item)
-            result.append(self.element.evaluate(iter_context, raise_error))
+            result.append(self.element.evaluate(iter_context, raise_on_non_evaluable))
         return result
 
     def used_names(self) -> set[str]:

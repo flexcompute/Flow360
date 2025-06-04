@@ -339,14 +339,14 @@ class Expression(Flow360BaseModel, Evaluable):
     def evaluate(
         self,
         context: EvaluationContext = None,
-        raise_error: bool = True,
+        raise_on_non_evaluable: bool = True,
         force_evaluate: bool = True,
     ) -> Union[float, list[float], unyt_array, Expression]:
         """Evaluate this expression against the given context."""
         if context is None:
             context = default_context
         expr = expr_to_model(self.expression, context)
-        result = expr.evaluate(context, raise_error, force_evaluate)
+        result = expr.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
         # Sometimes we may yield a list of expressions instead of
         # an expression containing a list, so we check this here
@@ -399,7 +399,9 @@ class Expression(Flow360BaseModel, Evaluable):
 
             return name
 
-        partial_result = self.evaluate(default_context, raise_error=False, force_evaluate=False)
+        partial_result = self.evaluate(
+            default_context, raise_on_non_evaluable=False, force_evaluate=False
+        )
 
         if isinstance(partial_result, Expression):
             expr = expr_to_model(partial_result.expression, default_context)
@@ -523,7 +525,7 @@ class ValueOrExpression(Expression, Generic[T]):
     def __class_getitem__(cls, typevar_values):  # pylint:disable=too-many-statements
         def _internal_validator(value: Expression):
             try:
-                result = value.evaluate(raise_error=False)
+                result = value.evaluate(raise_on_non_evaluable=False)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
             pd.TypeAdapter(typevar_values).validate_python(result, context={"allow_inf_nan": True})
@@ -555,7 +557,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
                 serialized.expression = value.expression
 
-                evaluated = value.evaluate(raise_error=False)
+                evaluated = value.evaluate(raise_on_non_evaluable=False)
 
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated

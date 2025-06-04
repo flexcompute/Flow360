@@ -12,12 +12,12 @@ from .types import Evaluable
 StatementNodeType = Annotated[
     # pylint: disable=duplicate-code
     Union[
-        "Assign",
-        "AugAssign",
-        "IfElse",
-        "ForLoop",
-        "Return",
-        "TupleUnpack",
+        "AssignNode",
+        "AugAssignNode",
+        "IfElseNode",
+        "ForLoopNode",
+        "ReturnNode",
+        "TupleUnpackNode",
     ],
     pd.Field(discriminator="type"),
 ]
@@ -29,7 +29,10 @@ class StatementNode(pd.BaseModel, Evaluable):
     """
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
         raise NotImplementedError
 
@@ -44,9 +47,14 @@ class AssignNode(StatementNode):
     value: ExpressionNodeType
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
-        context.set(self.target, self.value.evaluate(context, raise_error, force_evaluate))
+        context.set(
+            self.target, self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
+        )
 
 
 class AugAssignNode(StatementNode):
@@ -61,10 +69,13 @@ class AugAssignNode(StatementNode):
     value: ExpressionNodeType
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
         old_val = context.get(self.target)
-        increment = self.value.evaluate(context, raise_error, force_evaluate)
+        increment = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         if self.op == "Add":
             context.set(self.target, old_val + increment)
         elif self.op == "Sub":
@@ -92,14 +103,17 @@ class IfElseNode(StatementNode):
     orelse: list["StatementNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
-        if self.condition.evaluate(context, raise_error, force_evaluate):
+        if self.condition.evaluate(context, raise_on_non_evaluable, force_evaluate):
             for stmt in self.body:
-                stmt.evaluate(context, raise_error, force_evaluate)
+                stmt.evaluate(context, raise_on_non_evaluable, force_evaluate)
         else:
             for stmt in self.orelse:
-                stmt.evaluate(context, raise_error)
+                stmt.evaluate(context, raise_on_non_evaluable)
 
 
 class ForLoopNode(StatementNode):
@@ -115,13 +129,16 @@ class ForLoopNode(StatementNode):
     body: list["StatementNodeType"]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
-        iterable = self.iter.evaluate(context, raise_error, force_evaluate)
+        iterable = self.iter.evaluate(context, raise_on_non_evaluable, force_evaluate)
         for item in iterable:
             context.set(self.target, item)
             for stmt in self.body:
-                stmt.evaluate(context, raise_error, force_evaluate)
+                stmt.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
 
 class ReturnNode(StatementNode):
@@ -134,9 +151,12 @@ class ReturnNode(StatementNode):
     value: ExpressionNodeType
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
-        val = self.value.evaluate(context, raise_error, force_evaluate)
+        val = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         raise ReturnValue(val)
 
 
@@ -148,10 +168,13 @@ class TupleUnpackNode(StatementNode):
     values: list[ExpressionNodeType]
 
     def evaluate(
-        self, context: EvaluationContext, raise_error: bool = True, force_evaluate: bool = True
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
     ) -> None:
         evaluated_values = [
-            val.evaluate(context, raise_error, force_evaluate) for val in self.values
+            val.evaluate(context, raise_on_non_evaluable, force_evaluate) for val in self.values
         ]
         for target, value in zip(self.targets, evaluated_values):
             context.set(target, value)

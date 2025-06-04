@@ -800,7 +800,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
             if variable and isinstance(variable.value, Expression):
-                _ = variable.value.evaluate(raise_error=False)
+                _ = variable.value.evaluate(raise_on_non_evaluable=False)
         except pd.ValidationError as err:
             errors.extend(err.errors())
         except Exception as err:  # pylint: disable=broad-exception-caught
@@ -812,7 +812,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         unit = None
         try:
             expression_object = Expression(expression=expression)
-            result = expression_object.evaluate(raise_error=False)
+            result = expression_object.evaluate(raise_on_non_evaluable=False)
             if np.isnan(result):
                 pass
             elif isinstance(result, Number):

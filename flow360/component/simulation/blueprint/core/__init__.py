@@ -34,26 +34,26 @@ def _model_rebuild() -> None:
     """Update forward references in the correct order."""
     namespace = {
         # Expression types
-        "Name": NameNode,
-        "Constant": ConstantNode,
-        "BinOp": BinOpNode,
-        "RangeCall": RangeCallNode,
-        "CallModel": CallModelNode,
-        "Tuple": TupleNode,
-        "List": ListNode,
-        "ListComp": ListCompNode,
-        "Subscript": SubscriptNode,
-        "ExpressionType": ExpressionNodeType,
+        "NameNode": NameNode,
+        "ConstantNode": ConstantNode,
+        "BinOpNode": BinOpNode,
+        "RangeCallNode": RangeCallNode,
+        "CallModelNode": CallModelNode,
+        "TupleNode": TupleNode,
+        "ListNode": ListNode,
+        "ListCompNode": ListCompNode,
+        "SubscriptNode": SubscriptNode,
+        "ExpressionNodeType": ExpressionNodeType,
         # Statement types
-        "Assign": AssignNode,
-        "AugAssign": AugAssignNode,
-        "IfElse": IfElseNode,
-        "ForLoop": ForLoopNode,
-        "Return": ReturnNode,
-        "TupleUnpack": TupleUnpackNode,
-        "StatementType": StatementNodeType,
+        "AssignNode": AssignNode,
+        "AugAssignNode": AugAssignNode,
+        "IfElseNode": IfElseNode,
+        "ForLoopNode": ForLoopNode,
+        "ReturnNode": ReturnNode,
+        "TupleUnpackNode": TupleUnpackNode,
+        "StatementNodeType": StatementNodeType,
         # Function type
-        "Function": FunctionNode,
+        "FunctionNode": FunctionNode,
     }
 
     # First update expression classes that only depend on ExpressionType
