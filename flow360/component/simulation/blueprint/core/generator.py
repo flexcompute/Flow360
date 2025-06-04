@@ -139,10 +139,8 @@ def _tuple(expr, syntax, name_translator):
         return f"({', '.join(elements)})"
     if syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
-            return "{}"
-        if len(expr.elements) == 1:
-            return f"{{{elements[0]}}}"
-        return f"{{{', '.join(elements)}}}"
+            return "std::vector<float>()"
+        return f"std::vector<float>({{{', '.join(elements)}}})"
 
     raise ValueError(
         f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
@@ -159,8 +157,8 @@ def _list(expr, syntax, name_translator):
         return f"[{elements_str}]"
     if syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
-            return "{}"
-        return f"{{{', '.join(elements)}}}"
+            return "std::vector<float>()"
+        return f"std::vector<float>({{{', '.join(elements)}}})"
 
     raise ValueError(
         f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
