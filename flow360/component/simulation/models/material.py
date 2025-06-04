@@ -257,7 +257,7 @@ aluminum = SolidMaterial(
 class Water(MaterialBase):
     """
     Water material used for :class:`LiquidOperatingCondition`
-    
+
     Example
     -------
 
