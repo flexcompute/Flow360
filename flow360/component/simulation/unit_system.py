@@ -180,6 +180,24 @@ def _is_unit_validator(value):
     return value
 
 
+def _list_of_unyt_quantity_to_unyt_array(value):
+    """
+    Convert list of unyt_quantity (may come from `Expression`) to unyt_array
+    Only handles situation where all components share exact same unit.
+    We cab relax this to cover more expression results in the future when we decide how to convert.
+    """
+
+    if not isinstance(value, list):
+        return value
+    if not all(isinstance(item, unyt_quantity) for item in value):
+        return value
+    units = set([item.units for item in value])
+    if not len(units) == 1:
+        return value
+    shared_unit = units.pop()
+    return [item.value for item in value] * shared_unit
+
+
 # pylint: disable=too-many-return-statements
 def _unit_inference_validator(value, dim_name, is_array=False, is_matrix=False):
     """
@@ -495,6 +513,7 @@ class _DimensionedType(metaclass=ABCMeta):
                 """additional validator for value"""
                 try:
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _list_of_unyt_quantity_to_unyt_array(value)
                     value = _is_unit_validator(value)
 
                     is_collection = _check_if_input_is_nested_collection(value=value, nest_level=1)
@@ -546,6 +565,7 @@ class _DimensionedType(metaclass=ABCMeta):
             def __get_pydantic_core_schema__(vec_cls, *args, **kwargs) -> pd.CoreSchema:
                 def validate_with_info(value, info):
                     return validate(vec_cls, value, info, *args, **kwargs)
+
                 return core_schema.with_info_plain_validator_function(validate_with_info)
 
             cls_obj = type("_VectorType", (), {})

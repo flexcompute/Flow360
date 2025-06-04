@@ -1,6 +1,6 @@
 """"""
 
-from unyt import unyt_array
+from unyt import ucross, unyt_array
 
 from flow360.component.simulation.user_code.core.types import Expression, Variable
 
@@ -10,29 +10,24 @@ def _convert_argument(value):
 
     # If the argument is a Variable, convert it to an expression
     if isinstance(value, Variable):
-        return Expression.model_validate(value)
-
-    return value
-
-
-def _extract_units(value):
-    units = 1  # Neutral element of multiplication
+        return Expression.model_validate(value).evaluate(raise_error=False, force_evaluate=False)
 
     if isinstance(value, Expression):
-        result = value.evaluate(raise_error=False)
-        if isinstance(result, unyt_array):
-            units = result.units
-    elif isinstance(value, unyt_array):
-        units = value.units
-
-    return units
+        # TODO: Test numerical value?
+        return value.evaluate(raise_error=False, force_evaluate=False)
+    return value
 
 
 def cross(left, right):
     """Customized Cross function to work with the `Expression` and Variables"""
-
+    # print("Old left:", left, "  |  ", left.__class__.__name__)
+    # print("Old right:", right, "  |  ", right.__class__.__name__)
     left = _convert_argument(left)
     right = _convert_argument(right)
+
+    # Taking advantage of unyt as much as possible:
+    if isinstance(left, unyt_array) and isinstance(right, unyt_array):
+        return ucross(left, right)
 
     result = [
         left[1] * right[2] - left[2] * right[1],
@@ -48,18 +43,5 @@ def cross(left, right):
 
     if is_expression_type:
         result = Expression.model_validate(result)
-
-    unit = 1
-
-    left_units = _extract_units(left)
-    right_units = _extract_units(right)
-
-    if left_units != 1:
-        unit = left_units
-    if right_units != 1:
-        unit = unit * right_units if unit != 1 else right_units
-
-    if unit != 1:
-        result *= unit
 
     return result
