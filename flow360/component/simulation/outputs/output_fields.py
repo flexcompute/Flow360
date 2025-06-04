@@ -210,13 +210,13 @@ _FIELD_UNIT_MAPPING = {
     # Standard non-dimensioned fields - (unit, unit_system)
     "*": (None, "flow360"),
     # Dimensioned fields - (unit quantity, unit_system)
-    "velocity_m_per_s": (u.m / u.s, "SI"),
-    "velocity_magnitude_m_per_s": (u.m / u.s, "SI"),
-    "velocity_x_m_per_s": (u.m / u.s, "SI"),
-    "velocity_y_m_per_s": (u.m / u.s, "SI"),
-    "velocity_z_m_per_s": (u.m / u.s, "SI"),
-    "pressure_pa": (u.Pa, "SI"),
-    "wall_shear_stress_magnitude_pa": (u.Pa, "SI"),
+    "velocity_m_per_s": (u.slug / u.inch**3, "SI"), # Arbitrary density unit
+    "velocity_magnitude_m_per_s": (u.m, "SI"), # Length
+    "velocity_x_m_per_s": (u.kg / u.m**3, "SI"), # SI Density
+    "velocity_y_m_per_s": (u.K, "SI"), # Temperature
+    "velocity_z_m_per_s": (u.W / u.s**2, "SI"), # Heat flux
+    "pressure_pa": (u.N, "SI"), # Force
+    "wall_shear_stress_magnitude_pa": (u.N * u.m, "SI"), # Moment
 }
 
 
