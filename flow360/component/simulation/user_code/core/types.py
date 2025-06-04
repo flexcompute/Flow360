@@ -340,12 +340,27 @@ class Expression(Flow360BaseModel, Evaluable):
         context: EvaluationContext = None,
         raise_error: bool = True,
         force_evaluate: bool = True,
-    ) -> Union[float, list, unyt_array]:
+    ) -> Union[float, list[float], unyt_array, Expression]:
         """Evaluate this expression against the given context."""
         if context is None:
             context = default_context
         expr = expr_to_model(self.expression, context)
         result = expr.evaluate(context, raise_error, force_evaluate)
+
+        # Sometimes we may yield a list of expressions instead of
+        # an expression containing a list, so we check this here
+        # and convert if necessary
+
+        if isinstance(result, list):
+            is_expression_list = False
+
+            for item in result:
+                if isinstance(item, Expression):
+                    is_expression_list = True
+
+            if is_expression_list:
+                result = Expression.model_validate(result)
+
         return result
 
     def user_variables(self):

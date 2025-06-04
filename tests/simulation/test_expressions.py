@@ -645,7 +645,6 @@ def test_vector_solver_variable_cross_product_translation():
         field: ValueOrExpression[LengthType.Vector] = pd.Field()
 
     # From string
-    # TODO: LengthType.Vector should be accepting client-time evaluable (constant result) exprs
     expr_1 = TestModel(field="math.cross([1, 2, 3], [1, 2, 3]*u.m)").field
     assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3]*u.m)"
 
@@ -662,154 +661,96 @@ def test_vector_solver_variable_cross_product_translation():
 
     # During solver translation both options are inlined the same way through partial evaluation
     solver_2 = expr_2.to_solver_code(params)
-    print(
-        solver_2
-    )  # <- TODO: This currently will break, because the overloaded unyt operators in types.py don't
-    #          handle List[Expression]... We should do some sort of implicit conversion perhaps?
+    print(solver_2)
 
 
 def test_cross_function_use_case():
-
-    def printer(expr: Expression):
-        res = expr.evaluate(raise_error=False, force_evaluate=False)
-        print(">> Evaluation Result type: ", res.__class__.__name__)
-        if isinstance(res, list):
-            print(">> Component type: ", [item.__class__.__name__ for item in res])
-        for idx, item in enumerate(res):
-            print(f"[{idx}] ", item)
-
     print("\n1 Python mode\n")
-    a = UserVariable(name="aaa", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
+    a = UserVariable(name="a", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert (
-        res[0].expression
-        == "2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))"
-    )
-    assert (
-        res[1].expression
-        == "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))"
-    )
-    assert (
-        res[2].expression
-        == "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))"
+    assert str(res) == (
+        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
     )
 
     print("\n1.1 Python mode but arg swapped\n")
-    a = UserVariable(name="aaa", value=math.cross(solution.coordinate, [3, 2, 1] * u.m))
+    a.value = math.cross(solution.coordinate, [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-
-    assert (
-        res[0].expression
-        == "((solution.coordinate[1]) * 1) * u.m - (((solution.coordinate[2]) * 2) * u.m)"
-    )
-    assert (
-        res[1].expression
-        == "((solution.coordinate[2]) * 3) * u.m - (((solution.coordinate[0]) * 1) * u.m)"
-    )
-    assert (
-        res[2].expression
-        == "((solution.coordinate[0]) * 2) * u.m - (((solution.coordinate[1]) * 3) * u.m)"
+    assert str(res) == (
+        "[((solution.coordinate[1]) * 1) * u.m - (((solution.coordinate[2]) * 2) * u.m),"
+        "((solution.coordinate[2]) * 3) * u.m - (((solution.coordinate[0]) * 1) * u.m),"
+        "((solution.coordinate[0]) * 2) * u.m - (((solution.coordinate[1]) * 3) * u.m)]"
     )
 
     print("\n2 Taking advantage of unyt as much as possible\n")
-    a = UserVariable(name="aaa", value=math.cross([3, 2, 1] * u.m, [2, 2, 1] * u.m))
+    a.value = math.cross([3, 2, 1] * u.m, [2, 2, 1] * u.m)
     assert all(a.value == [0, -1, 2] * u.m * u.m)
 
-    print("\n3 (Unfortunate ill LengthType usage)\n")
-    a = UserVariable(
-        name="aaa", value=math.cross([3 * u.m, 2 * u.m, 1 * u.m], [2 * u.m, 2 * u.m, 1 * u.m])
-    )
+    print("\n3 (Units defined in components)\n")
+    a.value = math.cross([3 * u.m, 2 * u.m, 1 * u.m], [2 * u.m, 2 * u.m, 1 * u.m])
     assert a.value == [0 * u.m * u.m, -1 * u.m * u.m, 2 * u.m * u.m]
 
     print("\n4 Serialized version\n")
-    # TODO: Why string mode always evaluate to a single expression but not the Python counter part?
-    a = UserVariable(name="aaa", value="math.cross([3, 2, 1] * u.m, solution.coordinate)")
+    a.value = "math.cross([3, 2, 1] * u.m, solution.coordinate)"
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-
-    assert (
-        res.expression
-        == "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-        + "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),3 * u.m"
-        + " * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+    assert str(res) == (
+        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
     )
 
     print("\n5 Recursive cross in Python mode\n")
-    a = UserVariable(
-        name="aaa",
-        value=math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m),
-    )
+    a.value = math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert (
-        res[0].expression
-        == "((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1) * u.m - (((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2) * u.m)"
-    )
-    assert (
-        res[1].expression
-        == "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m)"
-    )
-    assert (
-        res[2].expression
-        == "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)"
+    assert str(res) == (
+        "[((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1) * u.m - (((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2) * u.m),"
+        "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m),"
+        "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)]"
     )
 
     print("\n6 Recursive cross in String mode\n")
-    a = UserVariable(
-        name="aaa",
-        value="math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)",
-    )
+    a.value = "math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)"
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert (
-        res.expression
-        == "[(1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1 * u.m - ((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2 * u.m),(3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3 * u.m - ((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1 * u.m),(2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2 * u.m - ((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3 * u.m)]"
-    )
+    # This is extremely long because every use of the inner math.cross() is inlined...
+    assert str(res) == ("[(([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[1]) * 1 * u.m - ((([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[2]) * 2 * u.m),"
+                        "(([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[2]) * 3 * u.m - ((([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[0]) * 1 * u.m),"
+                        "(([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[0]) * 2 * u.m - ((([2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))])[1]) * 3 * u.m)]")
 
     print("\n7 Using other variabels in Python mode\n")
-    b = UserVariable(name="bbb", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
-    a = UserVariable(name="aaa", value=math.cross(b, [3, 2, 1] * u.m))
+    b = UserVariable(name="b", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
+    a.value = math.cross(b, [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert (
-        res[0].expression
-        == "((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1) * u.m - (((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2) * u.m)"
-    )
-    assert (
-        res[1].expression
-        == "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m)"
-    )
-    assert (
-        res[2].expression
-        == "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)"
+    assert str(res) == (
+        "[((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1) * u.m - (((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2) * u.m),"
+        "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m),"
+        "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)]"
     )
 
     print("\n8 Using other constant variabels in Python mode\n")
-    b = UserVariable(name="bbb", value=[3, 2, 1] * u.m)
-    a = UserVariable(name="aaa", value=math.cross(b, solution.coordinate))
+    b.value = [3, 2, 1] * u.m
+    a.value = math.cross(b, solution.coordinate)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert (
-        res[0].expression
-        == "2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))"
-    )
-    assert (
-        res[1].expression
-        == "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))"
-    )
-    assert (
-        res[2].expression
-        == "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))"
-    )
+    assert str(res) == ("[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]")
 
     print("\n9 Using non-unyt_array\n")
-    b = UserVariable(name="bbb", value=[3 * u.m, 2 * u.m, 1 * u.m])
-    a = UserVariable(name="aaa", value=math.cross(b, solution.coordinate))
+    b.value = [3 * u.m, 2 * u.m, 1 * u.m]
+    a.value = math.cross(b, solution.coordinate)
     res = a.value.evaluate(raise_error=False, force_evaluate=False)
-    assert (
-        res[0].expression
-        == "2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))"
-    )
-    assert (
-        res[1].expression
-        == "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))"
-    )
-    assert (
-        res[2].expression
-        == "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))"
-    )
+    assert str(res) == ("[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
+                        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
+                        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]")
