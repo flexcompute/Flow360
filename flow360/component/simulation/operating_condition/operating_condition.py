@@ -520,6 +520,19 @@ class AerospaceCondition(MultiConstructorBaseModel):
 class LiquidOperatingCondition(Flow360BaseModel):
     """
     Operating condition for simulation of water as the only material.
+
+    Example
+    -------
+
+    >>> fl.LiquidOperatingCondition(
+    ...     velocity_magnitude=10 * fl.u.m / fl.u.s,
+    ...     alpha=-90 * fl.u.deg,
+    ...     beta=0 * fl.u.deg,
+    ...     material=fl.Water(name="Water"),
+    ...     reference_velocity_magnitude=5 * fl.u.m / fl.u.s,
+    ... )
+
+    ====
     """
 
     type_name: Literal["LiquidOperatingCondition"] = pd.Field(
