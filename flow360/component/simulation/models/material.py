@@ -255,7 +255,20 @@ aluminum = SolidMaterial(
 
 
 class Water(MaterialBase):
-    """Water material used for LiquidOperatingCondition"""
+    """
+    Water material used for :class:`LiquidOperatingCondition`
+    
+    Example
+    -------
+
+    >>> fl.Water(
+    ...     name="Water",
+    ...     density=1000 * fl.u.kg / fl.u.m**3,
+    ...     dynamic_viscosity=0.001002 * fl.u.kg / fl.u.m / fl.u.s,
+    ... )
+
+    ====
+    """
 
     type: Literal["water"] = pd.Field("water", frozen=True)
     name: str = pd.Field(frozen=True, description="Custom name of the water with given property.")
