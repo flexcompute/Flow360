@@ -141,7 +141,7 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
 
     def get_base_temperature():
         if params.operating_condition.type_name != "LiquidOperatingCondition":
-            # Temperature in this condition has no effect because the thermal features will be disabled.
+            # Temperature in Liquid condition has no effect because the thermal features will be disabled.
             # Also the viscosity will be constant.
             # pylint:disable = no-member
             require(["operating_condition", "thermal_state", "temperature"], required_by, params)
@@ -155,10 +155,12 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
         return base_velocity
 
     def get_base_time():
-        base_length = get_base_length()
-        base_velocity = get_base_velocity()
-        base_time = base_length / base_velocity
+        base_time = params.base_time.v.item()
         return base_time
+
+    def get_base_mass():
+        base_mass = params.base_mass.v.item()
+        return base_mass
 
     def get_base_angular_velocity():
         base_time = get_base_time()
@@ -249,7 +251,7 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
         flow360_conversion_unit_system.base_length = base_length
 
     elif dimension == u.dimensions.mass:
-        base_mass = params.base_mass
+        base_mass = get_base_mass()
         flow360_conversion_unit_system.base_mass = base_mass
 
     elif dimension == u.dimensions.temperature:
