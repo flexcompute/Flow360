@@ -139,7 +139,7 @@ def _tuple(expr, syntax, name_translator):
         return f"({', '.join(elements)})"
     if syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
-            return "std::vector<float>()"
+            raise TypeError("Zero-length tuple is found in expression.")
         return f"std::vector<float>({{{', '.join(elements)}}})"
 
     raise ValueError(
@@ -157,7 +157,8 @@ def _list(expr, syntax, name_translator):
         return f"[{elements_str}]"
     if syntax == TargetSyntax.CPP:
         if len(expr.elements) == 0:
-            return "std::vector<float>()"
+            raise TypeError("Zero-length list is found in expression.")
+
         return f"std::vector<float>({{{', '.join(elements)}}})"
 
     raise ValueError(

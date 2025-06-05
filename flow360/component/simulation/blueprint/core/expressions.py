@@ -198,7 +198,7 @@ class RangeCallNode(ExpressionNode):
         raise_on_non_evaluable: bool = True,
         force_evaluate: bool = True,
     ) -> range:
-        return range(self.arg.evaluate(context, raise_on_non_evaluable))
+        return range(self.arg.evaluate(context, raise_on_non_evaluable, force_evaluate))
 
     def used_names(self) -> set[str]:
         return self.arg.used_names()
@@ -338,7 +338,7 @@ class ListCompNode(ExpressionNode):
             # Create a new context for each iteration with the target variable
             iter_context = context.copy()
             iter_context.set(self.target, item)
-            result.append(self.element.evaluate(iter_context, raise_on_non_evaluable))
+            result.append(self.element.evaluate(iter_context, raise_on_non_evaluable, force_evaluate))
         return result
 
     def used_names(self) -> set[str]:
