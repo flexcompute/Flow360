@@ -338,7 +338,9 @@ class ListCompNode(ExpressionNode):
             # Create a new context for each iteration with the target variable
             iter_context = context.copy()
             iter_context.set(self.target, item)
-            result.append(self.element.evaluate(iter_context, raise_on_non_evaluable, force_evaluate))
+            result.append(
+                self.element.evaluate(iter_context, raise_on_non_evaluable, force_evaluate)
+            )
         return result
 
     def used_names(self) -> set[str]:
