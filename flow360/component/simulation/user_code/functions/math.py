@@ -6,19 +6,7 @@ from typing import Any, Union
 
 from unyt import ucross, unyt_array, unyt_quantity
 
-from flow360.component.simulation.user_code.core.types import Expression, Variable
-
-
-def _convert_argument(value):
-    """Convert argument for use in builtin expression math functions"""
-
-    # If the argument is a Variable, convert it to an expression
-    if isinstance(value, Variable):
-        return Expression.model_validate(value).evaluate(
-            raise_on_non_evaluable=False, force_evaluate=False
-        )
-
-    return value
+from flow360.component.simulation.user_code.core.types import Expression
 
 
 def _handle_expression_list(value: list[Any]):
@@ -40,9 +28,6 @@ ScalarInputType = Union[float, unyt_quantity, Expression]
 
 def cross(left: VectorInputType, right: VectorInputType):
     """Customized Cross function to work with the `Expression` and Variables"""
-    left = _convert_argument(left)
-    right = _convert_argument(right)
-
     # Taking advantage of unyt as much as possible:
     if isinstance(left, unyt_array) and isinstance(right, unyt_array):
         return ucross(left, right)

@@ -169,8 +169,9 @@ class SubscriptNode(ExpressionNode):
     ) -> Any:
         value = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         item = self.slice.evaluate(context, raise_on_non_evaluable, force_evaluate)
-
         if self.ctx == "Load":
+            if isinstance(item, float):
+                item = int(item)
             return value[item]
         if self.ctx == "Store":
             raise NotImplementedError("Subscripted writes are not supported yet")

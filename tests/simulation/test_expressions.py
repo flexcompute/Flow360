@@ -189,7 +189,7 @@ def test_expression_operators():
     model.field = ((x - 2 * x) + (x + y) / 2 - 2**x) % 4
     assert isinstance(model.field, Expression)
     assert model.field.evaluate() == 3.5
-    assert str(model.field) == "(x - (2 * x) + ((x + y) / 2) - (2 ** x)) % 4"
+    assert str(model.field) == "(x - 2 * x + (x + y) / 2 - 2 ** x) % 4"
 
 
 def test_dimensioned_expressions():
@@ -367,7 +367,7 @@ def test_solver_builtin():
 
     model = TestModel(field=x * u.m + solution.kOmega * u.cm)
 
-    assert str(model.field) == "x * u.m + (solution.kOmega * u.cm)"
+    assert str(model.field) == "x * u.m + solution.kOmega * u.cm"
 
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
@@ -382,12 +382,12 @@ def test_serializer():
 
     model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s)
 
-    assert str(model.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
     serialized = model.model_dump(exclude_none=True)
 
     assert serialized["field"]["type_name"] == "expression"
-    assert serialized["field"]["expression"] == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert serialized["field"]["expression"] == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
     model = TestModel(field=4 * u.m / u.s)
 
@@ -406,14 +406,14 @@ def test_deserializer():
 
     model = {
         "type_name": "expression",
-        "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
+        "expression": "x * u.m / u.s + 4 * x ** 2 * u.m / u.s",
         "evaluated_value": 68.0,
         "evaluated_units": "m/s",
     }
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(deserialized.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
     model = {"type_name": "number", "value": 4.0, "units": "m/s"}
 
@@ -430,7 +430,7 @@ def test_subscript_access():
 
     model = ScalarModel(scalar=x[0] + x[1] + x[2] + 1)
 
-    assert str(model.scalar) == "x[0] + (x[1]) + (x[2]) + 1"
+    assert str(model.scalar) == "x[0] + x[1] + x[2] + 1"
 
     assert model.scalar.evaluate() == 10
 
@@ -596,8 +596,8 @@ def test_auto_alias():
     model_1 = TestModel(field=unaliased)
     model_2 = TestModel(field=aliased)
 
-    assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
-    assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model_1.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
+    assert str(model_2.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
 
 def test_variable_space_init():
@@ -622,9 +622,12 @@ def test_cross_product():
     x = UserVariable(name="x", value=[1, 2, 3])
 
     model = TestModel(field=math.cross(x, [3, 2, 1]) * u.m / u.s)
-    assert str(model.field) == "[-4  8 -4] m/s"
+    assert (
+        str(model.field)
+        == "[x[1] * 1 - x[2] * 2, x[2] * 3 - x[0] * 1, x[0] * 2 - x[1] * 3] * u.m / u.s"
+    )
 
-    assert (model.field == [-4, 8, -4] * u.m / u.s).all()
+    assert (model.field.evaluate() == [-4, 8, -4] * u.m / u.s).all()
 
     model = TestModel(field="math.cross(x, [3, 2, 1]) * u.m / u.s")
     assert str(model.field) == "math.cross(x, [3, 2, 1]) * u.m / u.s"
@@ -645,8 +648,8 @@ def test_vector_solver_variable_cross_product_translation():
         field: ValueOrExpression[LengthType.Vector] = pd.Field()
 
     # From string
-    expr_1 = TestModel(field="math.cross([1, 2, 3], [1, 2, 3]*u.m)").field
-    assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3]*u.m)"
+    expr_1 = TestModel(field="math.cross([1, 2, 3], [1, 2, 3] * u.m)").field
+    assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3] * u.m)"
 
     # During solver translation both options are inlined the same way through partial evaluation
     solver_1 = expr_1.to_solver_code(params)
@@ -655,8 +658,9 @@ def test_vector_solver_variable_cross_product_translation():
     # From python code
     expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
     assert (
-        str(expr_2)
-        == "[2 * (solution.coordinate[2]) - (3 * (solution.coordinate[1])),3 * (solution.coordinate[0]) - (1 * (solution.coordinate[2])),1 * (solution.coordinate[1]) - (2 * (solution.coordinate[0]))]"
+        str(expr_2) == "[2 * solution.coordinate[2] - 3 * solution.coordinate[1], "
+        "3 * solution.coordinate[0] - 1 * solution.coordinate[2], "
+        "1 * solution.coordinate[1] - 2 * solution.coordinate[0]]"
     )
 
     # During solver translation both options are inlined the same way through partial evaluation
@@ -675,9 +679,9 @@ def test_cross_function_use_case():
     a = UserVariable(name="a", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -688,9 +692,9 @@ def test_cross_function_use_case():
     a.value = math.cross(solution.coordinate, [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[((solution.coordinate[1]) * 1) * u.m - (((solution.coordinate[2]) * 2) * u.m),"
-        "((solution.coordinate[2]) * 3) * u.m - (((solution.coordinate[0]) * 1) * u.m),"
-        "((solution.coordinate[0]) * 2) * u.m - (((solution.coordinate[1]) * 3) * u.m)]"
+        "[solution.coordinate[1] * 1 * u.m - solution.coordinate[2] * 2 * u.m, "
+        "solution.coordinate[2] * 3 * u.m - solution.coordinate[0] * 1 * u.m, "
+        "solution.coordinate[0] * 2 * u.m - solution.coordinate[1] * 3 * u.m]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -709,9 +713,9 @@ def test_cross_function_use_case():
     a.value = "math.cross([3, 2, 1] * u.m, solution.coordinate)"
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -722,9 +726,9 @@ def test_cross_function_use_case():
     a.value = math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1) * u.m - (((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2) * u.m),"
-        "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m),"
-        "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)]"
+        "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - (3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m, "
+        "(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - (2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m, "
+        "(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - (1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -736,7 +740,9 @@ def test_cross_function_use_case():
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert (
         str(res)
-        == "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - ((3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m),(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - ((2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m),(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - ((1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m)]"
+        == "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - (3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m, "
+        "(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - (2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m, "
+        "(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - (1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -748,9 +754,9 @@ def test_cross_function_use_case():
     a.value = math.cross(b, [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 1) * u.m - (((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 2) * u.m),"
-        "((3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))) * 3) * u.m - (((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 1) * u.m),"
-        "((2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1]))) * 2) * u.m - (((1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2]))) * 3) * u.m)]"
+        "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - (3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m, "
+        "(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - (2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m, "
+        "(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - (1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -762,9 +768,9 @@ def test_cross_function_use_case():
     a.value = math.cross(b, solution.coordinate)
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
     )
     assert (
         a.value.to_solver_code(params)
@@ -776,11 +782,33 @@ def test_cross_function_use_case():
     a.value = math.cross(b, solution.coordinate)
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
     assert str(res) == (
-        "[2 * u.m * (solution.coordinate[2]) - (1 * u.m * (solution.coordinate[1])),"
-        "1 * u.m * (solution.coordinate[0]) - (3 * u.m * (solution.coordinate[2])),"
-        "3 * u.m * (solution.coordinate[1]) - (2 * u.m * (solution.coordinate[0]))]"
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
     )
     assert (
         a.value.to_solver_code(params)
         == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
     )
+
+
+def test_expression_indexing():
+    a = UserVariable(name="a", value=1)
+    b = UserVariable(name="b", value=[1, 2, 3])
+    c = UserVariable(name="c", value=[3, 2, 1])
+
+    # Cannot simplify without non-statically evaluable index object (expression for example)
+    cross = math.cross(b, c)
+    expr = Expression.model_validate(cross[a])
+
+    assert (
+        str(expr)
+        == "[b[1] * c[2] - b[2] * c[1], b[2] * c[0] - b[0] * c[2], b[0] * c[1] - b[1] * c[0]][a]"
+    )
+    assert expr.evaluate() == 8
+
+    # Cannot simplify without non-statically evaluable index object (expression for example)
+    expr = Expression.model_validate(cross[1])
+
+    assert str(expr) == "b[2] * c[0] - b[0] * c[2]"
+    assert expr.evaluate() == 8

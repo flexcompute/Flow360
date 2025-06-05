@@ -327,7 +327,10 @@ class Expression(Flow360BaseModel, Evaluable):
             )
             raise pd.ValidationError.from_exception_data("Expression type error", [details])
         try:
+            # To ensure the expression is valid (also checks for
             expr_to_model(expression, default_context)
+            # To reduce unnecessary parentheses
+            expression = ast.unparse(ast.parse(expression))
         except SyntaxError as s_err:
             handle_syntax_error(s_err, expression)
         except ValueError as v_err:
@@ -500,12 +503,17 @@ class Expression(Flow360BaseModel, Evaluable):
 
     def __getitem__(self, index):
         (arg, _) = _convert_argument(index)
-
         tree = ast.parse(self.expression, mode="eval")
-        if isinstance(tree.body, ast.List):
+        int_arg = None
+        try:
+            int_arg = int(arg)
+        except ValueError:
+            pass
+        if isinstance(tree.body, ast.List) and int_arg is not None:
             # Expression string with list syntax, like "[aa,bb,cc]"
+            # and since the index is static we can reduce it
             result = [ast.unparse(elt) for elt in tree.body.elts]
-            return Expression.model_validate(result[int(arg)])
+            return Expression.model_validate(result[int_arg])
         return Expression(expression=f"({self.expression})[{arg}]")
 
     def __str__(self):

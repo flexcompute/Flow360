@@ -28,7 +28,6 @@ class Evaluable(metaclass=abc.ABCMeta):
                            if False, allow graceful failure or fallback behavior.
             force_evaluate (bool): If True, evaluate evaluable objects marked as
                           non-evaluable, instead of returning their identifier.
-            inline (bool): If True, inline certain marked function calls.
         Returns:
             Any: The evaluated value.
         """
