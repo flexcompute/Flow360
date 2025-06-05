@@ -1,5 +1,3 @@
-import json
-
 import flow360 as fl
 from flow360.examples import TutorialBETDisk
 
@@ -14,15 +12,12 @@ geometry.group_faces_by_tag("faceName")
 geometry.group_edges_by_tag("edgeName")
 
 
-bet = fl.BETDisk.from_file(TutorialBETDisk.extra["disk0"])
-
 with fl.SI_unit_system:
     cylinder1 = fl.Cylinder(
         name="cylinder1",
         axis=[1, 0, 0],
         center=[-2.0, 5.0, 0],
         outer_radius=4.0,
-        inner_radius=0,
         height=0.6,
     )
     cylinder2 = fl.Cylinder(
@@ -30,8 +25,14 @@ with fl.SI_unit_system:
         axis=[1, 0, 0],
         center=[0, 5, 0],
         outer_radius=4.1,
-        inner_radius=0,
         height=5,
+    )
+    bet_cylinder = fl.Cylinder(
+        name="bet_cylinder",
+        axis=[-1, 0, 0],
+        center=[-2.0, 5.0, 0.0],
+        outer_radius=3.81,
+        height=0.4572,
     )
     farfield = fl.AutomatedFarfield()
     params = fl.SimulationParams(
@@ -128,7 +129,16 @@ with fl.SI_unit_system:
                     equation_evaluation_frequency=1,
                 ),
             ),
-            bet,
+            fl.BETDisk.from_xrotor(
+                file=fl.XROTORFile(file_path=TutorialBETDisk.extra["xrotor"]),
+                rotation_direction_rule="rightHand",
+                omega=460 * fl.u.rpm,
+                chord_ref=0.3556,
+                n_loading_nodes=20,
+                entities=bet_cylinder,
+                angle_unit=fl.u.deg,
+                length_unit=fl.u.m,
+            ),
         ],
     )
 
