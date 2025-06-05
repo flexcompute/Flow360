@@ -134,10 +134,11 @@ def unit_converter(dimension, params, required_by: List[str] = None):
 
     def get_base_length():
         require(["private_attribute_asset_cache", "project_length_unit"], required_by, params)
-        base_length = params.private_attribute_asset_cache.project_length_unit.to("m").v.item()
+        base_length = params.base_length.v.item()
         return base_length
 
     def get_base_temperature():
+<<<<<<< HEAD
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_temperature = params.operating_condition.thermal_state.temperature.to("K").v.item()
         return base_temperature
@@ -145,13 +146,29 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     def get_base_velocity():
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
+=======
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            # Temperature in Liquid condition has no effect because the thermal features will be disabled.
+            # Also the viscosity will be constant.
+            # pylint:disable = no-member
+            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_temperature = params.base_temperature.v.item()
+        return base_temperature
+
+    def get_base_velocity():
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_velocity = params.base_velocity.v.item()
+>>>>>>> 7fa70e72 (Add Base Units and Unit System as SimulationParams's property (#1130))
         return base_velocity
 
     def get_base_time():
-        base_length = get_base_length()
-        base_velocity = get_base_velocity()
-        base_time = base_length / base_velocity
+        base_time = params.base_time.v.item()
         return base_time
+
+    def get_base_mass():
+        base_mass = params.base_mass.v.item()
+        return base_mass
 
     def get_base_angular_velocity():
         base_time = get_base_time()
@@ -160,9 +177,15 @@ def unit_converter(dimension, params, required_by: List[str] = None):
         return base_angular_velocity
 
     def get_base_density():
+<<<<<<< HEAD
         require(["operating_condition", "thermal_state", "density"], required_by, params)
         base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
 
+=======
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            require(["operating_condition", "thermal_state", "density"], required_by, params)
+        base_density = params.base_density.v.item()
+>>>>>>> 7fa70e72 (Add Base Units and Unit System as SimulationParams's property (#1130))
         return base_density
 
     def get_base_viscosity():
@@ -240,6 +263,10 @@ def unit_converter(dimension, params, required_by: List[str] = None):
     if dimension == u.dimensions.length:
         base_length = get_base_length()
         flow360_conversion_unit_system.base_length = base_length
+
+    elif dimension == u.dimensions.mass:
+        base_mass = get_base_mass()
+        flow360_conversion_unit_system.base_mass = base_mass
 
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()

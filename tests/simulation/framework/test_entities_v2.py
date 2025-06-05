@@ -211,6 +211,10 @@ class TempSimulationParam(_ParamModelBase):
     udd: Optional[TempUserDefinedDynamic] = pd.Field(None)
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
 
+    @property
+    def base_length(self) -> LengthType:
+        return self.private_attribute_asset_cache.project_length_unit.to("m")
+
     def preprocess(self):
         """
         Supply self._supplementary_registry to the construction of
