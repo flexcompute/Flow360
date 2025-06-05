@@ -13,11 +13,11 @@ def model_attribute_unlock(model, attr: str):
         # validate_assignment is set to False to allow for the attribute to be modified
         # Otherwise, the attribute will STILL be frozen and cannot be modified
         model.model_config["validate_assignment"] = False
-        model.model_fields[attr].frozen = False
+        model.__class__.model_fields[attr].frozen = False
         yield
     finally:
         model.model_config["validate_assignment"] = True
-        model.model_fields[attr].frozen = True
+        model.__class__.model_fields[attr].frozen = True
 
 
 def get_combined_subclasses(cls):

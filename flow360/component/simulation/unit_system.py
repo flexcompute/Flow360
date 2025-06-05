@@ -1780,7 +1780,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     def __init__(self):
         registry = u.UnitRegistry()
 
-        for field in self.model_fields.values():
+        for field in self.__class__.model_fields.values():
             if field.json_schema_extra is not None:
                 target_dimension = field.json_schema_extra.get("target_dimension", None)
                 if target_dimension is not None:
@@ -1826,6 +1826,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.field_validator("*")
+    @classmethod
     def assign_conversion_rate(cls, value, info: pd.ValidationInfo):
         """
         Pydantic validator for assigning conversion rates to a specific unit in the registry.

@@ -2,6 +2,7 @@
 
 # pylint: disable=duplicate-code
 import json
+import os
 from enum import Enum
 from numbers import Number
 from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
@@ -17,6 +18,11 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.models.bet.bet_translator_interface import (
+    generate_polar_file_name_list,
+    translate_xfoil_c81_to_bet_dict,
+    translate_xrotor_dfdc_to_bet_dict,
+)
 from flow360.component.simulation.models.surface_models import Freestream, Wall
 
 # Following unused-import for supporting parse_model_dict
@@ -47,10 +53,12 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
+    AngleType,
     CGS_unit_system,
     LengthType,
     SI_unit_system,
     UnitSystem,
+    _dimensioned_type_serializer,
     flow360_unit_system,
     imperial_unit_system,
     u,
@@ -63,7 +71,11 @@ from flow360.component.simulation.validation.validation_context import (
     ParamsValidationInfo,
     ValidationContext,
 )
-from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
+from flow360.exceptions import (
+    Flow360RuntimeError,
+    Flow360TranslationError,
+    Flow360ValueError,
+)
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __version__
 
@@ -836,6 +848,125 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         units.append(unit)
 
     return errors, values, units
+
+
+def _serialize_unit_in_dict(data):
+    """
+    Recursively serialize unit type data in a dictionary or list.
+
+    For unyt_quantity objects, converts them to {"value": item.value, "units": item.units.expr}
+    Handles nested dictionaries, lists, and other basic types.
+
+    Parameters:
+    -----------
+    data : any
+        The data to serialize, can be a dictionary, list, unyt_quantity or other basic types
+
+    Returns:
+    --------
+    any
+        The serialized data with unyt_quantity objects converted to dictionaries
+    """
+
+    if isinstance(data, (u.unyt_quantity, u.unyt_array)):
+        return _dimensioned_type_serializer(data)
+
+    if isinstance(data, dict):
+        return {key: _serialize_unit_in_dict(value) for key, value in data.items()}
+
+    if isinstance(data, list):
+        return [_serialize_unit_in_dict(item) for item in data]
+
+    return data
+
+
+def _validate_unit_string(unit_str: str, unit_type: Union[AngleType, LengthType]) -> bool:
+    """
+    Validate the unit string from request against the specified unit type.
+    """
+    try:
+        unit_dict = json.loads(unit_str)
+        return unit_type.validate(unit_dict)
+    except json.JSONDecodeError:
+        return unit_type.validate(unit_str)
+
+
+def translate_dfdc_xrotor_bet_disk(
+    *,
+    geometry_file_content: str,
+    length_unit: str,
+    angle_unit: str,
+    file_format: str,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for an XROTOR or DFDC input file.
+    Returns the dict of BETDisk.
+    """
+    # pylint: disable=no-member
+    errors = []
+    bet_dict_list = []
+    try:
+        length_unit = _validate_unit_string(length_unit, LengthType)
+        angle_unit = _validate_unit_string(angle_unit, AngleType)
+        bet_disk_dict = translate_xrotor_dfdc_to_bet_dict(
+            geometry_file_content=geometry_file_content,
+            length_unit=length_unit,
+            angle_unit=angle_unit,
+            file_format=file_format,
+        )
+        bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
+    except (pd.ValidationError, Flow360ValueError, ValueError) as e:
+        # Expected exceptions
+        errors.append(str(e))
+    return bet_dict_list, errors
+
+
+def translate_xfoil_c81_bet_disk(
+    *,
+    geometry_file_content: str,
+    polar_file_contents_dict: dict,
+    length_unit: str,
+    angle_unit: str,
+    file_format: str,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for an XFOIL or C81 input file.
+    Returns the dict of BETDisk.
+    """
+    # pylint: disable=no-member
+    errors = []
+    bet_dict_list = []
+    try:
+        length_unit = _validate_unit_string(length_unit, LengthType)
+        angle_unit = _validate_unit_string(angle_unit, AngleType)
+        polar_file_name_list = generate_polar_file_name_list(
+            geometry_file_content=geometry_file_content
+        )
+        polar_file_contents_list = []
+        polar_file_extensions = []
+        for file_name_list in polar_file_name_list:
+            file_contents_list = []
+            for file_name in file_name_list:
+                if file_name not in polar_file_contents_dict.keys():
+                    raise ValueError(
+                        f"The {file_format} polar file: {file_name} is missing. Please check the uploaded polar files."
+                    )
+                file_contents_list.append(polar_file_contents_dict.get(file_name))
+            polar_file_contents_list.append(file_contents_list)
+            polar_file_extensions.append(os.path.splitext(file_name_list[0])[1])
+        bet_disk_dict = translate_xfoil_c81_to_bet_dict(
+            geometry_file_content=geometry_file_content,
+            polar_file_contents_list=polar_file_contents_list,
+            polar_file_extensions=polar_file_extensions,
+            length_unit=length_unit,
+            angle_unit=angle_unit,
+            file_format=file_format,
+        )
+        bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
+    except (pd.ValidationError, Flow360ValueError, ValueError) as e:
+        # Expected exceptions
+        errors.append(str(e))
+    return bet_dict_list, errors
 
 
 def get_default_report_config() -> dict:

@@ -13,6 +13,7 @@ import pydantic as pd
 from flow360.cloud.s3_utils import CloudFileNotFoundError
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
+    _PSEUDO_STEP,
     PerEntityResultCSVModel,
     ResultBaseModel,
     ResultCSVModel,
@@ -35,7 +36,6 @@ from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
 # pylint:disable=invalid-name
-_PSEUDO_STEP = "pseudo_step"
 _CL = "CL"
 _CD = "CD"
 _CFx = "CFx"

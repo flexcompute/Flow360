@@ -173,8 +173,9 @@ class Flow360BaseModel(pd.BaseModel):
     )
 
     def __setattr__(self, name, value):
-        if name in self.model_fields:
-            is_frozen = self.model_fields[name].frozen
+        # pylint: disable=unsupported-membership-test,  unsubscriptable-object
+        if name in self.__class__.model_fields:
+            is_frozen = self.__class__.model_fields[name].frozen
             if is_frozen is not None and is_frozen is True:
                 raise ValueError(f"Cannot modify immutable/frozen fields: {name}")
         super().__setattr__(name, value)
@@ -245,6 +246,7 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def _get_field_context(cls, info, context_key):
         if info.field_name is not None:
+            # pylint:disable = unsubscriptable-object
             field_info = cls.model_fields[info.field_name]
             if isinstance(field_info.json_schema_extra, dict):
                 return field_info.json_schema_extra.get(context_key)
@@ -287,7 +289,10 @@ class Flow360BaseModel(pd.BaseModel):
         if need_to_rebuild is True:
             for mode, method in validators:
                 info = FieldValidatorDecoratorInfo(
-                    fields=tuple(fields_to_validate), mode=mode, check_fields=None
+                    fields=tuple(fields_to_validate),
+                    mode=mode,
+                    check_fields=None,
+                    json_schema_input_type=Any,
                 )
                 deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
                 cls.__pydantic_decorators__.field_validators[method] = deco
@@ -589,7 +594,7 @@ class Flow360BaseModel(pd.BaseModel):
 
         for property_name, value in chain(self_dict.items(), additional_fields.items()):
             loc_name = property_name
-            field = self.model_fields.get(property_name)
+            field = self.__class__.model_fields.get(property_name)
             if field is not None and field.alias is not None:
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
@@ -666,7 +671,7 @@ class Flow360BaseModel(pd.BaseModel):
             if property_name in exclude:
                 continue
             loc_name = property_name
-            field = self.model_fields.get(property_name)
+            field = self.__class__.model_fields.get(property_name)
             if field is not None and field.alias is not None:
                 loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
