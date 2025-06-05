@@ -5,47 +5,59 @@ from typing import Annotated, Literal, Union
 import pydantic as pd
 
 from .context import EvaluationContext, ReturnValue
-from .expressions import ExpressionType
+from .expressions import ExpressionNodeType
 from .types import Evaluable
 
 # Forward declaration of type
-StatementType = Annotated[
+StatementNodeType = Annotated[
     # pylint: disable=duplicate-code
     Union[
-        "Assign",
-        "AugAssign",
-        "IfElse",
-        "ForLoop",
-        "Return",
-        "TupleUnpack",
+        "AssignNode",
+        "AugAssignNode",
+        "IfElseNode",
+        "ForLoopNode",
+        "ReturnNode",
+        "TupleUnpackNode",
     ],
     pd.Field(discriminator="type"),
 ]
 
 
-class Statement(pd.BaseModel, Evaluable):
+class StatementNode(pd.BaseModel, Evaluable):
     """
     Base class for statements (like 'if', 'for', assignments, etc.).
     """
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
         raise NotImplementedError
 
 
-class Assign(Statement):
+class AssignNode(StatementNode):
     """
     Represents something like 'result = <expr>'.
     """
 
     type: Literal["Assign"] = "Assign"
     target: str
-    value: ExpressionType
+    value: ExpressionNodeType
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
-        context.set(self.target, self.value.evaluate(context, strict))
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
+        context.set(
+            self.target, self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
+        )
 
 
-class AugAssign(Statement):
+class AugAssignNode(StatementNode):
     """
     Represents something like 'result += <expr>'.
     The 'op' is again the operator class name (e.g. 'Add', 'Mult', etc.).
@@ -54,11 +66,16 @@ class AugAssign(Statement):
     type: Literal["AugAssign"] = "AugAssign"
     target: str
     op: str
-    value: ExpressionType
+    value: ExpressionNodeType
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
         old_val = context.get(self.target)
-        increment = self.value.evaluate(context, strict)
+        increment = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         if self.op == "Add":
             context.set(self.target, old_val + increment)
         elif self.op == "Sub":
@@ -71,7 +88,7 @@ class AugAssign(Statement):
             raise ValueError(f"Unsupported augmented assignment operator: {self.op}")
 
 
-class IfElse(Statement):
+class IfElseNode(StatementNode):
     """
     Represents an if/else block:
     if condition:
@@ -81,20 +98,25 @@ class IfElse(Statement):
     """
 
     type: Literal["IfElse"] = "IfElse"
-    condition: ExpressionType
-    body: list["StatementType"]
-    orelse: list["StatementType"]
+    condition: ExpressionNodeType
+    body: list["StatementNodeType"]
+    orelse: list["StatementNodeType"]
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
-        if self.condition.evaluate(context, strict):
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
+        if self.condition.evaluate(context, raise_on_non_evaluable, force_evaluate):
             for stmt in self.body:
-                stmt.evaluate(context, strict)
+                stmt.evaluate(context, raise_on_non_evaluable, force_evaluate)
         else:
             for stmt in self.orelse:
-                stmt.evaluate(context, strict)
+                stmt.evaluate(context, raise_on_non_evaluable)
 
 
-class ForLoop(Statement):
+class ForLoopNode(StatementNode):
     """
     Represents a for loop:
     for <target> in <iter>:
@@ -103,39 +125,56 @@ class ForLoop(Statement):
 
     type: Literal["ForLoop"] = "ForLoop"
     target: str
-    iter: ExpressionType
-    body: list["StatementType"]
+    iter: ExpressionNodeType
+    body: list["StatementNodeType"]
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
-        iterable = self.iter.evaluate(context, strict)
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
+        iterable = self.iter.evaluate(context, raise_on_non_evaluable, force_evaluate)
         for item in iterable:
             context.set(self.target, item)
             for stmt in self.body:
-                stmt.evaluate(context, strict)
+                stmt.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
 
-class Return(Statement):
+class ReturnNode(StatementNode):
     """
     Represents a return statement: return <expr>.
     We'll raise a custom exception to stop execution in the function.
     """
 
     type: Literal["Return"] = "Return"
-    value: ExpressionType
+    value: ExpressionNodeType
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
-        val = self.value.evaluate(context, strict)
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
+        val = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         raise ReturnValue(val)
 
 
-class TupleUnpack(Statement):
+class TupleUnpackNode(StatementNode):
     """Model for tuple unpacking assignments."""
 
     type: Literal["TupleUnpack"] = "TupleUnpack"
     targets: list[str]
-    values: list[ExpressionType]
+    values: list[ExpressionNodeType]
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> None:
-        evaluated_values = [val.evaluate(context, strict) for val in self.values]
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> None:
+        evaluated_values = [
+            val.evaluate(context, raise_on_non_evaluable, force_evaluate) for val in self.values
+        ]
         for target, value in zip(self.targets, evaluated_values):
             context.set(target, value)

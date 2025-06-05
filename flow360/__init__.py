@@ -145,12 +145,12 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
-from flow360.component.simulation.user_code import UserVariable
+from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import control, solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
-from flow360.component.simulation.variables import control_variables as control
-from flow360.component.simulation.variables import solution_variables as solution
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
@@ -277,4 +277,7 @@ __all__ = [
     "Transformation",
     "WallRotation",
     "UserVariable",
+    "math",
+    "control",
+    "solution",
 ]

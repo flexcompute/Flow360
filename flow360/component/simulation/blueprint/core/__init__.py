@@ -2,30 +2,30 @@
 
 from .context import EvaluationContext, ReturnValue
 from .expressions import (
-    BinOp,
-    CallModel,
-    Constant,
-    Expression,
-    ExpressionType,
-    List,
-    ListComp,
-    Name,
-    RangeCall,
-    Subscript,
-    Tuple,
+    BinOpNode,
+    CallModelNode,
+    ConstantNode,
+    ExpressionNode,
+    ExpressionNodeType,
+    ListCompNode,
+    ListNode,
+    NameNode,
+    RangeCallNode,
+    SubscriptNode,
+    TupleNode,
 )
-from .function import Function
+from .function import FunctionNode
 from .generator import expr_to_code, model_to_function, stmt_to_code
 from .parser import function_to_model
 from .statements import (
-    Assign,
-    AugAssign,
-    ForLoop,
-    IfElse,
-    Return,
-    Statement,
-    StatementType,
-    TupleUnpack,
+    AssignNode,
+    AugAssignNode,
+    ForLoopNode,
+    IfElseNode,
+    ReturnNode,
+    StatementNode,
+    StatementNodeType,
+    TupleUnpackNode,
 )
 from .types import Evaluable, TargetSyntax
 
@@ -34,47 +34,47 @@ def _model_rebuild() -> None:
     """Update forward references in the correct order."""
     namespace = {
         # Expression types
-        "Name": Name,
-        "Constant": Constant,
-        "BinOp": BinOp,
-        "RangeCall": RangeCall,
-        "CallModel": CallModel,
-        "Tuple": Tuple,
-        "List": List,
-        "ListComp": ListComp,
-        "Subscript": Subscript,
-        "ExpressionType": ExpressionType,
+        "NameNode": NameNode,
+        "ConstantNode": ConstantNode,
+        "BinOpNode": BinOpNode,
+        "RangeCallNode": RangeCallNode,
+        "CallModelNode": CallModelNode,
+        "TupleNode": TupleNode,
+        "ListNode": ListNode,
+        "ListCompNode": ListCompNode,
+        "SubscriptNode": SubscriptNode,
+        "ExpressionNodeType": ExpressionNodeType,
         # Statement types
-        "Assign": Assign,
-        "AugAssign": AugAssign,
-        "IfElse": IfElse,
-        "ForLoop": ForLoop,
-        "Return": Return,
-        "TupleUnpack": TupleUnpack,
-        "StatementType": StatementType,
+        "AssignNode": AssignNode,
+        "AugAssignNode": AugAssignNode,
+        "IfElseNode": IfElseNode,
+        "ForLoopNode": ForLoopNode,
+        "ReturnNode": ReturnNode,
+        "TupleUnpackNode": TupleUnpackNode,
+        "StatementNodeType": StatementNodeType,
         # Function type
-        "Function": Function,
+        "FunctionNode": FunctionNode,
     }
 
     # First update expression classes that only depend on ExpressionType
-    BinOp.model_rebuild(_types_namespace=namespace)
-    RangeCall.model_rebuild(_types_namespace=namespace)
-    CallModel.model_rebuild(_types_namespace=namespace)
-    Tuple.model_rebuild(_types_namespace=namespace)
-    List.model_rebuild(_types_namespace=namespace)
-    ListComp.model_rebuild(_types_namespace=namespace)
-    Subscript.model_rebuild(_types_namespace=namespace)
+    BinOpNode.model_rebuild(_types_namespace=namespace)
+    RangeCallNode.model_rebuild(_types_namespace=namespace)
+    CallModelNode.model_rebuild(_types_namespace=namespace)
+    TupleNode.model_rebuild(_types_namespace=namespace)
+    ListNode.model_rebuild(_types_namespace=namespace)
+    ListCompNode.model_rebuild(_types_namespace=namespace)
+    SubscriptNode.model_rebuild(_types_namespace=namespace)
 
     # Then update statement classes that depend on both types
-    Assign.model_rebuild(_types_namespace=namespace)
-    AugAssign.model_rebuild(_types_namespace=namespace)
-    IfElse.model_rebuild(_types_namespace=namespace)
-    ForLoop.model_rebuild(_types_namespace=namespace)
-    Return.model_rebuild(_types_namespace=namespace)
-    TupleUnpack.model_rebuild(_types_namespace=namespace)
+    AssignNode.model_rebuild(_types_namespace=namespace)
+    AugAssignNode.model_rebuild(_types_namespace=namespace)
+    IfElseNode.model_rebuild(_types_namespace=namespace)
+    ForLoopNode.model_rebuild(_types_namespace=namespace)
+    ReturnNode.model_rebuild(_types_namespace=namespace)
+    TupleUnpackNode.model_rebuild(_types_namespace=namespace)
 
     # Finally update Function class
-    Function.model_rebuild(_types_namespace=namespace)
+    FunctionNode.model_rebuild(_types_namespace=namespace)
 
 
 # Update forward references
@@ -82,25 +82,25 @@ _model_rebuild()
 
 
 __all__ = [
-    "Expression",
-    "Name",
-    "Constant",
-    "BinOp",
-    "RangeCall",
-    "CallModel",
-    "Tuple",
-    "List",
-    "ListComp",
-    "ExpressionType",
-    "Statement",
-    "Assign",
-    "AugAssign",
-    "IfElse",
-    "ForLoop",
-    "Return",
-    "TupleUnpack",
-    "StatementType",
-    "Function",
+    "ExpressionNode",
+    "NameNode",
+    "ConstantNode",
+    "BinOpNode",
+    "RangeCallNode",
+    "CallModelNode",
+    "TupleNode",
+    "ListNode",
+    "ListCompNode",
+    "ExpressionNodeType",
+    "StatementNode",
+    "AssignNode",
+    "AugAssignNode",
+    "IfElseNode",
+    "ForLoopNode",
+    "ReturnNode",
+    "TupleUnpackNode",
+    "StatementNodeType",
+    "FunctionNode",
     "EvaluationContext",
     "ReturnValue",
     "Evaluable",

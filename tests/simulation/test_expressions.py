@@ -10,20 +10,15 @@ from flow360 import (
     SimulationParams,
     Solid,
     Unsteady,
-    control,
-    solution,
+    math,
     u,
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
-from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import (
-    GenericVolume,
-    ReferenceGeometry,
-    Surface,
-)
+from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -50,11 +45,12 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
-from flow360.component.simulation.user_code import (
+from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
     ValueOrExpression,
 )
+from flow360.component.simulation.user_code.variables import control, solution
 
 
 @pytest.fixture(autouse=True)
@@ -189,17 +185,11 @@ def test_expression_operators():
     assert model.field.evaluate() == 3
     assert str(model.field) == "+x"
 
-    # Absolute value
-    model.field = abs(x)
-    assert isinstance(model.field, Expression)
-    assert model.field.evaluate() == 3
-    assert str(model.field) == "abs(x)"
-
     # Complex statement
-    model.field = ((abs(x) - 2 * x) + (x + y) / 2 - 2**x) % 4
+    model.field = ((x - 2 * x) + (x + y) / 2 - 2**x) % 4
     assert isinstance(model.field, Expression)
     assert model.field.evaluate() == 3.5
-    assert str(model.field) == "(abs(x) - (2 * x) + ((x + y) / 2) - (2 ** x)) % 4"
+    assert str(model.field) == "(x - 2 * x + (x + y) / 2 - 2 ** x) % 4"
 
 
 def test_dimensioned_expressions():
@@ -377,7 +367,7 @@ def test_solver_builtin():
 
     model = TestModel(field=x * u.m + solution.kOmega * u.cm)
 
-    assert str(model.field) == "x * u.m + (solution.kOmega * u.cm)"
+    assert str(model.field) == "x * u.m + solution.kOmega * u.cm"
 
     # Raises when trying to evaluate with a message about this variable being blacklisted
     with pytest.raises(ValueError):
@@ -392,12 +382,12 @@ def test_serializer():
 
     model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s)
 
-    assert str(model.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
     serialized = model.model_dump(exclude_none=True)
 
     assert serialized["field"]["type_name"] == "expression"
-    assert serialized["field"]["expression"] == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert serialized["field"]["expression"] == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
     model = TestModel(field=4 * u.m / u.s)
 
@@ -416,108 +406,20 @@ def test_deserializer():
 
     model = {
         "type_name": "expression",
-        "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
+        "expression": "x * u.m / u.s + 4 * x ** 2 * u.m / u.s",
         "evaluated_value": 68.0,
         "evaluated_units": "m/s",
     }
 
     deserialized = TestModel(field=model)
 
-    assert str(deserialized.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(deserialized.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
     model = {"type_name": "number", "value": 4.0, "units": "m/s"}
 
     deserialized = TestModel(field=model)
 
     assert str(deserialized.field) == "4.0 m/s"
-
-
-# def test_expression_vectors_scalars():
-#     class ScalarModel(Flow360BaseModel):
-#         scalar: ValueOrExpression[float] = pd.Field()
-#
-#     x = UserVariable(name="x", value=1)
-#
-#     # Since numpy arrays already give us the behavior we want there is no point
-#     # to building our own vector arithmetic. We just add the symbols to the whitelist
-#
-#     # Using expression types inside numpy arrays works OK
-#     a = np.array([x + 1, 0, x**2])
-#     b = np.array([0, x / 2, 3])
-#
-#     c = np.linalg.norm(a + b)  # This yields an expression containing the inlined dot product...
-#
-#     # Sadly it seems like we cannot stop numpy from inlining some functions by
-#     # implementing a specific method (like with trigonometic functions for example)
-#
-#     d = np.sin(c)  # This yields an expression
-#     e = np.cos(c)  # This also yields an expression
-#
-#     model = ScalarModel(
-#         scalar=np.arctan(d + e + 1)
-#     )  # So we can later compose those into expressions further...
-#
-#     assert str(model.scalar) == (
-#         "np.arctan(np.sin(np.sqrt((x + 1 + 0) * (x + 1 + 0) + "
-#         "((0 + x / 2) * (0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3)))) + "
-#         "(np.cos(np.sqrt((x + 1 + 0) * (x + 1 + 0) + ((0 + x / 2) * "
-#         "(0 + x / 2)) + ((x ** 2 + 3) * (x ** 2 + 3))))) + 1)"
-#     )
-#
-#     result = model.scalar.evaluate()
-#
-#     assert result == -0.1861456975646416
-#
-#     # Notice that when we inline some operations (like cross/dot product or norm, for example)
-#     # we make the underlying generated string of the expression ugly...
-#     #
-#     # Luckily this is transparent to the user. When the user is defining expressions in python he does
-#     # not have to worry about the internal string representation or the CUDA-generated code
-#     # (for CUDA code inlining might actually probably be our best bet to reduce function calls...)
-#     #
-#     # Conversely, when we are dealing with frontend strings we can deal with non-inlined numpy functions
-#     # because they are whitelisted by the blueprint parser:
-#
-#     # Let's simulate a frontend use case by parsing raw string input:
-#
-#     # The user defines some variables for convenience
-#
-#     a = UserVariable(name="a", value="np.array([x + 1, 0, x ** 2])")
-#     b = UserVariable(name="b", value="np.array([0, x / 2, 3])")
-#
-#     c = UserVariable(name="c", value="np.linalg.norm(a + b)")
-#
-#     d = UserVariable(name="d", value="np.sin(c)")
-#     e = UserVariable(name="e", value="np.cos(c)")
-#
-#     # Then he inputs the actual expression somewhere within
-#     # simulation.json using the helper variables defined before
-#
-#     model = ScalarModel(scalar="np.arctan(d + e + 1)")
-#
-#     assert str(model.scalar) == "np.arctan(d + e + 1)"
-#
-#     result = model.scalar.evaluate()
-#
-#     assert result == -0.1861456975646416
-#
-#
-# def test_numpy_interop_vectors():
-#     Vec3 = tuple[float, float, float]
-#
-#     class VectorModel(Flow360BaseModel):
-#         vector: ValueOrExpression[Vec3] = pd.Field()
-#
-#     x = UserVariable(name="x", value=np.array([2, 3, 4]))
-#     y = UserVariable(name="y", value=2 * x)
-#
-#     model = VectorModel(vector=x**2 + y + np.array([1, 0, 0]))
-#
-#     assert str(model.vector) == "x ** 2 + y + np.array([1,0,0])"
-#
-#     result = model.vector.evaluate()
-#
-#     assert np.array_equal(result, np.array([9, 15, 24]))
 
 
 def test_subscript_access():
@@ -528,7 +430,7 @@ def test_subscript_access():
 
     model = ScalarModel(scalar=x[0] + x[1] + x[2] + 1)
 
-    assert str(model.scalar) == "x[0] + (x[1]) + (x[2]) + 1"
+    assert str(model.scalar) == "x[0] + x[1] + x[2] + 1"
 
     assert model.scalar.evaluate() == 10
 
@@ -649,11 +551,11 @@ def test_solver_translation():
 
         # 3. User variables are inlined (for expression value types)
         expression = Expression.model_validate(y * u.m**2)
-        assert expression.to_solver_code(params) == "((4.0 + 1) * pow(0.5, 2))"
+        assert expression.to_solver_code(params) == "(5.0 * pow(0.5, 2))"
 
         # 4. For solver variables, the units are stripped (assumed to be in solver units so factor == 1.0)
         expression = Expression.model_validate(y * u.m / u.s + control.MachRef)
-        assert expression.to_solver_code(params) == "((((4.0 + 1) * 0.5) / 500.0) + machRef)"
+        assert expression.to_solver_code(params) == "(((5.0 * 0.5) / 500.0) + machRef)"
 
 
 def test_cyclic_dependencies():
@@ -694,22 +596,219 @@ def test_auto_alias():
     model_1 = TestModel(field=unaliased)
     model_2 = TestModel(field=aliased)
 
-    assert str(model_1.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
-    assert str(model_2.field) == "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)"
+    assert str(model_1.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
+    assert str(model_2.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
 
 def test_variable_space_init():
     # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
-    with open("data/variables.json", "r+") as fh:
+    with open("data/simulation.json", "r+") as fh:
         data = json.load(fh)
-    from flow360.component.simulation.services import ValidationCalledBy, validate_model
 
     params, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
     )
-    from flow360.component.simulation.user_code import _global_ctx, _user_variables
 
     assert errors is None
     evaluated = params.reference_geometry.area.evaluate()
 
     assert evaluated == 1.0 * u.m**2
+
+
+def test_cross_product():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[VelocityType.Vector] = pd.Field()
+
+    x = UserVariable(name="x", value=[1, 2, 3])
+
+    model = TestModel(field=math.cross(x, [3, 2, 1]) * u.m / u.s)
+    assert (
+        str(model.field)
+        == "[x[1] * 1 - x[2] * 2, x[2] * 3 - x[0] * 1, x[0] * 2 - x[1] * 3] * u.m / u.s"
+    )
+
+    assert (model.field.evaluate() == [-4, 8, -4] * u.m / u.s).all()
+
+    model = TestModel(field="math.cross(x, [3, 2, 1]) * u.m / u.s")
+    assert str(model.field) == "math.cross(x, [3, 2, 1]) * u.m / u.s"
+
+    result = model.field.evaluate()
+    assert (result == [-4, 8, -4] * u.m / u.s).all()
+
+
+def test_vector_solver_variable_cross_product_translation():
+    with open("data/simulation.json", "r+") as fh:
+        data = json.load(fh)
+
+    params, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[LengthType.Vector] = pd.Field()
+
+    # From string
+    expr_1 = TestModel(field="math.cross([1, 2, 3], [1, 2, 3] * u.m)").field
+    assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3] * u.m)"
+
+    # During solver translation both options are inlined the same way through partial evaluation
+    solver_1 = expr_1.to_solver_code(params)
+    print(solver_1)
+
+    # From python code
+    expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
+    assert (
+        str(expr_2) == "[2 * solution.coordinate[2] - 3 * solution.coordinate[1], "
+        "3 * solution.coordinate[0] - 1 * solution.coordinate[2], "
+        "1 * solution.coordinate[1] - 2 * solution.coordinate[0]]"
+    )
+
+    # During solver translation both options are inlined the same way through partial evaluation
+    solver_2 = expr_2.to_solver_code(params)
+    print(solver_2)
+
+
+def test_cross_function_use_case():
+
+    with SI_unit_system:
+        params = SimulationParams(
+            private_attribute_asset_cache=AssetCache(project_length_unit=10 * u.m)
+        )
+
+    print("\n1 Python mode\n")
+    a = UserVariable(name="a", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
+
+    print("\n1.1 Python mode but arg swapped\n")
+    a.value = math.cross(solution.coordinate, [3, 2, 1] * u.m)
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[solution.coordinate[1] * 1 * u.m - solution.coordinate[2] * 2 * u.m, "
+        "solution.coordinate[2] * 3 * u.m - solution.coordinate[0] * 1 * u.m, "
+        "solution.coordinate[0] * 2 * u.m - solution.coordinate[1] * 3 * u.m]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((solution.coordinate[1] * 1) * 0.1) - ((solution.coordinate[2] * 2) * 0.1)), (((solution.coordinate[2] * 3) * 0.1) - ((solution.coordinate[0] * 1) * 0.1)), (((solution.coordinate[0] * 2) * 0.1) - ((solution.coordinate[1] * 3) * 0.1))})"
+    )
+
+    print("\n2 Taking advantage of unyt as much as possible\n")
+    a.value = math.cross([3, 2, 1] * u.m, [2, 2, 1] * u.m)
+    assert all(a.value == [0, -1, 2] * u.m * u.m)
+
+    print("\n3 (Units defined in components)\n")
+    a.value = math.cross([3 * u.m, 2 * u.m, 1 * u.m], [2 * u.m, 2 * u.m, 1 * u.m])
+    assert a.value == [0 * u.m * u.m, -1 * u.m * u.m, 2 * u.m * u.m]
+
+    print("\n4 Serialized version\n")
+    a.value = "math.cross([3, 2, 1] * u.m, solution.coordinate)"
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
+
+    print("\n5 Recursive cross in Python mode\n")
+    a.value = math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - (3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m, "
+        "(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - (2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m, "
+        "(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - (1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({((((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 3) * 0.1))})"
+    )
+
+    print("\n6 Recursive cross in String mode\n")
+    a.value = "math.cross(math.cross([3, 2, 1] * u.m, solution.coordinate), [3, 2, 1] * u.m)"
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert (
+        str(res)
+        == "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - (3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m, "
+        "(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - (2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m, "
+        "(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - (1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({((((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 3) * 0.1))})"
+    )
+
+    print("\n7 Using other variabels in Python mode\n")
+    b = UserVariable(name="b", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
+    a.value = math.cross(b, [3, 2, 1] * u.m)
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[(1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 1 * u.m - (3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 2 * u.m, "
+        "(3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]) * 3 * u.m - (2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 1 * u.m, "
+        "(2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1]) * 2 * u.m - (1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2]) * 3 * u.m]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({((((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])) * 3) * 0.1))})"
+    )
+
+    print("\n8 Using other constant variabels in Python mode\n")
+    b.value = [3, 2, 1] * u.m
+    a.value = math.cross(b, solution.coordinate)
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
+
+    print("\n9 Using non-unyt_array\n")
+    b.value = [3 * u.m, 2 * u.m, 1 * u.m]
+    a.value = math.cross(b, solution.coordinate)
+    res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+    assert str(res) == (
+        "[2 * u.m * solution.coordinate[2] - 1 * u.m * solution.coordinate[1], "
+        "1 * u.m * solution.coordinate[0] - 3 * u.m * solution.coordinate[2], "
+        "3 * u.m * solution.coordinate[1] - 2 * u.m * solution.coordinate[0]]"
+    )
+    assert (
+        a.value.to_solver_code(params)
+        == "std::vector<float>({(((2 * 0.1) * solution.coordinate[2]) - ((1 * 0.1) * solution.coordinate[1])), (((1 * 0.1) * solution.coordinate[0]) - ((3 * 0.1) * solution.coordinate[2])), (((3 * 0.1) * solution.coordinate[1]) - ((2 * 0.1) * solution.coordinate[0]))})"
+    )
+
+
+def test_expression_indexing():
+    a = UserVariable(name="a", value=1)
+    b = UserVariable(name="b", value=[1, 2, 3])
+    c = UserVariable(name="c", value=[3, 2, 1])
+
+    # Cannot simplify without non-statically evaluable index object (expression for example)
+    cross = math.cross(b, c)
+    expr = Expression.model_validate(cross[a])
+
+    assert (
+        str(expr)
+        == "[b[1] * c[2] - b[2] * c[1], b[2] * c[0] - b[0] * c[2], b[0] * c[1] - b[1] * c[0]][a]"
+    )
+    assert expr.evaluate() == 8
+
+    # Cannot simplify without non-statically evaluable index object (expression for example)
+    expr = Expression.model_validate(cross[1])
+
+    assert str(expr) == "b[2] * c[0] - b[0] * c[2]"
+    assert expr.evaluate() == 8

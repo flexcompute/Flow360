@@ -56,7 +56,7 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.component.simulation.user_code import Expression, UserVariable
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -800,7 +800,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
             if variable and isinstance(variable.value, Expression):
-                _ = variable.value.evaluate(strict=False)
+                _ = variable.value.evaluate(raise_on_non_evaluable=False)
         except pd.ValidationError as err:
             errors.extend(err.errors())
         except Exception as err:  # pylint: disable=broad-exception-caught
@@ -812,7 +812,7 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         unit = None
         try:
             expression_object = Expression(expression=expression)
-            result = expression_object.evaluate(strict=False)
+            result = expression_object.evaluate(raise_on_non_evaluable=False)
             if np.isnan(result):
                 pass
             elif isinstance(result, Number):

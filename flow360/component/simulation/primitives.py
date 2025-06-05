@@ -21,7 +21,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
-from flow360.component.simulation.user_code import ValueOrExpression
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.types import Axis
 

@@ -5,10 +5,10 @@ from typing import Any
 import pydantic as pd
 
 from .context import EvaluationContext, ReturnValue
-from .statements import StatementType
+from .statements import StatementNodeType
 
 
-class Function(pd.BaseModel):
+class FunctionNode(pd.BaseModel):
     """
     Represents an entire function:
     def name(arg1, arg2, ...):
@@ -18,7 +18,7 @@ class Function(pd.BaseModel):
     name: str
     args: list[str]
     defaults: dict[str, Any]
-    body: list[StatementType]
+    body: list[StatementNodeType]
 
     def __call__(self, context: EvaluationContext, *call_args: Any) -> Any:
         # Add default values

@@ -17,7 +17,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code import Expression
+from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.utils import is_exact_instance
 
 
@@ -153,7 +153,7 @@ def inline_expressions_in_dict(input_dict, input_params):
         new_dict = {}
         if "expression" in input_dict.keys():
             expression = Expression(expression=input_dict["expression"])
-            evaluated = expression.evaluate(strict=False)
+            evaluated = expression.evaluate(raise_on_non_evaluable=False)
             converted = input_params.convert_unit(evaluated, "flow360").v
             new_dict = converted
             return new_dict
@@ -162,7 +162,7 @@ def inline_expressions_in_dict(input_dict, input_params):
             # so remove_units_in_dict should handle them correctly...
             if isinstance(value, dict) and "expression" in value.keys():
                 expression = Expression(expression=value["expression"])
-                evaluated = expression.evaluate(strict=False)
+                evaluated = expression.evaluate(raise_on_non_evaluable=False)
                 converted = input_params.convert_unit(evaluated, "flow360").v
                 if isinstance(converted, np.ndarray):
                     if converted.ndim == 0:

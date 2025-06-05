@@ -1,7 +1,10 @@
 """Solution variables of Flow360"""
 
-from flow360.component.simulation.user_code import SolverVariable
+import unyt as u
 
+from flow360.component.simulation.user_code.core.types import SolverVariable
+
+# pylint:disable = no-member
 mut = SolverVariable(name="solution.mut", value=float("NaN"))  # Turbulent viscosity
 mu = SolverVariable(name="solution.mu", value=float("NaN"))  # Laminar viscosity
 solutionNavierStokes = SolverVariable(
@@ -34,7 +37,16 @@ solutionHeatSolver = SolverVariable(
 residualHeatSolver = SolverVariable(
     name="solution.residualHeatSolver", value=float("NaN")
 )  # Residual for heat equation
-coordinate = SolverVariable(name="solution.coordinate", value=float("NaN"))  # Grid coordinates
+
+coordinate = SolverVariable(
+    name="solution.coordinate",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.m,
+)  # Grid coordinates
+
+velocity = SolverVariable(
+    name="solution.velocity",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
+)
 
 bet_thrust = SolverVariable(
     name="solution.bet_thrust", value=float("NaN")

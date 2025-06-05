@@ -60,7 +60,7 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
     unyt_quantity,
 )
-from flow360.component.simulation.user_code import UserVariable
+from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )

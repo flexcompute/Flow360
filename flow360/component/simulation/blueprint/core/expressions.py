@@ -9,24 +9,24 @@ from ..utils.operators import BINARY_OPERATORS, UNARY_OPERATORS
 from .context import EvaluationContext
 from .types import Evaluable
 
-ExpressionType = Annotated[
+ExpressionNodeType = Annotated[
     # pylint: disable=duplicate-code
     Union[
-        "Name",
-        "Constant",
-        "BinOp",
-        "RangeCall",
-        "CallModel",
-        "Tuple",
-        "List",
-        "ListComp",
-        "Subscript",
+        "NameNode",
+        "ConstantNode",
+        "BinOpNode",
+        "RangeCallNode",
+        "CallModelNode",
+        "TupleNode",
+        "ListNode",
+        "ListCompNode",
+        "SubscriptNode",
     ],
     pd.Field(discriminator="type"),
 ]
 
 
-class Expression(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
+class ExpressionNode(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
     """
     Base class for expressions (like `x > 3`, `range(n)`, etc.).
 
@@ -44,7 +44,7 @@ class Expression(pd.BaseModel, Evaluable, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-class Name(Expression):
+class NameNode(ExpressionNode):
     """
     Expression representing a name qualifier
     """
@@ -52,22 +52,30 @@ class Name(Expression):
     type: Literal["Name"] = "Name"
     id: str
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        if strict and not context.can_evaluate(self.id):
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> Any:
+        if raise_on_non_evaluable and not context.can_evaluate(self.id):
             raise ValueError(f"Name '{self.id}' cannot be evaluated at client runtime")
+        if not force_evaluate and not context.can_evaluate(self.id):
+            data_model = context.get_data_model(self.id)
+            if data_model:
+                return data_model.model_validate({"name": self.id, "value": context.get(self.id)})
+            raise ValueError("Partially evaluable symbols need to possess a type annotation.")
         value = context.get(self.id)
-
         # Recursively evaluate if the returned value is evaluable
         if isinstance(value, Evaluable):
-            value = value.evaluate(context, strict)
-
+            value = value.evaluate(context, raise_on_non_evaluable, force_evaluate)
         return value
 
     def used_names(self) -> set[str]:
         return {self.id}
 
 
-class Constant(Expression):
+class ConstantNode(ExpressionNode):
     """
     Expression representing a constant numeric value
     """
@@ -75,24 +83,34 @@ class Constant(Expression):
     type: Literal["Constant"] = "Constant"
     value: Any
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:  # noqa: ARG002
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> Any:  # noqa: ARG002
         return self.value
 
     def used_names(self) -> set[str]:
         return set()
 
 
-class UnaryOp(Expression):
+class UnaryOpNode(ExpressionNode):
     """
     Expression representing a unary operation
     """
 
     type: Literal["UnaryOp"] = "UnaryOp"
     op: str
-    operand: "ExpressionType"
+    operand: "ExpressionNodeType"
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        operand_val = self.operand.evaluate(context, strict)
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> Any:
+        operand_val = self.operand.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
         if self.op not in UNARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
@@ -103,19 +121,24 @@ class UnaryOp(Expression):
         return self.operand.used_names()
 
 
-class BinOp(Expression):
+class BinOpNode(ExpressionNode):
     """
     Expression representing a binary operation
     """
 
     type: Literal["BinOp"] = "BinOp"
-    left: "ExpressionType"
+    left: "ExpressionNodeType"
     op: str
-    right: "ExpressionType"
+    right: "ExpressionNodeType"
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        left_val = self.left.evaluate(context, strict)
-        right_val = self.right.evaluate(context, strict)
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> Any:
+        left_val = self.left.evaluate(context, raise_on_non_evaluable, force_evaluate)
+        right_val = self.right.evaluate(context, raise_on_non_evaluable, force_evaluate)
 
         if self.op not in BINARY_OPERATORS:
             raise ValueError(f"Unsupported operator: {self.op}")
@@ -128,21 +151,27 @@ class BinOp(Expression):
         return left.union(right)
 
 
-class Subscript(Expression):
+class SubscriptNode(ExpressionNode):
     """
     Expression representing an iterable object subscript
     """
 
     type: Literal["Subscript"] = "Subscript"
-    value: "ExpressionType"
-    slice: "ExpressionType"  # No proper slicing for now, only constants..
+    value: "ExpressionNodeType"
+    slice: "ExpressionNodeType"  # No proper slicing for now, only constants..
     ctx: str  # Only load context
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
-        value = self.value.evaluate(context, strict)
-        item = self.slice.evaluate(context, strict)
-
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> Any:
+        value = self.value.evaluate(context, raise_on_non_evaluable, force_evaluate)
+        item = self.slice.evaluate(context, raise_on_non_evaluable, force_evaluate)
         if self.ctx == "Load":
+            if isinstance(item, float):
+                item = int(item)
             return value[item]
         if self.ctx == "Store":
             raise NotImplementedError("Subscripted writes are not supported yet")
@@ -155,22 +184,27 @@ class Subscript(Expression):
         return value.union(item)
 
 
-class RangeCall(Expression):
+class RangeCallNode(ExpressionNode):
     """
     Model for something like range(<expression>).
     """
 
     type: Literal["RangeCall"] = "RangeCall"
-    arg: "ExpressionType"
+    arg: "ExpressionNodeType"
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> range:
-        return range(self.arg.evaluate(context, strict))
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> range:
+        return range(self.arg.evaluate(context, raise_on_non_evaluable, force_evaluate))
 
     def used_names(self) -> set[str]:
         return self.arg.used_names()
 
 
-class CallModel(Expression):
+class CallModelNode(ExpressionNode):
     """Represents a function or method call expression.
 
     This class handles both direct function calls and method calls through a fully qualified name.
@@ -182,10 +216,15 @@ class CallModel(Expression):
 
     type: Literal["CallModel"] = "CallModel"
     func_qualname: str
-    args: list["ExpressionType"] = []
-    kwargs: dict[str, "ExpressionType"] = {}
+    args: list["ExpressionNodeType"] = []
+    kwargs: dict[str, "ExpressionNodeType"] = {}
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> Any:
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> Any:
         try:
             # Split into parts for attribute traversal
             parts = self.func_qualname.split(".")
@@ -205,8 +244,13 @@ class CallModel(Expression):
                 func = getattr(base, parts[-1])
 
             # Evaluate arguments
-            args = [arg.evaluate(context, strict) for arg in self.args]
-            kwargs = {k: v.evaluate(context, strict) for k, v in self.kwargs.items()}
+            args = [
+                arg.evaluate(context, raise_on_non_evaluable, force_evaluate) for arg in self.args
+            ]
+            kwargs = {
+                k: v.evaluate(context, raise_on_non_evaluable, force_evaluate)
+                for k, v in self.kwargs.items()
+            }
 
             return func(*args, **kwargs)
 
@@ -229,27 +273,41 @@ class CallModel(Expression):
         return names
 
 
-class Tuple(Expression):
+class TupleNode(ExpressionNode):
     """Model for tuple expressions."""
 
     type: Literal["Tuple"] = "Tuple"
-    elements: list["ExpressionType"]
+    elements: list["ExpressionNodeType"]
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> tuple:
-        return tuple(elem.evaluate(context, strict) for elem in self.elements)
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> tuple:
+        return tuple(
+            elem.evaluate(context, raise_on_non_evaluable, force_evaluate) for elem in self.elements
+        )
 
     def used_names(self) -> set[str]:
         return self.arg.used_names()
 
 
-class List(Expression):
+class ListNode(ExpressionNode):
     """Model for list expressions."""
 
     type: Literal["List"] = "List"
-    elements: list["ExpressionType"]
+    elements: list["ExpressionNodeType"]
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> list:
-        return [elem.evaluate(context, strict) for elem in self.elements]
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> list:
+        return [
+            elem.evaluate(context, raise_on_non_evaluable, force_evaluate) for elem in self.elements
+        ]
 
     def used_names(self) -> set[str]:
         names = set()
@@ -260,22 +318,29 @@ class List(Expression):
         return names
 
 
-class ListComp(Expression):
+class ListCompNode(ExpressionNode):
     """Model for list comprehension expressions."""
 
     type: Literal["ListComp"] = "ListComp"
-    element: "ExpressionType"  # The expression to evaluate for each item
+    element: "ExpressionNodeType"  # The expression to evaluate for each item
     target: str  # The loop variable name
-    iter: "ExpressionType"  # The iterable expression
+    iter: "ExpressionNodeType"  # The iterable expression
 
-    def evaluate(self, context: EvaluationContext, strict: bool) -> list:
+    def evaluate(
+        self,
+        context: EvaluationContext,
+        raise_on_non_evaluable: bool = True,
+        force_evaluate: bool = True,
+    ) -> list:
         result = []
-        iterable = self.iter.evaluate(context, strict)
+        iterable = self.iter.evaluate(context, raise_on_non_evaluable, force_evaluate)
         for item in iterable:
             # Create a new context for each iteration with the target variable
             iter_context = context.copy()
             iter_context.set(self.target, item)
-            result.append(self.element.evaluate(iter_context, strict))
+            result.append(
+                self.element.evaluate(iter_context, raise_on_non_evaluable, force_evaluate)
+            )
         return result
 
     def used_names(self) -> set[str]:
