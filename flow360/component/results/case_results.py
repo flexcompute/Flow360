@@ -511,20 +511,19 @@ class ResultCSVModel(ResultBaseModel):
             )
 
         params = self._get_params_method()
-        if isinstance(params, Flow360Params):
-            try:
-                step_size = params.time_stepping.time_step_size
-            except KeyError:
-                raise ValueError(
-                    "Cannot find time step size for this simulation. Check flow360.json file."
-                )
-
-        elif isinstance(params, SimulationParams):
+        if isinstance(params, SimulationParams):
             try:
                 step_size = params.time_stepping.step_size
             except KeyError:
                 raise ValueError(
                     "Cannot find time step size for this simulation. Check simulation.json."
+                )
+        elif isinstance(params, Flow360Params):
+            try:
+                step_size = params.time_stepping.time_step_size
+            except KeyError:
+                raise ValueError(
+                    "Cannot find time step size for this simulation. Check flow360.json file."
                 )
         else:
             raise ValueError(
@@ -563,7 +562,12 @@ class ResultCSVModel(ResultBaseModel):
 
     @classmethod
     def _average_last_fraction(cls, df, average_fraction):
-        selected_fraction = df.tail(int(len(df) * average_fraction))
+        columns_filtered = [
+            col
+            for col in df.columns
+            if col not in [_PSEUDO_STEP, _PHYSICAL_STEP, _TIME, _TIME_UNITS]
+        ]
+        selected_fraction = df[columns_filtered].tail(int(len(df) * average_fraction))
         return selected_fraction.mean()
 
     def get_averages(self, average_fraction):
