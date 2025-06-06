@@ -400,7 +400,8 @@ class AerospaceCondition(MultiConstructorBaseModel):
         reynolds : PositiveFloat
             Freestream Reynolds number defined with mesh unit (must be positive).
         characteristic_length: LengthType.Positive
-            Length dimension that is used to define the scale of the system, for example, chord length.
+            Characteristic length scale of the system used to compute the Reynolds number
+            (e.g., the chord length of an airfoil). This value must be positive.
         alpha : AngleType, optional
             Angle of attack. Default is 0 degrees.
         beta : AngleType, optional
