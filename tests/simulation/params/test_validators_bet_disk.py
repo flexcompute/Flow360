@@ -3,8 +3,10 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation import services
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from tests.simulation.translator.utils.xv15_bet_disk_helper import createBETDiskSteady
 from tests.simulation.translator.utils.xv15BETDisk_param_generator import (
     _BET_cylinder,
@@ -54,6 +56,28 @@ def test_bet_disk_initial_blade_direction_with_bet_name(create_steady_bet_disk):
         bet_disk = create_steady_bet_disk
         bet_disk.name = "custom_bet_disk_name"
         bet_disk.blade_line_chord = 0.1 * u.inch
+
+
+def test_bet_disk_initial_blade_direction_with_unsteady_simulation(create_steady_bet_disk):
+    with u.SI_unit_system:
+        params = SimulationParams(
+            models=[create_steady_bet_disk],
+            time_stepping=Unsteady(
+                step_size=0.01 * u.s,
+                steps=120,
+            ),
+        )
+
+    params, errors, _ = services.validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The initial_blade_direction must be specified if performing an unsteady BET Line simulation."
+    )
 
 
 def test_bet_disk_disorder_alphas(create_steady_bet_disk):
