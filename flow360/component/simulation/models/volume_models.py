@@ -48,6 +48,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_alphas_in_order,
     _check_bet_disk_duplicate_chords,
     _check_bet_disk_duplicate_twists,
+    _check_bet_disk_initial_blade_direction,
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
@@ -778,6 +779,12 @@ class BETDisk(MultiConstructorBaseModel):
     def check_bet_disk_duplicate_twists(cls, value, info: pd.ValidationInfo):
         """validate duplicates in twists in BET disks"""
         return _check_bet_disk_duplicate_twists(value, info)
+
+    @pd.field_validator("initial_blade_direction", mode="after")
+    @classmethod
+    def invalid_growth_rate(cls, value, info: pd.ValidationInfo):
+        """Ensure initial_blade_direction is specified in an unsteady simulation"""
+        return _check_bet_disk_initial_blade_direction(value, info)
 
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
