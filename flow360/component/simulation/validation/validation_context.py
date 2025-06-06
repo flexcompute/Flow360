@@ -68,17 +68,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
-<<<<<<< HEAD
-    __slots__ = ["auto_farfield_method", "is_beta_mesher"]
-=======
-    __slots__ = [
-        "auto_farfield_method",
-        "is_beta_mesher",
-        "use_geometry_AI",
-        "using_liquid_as_material",
-        "time_stepping",
-    ]
->>>>>>> a13c1bab (Add BET Validator to check initial_blade_direction in an unsteady simulation (#1142))
+    __slots__ = ["auto_farfield_method", "is_beta_mesher", "time_stepping"]
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -102,18 +92,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return False
 
-<<<<<<< HEAD
-    def __init__(self, param_as_dict: dict):
-        self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
-        self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
-=======
-    @classmethod
-    def _get_use_geometry_AI_(cls, param_as_dict: dict):  # pylint:disable=invalid-name
-        try:
-            return param_as_dict["private_attribute_asset_cache"]["use_geometry_AI"]
-        except KeyError:
-            return False
-
     @classmethod
     def _get_time_stepping_(cls, param_as_dict: dict):
         try:
@@ -126,14 +104,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
-        self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
-            param_as_dict=param_as_dict
-        )
-        self.using_liquid_as_material = self._get_using_liquid_as_material_(
-            param_as_dict=param_as_dict
-        )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
->>>>>>> a13c1bab (Add BET Validator to check initial_blade_direction in an unsteady simulation (#1142))
 
 
 class ValidationContext:
