@@ -52,6 +52,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         "is_beta_mesher",
         "use_geometry_AI",
         "using_liquid_as_material",
+        "is_unsteady_simulation",
     ]
 
     @classmethod
@@ -95,6 +96,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return False
 
+    @classmethod
+    def _get_is_unsteady_simulation_(cls, param_as_dict: dict):
+        try:
+            return param_as_dict["time_stepping"]["type_name"] == "Unsteady"
+        except KeyError:
+            return False
+
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -104,6 +112,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         self.using_liquid_as_material = self._get_using_liquid_as_material_(
             param_as_dict=param_as_dict
         )
+        self.is_unsteady_simulation = self._get_is_unsteady_simulation_(param_as_dict=param_as_dict)
 
 
 class ValidationContext:
