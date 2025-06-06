@@ -4,7 +4,8 @@ Math.h for Flow360 Expression system
 
 from typing import Any, Union
 
-from unyt import ucross, unyt_array, unyt_quantity
+import numpy as np
+from unyt import unyt_array, unyt_quantity
 
 from flow360.component.simulation.user_code.core.types import Expression
 
@@ -30,7 +31,7 @@ def cross(left: VectorInputType, right: VectorInputType):
     """Customized Cross function to work with the `Expression` and Variables"""
     # Taking advantage of unyt as much as possible:
     if isinstance(left, unyt_array) and isinstance(right, unyt_array):
-        return ucross(left, right)
+        return np.cross(left, right)
 
     # Otherwise
     result = [

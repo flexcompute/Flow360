@@ -608,7 +608,7 @@ class ValueOrExpression(Expression, Generic[T]):
             Union[
                 Annotated[expr_type, Tag("expression")], Annotated[typevar_values, Tag("number")]
             ],
-            Discriminator(_discriminator),
+            pd.Field(discriminator=Discriminator(_discriminator)),
             BeforeValidator(_deserialize),
             PlainSerializer(_serializer),
         ]
