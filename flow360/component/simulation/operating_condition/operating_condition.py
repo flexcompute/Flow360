@@ -245,7 +245,7 @@ class AerospaceConditionCache(Flow360BaseModel):
 
     mach: Optional[pd.NonNegativeFloat] = None
     reynolds: Optional[pd.PositiveFloat] = None
-    project_length_unit: Optional[LengthType.Positive] = None
+    characteristic_length: Optional[LengthType.Positive] = None
     alpha: Optional[AngleType] = None
     beta: Optional[AngleType] = None
     temperature: Optional[AbsoluteTemperatureType] = None
@@ -380,7 +380,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         cls,
         mach: pd.PositiveFloat,
         reynolds: pd.PositiveFloat,
-        project_length_unit: LengthType.Positive,
+        characteristic_length: LengthType.Positive,
         alpha: Optional[AngleType] = 0 * u.deg,
         beta: Optional[AngleType] = 0 * u.deg,
         temperature: AbsoluteTemperatureType = 288.15 * u.K,
@@ -399,8 +399,8 @@ class AerospaceCondition(MultiConstructorBaseModel):
             Freestream Mach number (must be non-negative).
         reynolds : PositiveFloat
             Freestream Reynolds number defined with mesh unit (must be positive).
-        project_length_unit: LengthType.Positive
-            Project length unit.
+        characteristic_length: LengthType.Positive
+            Length dimension that is used to define the scale of the system, for example, chord length.
         alpha : AngleType, optional
             Angle of attack. Default is 0 degrees.
         beta : AngleType, optional
@@ -419,10 +419,10 @@ class AerospaceCondition(MultiConstructorBaseModel):
         -------
         Example usage:
 
-        >>> condition = operating_condition_from_mach_reynolds(
+        >>> condition = fl.AerospaceCondition.from_mach_reynolds(
         ...     mach=0.85,
         ...     reynolds=1e6,
-        ...     project_length_unit=1 * u.mm,
+        ...     characteristic_length=1 * u.mm,
         ...     temperature=288.15 * u.K,
         ...     alpha=2.0 * u.deg,
         ...     beta=0.0 * u.deg,
@@ -443,7 +443,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         density = (
             reynolds
             * material.get_dynamic_viscosity(temperature)
-            / (velocity * project_length_unit)
+            / (velocity * characteristic_length)
         )
 
         thermal_state = ThermalState(temperature=temperature, density=density)

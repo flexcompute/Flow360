@@ -21,8 +21,8 @@ with fl.SI_unit_system:
             moment_center=[0, 0, 0],
             moment_length=[1.47602, 0.801672958512342, 1.47602],
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=14.6e6, mach=0.84, alpha=3.06 * fl.u.deg, project_length_unit=fl.u.m
+        operating_condition=fl.AerospaceCondition.from_mach_reynolds(
+            reynolds=14.6e6, mach=0.84, alpha=3.06 * fl.u.deg, characteristic_length=fl.u.m
         ),
         time_stepping=fl.Steady(
             max_steps=500, CFL=fl.RampCFL(initial=5, final=200, ramp_steps=100)

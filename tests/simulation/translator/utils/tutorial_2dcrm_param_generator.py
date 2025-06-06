@@ -30,7 +30,7 @@ def get_2dcrm_tutorial_param():
                 temperature=272.1 * u.K,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
-                project_length_unit=1 * u.m,
+                characteristic_length=1 * u.m,
             ),
             models=[
                 Wall(surfaces=[my_wall]),
@@ -58,7 +58,7 @@ def get_2dcrm_tutorial_param_deg_c():
                 temperature=-1.05 * u.degC,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
-                project_length_unit=1 * u.m,
+                characteristic_length=1 * u.m,
             ),
             models=[
                 Wall(surfaces=[my_wall]),
@@ -86,7 +86,7 @@ def get_2dcrm_tutorial_param_deg_f():
                 temperature=30.11 * u.degF,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
-                project_length_unit=1 * u.m,
+                characteristic_length=1 * u.m,
             ),
             models=[
                 Wall(surfaces=[my_wall]),

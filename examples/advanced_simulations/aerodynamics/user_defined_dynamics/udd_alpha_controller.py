@@ -16,10 +16,10 @@ with fl.SI_unit_system:
             moment_center=[0, 0, 0],
             moment_length=[1.47601, 0.80167, 1.47601],
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
+        operating_condition=fl.AerospaceCondition.from_mach_reynolds(
             reynolds=11.72e6,
             mach=0.84,
-            project_length_unit=0.80167 * fl.u.m,
+            characteristic_length=0.80167 * fl.u.m,
             temperature=297.78,
             alpha=3.06 * fl.u.deg,
             beta=0 * fl.u.deg,

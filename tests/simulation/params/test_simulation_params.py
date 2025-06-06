@@ -350,7 +350,7 @@ def test_mach_reynolds_op_cond():
         temperature=288.15 * u.K,
         alpha=2.0 * u.deg,
         beta=0.0 * u.deg,
-        project_length_unit=u.m,
+        characteristic_length=u.m,
     )
     assertions.assertAlmostEqual(condition.thermal_state.dynamic_viscosity.value, 1.78929763e-5)
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
@@ -361,7 +361,7 @@ def test_mach_reynolds_op_cond():
         temperature=288.15 * u.K,
         alpha=2.0 * u.deg,
         beta=0.0 * u.deg,
-        project_length_unit=u.m,
+        characteristic_length=u.m,
         reference_mach=0.4,
     )
     assertions.assertAlmostEqual(condition.thermal_state.density.value, 1.31452332)
@@ -371,7 +371,7 @@ def test_mach_reynolds_op_cond():
             mach=0.2,
             reynolds=0,
             temperature=288.15 * u.K,
-            project_length_unit=u.m,
+            characteristic_length=u.m,
         )
 
 

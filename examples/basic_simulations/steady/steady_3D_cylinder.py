@@ -25,8 +25,8 @@ with fl.SI_unit_system:
         reference_geometry=fl.ReferenceGeometry(
             area=340, moment_center=[0, 0, 0], moment_length=[1, 1, 1]
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
-            reynolds=5, mach=0.1, project_length_unit=fl.u.m
+        operating_condition=fl.AerospaceCondition.from_mach_reynolds(
+            reynolds=5, mach=0.1, characteristic_length=fl.u.m
         ),
         time_stepping=fl.Steady(),
         models=[
