@@ -550,7 +550,7 @@ class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         file_content = get_file_content(input_data["file_path"])
 
-        return {"file_path": input_data["file_path"], "content": file_content}
+        return {"file_path": os.path.basename(input_data["file_path"]), "content": file_content}
 
 
 class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
@@ -593,7 +593,11 @@ class BETSingleMultiFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
             polar_file_obj_list.append(
                 [{"file_path": os.path.join(file_dir, file_name)} for file_name in file_name_list]
             )
-        return {"file_path": file_path, "content": file_content, "polar_files": polar_file_obj_list}
+        return {
+            "file_path": os.path.basename(file_path),
+            "content": file_content,
+            "polar_files": polar_file_obj_list,
+        }
 
 
 class XROTORFile(BETSingleInputFileBaseModel):
