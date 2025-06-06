@@ -5,6 +5,7 @@ validation BETDisk
 from pydantic import ValidationInfo
 
 from flow360.component.simulation.validation.validation_context import (
+    TimeSteppingType,
     get_validation_info,
 )
 
@@ -60,7 +61,7 @@ def _check_bet_disk_initial_blade_direction(value, info: ValidationInfo):
     if validation_info is None:
         return value
 
-    if validation_info.is_unsteady_simulation and value is None:
+    if validation_info.time_stepping == TimeSteppingType.UNSTEADY and value is None:
         raise ValueError(
             "The initial_blade_direction must be specified if performing an unsteady BET Line simulation."
         )
