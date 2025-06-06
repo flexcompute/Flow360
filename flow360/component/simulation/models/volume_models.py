@@ -551,7 +551,7 @@ class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         file_content = get_file_content(input_data["file_path"])
 
-        return {"file_path": input_data["file_path"], "content": file_content}
+        return {"file_path": os.path.basename(input_data["file_path"]), "content": file_content}
 
 
 class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
