@@ -1,7 +1,11 @@
 """Flow360 solver setting parameter translator."""
 
 # pylint: disable=too-many-lines
-from typing import Type, Union
+from numbers import Number
+from typing import Literal, Type, Union
+
+import numpy as np
+import unyt as u
 
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -86,6 +90,7 @@ from flow360.component.simulation.translator.utils import (
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import (
     is_exact_instance,
     is_instance_of_type_in_union,
@@ -237,11 +242,20 @@ def translate_output_fields(
     ],
 ):
     """Get output fields"""
-    return {"outputFields": append_component_to_output_fields(output_model.output_fields.items)}
+    output_fields = []
+
+    for item in append_component_to_output_fields(output_model.output_fields.items):
+        output_fields.append(item)
+
+    for output_field in output_model.output_fields.items:
+        if isinstance(output_field, UserVariable):
+            output_fields.append(output_field.name)
+
+    return {"outputFields": output_fields}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
-    """Translate non-entitties part of SurfaceProbeOutput"""
+    """Translate non-entities part of SurfaceProbeOutput"""
     dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
         surface.full_name for surface in entity.target_surfaces.stored_entities
@@ -355,13 +369,22 @@ def translate_volume_output(
         is_average=volume_output_class is TimeAverageVolumeOutput,
     )
     # Get outputFields
+    output_fields = []
+
+    output_fields = append_component_to_output_fields(
+        get_global_setting_from_first_instance(
+            output_params, volume_output_class, "output_fields"
+        ).model_dump()["items"]
+    )
+
+    for output_field in get_global_setting_from_first_instance(
+        output_params, volume_output_class, "output_fields"
+    ).items:
+        if isinstance(output_field, UserVariable):
+            output_fields.append(output_field.name)
     volume_output.update(
         {
-            "outputFields": append_component_to_output_fields(
-                get_global_setting_from_first_instance(
-                    output_params, volume_output_class, "output_fields"
-                ).model_dump()["items"]
-            ),
+            "outputFields": output_fields,
         }
     )
     return volume_output
@@ -512,7 +535,107 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
+def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams):
+    # pylint:disable=too-many-statements
+    """Convert user variable to UDF"""
+    if not isinstance(variable.value, Expression):
+        # Likely number of unyt object
+        # We should add validator for this for output fields.
+        raise ValueError("Did not find expression in user variable")
+
+    numerical_value = variable.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+
+    is_constant = False
+    if isinstance(numerical_value, Number) and not np.isnan(numerical_value):  # not NaN
+        is_constant = True
+    elif isinstance(numerical_value, u.unyt_quantity) and not np.isnan(numerical_value.value):
+        is_constant = True
+    elif isinstance(numerical_value, u.unyt_array) and not np.any(np.isnan(numerical_value.value)):
+        is_constant = True
+
+    if is_constant:
+        raise ValueError("Constant value found in user variable.")
+
+    def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
+        y2 = (2 * target_unit).in_units(source_unit).value
+        y1 = (1 * target_unit).in_units(source_unit).value
+        x2 = 2
+        x1 = 1
+
+        coefficient = (y2 - y1) / (x2 - x1)
+        offset = y1 / coefficient - x1
+
+        assert np.isclose(
+            123, (coefficient * (123 + offset) * source_unit).in_units(target_unit).value
+        )
+        assert np.isclose(
+            12, (coefficient * (12 + offset) * source_unit).in_units(target_unit).value
+        )
+
+        return coefficient, offset
+
+    def _get_output_unit(expression: Expression, input_params: SimulationParams):
+        if not expression.output_units:
+            # Derive the default output unit based on the value's dimensionality and current unit system
+            current_unit_system_name: Literal["SI", "Imperial", "CGS"] = (
+                input_params.unit_system.name
+            )
+            numerical_value = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+            if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity)):
+                # Pure dimensionless constant
+                return None
+            if current_unit_system_name == "SI":
+                return numerical_value.in_base("mks").units
+            if current_unit_system_name == "Imperial":
+                return numerical_value.in_base("imperial").units
+            if current_unit_system_name == "CGS":
+                return numerical_value.in_base("cgs").units
+
+        return u.Unit(expression.output_units)
+
+    expression: Expression = variable.value
+
+    requested_unit: Union[u.Unit, None] = _get_output_unit(expression, input_params)
+    if requested_unit is None:
+        # Number constant output requested
+        coefficient = 1
+        offset = 0
+    else:
+        flow360_unit_system = input_params.flow360_unit_system
+        # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
+        flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
+        flow360_unit = flow360_unit_system[requested_unit.dimensions]
+        coefficient, offset = _compute_coefficient_and_offset(
+            source_unit=requested_unit, target_unit=flow360_unit
+        )
+
+    if expression.length == 1:
+        expression = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+        if offset != 0:
+            expression = (expression + offset) * coefficient
+        else:
+            expression = expression * coefficient
+        expression = expression.to_solver_code(params=input_params)
+        return UserDefinedField(
+            name=variable.name, expression=f"{variable.name} = " + expression + ";"
+        )
+
+    # Vector output requested
+    expression = [
+        expression[i].evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+        for i in range(expression.length)
+    ]
+    if offset != 0:
+        expression = [(item + offset) * coefficient for item in expression]
+    else:
+        expression = [item * coefficient for item in expression]
+    expression = [item.to_solver_code(params=input_params) for item in expression]
+    expression = [f"{variable.name}[{i}] = " + item for i, item in enumerate(expression)]
+    return UserDefinedField(name=variable.name, expression="; ".join(expression) + ";")
+
+
 def process_output_fields_for_udf(input_params: SimulationParams):
+    # pylint:disable=too-many-branches
     """
     Process all output fields from different output types and generate additional
     UserDefinedFields for dimensioned fields.
@@ -549,6 +672,17 @@ def process_output_fields_for_udf(input_params: SimulationParams):
         udf_expression = generate_predefined_udf(field_name, input_params)
         if udf_expression:
             generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
+
+    if input_params.outputs:
+        # UserVariable handling:
+        user_variable_udfs = set()
+        for output in input_params.outputs:
+            if not hasattr(output, "output_fields") or not output.output_fields:
+                continue
+            for output_field in output.output_fields.items:
+                if not isinstance(output_field, UserVariable):
+                    continue
+                user_variable_udfs.add(user_variable_to_udf(output_field, input_params))
 
     return generated_udfs
 

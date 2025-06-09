@@ -5,14 +5,14 @@ from __future__ import annotations
 import ast
 import re
 from numbers import Number
-from typing import Annotated, Any, Generic, Literal, Optional, TypeVar, Union
+from typing import Annotated, Any, Generic, List, Literal, Optional, TypeVar, Union
 
 import numpy as np
 import pydantic as pd
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
-from unyt import Unit, unyt_array
+from unyt import Unit, unyt_array, unyt_quantity
 
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
@@ -104,12 +104,13 @@ def _convert_argument(value):
 class SerializedValueOrExpression(Flow360BaseModel):
     """Serialized frontend-compatible format of an arbitrary value/expression field"""
 
-    type_name: Union[Literal["number"], Literal["expression"]] = pd.Field(None)
+    type_name: Literal["number", "expression"] = pd.Field()
     value: Optional[Union[Number, list[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, list[Number]]] = pd.Field(None)
+    evaluated_value: Union[Optional[Number], list[Optional[Number]]] = pd.Field(None)
     evaluated_units: Optional[str] = pd.Field(None)
+    output_units: Optional[str] = pd.Field(None, description="See definition in `Expression`.")
 
 
 # This is a wrapper to allow using unyt arrays with pydantic models
@@ -242,24 +243,28 @@ class Variable(Flow360BaseModel):
     def __hash__(self):
         return hash(self.name)
 
+    def __eq__(self, other):
+        # NaN-compatible equal operator for unit test support
+        if not isinstance(other, Variable):
+            return False
+        return self.model_dump_json() == other.model_dump_json()
+
 
 class UserVariable(Variable):
     """Class representing a user-defined symbolic variable"""
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def update_context(cls, value):
+    def update_context(self):
         """Auto updating context when new variable is declared"""
-        default_context.set(value.name, value.value)
-        _user_variables.add(value.name)
-        return value
+        default_context.set(self.name, self.value)
+        _user_variables.add(self.name)
+        return self
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def check_dependencies(cls, value):
+    def check_dependencies(self):
         """Validator for ensuring no cyclic dependency."""
         visited = set()
-        stack = [(value.name, [value.name])]
+        stack = [(self.name, [self.name])]
         while stack:
             (current_name, current_path) = stack.pop()
             current_value = default_context.get(current_name)
@@ -275,7 +280,19 @@ class UserVariable(Variable):
                 stack.extend(
                     [(name, current_path + [name]) for name in used_names if name not in visited]
                 )
-        return value
+        return self
+
+    def __hash__(self):
+        """
+        Support for set and deduplicate.
+        Can be removed if not used directly in output_fields.
+        """
+        return hash(self.model_dump_json())
+
+    def in_unit(self, new_unit: str = None):
+        """Requesting the output of the variable to be in the given (new_unit) units."""
+        self.value.output_units = new_unit
+        return self
 
 
 class SolverVariable(Variable):
@@ -284,13 +301,24 @@ class SolverVariable(Variable):
     solver_name: Optional[str] = pd.Field(None)
 
     @pd.model_validator(mode="after")
-    @classmethod
-    def update_context(cls, value):
+    def update_context(self):
         """Auto updating context when new variable is declared"""
-        default_context.set(value.name, value.value, SolverVariable)
-        if value.solver_name:
-            default_context.set_alias(value.name, value.solver_name)
-        return value
+        default_context.set(self.name, self.value, SolverVariable)
+        if self.solver_name:
+            default_context.set_alias(self.name, self.solver_name)
+        return self
+
+    def in_unit(self, new_name: str, new_unit: str = None):
+        """
+
+
+        Return a UserVariable that will generate results in the new_unit.
+        If new_unit is not specified then the unit will be determined by the unit system.
+        """
+
+        new_variable = UserVariable(name=new_name, value=Expression(expression=self.name))
+        new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
+        return new_variable
 
 
 class Expression(Flow360BaseModel, Evaluable):
@@ -305,20 +333,31 @@ class Expression(Flow360BaseModel, Evaluable):
     """
 
     expression: str = pd.Field("")
+    output_units: Optional[str] = pd.Field(
+        None,
+        description="String representation of what the requested units the evaluated expression should be "
+        "when `self` is used as an output field. By default the output units will be inferred from the unit "
+        "system associated with SimulationParams",
+    )
 
     model_config = pd.ConfigDict(validate_assignment=True)
 
     @pd.model_validator(mode="before")
     @classmethod
     def _validate_expression(cls, value) -> Self:
+        output_units = None
         if isinstance(value, str):
             expression = value
         elif isinstance(value, dict) and "expression" in value.keys():
             expression = value["expression"]
+            output_units = value.get("output_units")
         elif isinstance(value, Expression):
             expression = str(value)
+            output_units = value.output_units
         elif isinstance(value, Variable):
             expression = str(value)
+            if isinstance(value.value, Expression):
+                output_units = value.value.output_units
         elif isinstance(value, list):
             expression = f"[{','.join([_convert_argument(item)[0] for item in value])}]"
         else:
@@ -337,7 +376,7 @@ class Expression(Flow360BaseModel, Evaluable):
             details = InitErrorDetails(type="value_error", ctx={"error": v_err})
             raise pd.ValidationError.from_exception_data("Expression value error", [details])
 
-        return {"expression": expression}
+        return {"expression": expression, "output_units": output_units}
 
     def evaluate(
         self,
@@ -523,6 +562,22 @@ class Expression(Flow360BaseModel, Evaluable):
     def __repr__(self):
         return f"Expression({self.expression})"
 
+    @property
+    def dimensionality(self):
+        """The physical dimensionality of the expression."""
+        value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+        assert isinstance(value, (unyt_array, unyt_quantity))
+        return value.units.dimensions
+
+    @property
+    def length(self):
+        """The number of elements in the expression."""
+        value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+        assert isinstance(value, (unyt_array, unyt_quantity, list))
+        if isinstance(value, list):
+            return len(value)
+        return 1 if isinstance(value, unyt_quantity) else value.shape[0]
+
 
 T = TypeVar("T")
 
@@ -542,26 +597,26 @@ class ValueOrExpression(Expression, Generic[T]):
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
-            is_serialized = False
-
             try:
                 value = SerializedValueOrExpression.model_validate(value)
-                is_serialized = True
-            except Exception:  # pylint:disable=broad-exception-caught
-                pass
-
-            if is_serialized:
                 if value.type_name == "number":
                     if value.units is not None:
+                        # unyt objects
                         return unyt_array(value.value, value.units)
                     return value.value
                 if value.type_name == "expression":
                     return expr_type(expression=value.expression)
+            except Exception:  # pylint:disable=broad-exception-caught
+                pass
+
             return value
 
         def _serializer(value, info) -> dict:
             if isinstance(value, Expression):
-                serialized = SerializedValueOrExpression(type_name="expression")
+                serialized = SerializedValueOrExpression(
+                    type_name="expression",
+                    output_units=value.output_units,
+                )
 
                 serialized.expression = value.expression
 
@@ -570,19 +625,24 @@ class ValueOrExpression(Expression, Generic[T]):
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
                 elif isinstance(evaluated, unyt_array):
-
                     if evaluated.size == 1:
-                        serialized.evaluated_value = float(evaluated.value)
+                        serialized.evaluated_value = (
+                            float(evaluated.value)
+                            if not np.isnan(evaluated.value)
+                            else None  # NaN-None handling
+                        )
                     else:
-                        serialized.evaluated_value = tuple(evaluated.value.tolist())
+                        serialized.evaluated_value = tuple(
+                            item if not np.isnan(item) else None
+                            for item in evaluated.value.tolist()
+                        )
 
                     serialized.evaluated_units = str(evaluated.units.expr)
             else:
                 serialized = SerializedValueOrExpression(type_name="number")
-                if isinstance(value, Number):
+                if isinstance(value, (Number, List)):
                     serialized.value = value
                 elif isinstance(value, unyt_array):
-
                     if value.size == 1:
                         serialized.value = float(value.value)
                     else:

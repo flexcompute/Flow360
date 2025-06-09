@@ -52,7 +52,7 @@ def _check_output_fields(params):
         allowed_items = natively_supported + additional_fields
 
         for item in output.output_fields.items:
-            if item not in allowed_items:
+            if isinstance(item, str) and item not in allowed_items and isinstance(item, str):
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a"
                     f" valid output field name. Allowed fields are {allowed_items}."
@@ -98,7 +98,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
         if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
             continue
         for item in output.output_fields.items:
-            if item in invalid_output_fields[turbulence_model]:
+            if isinstance(item, str) and item in invalid_output_fields[turbulence_model]:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a valid"
                     f" output field when using turbulence model: {turbulence_model}."

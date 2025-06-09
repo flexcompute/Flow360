@@ -37,6 +37,7 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -260,7 +261,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     """
 
     name: Optional[str] = pd.Field("Volume output", description="Name of the `VolumeOutput`.")
-    output_fields: UniqueItemList[Union[VolumeFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[VolumeFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."

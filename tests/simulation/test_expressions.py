@@ -1,10 +1,13 @@
 import json
-from typing import List
+import re
+from typing import Annotated, List
 
+import numpy as np
 import pydantic as pd
 import pytest
 
 from flow360 import (
+    AerospaceCondition,
     HeatEquationInitialCondition,
     LiquidOperatingCondition,
     SimulationParams,
@@ -16,9 +19,16 @@ from flow360 import (
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
-from flow360.component.simulation.outputs.outputs import SurfaceOutput
-from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
+from flow360.component.simulation.primitives import (
+    GenericVolume,
+    ReferenceGeometry,
+    Surface,
+)
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.translator.solver_translator import (
+    user_variable_to_udf,
+)
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngleType,
@@ -51,11 +61,37 @@ from flow360.component.simulation.user_code.core.types import (
     ValueOrExpression,
 )
 from flow360.component.simulation.user_code.variables import control, solution
+from tests.utils import to_file_from_file_test
 
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture()
+def constant_variable():
+    return UserVariable(name="constant_variable", value=10)
+
+
+@pytest.fixture()
+def constant_array():
+    return UserVariable(name="constant_array", value=[10, 20])
+
+
+@pytest.fixture()
+def constant_unyt_quantity():
+    return UserVariable(name="constant_unyt_quantity", value=10 * u.m)
+
+
+@pytest.fixture()
+def constant_unyt_array():
+    return UserVariable(name="constant_unyt_array", value=[10, 20] * u.m)
+
+
+@pytest.fixture()
+def solution_variable():
+    return UserVariable(name="solution_variable", value=solution.velocity)
 
 
 def test_variable_init():
@@ -279,7 +315,7 @@ def test_dimensioned_expressions():
 
 def test_constrained_scalar_type():
     class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[pd.confloat(ge=0)] = pd.Field()
+        field: ValueOrExpression[Annotated[float, pd.Field(strict=True, ge=0)]] = pd.Field()
 
     x = UserVariable(name="x", value=1)
 
@@ -374,7 +410,13 @@ def test_solver_builtin():
         model.field.evaluate()
 
 
-def test_serializer():
+def test_serializer(
+    constant_variable,
+    constant_array,
+    constant_unyt_quantity,
+    constant_unyt_array,
+    solution_variable,
+):
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
 
@@ -397,8 +439,78 @@ def test_serializer():
     assert serialized["field"]["value"] == 4
     assert serialized["field"]["units"] == "m/s"
 
+    assert constant_variable.model_dump() == {
+        "name": "constant_variable",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": 10.0,
+        },
+    }
 
-def test_deserializer():
+    assert constant_array.model_dump() == {
+        "name": "constant_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": [10, 20],
+        },
+    }
+    assert constant_unyt_quantity.model_dump() == {
+        "name": "constant_unyt_quantity",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": 10.0,
+        },
+    }
+
+    assert constant_unyt_array.model_dump() == {
+        "name": "constant_unyt_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": [10, 20],
+        },
+    }
+
+    assert solution_variable.model_dump() == {
+        "name": "solution_variable",
+        "value": {
+            "evaluated_units": "m/s",
+            "evaluated_value": [None, None, None],
+            "expression": "solution.velocity",
+            "output_units": None,
+            "type_name": "expression",
+            "units": None,
+            "value": None,
+        },
+    }
+
+
+def test_deserializer(
+    constant_unyt_quantity,
+    constant_unyt_array,
+    constant_variable,
+    constant_array,
+    solution_variable,
+):
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
 
@@ -420,6 +532,90 @@ def test_deserializer():
     deserialized = TestModel(field=model)
 
     assert str(deserialized.field) == "4.0 m/s"
+
+    # Constant unyt quantity
+    model = {
+        "name": "constant_unyt_quantity",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": 10.0,
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_unyt_quantity
+
+    # Constant unyt array
+    model = {
+        "name": "constant_unyt_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": [10, 20],
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_unyt_array
+
+    # Constant quantity
+    model = {
+        "name": "constant_variable",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": 10.0,
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_variable
+
+    # Constant array
+    model = {
+        "name": "constant_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": [10, 20],
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_array
+
+    # Solver variable (NaN-None handling)
+    model = {
+        "name": "solution_variable",
+        "value": {
+            "evaluated_units": "m/s",
+            "evaluated_value": [None, None, None],
+            "expression": "solution.velocity",
+            "output_units": None,
+            "type_name": "expression",
+            "units": None,
+            "value": None,
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == solution_variable
+    assert all(
+        np.isnan(item)
+        for item in deserialized.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+    )
 
 
 def test_subscript_access():
@@ -448,7 +644,7 @@ def test_error_message():
     x = UserVariable(name="x", value=4)
 
     try:
-        model = TestModel(field="1 + nonexisting * 1")
+        TestModel(field="1 + nonexisting * 1")
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
@@ -457,7 +653,7 @@ def test_error_message():
         assert "Name 'nonexisting' is not defined" in validation_errors[0]["msg"]
 
     try:
-        model = TestModel(field="1 + x * 1")
+        TestModel(field="1 + x * 1")
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
@@ -466,7 +662,7 @@ def test_error_message():
         assert "does not match (length)/(time) dimension" in validation_errors[0]["msg"]
 
     try:
-        model = TestModel(field="1 * 1 +")
+        TestModel(field="1 * 1 +")
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
@@ -479,7 +675,7 @@ def test_error_message():
         assert validation_errors[0]["ctx"]["column"] == 8
 
     try:
-        model = TestModel(field="1 * 1 +* 2")
+        TestModel(field="1 * 1 +* 2")
     except pd.ValidationError as err:
         validation_errors = err.errors()
 
@@ -798,8 +994,8 @@ def test_expression_indexing():
     c = UserVariable(name="c", value=[3, 2, 1])
 
     # Cannot simplify without non-statically evaluable index object (expression for example)
-    cross = math.cross(b, c)
-    expr = Expression.model_validate(cross[a])
+    cross_result = math.cross(b, c)
+    expr = Expression.model_validate(cross_result[a])
 
     assert (
         str(expr)
@@ -808,7 +1004,86 @@ def test_expression_indexing():
     assert expr.evaluate() == 8
 
     # Cannot simplify without non-statically evaluable index object (expression for example)
-    expr = Expression.model_validate(cross[1])
+    expr = Expression.model_validate(cross_result[1])
 
     assert str(expr) == "b[2] * c[0] - b[0] * c[2]"
     assert expr.evaluate() == 8
+
+
+def test_to_file_from_file_expression(
+    constant_variable, constant_array, constant_unyt_quantity, constant_unyt_array
+):
+    with SI_unit_system:
+        params = SimulationParams(
+            reference_geometry=ReferenceGeometry(
+                area=10 * u.m**2,
+            ),
+            outputs=[
+                VolumeOutput(
+                    output_fields=[
+                        solution.mut.in_unit(new_name="mut_in_SI"),
+                        constant_variable,
+                        constant_array,
+                        constant_unyt_quantity,
+                        constant_unyt_array,
+                    ]
+                )
+            ],
+        )
+
+    to_file_from_file_test(params)
+
+
+def assert_ignore_space(expected: str, actual: str):
+    """For expression comparison, ignore spaces"""
+    assert expected.replace(" ", "") == actual.replace(" ", "")
+
+
+def test_udf_generator():
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                reference_velocity_magnitude=10 * u.m / u.s,
+            ),
+            private_attribute_asset_cache=AssetCache(project_length_unit=10 * u.m),
+        )
+    # Scalar output
+    result = user_variable_to_udf(
+        solution.mut.in_unit(new_name="mut_in_Imperial", new_unit="ft**2/s"), input_params=params
+    )
+    # velocity scale = 340.29400580821283 m/s, length scale = 10m, mut_scale = 3402.94 m**2/s -> 36628.94131344 *ft**2/s
+    pattern = r"mut_in_Imperial = \(mut \* ([\d\.]+)\);"
+    match = re.match(pattern, result.expression)
+    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
+    conversion_factor = float(match.group(1))
+    # Note: Ranged since the value depends on the OS.
+    assert (
+        36628.941 < conversion_factor < 36628.942
+    ), f"Conversion factor {conversion_factor} outside expected range"
+
+    # Vector output
+    result = user_variable_to_udf(
+        solution.velocity.in_unit(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
+    )
+    # velocity scale = 340.29400580821283 m/s
+    pattern = r"velocity_in_SI\[0\] = \(solution\.velocity\[0\] \* ([\d\.]+)\); velocity_in_SI\[1\] = \(solution\.velocity\[1\] \* \1\); velocity_in_SI\[2\] = \(solution\.velocity\[2\] \* \1\);"
+    match = re.match(pattern, result.expression)
+    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
+    conversion_factor = float(match.group(1))
+    assert (
+        340.294005 < conversion_factor < 340.2940064
+    ), f"Conversion factor {conversion_factor} outside expected range"
+
+    vel_cross_vec = UserVariable(
+        name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
+    ).in_unit(new_unit="m*ft/s/min")
+    result = user_variable_to_udf(vel_cross_vec, input_params=params)
+    # velocity scale = 340.29400580821283 m/s --> 22795277.63562985 m*ft/s/min
+    pattern = r"vel_cross_vec\[0\] = \(\(\(\(solution\.velocity\[1\] \* 3\) \* 0\.001\) - \(\(solution\.velocity\[2\] \* 2\) \* 0\.001\)\) \* ([\d\.]+)\); vel_cross_vec\[1\] = \(\(\(\(solution\.velocity\[2\] \* 1\) \* 0\.001\) - \(\(solution\.velocity\[0\] \* 3\) \* 0\.001\)\) \* \1\); vel_cross_vec\[2\] = \(\(\(\(solution\.velocity\[0\] \* 2\) \* 0\.001\) - \(\(solution\.velocity\[1\] \* 1\) \* 0\.001\)\) \* \1\);"
+    match = re.match(pattern, result.expression)
+    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
+    conversion_factor = float(match.group(1))
+    assert (
+        22795277.635 < conversion_factor < 22795278 + 1e-8
+    ), f"Conversion factor {conversion_factor} outside expected range"
