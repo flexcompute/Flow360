@@ -1514,4 +1514,13 @@ class Project(pd.BaseModel):
             raise_on_error=raise_on_error,
             **kwargs,
         )
+<<<<<<< HEAD
+=======
+        report_template = get_default_report_summary_template()
+        report_template.create_in_cloud(
+            name=f"{name}-summary",
+            cases=[case],
+            solver_version=solver_version if solver_version else self.solver_version,
+        )
+>>>>>>> 6343e7f7 (change default result summary's name (#1145))
         return case
