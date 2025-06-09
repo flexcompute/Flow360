@@ -1,6 +1,6 @@
 import json
-from typing import Annotated, List
 import re
+from typing import Annotated, List
 
 import numpy as np
 import pydantic as pd
