@@ -299,6 +299,9 @@ class SolverVariable(Variable):
     """Class representing a pre-defined symbolic variable that cannot be evaluated at client runtime"""
 
     solver_name: Optional[str] = pd.Field(None)
+    variable_type: Union[Literal["Volume"], Literal["Surface"]] = pd.Field(None)
+    prepending_code: str = pd.Field(None)
+
 
     @pd.model_validator(mode="after")
     def update_context(self):
