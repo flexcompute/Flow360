@@ -1465,7 +1465,6 @@ def get_solver_json(
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
     # Add auto-generated UDFs for dimensioned fields
-
     generated_udfs = process_output_fields_for_udf(input_params)
 
     # Add user-specified UDFs and auto-generated UDFs for dimensioned fields

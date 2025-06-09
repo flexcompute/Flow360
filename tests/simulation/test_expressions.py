@@ -1,5 +1,6 @@
 import json
 from typing import Annotated, List
+import re
 
 import numpy as np
 import pydantic as pd
@@ -1052,26 +1053,37 @@ def test_udf_generator():
         solution.mut.in_unit(new_name="mut_in_Imperial", new_unit="ft**2/s"), input_params=params
     )
     # velocity scale = 340.29400580821283 m/s, length scale = 10m, mut_scale = 3402.94 m**2/s -> 36628.94131344 *ft**2/s
-    assert result.expression == "mut_in_Imperial = (mut * 36628.94193862895);"
+    pattern = r"mut_in_Imperial = \(mut \* ([\d\.]+)\);"
+    match = re.match(pattern, result.expression)
+    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
+    conversion_factor = float(match.group(1))
+    # Ranged since the value depends on the OS.
+    assert (
+        36628.941 < conversion_factor < 36628.942
+    ), f"Conversion factor {conversion_factor} outside expected range"
 
     # Vector output
     result = user_variable_to_udf(
         solution.velocity.in_unit(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
     )
     # velocity scale = 340.29400580821283 m/s
+    pattern = r"velocity_in_SI\[0\] = \(solution\.velocity\[0\] \* ([\d\.]+)\); velocity_in_SI\[1\] = \(solution\.velocity\[1\] \* \1\); velocity_in_SI\[2\] = \(solution\.velocity\[2\] \* \1\);"
+    match = re.match(pattern, result.expression)
+    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
+    conversion_factor = float(match.group(1))
     assert (
-        result.expression
-        == "velocity_in_SI[0] = (solution.velocity[0] * 340.2940058082124); velocity_in_SI[1] = (solution.velocity[1] * 340.2940058082124); velocity_in_SI[2] = (solution.velocity[2] * 340.2940058082124);"
-    )
+        340.294005 < conversion_factor < 340.294006
+    ), f"Conversion factor {conversion_factor} outside expected range"
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_unit(new_unit="m*ft/s/min")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
     # velocity scale = 340.29400580821283 m/s --> 22795277.63562985 m*ft/s/min
-    assert_ignore_space(
-        result.expression,
-        "vel_cross_vec[0] = ((((solution.velocity[1] * 3) * 0.001) - ((solution.velocity[2] * 2) * 0.001)) * 22795277.63562985);\
-         vel_cross_vec[1] = ((((solution.velocity[2] * 1) * 0.001) - ((solution.velocity[0] * 3) * 0.001)) * 22795277.63562985);\
-         vel_cross_vec[2] = ((((solution.velocity[0] * 2) * 0.001) - ((solution.velocity[1] * 1) * 0.001)) * 22795277.63562985);",
-    )
+    pattern = r"vel_cross_vec\[0\] = \(\(\(\(solution\.velocity\[1\] \* 3\) \* 0\.001\) - \(\(solution\.velocity\[2\] \* 2\) \* 0\.001\)\) \* ([\d\.]+)\); vel_cross_vec\[1\] = \(\(\(\(solution\.velocity\[2\] \* 1\) \* 0\.001\) - \(\(solution\.velocity\[0\] \* 3\) \* 0\.001\)\) \* \1\); vel_cross_vec\[2\] = \(\(\(\(solution\.velocity\[0\] \* 2\) \* 0\.001\) - \(\(solution\.velocity\[1\] \* 1\) \* 0\.001\)\) \* \1\);"
+    match = re.match(pattern, result.expression)
+    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
+    conversion_factor = float(match.group(1))
+    assert (
+        22795277.635 < conversion_factor < 22795277.636
+    ), f"Conversion factor {conversion_factor} outside expected range"

@@ -311,11 +311,11 @@ class SolverVariable(Variable):
     def in_unit(self, new_name: str, new_unit: str = None):
         """
 
-        #TODO: UDF none-duplicate name check
 
         Return a UserVariable that will generate results in the new_unit.
         If new_unit is not specified then the unit will be determined by the unit system.
         """
+
         new_variable = UserVariable(name=new_name, value=Expression(expression=self.name))
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
         return new_variable
