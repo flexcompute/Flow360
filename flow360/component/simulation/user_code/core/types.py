@@ -625,7 +625,6 @@ class ValueOrExpression(Expression, Generic[T]):
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
                 elif isinstance(evaluated, unyt_array):
-                    print(">>> size", evaluated.size)
                     if evaluated.size == 1:
                         serialized.evaluated_value = (
                             float(evaluated.value)

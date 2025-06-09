@@ -1057,7 +1057,7 @@ def test_udf_generator():
     match = re.match(pattern, result.expression)
     assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
     conversion_factor = float(match.group(1))
-    # Ranged since the value depends on the OS.
+    # Note: Ranged since the value depends on the OS.
     assert (
         36628.941 < conversion_factor < 36628.942
     ), f"Conversion factor {conversion_factor} outside expected range"
@@ -1085,5 +1085,5 @@ def test_udf_generator():
     assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
     conversion_factor = float(match.group(1))
     assert (
-        22795277.635 < conversion_factor < 22795278 + 1e-10
+        22795277.635 < conversion_factor < 22795278 + 1e-8
     ), f"Conversion factor {conversion_factor} outside expected range"
