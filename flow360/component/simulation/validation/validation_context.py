@@ -15,6 +15,7 @@ Features
 """
 
 import contextvars
+from enum import Enum
 from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
@@ -25,6 +26,26 @@ VOLUME_MESH = "VolumeMesh"
 CASE = "Case"
 # when running validation with ALL, it will report errors happing in all scenarios in one validation pass
 ALL = "All"
+
+
+class TimeSteppingType(Enum):
+    """
+    Enum for time stepping type
+
+    Attributes
+    ----------
+    STEADY : str
+        Represents a steady simulation.
+    UNSTEADY : str
+        Represents an unsteady simulation.
+    UNSET : str
+        The time stepping is unset.
+    """
+
+    STEADY = "Steady"
+    UNSTEADY = "Unsteady"
+    UNSET = "Unset"
+
 
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
@@ -47,7 +68,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
-    __slots__ = ["auto_farfield_method", "is_beta_mesher"]
+    __slots__ = ["auto_farfield_method", "is_beta_mesher", "time_stepping"]
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -71,9 +92,19 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return False
 
+    @classmethod
+    def _get_time_stepping_(cls, param_as_dict: dict):
+        try:
+            if param_as_dict["time_stepping"]["type_name"] == "Unsteady":
+                return TimeSteppingType.UNSTEADY
+            return TimeSteppingType.STEADY
+        except KeyError:
+            return TimeSteppingType.UNSET
+
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
+        self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
 
 
 class ValidationContext:
