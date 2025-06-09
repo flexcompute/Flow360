@@ -261,7 +261,6 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     """
 
     name: Optional[str] = pd.Field("Volume output", description="Name of the `VolumeOutput`.")
-    # TODO: Deprecate the string inputs and raise deprecation warning
     output_fields: UniqueItemList[Union[VolumeFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"

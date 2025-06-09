@@ -1,6 +1,7 @@
 import json
 from typing import Annotated, List
 
+import numpy as np
 import pydantic as pd
 import pytest
 
@@ -18,7 +19,11 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
-from flow360.component.simulation.primitives import GenericVolume, Surface
+from flow360.component.simulation.primitives import (
+    GenericVolume,
+    ReferenceGeometry,
+    Surface,
+)
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.translator.solver_translator import (
     user_variable_to_udf,
@@ -61,6 +66,31 @@ from tests.utils import to_file_from_file_test
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture()
+def constant_variable():
+    return UserVariable(name="constant_variable", value=10)
+
+
+@pytest.fixture()
+def constant_array():
+    return UserVariable(name="constant_array", value=[10, 20])
+
+
+@pytest.fixture()
+def constant_unyt_quantity():
+    return UserVariable(name="constant_unyt_quantity", value=10 * u.m)
+
+
+@pytest.fixture()
+def constant_unyt_array():
+    return UserVariable(name="constant_unyt_array", value=[10, 20] * u.m)
+
+
+@pytest.fixture()
+def solution_variable():
+    return UserVariable(name="solution_variable", value=solution.velocity)
 
 
 def test_variable_init():
@@ -379,7 +409,13 @@ def test_solver_builtin():
         model.field.evaluate()
 
 
-def test_serializer():
+def test_serializer(
+    constant_variable,
+    constant_array,
+    constant_unyt_quantity,
+    constant_unyt_array,
+    solution_variable,
+):
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
 
@@ -402,8 +438,78 @@ def test_serializer():
     assert serialized["field"]["value"] == 4
     assert serialized["field"]["units"] == "m/s"
 
+    assert constant_variable.model_dump() == {
+        "name": "constant_variable",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": 10.0,
+        },
+    }
 
-def test_deserializer():
+    assert constant_array.model_dump() == {
+        "name": "constant_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": [10, 20],
+        },
+    }
+    assert constant_unyt_quantity.model_dump() == {
+        "name": "constant_unyt_quantity",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": 10.0,
+        },
+    }
+
+    assert constant_unyt_array.model_dump() == {
+        "name": "constant_unyt_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": [10, 20],
+        },
+    }
+
+    assert solution_variable.model_dump() == {
+        "name": "solution_variable",
+        "value": {
+            "evaluated_units": "m/s",
+            "evaluated_value": [None, None, None],
+            "expression": "solution.velocity",
+            "output_units": None,
+            "type_name": "expression",
+            "units": None,
+            "value": None,
+        },
+    }
+
+
+def test_deserializer(
+    constant_unyt_quantity,
+    constant_unyt_array,
+    constant_variable,
+    constant_array,
+    solution_variable,
+):
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
 
@@ -425,6 +531,90 @@ def test_deserializer():
     deserialized = TestModel(field=model)
 
     assert str(deserialized.field) == "4.0 m/s"
+
+    # Constant unyt quantity
+    model = {
+        "name": "constant_unyt_quantity",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": 10.0,
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_unyt_quantity
+
+    # Constant unyt array
+    model = {
+        "name": "constant_unyt_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": "m",
+            "value": [10, 20],
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_unyt_array
+
+    # Constant quantity
+    model = {
+        "name": "constant_variable",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": 10.0,
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_variable
+
+    # Constant array
+    model = {
+        "name": "constant_array",
+        "value": {
+            "evaluated_units": None,
+            "evaluated_value": None,
+            "expression": None,
+            "output_units": None,
+            "type_name": "number",
+            "units": None,
+            "value": [10, 20],
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == constant_array
+
+    # Solver variable (NaN-None handling)
+    model = {
+        "name": "solution_variable",
+        "value": {
+            "evaluated_units": "m/s",
+            "evaluated_value": [None, None, None],
+            "expression": "solution.velocity",
+            "output_units": None,
+            "type_name": "expression",
+            "units": None,
+            "value": None,
+        },
+    }
+    deserialized = UserVariable.model_validate(model)
+    assert deserialized == solution_variable
+    assert all(
+        np.isnan(item)
+        for item in deserialized.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+    )
 
 
 def test_subscript_access():
@@ -819,10 +1009,25 @@ def test_expression_indexing():
     assert expr.evaluate() == 8
 
 
-def test_to_file_from_file_expression():
+def test_to_file_from_file_expression(
+    constant_variable, constant_array, constant_unyt_quantity, constant_unyt_array
+):
     with SI_unit_system:
         params = SimulationParams(
-            outputs=[VolumeOutput(output_fields=[solution.mut.in_unit(new_name="mut_in_SI")])],
+            reference_geometry=ReferenceGeometry(
+                area=10 * u.m**2,
+            ),
+            outputs=[
+                VolumeOutput(
+                    output_fields=[
+                        solution.mut.in_unit(new_name="mut_in_SI"),
+                        constant_variable,
+                        constant_array,
+                        constant_unyt_quantity,
+                        constant_unyt_array,
+                    ]
+                )
+            ],
         )
 
     to_file_from_file_test(params)

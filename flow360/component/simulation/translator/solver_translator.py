@@ -89,11 +89,7 @@ from flow360.component.simulation.translator.utils import (
     translate_setting_and_apply_to_all_entities,
     update_dict_recursively,
 )
-from flow360.component.simulation.unit_system import (
-    LengthType,
-    UnitSystem,
-    unit_system_manager,
-)
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.utils import (
     is_exact_instance,
@@ -540,6 +536,7 @@ def translate_acoustic_output(output_params: list):
 
 
 def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams):
+    # pylint:disable=too-many-statements
     """Convert user variable to UDF"""
     if not isinstance(variable.value, Expression):
         # Likely number of unyt object
@@ -560,7 +557,6 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         raise ValueError("Constant value found in user variable.")
 
     def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
-        # TODO: Unit test?
         y2 = (2 * target_unit).in_units(source_unit).value
         y1 = (1 * target_unit).in_units(source_unit).value
         x2 = 2
@@ -585,15 +581,14 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
                 input_params.unit_system.name
             )
             numerical_value = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-            # TODO: allowing different unit for each list component?
             if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity)):
                 # Pure dimensionless constant
                 return None
             if current_unit_system_name == "SI":
                 return numerical_value.in_base("mks").units
-            elif current_unit_system_name == "Imperial":
+            if current_unit_system_name == "Imperial":
                 return numerical_value.in_base("imperial").units
-            elif current_unit_system_name == "CGS":
+            if current_unit_system_name == "CGS":
                 return numerical_value.in_base("cgs").units
 
         return u.Unit(expression.output_units)
@@ -607,8 +602,8 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         offset = 0
     else:
         flow360_unit_system = input_params.flow360_unit_system
-        flow360_unit_system["angle"] = u.rad
-        # TODO: Validation that the target unit is consistent with the expression evaluation result
+        # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
+        flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
         flow360_unit = flow360_unit_system[requested_unit.dimensions]
         coefficient, offset = _compute_coefficient_and_offset(
             source_unit=requested_unit, target_unit=flow360_unit
@@ -640,6 +635,7 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
 
 
 def process_output_fields_for_udf(input_params: SimulationParams):
+    # pylint:disable=too-many-branches
     """
     Process all output fields from different output types and generate additional
     UserDefinedFields for dimensioned fields.

@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 import re
 from numbers import Number
-from typing import Annotated, Any, Generic, Literal, Optional, TypeVar, Union
+from typing import Annotated, Any, Generic, List, Literal, Optional, TypeVar, Union
 
 import numpy as np
 import pydantic as pd
@@ -108,7 +108,7 @@ class SerializedValueOrExpression(Flow360BaseModel):
     value: Optional[Union[Number, list[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Optional[Union[Number, list[Number]]] = pd.Field(None)
+    evaluated_value: Union[Optional[Number], list[Optional[Number]]] = pd.Field(None)
     evaluated_units: Optional[str] = pd.Field(None)
     output_units: Optional[str] = pd.Field(None, description="See definition in `Expression`.")
 
@@ -290,6 +290,7 @@ class UserVariable(Variable):
         return hash(self.model_dump_json())
 
     def in_unit(self, new_unit: str = None):
+        """Requesting the output of the variable to be in the given (new_unit) units."""
         self.value.output_units = new_unit
         return self
 
@@ -317,7 +318,6 @@ class SolverVariable(Variable):
         """
         new_variable = UserVariable(name=new_name, value=Expression(expression=self.name))
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
-        # TODO: Validation that the new_unit is valid.
         return new_variable
 
 
@@ -564,12 +564,14 @@ class Expression(Flow360BaseModel, Evaluable):
 
     @property
     def dimensionality(self):
+        """The physical dimensionality of the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
         assert isinstance(value, (unyt_array, unyt_quantity))
         return value.units.dimensions
 
     @property
     def length(self):
+        """The number of elements in the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
         assert isinstance(value, (unyt_array, unyt_quantity, list))
         if isinstance(value, list):
@@ -595,30 +597,18 @@ class ValueOrExpression(Expression, Generic[T]):
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
-            is_serialized = False
-
             try:
                 value = SerializedValueOrExpression.model_validate(value)
-                is_serialized = True
-            except Exception:  # pylint:disable=broad-exception-caught
-                pass
-
-            if is_serialized:
                 if value.type_name == "number":
                     if value.units is not None:
-                        # Ensure NaN is handled correctly to and from file.
-                        if isinstance(value.value, unyt_array):
-                            # TODO: Should not this be accessing value.value.value?
-                            # TODO: Test list handling?
-                            value.value = [
-                                float("NaN") if item is None else item for item in value.value
-                            ]
-                        elif value.value is None:
-                            value.value = float("NaN")
+                        # unyt objects
                         return unyt_array(value.value, value.units)
                     return value.value
                 if value.type_name == "expression":
                     return expr_type(expression=value.expression)
+            except Exception:  # pylint:disable=broad-exception-caught
+                pass
+
             return value
 
         def _serializer(value, info) -> dict:
@@ -635,21 +625,25 @@ class ValueOrExpression(Expression, Generic[T]):
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
                 elif isinstance(evaluated, unyt_array):
-
+                    print(">>> size", evaluated.size)
                     if evaluated.size == 1:
                         serialized.evaluated_value = (
-                            float(evaluated.value) if evaluated.value else None  # NaN-None handling
+                            float(evaluated.value)
+                            if not np.isnan(evaluated.value)
+                            else None  # NaN-None handling
                         )
                     else:
-                        serialized.evaluated_value = tuple(evaluated.value.tolist())
+                        serialized.evaluated_value = tuple(
+                            item if not np.isnan(item) else None
+                            for item in evaluated.value.tolist()
+                        )
 
                     serialized.evaluated_units = str(evaluated.units.expr)
             else:
                 serialized = SerializedValueOrExpression(type_name="number")
-                if isinstance(value, Number):
+                if isinstance(value, (Number, List)):
                     serialized.value = value
                 elif isinstance(value, unyt_array):
-
                     if value.size == 1:
                         serialized.value = float(value.value)
                     else:
