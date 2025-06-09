@@ -1621,7 +1621,16 @@ class UnitSystem(pd.BaseModel):
 
     def __getitem__(self, item):
         """to support [] access"""
-        return getattr(self, item)
+        try:
+            return getattr(self, item)
+        except TypeError:
+            # Allowing usage like [(mass)/(time)]
+            for attr_name, attr in vars(self).items():
+                if not isinstance(attr, unyt_quantity):
+                    continue
+                if attr.units.dimensions == item:
+                    return getattr(self, attr_name)
+        raise AttributeError(f"'{item}' is not a valid attribute of {self.__class__.__name__}. ")
 
     def system_repr(self):
         """(mass, length, time, temperature) string representation of the system"""

@@ -133,7 +133,7 @@ def remove_units_in_dict(input_dict):
                 )
             return new_dict
         for key, value in input_dict.items():
-            if isinstance(value, dict) and _is_unyt_or_unyt_like_obj(input_dict):
+            if isinstance(value, dict) and _is_unyt_or_unyt_like_obj(value):
                 if value["units"].startswith("flow360_") is False:
                     raise ValueError(
                         f"[Internal Error] Unit {value['units']} is not non-dimensionalized."
@@ -148,7 +148,7 @@ def remove_units_in_dict(input_dict):
 
 
 def inline_expressions_in_dict(input_dict, input_params):
-    """Inline all expressions in the provided dict to their evaluated values"""
+    """Inline all client-time evaluable expressions in the provided dict to their evaluated values"""
     if isinstance(input_dict, dict):
         new_dict = {}
         if "expression" in input_dict.keys():

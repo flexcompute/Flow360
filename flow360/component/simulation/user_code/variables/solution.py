@@ -5,8 +5,11 @@ import unyt as u
 from flow360.component.simulation.user_code.core.types import SolverVariable
 
 # pylint:disable = no-member
-mut = SolverVariable(name="solution.mut", value=float("NaN"))  # Turbulent viscosity
-mu = SolverVariable(name="solution.mu", value=float("NaN"))  # Laminar viscosity
+mut = SolverVariable(
+    name="solution.mut", value=float("NaN") * u.kg / u.m / u.s, solver_name="mut"
+)  # Turbulent viscosity
+mu = SolverVariable(name="solution.mu", value=float("NaN") * u.kg / u.m / u.s)  # Laminar viscosity
+
 solutionNavierStokes = SolverVariable(
     name="solution.solutionNavierStokes", value=float("NaN")
 )  # Solution for N-S equation in conservative form
