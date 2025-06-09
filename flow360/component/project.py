@@ -1554,7 +1554,7 @@ class Project(pd.BaseModel):
         )
         report_template = get_default_report_summary_template()
         report_template.create_in_cloud(
-            name="ResultSummary",
+            name=f"{name}-summary",
             cases=[case],
             solver_version=solver_version if solver_version else self.solver_version,
         )

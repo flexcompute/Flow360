@@ -48,6 +48,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_alphas_in_order,
     _check_bet_disk_duplicate_chords,
     _check_bet_disk_duplicate_twists,
+    _check_bet_disk_initial_blade_direction,
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
@@ -551,7 +552,7 @@ class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         file_content = get_file_content(input_data["file_path"])
 
-        return {"file_path": input_data["file_path"], "content": file_content}
+        return {"file_path": os.path.basename(input_data["file_path"]), "content": file_content}
 
 
 class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
@@ -594,7 +595,11 @@ class BETSingleMultiFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
             polar_file_obj_list.append(
                 [{"file_path": os.path.join(file_dir, file_name)} for file_name in file_name_list]
             )
-        return {"file_path": file_path, "content": file_content, "polar_files": polar_file_obj_list}
+        return {
+            "file_path": os.path.basename(file_path),
+            "content": file_content,
+            "polar_files": polar_file_obj_list,
+        }
 
 
 class XROTORFile(BETSingleInputFileBaseModel):
@@ -774,6 +779,12 @@ class BETDisk(MultiConstructorBaseModel):
     def check_bet_disk_duplicate_twists(cls, value, info: pd.ValidationInfo):
         """validate duplicates in twists in BET disks"""
         return _check_bet_disk_duplicate_twists(value, info)
+
+    @pd.field_validator("initial_blade_direction", mode="after")
+    @classmethod
+    def invalid_growth_rate(cls, value, info: pd.ValidationInfo):
+        """Ensure initial_blade_direction is specified in an unsteady simulation"""
+        return _check_bet_disk_initial_blade_direction(value, info)
 
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
