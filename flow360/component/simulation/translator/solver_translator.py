@@ -625,10 +625,12 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         )
 
     # Vector output requested
+    print("0 expression: ", expression)
     expression = [
         expression[i].evaluate(raise_on_non_evaluable=False, force_evaluate=False)
         for i in range(expression.length)
     ]
+    print("1 expression: ", expression)
     if offset != 0:
         expression = [(item + offset) * coefficient for item in expression]
     else:

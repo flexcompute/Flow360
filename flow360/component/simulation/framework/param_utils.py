@@ -39,7 +39,9 @@ class AssetCache(Flow360BaseModel):
     use_geometry_AI: bool = pd.Field(
         False, description="Flag whether user requested the use of GAI."
     )
-    project_variables: Optional[List[UserVariable]] = pd.Field(None)
+    project_variables: Optional[List[UserVariable]] = pd.Field(
+        None, description="List of user variables that are used in all the `Expression` instances."
+    )
 
     @property
     def boundaries(self):
