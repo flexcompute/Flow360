@@ -178,7 +178,7 @@ def _list_comp(expr, syntax, name_translator):
 
 
 def _subscript(expr, syntax, name_translator):  # pylint:disable=unused-argument
-    return f"{expr.value.id}[{expr.slice.value}]"
+    return f"{name_translator(expr.value.id)}[{expr.slice.value}]"
 
 
 def expr_to_code(
