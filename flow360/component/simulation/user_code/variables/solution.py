@@ -24,6 +24,7 @@ from flow360.component.simulation.user_code.core.types import SolverVariable
 # momentZ = SolverVariable(name="solution.momentZ", value=float("NaN"))  # Total moment in Z direction
 
 
+# pylint:disable=no-member
 # Common
 coordinate = SolverVariable(
     name="solution.coordinate",
@@ -321,7 +322,8 @@ heat_transfer_coefficient_total_temperature = SolverVariable(
 #     name="solution.velocity_relative",
 #     value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
 #     solver_name="velocityRelative",
-#     prepending_code="double velocityRelative[3];for(int i=0;i<3;i++){velocityRelative[i]=velocity[i]-nodeVelocity[i];}",
+#     prepending_code="double velocityRelative[3];for(int i=0;i<3;i++)"
+#     + "{velocityRelative[i]=velocity[i]-nodeVelocity[i];}",
 #     variable_type="Volume",
 # )
 # wallFunctionMetric = SolverVariable(
