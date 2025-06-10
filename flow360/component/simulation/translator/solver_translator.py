@@ -98,11 +98,11 @@ from flow360.component.simulation.utils import (
 from flow360.exceptions import Flow360TranslationError
 
 udf_prepending_code = {
-    "solution.Cp": "double Cp;Cp = (primitive[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
-    "solution.Cpt": "double Cpt;double MachUser = sqrt(primitive[1] * primitive[1]+"
-    + "primitive[2] * primitive[2] + primitive[3] * primitive[3])"
-    + "/sqrt(gamma * primitive[4] / primitive[0]);"
-    + "Cpt = (gamma * primitive[4] * pow(1.0 + (gamma - 1.0) / 2. * MachUser * MachUser,"
+    "solution.Cp": "double Cp;Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
+    "solution.Cpt": "double Cpt;double MachUser = sqrt(primitiveVars[1] * primitiveVars[1]+"
+    + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3])"
+    + "/sqrt(gamma * primitiveVars[4] / primitiveVars[0]);"
+    + "Cpt = (gamma * primitiveVars[4] * pow(1.0 + (gamma - 1.0) / 2. * MachUser * MachUser,"
     + "gamma / (gamma - 1.)) - pow(1.0 + (gamma - 1.0) / 2. * MachRef * MachRef,"
     + "gamma / (gamma - 1.))) / (0.5 * gamma * MachRef * MachRef);",
     "solution.grad_density": "double gradDensity[3];gradDensity[0] = gradPrimitive[0][0];"
@@ -115,15 +115,15 @@ udf_prepending_code = {
     + "gradVelocityZ[1] = gradPrimitive[3][1];gradVelocityZ[2] = gradPrimitive[3][2];",
     "solution.grad_pressure": "double gradPressure[3];gradPressure[0] = gradPrimitive[4][0];"
     + "gradPressure[1] = gradPrimitive[4][1];gradPressure[2] = gradPrimitive[4][2];",
-    "solution.Mach": "double Mach;Mach = sqrt(primitive[1] * primitive[1] + "
-    + "primitive[2] * primitive[2] + primitive[3] * primitive[3])"
-    + " / sqrt(gamma * primitive[4] / primitive[0]);"
+    "solution.Mach": "double Mach;Mach = sqrt(primitiveVars[1] * primitiveVars[1] + "
+    + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3])"
+    + " / sqrt(gamma * primitiveVars[4] / primitiveVars[0]);"
     + "if (usingLiquidAsMaterial){Mach = 0;}",
     "solution.mut_ratio": "double mutRatio;mutRatio = mut / mu;",
     "solution.velocity": "double velocity[3];"
-    + "velocity[0] = primitive[1] * velocityScale;"
-    + "velocity[1] = primitive[2] * velocityScale;"
-    + "velocity[2] = primitive[3] * velocityScale;",
+    + "velocity[0] = primitiveVars[1] * velocityScale;"
+    + "velocity[1] = primitiveVars[2] * velocityScale;"
+    + "velocity[2] = primitiveVars[3] * velocityScale;",
     "solution.qcriterion": "double qcriterion;"
     + "double ux = gradPrimitive[1][0];"
     + "double uy = gradPrimitive[1][1];"
@@ -147,8 +147,8 @@ udf_prepending_code = {
     + "double omg23 = 0.5 * (vz - wy);"
     + "double omg_norm = 2 * (omg12 * omg12) + 2 * (omg13 * omg13) + 2 * (omg23 * omg23);"
     + "qcriterion = 0.5 * (omg_norm - str_norm) * (velocityScale * velocityScale);",
-    "solution.entropy": "double entropy;entropy = log(primitive[4] / gasConstant / pow(primitive[0],gamma));",
-    "solution.temperature": "double temperature;temperature = primitive[4] / (primitive[0] *  gasConstant);",
+    "solution.entropy": "double entropy;entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0],gamma));",
+    "solution.temperature": "double temperature;temperature = primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
     "solution.vorticity": "double vorticity[3];"
     + "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
     + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
@@ -160,10 +160,10 @@ udf_prepending_code = {
     "solution.node_forces_per_unit_area": "double nodeForcesPerUnitArea[3];"
     + "double normalMag = magnitude(nodeNormals);"
     + "for (int i = 0;i < 3;i++){nodeForcesPerUnitArea[i] = "
-    + "((primitive[4] - pressureFreestream) * nodeNormals[i] / normalMag + wallViscousStress[i])"
+    + "((primitiveVars[4] - pressureFreestream) * nodeNormals[i] / normalMag + wallViscousStress[i])"
     + " * (velocityScale * velocityScale);}",
     "solution.heat_transfer_coefficient_static_temperature": "double heatTransferCoefficientStaticTemperature;"
-    + "double temperature = primitive[4] / (primitive[0] * gasConstant);"
+    + "double temperature = primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
     + f"double temperatureSafeDivide; double epsilon = {np.finfo(np.float64).eps};"
     + "heatTransferCoefficientTotalTemperature = 1.0 / epsilon;"
     + "if (temperature - 1.0 < 0){temperatureSafeDivide = temperature - 1.0 - epsilon;}"
@@ -171,7 +171,7 @@ udf_prepending_code = {
     + "if (abs(temperature - temperatureTotal) > epsilon)"
     + "{temperatureTotal = - heatFlux / temperatureSafeDivide;}",
     "solution.heat_transfer_coefficient_total_temperature": "double heatTransferCoefficientTotalTemperature;"
-    + "double temperature = primitive[4] / (primitive[0] * gasConstant);"
+    + "double temperature = primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
     + "double temperatureTotal = 1.0 + (gamma - 1.0) / 2.0 * MachRef * MachRef;"
     + f"double temperatureSafeDivide; double epsilon = {np.finfo(np.float64).eps};"
     + "if (temperature - temperatureTotal < 0){temperatureSafeDivide = temperature - temperatureTotal - epsilon;}"
