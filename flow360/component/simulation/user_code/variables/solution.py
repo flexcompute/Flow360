@@ -1,11 +1,11 @@
 """Solution variables of Flow360"""
 
-import unyt as u
 import numpy as np
+import unyt as u
 
 from flow360.component.simulation.user_code.core.types import SolverVariable
 
-# pylint:disable = no-member
+# pylint:disable = fixme
 # TODO:Scalar type (needs further discussion)
 # bet_thrust = SolverVariable(
 #     name="solution.bet_thrust", value=float("NaN")
@@ -61,7 +61,7 @@ grad_density = SolverVariable(
 )
 grad_velocity_x = SolverVariable(
     name="solution.grad_velocity_x",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.s,
+    value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityX",
     prepending_code="double gradVelocityX[3];gradVelocityX[0]=gradPrimitive[1][0];"
     + "gradVelocityX[1]=gradPrimitive[1][1];gradVelocityX[2]=gradPrimitive[1][2];",
@@ -69,7 +69,7 @@ grad_velocity_x = SolverVariable(
 )
 grad_velocity_y = SolverVariable(
     name="solution.grad_velocity_y",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.s,
+    value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityY",
     prepending_code="double gradVelocityY[3];gradVelocityY[0]=gradPrimitive[2][0];"
     + "gradVelocityY[1]=gradPrimitive[2][1];gradVelocityY[2]=gradPrimitive[2][2];",
@@ -77,7 +77,7 @@ grad_velocity_y = SolverVariable(
 )
 gradVelocity_z = SolverVariable(
     name="solution.grad_velocity_z",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.s,
+    value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityZ",
     prepending_code="double gradVelocityZ[3];gradVelocityZ[0]=gradPrimitive[3][0];"
     + "gradVelocityZ[1]=gradPrimitive[3][1];gradVelocityZ[2]=gradPrimitive[3][2];",
@@ -102,14 +102,18 @@ Mach = SolverVariable(
     + "if (usingLiquidAsMaterial){Mach=0;}",
     variable_type="Volume",
 )
-
-# TODO
 mut = SolverVariable(
     name="solution.mut",
     value=float("NaN") * u.kg / u.m / u.s,
     solver_name="mut",
     variable_type="Volume",
 )  # Turbulent viscosity
+mu = SolverVariable(
+    name="solution.mu",
+    value=float("NaN") * u.kg / u.m / u.s,
+    solver_name="mu",
+    variable_type="Volume",
+)  # Laminar viscosity
 mut_ratio = SolverVariable(
     name="solution.mut_ratio",
     value=float("NaN"),
@@ -141,18 +145,13 @@ amplification_factor = SolverVariable(
     solver_name="solutionTransition[0]",
     variable_type="Volume",
 )  # transition model variable: n, non-dimensional
-intermittency = SolverVariable(
-    name="solution.intermittency",
+turbulence_intermittency = SolverVariable(
+    name="solution.turbulence_intermittency",
     value=float("NaN"),
     solver_name="solutionTransition[1]",
     variable_type="Volume",
 )  # transition model variable: gamma, non-dimensional
-mu = SolverVariable(
-    name="solution.mu",
-    value=float("NaN") * u.kg / u.m / u.s,
-    solver_name="mu",
-    variable_type="Volume",
-)  # Laminar viscosity
+
 
 density = SolverVariable(
     name="solution.density",
@@ -205,11 +204,11 @@ qcriterion = SolverVariable(
     + "qcriterion=0.5*(omg_norm-str_norm)*(velocityScale*velocityScale);",
     variable_type="Volume",
 )
-entrophy = SolverVariable(
-    name="solution.entrophy",
+entropy = SolverVariable(
+    name="solution.entropy",
     value=float("NaN") * u.J / u.K,
-    prepending_code="double entrophy;entrophy=log(primitive[4]/gasConstant/pow(primitive[0],gamma))",
-    solver_name="entrophy",
+    prepending_code="double entropy;entropy=log(primitive[4]/gasConstant/pow(primitive[0],gamma))",
+    solver_name="entropy",
     variable_type="Volume",
 )
 temperature = SolverVariable(
@@ -287,10 +286,11 @@ wall_shear_stress = SolverVariable(
 )
 heat_transfer_coefficient_static_temperature = SolverVariable(
     name="solution.heat_transfer_coefficient_static_temperature",
-    value=float("NaN"),
+    value=float("NaN") * u.W / (u.m**2 * u.K),
     solver_name="heatTransferCoefficientStaticTemperature",
-    prepending_code="float heatTransferCoefficientStaticTemperature;float temperature=primitive[4]/(primitive[0]*gasConstant);"
-    + f"float temperatureSafeDivide; float epsilon={np.finfo(np.float32).eps};"
+    prepending_code="double heatTransferCoefficientStaticTemperature;"
+    + "double temperature=primitive[4]/(primitive[0]*gasConstant);"
+    + f"double temperatureSafeDivide; double epsilon={np.finfo(np.float64).eps};"
     + "heatTransferCoefficientTotalTemperature={1.0/epsilon};"
     + "if(temperature-1.0<0){temperatureSafeDivide=temperature-1.0-epsilon;}"
     + "else{temperatureSafeDivide=temperature-1.0+epsilon;}"
@@ -300,11 +300,12 @@ heat_transfer_coefficient_static_temperature = SolverVariable(
 )
 heat_transfer_coefficient_total_temperature = SolverVariable(
     name="solution.heat_transfer_coefficient_total_temperature",
-    value=float("NaN"),
+    value=float("NaN") * u.W / (u.m**2 * u.K),
     solver_name="heatTransferCoefficientTotalTemperature",
-    prepending_code="float heatTransferCoefficientTotalTemperature;float temperature=primitive[4]/(primitive[0]*gasConstant);"
-    + "float temperatureTotal = 1.0 + (gamma - 1) / 2.0 * MachRef * MachRef;"
-    + f"float temperatureSafeDivide; float epsilon={np.finfo(np.float32).eps};"
+    prepending_code="double heatTransferCoefficientTotalTemperature;"
+    + "double temperature=primitive[4]/(primitive[0]*gasConstant);"
+    + "double temperatureTotal = 1.0 + (gamma - 1.0) / 2.0 * MachRef * MachRef;"
+    + f"double temperatureSafeDivide; double epsilon={np.finfo(np.float64).eps};"
     + "if(temperature-temperatureTotal<0){temperatureSafeDivide=temperature-temperatureTotal-epsilon;}"
     + "else{temperatureSafeDivide=temperature-temperatureTotal+epsilon;}"
     + "heatTransferCoefficientTotalTemperature=1.0/epsilon;"
@@ -315,106 +316,105 @@ heat_transfer_coefficient_total_temperature = SolverVariable(
 
 
 # TODO
-velocity_relative = SolverVariable(
-    name="solution.velocity_relative",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
-    solver_name="velocityRelative",
-    prepending_code="double velocityRelative[3];for(int i=0;i<3;i++){velocityRelative[i]=velocity[i]-nodeVelocity[i];}",
-    variable_type="Volume",
-)
-wallFunctionMetric = SolverVariable(
-    name="solution.wallFunctionMetric", value=float("NaN"), variable_type="Surface"
-)
-bet_metrics_alpha_degree = SolverVariable(
-    name="solution.bet_metrics_alpha_degree", value=float("NaN") * u.deg, variable_type="Volume"
-)
-bet_metrics_Cf_axial = SolverVariable(
-    name="solution.bet_metrics_Cf_axial", value=float("NaN"), variable_type="Volume"
-)
-bet_metrics_Cf_circumferential = SolverVariable(
-    name="solution.bet_metrics_Cf_circumferential", value=float("NaN"), variable_type="Volume"
-)
-bet_metrics_local_solidity_integral_weight = SolverVariable(
-    name="solution.bet_metrics_local_solidity_integral_weight",
-    value=float("NaN"),
-    variable_type="Volume",
-)
-bet_metrics_tip_loss_factor = SolverVariable(
-    name="solution.bet_metrics_tip_loss_factor", value=float("NaN"), variable_type="Volume"
-)
-bet_metrics_velocity_relative = SolverVariable(
-    name="solution.bet_metrics_velocity_relative",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
-    variable_type="Volume",
-)
-betMetricsPerDisk = SolverVariable(
-    name="solution.betMetricsPerDisk", value=float("NaN"), variable_type="Volume"
-)
+# pylint:disable = fixme
+# velocity_relative = SolverVariable(
+#     name="solution.velocity_relative",
+#     value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
+#     solver_name="velocityRelative",
+#     prepending_code="double velocityRelative[3];for(int i=0;i<3;i++){velocityRelative[i]=velocity[i]-nodeVelocity[i];}",
+#     variable_type="Volume",
+# )
+# wallFunctionMetric = SolverVariable(
+#     name="solution.wallFunctionMetric", value=float("NaN"), variable_type="Surface"
+# )
+# bet_metrics_alpha_degree = SolverVariable(
+#     name="solution.bet_metrics_alpha_degree", value=float("NaN") * u.deg, variable_type="Volume"
+# )
+# bet_metrics_Cf_axial = SolverVariable(
+#     name="solution.bet_metrics_Cf_axial", value=float("NaN"), variable_type="Volume"
+# )
+# bet_metrics_Cf_circumferential = SolverVariable(
+#     name="solution.bet_metrics_Cf_circumferential", value=float("NaN"), variable_type="Volume"
+# )
+# bet_metrics_local_solidity_integral_weight = SolverVariable(
+#     name="solution.bet_metrics_local_solidity_integral_weight",
+#     value=float("NaN"),
+#     variable_type="Volume",
+# )
+# bet_metrics_tip_loss_factor = SolverVariable(
+#     name="solution.bet_metrics_tip_loss_factor", value=float("NaN"), variable_type="Volume"
+# )
+# bet_metrics_velocity_relative = SolverVariable(
+#     name="solution.bet_metrics_velocity_relative",
+#     value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
+#     variable_type="Volume",
+# )
+# betMetricsPerDisk = SolverVariable(
+#     name="solution.betMetricsPerDisk", value=float("NaN"), variable_type="Volume"
+# )
 
 
 # Abandoned (Possible)
-SpalartAllmaras_hybridModel = SolverVariable(
-    name="solution.SpalartAllmaras_hybridModel", value=float("NaN"), variable_type="Volume"
-)
-kOmegaSST_hybridModel = SolverVariable(
-    name="solution.kOmegaSST_hybridModel", value=float("NaN"), variable_type="Volume"
-)
-localCFL = SolverVariable(name="solution.localCFL", value=float("NaN"), variable_type="Volume")
-numericalDissipationFactor = SolverVariable(
-    name="solution.numericalDissipationFactor", value=float("NaN"), variable_type="Volume"
-)
-lowMachPreconditionerSensor = SolverVariable(
-    name="solution.lowMachPreconditionerSensor", value=float("NaN"), variable_type="Volume"
-)
+# SpalartAllmaras_hybridModel = SolverVariable(
+#     name="solution.SpalartAllmaras_hybridModel", value=float("NaN"), variable_type="Volume"
+# )
+# kOmegaSST_hybridModel = SolverVariable(
+#     name="solution.kOmegaSST_hybridModel", value=float("NaN"), variable_type="Volume"
+# )
+# localCFL = SolverVariable(name="solution.localCFL", value=float("NaN"), variable_type="Volume")
+# numericalDissipationFactor = SolverVariable(
+#     name="solution.numericalDissipationFactor", value=float("NaN"), variable_type="Volume"
+# )
+# lowMachPreconditionerSensor = SolverVariable(
+#     name="solution.lowMachPreconditionerSensor", value=float("NaN"), variable_type="Volume"
+# )
 
 # Abandoned
-linearResidualNavierStokes = SolverVariable(
-    name="solution.linearResidualNavierStokes", value=float("NaN"), variable_type="Volume"
-)
-linearResidualTurbulence = SolverVariable(
-    name="solution.linearResidualTurbulence", value=float("NaN"), variable_type="Volume"
-)
-linearResidualTransition = SolverVariable(
-    name="solution.linearResidualTransition", value=float("NaN"), variable_type="Volume"
-)
-residualNavierStokes = SolverVariable(
-    name="solution.residualNavierStokes", value=float("NaN"), variable_type="Volume"
-)
-residualTransition = SolverVariable(
-    name="solution.residualTransition", value=float("NaN"), variable_type="Volume"
-)
-residualTurbulence = SolverVariable(
-    name="solution.residualTurbulence", value=float("NaN"), variable_type="Volume"
-)
-solutionNavierStokes = SolverVariable(
-    name="solution.solutionNavierStokes", value=float("NaN"), variable_type="Volume"
-)
-solutionTurbulence = SolverVariable(
-    name="solution.solutionTurbulence", value=float("NaN"), variable_type="Volume"
-)
-residualHeatSolver = SolverVariable(
-    name="solution.residualHeatSolver", value=float("NaN"), variable_type="Volume"
-)
-velocity = SolverVariable(name="solution.velocity", value=float("NaN"), variable_type="Volume")
-velocity_x = SolverVariable(name="solution.velocity_x", value=float("NaN"), variable_type="Volume")
-velocity_y = SolverVariable(name="solution.velocity_y", value=float("NaN"), variable_type="Volume")
-velocity_z = SolverVariable(name="solution.velocity_z", value=float("NaN"), variable_type="Volume")
-velocity_magnitude = SolverVariable(
-    name="solution.velocity_magnitude", value=float("NaN"), variable_type="Volume"
-)
-pressure = SolverVariable(name="solution.pressure", value=float("NaN"), variable_type="Volume")
-vorticityMagnitude = SolverVariable(
-    name="solution.vorticityMagnitude", value=float("NaN"), variable_type="Volume"
-)
-vorticity_x = SolverVariable(
-    name="solution.vorticity_x", value=float("NaN"), variable_type="Volume"
-)
-vorticity_y = SolverVariable(
-    name="solution.vorticity_y", value=float("NaN"), variable_type="Volume"
-)
-vorticity_z = SolverVariable(
-    name="solution.vorticity_z", value=float("NaN"), variable_type="Volume"
-)
-wall_shear_stress_magnitude_pa = SolverVariable(
-    name="solution.wall_shear_stress_magnitude_pa", value=float("NaN"), variable_type="Surface"
-)
+# linearResidualNavierStokes = SolverVariable(
+#     name="solution.linearResidualNavierStokes", value=float("NaN"), variable_type="Volume"
+# )
+# linearResidualTurbulence = SolverVariable(
+#     name="solution.linearResidualTurbulence", value=float("NaN"), variable_type="Volume"
+# )
+# linearResidualTransition = SolverVariable(
+#     name="solution.linearResidualTransition", value=float("NaN"), variable_type="Volume"
+# )
+# residualNavierStokes = SolverVariable(
+#     name="solution.residualNavierStokes", value=float("NaN"), variable_type="Volume"
+# )
+# residualTransition = SolverVariable(
+#     name="solution.residualTransition", value=float("NaN"), variable_type="Volume"
+# )
+# residualTurbulence = SolverVariable(
+#     name="solution.residualTurbulence", value=float("NaN"), variable_type="Volume"
+# )
+# solutionNavierStokes = SolverVariable(
+#     name="solution.solutionNavierStokes", value=float("NaN"), variable_type="Volume"
+# )
+# solutionTurbulence = SolverVariable(
+#     name="solution.solutionTurbulence", value=float("NaN"), variable_type="Volume"
+# )
+# residualHeatSolver = SolverVariable(
+#     name="solution.residualHeatSolver", value=float("NaN"), variable_type="Volume"
+# )
+# velocity_x = SolverVariable(name="solution.velocity_x", value=float("NaN"), variable_type="Volume")
+# velocity_y = SolverVariable(name="solution.velocity_y", value=float("NaN"), variable_type="Volume")
+# velocity_z = SolverVariable(name="solution.velocity_z", value=float("NaN"), variable_type="Volume")
+# velocity_magnitude = SolverVariable(
+#     name="solution.velocity_magnitude", value=float("NaN"), variable_type="Volume"
+# )
+# vorticityMagnitude = SolverVariable(
+#     name="solution.vorticityMagnitude", value=float("NaN"), variable_type="Volume"
+# )
+# vorticity_x = SolverVariable(
+#     name="solution.vorticity_x", value=float("NaN"), variable_type="Volume"
+# )
+# vorticity_y = SolverVariable(
+#     name="solution.vorticity_y", value=float("NaN"), variable_type="Volume"
+# )
+# vorticity_z = SolverVariable(
+#     name="solution.vorticity_z", value=float("NaN"), variable_type="Volume"
+# )
+# wall_shear_stress_magnitude_pa = SolverVariable(
+#     name="solution.wall_shear_stress_magnitude_pa", value=float("NaN"), variable_type="Surface"
+# )

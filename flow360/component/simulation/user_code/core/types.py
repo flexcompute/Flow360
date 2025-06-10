@@ -299,14 +299,13 @@ class SolverVariable(Variable):
     """Class representing a pre-defined symbolic variable that cannot be evaluated at client runtime"""
 
     solver_name: Optional[str] = pd.Field(None)
-    variable_type: Union[Literal["Volume"], Literal["Surface"]] = pd.Field(None)
-    prepending_code: str = pd.Field(None)
-
+    variable_type: Literal["Volume", "Surface", "Scalar"] = pd.Field()
+    prepending_code: Optional[str] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def update_context(self):
         """Auto updating context when new variable is declared"""
-        default_context.set(self.name, self.value, SolverVariable)
+        default_context.set(self.name, self.value, Variable)
         if self.solver_name:
             default_context.set_alias(self.name, self.solver_name)
         return self
