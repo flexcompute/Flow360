@@ -1,6 +1,7 @@
 """Solution variables of Flow360"""
 
 import unyt as u
+import numpy as np
 
 from flow360.component.simulation.user_code.core.types import SolverVariable
 
@@ -74,7 +75,7 @@ grad_velocity_y = SolverVariable(
     + "gradVelocityY[1]=gradPrimitive[2][1];gradVelocityY[2]=gradPrimitive[2][2];",
     variable_type="Volume",
 )
-gradVelocityZ = SolverVariable(
+gradVelocity_z = SolverVariable(
     name="solution.grad_velocity_z",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.s,
     solver_name="gradVelocityZ",
@@ -83,7 +84,7 @@ gradVelocityZ = SolverVariable(
     variable_type="Volume",
 )
 grad_pressure = SolverVariable(
-    name="solution.grad_p",
+    name="solution.grad_pressure",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa / u.m,
     solver_name="gradPressure",
     prepending_code="double gradPressure[3];gradPressure[0]=gradPrimitive[4][0];"
@@ -102,24 +103,55 @@ Mach = SolverVariable(
     variable_type="Volume",
 )
 
-#TODO
+# TODO
 mut = SolverVariable(
-    name="solution.mut", value=float("NaN")* u.kg / u.m / u.s, solver_name="mut", variable_type="Volume"
+    name="solution.mut",
+    value=float("NaN") * u.kg / u.m / u.s,
+    solver_name="mut",
+    variable_type="Volume",
 )  # Turbulent viscosity
-mut_ratio = SolverVariable(name="solution.mut_ratio", value=float("NaN"), variable_type="Volume")
+mut_ratio = SolverVariable(
+    name="solution.mut_ratio",
+    value=float("NaN"),
+    solver_name="mutRatio",
+    prepending_code="double mutRatio;mutRatio=mut/mu",
+    variable_type="Volume",
+)
 nu_hat = SolverVariable(
-    name="solution.nu_hat", value=float("NaN") * u.m**2 / u.s, variable_type="Volume"
+    name="solution.nu_hat",
+    value=float("NaN") * u.m**2 / u.s,
+    solver_name="SpalartAllmaras_solution",
+    variable_type="Volume",
 )
 turbulence_kinetic_energy = SolverVariable(
     name="solution.turbulence_kinetic_energy",
     value=float("NaN") * u.J / u.kg,
+    solver_name="kOmegaSST_solution[0]",
     variable_type="Volume",
 )  # k
 specific_rate_of_dissipation = SolverVariable(
-    name="solution.specific_rate_of_dissipation", value=float("NaN") / u.s, variable_type="Volume"
+    name="solution.specific_rate_of_dissipation",
+    value=float("NaN") / u.s,
+    solver_name="kOmegaSST_solution[1]",
+    variable_type="Volume",
 )  # Omega
+amplification_factor = SolverVariable(
+    name="solution.amplification_factor",
+    value=float("NaN"),
+    solver_name="solutionTransition[0]",
+    variable_type="Volume",
+)  # transition model variable: n, non-dimensional
+intermittency = SolverVariable(
+    name="solution.intermittency",
+    value=float("NaN"),
+    solver_name="solutionTransition[1]",
+    variable_type="Volume",
+)  # transition model variable: gamma, non-dimensional
 mu = SolverVariable(
-    name="solution.mu", value=float("NaN")* u.kg / u.m / u.s, solver_name="mu", variable_type="Volume"
+    name="solution.mu",
+    value=float("NaN") * u.kg / u.m / u.s,
+    solver_name="mu",
+    variable_type="Volume",
 )  # Laminar viscosity
 
 density = SolverVariable(
@@ -131,11 +163,11 @@ density = SolverVariable(
 velocity = SolverVariable(
     name="solution.velocity",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
+    solver_name="velocity",
     prepending_code="double velocity[3];"
     + "velocity[0]=primitive[1]*velocityScale;"
     + "velocity[1]=primitive[2]*velocityScale;"
     + "velocity[2]=primitive[3]*velocityScale;",
-    solver_name="velocity",
     variable_type="Volume",
 )
 pressure = SolverVariable(
@@ -197,16 +229,10 @@ vorticity = SolverVariable(
     + "vorticity[2]=(gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
     variable_type="Volume",
 )
-
-#TODO
 wall_distance = SolverVariable(
-    name="solution.wall_distance", value=float("NaN") * u.m, variable_type="Volume"
-)
-velocity_relative = SolverVariable(
-    name="solution.velocity_relative",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
-    solver_name="velocityRelative",
-    prepending_code="double velocityRelative[3];for(int i=0;i<3;i++){velocityRelative[i]=velocity[i]-nodeVelocity[i];}",
+    name="solution.wall_distance",
+    value=float("NaN") * u.m,
+    solver_name="wallDistance",
     variable_type="Volume",
 )
 
@@ -227,7 +253,6 @@ Cf = SolverVariable(
     prepending_code="double Cf;Cf=magnitude(wallShearStress)/(0.5*MachRef*MachRef);",
     variable_type="Surface",
 )
-
 heatflux = SolverVariable(
     name="solution.heatflux",
     value=float("NaN") * u.W / u.m**2,
@@ -254,19 +279,23 @@ node_forces_per_unit_area = SolverVariable(
 y_plus = SolverVariable(
     name="solution.y_plus", value=float("NaN"), solver_name="yPlus", variable_type="Surface"
 )
-
-#TODO
-wallFunctionMetric = SolverVariable(
-    name="solution.wallFunctionMetric", value=float("NaN"), variable_type="Surface"
+wall_shear_stress = SolverVariable(
+    name="solution.wall_shear_stress",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa,
+    solver_name="wallShearStress",
+    variable_type="Surface",
 )
 heat_transfer_coefficient_static_temperature = SolverVariable(
     name="solution.heat_transfer_coefficient_static_temperature",
     value=float("NaN"),
     solver_name="heatTransferCoefficientStaticTemperature",
     prepending_code="float heatTransferCoefficientStaticTemperature;float temperature=primitive[4]/(primitive[0]*gasConstant);"
-    + "heatTransferCoefficientTotalTemperature=largeValue<float>();"
-    + "if(abs(temperature-temperatureTotal)>epsilon<float>())"
-    + "{temperatureTotal=-heatFlux/safeDivide(temperature-float(1.0));}",
+    + f"float temperatureSafeDivide; float epsilon={np.finfo(np.float32).eps};"
+    + "heatTransferCoefficientTotalTemperature={1.0/epsilon};"
+    + "if(temperature-1.0<0){temperatureSafeDivide=temperature-1.0-epsilon;}"
+    + "else{temperatureSafeDivide=temperature-1.0+epsilon;}"
+    + "if(abs(temperature-temperatureTotal)>epsilon)"
+    + "{temperatureTotal=-heatFlux/temperatureSafeDivide;}",
     variable_type="Surface",
 )
 heat_transfer_coefficient_total_temperature = SolverVariable(
@@ -275,22 +304,26 @@ heat_transfer_coefficient_total_temperature = SolverVariable(
     solver_name="heatTransferCoefficientTotalTemperature",
     prepending_code="float heatTransferCoefficientTotalTemperature;float temperature=primitive[4]/(primitive[0]*gasConstant);"
     + "float temperatureTotal = 1.0 + (gamma - 1) / 2.0 * MachRef * MachRef;"
-    + "heatTransferCoefficientTotalTemperature=largeValue<float>();"
-    + "if(abs(temperature-temperatureTotal)>epsilon<float>())"
-    + "{temperatureTotal=-heatFlux/safeDivide(temperature-temperatureTotal);}",
+    + f"float temperatureSafeDivide; float epsilon={np.finfo(np.float32).eps};"
+    + "if(temperature-temperatureTotal<0){temperatureSafeDivide=temperature-temperatureTotal-epsilon;}"
+    + "else{temperatureSafeDivide=temperature-temperatureTotal+epsilon;}"
+    + "heatTransferCoefficientTotalTemperature=1.0/epsilon;"
+    + "if(abs(temperature-temperatureTotal)>epsilon)"
+    + "{temperatureTotal=-heatFlux/temperatureSafeDivide;}",
     variable_type="Surface",
 )
 
-wall_shear_stress = SolverVariable(
-    name="solution.wall_shear_stress",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa,
-    solver_name="wallShearStress",
-    variable_type="Surface",
-)
 
 # TODO
-solutionTransition = SolverVariable(
-    name="solution.solutionTransition", value=float("NaN"), variable_type="Volume"
+velocity_relative = SolverVariable(
+    name="solution.velocity_relative",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
+    solver_name="velocityRelative",
+    prepending_code="double velocityRelative[3];for(int i=0;i<3;i++){velocityRelative[i]=velocity[i]-nodeVelocity[i];}",
+    variable_type="Volume",
+)
+wallFunctionMetric = SolverVariable(
+    name="solution.wallFunctionMetric", value=float("NaN"), variable_type="Surface"
 )
 bet_metrics_alpha_degree = SolverVariable(
     name="solution.bet_metrics_alpha_degree", value=float("NaN") * u.deg, variable_type="Volume"
