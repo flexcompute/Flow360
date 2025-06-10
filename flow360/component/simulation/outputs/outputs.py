@@ -194,7 +194,7 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "Will choose the value of the last instance of this option of the same output type "
         + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
@@ -329,7 +329,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
     )
-    output_fields: UniqueItemList[Union[SliceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SliceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SliceOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
@@ -415,7 +415,7 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
         alias="isosurfaces",
         description="List of :class:`~flow360.Isosurface` entities.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including "
         ":ref:`universal output variables<UniversalVariablesV2>` and :class:`UserDefinedField`."
     )
@@ -452,7 +452,7 @@ class SurfaceIntegralOutput(_OutputBase):
         alias="surfaces",
         description="List of boundaries where the surface integral will be calculated.",
     )
-    output_fields: UniqueItemList[str] = pd.Field(
+    output_fields: UniqueItemList[Union[str, UserVariable]] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
@@ -516,7 +516,7 @@ class ProbeOutput(_OutputBase):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
         description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
         " and :class:`UserDefinedField`."
     )
@@ -580,7 +580,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
         + "entities belonging to this monitor group."
     )
 
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
@@ -609,7 +609,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
 
     output_format: Literal["paraview"] = pd.Field(default="paraview")
 
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
