@@ -17,7 +17,7 @@ with fl.SI_unit_system:
             area=20, moment_center=[0, 0, 0], moment_length=[1, 1, 1]
         ),
         operating_condition=fl.AerospaceCondition.from_mach_reynolds(
-            reynolds=50, mach=0.1, characteristic_length=fl.u.m
+            reynolds_mesh_unit=50, mach=0.1, project_length_unit=fl.u.m
         ),
         models=[
             fl.Fluid(

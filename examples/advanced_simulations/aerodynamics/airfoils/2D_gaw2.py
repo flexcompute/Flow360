@@ -76,8 +76,8 @@ with fl.SI_unit_system:
         ),
         operating_condition=fl.AerospaceCondition.from_mach_reynolds(
             mach=0.13,
-            reynolds=2.2e06,
-            characteristic_length=1 * fl.u.m,
+            reynolds_mesh_unit=2.2e06,
+            project_length_unit=1 * fl.u.m,
             temperature=288.16,
             alpha=4 * fl.u.deg,
             beta=0 * fl.u.deg,

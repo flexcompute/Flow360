@@ -54,8 +54,8 @@ def get_aerospace_condition_using_from_mach():
 def get_aerospace_condition_using_from_mach_reynolds():
     return AerospaceCondition.from_mach_reynolds(
         mach=0.8,
-        reynolds=1e6,
-        characteristic_length=u.m,
+        reynolds_mesh_unit=1e6,
+        project_length_unit=u.m,
         alpha=5 * u.deg,
         temperature=290 * u.K,
     )
