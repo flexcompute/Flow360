@@ -1067,7 +1067,7 @@ def test_udf_generator():
         solution.velocity.in_unit(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
     )
     # velocity scale = 340.29400580821283 m/s
-    pattern = r"velocity_in_SI\[0\] = \(velocity\[0\] \* ([\d\.]+)\); velocity_in_SI\[1\] = \(velocity\[1\] \* \1\); velocity_in_SI\[2\] = \(velocity\[2\] \* \1\);"
+    pattern = r"double velocity\[3\];velocity\[0\] = primitive\[1\] \* velocityScale;velocity\[1\] = primitive\[2\] \* velocityScale;velocity\[2\] = primitive\[3\] \* velocityScale;velocity_in_SI\[0\] = \(velocity\[0\] \* ([\d\.]+)\); velocity_in_SI\[1\] = \(velocity\[1\] \* \1\); velocity_in_SI\[2\] = \(velocity\[2\] \* \1\);"
     match = re.match(pattern, result.expression)
     assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
     conversion_factor = float(match.group(1))
@@ -1080,7 +1080,7 @@ def test_udf_generator():
     ).in_unit(new_unit="m*ft/s/min")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
     # velocity scale = 340.29400580821283 m/s --> 22795277.63562985 m*ft/s/min
-    pattern = r"vel_cross_vec\[0\] = \(\(\(\(velocity\[1\] \* 3\) \* 0\.001\) - \(\(velocity\[2\] \* 2\) \* 0\.001\)\) \* ([\d\.]+)\); vel_cross_vec\[1\] = \(\(\(\(velocity\[2\] \* 1\) \* 0\.001\) - \(\(velocity\[0\] \* 3\) \* 0\.001\)\) \* \1\); vel_cross_vec\[2\] = \(\(\(\(velocity\[0\] \* 2\) \* 0\.001\) - \(\(velocity\[1\] \* 1\) \* 0\.001\)\) \* \1\);"
+    pattern = r"double velocity\[3\];velocity\[0\] = primitive\[1\] \* velocityScale;velocity\[1\] = primitive\[2\] \* velocityScale;velocity\[2\] = primitive\[3\] \* velocityScale;vel_cross_vec\[0\] = \(\(\(\(velocity\[1\] \* 3\) \* 0\.001\) - \(\(velocity\[2\] \* 2\) \* 0\.001\)\) \* ([\d\.]+)\); vel_cross_vec\[1\] = \(\(\(\(velocity\[2\] \* 1\) \* 0\.001\) - \(\(velocity\[0\] \* 3\) \* 0\.001\)\) \* \1\); vel_cross_vec\[2\] = \(\(\(\(velocity\[0\] \* 2\) \* 0\.001\) - \(\(velocity\[1\] \* 1\) \* 0\.001\)\) \* \1\);"
     match = re.match(pattern, result.expression)
     assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
     conversion_factor = float(match.group(1))

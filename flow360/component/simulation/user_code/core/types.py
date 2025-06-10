@@ -26,6 +26,7 @@ from flow360.component.simulation.user_code.core.utils import (
 )
 
 _user_variables: set[str] = set()
+_solver_variables: set[str] = set()
 
 
 def __soft_fail_add__(self, other):
@@ -300,12 +301,12 @@ class SolverVariable(Variable):
 
     solver_name: Optional[str] = pd.Field(None)
     variable_type: Literal["Volume", "Surface", "Scalar"] = pd.Field()
-    prepending_code: Optional[str] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def update_context(self):
         """Auto updating context when new variable is declared"""
         default_context.set(self.name, self.value, Variable)
+        _solver_variables.add(self.name)
         if self.solver_name:
             default_context.set_alias(self.name, self.solver_name)
         return self
@@ -423,6 +424,13 @@ class Expression(Flow360BaseModel, Evaluable):
         names = expr.used_names()
         names = [name for name in names if name in _user_variables]
 
+        return names
+
+    def solver_variable_names(self):
+        """Get list of solver variable names used in expression."""
+        expr = expr_to_model(self.expression, default_context)
+        names = expr.used_names()
+        names = [name for name in names if name in _solver_variables]
         return names
 
     def to_solver_code(self, params):
