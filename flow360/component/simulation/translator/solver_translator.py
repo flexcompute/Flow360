@@ -249,8 +249,10 @@ def translate_output_fields(
 
     for output_field in output_model.output_fields.items:
         if isinstance(output_field, UserVariable):
+            # Remove the UserVariable object and add its name
             output_fields.append(output_field.name)
-
+    # Filter out the UserVariable Dicts
+    output_fields = [item for item in output_fields if isinstance(item, str)]
     return {"outputFields": output_fields}
 
 
@@ -382,6 +384,8 @@ def translate_volume_output(
     ).items:
         if isinstance(output_field, UserVariable):
             output_fields.append(output_field.name)
+    # Filter out the UserVariable Dicts
+    output_fields = [item for item in output_fields if isinstance(item, str)]
     volume_output.update(
         {
             "outputFields": output_fields,
@@ -673,18 +677,18 @@ def process_output_fields_for_udf(input_params: SimulationParams):
         if udf_expression:
             generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
 
+    # UserVariable handling:
+    user_variable_udfs = {}
     if input_params.outputs:
-        # UserVariable handling:
-        user_variable_udfs = set()
         for output in input_params.outputs:
             if not hasattr(output, "output_fields") or not output.output_fields:
                 continue
             for output_field in output.output_fields.items:
                 if not isinstance(output_field, UserVariable):
                     continue
-                user_variable_udfs.add(user_variable_to_udf(output_field, input_params))
-
-    return generated_udfs
+                udf_from_user_variable = user_variable_to_udf(output_field, input_params)
+                user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+    return generated_udfs + list(user_variable_udfs.values())
 
 
 def translate_streamline_output(output_params: list):

@@ -308,14 +308,15 @@ class SolverVariable(Variable):
             default_context.set_alias(self.name, self.solver_name)
         return self
 
-    def in_unit(self, new_name: str, new_unit: str = None):
+    def in_unit(self, new_name: str, new_unit: Union[str, Unit] = None):
         """
 
 
         Return a UserVariable that will generate results in the new_unit.
         If new_unit is not specified then the unit will be determined by the unit system.
         """
-
+        if isinstance(new_unit, Unit):
+            new_unit = str(new_unit)
         new_variable = UserVariable(name=new_name, value=Expression(expression=self.name))
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
         return new_variable
