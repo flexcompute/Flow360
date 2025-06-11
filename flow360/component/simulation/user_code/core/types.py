@@ -9,6 +9,7 @@ from typing import Annotated, Any, Generic, List, Literal, Optional, TypeVar, Un
 
 import numpy as np
 import pydantic as pd
+import unyt as u
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
@@ -289,8 +290,10 @@ class UserVariable(Variable):
         """
         return hash(self.model_dump_json())
 
-    def in_unit(self, new_unit: str = None):
+    def in_unit(self, new_unit: Union[str, Unit] = None):
         """Requesting the output of the variable to be in the given (new_unit) units."""
+        if isinstance(new_unit, Unit):
+            new_unit = str(new_unit)
         self.value.output_units = new_unit
         return self
 
@@ -578,6 +581,53 @@ class Expression(Flow360BaseModel, Evaluable):
         if isinstance(value, list):
             return len(value)
         return 1 if isinstance(value, unyt_quantity) else value.shape[0]
+
+    def get_output_units(self, input_params=None):
+        """
+        Get the output units of the expression.
+
+        - If self.output_units is None, derive the default output unit based on the
+        value's dimensionality and current unit system.
+
+        - If self.output_units is valid u.Unit string, deserialize it and return it.
+
+        - If self.output_units is valid unit system name, derive the default output
+        unit based on the value's dimensionality and the **given** unit system.
+
+        - If expression is a number constant, return None.
+
+        - Else raise ValueError.
+        """
+
+        def get_unit_from_unit_system(expression: Expression, unit_system_name: str):
+            """Derive the default output unit based on the value's dimensionality and current unit system"""
+            numerical_value = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+            if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity, list)):
+                # Pure dimensionless constant
+                return None
+            if isinstance(numerical_value, list):
+                numerical_value = numerical_value[0]
+
+            if unit_system_name in ("SI", "SI_unit_system"):
+                return numerical_value.in_base("mks").units
+            if unit_system_name in ("Imperial", "Imperial_unit_system"):
+                return numerical_value.in_base("imperial").units
+            if unit_system_name in ("CGS", "CGS_unit_system"):
+                return numerical_value.in_base("cgs").units
+            raise ValueError(f"[Internal] Invalid unit system: {unit_system_name}")
+
+        try:
+            return u.Unit(self.output_units)
+        except u.exceptions.UnitParseError as e:
+            if input_params is None:
+                raise ValueError(
+                    "[Internal] input_params required when output_units is not valid u.Unit string"
+                ) from e
+            if not self.output_units:
+                unit_system_name: Literal["SI", "Imperial", "CGS"] = input_params.unit_system.name
+            else:
+                unit_system_name = self.output_units
+            return get_unit_from_unit_system(self, unit_system_name)
 
 
 T = TypeVar("T")
