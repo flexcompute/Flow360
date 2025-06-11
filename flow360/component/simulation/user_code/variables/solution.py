@@ -62,7 +62,7 @@ grad_velocity_y = SolverVariable(
     solver_name="gradVelocityY",
     variable_type="Volume",
 )
-gradVelocity_z = SolverVariable(
+grad_velocity_z = SolverVariable(
     name="solution.grad_velocity_z",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityZ",
