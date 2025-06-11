@@ -346,7 +346,7 @@ def test_subsequent_param_with_different_unit_system():
 def test_mach_reynolds_op_cond():
     condition = AerospaceCondition.from_mach_reynolds(
         mach=0.2,
-        reynolds=5e6,
+        reynolds_mesh_unit=5e6,
         temperature=288.15 * u.K,
         alpha=2.0 * u.deg,
         beta=0.0 * u.deg,
@@ -357,7 +357,7 @@ def test_mach_reynolds_op_cond():
 
     condition = AerospaceCondition.from_mach_reynolds(
         mach=0.2,
-        reynolds=5e6,
+        reynolds_mesh_unit=5e6,
         temperature=288.15 * u.K,
         alpha=2.0 * u.deg,
         beta=0.0 * u.deg,
@@ -369,7 +369,7 @@ def test_mach_reynolds_op_cond():
     with pytest.raises(ValueError, match="Input should be greater than 0"):
         condition = AerospaceCondition.from_mach_reynolds(
             mach=0.2,
-            reynolds=0,
+            reynolds_mesh_unit=0,
             temperature=288.15 * u.K,
             project_length_unit=u.m,
         )

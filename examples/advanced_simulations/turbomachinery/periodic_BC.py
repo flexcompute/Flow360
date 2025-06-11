@@ -29,9 +29,9 @@ with fl.SI_unit_system:
         normal=[1, 0, 0],
         origin=[294.65, 0, 0] * fl.u.m,
     )
-    operating_condition = fl.operating_condition_from_mach_reynolds(
+    operating_condition = fl.AerospaceCondition.from_mach_reynolds(
         mach=0.13989,
-        reynolds=3200,
+        reynolds_mesh_unit=3200,
         project_length_unit=1 * fl.u.m,
         temperature=298.25 * fl.u.K,
     )
