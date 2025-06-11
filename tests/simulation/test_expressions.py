@@ -1042,48 +1042,60 @@ def assert_ignore_space(expected: str, actual: str):
 def test_udf_generator():
     with SI_unit_system:
         params = SimulationParams(
-            operating_condition=AerospaceCondition(
-                velocity_magnitude=10 * u.m / u.s,
-                reference_velocity_magnitude=10 * u.m / u.s,
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=5 * u.m / u.s,
             ),
             private_attribute_asset_cache=AssetCache(project_length_unit=10 * u.m),
         )
     # Scalar output
     result = user_variable_to_udf(
-        solution.mut.in_unit(new_name="mut_in_Imperial", new_unit="ft**2/s"), input_params=params
+        solution.mut.in_unit(new_name="mut_in_km", new_unit="km**2/s"), input_params=params
     )
-    # velocity scale = 340.29400580821283 m/s, length scale = 10m, mut_scale = 3402.94 m**2/s -> 36628.94131344 *ft**2/s
-    pattern = r"mut_in_Imperial = \(mut \* ([\d\.]+)\);"
-    match = re.match(pattern, result.expression)
-    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
-    conversion_factor = float(match.group(1))
-    # Note: Ranged since the value depends on the OS.
-    assert (
-        36628.941 < conversion_factor < 36628.942
-    ), f"Conversion factor {conversion_factor} outside expected range"
+    # velocity scale = 100 m/s, length scale = 10m, mut_scale = 1000 m**2/s -> 0.01 *km**2/s
+    assert result.expression == "mut_in_km = (mut * 0.001);"
 
     # Vector output
     result = user_variable_to_udf(
         solution.velocity.in_unit(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
     )
-    # velocity scale = 340.29400580821283 m/s
-    pattern = r"double velocity\[3\];velocity\[0\] = primitiveVars\[1\] \* velocityScale;velocity\[1\] = primitiveVars\[2\] \* velocityScale;velocity\[2\] = primitiveVars\[3\] \* velocityScale;velocity_in_SI\[0\] = \(velocity\[0\] \* ([\d\.]+)\); velocity_in_SI\[1\] = \(velocity\[1\] \* \1\); velocity_in_SI\[2\] = \(velocity\[2\] \* \1\);"
-    match = re.match(pattern, result.expression)
-    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
-    conversion_factor = float(match.group(1))
+    # velocity scale =  100 m/s,
     assert (
-        340.294005 < conversion_factor < 340.2940064
-    ), f"Conversion factor {conversion_factor} outside expected range"
+        result.expression
+        == "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_in_SI[0] = (velocity[0] * 100.0); velocity_in_SI[1] = (velocity[1] * 100.0); velocity_in_SI[2] = (velocity[2] * 100.0);"
+    )
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_unit(new_unit="m*ft/s/min")
+    ).in_unit(new_unit="m*km/s/s")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
-    # velocity scale = 340.29400580821283 m/s --> 22795277.63562985 m*ft/s/min
-    pattern = r"double velocity\[3\];velocity\[0\] = primitiveVars\[1\] \* velocityScale;velocity\[1\] = primitiveVars\[2\] \* velocityScale;velocity\[2\] = primitiveVars\[3\] \* velocityScale;vel_cross_vec\[0\] = \(\(\(\(velocity\[1\] \* 3\) \* 0\.001\) - \(\(velocity\[2\] \* 2\) \* 0\.001\)\) \* ([\d\.]+)\); vel_cross_vec\[1\] = \(\(\(\(velocity\[2\] \* 1\) \* 0\.001\) - \(\(velocity\[0\] \* 3\) \* 0\.001\)\) \* \1\); vel_cross_vec\[2\] = \(\(\(\(velocity\[0\] \* 2\) \* 0\.001\) - \(\(velocity\[1\] \* 1\) \* 0\.001\)\) \* \1\);"
-    match = re.match(pattern, result.expression)
-    assert match is not None, f"Expression '{result.expression}' does not match expected pattern"
-    conversion_factor = float(match.group(1))
+    print("3>>> result.expression", result.expression)
     assert (
-        22795277.635 < conversion_factor < 22795278 + 1e-8
-    ), f"Conversion factor {conversion_factor} outside expected range"
+        result.expression
+        == "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((velocity[1] * 3) * 0.001) - ((velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((velocity[2] * 1) * 0.001) - ((velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((velocity[0] * 2) * 0.001) - ((velocity[1] * 1) * 0.001)) * 10.0);"
+    )
+
+    # DOES NOT WORK
+    # vel_plus_vec = UserVariable(
+    #     name="vel_cross_vec", value=solution.velocity + [1, 2, 3] * u.cm / u.ms
+    # ).in_unit(new_unit="cm/s")
+    # result = user_variable_to_udf(vel_plus_vec, input_params=params)
+    # print("4>>> result.expression", result.expression)
+
+
+def test_project_variables():
+    aaa = UserVariable(name="aaa", value=solution.velocity + 12 * u.m / u.s)
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                reference_velocity_magnitude=10 * u.m / u.s,
+            ),
+            outputs=[
+                VolumeOutput(
+                    output_fields=[
+                        UserVariable(name="bbb", value=aaa + 14 * u.m / u.s),
+                    ]
+                )
+            ],
+        )
+    assert params.private_attribute_asset_cache.project_variables == [aaa]

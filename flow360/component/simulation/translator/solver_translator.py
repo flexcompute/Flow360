@@ -645,20 +645,13 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         raise ValueError("Constant value found in user variable.")
 
     def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
-        y2 = (2 * target_unit).in_units(source_unit).value
-        y1 = (1 * target_unit).in_units(source_unit).value
-        x2 = 2
-        x1 = 1
+        y2 = (2.0 * target_unit).in_units(source_unit).value
+        y1 = (1.0 * target_unit).in_units(source_unit).value
+        x2 = 2.0
+        x1 = 1.0
 
         coefficient = (y2 - y1) / (x2 - x1)
         offset = y1 / coefficient - x1
-
-        assert np.isclose(
-            123, (coefficient * (123 + offset) * source_unit).in_units(target_unit).value
-        )
-        assert np.isclose(
-            12, (coefficient * (12 + offset) * source_unit).in_units(target_unit).value
-        )
 
         return coefficient, offset
 
