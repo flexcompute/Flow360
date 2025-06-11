@@ -618,11 +618,11 @@ class Expression(Flow360BaseModel, Evaluable):
 
         try:
             return u.Unit(self.output_units)
-        except u.exceptions.UnitParseError:
+        except u.exceptions.UnitParseError as e:
             if input_params is None:
                 raise ValueError(
-                    "[Internal] input_params required when output_units is not valid u.Unit string."
-                )
+                    "[Internal] input_params required when output_units is not valid u.Unit string"
+                ) from e
             if not self.output_units:
                 unit_system_name: Literal["SI", "Imperial", "CGS"] = input_params.unit_system.name
             else:
