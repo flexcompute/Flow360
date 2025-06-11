@@ -601,11 +601,8 @@ class Expression(Flow360BaseModel, Evaluable):
         def get_unit_from_unit_system(expression: Expression, unit_system_name: str):
             """Derive the default output unit based on the value's dimensionality and current unit system"""
             numerical_value = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-            print(">> numerical_value type:", type(numerical_value))
-            print(">> numerical_value:", numerical_value)
             if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity, list)):
                 # Pure dimensionless constant
-                print(">> Pure dimensionless constant, returning None")
                 return None
             if isinstance(numerical_value, list):
                 numerical_value = numerical_value[0]
