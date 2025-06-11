@@ -244,7 +244,7 @@ class AerospaceConditionCache(Flow360BaseModel):
     """[INTERNAL] Cache for AerospaceCondition inputs"""
 
     mach: Optional[pd.NonNegativeFloat] = None
-    reynolds: Optional[pd.PositiveFloat] = None
+    reynolds_mesh_unit: Optional[pd.PositiveFloat] = None
     project_length_unit: Optional[LengthType.Positive] = None
     alpha: Optional[AngleType] = None
     beta: Optional[AngleType] = None
@@ -379,7 +379,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def from_mach_reynolds(
         cls,
         mach: pd.PositiveFloat,
-        reynolds: pd.PositiveFloat,
+        reynolds_mesh_unit: pd.PositiveFloat,
         project_length_unit: LengthType.Positive,
         alpha: Optional[AngleType] = 0 * u.deg,
         beta: Optional[AngleType] = 0 * u.deg,
@@ -397,10 +397,12 @@ class AerospaceCondition(MultiConstructorBaseModel):
         ----------
         mach : NonNegativeFloat
             Freestream Mach number (must be non-negative).
-        reynolds : PositiveFloat
-            Freestream Reynolds number defined with mesh unit (must be positive).
+        reynolds_mesh_unit : PositiveFloat
+            Freestream Reynolds number scaled to mesh unit (must be positive).
+            For example if the mesh unit is 1 mm, the reynolds_mesh_unit should be
+            equal to a Reynolds number that has the characteristic length of 1 mm.
         project_length_unit: LengthType.Positive
-            Project length unit.
+            Project length unit used to compute the density (must be positive).
         alpha : AngleType, optional
             Angle of attack. Default is 0 degrees.
         beta : AngleType, optional
@@ -419,9 +421,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
         -------
         Example usage:
 
-        >>> condition = operating_condition_from_mach_reynolds(
+        >>> condition = fl.AerospaceCondition.from_mach_reynolds(
         ...     mach=0.85,
-        ...     reynolds=1e6,
+        ...     reynolds_mesh_unit=1e6,
         ...     project_length_unit=1 * u.mm,
         ...     temperature=288.15 * u.K,
         ...     alpha=2.0 * u.deg,
@@ -441,7 +443,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
         velocity = mach * material.get_speed_of_sound(temperature)
 
         density = (
-            reynolds
+            reynolds_mesh_unit
             * material.get_dynamic_viscosity(temperature)
             / (velocity * project_length_unit)
         )

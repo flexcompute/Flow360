@@ -26,7 +26,7 @@ def get_2dcrm_tutorial_param():
             ),
             operating_condition=AerospaceCondition.from_mach_reynolds(
                 mach=0.2,
-                reynolds=5e6,
+                reynolds_mesh_unit=5e6,
                 temperature=272.1 * u.K,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
@@ -54,7 +54,7 @@ def get_2dcrm_tutorial_param_deg_c():
             ),
             operating_condition=AerospaceCondition.from_mach_reynolds(
                 mach=0.2,
-                reynolds=5e6,
+                reynolds_mesh_unit=5e6,
                 temperature=-1.05 * u.degC,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
@@ -82,7 +82,7 @@ def get_2dcrm_tutorial_param_deg_f():
             ),
             operating_condition=AerospaceCondition.from_mach_reynolds(
                 mach=0.2,
-                reynolds=5e6,
+                reynolds_mesh_unit=5e6,
                 temperature=30.11 * u.degF,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
