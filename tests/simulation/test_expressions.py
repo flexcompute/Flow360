@@ -1073,6 +1073,11 @@ def test_udf_generator():
         == "vel_cross_vec[0] = ((((solution.velocity[1] * 3) * 0.001) - ((solution.velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((solution.velocity[2] * 1) * 0.001) - ((solution.velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((solution.velocity[0] * 2) * 0.001) - ((solution.velocity[1] * 1) * 0.001)) * 10.0);"
     )
 
+    vel_cross_vec = UserVariable(
+        name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
+    ).in_unit(new_unit="CGS_unit_system")
+    assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
+
     # DOES NOT WORK
     # vel_plus_vec = UserVariable(
     #     name="vel_cross_vec", value=solution.velocity + [1, 2, 3] * u.cm / u.ms
