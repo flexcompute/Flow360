@@ -74,9 +74,9 @@ with fl.SI_unit_system:
         reference_geometry=fl.ReferenceGeometry(
             moment_center=[0.25, 0, 0], moment_length=[1, 1, 1], area=0.01
         ),
-        operating_condition=fl.operating_condition_from_mach_reynolds(
+        operating_condition=fl.AerospaceCondition.from_mach_reynolds(
             mach=0.13,
-            reynolds=2.2e06,
+            reynolds_mesh_unit=2.2e06,
             project_length_unit=1 * fl.u.m,
             temperature=288.16,
             alpha=4 * fl.u.deg,
