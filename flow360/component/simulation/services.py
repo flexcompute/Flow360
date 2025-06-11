@@ -909,3 +909,21 @@ def get_default_report_config() -> dict:
     return get_default_report_summary_template().model_dump(
         exclude_none=True,
     )
+
+
+def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
+    """Deduct the root item entity type from simulation.json"""
+    try:
+        entity_info_type = param_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "type_name"
+        ]
+        if entity_info_type == "GeometryEntityInfo":
+            return "Geometry"
+        if entity_info_type == "SurfaceMeshEntityInfo":
+            return "SurfaceMesh"
+        if entity_info_type == "VolumeMeshEntityInfo":
+            return "VolumeMesh"
+        raise ValueError(f"[INTERNAL] Invalid type of the entity info found: {entity_info_type}")
+    except KeyError:
+        # pylint:disable = raise-missing-from
+        raise ValueError("[INTERNAL] Failed to get the root item from the simulation.json!!!")
