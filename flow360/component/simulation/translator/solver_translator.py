@@ -2,7 +2,7 @@
 
 # pylint: disable=too-many-lines
 from numbers import Number
-from typing import Literal, Type, Union
+from typing import Type, Union
 
 import numpy as np
 import unyt as u
@@ -655,28 +655,9 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
 
         return coefficient, offset
 
-    def _get_output_unit(expression: Expression, input_params: SimulationParams):
-        if not expression.output_units:
-            # Derive the default output unit based on the value's dimensionality and current unit system
-            current_unit_system_name: Literal["SI", "Imperial", "CGS"] = (
-                input_params.unit_system.name
-            )
-            numerical_value = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-            if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity)):
-                # Pure dimensionless constant
-                return None
-            if current_unit_system_name == "SI":
-                return numerical_value.in_base("mks").units
-            if current_unit_system_name == "Imperial":
-                return numerical_value.in_base("imperial").units
-            if current_unit_system_name == "CGS":
-                return numerical_value.in_base("cgs").units
-
-        return u.Unit(expression.output_units)
-
     expression: Expression = variable.value
 
-    requested_unit: Union[u.Unit, None] = _get_output_unit(expression, input_params)
+    requested_unit: Union[u.Unit, None] = expression.get_output_units(input_params=input_params)
     if requested_unit is None:
         # Number constant output requested
         coefficient = 1
