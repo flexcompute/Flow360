@@ -1021,7 +1021,7 @@ def test_to_file_from_file_expression(
             outputs=[
                 VolumeOutput(
                     output_fields=[
-                        solution.mut.in_unit(new_name="mut_in_SI"),
+                        solution.mut.in_unit(new_name="mut_in_SI", new_unit="cm**2/min"),
                         constant_variable,
                         constant_array,
                         constant_unyt_quantity,

@@ -616,7 +616,7 @@ class ValueOrExpression(Expression, Generic[T]):
                         return unyt_array(value.value, value.units)
                     return value.value
                 if value.type_name == "expression":
-                    return expr_type(expression=value.expression)
+                    return expr_type(expression=value.expression, output_units=value.output_units)
             except Exception:  # pylint:disable=broad-exception-caught
                 pass
 
