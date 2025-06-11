@@ -595,6 +595,7 @@ class Expression(Flow360BaseModel, Evaluable):
         unit based on the value's dimensionality and the **given** unit system.
 
         - If expression is a number constant, return None.
+
         - Else raise ValueError.
         """
 
@@ -618,11 +619,15 @@ class Expression(Flow360BaseModel, Evaluable):
         try:
             return u.Unit(self.output_units)
         except u.exceptions.UnitParseError:
+            if input_params is None:
+                raise ValueError(
+                    "[Internal] input_params required when output_units is not valid u.Unit string."
+                )
             if not self.output_units:
                 unit_system_name: Literal["SI", "Imperial", "CGS"] = input_params.unit_system.name
             else:
                 unit_system_name = self.output_units
-        return get_unit_from_unit_system(self, unit_system_name)
+            return get_unit_from_unit_system(self, unit_system_name)
 
 
 T = TypeVar("T")
