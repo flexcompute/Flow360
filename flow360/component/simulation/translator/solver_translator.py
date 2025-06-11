@@ -101,10 +101,10 @@ udf_prepending_code = {
     "solution.Cp": "double Cp;Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
     "solution.Cpt": "double Cpt;double MachUser = sqrt(primitiveVars[1] * primitiveVars[1]+"
     + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3])"
-    + "/sqrt(gamma * primitiveVars[4] / primitiveVars[0]);"
-    + "Cpt = (gamma * primitiveVars[4] * pow(1.0 + (gamma - 1.0) / 2. * MachUser * MachUser,"
-    + "gamma / (gamma - 1.)) - pow(1.0 + (gamma - 1.0) / 2. * MachRef * MachRef,"
-    + "gamma / (gamma - 1.))) / (0.5 * gamma * MachRef * MachRef);",
+    + "/sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
+    + "Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * MachUser * MachUser,"
+    + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
+    + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
     "solution.grad_density": "double gradDensity[3];gradDensity[0] = gradPrimitive[0][0];"
     + "gradDensity[1] = gradPrimitive[0][1];gradDensity[2] = gradPrimitive[0][2];",
     "solution.grad_velocity_x": "double gradVelocityX[3];gradVelocityX[0] = gradPrimitive[1][0];"
@@ -117,7 +117,7 @@ udf_prepending_code = {
     + "gradPressure[1] = gradPrimitive[4][1];gradPressure[2] = gradPrimitive[4][2];",
     "solution.Mach": "double Mach;Mach = sqrt(primitiveVars[1] * primitiveVars[1] + "
     + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3])"
-    + " / sqrt(gamma * primitiveVars[4] / primitiveVars[0]);"
+    + " / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
     + "if (usingLiquidAsMaterial){Mach = 0;}",
     "solution.mut_ratio": "double mutRatio;mutRatio = mut / mu;",
     "solution.velocity": "double velocity[3];"
@@ -147,19 +147,19 @@ udf_prepending_code = {
     + "double omg23 = 0.5 * (vz - wy);"
     + "double omg_norm = 2 * (omg12 * omg12) + 2 * (omg13 * omg13) + 2 * (omg23 * omg23);"
     + "qcriterion = 0.5 * (omg_norm - str_norm) * (velocityScale * velocityScale);",
-    "solution.entropy": "double entropy;entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0],gamma));",
+    "solution.entropy": "double entropy;entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0], 1.4));",
     "solution.temperature": "double temperature;temperature = primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
     "solution.vorticity": "double vorticity[3];"
     + "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
     + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
     + "vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
     "solution.CfVec": "double CfVec[3];"
-    + "for (int i = 0;i<3;i++)"
+    + "for (int i = 0; i < 3; i++)"
     + "{CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}",
     "solution.Cf": "double Cf;Cf = magnitude(wallShearStress) / (0.5 * MachRef * MachRef);",
     "solution.node_forces_per_unit_area": "double nodeForcesPerUnitArea[3];"
     + "double normalMag = magnitude(nodeNormals);"
-    + "for (int i = 0;i < 3;i++){nodeForcesPerUnitArea[i] = "
+    + "for (int i = 0; i < 3; i++){nodeForcesPerUnitArea[i] = "
     + "((primitiveVars[4] - pressureFreestream) * nodeNormals[i] / normalMag + wallViscousStress[i])"
     + " * (velocityScale * velocityScale);}",
     "solution.heat_transfer_coefficient_static_temperature": "double heatTransferCoefficientStaticTemperature;"
@@ -172,7 +172,7 @@ udf_prepending_code = {
     + "{temperatureTotal = - heatFlux / temperatureSafeDivide;}",
     "solution.heat_transfer_coefficient_total_temperature": "double heatTransferCoefficientTotalTemperature;"
     + "double temperature = primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
-    + "double temperatureTotal = 1.0 + (gamma - 1.0) / 2.0 * MachRef * MachRef;"
+    + "double temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
     + f"double temperatureSafeDivide; double epsilon = {np.finfo(np.float64).eps};"
     + "if (temperature - temperatureTotal < 0){temperatureSafeDivide = temperature - temperatureTotal - epsilon;}"
     + "else{temperatureSafeDivide = temperature - temperatureTotal + epsilon;}"
