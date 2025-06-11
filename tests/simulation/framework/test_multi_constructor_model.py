@@ -50,6 +50,20 @@ def get_aerospace_condition_using_from():
     )
 
 
+<<<<<<< HEAD
+=======
+@pytest.fixture
+def get_aerospace_condition_using_from_mach_reynolds():
+    return AerospaceCondition.from_mach_reynolds(
+        mach=0.8,
+        reynolds_mesh_unit=1e6,
+        project_length_unit=u.m,
+        alpha=5 * u.deg,
+        temperature=290 * u.K,
+    )
+
+
+>>>>>>> f5627a46 (changed mach reynolds to use charcteristic length (#1138))
 def compare_objects_from_dict(dict1: dict, dict2: dict, object_class: type[Flow360BaseModel]):
     obj1 = object_class.model_validate(dict1)
     obj2 = object_class.model_validate(dict2)
