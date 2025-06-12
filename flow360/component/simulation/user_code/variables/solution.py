@@ -215,10 +215,10 @@ node_forces_per_unit_area = SolverVariable(
 y_plus = SolverVariable(
     name="solution.y_plus", value=float("NaN"), solver_name="yPlus", variable_type="Surface"
 )
-wall_shear_stress = SolverVariable(
-    name="solution.wall_shear_stress",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa,
-    solver_name="wallShearStress",
+wall_shear_stress_magnitude = SolverVariable(
+    name="solution.wall_shear_stress_magnitude",
+    value=float("NaN") * u.Pa,
+    solver_name="wallShearStressMagnitude",
     variable_type="Surface",
 )
 heat_transfer_coefficient_static_temperature = SolverVariable(

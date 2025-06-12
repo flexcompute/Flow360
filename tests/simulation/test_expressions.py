@@ -18,6 +18,7 @@ from flow360 import (
 )
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.framework.updater_utils import compare_lists
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import (
@@ -55,8 +56,10 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.component.simulation.user_code.core.context import WHITELISTED_CALLABLES
 from flow360.component.simulation.user_code.core.types import (
     Expression,
+    SolverVariable,
     UserVariable,
     ValueOrExpression,
 )
@@ -1104,3 +1107,14 @@ def test_project_variables():
             ],
         )
     assert params.private_attribute_asset_cache.project_variables == [aaa]
+
+
+def test_whitelisted_callables():
+    def get_user_variable_names(module):
+        return [attr for attr in dir(module) if isinstance(getattr(module, attr), SolverVariable)]
+
+    solution_vars = get_user_variable_names(solution)
+    control_vars = get_user_variable_names(control)
+
+    assert compare_lists(solution_vars, WHITELISTED_CALLABLES["flow360.solution"]["callables"])
+    assert compare_lists(control_vars, WHITELISTED_CALLABLES["flow360.control"]["callables"])

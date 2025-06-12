@@ -184,6 +184,8 @@ udf_prepending_code = {
     + "double heatTransferCoefficientTotalTemperature = "
     + "abs(temperature - temperatureTotal) > epsilon ? "
     + "temperatureTotal = - heatFlux / temperatureSafeDivide :  1.0 / epsilon;",
+    "solution.wall_shear_stress_magnitude": "double wallShearStressMagnitude; "
+    + "wallShearStressMagnitude = magnitude(wallShearStress);",
 }
 
 

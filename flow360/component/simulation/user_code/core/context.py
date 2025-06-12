@@ -115,7 +115,7 @@ WHITELISTED_CALLABLES = {
             "node_normals",
             "node_forces_per_unit_area",
             "y_plus",
-            "wall_shear_stress",
+            "wall_shear_stress_magnitude",
             "heat_transfer_coefficient_static_temperature",
             "heat_transfer_coefficient_total_temperature",
         ],
