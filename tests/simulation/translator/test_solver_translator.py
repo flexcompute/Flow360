@@ -52,6 +52,8 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.variables import solution
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
@@ -500,6 +502,26 @@ def test_user_defined_field():
             user_defined_fields=[UserDefinedField(name="CpT", expression="C-p*T")],
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_udf.json")
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            outputs=[
+                VolumeOutput(
+                    name="output",
+                    output_fields=[
+                        solution.Mach,
+                        solution.velocity,
+                        UserVariable(name="uuu", value=solution.velocity),
+                    ],
+                )
+            ],
+        )
+    translated = get_solver_json(param, mesh_unit=1 * u.m)
+    print("-----------------\n", json.dumps(translated, indent=4))
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_expression_udf.json")
 
 
 def test_boundaries():
