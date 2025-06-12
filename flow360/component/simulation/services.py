@@ -1,6 +1,6 @@
 """Simulation services module."""
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, too-many-lines
 import json
 import os
 from enum import Enum
@@ -825,7 +825,10 @@ def validate_expression(variables: list[dict], expressions: list[str]):
         try:
             expression_object = Expression(expression=expression)
             result = expression_object.evaluate(raise_on_non_evaluable=False)
-            if np.isnan(result):
+            if isinstance(result, (list, np.ndarray)):
+                if np.isnan(result).all():
+                    pass
+            elif isinstance(result, Number) and np.isnan(result):
                 pass
             elif isinstance(result, Number):
                 value = result
@@ -840,6 +843,9 @@ def validate_expression(variables: list[dict], expressions: list[str]):
                     value = float(result[0])
                 else:
                     value = tuple(result.tolist())
+
+            # Test symbolically
+            expression_object.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
         except pd.ValidationError as err:
             errors.extend(err.errors())
         except Exception as err:  # pylint: disable=broad-exception-caught
