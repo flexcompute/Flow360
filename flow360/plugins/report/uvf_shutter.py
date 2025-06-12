@@ -34,7 +34,7 @@ class ShutterRequestBaseModel(Flow360BaseModel):
     """
 
 
-ShutterObjectTypes = Literal["slices", "qcriterion", "isosurfaces", "boundaries", "edges"]
+ShutterObjectTypes = Literal["slices", "qcriterion", "isosurface", "boundaries"]
 
 
 class Resource(Flow360BaseModel):
@@ -190,20 +190,20 @@ class Camera(Flow360BaseModel):
 
     Attributes
     ----------
-    position : Vector3
+    position : Tuple[float, float, float], optional
         Camera eye position, think of the eye position as a position on the unit sphere centered at the `lookAt`.
         The units are in length units used in geometry or volume mesh.
-    up : Vector3
+    up : Tuple[float, float, float], optional
         Up orientation of the camera.
-    look_at : Vector3
+    look_at : Tuple[float, float, float], optional
         Target point the camera will look at from the position. Default: center of bbox
         The units are in length units used in geometry or volume mesh.
-    pan_target : Vector3 or None
+    pan_target : [Tuple[float, float, float], optional
         Position to pan the viewport center to; if undefined, the default is `look_at`.
         The units are in length units used in geometry or volume mesh.
-    dimension_dir : {'width', 'height', 'diagonal'}
+    dimension_dir : Literal["width", "height", "diagonal"], optional
         The direction `dimension_size_model_units` is for.
-    dimension : float
+    dimension : float, optional
         The camera zoom will be set such that the extents of the scene's projection is this number of model units for
         the applicable `dimension_dir`. The units are in length units used in geometry or volume mesh.
     """
@@ -241,10 +241,10 @@ class LeftCamera(Camera):
     Up:       (0, 0, 1)
     """
 
-    type: Literal["LeftCamera"] = "LeftCamera"
     position: Tuple[float, float, float] = (0.0, -1.0, 0.0)
     look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
     up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
+    type: Literal["LeftCamera"] = "LeftCamera"
 
 
 class RearCamera(Camera):

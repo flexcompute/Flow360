@@ -148,8 +148,8 @@ class ReportTemplate(Flow360BaseModel):
     Parameters
     ----------
     title: str, optional
-        Title of report, shown on the first page
-    items : List[Union[Summary, Inputs, Table, Chart2D, Chart3D]]
+        Title of report, shown on the first page.
+    items : List[ReportItemTypes]
         A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart.
         The `type` field acts as a discriminator for differentiating item types.
     include_case_by_case : bool, default=True

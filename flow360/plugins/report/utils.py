@@ -418,7 +418,7 @@ class GetAttribute(GenericOperation):
     using Python's built-in `getattr` function. If the attribute is not found, an `AttributeError`
     is raised, providing a clear error message.
 
-    Attributes
+    Parameters
     ----------
     attr_name : str
         The name of the attribute to retrieve from the data object.
@@ -455,21 +455,19 @@ class Average(GenericOperation):
     This operation calculates the average of a given data set over a specified range of steps, time,
     or fraction of the dataset.
 
-    Attributes
+    Parameters
     ----------
-    start_step : Optional[pd.NonNegativeInt]
+    start_step : NonNegativeInt, optional
         The starting step for averaging. If not specified, averaging starts from the beginning.
-    end_step : Optional[pd.NonNegativeInt]
+    end_step : NonNegativeInt, optional
         The ending step for averaging. If not specified, averaging continues to the end.
-    start_time : Optional[pd.NonNegativeFloat]
+    start_time : NonNegativeFloat, optional
         The starting time for averaging. If not specified, averaging starts from the beginning.
-    end_time : Optional[pd.NonNegativeFloat]
+    end_time : NonNegativeFloat, optional
         The ending time for averaging. If not specified, averaging continues to the end.
-    fraction : Optional[pd.PositiveFloat]
+    fraction : PositiveFloat, optional
         The fraction of the dataset to be averaged, ranging from 0 to 1.
         Only the fraction-based method is implemented.
-    type_name : Literal["Average"]
-        A literal string indicating the operation type.
 
     Raises
     ------
@@ -535,7 +533,7 @@ class Expression(GenericOperation):
     variables extracted from simulation results. The results of the expression
     evaluation can be added as a new column to a dataframe for further analysis.
 
-    Attributes
+    Parameters
     ----------
     expr : str
         The mathematical expression to evaluate. It should be written in a syntax
@@ -697,8 +695,6 @@ class DataItem(Flow360BaseModel):
         `Expression` and `Average`.
     variables : list[Variable], optional
         Additional user-defined variables that may be referenced in the `Expression` operations.
-    type_name : Literal["DataItem"]
-        A literal string identifying the type of the item, set to "DataItem".
     """
 
     data: str
@@ -799,8 +795,9 @@ class Delta(Flow360BaseModel):
     ----------
     data : str
         Path to the data item used for delta calculation.
-    ref_index : Optional[NonNegativeInt], default=0
+    ref_index : NonNegativeInt, optional
         Index of the reference case in the list of cases for comparison.
+        Defaults to 0.
     """
 
     data: Union[str, DataItem]
@@ -872,7 +869,7 @@ class Grouper(Flow360BaseModel):
     group_by: Union[str, List[str]]
         The path to the data attribute (or paths to attributes in case of multi-level grouping)
         by which the grouping should be done.
-    buckets: Optional[Union[dict[str, List], List[Union[dict[str, List], None]]]]
+    buckets: Union[dict[str, List], List[Union[dict[str, List], None]]], optional
         Dictionaries where key represents the name of the group and value is the list of values,
         that belong to the group. If all the values should be unique, enter None for the corresponding bucket.
 
