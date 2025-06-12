@@ -187,162 +187,138 @@ class SetLICPayload(Flow360BaseModel):
 class Camera(Flow360BaseModel):
     """
     Represents the camera configuration payload.
-
-    Attributes
-    ----------
-    position : Tuple[float, float, float], optional
-        Camera eye position, think of the eye position as a position on the unit sphere centered at the `lookAt`.
-        The units are in length units used in geometry or volume mesh.
-    up : Tuple[float, float, float], optional
-        Up orientation of the camera.
-    look_at : Tuple[float, float, float], optional
-        Target point the camera will look at from the position. Default: center of bbox
-        The units are in length units used in geometry or volume mesh.
-    pan_target : [Tuple[float, float, float], optional
-        Position to pan the viewport center to; if undefined, the default is `look_at`.
-        The units are in length units used in geometry or volume mesh.
-    dimension_dir : Literal["width", "height", "diagonal"], optional
-        The direction `dimension_size_model_units` is for.
-    dimension : float, optional
-        The camera zoom will be set such that the extents of the scene's projection is this number of model units for
-        the applicable `dimension_dir`. The units are in length units used in geometry or volume mesh.
     """
 
-    position: Optional[Tuple[float, float, float]] = (-1, -1, 1)
-    up: Optional[Tuple[float, float, float]] = (0, 0, 1)
-    look_at: Optional[Tuple[float, float, float]] = None
-    pan_target: Optional[Tuple[float, float, float]] = None
-    dimension_dir: Optional[Literal["width", "height", "diagonal"]] = pd.Field(
-        "width", alias="dimensionDirection"
+    position: Optional[Tuple[float, float, float]] = pd.Field(
+        (-1, -1, 1),
+        description="Camera eye position, think of the eye position as a position on the unit sphere"
+        + " centered at the `lookAt`. The units are in length units used in geometry or volume mesh.",
     )
-    dimension: Optional[float] = pd.Field(None, alias="dimensionSizeModelUnits")
-    type: Literal["Camera"] = "Camera"
+    up: Optional[Tuple[float, float, float]] = pd.Field(
+        (0, 0, 1), description="Up orientation of the camera."
+    )
+    look_at: Optional[Tuple[float, float, float]] = pd.Field(
+        None,
+        description="Target point the camera will look at from the position. Default: center of bbox."
+        + " The units are in length units used in geometry or volume mesh.",
+    )
+    pan_target: Optional[Tuple[float, float, float]] = pd.Field(
+        None,
+        description="Position to pan the viewport center to; if undefined, the default is `look_at`."
+        + " The units are in length units used in geometry or volume mesh.",
+    )
+    dimension_dir: Optional[Literal["width", "height", "diagonal"]] = pd.Field(
+        "width",
+        alias="dimensionDirection",
+        description="The direction `dimension_size_model_units` is for.",
+    )
+    dimension: Optional[float] = pd.Field(
+        None,
+        alias="dimensionSizeModelUnits",
+        description="The camera zoom will be set such that the extents of the scene's projection is this number"
+        + " of model units for the applicable `dimension_dir`."
+        + " The units are in length units used in geometry or volume mesh.",
+    )
+    type: Literal["Camera"] = pd.Field("Camera", frozen=True)
 
 
 class TopCamera(Camera):
     """
     Camera looking down from above (along +Z).
-    Position: (0, 0, 1)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 1, 0)
     """
 
-    position: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 1.0, 0.0)
-    type: Literal["TopCamera"] = "TopCamera"
+    position: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 1.0, 0.0))
+    type: Literal["TopCamera"] = pd.Field("TopCamera")
 
 
 class LeftCamera(Camera):
     """
     Camera looking from the positive Y side toward the origin (i.e. along -Y).
-    Position: (0, -1, 0)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
     """
 
-    position: Tuple[float, float, float] = (0.0, -1.0, 0.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["LeftCamera"] = "LeftCamera"
+    position: Tuple[float, float, float] = pd.Field((0.0, -1.0, 0.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["LeftCamera"] = pd.Field("LeftCamera")
 
 
 class RearCamera(Camera):
     """
     Camera looking from negative X toward the origin (i.e. along +X).
-    Position: (1, 0, 0)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
     """
 
-    position: Tuple[float, float, float] = (1.0, 0.0, 0.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["RearCamera"] = "RearCamera"
+    position: Tuple[float, float, float] = pd.Field((1.0, 0.0, 0.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["RearCamera"] = pd.Field("RearCamera")
 
 
 class FrontCamera(Camera):
     """
     Camera looking from positive X side toward the origin (i.e. along -X).
-    Position: (-1, 0, 0)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
     """
 
-    position: Tuple[float, float, float] = (-1.0, 0.0, 0.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["FrontCamera"] = "FrontCamera"
+    position: Tuple[float, float, float] = pd.Field((-1.0, 0.0, 0.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["FrontCamera"] = pd.Field("FrontCamera")
 
 
 class BottomCamera(Camera):
     """
     Camera looking up from below (along -Z).
-    Position: (0, 0, -1)
-    Look-at:  (0, 0, 0)
-    Up:       (0, -1, 0)
     """
 
-    position: Tuple[float, float, float] = (0.0, 0.0, -1.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, -1.0, 0.0)
-    type: Literal["BottomCamera"] = "BottomCamera"
+    position: Tuple[float, float, float] = pd.Field((0.0, 0.0, -1.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, -1.0, 0.0))
+    type: Literal["BottomCamera"] = pd.Field("BottomCamera")
 
 
 class FrontLeftBottomCamera(Camera):
     """
-    Camera placed front-left-bottom, diagonally looking at the model.
-    Position: (-1, -1, -1)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
+    Camera placed front-left-bottom, diagonally looking at the model.]
     """
 
-    position: Tuple[float, float, float] = (-1.0, -1.0, -1.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["FrontLeftBottomCamera"] = "FrontLeftBottomCamera"
+    position: Tuple[float, float, float] = pd.Field((-1.0, -1.0, -1.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["FrontLeftBottomCamera"] = pd.Field("FrontLeftBottomCamera")
 
 
 class RearRightBottomCamera(Camera):
     """
     Camera placed rear-right-bottom, diagonally looking at the model.
-    Position: (1, 1, -1)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
     """
 
-    position: Tuple[float, float, float] = (1.0, 1.0, -1.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["RearRightBottomCamera"] = "RearRightBottomCamera"
+    position: Tuple[float, float, float] = pd.Field((1.0, 1.0, -1.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["RearRightBottomCamera"] = pd.Field("RearRightBottomCamera")
 
 
 class FrontLeftTopCamera(Camera):
     """
     Camera placed front-left-top, diagonally looking at the model.
-    Position: (-1, -1, 1)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
     """
 
-    position: Tuple[float, float, float] = (-1.0, -1.0, 1.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["FrontLeftTopCamera"] = "FrontLeftTopCamera"
+    position: Tuple[float, float, float] = pd.Field((-1.0, -1.0, 1.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["FrontLeftTopCamera"] = pd.Field("FrontLeftTopCamera")
 
 
 class RearLeftTopCamera(Camera):
     """
     Camera placed rear-left-top, diagonally looking at the model.
-    Position: (1, -1, 1)
-    Look-at:  (0, 0, 0)
-    Up:       (0, 0, 1)
     """
 
-    position: Tuple[float, float, float] = (1.0, -1.0, 1.0)
-    look_at: Tuple[float, float, float] = (0.0, 0.0, 0.0)
-    up: Tuple[float, float, float] = (0.0, 0.0, 1.0)
-    type: Literal["RearLeftTopCamera"] = "RearLeftTopCamera"
+    position: Tuple[float, float, float] = pd.Field((1.0, -1.0, 1.0))
+    look_at: Tuple[float, float, float] = pd.Field((0.0, 0.0, 0.0))
+    up: Tuple[float, float, float] = pd.Field((0.0, 0.0, 1.0))
+    type: Literal["RearLeftTopCamera"] = pd.Field("RearLeftTopCamera")
 
 
 class SetCameraPayload(Camera):
