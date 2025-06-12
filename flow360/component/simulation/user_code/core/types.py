@@ -138,6 +138,25 @@ class UnytArray(unyt_array):
 AnyNumericType = Union[float, UnytArray, list]
 
 
+def check_vector_arithmetic(func):
+    """Decorator to check if vector arithmetic is being attempted and raise an error if so."""
+
+    def wrapper(self, other):
+        vector_arithmetic = False
+        if isinstance(other, unyt_array) and other.shape != ():
+            vector_arithmetic = True
+        elif isinstance(other, list):
+            vector_arithmetic = True
+        if vector_arithmetic:
+            raise ValueError(
+                f"Vector operation ({func.__name__} between {self.name} and {other}) not "
+                "supported for variables. Please write expression for each component."
+            )
+        return func(self, other)
+
+    return wrapper
+
+
 class Variable(Flow360BaseModel):
     """Base class representing a symbolic variable"""
 
@@ -146,16 +165,19 @@ class Variable(Flow360BaseModel):
 
     model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
 
+    @check_vector_arithmetic
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} + {str_arg}")
 
+    @check_vector_arithmetic
     def __sub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} - {str_arg}")
 
+    @check_vector_arithmetic
     def __mul__(self, other):
         if isinstance(other, Number) and other == 0:
             return Expression(expression="0")
@@ -164,21 +186,25 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} * {str_arg}")
 
+    @check_vector_arithmetic
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} / {str_arg}")
 
+    @check_vector_arithmetic
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} // {str_arg}")
 
+    @check_vector_arithmetic
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} % {str_arg}")
 
+    @check_vector_arithmetic
     def __pow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
@@ -193,16 +219,19 @@ class Variable(Flow360BaseModel):
     def __abs__(self):
         return Expression(expression=f"abs({self.name})")
 
+    @check_vector_arithmetic
     def __radd__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} + {self.name}")
 
+    @check_vector_arithmetic
     def __rsub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} - {self.name}")
 
+    @check_vector_arithmetic
     def __rmul__(self, other):
         if isinstance(other, Number) and other == 0:
             return Expression(expression="0")
@@ -211,21 +240,25 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} * {self.name}")
 
+    @check_vector_arithmetic
     def __rtruediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} / {self.name}")
 
+    @check_vector_arithmetic
     def __rfloordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} // {self.name}")
 
+    @check_vector_arithmetic
     def __rmod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} % {self.name}")
 
+    @check_vector_arithmetic
     def __rpow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"

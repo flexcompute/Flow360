@@ -25,7 +25,11 @@ from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     Surface,
 )
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    validate_expression,
+    validate_model,
+)
 from flow360.component.simulation.translator.solver_translator import (
     user_variable_to_udf,
 )
@@ -701,6 +705,24 @@ def test_error_message():
         11,
     )  # Python 3.9 report error on col 11, error message is also different
 
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Vector operation (__add__ between solution.velocity and [1 2 3] cm/ms) not supported for variables. Please write expression for each component."
+        ),
+    ):
+        UserVariable(name="x", value=solution.velocity + [1, 2, 3] * u.cm / u.ms)
+
+    errors, _, _ = validate_expression(
+        variables=[], expressions=["solution.velocity + [1, 2, 3] * u.cm / u.ms"]
+    )
+    assert len(errors) == 1
+    assert errors[0]["type"] == "value_error"
+    assert (
+        "Vector operation (__add__ between solution.velocity and [1 2 3] cm/ms) not supported for variables. Please write expression for each component."
+        in errors[0]["msg"]
+    )
+
 
 def test_solver_translation():
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
@@ -1078,13 +1100,6 @@ def test_udf_generator():
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_unit(new_unit="CGS_unit_system")
     assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
-
-    # DOES NOT WORK
-    # vel_plus_vec = UserVariable(
-    #     name="vel_cross_vec", value=solution.velocity + [1, 2, 3] * u.cm / u.ms
-    # ).in_unit(new_unit="cm/s")
-    # result = user_variable_to_udf(vel_plus_vec, input_params=params)
-    # print("4>>> result.expression", result.expression)
 
 
 def test_project_variables():
