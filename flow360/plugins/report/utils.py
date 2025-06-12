@@ -676,7 +676,7 @@ class DataItem(Flow360BaseModel):
     """
 
     data: str = pd.Field(
-        description='Path to the data item to retrieve from a `Case`.'
+        description="Path to the data item to retrieve from a `Case`."
         + ' The path can include nested attributes and dictionary keys (e.g., "results.surface_forces").'
     )
     title: Optional[str] = pd.Field(

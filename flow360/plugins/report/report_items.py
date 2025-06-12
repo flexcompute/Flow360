@@ -409,8 +409,8 @@ class PatternCaption(Flow360BaseModel):
 
     pattern: str = Field(
         default="[case.name]",
-        description='The caption pattern containing placeholders like [case.name] and [case.id].'
-        + ' These placeholders will be replaced with the actual case name and ID when resolving the caption.'
+        description="The caption pattern containing placeholders like [case.name] and [case.id]."
+        + " These placeholders will be replaced with the actual case name and ID when resolving the caption."
         + ' For example, "The case is [case.name] with ID [case.id]". Defaults to ``"[case.name]"``.',
     )
     type_name: Literal["PatternCaption"] = Field("PatternCaption", frozen=True)
@@ -639,6 +639,7 @@ class Chart(ReportItem):
             if row_idx == idx_list[-1]:
                 doc.append(NoEscape(r"\caption{" + escape_latex(fig_caption) + "}"))
             doc.append(NoEscape(r"\end{figure}"))
+
 
 # pylint: disable=no-member
 class PlotModel(BaseModel):
@@ -891,9 +892,9 @@ class SubsetLimit(Flow360BaseModel):
     )
     offset: float = Field(
         description='"Padding" that will be added to the top and bottom of the charts y_range.'
-        + ' It scales with with calculated range of y values. For example, if range of y value is 10,'
+        + " It scales with with calculated range of y values. For example, if range of y value is 10,"
         + ' an offset=0.3 will "expand" the range by 0.3*10 on both sides,'
-        + ' resulting in a final range of y values equal to 16.'
+        + " resulting in a final range of y values equal to 16."
     )
     type_name: Literal["SubsetLimit"] = Field("SubsetLimit", frozen=True)
 
@@ -922,16 +923,16 @@ class FixedRangeLimit(Flow360BaseModel):
     )
     center_strategy: Literal["last", "last_percent"] = Field(
         "last",
-        description='Describes which values will be considered for calculating ylim.'
+        description="Describes which values will be considered for calculating ylim."
         + ' "last" means that the last value will be the center. "last_percent"'
-        + ' means that the middle point between max and min y values'
-        + ' in the specified center_fraction will be the center.',
+        + " means that the middle point between max and min y values"
+        + " in the specified center_fraction will be the center.",
     )
     center_fraction: Optional[pd.PositiveFloat] = Field(
         None,
         description='Used alongside center_strategy="last_percent",'
-        + ' describes values that will be taken into account for calculating ylim.'
-        + ' For example, center_fraction=0.3 means that the last 30% of data will be used.',
+        + " describes values that will be taken into account for calculating ylim."
+        + " For example, center_fraction=0.3 means that the last 30% of data will be used.",
     )
     type_name: Literal["FixedRangeLimit"] = Field("FixedRangeLimit", frozen=True)
 
