@@ -5,7 +5,7 @@ import unyt as u
 from flow360.component.simulation.user_code.core.types import SolverVariable
 
 # pylint:disable = fixme
-# TODO:Scalar type (needs further discussion)
+# TODO:Scalar type (needs further discussion on how to handle scalar values)
 # bet_thrust = SolverVariable(
 #     name="solution.bet_thrust", value=float("NaN")
 # )  # Thrust force for BET disk
@@ -134,7 +134,7 @@ turbulence_intermittency = SolverVariable(
 density = SolverVariable(
     name="solution.density",
     value=float("NaN") * u.kg / u.m**3,
-    solver_name="primitive[0]",
+    solver_name="primitiveVars[0]",
     variable_type="Volume",
 )
 velocity = SolverVariable(
@@ -146,7 +146,7 @@ velocity = SolverVariable(
 pressure = SolverVariable(
     name="solution.pressure",
     value=float("NaN") * u.Pa,
-    solver_name="primitive[4]",
+    solver_name="primitiveVars[4]",
     variable_type="Volume",
 )
 
