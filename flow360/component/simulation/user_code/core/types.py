@@ -587,10 +587,12 @@ class Expression(Flow360BaseModel, Evaluable):
     def length(self):
         """The number of elements in the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-        assert isinstance(value, (unyt_array, unyt_quantity, list))
+        assert isinstance(
+            value, (unyt_array, unyt_quantity, list, Number)
+        ), f"Unexpected evaluated result type: {type(value)}"
         if isinstance(value, list):
             return len(value)
-        return 1 if isinstance(value, unyt_quantity) else value.shape[0]
+        return 1 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
     def get_output_units(self, input_params=None):
         """
