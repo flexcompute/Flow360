@@ -114,7 +114,7 @@ udf_prepending_code = {
     "solution.grad_velocity_z": "double gradVelocityZ[3] = {gradPrimitive[3][0], "
     + "gradPrimitive[3][1], gradPrimitive[3][2]};",
     "solution.grad_pressure": "double gradPressure[3] = {gradPrimitive[4][0], "
-    + "gradPressure[1], gradPressure[2]};",
+    + "gradPrimitive[4][1], gradPrimitive[4][2]};",
     "solution.Mach": "double Mach = usingLiquidAsMaterial ? 0 : "
     + "sqrt(primitiveVars[1] * primitiveVars[1] + "
     + "primitiveVars[2] * primitiveVars[2] + "
