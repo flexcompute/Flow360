@@ -97,6 +97,95 @@ from flow360.component.simulation.utils import (
 )
 from flow360.exceptions import Flow360TranslationError
 
+udf_prepending_code = {
+    "solution.Cp": "double Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
+    "solution.Cpt": "double MachUser = sqrt(primitiveVars[1] * primitiveVars[1] + "
+    + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3])"
+    + "/sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
+    + "double Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * MachUser * MachUser,"
+    + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
+    + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
+    "solution.grad_density": "double gradDensity[3] = {gradPrimitive[0][0], "
+    + "gradPrimitive[0][1], gradPrimitive[0][2]};",
+    "solution.grad_velocity_x": "double gradVelocityX[3] = {gradPrimitive[1][0], "
+    + " gradPrimitive[1][1], gradPrimitive[1][2]};",
+    "solution.grad_velocity_y": "double gradVelocityY[3] = {gradPrimitive[2][0],"
+    + "gradPrimitive[2][1], gradPrimitive[2][2]};",
+    "solution.grad_velocity_z": "double gradVelocityZ[3] = {gradPrimitive[3][0], "
+    + "gradPrimitive[3][1], gradPrimitive[3][2]};",
+    "solution.grad_pressure": "double gradPressure[3] = {gradPrimitive[4][0], "
+    + "gradPrimitive[4][1], gradPrimitive[4][2]};",
+    "solution.Mach": "double Mach = usingLiquidAsMaterial ? 0 : "
+    + "sqrt(primitiveVars[1] * primitiveVars[1] + "
+    + "primitiveVars[2] * primitiveVars[2] + "
+    + "primitiveVars[3] * primitiveVars[3]) / "
+    + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);",
+    "solution.mut_ratio": "double mutRatio;mutRatio = mut / mu;",
+    "solution.velocity": "double velocity[3];"
+    + "velocity[0] = primitiveVars[1] * velocityScale;"
+    + "velocity[1] = primitiveVars[2] * velocityScale;"
+    + "velocity[2] = primitiveVars[3] * velocityScale;",
+    "solution.qcriterion": "double qcriterion;"
+    + "double ux = gradPrimitive[1][0];"
+    + "double uy = gradPrimitive[1][1];"
+    + "double uz = gradPrimitive[1][2];"
+    + "double vx = gradPrimitive[2][0];"
+    + "double vy = gradPrimitive[2][1];"
+    + "double vz = gradPrimitive[2][2];"
+    + "double wx = gradPrimitive[3][0];"
+    + "double wy = gradPrimitive[3][1];"
+    + "double wz = gradPrimitive[3][2];"
+    + "double str11 = ux;"
+    + "double str22 = vy;"
+    + "double str33 = wz;"
+    + "double str12 = 0.5 * (uy + vx);"
+    + "double str13 = 0.5 * (uz + wx);"
+    + "double str23 = 0.5 * (vz + wy);"
+    + "double str_norm = str11 * str11 + str22 * str22 + str33 * str33 + "
+    + "2 * (str12 * str12) + 2 * (str13 * str13) + 2 * (str23 * str23);"
+    + "double omg12 = 0.5 * (uy - vx);"
+    + "double omg13 = 0.5 * (uz - wx);"
+    + "double omg23 = 0.5 * (vz - wy);"
+    + "double omg_norm = 2 * (omg12 * omg12) + 2 * (omg13 * omg13) + 2 * (omg23 * omg23);"
+    + "qcriterion = 0.5 * (omg_norm - str_norm) * (velocityScale * velocityScale);",
+    "solution.entropy": "double entropy;entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0], 1.4));",
+    "solution.temperature": f"double epsilon = {np.finfo(np.float64).eps};"
+    "double temperature = (primitiveVars[0] < epsilon && HeatEquation_solution != nullptr) ? "
+    "HeatEquation_solution[0] : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
+    "solution.vorticity": "double vorticity[3];"
+    + "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
+    + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
+    + "vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
+    "solution.CfVec": "double CfVec[3];"
+    + "for (int i = 0; i < 3; i++)"
+    + "{CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}",
+    "solution.Cf": "double Cf;Cf = magnitude(wallShearStress) / (0.5 * MachRef * MachRef);",
+    "solution.node_forces_per_unit_area": "double nodeForcesPerUnitArea[3];"
+    + "double normalMag = magnitude(nodeNormals);"
+    + "for (int i = 0; i < 3; i++){nodeForcesPerUnitArea[i] = "
+    + "((primitiveVars[4] - pressureFreestream) * nodeNormals[i] / normalMag + wallViscousStress[i])"
+    + " * (velocityScale * velocityScale);}",
+    "solution.heat_transfer_coefficient_static_temperature": "double temperature = "
+    + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
+    + f"double temperatureSafeDivide; double epsilon = {np.finfo(np.float64).eps};"
+    + "temperatureSafeDivide = (temperature - 1.0 < 0) ? "
+    + "temperature - 1.0 - epsilon : "
+    + "temperature - 1.0 + epsilon;"
+    + "double heatTransferCoefficientStaticTemperature = "
+    + "abs(temperature - 1.0) > epsilon ? "
+    + "- heatFlux / temperatureSafeDivide :  1.0 / epsilon;",
+    "solution.heat_transfer_coefficient_total_temperature": "double temperature = "
+    + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
+    + "double temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
+    + f"double temperatureSafeDivide; double epsilon = {np.finfo(np.float64).eps};"
+    + "temperatureSafeDivide = (temperature - temperatureTotal < 0) ? "
+    + "temperature - temperatureTotal - epsilon : "
+    + "temperature - temperatureTotal + epsilon;"
+    + "double heatTransferCoefficientTotalTemperature = "
+    + "abs(temperature - temperatureTotal) > epsilon ? "
+    + "temperatureTotal = - heatFlux / temperatureSafeDivide :  1.0 / epsilon;",
+}
+
 
 def dump_dict(input_params):
     """Dumping param/model to dictionary."""
@@ -587,7 +676,15 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
             source_unit=requested_unit, target_unit=flow360_unit
         )
 
-    if expression.length == 1:
+    expression_length = expression.length
+    prepending_code = [
+        udf_prepending_code[name]
+        for name in expression.solver_variable_names()
+        if udf_prepending_code.get(name)
+    ]
+    prepending_code = "".join(prepending_code)
+
+    if expression_length == 1:
         expression = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
         if offset != 0:
             expression = (expression + offset) * coefficient
@@ -595,13 +692,13 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
             expression = expression * coefficient
         expression = expression.to_solver_code(params=input_params)
         return UserDefinedField(
-            name=variable.name, expression=f"{variable.name} = " + expression + ";"
+            name=variable.name, expression=f"{prepending_code}{variable.name} = " + expression + ";"
         )
 
     # Vector output requested
     expression = [
         expression[i].evaluate(raise_on_non_evaluable=False, force_evaluate=False)
-        for i in range(expression.length)
+        for i in range(expression_length)
     ]
     if offset != 0:
         expression = [(item + offset) * coefficient for item in expression]
@@ -609,7 +706,9 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         expression = [item * coefficient for item in expression]
     expression = [item.to_solver_code(params=input_params) for item in expression]
     expression = [f"{variable.name}[{i}] = " + item for i, item in enumerate(expression)]
-    return UserDefinedField(name=variable.name, expression="; ".join(expression) + ";")
+    return UserDefinedField(
+        name=variable.name, expression=prepending_code + "; ".join(expression) + ";"
+    )
 
 
 def process_output_fields_for_udf(input_params: SimulationParams):

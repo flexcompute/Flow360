@@ -1254,7 +1254,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "velocity_in_km_per_hr",
-                "expression": "velocity_in_km_per_hr[0] = (solution.velocity[0] * 3600.0); velocity_in_km_per_hr[1] = (solution.velocity[1] * 3600.0); velocity_in_km_per_hr[2] = (solution.velocity[2] * 3600.0);",
+                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (velocity[0] * 3600.0); velocity_in_km_per_hr[1] = (velocity[1] * 3600.0); velocity_in_km_per_hr[2] = (velocity[2] * 3600.0);",
             },
             {
                 "name": "velocity_m_per_s",

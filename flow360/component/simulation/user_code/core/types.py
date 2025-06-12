@@ -27,6 +27,7 @@ from flow360.component.simulation.user_code.core.utils import (
 )
 
 _user_variables: set[str] = set()
+_solver_variables: set[str] = set()
 
 
 def __soft_fail_add__(self, other):
@@ -335,11 +336,13 @@ class SolverVariable(Variable):
     """Class representing a pre-defined symbolic variable that cannot be evaluated at client runtime"""
 
     solver_name: Optional[str] = pd.Field(None)
+    variable_type: Literal["Volume", "Surface", "Scalar"] = pd.Field()
 
     @pd.model_validator(mode="after")
     def update_context(self):
         """Auto updating context when new variable is declared"""
-        default_context.set(self.name, self.value, SolverVariable)
+        default_context.set(self.name, self.value, Variable)
+        _solver_variables.add(self.name)
         if self.solver_name:
             default_context.set_alias(self.name, self.solver_name)
         return self
@@ -457,6 +460,13 @@ class Expression(Flow360BaseModel, Evaluable):
         names = expr.used_names()
         names = [name for name in names if name in _user_variables]
 
+        return names
+
+    def solver_variable_names(self):
+        """Get list of solver variable names used in expression."""
+        expr = expr_to_model(self.expression, default_context)
+        names = expr.used_names()
+        names = [name for name in names if name in _solver_variables]
         return names
 
     def to_solver_code(self, params):
@@ -610,10 +620,12 @@ class Expression(Flow360BaseModel, Evaluable):
     def length(self):
         """The number of elements in the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-        assert isinstance(value, (unyt_array, unyt_quantity, list))
+        assert isinstance(
+            value, (unyt_array, unyt_quantity, list, Number)
+        ), f"Unexpected evaluated result type: {type(value)}"
         if isinstance(value, list):
             return len(value)
-        return 1 if isinstance(value, unyt_quantity) else value.shape[0]
+        return 1 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
     def get_output_units(self, input_params=None):
         """
@@ -689,7 +701,7 @@ class ValueOrExpression(Expression, Generic[T]):
                         return unyt_array(value.value, value.units)
                     return value.value
                 if value.type_name == "expression":
-                    return expr_type(expression=value.expression)
+                    return expr_type(expression=value.expression, output_units=value.output_units)
             except Exception:  # pylint:disable=broad-exception-caught
                 pass
 
