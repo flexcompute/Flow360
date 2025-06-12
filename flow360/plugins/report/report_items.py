@@ -1452,7 +1452,8 @@ class Chart2D(BaseChart2D):
     y : Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]]
         The data source for the y-axis, which can be a string path, 'DataItem', a 'Delta' object or their list.
     group_by : Union[str, Grouper], optional
-        A grouper object or a string leading to the data by which the grouping should be done. Defaults to ``Grouper(group_by=None)``.
+        A grouper object or a string leading to the data by which the grouping should be done.
+        Defaults to ``Grouper(group_by=None)``.
     include : List[str], optional
         List of boundaries to include in data. Applicable to:
         x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.
@@ -1798,7 +1799,9 @@ class Chart3D(Chart):
     ----------
     field : Union[SurfaceFieldNames, str], optional
         The name of the surface field to display in the chart.
-    camera: Union[Camera, BottomCamera, FrontCamera, FrontLeftBottomCamera, FrontLeftTopCamera, LeftCamera, RearCamera, RearLeftTopCamera, RearRightBottomCamera, TopCamera], optional
+    camera: Union[Camera, BottomCamera, FrontCamera,
+        FrontLeftBottomCamera, FrontLeftTopCamera, LeftCamera,
+        RearCamera, RearLeftTopCamera, RearRightBottomCamera, TopCamera], optional
         Camera settings: camera position, look at, up. Defaults to ``Camera()``
     limits : Union[Tuple[float, float], Tuple[DimensionedTypes, DimensionedTypes]], optional
         Limits for the field values, specified as a tuple (min, max).
