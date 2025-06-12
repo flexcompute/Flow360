@@ -884,7 +884,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({(((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])), (((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])), (((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0]))})"
+        == "std::vector<float>({(((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])), (((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])), (((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0]))})"
     )
 
     print("\n1.1 Python mode but arg swapped\n")
@@ -897,7 +897,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({(((nodePosition[1] * 1) * 0.1) - ((nodePosition[2] * 2) * 0.1)), (((nodePosition[2] * 3) * 0.1) - ((nodePosition[0] * 1) * 0.1)), (((nodePosition[0] * 2) * 0.1) - ((nodePosition[1] * 3) * 0.1))})"
+        == "std::vector<float>({(((coordinate[1] * 1) * 0.1) - ((coordinate[2] * 2) * 0.1)), (((coordinate[2] * 3) * 0.1) - ((coordinate[0] * 1) * 0.1)), (((coordinate[0] * 2) * 0.1) - ((coordinate[1] * 3) * 0.1))})"
     )
 
     print("\n2 Taking advantage of unyt as much as possible\n")
@@ -918,7 +918,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({(((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])), (((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])), (((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0]))})"
+        == "std::vector<float>({(((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])), (((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])), (((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0]))})"
     )
 
     print("\n5 Recursive cross in Python mode\n")
@@ -931,7 +931,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({((((((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])) * 1) * 0.1) - (((((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0])) * 2) * 0.1)), ((((((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0])) * 3) * 0.1) - (((((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])) * 1) * 0.1)), ((((((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])) * 2) * 0.1) - (((((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])) * 3) * 0.1))})"
+        == "std::vector<float>({((((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 3) * 0.1))})"
     )
 
     print("\n6 Recursive cross in String mode\n")
@@ -945,7 +945,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({((((((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])) * 1) * 0.1) - (((((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0])) * 2) * 0.1)), ((((((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0])) * 3) * 0.1) - (((((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])) * 1) * 0.1)), ((((((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])) * 2) * 0.1) - (((((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])) * 3) * 0.1))})"
+        == "std::vector<float>({((((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 3) * 0.1))})"
     )
 
     print("\n7 Using other variabels in Python mode\n")
@@ -959,7 +959,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({((((((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])) * 1) * 0.1) - (((((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0])) * 2) * 0.1)), ((((((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0])) * 3) * 0.1) - (((((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])) * 1) * 0.1)), ((((((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])) * 2) * 0.1) - (((((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])) * 3) * 0.1))})"
+        == "std::vector<float>({((((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 3) * 0.1))})"
     )
 
     print("\n8 Using other constant variabels in Python mode\n")
@@ -973,7 +973,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({(((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])), (((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])), (((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0]))})"
+        == "std::vector<float>({(((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])), (((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])), (((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0]))})"
     )
 
     print("\n9 Using non-unyt_array\n")
@@ -987,7 +987,7 @@ def test_cross_function_use_case():
     )
     assert (
         a.value.to_solver_code(params)
-        == "std::vector<float>({(((2 * 0.1) * nodePosition[2]) - ((1 * 0.1) * nodePosition[1])), (((1 * 0.1) * nodePosition[0]) - ((3 * 0.1) * nodePosition[2])), (((3 * 0.1) * nodePosition[1]) - ((2 * 0.1) * nodePosition[0]))})"
+        == "std::vector<float>({(((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])), (((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])), (((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0]))})"
     )
 
 

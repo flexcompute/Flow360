@@ -28,7 +28,7 @@ from flow360.component.simulation.user_code.core.types import SolverVariable
 coordinate = SolverVariable(
     name="solution.coordinate",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.m,
-    solver_name="nodePosition",
+    solver_name="coordinate",
     variable_type="Volume",
 )  # Grid coordinates
 
@@ -87,12 +87,6 @@ mut = SolverVariable(
     solver_name="mut",
     variable_type="Volume",
 )  # Turbulent viscosity
-mu = SolverVariable(
-    name="solution.mu",
-    value=float("NaN") * u.kg / u.m / u.s,
-    solver_name="mu",
-    variable_type="Volume",
-)  # Laminar viscosity
 mut_ratio = SolverVariable(
     name="solution.mut_ratio",
     value=float("NaN"),

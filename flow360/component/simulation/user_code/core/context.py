@@ -94,7 +94,6 @@ WHITELISTED_CALLABLES = {
             "grad_pressure",
             "Mach",
             "mut",
-            "mu",
             "mut_ratio",
             "nu_hat",
             "turbulence_kinetic_energy",
