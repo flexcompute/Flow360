@@ -137,6 +137,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
+from flow360.plugins import report
 from flow360.version import __solver_version__, __version__
 
 __all__ = [
@@ -253,4 +254,13 @@ __all__ = [
     "SurfaceSliceOutput",
     "SlaterPorousBleed",
     "migration",
+<<<<<<< HEAD
+=======
+    "Water",
+    "PointArray2D",
+    "StreamlineOutput",
+    "Transformation",
+    "WallRotation",
+    "report",
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
 ]

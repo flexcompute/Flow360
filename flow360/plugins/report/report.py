@@ -135,23 +135,24 @@ class ReportTemplate(Flow360BaseModel):
     """
     A model representing a report containing various components such as summaries, inputs, tables,
     and charts in both 2D and 3D.
-
-    Parameters
-    ----------
-    title: str, optional
-        Title of report, shown on the first page
-    items : List[Union[Summary, Inputs, Table, Chart2D, Chart3D]]
-        A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart.
-        The `type` field acts as a discriminator for differentiating item types.
-    include_case_by_case : bool, default=True
-        Flag indicating whether to include a case-by-case analysis in the report.
     """
 
+<<<<<<< HEAD
     title: Optional[str] = None
     items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = pd.Field(
         discriminator="type_name"
     )
     include_case_by_case: bool = False
+=======
+    title: Optional[str] = pd.Field(None, description="Title of report, shown on the first page.")
+    items: List[ReportItemTypes] = pd.Field(
+        description="A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart."
+    )
+    include_case_by_case: bool = pd.Field(
+        False,
+        description="Flag indicating whether to include a case-by-case analysis in the report.",
+    )
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
     settings: Optional[Settings] = Settings()
 
     @pd.model_validator(mode="after")

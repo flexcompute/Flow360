@@ -344,28 +344,50 @@ class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
         """
 
 
+<<<<<<< HEAD
+=======
+class GetAttribute(GenericOperation):
+    """
+    Retrieve an attribute from a data object.
+
+    This operation extracts the attribute specified by `attr_name` from the provided data object
+    using Python's built-in `getattr` function. If the attribute is not found, an `AttributeError`
+    is raised, providing a clear error message.
+
+    Methods
+    -------
+    calculate(data, case, cases, variables, new_variable_name)
+        Retrieves the attribute specified by `attr_name` from the given data object.
+        Returns a tuple containing the original data, the cases list, and the extracted attribute value.
+    """
+
+    attr_name: str = pd.Field(
+        description="The name of the attribute to retrieve from the data object."
+    )
+    type_name: Literal["GetAttribute"] = pd.Field("GetAttribute", frozen=True)
+
+    def calculate(
+        self, data, case, cases, variables, new_variable_name
+    ):  # pylint: disable=too-many-arguments
+        """
+        Getting attribute on the provided data.
+        """
+
+        try:
+            result = getattr(data, self.attr_name)
+        except AttributeError as err:
+            raise AttributeError(f"Attribute {self.attr_name} not found in {type(data)=}") from err
+
+        return data, cases, result
+
+
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
 class Average(GenericOperation):
     """
     Represents an averaging operation on simulation results.
 
     This operation calculates the average of a given data set over a specified range of steps, time,
     or fraction of the dataset.
-
-    Attributes
-    ----------
-    start_step : Optional[pd.NonNegativeInt]
-        The starting step for averaging. If not specified, averaging starts from the beginning.
-    end_step : Optional[pd.NonNegativeInt]
-        The ending step for averaging. If not specified, averaging continues to the end.
-    start_time : Optional[pd.NonNegativeFloat]
-        The starting time for averaging. If not specified, averaging starts from the beginning.
-    end_time : Optional[pd.NonNegativeFloat]
-        The ending time for averaging. If not specified, averaging continues to the end.
-    fraction : Optional[pd.PositiveFloat]
-        The fraction of the dataset to be averaged, ranging from 0 to 1.
-        Only the fraction-based method is implemented.
-    type_name : Literal["Average"]
-        A literal string indicating the operation type.
 
     Raises
     ------
@@ -378,11 +400,28 @@ class Average(GenericOperation):
     result = avg.calculate(data, case, cases, variables, new_variable_name)
     """
 
-    start_step: Optional[pd.NonNegativeInt] = None
-    end_step: Optional[pd.NonNegativeInt] = None
-    start_time: Optional[pd.NonNegativeFloat] = None
-    end_time: Optional[pd.NonNegativeFloat] = None
-    fraction: Optional[pd.PositiveFloat] = pd.Field(None, le=1)
+    start_step: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="The starting step for averaging. If not specified, averaging starts from the beginning.",
+    )
+    end_step: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="The ending step for averaging. If not specified, averaging continues to the end.",
+    )
+    start_time: Optional[pd.NonNegativeFloat] = pd.Field(
+        None,
+        description="The starting time for averaging. If not specified, averaging starts from the beginning.",
+    )
+    end_time: Optional[pd.NonNegativeFloat] = pd.Field(
+        None,
+        description="The ending time for averaging. If not specified, averaging continues to the end.",
+    )
+    fraction: Optional[pd.PositiveFloat] = pd.Field(
+        None,
+        le=1,
+        description="The fraction of the dataset to be averaged, ranging from 0 to 1."
+        + " Only the fraction-based method is implemented.",
+    )
     type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
     model_config = pd.ConfigDict(
@@ -419,8 +458,8 @@ class Variable(Flow360BaseModel):
     Variable model used in expressions
     """
 
-    name: str
-    data: str
+    name: str = pd.Field(description="Name of the variable.")
+    data: str = pd.Field(description="Data contained within the variable.")
 
 
 class Expression(GenericOperation):
@@ -430,13 +469,6 @@ class Expression(GenericOperation):
     This operation allows for defining and calculating custom expressions using
     variables extracted from simulation results. The results of the expression
     evaluation can be added as a new column to a dataframe for further analysis.
-
-    Attributes
-    ----------
-    expr : str
-        The mathematical expression to evaluate. It should be written in a syntax
-        compatible with the `numexpr` library, using variable names that correspond
-        to columns in the dataframe or user-defined variables.
 
     Example
     -------
@@ -452,7 +484,11 @@ class Expression(GenericOperation):
         If the data type is unsupported by the `calculate` method.
     """
 
-    expr: str
+    expr: str = pd.Field(
+        description="The mathematical expression to evaluate. It should be written in a syntax compatible"
+        + " with the `numexpr` library, using variable names that correspond to"
+        + " columns in the dataframe or user-defined variables."
+    )
     type_name: Literal["Expression"] = pd.Field("Expression", frozen=True)
 
     @classmethod
@@ -561,6 +597,7 @@ class Expression(GenericOperation):
 OperationTypes = Annotated[Union[Average, Expression], pd.Field(discriminator="type_name")]
 
 
+# pylint: disable=no-member
 class DataItem(Flow360BaseModel):
     """
     Represents a retrievable data item that can be post-processed.
@@ -569,36 +606,36 @@ class DataItem(Flow360BaseModel):
      - Excluding specific boundaries (if applicable).
      - Applying one or more post-processing operations (e.g., mathematical expressions, averaging).
      - Introducing additional variables for use in these operations.
-
-    Parameters
-    ----------
-    data : str
-        Path to the data item to retrieve from a `Case`. The path can include nested attributes
-        and dictionary keys (e.g., "results.surface_forces").
-    title : str, optional
-        A human-readable title for this data item. If omitted, the title defaults to the
-        last component of the `data` path.
-    include : list[str], optional
-        A list of boundaries to include in the retrieved data (e.g., certain surfaces). Only
-        applicable to some data types, such as surface forces or slicing force distributions.
-    exclude : list[str], optional
-        A list of boundaries to exclude from the retrieved data (e.g., certain surfaces). Only
-        applicable to some data types, such as surface forces or slicing force distributions.
-    operations : list[OperationTypes], optional
-        A list of operations to apply to the retrieved data. Supported operations include:
-        `Expression` and `Average`.
-    variables : list[Variable], optional
-        Additional user-defined variables that may be referenced in the `Expression` operations.
-    type_name : Literal["DataItem"]
-        A literal string identifying the type of the item, set to "DataItem".
     """
 
-    data: str
-    title: Optional[str] = None
-    include: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
-    operations: Optional[List[OperationTypes]] = None
-    variables: Optional[List[Variable]] = None
+    data: str = pd.Field(
+        description="Path to the data item to retrieve from a `Case`."
+        + ' The path can include nested attributes and dictionary keys (e.g., "results.surface_forces").'
+    )
+    title: Optional[str] = pd.Field(
+        None,
+        description="A human-readable title for this data item."
+        + " If omitted, the title defaults to the last component of the `data` path.",
+    )
+    include: Optional[List[str]] = pd.Field(
+        None,
+        description="Boundaries to be included in the retrieved data (e.g., certain surfaces)."
+        + " Only applicable to some data types, such as surface forces or slicing force distributions.",
+    )
+    exclude: Optional[List[str]] = pd.Field(
+        None,
+        description="Boundaries to be excluded from the retrieved data (e.g., certain surfaces)."
+        + " Only applicable to some data types, such as surface forces or slicing force distributions.",
+    )
+    operations: Optional[List[OperationTypes]] = pd.Field(
+        None,
+        description="A list of operations to apply to the retrieved data."
+        + " Supported operations include: `Expression` and `Average`.",
+    )
+    variables: Optional[List[Variable]] = pd.Field(
+        None,
+        description="Additional user-defined variables that may be referenced in the `Expression` operations.",
+    )
     type_name: Literal["DataItem"] = pd.Field("DataItem", frozen=True)
 
     @pd.model_validator(mode="before")
@@ -686,17 +723,14 @@ class DataItem(Flow360BaseModel):
 class Delta(Flow360BaseModel):
     """
     Represents a delta calculation between a reference case and a target case based on specified data.
-
-    Parameters
-    ----------
-    data : str
-        Path to the data item used for delta calculation.
-    ref_index : Optional[NonNegativeInt], default=0
-        Index of the reference case in the list of cases for comparison.
     """
 
-    data: Union[str, DataItem]
-    ref_index: Optional[pd.NonNegativeInt] = 0
+    data: Union[str, DataItem] = pd.Field(
+        description="Path to the data item used for delta calculation."
+    )
+    ref_index: Optional[pd.NonNegativeInt] = pd.Field(
+        0, description="Index of the reference case in the list of cases for comparison."
+    )
     type_name: Literal["Delta"] = pd.Field("Delta", frozen=True)
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
@@ -753,6 +787,146 @@ class Tabulary(Tabular):
         super().__init__(*args, start_arguments=width_argument, **kwargs)
 
 
+<<<<<<< HEAD
+=======
+class Grouper(Flow360BaseModel):
+    """
+    Class for objects responsible for grouping data into series in Chart2D.
+
+    Example
+    -------
+    - Data will be grouped by each turbulence model and then by the first tag,
+        if the first tag is "a" or "b" the data point will be assigned to group "bucket0",
+        if the first tag is "c" the data point will be assigned to "bucket1"
+
+    >>> Grouper(
+    ...     group_by=["params/models/Fluid/turbulence_model_solver/type_name", "info/tags/0"],
+    ...     buckets=[None, {"bucket0": ["a", "b"], "bucket1": ["c"]}],
+    ... )
+
+    ====
+    """
+
+    group_by: Union[str, List[str], None, List[None]] = pd.Field(
+        description="The path to the data attribute (or paths to attributes in case of multi-level grouping)"
+        + " by which the grouping should be done."
+    )
+    buckets: Optional[Union[dict[str, List], List[Union[dict[str, List], None]]]] = pd.Field(
+        None,
+        description="Dictionaries where key represents the name of the group and value is the list of values,"
+        + " that belong to the group. If all the values should be unique, enter None for the corresponding bucket.",
+    )
+    _series_assignments: List[List[str]] = pd.PrivateAttr(default=None)
+
+    @pd.model_validator(mode="after")
+    def _handle_singular_inputs(self):
+        if not isinstance(self.group_by, List):
+            self.group_by = [self.group_by]
+        if not isinstance(self.buckets, List):
+            self.buckets = [self.buckets] * len(self.group_by)
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_argument_lengths(self):
+        if self.buckets is not None and len(self.group_by) != len(self.buckets):
+            raise pd.ValidationError(
+                "group_by and buckets must be the same length. "
+                + "If a category should not be grouped into buckets enter None in the bucket's place."
+            )
+        return self
+
+    def _get_possible_assignments(self, category, cases):
+        assignments = []
+        for case in cases:
+            assignment = data_from_path(case, category, cases)
+            if assignment not in assignments:
+                assignments.append(assignment)
+        return assignments
+
+    def initialize_arrays(self, cases, y_variables):
+        """
+        Initializes data structures for x_data and y_data.
+        """
+        self._series_assignments = [[path_variable_name(str(y))] for y in y_variables]
+
+        if self.group_by != [None]:
+            for category, bucket in zip(self.group_by, self.buckets):
+                if bucket is not None:
+                    grouping_attributes = bucket.keys()
+                else:
+                    grouping_attributes = self._get_possible_assignments(category, cases)
+
+                new_assignments = []
+                for assignment in self._series_assignments:
+                    for attribute in grouping_attributes:
+                        new_assignments.append(assignment + [attribute])
+
+                self._series_assignments = new_assignments
+
+        x_data = [[] for _ in range(len(self._series_assignments))]
+        y_data = [[] for _ in range(len(self._series_assignments))]
+        return x_data, y_data
+
+    # pylint: disable=inconsistent-return-statements
+    def _is_in_bucket(self, bucket_criteria, attribute) -> bool:
+        for criterion in bucket_criteria:
+            if attribute == criterion:
+                return True
+            if callable(criterion):
+                crit_result = criterion(attribute)
+                if isinstance(crit_result, bool):
+                    return crit_result
+                raise AttributeError(
+                    f"Bucket criterion must return bool, current returned is {type(crit_result)}."
+                )
+
+    # pylint: disable=too-many-arguments
+    def arrange_data(self, case, x_data, y_data, x_data_point, y_data_point, y_variable):
+        """
+        Sorts the data into appropriate series based on the case.
+        """
+
+        point_attributes = [path_variable_name(str(y_variable))]
+
+        if self.group_by != [None]:
+            for category, bucket in zip(self.group_by, self.buckets):
+                attribute = data_from_path(case, category)
+                if bucket is not None:
+                    for key, value in bucket.items():
+                        if self._is_in_bucket(value, attribute):
+                            point_attributes.append(key)
+                else:
+                    point_attributes.append(attribute)
+
+        for idx, assignment in enumerate(self._series_assignments):
+            if point_attributes == assignment:
+                x_data[idx].append(x_data_point)
+                y_data[idx].append(y_data_point)
+                return x_data, y_data
+
+        return x_data, y_data
+
+    def arrange_legend(self):
+        """
+        Creates the legend for the defined grouping.
+        """
+        legend = []
+        assignments = self._series_assignments.copy()
+
+        assignments_array = np.array(assignments)
+        if np.all(assignments_array[:, 0] == assignments_array[0, 0]):
+            assignments = assignments_array[:, 1:].tolist()
+
+        if assignments is None:
+            return None
+
+        for assignment in assignments:
+            legend.append(" - ".join(assignment))
+
+        return legend
+
+
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
 def generate_colorbar_from_image(
     image_filename=os.path.join(here, "img", "colorbar_rainbow_banded_30.png"),
     limits: Tuple[float, float] = (0, 1),
