@@ -96,19 +96,19 @@ mut_ratio = SolverVariable(
 nu_hat = SolverVariable(
     name="solution.nu_hat",
     value=float("NaN") * u.m**2 / u.s,
-    solver_name="SpalartAllmaras_solution",
+    solver_name="nuHat",
     variable_type="Volume",
 )
 turbulence_kinetic_energy = SolverVariable(
     name="solution.turbulence_kinetic_energy",
     value=float("NaN") * u.J / u.kg,
-    solver_name="kOmegaSST_solution[0]",
+    solver_name="turbulenceKineticEnergy",
     variable_type="Volume",
 )  # k
 specific_rate_of_dissipation = SolverVariable(
     name="solution.specific_rate_of_dissipation",
     value=float("NaN") / u.s,
-    solver_name="kOmegaSST_solution[1]",
+    solver_name="specificRateOfDissipation",
     variable_type="Volume",
 )  # Omega
 amplification_factor = SolverVariable(

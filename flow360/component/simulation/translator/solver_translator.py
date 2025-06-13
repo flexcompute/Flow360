@@ -121,6 +121,11 @@ udf_prepending_code = {
     + "primitiveVars[3] * primitiveVars[3]) / "
     + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);",
     "solution.mut_ratio": "double mutRatio;mutRatio = mut / mu;",
+    "solution.nu_hat": "double nuHat; " + "nuHat = SpalartAllmaras_solution * velocityScale;",
+    "solution.turbulence_kinetic_energy": "double turbulenceKineticEnergy; "
+    + "turbulenceKineticEnergy = kOmegaSST_solution[0] * pow(velocityScale, 2);",
+    "solution.specific_rate_of_dissipation": "double specificRateOfDissipation; "
+    + "specificRateOfDissipation = kOmegaSST_solution[1] * velocityScale;",
     "solution.velocity": "double velocity[3];"
     + "velocity[0] = primitiveVars[1] * velocityScale;"
     + "velocity[1] = primitiveVars[2] * velocityScale;"
