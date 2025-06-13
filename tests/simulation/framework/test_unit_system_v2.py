@@ -767,6 +767,20 @@ def test_units_serializer():
 
     assert data_reimport == data
 
+    #####
+    with u.SI_unit_system:
+        data = ArrayDataWithUnits(
+            l_arr=[0] * u.rad,  # Single element array should come back as an array.
+            l_arr_nonneg=[1, 1, 1, 1],
+        )
+
+    data_as_json = data.model_dump_json()
+
+    with u.CGS_unit_system:
+        data_reimport = ArrayDataWithUnits(**json.loads(data_as_json))
+
+    assert data_reimport == data
+
 
 def test_units_schema():
     schema = Flow360DataWithUnits.model_json_schema()
