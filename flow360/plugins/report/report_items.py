@@ -97,20 +97,26 @@ FIG_ASPECT_RATIO = 16 / 9
 class Settings(Flow360BaseModel):
     """
     Settings for controlling output properties.
-
-    Attributes
-    ----------
-    dpi : PositiveInt, optional
-        The resolution in dots per inch (DPI) for generated images in report (A4 assumed).
-        If not specified, defaults to 300.
     """
 
+<<<<<<< HEAD
     dpi: Optional[pd.PositiveInt] = 300
+=======
+    # pylint: disable=fixme
+    # TODO: Create a setting class for each type of report items.
+    dpi: Optional[pd.PositiveInt] = Field(
+        300,
+        description="The resolution in dots per inch (DPI) for generated images in report (A4 assumed).",
+    )
+    dump_table_csv: Optional[pd.StrictBool] = Field(
+        False, description="If ``True``, :class:``Table`` data will be dumped into a csv file."
+    )
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
 
 
 class ReportItem(Flow360BaseModel):
     """
-    Base class for for all report items
+    Base class for for all report items.
     """
 
     _requirements: List[str] = None
@@ -137,18 +143,9 @@ class ReportItem(Flow360BaseModel):
 class Summary(ReportItem):
     """
     Represents a summary item in a report.
-
-    Parameters
-    ----------
-    text : str, optional
-        The main content or text of the summary.
-    type_name : Literal["Summary"], default="Summary"
-        Indicates that this item is of type "Summary"; this field is immutable.
-    _requirements : List[str], default=[]
-        List of specific requirements associated with the summary item.
     """
 
-    text: Optional[str] = None
+    text: Optional[str] = Field(None, description="The main content or text of the summary.")
     type_name: Literal["Summary"] = Field("Summary", frozen=True)
     _requirements: List[str] = []
 
@@ -168,7 +165,7 @@ class Summary(ReportItem):
 
 class Inputs(ReportItem):
     """
-    Inputs is a wrapper for a specific Table setup that details key inputs from the simulation
+    Inputs is a wrapper for a specific Table setup that details key inputs from the simulation.
     """
 
     type_name: Literal["Inputs"] = Field("Inputs", frozen=True)
@@ -193,9 +190,11 @@ class Inputs(ReportItem):
 
 
 def human_readable_formatter(value):
-    """Custom formatter that uses k/M suffixes with a human-readable style.
+    """
+    Custom formatter that uses k/M suffixes with a human-readable style.
     For large numbers, it attempts to show a concise representation without
     scientific notation:
+
     - For millions, it will show something like 225M (no decimals if >100),
       22.5M (one decimal if between 10 and 100), or 2.3M (two decimals if <10).
     - For thousands, it follows a similar pattern for k.
@@ -240,31 +239,23 @@ _SPECIAL_FORMATING_MAP = {"volume_mesh/stats/n_nodes": human_readable_formatter}
 class Table(ReportItem):
     """
     Represents a table within a report, with configurable data and headers.
-
-    Parameters
-    ----------
-    data : list[Union[str, Delta]]
-        A list of table data entries, which can be either strings or `Delta` objects.
-    section_title : Union[str, None]
-        The title of the table section.
-    headers : Union[list[str], None], optional
-        List of column headers for the table, default is None.
-    type_name : Literal["Table"], default="Table"
-        Specifies the type of report item as "Table"; this field is immutable.
-    select_indices : Optional[List[NonNegativeInt]], optional
-        Specific indices to select for the chart.
-    formatter : Optional
-        formatter can be:
-        single str (e.g. ".4g")
-        list of str of the same length as `data`
     """
 
-    data: List[Union[str, Delta, DataItem]]
-    section_title: Union[str, None]
-    headers: Union[list[str], None] = None
+    data: List[Union[str, Delta, DataItem]] = Field(
+        description="A list of table data entries, which can be either strings or `Delta` objects."
+    )
+    section_title: Union[str, None] = Field(description="The title of the table section.")
+    headers: Union[list[str], None] = Field(
+        None, description="List of column headers for the table, default is None."
+    )
     type_name: Literal["Table"] = Field("Table", frozen=True)
-    select_indices: Optional[List[NonNegativeInt]] = None
-    formatter: Optional[Union[str, List[Union[str, None]]]] = None
+    select_indices: Optional[List[NonNegativeInt]] = Field(
+        None, description="Specific indices to select for the chart."
+    )
+    formatter: Optional[Union[str, List[Union[str, None]]]] = Field(
+        None,
+        description='Formatter can be a single str (e.g. ".4g") or a list of str of the same length as ``data``',
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -409,17 +400,13 @@ class Table(ReportItem):
 class PatternCaption(Flow360BaseModel):
     """
     Class for setting up chart caption.
-
-    Parameters
-    ----------
-    pattern : str
-        The caption pattern containing placeholders like [case.name] and [case.id].
-        These placeholders will be replaced with the actual case name and ID when
-        resolving the caption. For example, "The case is [case.name] with ID [case.id]".
     """
 
     pattern: str = Field(
-        default="[case.name]", description="The caption pattern with placeholders."
+        default="[case.name]",
+        description="The caption pattern containing placeholders like [case.name] and [case.id]."
+        + " These placeholders will be replaced with the actual case name and ID when resolving the caption."
+        + ' For example, "The case is [case.name] with ID [case.id]". Defaults to ``"[case.name]"``.',
     )
     type_name: Literal["PatternCaption"] = Field("PatternCaption", frozen=True)
 
@@ -453,35 +440,31 @@ class PatternCaption(Flow360BaseModel):
 class Chart(ReportItem):
     """
     Represents a chart in a report, with options for layout and display properties.
-
-    Parameters
-    ----------
-    section_title : str, optional
-        The title of the chart section.
-    fig_name : FileNameStr, optional
-        Name of the figure file or identifier for the chart (). Only '^[a-zA-Z0-9._-]+$' allowed.
-    fig_size : float, default=0.7
-        Relative size of the figure as a fraction of text width.
-    items_in_row : Union[int, None], optional
-        Number of items to display in a row within the chart section.
-    select_indices : Optional[List[NonNegativeInt]], optional
-        Specific indices to select for the chart.
-    separate_plots : bool, default=None
-        If True, display as multiple plots; otherwise single plot.
-    force_new_page : bool, default=False
-        If True, starts the chart on a new page in the report.
-    caption: Optional[Union[str, List[str], PatternCaption]]
-        Caption to be shown for figures.
     """
 
-    section_title: Optional[str] = None
-    fig_name: Optional[FileNameStr] = None
-    fig_size: float = 0.7  # Relates to fraction of the textwidth
-    items_in_row: Union[int, None] = None
-    select_indices: Optional[List[NonNegativeInt]] = None
-    separate_plots: Optional[bool] = None
-    force_new_page: bool = False
-    caption: Optional[Union[str, List[str], PatternCaption]] = ""
+    section_title: Optional[str] = Field(None, description="The title of the chart section.")
+    fig_name: Optional[FileNameStr] = Field(
+        None,
+        description="Name of the figure file or identifier for the chart (). Only '^[a-zA-Z0-9._-]+$' allowed.",
+    )
+    fig_size: float = Field(
+        0.7, description="Relative size of the figure as a fraction of text width."
+    )
+    items_in_row: Union[int, None] = Field(
+        None, description="Number of items to display in a row within the chart section."
+    )
+    select_indices: Optional[List[NonNegativeInt]] = Field(
+        None, description="Specific indices to select for the chart."
+    )
+    separate_plots: Optional[bool] = Field(
+        None, description="If True, display as multiple plots; otherwise single plot."
+    )
+    force_new_page: bool = Field(
+        False, description="If True, starts the chart on a new page in the report."
+    )
+    caption: Optional[Union[str, List[str], PatternCaption]] = Field(
+        "", description="Caption to be shown for figures."
+    )
 
     @model_validator(mode="after")
     def _check_chart_args(self) -> None:
@@ -653,8 +636,10 @@ class Chart(ReportItem):
             doc.append(NoEscape(r"\end{figure}"))
 
 
+# pylint: disable=no-member
 class PlotModel(BaseModel):
     """
+<<<<<<< HEAD
     PlotModel that holds data and ability to return matplotlib fig
     """
 
@@ -669,6 +654,51 @@ class PlotModel(BaseModel):
     xlim: Optional[Tuple[float, float]] = None
     ylim: Optional[Tuple[float, float]] = None
     grid: Optional[bool] = True
+=======
+    PlotModel that stores series data and configuration required to render
+    a matplotlib ``Figure``.
+    """
+
+    x_data: Union[List[float], List[List[float]]] = Field(
+        description="Values for the primary x-axis. Accepts a single list (one series)"
+        + " or a list of lists (multiple series)."
+    )
+    y_data: Union[List[float], List[List[float]]] = Field(
+        description="Values for the primary y-axis, matching the shape of ``x_data``."
+    )
+    x_label: str = Field(description="Text label for the primary x-axis.")
+    y_label: str = Field(description="Text label for the primary y-axis.")
+    secondary_x_data: Optional[Union[List[float], List[List[float]]]] = Field(
+        None, description="Alternate x-axis values used when plotting against a secondary axis."
+    )
+    secondary_x_label: Optional[str] = Field(
+        None,
+        description="Label for the secondary x-axis (shown only if ``secondary_x_data`` is set).",
+    )
+    legend: Optional[List[str]] = Field(
+        None,
+        description="Series names to appear in the plot legend. The length should equal the number of plotted series.",
+    )
+    is_log: bool = Field(
+        False, description="If ``True``, the y-axis is drawn on a logarithmic scale."
+    )
+    style: str = Field(
+        "-",
+        description='Matplotlib style or format string (e.g. ``"-"`` or ``"o--"``) applied to all data series.',
+    )
+    backgroung_png: Optional[str] = Field(
+        None, description="Path to a PNG file placed behind the plot as a background image."
+    )
+    xlim: Optional[Tuple[float, float]] = Field(
+        None, description="Axis limits for the x-axis as ``(xmin, xmax)``."
+    )
+    ylim: Optional[Tuple[float, float]] = Field(
+        None, description="Axis limits for the y-axis as ``(ymin, ymax)``."
+    )
+    grid: Optional[bool] = Field(
+        True, description="Show grid lines if ``True``, hide them if ``False``."
+    )
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
 
     @field_validator("x_data", "y_data", mode="before")
     @classmethod
@@ -708,6 +738,7 @@ class PlotModel(BaseModel):
         """
         return [np.array(x_series) for x_series in self.x_data]
 
+    # pylint: disable=not-an-iterable
     @property
     def y_data_as_np(self):
         """
@@ -804,17 +835,10 @@ class ManualLimit(Flow360BaseModel):
     """
     Class for setting up xlim and ylim in Chart2D by providing
     a lower and upper value of the limits.
-
-    Parameters
-    ----------
-    lower : float
-        Absolute value of the lower limit of an axis.
-    upper : float
-        Absolute value of the upper limit of an axis.
     """
 
-    lower: float
-    upper: float
+    lower: float = Field(description="Absolute value of the lower limit of an axis.")
+    upper: float = Field(description="Absolute value of the upper limit of an axis.")
     type_name: Literal["ManualLimit"] = Field("ManualLimit", frozen=True)
 
 
@@ -823,21 +847,18 @@ class SubsetLimit(Flow360BaseModel):
     Class for setting up ylim in Chart2D by providing
     a subset of values and an offset, which will be applied
     to the range of y values.
-
-    Parameters
-    ----------
-    subset : Tuple[float, float]
-        Tuple of fractions between 0 and 1 describing the lower and upper range
-        of the subset of values that will be used to calculate the ylim.
-    offset : float
-        "Padding" that will be added to the top and bottom of the charts y_range.
-        It scales with with calculated range of y values.
-        For example, if range of y value is 10, an offset=0.3 will "expand" the range
-        by 0.3*10 on both sides, resulting in a final range of y values equal to 16.
     """
 
-    subset: Tuple[pd.NonNegativeFloat, pd.NonNegativeFloat]
-    offset: float
+    subset: Tuple[pd.NonNegativeFloat, pd.NonNegativeFloat] = Field(
+        description="Tuple of fractions between 0 and 1 describing the lower"
+        + " and upper range of the subset of values that will be used to calculate the ylim."
+    )
+    offset: float = Field(
+        description='"Padding" that will be added to the top and bottom of the charts y_range.'
+        + " It scales with with calculated range of y values. For example, if range of y value is 10,"
+        + ' an offset=0.3 will "expand" the range by 0.3*10 on both sides,'
+        + " resulting in a final range of y values equal to 16."
+    )
     type_name: Literal["SubsetLimit"] = Field("SubsetLimit", frozen=True)
 
     @pd.model_validator(mode="after")
@@ -857,32 +878,31 @@ class FixedRangeLimit(Flow360BaseModel):
     """
     Class for setting up ylim in Chart2D by providing
     a fixed range of y values and strategy for centering.
-
-    Parameters
-    ----------
-    fixed_range : float
-        Range of absolute y values that will be visible on the chart.
-        For example, fixed_range=3 means that y_max - y_min = 3.
-    center_strategy : Literal["last", "last_percent"]
-        Describes which values will be considered for calculating ylim.
-        "last" means that the last value will be the center.
-        "last_percent" means that the middle point between max and min
-        y values in the specified center_fraction will be the center.
-    center_fraction : Optional[float]
-        Used alongside center_strategy="last_percent", describes values
-        that will be taken into account for calculating ylim.
-        For example, center_fraction=0.3 means that the last 30% of data will be used.
     """
 
-    fixed_range: float
-    center_strategy: Literal["last", "last_percent"] = Field("last")
-    center_fraction: Optional[pd.PositiveFloat] = None
+    fixed_range: float = Field(
+        description="Range of absolute y values that will be visible on the chart."
+        + " For example, fixed_range=3 means that y_max - y_min = 3."
+    )
+    center_strategy: Literal["last", "last_percent"] = Field(
+        "last",
+        description="Describes which values will be considered for calculating ylim."
+        + ' "last" means that the last value will be the center. "last_percent"'
+        + " means that the middle point between max and min y values"
+        + " in the specified center_fraction will be the center.",
+    )
+    center_fraction: Optional[pd.PositiveFloat] = Field(
+        None,
+        description='Used alongside center_strategy="last_percent",'
+        + " describes values that will be taken into account for calculating ylim."
+        + " For example, center_fraction=0.3 means that the last 30% of data will be used.",
+    )
     type_name: Literal["FixedRangeLimit"] = Field("FixedRangeLimit", frozen=True)
 
     @pd.model_validator(mode="after")
     def check_center_fraction(self):
         """Ensure that correct center fraction value is provided."""
-        if self.center_strategy == "last_percent" and not self.center_fraction < 1:
+        if self.center_strategy == "last_percent" and self.center_fraction >= 1:
             raise ValueError("Center fraction value needs to be between 0 and 1 (exclusive).")
         return self
 
@@ -890,21 +910,11 @@ class FixedRangeLimit(Flow360BaseModel):
 class BaseChart2D(Chart, metaclass=ABCMeta):
     """
     Base class for Chart2D like objects - does not contain data.
-
-    Parameters
-    ----------
-    xlim : Optional[Union[ManualLimit, Tuple[float, float]]]
-        Defines the range of x values that will be displayed on the chart.
-    ylim : Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]]
-        Defines the range of y values that will be displayed on the chart.
-        This helps with highlighting a desired portion of the chart.
-    y_log : Optional[bool]
-        Sets the y axis to logarithmic scale.
-    show_grid : Optional[bool]
-        Turns the gridlines on.
     """
 
-    operations: Optional[Union[List[OperationTypes], OperationTypes]] = None
+    operations: Optional[Union[List[OperationTypes], OperationTypes]] = Field(
+        None, description="List of operations to perform on the data."
+    )
     focus_x: Optional[
         Annotated[
             Tuple[float, float],
@@ -914,10 +924,20 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             ),
         ]
     ] = None
-    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
-    ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = None
-    y_log: Optional[bool] = False
-    show_grid: Optional[bool] = True
+    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = Field(
+        None, description="Defines the range of x values that will be displayed on the chart."
+    )
+    ylim: Optional[Union[ManualLimit, SubsetLimit, FixedRangeLimit, Tuple[float, float]]] = Field(
+        None,
+        description="Defines the range of y values that will be displayed on the chart."
+        + " This helps with highlighting a desired portion of the chart.",
+    )
+    y_log: Optional[bool] = Field(
+        False, description="Sets the y axis to logarithmic scale. Defaults to ``False``."
+    )
+    show_grid: Optional[bool] = Field(
+        True, description="Turns the gridlines on. Defaults to ``True``."
+    )
 
     def is_log_plot(self):
         """
@@ -1258,6 +1278,7 @@ class Chart2D(BaseChart2D):
     """
     Represents a 2D chart within a report, plotting x and y data.
 
+<<<<<<< HEAD
     Parameters
     ----------
     x : Union[str, Delta]
@@ -1281,6 +1302,63 @@ class Chart2D(BaseChart2D):
     include: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
     background: Union[Literal["geometry"], None] = None
+=======
+    Example
+    -------
+
+    -  Create a chart of CL for an alpha sweep case, different turbulence models
+
+    >>> Chart2D(
+    ...     x="params/operating_condition/beta",
+    ...     y=DataItem(data="total_forces/CL", operations=[Average(fraction=0.1)]),
+    ...     section_title="CL vs alpha",
+    ...     fig_name="cl_vs_alpha",
+    ...     group_by=Grouper(group_by="params/models/Fluid/turbulence_model_solver/type_name"),
+    ... )
+
+    ====
+    """
+
+    x: Union[DataItem, Delta, str] = Field(
+        description="The data source for the x-axis, which can be a string path, 'DataItem', a 'Delta' object."
+    )
+    y: Union[DataItem, Delta, str, List[DataItem], List[Delta], List[str]] = Field(
+        description="The data source for the y-axis, which can be a string path,"
+        + " 'DataItem', a 'Delta' object or their list."
+    )
+    group_by: Optional[Union[str, Grouper]] = Field(
+        Grouper(group_by=None),
+        description="A grouper object or a string leading to the data by which the grouping should be done.",
+    )
+    include: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = Field(
+        None,
+        description="List of boundaries to include in data. Applicable to:"
+        + " x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.",
+    )
+    exclude: Optional[
+        Annotated[
+            List[str],
+            Field(
+                deprecated="Include and exclude are deprecated as Chart2D options, use DataItem instead."
+            ),
+        ]
+    ] = Field(
+        None,
+        description="List of boundaries to exclude from data. Applicable to:"
+        + " x_slicing_force_distribution, y_slicing_force_distribution, surface_forces.",
+    )
+    background: Union[Literal["geometry"], None] = Field(
+        None,
+        description='Background type for the chart; set to "geometry" or None. Defaults to ``None``.',
+    )
+>>>>>>> 8ba5fb3b (adjusted report related docstrings and added report init (#1159))
     _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
@@ -1409,12 +1487,18 @@ class Chart2D(BaseChart2D):
 class NonlinearResiduals(BaseChart2D):
     """
     Residuals is an object for showing the solution history of nonlinear residuals.
-
     """
 
-    show_grid: Optional[bool] = True
-    separate_plots: Optional[bool] = True
-    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = None
+    show_grid: Optional[bool] = Field(
+        True, description="If ``True``, grid lines are displayed on the plot. Defaults to ``True``."
+    )
+    separate_plots: Optional[bool] = Field(
+        True, description="If ``True``, each residual component is plotted in a separate subplot."
+    )
+    xlim: Optional[Union[ManualLimit, Tuple[float, float]]] = Field(
+        None,
+        description="Limits for the *x*-axis. Can be a tuple ``(xmin, xmax)`` or a `ManualLimit`.",
+    )
     section_title: Literal["Nonlinear residuals"] = Field("Nonlinear residuals", frozen=True)
     x: Literal["nonlinear_residuals/pseudo_step"] = Field(
         "nonlinear_residuals/pseudo_step", frozen=True
@@ -1476,25 +1560,11 @@ class NonlinearResiduals(BaseChart2D):
 class Chart3D(Chart):
     """
     Represents a 3D chart within a report, displaying a specific surface field.
-
-    Parameters
-    ----------
-    field : Optional[SurfaceFieldNames], default=None
-        The name of the surface field to display in the chart.
-    limits : Optional[Tuple[float, float]], default=None
-        Optional limits for the field values, specified as a tuple (min, max).
-    camera: Camera
-        Camera settings: camera position, look at, up. Use some predefined cameras:
-            BottomCamera, FrontCamera, FrontLeftBottomCamera,
-            FrontLeftTopCamera,LeftCamera, RearCamera, RearLeftTopCamera, RearRightBottomCamera, TopCamera
-
-    show : ShutterObjectTypes
-        Type of object to display in the 3D chart.
-    exclude : Optional[List[str]]
-        Exclude boundaries from screenshot,
     """
 
-    field: Optional[Union[SurfaceFieldNames, str]] = None
+    field: Optional[Union[SurfaceFieldNames, str]] = Field(
+        None, description="The name of the field to display in the chart."
+    )
     camera: Optional[
         Union[
             Camera,
@@ -1508,14 +1578,32 @@ class Chart3D(Chart):
             RearRightBottomCamera,
             TopCamera,
         ]
-    ] = pd.Field(default=Camera(), discriminator="type")
-    limits: Optional[Union[Tuple[float, float], Tuple[DimensionedTypes, DimensionedTypes]]] = None
-    is_log_scale: bool = False
-    show: Union[ShutterObjectTypes, Literal["isosurface"]]
-    iso_field: Optional[Union[IsoSurfaceFieldNames, str]] = None
-    mode: Optional[Literal["contour", "lic"]] = "contour"
-    exclude: Optional[List[str]] = None
-    include: Optional[List[str]] = None
+    ] = pd.Field(
+        default=Camera(), description="Specify how the view will be set up.", discriminator="type"
+    )
+    limits: Optional[Union[Tuple[float, float], Tuple[DimensionedTypes, DimensionedTypes]]] = Field(
+        None, description="Limits for the field values, specified as a tuple (min, max)."
+    )
+    is_log_scale: bool = Field(
+        False, description="Applies a logarithmic scale to the colormap. Defaults to ``False``."
+    )
+    show: ShutterObjectTypes = Field(
+        description="Type of object to display in the 3D chart. Note: ``qcriterion`` refers to an iso-surface"
+        + " that is created by default, whereas ``isosurface`` refers to iso-surfaces specified in simulation outputs."
+    )
+    iso_field: Optional[Union[IsoSurfaceFieldNames, str]] = Field(
+        None,
+        description="Iso-surface fields to be displayed when ``isosurface`` is selected in ``show``.",
+    )
+    mode: Optional[Literal["contour", "lic"]] = Field(
+        "contour", description="Field display mode, lic stands for line integral convolution."
+    )
+    include: Optional[List[str]] = Field(
+        None, description="Boundaries to be included in the chart."
+    )
+    exclude: Optional[List[str]] = Field(
+        None, description="Boundaries to be excluded from the chart."
+    )
     type_name: Literal["Chart3D"] = Field("Chart3D", frozen=True)
 
     # pylint: disable=unsubscriptable-object
