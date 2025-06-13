@@ -95,11 +95,11 @@
     "userDefinedFields": [
         {
             "name": "Mach",
-            "expression": "double Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach = (Mach * 1);"
+            "expression": "Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach = (Mach * 1);"
         },
         {
             "name": "velocity",
-            "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity[0] = (velocity[0] * 340.2940058082124); velocity[1] = (velocity[1] * 340.2940058082124); velocity[2] = (velocity[2] * 340.2940058082124);"
+            "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity[0] = (velocity[0] * 340.2940058082124); velocity[1] = (velocity[1] * 340.2940058082124); velocity[2] = (velocity[2] * 340.2940058082124);"
         },
         {
             "name": "uuu",
