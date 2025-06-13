@@ -161,6 +161,12 @@ udf_prepending_code = {
     + "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
     + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
     + "vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
+    "solution.vorticity_magnitude": "double vorticityMagnitude;"
+    + "double vorticity[3];"
+    + "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
+    + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
+    + "vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;"
+    + "vorticityMagnitude = magnitude(vorticity);",
     "solution.CfVec": "double CfVec[3];"
     + "for (int i = 0; i < 3; i++)"
     + "{CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}",
@@ -178,7 +184,7 @@ udf_prepending_code = {
     + "temperature - 1.0 + epsilon;"
     + "double heatTransferCoefficientStaticTemperature = "
     + "abs(temperature - 1.0) > epsilon ? "
-    + "- heatFlux / temperatureSafeDivide :  1.0 / epsilon;",
+    + "- wallHeatFlux / temperatureSafeDivide :  1.0 / epsilon;",
     "solution.heat_transfer_coefficient_total_temperature": "double temperature = "
     + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
     + "double temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
@@ -188,7 +194,7 @@ udf_prepending_code = {
     + "temperature - temperatureTotal + epsilon;"
     + "double heatTransferCoefficientTotalTemperature = "
     + "abs(temperature - temperatureTotal) > epsilon ? "
-    + "temperatureTotal = - heatFlux / temperatureSafeDivide :  1.0 / epsilon;",
+    + "temperatureTotal = - wallHeatFlux / temperatureSafeDivide :  1.0 / epsilon;",
     "solution.wall_shear_stress_magnitude": "double wallShearStressMagnitude; "
     + "wallShearStressMagnitude = magnitude(wallShearStress);",
 }

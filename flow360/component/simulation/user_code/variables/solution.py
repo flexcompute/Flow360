@@ -168,6 +168,12 @@ vorticity = SolverVariable(
     solver_name="vorticity",
     variable_type="Volume",
 )
+vorticity_magnitude = SolverVariable(
+    name="solution.vorticity_magnitude",
+    value=float("NaN") / u.s,
+    solver_name="vorticityMagnitude",
+    variable_type="Volume",
+)
 wall_distance = SolverVariable(
     name="solution.wall_distance",
     value=float("NaN") * u.m,
@@ -191,7 +197,7 @@ Cf = SolverVariable(
 heatflux = SolverVariable(
     name="solution.heatflux",
     value=float("NaN") * u.W / u.m**2,
-    solver_name="heatFlux",
+    solver_name="wallHeatFlux",
     variable_type="Surface",
 )
 node_normals = SolverVariable(

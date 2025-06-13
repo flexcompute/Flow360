@@ -107,6 +107,7 @@ WHITELISTED_CALLABLES = {
             "entropy",
             "temperature",
             "vorticity",
+            "vorticity_magnitude",
             "wall_distance",
             "CfVec",
             "Cf",
