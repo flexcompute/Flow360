@@ -203,7 +203,7 @@ Cf = SolverVariable(
 heatflux = SolverVariable(
     name="solution.heatflux",
     value=float("NaN") * u.W / u.m**2,
-    solver_name="wallHeatFlux",
+    solver_name="heatFlux",
     variable_type="Surface",
 )
 node_normals = SolverVariable(
