@@ -94,7 +94,6 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
-    _save_project_variables,
 )
 from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
@@ -450,11 +449,6 @@ class SimulationParams(_ParamModelBase):
             known_user_defined_fields.add(field.name)
 
         return v
-
-    @pd.model_validator(mode="after")
-    def save_project_variables(self):
-        """Populate project variables private attribute used in the simulation params"""
-        return _save_project_variables(self)
 
     @pd.model_validator(mode="after")
     def check_cht_solver_settings(self):

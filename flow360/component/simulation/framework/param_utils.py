@@ -1,6 +1,6 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import List, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -18,8 +18,30 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.core.types import (
+    AnyNumericType,
+    ValueOrExpression,
+)
 from flow360.component.simulation.utils import model_attribute_unlock
+
+
+class VariableContextInfo(Flow360BaseModel):
+    name: str
+    value: ValueOrExpression[AnyNumericType]
+
+
+def update_global_context(value: List[VariableContextInfo]):
+    import flow360.component.simulation.user_code.core.context as context
+
+    for item in value:
+        context.default_context.set(item.name, item.value)
+    return value
+
+
+variable_context_type = Annotated[
+    List[VariableContextInfo],
+    pd.AfterValidator(update_global_context),
+]
 
 
 class AssetCache(Flow360BaseModel):
@@ -39,7 +61,7 @@ class AssetCache(Flow360BaseModel):
     use_geometry_AI: bool = pd.Field(
         False, description="Flag whether user requested the use of GAI."
     )
-    project_variables: Optional[List[UserVariable]] = pd.Field(
+    project_variables: Optional[variable_context_type] = pd.Field(
         None, description="List of user variables that are used in all the `Expression` instances."
     )
 

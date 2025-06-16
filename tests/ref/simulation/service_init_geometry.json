@@ -300,7 +300,6 @@
     "units": "m"
   },
   "use_inhouse_mesher": false,
-  "use_geometry_AI": false,
-  "project_variables":[]
+  "use_geometry_AI": false
 }
 }

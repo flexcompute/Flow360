@@ -1,0 +1,132 @@
+{
+    "boundaries": {
+        "fluid/body": {
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0,
+            "type": "NoSlipWall"
+        },
+        "fluid/farfield": {
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.05,
+        "Temperature": -1,
+        "alphaAngle": 5.0,
+        "betaAngle": 2.0,
+        "muRef": 5.010000000000001e-09
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": -1.0,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 30
+        },
+        "lowMachPreconditioner": true,
+        "lowMachPreconditionerThreshold": 0.05,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 20.0
+    },
+    "timeStepping": {
+        "CFL": {
+            "convergenceLimitingFactor": 0.25,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "maxPseudoSteps": 2000,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "ZDES": false,
+        "absoluteTolerance": 1e-08,
+        "equationEvalFrequency": 4,
+        "gridSizeForLES": "maxEdgeLength",
+        "linearSolver": {
+            "maxIterations": 20
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
+            "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3
+        },
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "relativeTolerance": 0.0,
+        "rotationCorrection": false,
+        "updateJacobianFrequency": 4
+    },
+    "userDefinedFields": [
+        {
+            "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;",
+            "name": "velocity_magnitude"
+        },
+        {
+            "expression": "double Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach = (Mach * 1);",
+            "name": "Mach"
+        },
+        {
+            "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity[0] = (velocity[0] * 200.0); velocity[1] = (velocity[1] * 200.0); velocity[2] = (velocity[2] * 200.0);",
+            "name": "velocity"
+        },
+        {
+            "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;uuu[0] = (velocity[0] * 0.0002); uuu[1] = (velocity[1] * 0.0002); uuu[2] = (velocity[2] * 0.0002);",
+            "name": "uuu"
+        },
+        {
+            "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;my_var[0] = (((((2.0 * 1.0) / 200.0) * velocity[2]) - (((3.0 * 1.0) / 200.0) * velocity[1])) * 40000.0); my_var[1] = (((((3.0 * 1.0) / 200.0) * velocity[0]) - (((1.0 * 1.0) / 200.0) * velocity[2])) * 40000.0); my_var[2] = (((((1.0 * 1.0) / 200.0) * velocity[1]) - (((2.0 * 1.0) / 200.0) * velocity[0])) * 40000.0);",
+            "name": "my_var"
+        }
+    ],
+    "usingLiquidAsMaterial": true,
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [
+            "Mach",
+            "velocity",
+            "uuu",
+            "my_var"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
+    }
+}

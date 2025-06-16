@@ -12,6 +12,7 @@ from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.param_utils import VariableContextInfo
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -239,6 +240,17 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
+def _save_user_variables(params: SimulationParams):
+    import flow360.component.simulation.user_code.core.context as context
+
+    params.private_attribute_asset_cache.project_variables = [
+        VariableContextInfo(name=name, value=value)
+        for name, value in context.default_context._values.items()
+        if "." not in name  # Skipping scoped variables (non-user variables)
+    ]
+    return params
+
+
 def set_up_params_for_uploading(
     root_asset: AssetBase,
     length_unit: LengthType,
@@ -280,6 +292,9 @@ def set_up_params_for_uploading(
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
+
+    # Convert all reference of UserVariables to VariableToken
+    params = _save_user_variables(params)
 
     return params
 

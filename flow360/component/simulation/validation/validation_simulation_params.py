@@ -32,18 +32,6 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 
-def _save_project_variables(v):
-    expressions = find_instances(v, Expression)
-    user_variables = set()
-
-    for expression in expressions:
-        user_variables = user_variables.union(expression.user_variables())
-
-    v.private_attribute_asset_cache.project_variables = list(user_variables)
-
-    return v
-
-
 def _check_consistency_wall_function_and_surface_output(v):
     models = v.models
 
