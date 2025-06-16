@@ -102,6 +102,7 @@ WHITELISTED_CALLABLES = {
             "turbulence_intermittency",
             "density",
             "velocity",
+            "velocity_magnitude",
             "pressure",
             "qcriterion",
             "entropy",

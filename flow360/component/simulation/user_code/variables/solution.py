@@ -137,6 +137,12 @@ velocity = SolverVariable(
     solver_name="velocity",
     variable_type="Volume",
 )
+velocity_magnitude = SolverVariable(
+    name="solution.velocity_magnitude",
+    value=float("NaN") * u.m / u.s,
+    solver_name="velocityMagnitude",
+    variable_type="Volume",
+)
 pressure = SolverVariable(
     name="solution.pressure",
     value=float("NaN") * u.Pa,

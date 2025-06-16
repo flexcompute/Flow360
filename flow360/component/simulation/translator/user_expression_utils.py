@@ -1,3 +1,5 @@
+"""Utilities for user expression translation."""
+
 import numpy as np
 
 udf_prepending_code = {
@@ -7,10 +9,10 @@ udf_prepending_code = {
     },
     "solution.Cpt": {
         "declaration": "double Cpt;",
-        "computation": "double MachUser = sqrt(primitiveVars[1] * primitiveVars[1] + "
+        "computation": "double MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + "
         + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / "
         + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
-        + "Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * MachUser * MachUser,"
+        + "Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * MachTmp * MachTmp,"
         + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
         + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
     },
@@ -74,6 +76,13 @@ udf_prepending_code = {
         + "velocity[1] = primitiveVars[2] * velocityScale;"
         + "velocity[2] = primitiveVars[3] * velocityScale;",
     },
+    "solution.velocity_magnitude": {
+        "declaration": "double velocityMagnitude;",
+        "computation": "double velocityTmp[3];velocityTmp[0] = primitiveVars[1] * velocityScale;"
+        + "velocityTmp[1] = primitiveVars[2] * velocityScale;"
+        + "velocityTmp[2] = primitiveVars[3] * velocityScale;"
+        + "velocityMagnitude = magnitude(velocityTmp);",
+    },
     "solution.qcriterion": {
         "declaration": "double qcriterion;",
         "computation": "double ux = gradPrimitive[1][0];"
@@ -117,11 +126,11 @@ udf_prepending_code = {
     },
     "solution.vorticity_magnitude": {
         "declaration": "double vorticityMagnitude;",
-        "computation": "double vorticity[3];"
-        + "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
-        + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
-        + "vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;"
-        + "vorticityMagnitude = magnitude(vorticity);",
+        "computation": "double vorticityTmp[3];"
+        + "vorticityTmp[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
+        + "vorticityTmp[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
+        + "vorticityTmp[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;"
+        + "vorticityMagnitude = magnitude(vorticityTmp);",
     },
     "solution.CfVec": {
         "declaration": "double CfVec[3];",
@@ -141,27 +150,27 @@ udf_prepending_code = {
     },
     "solution.heat_transfer_coefficient_static_temperature": {
         "declaration": "double heatTransferCoefficientStaticTemperature;",
-        "computation": "double temperature = "
+        "computation": "double temperatureTmp = "
         + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
         + f"double epsilon = {np.finfo(np.float64).eps};"
-        + "double temperatureSafeDivide = (temperature - 1.0 < 0) ? "
-        + "temperature - 1.0 - epsilon : "
-        + "temperature - 1.0 + epsilon;"
+        + "double temperatureSafeDivide = (temperatureTmp - 1.0 < 0) ? "
+        + "temperatureTmp - 1.0 - epsilon : "
+        + "temperatureTmp - 1.0 + epsilon;"
         + "heatTransferCoefficientStaticTemperature = "
-        + "abs(temperature - 1.0) > epsilon ? "
+        + "abs(temperatureTmp - 1.0) > epsilon ? "
         + "- wallHeatFlux / temperatureSafeDivide :  1.0 / epsilon;",
     },
     "solution.heat_transfer_coefficient_total_temperature": {
         "declaration": "double heatTransferCoefficientTotalTemperature;",
-        "computation": "double temperature = "
+        "computation": "double temperatureTmp = "
         + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
         + "double temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
         + f"double epsilon = {np.finfo(np.float64).eps};"
-        + "double temperatureSafeDivide = (temperature - temperatureTotal < 0) ? "
-        + "temperature - temperatureTotal - epsilon : "
-        + "temperature - temperatureTotal + epsilon;"
+        + "double temperatureSafeDivide = (temperatureTmp - temperatureTotal < 0) ? "
+        + "temperatureTmp - temperatureTotal - epsilon : "
+        + "temperatureTmp - temperatureTotal + epsilon;"
         + "double heatTransferCoefficientTotalTemperature = "
-        + "abs(temperature - temperatureTotal) > epsilon ? "
+        + "abs(temperatureTmp - temperatureTotal) > epsilon ? "
         + "temperatureTotal = - wallHeatFlux / temperatureSafeDivide :  1.0 / epsilon;",
     },
     "solution.wall_shear_stress_magnitude": {
