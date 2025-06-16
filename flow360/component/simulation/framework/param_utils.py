@@ -26,19 +26,23 @@ from flow360.component.simulation.utils import model_attribute_unlock
 
 
 class VariableContextInfo(Flow360BaseModel):
+    """Variable context info for project variables."""
+
     name: str
     value: ValueOrExpression[AnyNumericType]
 
 
 def update_global_context(value: List[VariableContextInfo]):
-    import flow360.component.simulation.user_code.core.context as context
+    """Once the project variables are validated, update the global context."""
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.user_code.core import context
 
     for item in value:
         context.default_context.set(item.name, item.value)
     return value
 
 
-variable_context_type = Annotated[
+VariableContextList = Annotated[
     List[VariableContextInfo],
     pd.AfterValidator(update_global_context),
 ]
@@ -61,7 +65,7 @@ class AssetCache(Flow360BaseModel):
     use_geometry_AI: bool = pd.Field(
         False, description="Flag whether user requested the use of GAI."
     )
-    project_variables: Optional[variable_context_type] = pd.Field(
+    project_variables: Optional[VariableContextList] = pd.Field(
         None, description="List of user variables that are used in all the `Expression` instances."
     )
 

@@ -5,17 +5,7 @@ from __future__ import annotations
 import ast
 import re
 from numbers import Number
-from typing import (
-    Annotated,
-    Any,
-    ClassVar,
-    Generic,
-    List,
-    Literal,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Annotated, Any, Generic, List, Literal, Optional, TypeVar, Union
 
 import numpy as np
 import pydantic as pd
@@ -187,7 +177,6 @@ def _check_cyclic_dependencies(*, variable_name: str) -> None:
             stack.extend(
                 [(name, current_path + [name]) for name in used_names if name not in visited]
             )
-    return
 
 
 class Variable(Flow360BaseModel):
@@ -210,7 +199,6 @@ class Variable(Flow360BaseModel):
         Set the value of the variable in the global context.
         In parallel to `set_value` this supports syntax like `my_user_var.value = 10.0`.
         """
-        # TODO: Overwrite warning.
         default_context.set(
             self.name, pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(value)
         )
@@ -365,7 +353,9 @@ class UserVariable(Variable):
     type_name: Literal["UserVariable"] = pd.Field("UserVariable", frozen=True)
 
     @pd.field_validator("name", mode="after")
+    @classmethod
     def check_unscoped_name(cls, v):
+        """Ensure that the variable name is not scoped. Only solver side variables can be scoped."""
         if "." in v:
             raise ValueError(
                 "User variable name cannot contain dots (scoped variables not supported)."
@@ -790,7 +780,7 @@ class ValueOrExpression(Expression, Generic[T]):
                     # May result from Expression which is actually a list of expressions
                     try:
                         evaluated = u.unyt_array(evaluated)
-                    except u.exceptions.unyt.exceptions.IterableUnitCoercionError:
+                    except u.exceptions.IterableUnitCoercionError:
                         # Inconsistent units for components of list
                         pass
 

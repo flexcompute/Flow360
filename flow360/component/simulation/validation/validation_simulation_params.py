@@ -4,7 +4,6 @@ validation for SimulationParams
 
 from typing import get_args
 
-from flow360.component.simulation.framework.param_utils import find_instances
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -22,7 +21,6 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
-from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,

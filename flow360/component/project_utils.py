@@ -241,11 +241,12 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
 
 
 def _save_user_variables(params: SimulationParams):
-    import flow360.component.simulation.user_code.core.context as context
+    # pylint: disable=import-outside-toplevel
+    from flow360.component.simulation.user_code.core import context
 
     params.private_attribute_asset_cache.project_variables = [
         VariableContextInfo(name=name, value=value)
-        for name, value in context.default_context._values.items()
+        for name, value in context.default_context._values.items()  # pylint: disable=protected-access
         if "." not in name  # Skipping scoped variables (non-user variables)
     ]
     return params
