@@ -574,6 +574,22 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
 
         return coefficient, offset
 
+    def _prepare_prepending_code(expression: Expression):
+        prepending_code = []
+        for name in expression.solver_variable_names():
+            if not udf_prepending_code.get(name):
+                continue
+            if name.split(".")[-1] == variable.name:
+                # Avoid duplicate declaration if the intermediate variable name is 
+                # the same as the solver_name.
+                prepending_code.append(udf_prepending_code[name]["computation"])
+                continue
+            prepending_code.append(
+                udf_prepending_code[name]["declaration"] + udf_prepending_code[name]["computation"]
+            )
+        prepending_code = "".join(prepending_code)
+        return prepending_code
+
     expression: Expression = variable.value
 
     requested_unit: Union[u.Unit, None] = expression.get_output_units(input_params=input_params)
@@ -591,16 +607,7 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         )
 
     expression_length = expression.length
-    prepending_code = [
-        (
-            udf_prepending_code[name]["declaration"] + udf_prepending_code[name]["computation"]
-            if name.split(".")[-1] != variable.name
-            else udf_prepending_code[name]["computation"]
-        )
-        for name in expression.solver_variable_names()
-        if udf_prepending_code.get(name)
-    ]
-    prepending_code = "".join(prepending_code)
+    prepending_code = _prepare_prepending_code(expression=expression)
 
     if expression_length == 1:
         expression = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=False)

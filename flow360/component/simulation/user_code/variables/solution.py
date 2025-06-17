@@ -137,12 +137,6 @@ velocity = SolverVariable(
     solver_name="velocity",
     variable_type="Volume",
 )
-velocity_magnitude = SolverVariable(
-    name="solution.velocity_magnitude",
-    value=float("NaN") * u.m / u.s,
-    solver_name="velocityMagnitude",
-    variable_type="Volume",
-)
 pressure = SolverVariable(
     name="solution.pressure",
     value=float("NaN") * u.Pa,
@@ -172,12 +166,6 @@ vorticity = SolverVariable(
     name="solution.vorticity",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="vorticity",
-    variable_type="Volume",
-)
-vorticity_magnitude = SolverVariable(
-    name="solution.vorticity_magnitude",
-    value=float("NaN") / u.s,
-    solver_name="vorticityMagnitude",
     variable_type="Volume",
 )
 wall_distance = SolverVariable(
