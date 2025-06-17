@@ -48,11 +48,13 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
@@ -519,8 +521,6 @@ def test_user_defined_field():
                 )
             ],
         )
-    translated = get_solver_json(param, mesh_unit=1 * u.m)
-    print("-----------------\n", json.dumps(translated, indent=4))
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_expression_udf.json")
 
 
@@ -640,3 +640,59 @@ def test_liquid_simulation_translation():
         # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
         # t_seconds = (0.005 s * t)
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
+
+
+import flow360.component.simulation.user_code.core.context as context
+
+
+@pytest.fixture()
+def reset_context():
+    context.default_context._values = {
+        name: item for (name, item) in context.default_context._values.items() if "." in name
+    }
+
+
+def test_param_with_user_variables():
+    some_dependent_variable_a = UserVariable(
+        name="some_dependent_variable_a", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
+    )
+    my_var = UserVariable(
+        name="my_var", value=math.cross(some_dependent_variable_a, solution.velocity)
+    )
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                alpha=5 * u.deg,
+                beta=2 * u.deg,
+                material=Water(name="my_water", density=1.000 * 10**3 * u.kg / u.m**3),
+            ),
+            models=[
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+            outputs=[
+                VolumeOutput(
+                    name="output",
+                    output_fields=[
+                        solution.Mach,
+                        solution.velocity,
+                        UserVariable(name="uuu", value=solution.velocity).in_unit(new_unit="km/ms"),
+                        my_var,
+                    ],
+                )
+            ],
+        )
+    # Mimicking real workflow where the Param is serialized and then deserialized
+    params_validated, _, _ = validate_model(
+        params_as_dict=param.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+    )
+
+    assert params_validated
+    translate_and_compare(
+        params_validated,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_user_variable.json",
+    )

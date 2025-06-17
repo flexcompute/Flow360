@@ -80,11 +80,17 @@ class EvaluationContext:
         return self._data_models[name]
 
     def set_alias(self, name, alias) -> None:
-        """Set alias used for code generation."""
+        """
+        Set alias used for code generation.
+        This is meant for non-user variables.
+        """
         self._aliases[name] = alias
 
     def get_alias(self, name) -> Optional[str]:
-        """Get alias used for code generation."""
+        """
+        Get alias used for code generation.
+        This is meant for non-user variables.
+        """
         return self._aliases.get(name)
 
     def set(self, name: str, value: Any, data_model: pd.BaseModel = None) -> None:
@@ -94,7 +100,7 @@ class EvaluationContext:
         Args:
             name (str): The variable name to set.
             value (Any): The value to assign.
-            data_model (BaseModel, optional): The type of the associate with this entry
+            data_model (BaseModel, optional): The type of the associate with this entry (for non-user variables)
         """
         self._values[name] = value
 
@@ -137,3 +143,12 @@ class EvaluationContext:
             of the current variable values.
         """
         return EvaluationContext(self._resolver, dict(self._values))
+
+    @property
+    def user_variable_names(self):
+        """Get the set of user variables in the context."""
+        return {name for name in self._values.keys() if "." not in name}
+
+    def clear(self):
+        """Clear user variables from the context."""
+        self._values = {name: value for name, value in self._values.items() if "." in name}

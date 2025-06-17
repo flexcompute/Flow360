@@ -1,11 +1,12 @@
 import json
 import re
-from typing import Annotated, List
+from typing import Annotated
 
 import numpy as np
 import pydantic as pd
 import pytest
 
+import flow360.component.simulation.user_code.core.context as context
 from flow360 import (
     AerospaceCondition,
     HeatEquationInitialCondition,
@@ -16,11 +17,17 @@ from flow360 import (
     math,
     u,
 )
+from flow360.component.project_utils import save_user_variables
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_lists
 from flow360.component.simulation.models.material import Water, aluminum
-from flow360.component.simulation.outputs.outputs import SurfaceOutput, VolumeOutput
+from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.outputs import (
+    ProbeOutput,
+    SurfaceOutput,
+    VolumeOutput,
+)
 from flow360.component.simulation.primitives import (
     GenericVolume,
     ReferenceGeometry,
@@ -72,6 +79,11 @@ from tests.utils import to_file_from_file_test
 
 
 @pytest.fixture(autouse=True)
+def reset_context():
+    context.default_context.clear()
+
+
+@pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
@@ -102,9 +114,6 @@ def solution_variable():
 
 
 def test_variable_init():
-    class TestModel(Flow360BaseModel):
-        field: List[UserVariable] = pd.Field()
-
     # Variables can be initialized with a...
 
     # Value
@@ -360,46 +369,44 @@ def test_vector_types():
         direction: ValueOrExpression[LengthType.Direction] = pd.Field()
         moment: ValueOrExpression[LengthType.Moment] = pd.Field()
 
-    x = UserVariable(name="x", value=[1, 0, 0])
-    y = UserVariable(name="y", value=[0, 0, 0])
-    z = UserVariable(name="z", value=[1, 0, 0, 0])
-    w = UserVariable(name="w", value=[1, 1, 1])
+    x = UserVariable(name="x", value=[1, 0, 0] * u.m)
+    y = UserVariable(name="y", value=[0, 0, 0] * u.m)
+    z = UserVariable(name="z", value=[1, 0, 0, 0] * u.m)
+    w = UserVariable(name="w", value=[1, 1, 1] * u.m)
 
-    model = TestModel(
-        vector=y * u.m, axis=x * u.m, array=z * u.m, direction=x * u.m, moment=w * u.m
-    )
+    model = TestModel(vector=y, axis=x, array=z, direction=x, moment=w)
 
     assert isinstance(model.vector, Expression)
     assert (model.vector.evaluate() == [0, 0, 0] * u.m).all()
-    assert str(model.vector) == "y * u.m"
+    assert str(model.vector) == "y"
 
     assert isinstance(model.axis, Expression)
     assert (model.axis.evaluate() == [1, 0, 0] * u.m).all()
-    assert str(model.axis) == "x * u.m"
+    assert str(model.axis) == "x"
 
     assert isinstance(model.array, Expression)
     assert (model.array.evaluate() == [1, 0, 0, 0] * u.m).all()
-    assert str(model.array) == "z * u.m"
+    assert str(model.array) == "z"
 
     assert isinstance(model.direction, Expression)
     assert (model.direction.evaluate() == [1, 0, 0] * u.m).all()
-    assert str(model.direction) == "x * u.m"
+    assert str(model.direction) == "x"
 
     assert isinstance(model.moment, Expression)
     assert (model.moment.evaluate() == [1, 1, 1] * u.m).all()
-    assert str(model.moment) == "w * u.m"
+    assert str(model.moment) == "w"
 
     with pytest.raises(pd.ValidationError):
-        model.vector = z * u.m
+        model.vector = z
 
     with pytest.raises(pd.ValidationError):
-        model.axis = y * u.m
+        model.axis = y
 
     with pytest.raises(pd.ValidationError):
-        model.direction = y * u.m
+        model.direction = y
 
     with pytest.raises(pd.ValidationError):
-        model.moment = x * u.m
+        model.moment = x
 
 
 def test_solver_builtin():
@@ -448,66 +455,26 @@ def test_serializer(
 
     assert constant_variable.model_dump() == {
         "name": "constant_variable",
-        "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": None,
-            "value": 10.0,
-        },
+        "type_name": "UserVariable",
     }
 
     assert constant_array.model_dump() == {
         "name": "constant_array",
-        "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": None,
-            "value": [10, 20],
-        },
+        "type_name": "UserVariable",
     }
     assert constant_unyt_quantity.model_dump() == {
         "name": "constant_unyt_quantity",
-        "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": "m",
-            "value": 10.0,
-        },
+        "type_name": "UserVariable",
     }
 
     assert constant_unyt_array.model_dump() == {
         "name": "constant_unyt_array",
-        "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": "m",
-            "value": [10, 20],
-        },
+        "type_name": "UserVariable",
     }
 
     assert solution_variable.model_dump() == {
         "name": "solution_variable",
-        "value": {
-            "evaluated_units": "m/s",
-            "evaluated_value": [None, None, None],
-            "expression": "solution.velocity",
-            "output_units": None,
-            "type_name": "expression",
-            "units": None,
-            "value": None,
-        },
+        "type_name": "UserVariable",
     }
 
 
@@ -788,10 +755,10 @@ def test_cyclic_dependencies():
     with pytest.raises(pd.ValidationError):
         x.value = y
 
-    x = UserVariable(name="x", value=4)
+    z = UserVariable(name="z", value=4)
 
     with pytest.raises(pd.ValidationError):
-        x.value = x
+        z.value = z
 
 
 def test_auto_alias():
@@ -873,8 +840,7 @@ def test_vector_solver_variable_cross_product_translation():
     assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3] * u.m)"
 
     # During solver translation both options are inlined the same way through partial evaluation
-    solver_1 = expr_1.to_solver_code(params)
-    print(solver_1)
+    expr_1.to_solver_code(params)
 
     # From python code
     expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
@@ -885,8 +851,7 @@ def test_vector_solver_variable_cross_product_translation():
     )
 
     # During solver translation both options are inlined the same way through partial evaluation
-    solver_2 = expr_2.to_solver_code(params)
-    print(solver_2)
+    expr_2.to_solver_code(params)
 
 
 def test_cross_function_use_case():
@@ -1093,7 +1058,6 @@ def test_udf_generator():
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_unit(new_unit="m*km/s/s")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
-    print("3>>> result.expression", result.expression)
     assert (
         result.expression
         == "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((velocity[1] * 3) * 0.001) - ((velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((velocity[2] * 1) * 0.001) - ((velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((velocity[0] * 2) * 0.001) - ((velocity[1] * 1) * 0.001)) * 10.0);"
@@ -1105,8 +1069,15 @@ def test_udf_generator():
     assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
 
 
-def test_project_variables():
-    aaa = UserVariable(name="aaa", value=solution.velocity + 12 * u.m / u.s)
+def test_project_variables_serialization():
+    ccc = UserVariable(name="ccc", value=12 * u.m / u.s)
+    aaa = UserVariable(
+        name="aaa", value=[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]
+    )
+    bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_unit(
+        new_unit="km/ms"
+    )
+
     with SI_unit_system:
         params = SimulationParams(
             operating_condition=AerospaceCondition(
@@ -1116,12 +1087,68 @@ def test_project_variables():
             outputs=[
                 VolumeOutput(
                     output_fields=[
-                        UserVariable(name="bbb", value=aaa + 14 * u.m / u.s),
+                        bbb,
                     ]
-                )
+                ),
+                ProbeOutput(
+                    probe_points=[
+                        Point(name="pt1", location=(1, 2, 3), private_attribute_id="111")
+                    ],
+                    output_fields=[bbb],
+                ),
             ],
         )
-    assert params.private_attribute_asset_cache.project_variables == [aaa]
+
+    params = save_user_variables(params)
+
+    with open("ref/simulation_with_project_variables.json", "r+") as fh:
+        ref_data = fh.read()
+
+    assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
+
+
+def test_project_variables_deserialization():
+    with open("ref/simulation_with_project_variables.json", "r+") as fh:
+        data = json.load(fh)
+
+    # Assert no variables registered yet
+    with pytest.raises(NameError):
+        context.default_context.get("aaa")
+    with pytest.raises(NameError):
+        context.default_context.get("bbb")
+    with pytest.raises(NameError):
+        context.default_context.get("ccc")
+
+    params, _, _ = validate_model(
+        params_as_dict=data,
+        root_item_type=None,
+        validated_by=ValidationCalledBy.LOCAL,
+    )
+    assert params
+    assert (
+        params.outputs[0].output_fields.items[0].value.expression
+        == "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]"
+    )
+
+    assert params.outputs[0].output_fields.items[0].value.output_units == "km/ms"
+
+    assert (
+        params.outputs[0]
+        .output_fields.items[0]
+        .value.evaluate(force_evaluate=False, raise_on_non_evaluable=False)
+        .expression
+        == "[solution.velocity[0] + 12.0 * u.m / u.s + 14 * u.m / u.s, solution.velocity[1], solution.velocity[2]]"
+    )  # Fully resolvable
+
+
+def test_overwriting_project_variables():
+    UserVariable(name="a", value=1)
+
+    with pytest.raises(
+        ValueError,
+        match="Redeclaring user variable a with new value: 2.0. Previous value: 1.0",
+    ):
+        UserVariable(name="a", value=2)
 
 
 def test_whitelisted_callables():

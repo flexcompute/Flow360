@@ -21,6 +21,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
@@ -280,6 +281,9 @@ def set_up_params_for_uploading(
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
+
+    # Convert all reference of UserVariables to VariableToken
+    params = save_user_variables(params)
 
     return params
 

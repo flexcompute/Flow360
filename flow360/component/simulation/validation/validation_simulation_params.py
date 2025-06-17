@@ -4,7 +4,6 @@ validation for SimulationParams
 
 from typing import get_args
 
-from flow360.component.simulation.framework.param_utils import find_instances
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -22,7 +21,6 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
-from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -30,18 +28,6 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
-
-
-def _save_project_variables(v):
-    expressions = find_instances(v, Expression)
-    user_variables = set()
-
-    for expression in expressions:
-        user_variables = user_variables.union(expression.user_variables())
-
-    v.private_attribute_asset_cache.project_variables = list(user_variables)
-
-    return v
 
 
 def _check_consistency_wall_function_and_surface_output(v):

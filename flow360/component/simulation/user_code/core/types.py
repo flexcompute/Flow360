@@ -26,8 +26,35 @@ from flow360.component.simulation.user_code.core.utils import (
     split_keep_delimiters,
 )
 
-_user_variables: set[str] = set()
 _solver_variables: set[str] = set()
+
+
+class VariableContextInfo(Flow360BaseModel):
+    """Variable context info for project variables."""
+
+    name: str
+    value: ValueOrExpression[AnyNumericType]
+
+
+def save_user_variables(params):
+    """
+    Save user variables to the project variables.
+    Declared here since I do not want to import default_context everywhere.
+    """
+    params.private_attribute_asset_cache.project_variables = [
+        VariableContextInfo(name=name, value=value)
+        for name, value in default_context._values.items()  # pylint: disable=protected-access
+        if "." not in name  # Skipping scoped variables (non-user variables)
+    ]
+    return params
+
+
+def update_global_context(value: List[VariableContextInfo]):
+    """Once the project variables are validated, update the global context."""
+
+    for item in value:
+        default_context.set(item.name, item.value)
+    return value
 
 
 def __soft_fail_add__(self, other):
@@ -142,12 +169,14 @@ def check_vector_arithmetic(func):
     """Decorator to check if vector arithmetic is being attempted and raise an error if so."""
 
     def wrapper(self, other):
-        vector_arithmetic = False
-        if isinstance(other, unyt_array) and other.shape != ():
-            vector_arithmetic = True
-        elif isinstance(other, list):
-            vector_arithmetic = True
-        if vector_arithmetic:
+        def is_array(item):
+            if isinstance(item, unyt_array) and item.shape != ():
+                return True
+            if isinstance(item, list):
+                return True
+            return False
+
+        if is_array(self.value) or is_array(other):
             raise ValueError(
                 f"Vector operation ({func.__name__} between {self.name} and {other}) not "
                 "supported for variables. Please write expression for each component."
@@ -157,13 +186,88 @@ def check_vector_arithmetic(func):
     return wrapper
 
 
+def _check_cyclic_dependencies(*, variable_name: str) -> None:
+    visited = set()
+    stack = [(variable_name, [variable_name])]
+    while stack:
+        (current_name, current_path) = stack.pop()
+        current_value = default_context.get(current_name)
+        if isinstance(current_value, Expression):
+            used_names = current_value.user_variable_names()
+            if [name for name in used_names if name in current_path]:
+                path_string = " -> ".join(current_path + [current_path[0]])
+                details = InitErrorDetails(
+                    type="value_error",
+                    ctx={"error": f"Cyclic dependency between variables {path_string}"},
+                )
+                raise pd.ValidationError.from_exception_data("Variable value error", [details])
+            stack.extend(
+                [(name, current_path + [name]) for name in used_names if name not in visited]
+            )
+
+
 class Variable(Flow360BaseModel):
     """Base class representing a symbolic variable"""
 
-    name: str = pd.Field()
-    value: ValueOrExpression[AnyNumericType] = pd.Field()
+    name: str = pd.Field(frozen=True)
 
     model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
+
+    @property
+    def value(self):
+        """
+        Get the value of the variable from the global context.
+        """
+        return default_context.get(self.name)
+
+    @value.setter
+    def value(self, value):
+        """
+        Set the value of the variable in the global context.
+        In parallel to `set_value` this supports syntax like `my_user_var.value = 10.0`.
+        """
+        new_value = pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(value)
+        # Not checking overwrite here since it is user controlled explicit assignment operation
+        default_context.set(self.name, new_value)
+        _check_cyclic_dependencies(variable_name=self.name)
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def set_value(cls, values):
+        """
+        Supporting syntax like `a = fl.Variable(name="a", value=1)`.
+        """
+        if "name" not in values:
+            raise ValueError("`name` is required for variable declaration.")
+
+        if "value" in values:
+            new_value = pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(
+                values.pop("value")
+            )
+            # Check overwriting, skip for solver variables:
+            if values["name"] in default_context.user_variable_names:
+                diff = new_value != default_context.get(values["name"])
+
+                if isinstance(diff, np.ndarray):
+                    diff = diff.any()
+
+                if isinstance(diff, list):
+                    # Might not end up here but just in case
+                    diff = any(diff)
+
+                if diff:
+                    raise ValueError(
+                        f"Redeclaring user variable {values['name']} with new value: {new_value}. "
+                        f"Previous value: {default_context.get(values['name'])}"
+                    )
+            # Call the setter
+            default_context.set(
+                values["name"],
+                new_value,
+            )
+            _check_cyclic_dependencies(variable_name=values["name"])
+
+        return values
 
     @check_vector_arithmetic
     def __add__(self, other):
@@ -288,39 +392,23 @@ class Variable(Flow360BaseModel):
 class UserVariable(Variable):
     """Class representing a user-defined symbolic variable"""
 
-    @pd.model_validator(mode="after")
-    def update_context(self):
-        """Auto updating context when new variable is declared"""
-        default_context.set(self.name, self.value)
-        _user_variables.add(self.name)
-        return self
+    name: str = pd.Field(frozen=True)
 
-    @pd.model_validator(mode="after")
-    def check_dependencies(self):
-        """Validator for ensuring no cyclic dependency."""
-        visited = set()
-        stack = [(self.name, [self.name])]
-        while stack:
-            (current_name, current_path) = stack.pop()
-            current_value = default_context.get(current_name)
-            if isinstance(current_value, Expression):
-                used_names = current_value.user_variable_names()
-                if [name for name in used_names if name in current_path]:
-                    path_string = " -> ".join(current_path + [current_path[0]])
-                    details = InitErrorDetails(
-                        type="value_error",
-                        ctx={"error": f"Cyclic dependency between variables {path_string}"},
-                    )
-                    raise pd.ValidationError.from_exception_data("Variable value error", [details])
-                stack.extend(
-                    [(name, current_path + [name]) for name in used_names if name not in visited]
-                )
-        return self
+    type_name: Literal["UserVariable"] = pd.Field("UserVariable", frozen=True)
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def check_unscoped_name(cls, v):
+        """Ensure that the variable name is not scoped. Only solver side variables can be scoped."""
+        if "." in v:
+            raise ValueError(
+                "User variable name cannot contain dots (scoped variables not supported)."
+            )
+        return v
 
     def __hash__(self):
         """
         Support for set and deduplicate.
-        Can be removed if not used directly in output_fields.
         """
         return hash(self.model_dump_json())
 
@@ -335,6 +423,7 @@ class UserVariable(Variable):
 class SolverVariable(Variable):
     """Class representing a pre-defined symbolic variable that cannot be evaluated at client runtime"""
 
+    type_name: Literal["SolverVariable"] = pd.Field("SolverVariable", frozen=True)
     solver_name: Optional[str] = pd.Field(None)
     variable_type: Literal["Volume", "Surface", "Scalar"] = pd.Field()
 
@@ -349,14 +438,15 @@ class SolverVariable(Variable):
 
     def in_unit(self, new_name: str, new_unit: Union[str, Unit] = None):
         """
-
-
         Return a UserVariable that will generate results in the new_unit.
         If new_unit is not specified then the unit will be determined by the unit system.
         """
         if isinstance(new_unit, Unit):
             new_unit = str(new_unit)
-        new_variable = UserVariable(name=new_name, value=Expression(expression=self.name))
+        new_variable = UserVariable(
+            name=new_name,
+            value=Expression(expression=self.name),
+        )
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
         return new_variable
 
@@ -418,6 +508,12 @@ class Expression(Flow360BaseModel, Evaluable):
 
         return {"expression": expression, "output_units": output_units}
 
+    @pd.field_validator("expression", mode="after")
+    @classmethod
+    def remove_leading_and_trailing_whitespace(cls, value: str) -> str:
+        """Remove leading and trailing whitespace from the expression"""
+        return value.strip()
+
     def evaluate(
         self,
         context: EvaluationContext = None,
@@ -450,7 +546,7 @@ class Expression(Flow360BaseModel, Evaluable):
         """Get list of user variables used in expression."""
         expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
-        names = [name for name in names if name in _user_variables]
+        names = [name for name in names if name in default_context.user_variable_names]
 
         return [UserVariable(name=name, value=default_context.get(name)) for name in names]
 
@@ -458,7 +554,7 @@ class Expression(Flow360BaseModel, Evaluable):
         """Get list of user variable names used in expression."""
         expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
-        names = [name for name in names if name in _user_variables]
+        names = [name for name in names if name in default_context.user_variable_names]
 
         return names
 
@@ -609,6 +705,11 @@ class Expression(Flow360BaseModel, Evaluable):
     def __repr__(self):
         return f"Expression({self.expression})"
 
+    def __eq__(self, other):
+        if isinstance(other, Expression):
+            return self.expression == other.expression
+        return super().__eq__(other)
+
     @property
     def dimensionality(self):
         """The physical dimensionality of the expression."""
@@ -684,7 +785,7 @@ class ValueOrExpression(Expression, Generic[T]):
     def __class_getitem__(cls, typevar_values):  # pylint:disable=too-many-statements
         def _internal_validator(value: Expression):
             try:
-                result = value.evaluate(raise_on_non_evaluable=False)
+                result = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
             pd.TypeAdapter(typevar_values).validate_python(result, context={"allow_inf_nan": True})
@@ -716,7 +817,15 @@ class ValueOrExpression(Expression, Generic[T]):
 
                 serialized.expression = value.expression
 
-                evaluated = value.evaluate(raise_on_non_evaluable=False)
+                evaluated = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+
+                if isinstance(evaluated, list):
+                    # May result from Expression which is actually a list of expressions
+                    try:
+                        evaluated = u.unyt_array(evaluated)
+                    except u.exceptions.IterableUnitCoercionError:
+                        # Inconsistent units for components of list
+                        pass
 
                 if isinstance(evaluated, Number):
                     serialized.evaluated_value = evaluated
@@ -755,6 +864,8 @@ class ValueOrExpression(Expression, Generic[T]):
             if isinstance(v, dict):
                 return v.get("typeName") if v.get("typeName") else v.get("type_name")
             if isinstance(v, (Expression, Variable, str)):
+                return "expression"
+            if isinstance(v, list) and all(isinstance(item, Expression) for item in v):
                 return "expression"
             if isinstance(v, (Number, unyt_array, list)):
                 return "number"
