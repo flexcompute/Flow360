@@ -108,7 +108,6 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     IsosurfaceOutput,
@@ -216,7 +215,6 @@ __all__ = [
     "SliceOutput",
     "TimeAverageSliceOutput",
     "IsosurfaceOutput",
-    "IsoSurfaceFieldNames",
     "SurfaceIntegralOutput",
     "ProbeOutput",
     "SurfaceProbeOutput",
