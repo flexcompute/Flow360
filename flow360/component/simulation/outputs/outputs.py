@@ -548,7 +548,7 @@ class ProbeOutput(_OutputBase):
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
-class SurfaceProbeOutput(Flow360BaseModel):
+class SurfaceProbeOutput(_OutputBase):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
