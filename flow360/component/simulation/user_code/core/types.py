@@ -828,7 +828,9 @@ class ValueOrExpression(Expression, Generic[T]):
                         pass
 
                 if isinstance(evaluated, Number):
-                    serialized.evaluated_value = evaluated
+                    serialized.evaluated_value = (
+                        evaluated if not np.isnan(evaluated) else None  # NaN-None handling
+                    )
                 elif isinstance(evaluated, unyt_array):
                     if evaluated.size == 1:
                         serialized.evaluated_value = (
@@ -845,6 +847,8 @@ class ValueOrExpression(Expression, Generic[T]):
                     serialized.evaluated_units = str(evaluated.units.expr)
             else:
                 serialized = SerializedValueOrExpression(type_name="number")
+                # Note: NaN handling should be unnecessary since it would
+                # have end up being expression first so not reaching here.
                 if isinstance(value, (Number, List)):
                     serialized.value = value
                 elif isinstance(value, unyt_array):

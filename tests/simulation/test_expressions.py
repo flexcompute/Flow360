@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Annotated
+from typing import Annotated, Optional
 
 import numpy as np
 import pydantic as pd
@@ -433,17 +433,21 @@ def test_serializer(
 ):
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
+        non_dim_field: Optional[ValueOrExpression[float]] = pd.Field(default=None)
 
     x = UserVariable(name="x", value=4)
+    cp = UserVariable(name="my_cp", value=solution.Cp)
 
-    model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s)
+    model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s, non_dim_field=cp)
 
     assert str(model.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
 
-    serialized = model.model_dump(exclude_none=True)
+    serialized = model.model_dump()
 
     assert serialized["field"]["type_name"] == "expression"
     assert serialized["field"]["expression"] == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
+    assert serialized["non_dim_field"]["expression"] == "my_cp"
+    assert serialized["non_dim_field"]["evaluated_value"] == None  # Not NaN anymore
 
     model = TestModel(field=4 * u.m / u.s)
 
