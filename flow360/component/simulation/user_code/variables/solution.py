@@ -28,7 +28,7 @@ from flow360.component.simulation.user_code.core.types import SolverVariable
 coordinate = SolverVariable(
     name="solution.coordinate",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.m,
-    solver_name="nodePosition",
+    solver_name="coordinate",
     variable_type="Volume",
 )  # Grid coordinates
 
@@ -87,12 +87,6 @@ mut = SolverVariable(
     solver_name="mut",
     variable_type="Volume",
 )  # Turbulent viscosity
-mu = SolverVariable(
-    name="solution.mu",
-    value=float("NaN") * u.kg / u.m / u.s,
-    solver_name="mu",
-    variable_type="Volume",
-)  # Laminar viscosity
 mut_ratio = SolverVariable(
     name="solution.mut_ratio",
     value=float("NaN"),
@@ -102,19 +96,19 @@ mut_ratio = SolverVariable(
 nu_hat = SolverVariable(
     name="solution.nu_hat",
     value=float("NaN") * u.m**2 / u.s,
-    solver_name="SpalartAllmaras_solution",
+    solver_name="nuHat",
     variable_type="Volume",
 )
 turbulence_kinetic_energy = SolverVariable(
     name="solution.turbulence_kinetic_energy",
     value=float("NaN") * u.J / u.kg,
-    solver_name="kOmegaSST_solution[0]",
+    solver_name="turbulenceKineticEnergy",
     variable_type="Volume",
 )  # k
 specific_rate_of_dissipation = SolverVariable(
     name="solution.specific_rate_of_dissipation",
     value=float("NaN") / u.s,
-    solver_name="kOmegaSST_solution[1]",
+    solver_name="specificRateOfDissipation",
     variable_type="Volume",
 )  # Omega
 amplification_factor = SolverVariable(
@@ -215,10 +209,10 @@ node_forces_per_unit_area = SolverVariable(
 y_plus = SolverVariable(
     name="solution.y_plus", value=float("NaN"), solver_name="yPlus", variable_type="Surface"
 )
-wall_shear_stress = SolverVariable(
-    name="solution.wall_shear_stress",
-    value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa,
-    solver_name="wallShearStress",
+wall_shear_stress_magnitude = SolverVariable(
+    name="solution.wall_shear_stress_magnitude",
+    value=float("NaN") * u.Pa,
+    solver_name="wallShearStressMagnitude",
     variable_type="Surface",
 )
 heat_transfer_coefficient_static_temperature = SolverVariable(
