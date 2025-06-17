@@ -795,7 +795,6 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _deserialize(value) -> Self:
             try:
-                print(">>> Deserializing", value)
                 value = SerializedValueOrExpression.model_validate(value)
                 if value.type_name == "number":
                     if value.units is not None:
@@ -860,7 +859,6 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _discriminator(v: Any) -> str:
             # Note: This is ran after deserializer
-            print(">>> Discriminator", v)
             if isinstance(v, SerializedValueOrExpression):
                 return v.type_name
             if isinstance(v, dict):

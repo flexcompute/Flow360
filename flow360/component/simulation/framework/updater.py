@@ -176,7 +176,7 @@ def _to_25_4_1(params_as_dict):
     return params_as_dict
 
 
-def _to_25_6_0(params_as_dict):
+def _to_25_6_1(params_as_dict):
     # Known: There can not be velocity_direction both under Inflow AND TotalPressure
 
     # Move the velocity_direction under TotalPressure to the Inflow level.
@@ -213,7 +213,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.2.1"), _to_25_2_1),
     (Flow360Version("25.2.3"), _to_25_2_3),
     (Flow360Version("25.4.1"), _to_25_4_1),
-    (Flow360Version("25.6.0"), _to_25_6_0),
+    (Flow360Version("25.6.1"), _to_25_6_1),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
