@@ -197,6 +197,11 @@ def _to_25_6_0(params_as_dict):
         ):
             params_as_dict["reference_geometry"]["area"]["type_name"] = "number"
 
+    # Add similar logic for step_size in time_stepping
+    if "time_stepping" in params_as_dict and "step_size" in params_as_dict["time_stepping"]:
+        if "type_name" not in params_as_dict["time_stepping"]["step_size"]:
+            params_as_dict["time_stepping"]["step_size"]["type_name"] = "number"
+
     return params_as_dict
 
 
