@@ -26,8 +26,35 @@ from flow360.component.simulation.user_code.core.utils import (
     split_keep_delimiters,
 )
 
-_user_variables: set[str] = set()
 _solver_variables: set[str] = set()
+
+
+class VariableContextInfo(Flow360BaseModel):
+    """Variable context info for project variables."""
+
+    name: str
+    value: ValueOrExpression[AnyNumericType]
+
+
+def save_user_variables(params):
+    """
+    Save user variables to the project variables.
+    Declared here since I do not want to import default_context everywhere.
+    """
+    params.private_attribute_asset_cache.project_variables = [
+        VariableContextInfo(name=name, value=value)
+        for name, value in default_context._values.items()  # pylint: disable=protected-access
+        if "." not in name  # Skipping scoped variables (non-user variables)
+    ]
+    return params
+
+
+def update_global_context(value: List[VariableContextInfo]):
+    """Once the project variables are validated, update the global context."""
+
+    for item in value:
+        default_context.set(item.name, item.value)
+    return value
 
 
 def __soft_fail_add__(self, other):
@@ -199,9 +226,9 @@ class Variable(Flow360BaseModel):
         Set the value of the variable in the global context.
         In parallel to `set_value` this supports syntax like `my_user_var.value = 10.0`.
         """
-        default_context.set(
-            self.name, pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(value)
-        )
+        new_value = pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(value)
+        # Not checking overwrite here since it is user controlled explicit assignment operation
+        default_context.set(self.name, new_value)
         _check_cyclic_dependencies(variable_name=self.name)
 
     @pd.model_validator(mode="before")
@@ -214,12 +241,29 @@ class Variable(Flow360BaseModel):
             raise ValueError("`name` is required for variable declaration.")
 
         if "value" in values:
+            new_value = pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(
+                values.pop("value")
+            )
+            # Check overwriting, skip for solver variables:
+            if values["name"] in default_context.user_variable_names:
+                diff = new_value != default_context.get(values["name"])
+
+                if isinstance(diff, np.ndarray):
+                    diff = diff.any()
+
+                if isinstance(diff, list):
+                    # Might not end up here but just in case
+                    diff = any(diff)
+
+                if diff:
+                    raise ValueError(
+                        f"Redeclaring user variable {values['name']} with new value: {new_value}. "
+                        f"Previous value: {default_context.get(values['name'])}"
+                    )
             # Call the setter
             default_context.set(
                 values["name"],
-                pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(
-                    values.pop("value")
-                ),
+                new_value,
             )
             _check_cyclic_dependencies(variable_name=values["name"])
 
@@ -362,12 +406,6 @@ class UserVariable(Variable):
             )
         return v
 
-    @pd.model_validator(mode="after")
-    def update_context(self):
-        """Auto updating context when new variable is declared"""
-        _user_variables.add(self.name)
-        return self
-
     def __hash__(self):
         """
         Support for set and deduplicate.
@@ -508,7 +546,7 @@ class Expression(Flow360BaseModel, Evaluable):
         """Get list of user variables used in expression."""
         expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
-        names = [name for name in names if name in _user_variables]
+        names = [name for name in names if name in default_context.user_variable_names]
 
         return [UserVariable(name=name, value=default_context.get(name)) for name in names]
 
@@ -516,7 +554,7 @@ class Expression(Flow360BaseModel, Evaluable):
         """Get list of user variable names used in expression."""
         expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
-        names = [name for name in names if name in _user_variables]
+        names = [name for name in names if name in default_context.user_variable_names]
 
         return names
 
@@ -666,6 +704,11 @@ class Expression(Flow360BaseModel, Evaluable):
 
     def __repr__(self):
         return f"Expression({self.expression})"
+
+    def __eq__(self, other):
+        if isinstance(other, Expression):
+            return self.expression == other.expression
+        return super().__eq__(other)
 
     @property
     def dimensionality(self):

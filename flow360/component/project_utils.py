@@ -12,7 +12,6 @@ from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.param_utils import VariableContextInfo
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -22,6 +21,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
@@ -240,18 +240,6 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
-def _save_user_variables(params: SimulationParams):
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.user_code.core import context
-
-    params.private_attribute_asset_cache.project_variables = [
-        VariableContextInfo(name=name, value=value)
-        for name, value in context.default_context._values.items()  # pylint: disable=protected-access
-        if "." not in name  # Skipping scoped variables (non-user variables)
-    ]
-    return params
-
-
 def set_up_params_for_uploading(
     root_asset: AssetBase,
     length_unit: LengthType,
@@ -295,7 +283,7 @@ def set_up_params_for_uploading(
     params = _set_up_default_reference_geometry(params, length_unit)
 
     # Convert all reference of UserVariables to VariableToken
-    params = _save_user_variables(params)
+    params = save_user_variables(params)
 
     return params
 

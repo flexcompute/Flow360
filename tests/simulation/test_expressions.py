@@ -17,7 +17,7 @@ from flow360 import (
     math,
     u,
 )
-from flow360.component.project_utils import _save_user_variables
+from flow360.component.project_utils import save_user_variables
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
@@ -77,9 +77,7 @@ from tests.utils import to_file_from_file_test
 
 @pytest.fixture(autouse=True)
 def reset_context():
-    context.default_context._values = {
-        name: item for (name, item) in context.default_context._values.items() if "." in name
-    }
+    context.default_context.clear()
 
 
 @pytest.fixture(autouse=True)
@@ -754,10 +752,10 @@ def test_cyclic_dependencies():
     with pytest.raises(pd.ValidationError):
         x.value = y
 
-    x = UserVariable(name="x", value=4)
+    z = UserVariable(name="z", value=4)
 
     with pytest.raises(pd.ValidationError):
-        x.value = x
+        z.value = z
 
 
 def test_auto_alias():
@@ -839,8 +837,7 @@ def test_vector_solver_variable_cross_product_translation():
     assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3] * u.m)"
 
     # During solver translation both options are inlined the same way through partial evaluation
-    solver_1 = expr_1.to_solver_code(params)
-    print(solver_1)
+    expr_1.to_solver_code(params)
 
     # From python code
     expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
@@ -851,8 +848,7 @@ def test_vector_solver_variable_cross_product_translation():
     )
 
     # During solver translation both options are inlined the same way through partial evaluation
-    solver_2 = expr_2.to_solver_code(params)
-    print(solver_2)
+    expr_2.to_solver_code(params)
 
 
 def test_cross_function_use_case():
@@ -1059,7 +1055,6 @@ def test_udf_generator():
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_unit(new_unit="m*km/s/s")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
-    print("3>>> result.expression", result.expression)
     assert (
         result.expression
         == "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((velocity[1] * 3) * 0.001) - ((velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((velocity[2] * 1) * 0.001) - ((velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((velocity[0] * 2) * 0.001) - ((velocity[1] * 1) * 0.001)) * 10.0);"
@@ -1101,7 +1096,7 @@ def test_project_variables_serialization():
             ],
         )
 
-    params = _save_user_variables(params)
+    params = save_user_variables(params)
 
     with open("ref/simulation_with_project_variables.json", "r+") as fh:
         ref_data = fh.read()
@@ -1141,3 +1136,13 @@ def test_project_variables_deserialization():
         .expression
         == "[solution.velocity[0] + 12.0 * u.m / u.s + 14 * u.m / u.s, solution.velocity[1], solution.velocity[2]]"
     )  # Fully resolvable
+
+
+def test_overwriting_project_variables():
+    UserVariable(name="a", value=1)
+
+    with pytest.raises(
+        ValueError,
+        match="Redeclaring user variable a with new value: 2.0. Previous value: 1.0",
+    ):
+        UserVariable(name="a", value=2)

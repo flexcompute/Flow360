@@ -143,3 +143,12 @@ class EvaluationContext:
             of the current variable values.
         """
         return EvaluationContext(self._resolver, dict(self._values))
+
+    @property
+    def user_variable_names(self):
+        """Get the set of user variables in the context."""
+        return {name for name in self._values.keys() if "." not in name}
+
+    def clear(self):
+        """Clear user variables from the context."""
+        self._values = {name: value for name, value in self._values.items() if "." in name}

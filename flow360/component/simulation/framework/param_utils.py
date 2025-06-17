@@ -19,28 +19,10 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
-    AnyNumericType,
-    ValueOrExpression,
+    VariableContextInfo,
+    update_global_context,
 )
 from flow360.component.simulation.utils import model_attribute_unlock
-
-
-class VariableContextInfo(Flow360BaseModel):
-    """Variable context info for project variables."""
-
-    name: str
-    value: ValueOrExpression[AnyNumericType]
-
-
-def update_global_context(value: List[VariableContextInfo]):
-    """Once the project variables are validated, update the global context."""
-    # pylint: disable=import-outside-toplevel
-    from flow360.component.simulation.user_code.core import context
-
-    for item in value:
-        context.default_context.set(item.name, item.value)
-    return value
-
 
 VariableContextList = Annotated[
     List[VariableContextInfo],
