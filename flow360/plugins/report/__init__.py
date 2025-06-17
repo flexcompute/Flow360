@@ -1,6 +1,7 @@
 """Utilities for creating reports"""
 
 from flow360.plugins.report.report import ReportTemplate
+from flow360.plugins.report.report_context import ReportContext
 from flow360.plugins.report.report_items import (
     Chart2D,
     Chart3D,
@@ -57,6 +58,7 @@ __all__ = [
     "RearCamera",
     "RearLeftTopCamera",
     "RearRightBottomCamera",
+    "ReportContext",
     "ReportTemplate",
     "Settings",
     "SubsetLimit",
