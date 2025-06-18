@@ -920,7 +920,7 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
     return udd
 
 def _get_default_mass_inflow_udd(entities, mass_flow_rate):
-    Kp = 1.0
+    Kp = 1.0e-2
     Ki = 0.0
     start_step = 0
     boundary_patches = [entity.name for entity in entities.stored_entities]
