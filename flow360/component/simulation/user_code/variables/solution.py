@@ -35,50 +35,50 @@ coordinate = SolverVariable(
 Cp = SolverVariable(
     name="solution.Cp",
     value=float("NaN"),
-    solver_name="Cp",
+    solver_name="___Cp",
     variable_type="Volume",
 )
 Cpt = SolverVariable(
     name="solution.Cpt",
     value=float("NaN"),
-    solver_name="Cpt",
+    solver_name="___Cpt",
     variable_type="Volume",
 )
 grad_density = SolverVariable(
     name="solution.grad_density",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.kg / u.m**4,
-    solver_name="gradDensity",
+    solver_name="___grad_density",
     variable_type="Volume",
 )
 grad_u = SolverVariable(
     name="solution.grad_u",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
-    solver_name="gradVelocityX",
+    solver_name="___grad_u",
     variable_type="Volume",
 )
 grad_v = SolverVariable(
     name="solution.grad_v",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
-    solver_name="gradVelocityY",
+    solver_name="___grad_v",
     variable_type="Volume",
 )
 grad_w = SolverVariable(
     name="solution.grad_w",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
-    solver_name="gradVelocityZ",
+    solver_name="___grad_w",
     variable_type="Volume",
 )
 grad_pressure = SolverVariable(
     name="solution.grad_pressure",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa / u.m,
-    solver_name="gradPressure",
+    solver_name="___grad_pressure",
     variable_type="Volume",
 )
 
 Mach = SolverVariable(
     name="solution.Mach",
     value=float("NaN"),
-    solver_name="Mach",
+    solver_name="___Mach",
     variable_type="Volume",
 )
 mut = SolverVariable(
@@ -90,25 +90,25 @@ mut = SolverVariable(
 mut_ratio = SolverVariable(
     name="solution.mut_ratio",
     value=float("NaN"),
-    solver_name="mutRatio",
+    solver_name="___mut_ratio",
     variable_type="Volume",
 )
 nu_hat = SolverVariable(
     name="solution.nu_hat",
     value=float("NaN") * u.m**2 / u.s,
-    solver_name="nuHat",
+    solver_name="___nu_hat",
     variable_type="Volume",
 )
 turbulence_kinetic_energy = SolverVariable(
     name="solution.turbulence_kinetic_energy",
     value=float("NaN") * u.J / u.kg,
-    solver_name="turbulenceKineticEnergy",
+    solver_name="___turbulence_kinetic_energy",
     variable_type="Volume",
 )  # k
 specific_rate_of_dissipation = SolverVariable(
     name="solution.specific_rate_of_dissipation",
     value=float("NaN") / u.s,
-    solver_name="specificRateOfDissipation",
+    solver_name="___specific_rate_of_dissipation",
     variable_type="Volume",
 )  # Omega
 amplification_factor = SolverVariable(
@@ -134,7 +134,7 @@ density = SolverVariable(
 velocity = SolverVariable(
     name="solution.velocity",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.m / u.s,
-    solver_name="velocity",
+    solver_name="___velocity",
     variable_type="Volume",
 )
 pressure = SolverVariable(
@@ -147,25 +147,25 @@ pressure = SolverVariable(
 qcriterion = SolverVariable(
     name="solution.qcriterion",
     value=float("NaN") / u.s**2,
-    solver_name="qcriterion",
+    solver_name="___qcriterion",
     variable_type="Volume",
 )
 entropy = SolverVariable(
     name="solution.entropy",
     value=float("NaN") * u.J / u.K,
-    solver_name="entropy",
+    solver_name="___entropy",
     variable_type="Volume",
 )
 temperature = SolverVariable(
     name="solution.temperature",
     value=float("NaN") * u.K,
-    solver_name="temperature",
+    solver_name="___temperature",
     variable_type="Volume",
 )
 vorticity = SolverVariable(
     name="solution.vorticity",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
-    solver_name="vorticity",
+    solver_name="___vorticity",
     variable_type="Volume",
 )
 wall_distance = SolverVariable(
@@ -179,13 +179,13 @@ wall_distance = SolverVariable(
 CfVec = SolverVariable(
     name="solution.CfVec",
     value=[float("NaN"), float("NaN"), float("NaN")],
-    solver_name="CfVec",
+    solver_name="___CfVec",
     variable_type="Surface",
 )
 Cf = SolverVariable(
     name="solution.Cf",
     value=float("NaN"),
-    solver_name="Cf",
+    solver_name="___Cf",
     variable_type="Surface",
 )
 heatflux = SolverVariable(
@@ -203,7 +203,7 @@ node_normals = SolverVariable(
 node_forces_per_unit_area = SolverVariable(
     name="solution.node_forces_per_unit_area",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.Pa,
-    solver_name="nodeForcesPerUnitArea",
+    solver_name="___node_forces_per_unit_area",
     variable_type="Surface",
 )
 y_plus = SolverVariable(
@@ -212,19 +212,19 @@ y_plus = SolverVariable(
 wall_shear_stress_magnitude = SolverVariable(
     name="solution.wall_shear_stress_magnitude",
     value=float("NaN") * u.Pa,
-    solver_name="wallShearStressMagnitude",
+    solver_name="___wall_shear_stress_magnitude",
     variable_type="Surface",
 )
 heat_transfer_coefficient_static_temperature = SolverVariable(
     name="solution.heat_transfer_coefficient_static_temperature",
     value=float("NaN") * u.W / (u.m**2 * u.K),
-    solver_name="heatTransferCoefficientStaticTemperature",
+    solver_name="___heat_transfer_coefficient_static_temperature",
     variable_type="Surface",
 )
 heat_transfer_coefficient_total_temperature = SolverVariable(
     name="solution.heat_transfer_coefficient_total_temperature",
     value=float("NaN") * u.W / (u.m**2 * u.K),
-    solver_name="heatTransferCoefficientTotalTemperature",
+    solver_name="___heat_transfer_coefficient_total_temperature",
     variable_type="Surface",
 )
 

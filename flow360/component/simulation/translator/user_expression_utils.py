@@ -3,178 +3,111 @@
 import numpy as np
 
 udf_prepending_code = {
-    "solution.Cp": {
-        "declaration": "double Cp;",
-        "computation": "Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
-    },
-    "solution.Cpt": {
-        "declaration": "double Cpt;",
-        "computation": "double MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + "
-        + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / "
-        + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
-        + "Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * MachTmp * MachTmp,"
-        + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
-        + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
-    },
-    "solution.grad_density": {
-        "declaration": "double gradDensity[3];",
-        "computation": " gradDensity[0] = gradPrimitive[0][0];"
-        + "gradDensity[1] = gradPrimitive[0][1];"
-        + "gradDensity[2] = gradPrimitive[0][2];",
-    },
-    "solution.grad_u": {
-        "declaration": "double gradVelocityX[3];",
-        "computation": "gradVelocityX[0] = gradPrimitive[1][0] * velocityScale;"
-        + "gradVelocityX[1] = gradPrimitive[1][1] * velocityScale;"
-        + "gradVelocityX[2] = gradPrimitive[1][2] * velocityScale;",
-    },
-    "solution.grad_v": {
-        "declaration": "double gradVelocityY[3];",
-        "computation": "gradVelocityY[0] = gradPrimitive[2][0] * velocityScale;"
-        + "gradVelocityY[1] = gradPrimitive[2][1] * velocityScale;"
-        + "gradVelocityY[2] = gradPrimitive[2][2] * velocityScale;",
-    },
-    "solution.grad_w": {
-        "declaration": "double gradVelocityZ[3];",
-        "computation": "gradVelocityZ[0] = gradPrimitive[3][0] * velocityScale;"
-        + "gradVelocityZ[1] = gradPrimitive[3][1] * velocityScale;"
-        + "gradVelocityZ[2] = gradPrimitive[3][2] * velocityScale;",
-    },
-    "solution.grad_pressure": {
-        "declaration": "double gradPressure[3];",
-        "computation": "gradPressure[0] = gradPrimitive[4][0]; "
-        + "gradPressure[1] = gradPrimitive[4][1]; "
-        + "gradPressure[2] = gradPrimitive[4][2];",
-    },
-    "solution.Mach": {
-        "declaration": "double Mach;",
-        "computation": "Mach = usingLiquidAsMaterial ? 0 : "
-        + "sqrt(primitiveVars[1] * primitiveVars[1] + "
-        + "primitiveVars[2] * primitiveVars[2] + "
-        + "primitiveVars[3] * primitiveVars[3]) / "
-        + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);",
-    },
-    "solution.mut_ratio": {
-        "declaration": "double mutRatio;",
-        "computation": "mutRatio = mut / mu;",
-    },
-    "solution.nu_hat": {
-        "declaration": "double nuHat;",
-        "computation": "nuHat = SpalartAllmaras_solution * velocityScale;",
-    },
-    "solution.turbulence_kinetic_energy": {
-        "declaration": "double turbulenceKineticEnergy;",
-        "computation": "turbulenceKineticEnergy = kOmegaSST_solution[0] * pow(velocityScale, 2);",
-    },
-    "solution.specific_rate_of_dissipation": {
-        "declaration": "double specificRateOfDissipation;",
-        "computation": "specificRateOfDissipation = kOmegaSST_solution[1] * velocityScale;",
-    },
-    "solution.velocity": {
-        "declaration": "double velocity[3];",
-        "computation": "velocity[0] = primitiveVars[1] * velocityScale;"
-        + "velocity[1] = primitiveVars[2] * velocityScale;"
-        + "velocity[2] = primitiveVars[3] * velocityScale;",
-    },
-    "solution.velocity_magnitude": {
-        "declaration": "double velocityMagnitude;",
-        "computation": "double velocityTmp[3];velocityTmp[0] = primitiveVars[1] * velocityScale;"
-        + "velocityTmp[1] = primitiveVars[2] * velocityScale;"
-        + "velocityTmp[2] = primitiveVars[3] * velocityScale;"
-        + "velocityMagnitude = magnitude(velocityTmp);",
-    },
-    "solution.qcriterion": {
-        "declaration": "double qcriterion;",
-        "computation": "double ux = gradPrimitive[1][0];"
-        + "double uy = gradPrimitive[1][1];"
-        + "double uz = gradPrimitive[1][2];"
-        + "double vx = gradPrimitive[2][0];"
-        + "double vy = gradPrimitive[2][1];"
-        + "double vz = gradPrimitive[2][2];"
-        + "double wx = gradPrimitive[3][0];"
-        + "double wy = gradPrimitive[3][1];"
-        + "double wz = gradPrimitive[3][2];"
-        + "double str11 = ux;"
-        + "double str22 = vy;"
-        + "double str33 = wz;"
-        + "double str12 = 0.5 * (uy + vx);"
-        + "double str13 = 0.5 * (uz + wx);"
-        + "double str23 = 0.5 * (vz + wy);"
-        + "double str_norm = str11 * str11 + str22 * str22 + str33 * str33 + "
-        + "2 * (str12 * str12) + 2 * (str13 * str13) + 2 * (str23 * str23);"
-        + "double omg12 = 0.5 * (uy - vx);"
-        + "double omg13 = 0.5 * (uz - wx);"
-        + "double omg23 = 0.5 * (vz - wy);"
-        + "double omg_norm = 2 * (omg12 * omg12) + 2 * (omg13 * omg13) + 2 * (omg23 * omg23);"
-        + "qcriterion = 0.5 * (omg_norm - str_norm) * (velocityScale * velocityScale);",
-    },
-    "solution.entropy": {
-        "declaration": "double entropy;",
-        "computation": "entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0], 1.4));",
-    },
-    "solution.temperature": {
-        "declaration": "double temperature;",
-        "computation": f"double epsilon = {np.finfo(np.float64).eps};"
-        "temperature = (primitiveVars[0] < epsilon && HeatEquation_solution != nullptr) ? "
-        "HeatEquation_solution[0] : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
-    },
-    "solution.vorticity": {
-        "declaration": "double vorticity[3];",
-        "computation": "vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
-        + "vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
-        + "vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
-    },
-    "solution.vorticity_magnitude": {
-        "declaration": "double vorticityMagnitude;",
-        "computation": "double vorticityTmp[3];"
-        + "vorticityTmp[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
-        + "vorticityTmp[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
-        + "vorticityTmp[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;"
-        + "vorticityMagnitude = magnitude(vorticityTmp);",
-    },
-    "solution.CfVec": {
-        "declaration": "double CfVec[3];",
-        "computation": "for (int i = 0; i < 3; i++)"
-        + "{CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}",
-    },
-    "solution.Cf": {
-        "declaration": "double Cf;",
-        "computation": "Cf = magnitude(wallShearStress) / (0.5 * MachRef * MachRef);",
-    },
-    "solution.node_forces_per_unit_area": {
-        "declaration": "double nodeForcesPerUnitArea[3];",
-        "computation": "double normalMag = magnitude(nodeNormals);"
-        + "for (int i = 0; i < 3; i++){nodeForcesPerUnitArea[i] = "
-        + "((primitiveVars[4] - pressureFreestream) * nodeNormals[i] / normalMag + wallViscousStress[i])"
-        + " * (velocityScale * velocityScale);}",
-    },
-    "solution.heat_transfer_coefficient_static_temperature": {
-        "declaration": "double heatTransferCoefficientStaticTemperature;",
-        "computation": "double temperatureTmp = "
-        + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
-        + f"double epsilon = {np.finfo(np.float64).eps};"
-        + "double temperatureSafeDivide = (temperatureTmp - 1.0 < 0) ? "
-        + "temperatureTmp - 1.0 - epsilon : "
-        + "temperatureTmp - 1.0 + epsilon;"
-        + "heatTransferCoefficientStaticTemperature = "
-        + "abs(temperatureTmp - 1.0) > epsilon ? "
-        + "- wallHeatFlux / temperatureSafeDivide :  1.0 / epsilon;",
-    },
-    "solution.heat_transfer_coefficient_total_temperature": {
-        "declaration": "double heatTransferCoefficientTotalTemperature;",
-        "computation": "double temperatureTmp = "
-        + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
-        + "double temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
-        + f"double epsilon = {np.finfo(np.float64).eps};"
-        + "double temperatureSafeDivide = (temperatureTmp - temperatureTotal < 0) ? "
-        + "temperatureTmp - temperatureTotal - epsilon : "
-        + "temperatureTmp - temperatureTotal + epsilon;"
-        + "double heatTransferCoefficientTotalTemperature = "
-        + "abs(temperatureTmp - temperatureTotal) > epsilon ? "
-        + "temperatureTotal = - wallHeatFlux / temperatureSafeDivide :  1.0 / epsilon;",
-    },
-    "solution.wall_shear_stress_magnitude": {
-        "declaration": "double wallShearStressMagnitude;",
-        "computation": "wallShearStressMagnitude = magnitude(wallShearStress);",
-    },
+    "solution.Cp": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
+    "solution.Cpt": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + "
+    + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / "
+    + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
+    + "double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,"
+    + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
+    + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
+    "solution.grad_density": "double ___grad_density[3]; ___grad_density[0] = gradPrimitive[0][0];"
+    + "___grad_density[1] = gradPrimitive[0][1];"
+    + "___grad_density[2] = gradPrimitive[0][2];",
+    "solution.grad_u": "double ___grad_u[3];"
+    + "___grad_u[0] = gradPrimitive[1][0] * velocityScale;"
+    + "___grad_u[1] = gradPrimitive[1][1] * velocityScale;"
+    + "___grad_u[2] = gradPrimitive[1][2] * velocityScale;",
+    "solution.grad_v": "double ___grad_v[3];"
+    + "___grad_v[0] = gradPrimitive[2][0] * velocityScale;"
+    + "___grad_v[1] = gradPrimitive[2][1] * velocityScale;"
+    + "___grad_v[2] = gradPrimitive[2][2] * velocityScale;",
+    "solution.grad_w": "double ___grad_w[3];"
+    + "___grad_w[0] = gradPrimitive[3][0] * velocityScale;"
+    + "___grad_w[1] = gradPrimitive[3][1] * velocityScale;"
+    + "___grad_w[2] = gradPrimitive[3][2] * velocityScale;",
+    "solution.grad_pressure": "double ___grad_pressure[3];"
+    + "___grad_pressure[0] = gradPrimitive[4][0];"
+    + "___grad_pressure[1] = gradPrimitive[4][1];"
+    + "___grad_pressure[2] = gradPrimitive[4][2];",
+    "solution.Mach": "double ___Mach;"
+    + "___Mach = usingLiquidAsMaterial ? 0 : "
+    + "sqrt(primitiveVars[1] * primitiveVars[1] + "
+    + "primitiveVars[2] * primitiveVars[2] + "
+    + "primitiveVars[3] * primitiveVars[3]) / "
+    + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);",
+    "solution.mut_ratio": "double ___mut_ratio; ___mut_ratio = mut / mu;",
+    "solution.nu_hat": "double ___nu_hat;___nu_hat = solutionTurbulence * velocityScale;",
+    "solution.turbulence_kinetic_energy": "double ___turbulence_kinetic_energy;"
+    "___turbulence_kinetic_energy = solutionTurbulence[0] * pow(velocityScale, 2);",
+    "solution.specific_rate_of_dissipation": "double ___specific_rate_of_dissipation;"
+    + "___specific_rate_of_dissipation = solutionTurbulence[1] * velocityScale;",
+    "solution.velocity": "double ___velocity[3];"
+    + "___velocity[0] = primitiveVars[1] * velocityScale;"
+    + "___velocity[1] = primitiveVars[2] * velocityScale;"
+    + "___velocity[2] = primitiveVars[3] * velocityScale;",
+    "solution.qcriterion": "double ___qcriterion;"
+    + "double ___ux = gradPrimitive[1][0];"
+    + "double ___uy = gradPrimitive[1][1];"
+    + "double ___uz = gradPrimitive[1][2];"
+    + "double ___vx = gradPrimitive[2][0];"
+    + "double ___vy = gradPrimitive[2][1];"
+    + "double ___vz = gradPrimitive[2][2];"
+    + "double ___wx = gradPrimitive[3][0];"
+    + "double ___wy = gradPrimitive[3][1];"
+    + "double ___wz = gradPrimitive[3][2];"
+    + "double ___str11 = ___ux;"
+    + "double ___str22 = ___vy;"
+    + "double ___str33 = ___wz;"
+    + "double ___str12 = 0.5 * (___uy + ___vx);"
+    + "double ___str13 = 0.5 * (___uz + ___wx);"
+    + "double ___str23 = 0.5 * (___vz + ___wy);"
+    + "double ___str_norm = ___str11 * ___str11 + ___str22 * ___str22 + ___str33 * ___str33 + "
+    + "2 * (___str12 * ___str12) + 2 * (___str13 * ___str13) + 2 * (___str23 * ___str23);"
+    + "double ___omg12 = 0.5 * (___uy - ___vx);"
+    + "double ___omg13 = 0.5 * (___uz - ___wx);"
+    + "double ___omg23 = 0.5 * (___vz - ___wy);"
+    + "double ___omg_norm = 2 * (___omg12 * ___omg12) + 2 * (___omg13 * ___omg13) + 2 * (___omg23 * ___omg23);"
+    + "___qcriterion = 0.5 * (___omg_norm - ___str_norm) * (velocityScale * velocityScale);",
+    "solution.entropy": "double ___entropy;"
+    + "___entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0], 1.4));",
+    "solution.temperature": "double ___temperature;"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    "___temperature = (primitiveVars[0] < ___epsilon && HeatEquation_solution != nullptr) ? "
+    "HeatEquation_solution[0] : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
+    "solution.vorticity": "double ___vorticity[3];"
+    + "___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
+    + "___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
+    + "___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
+    "solution.CfVec": "double ___CfVec[3]; for (int i = 0; i < 3; i++)"
+    + "{___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}",
+    "solution.Cf": "double ___Cf;"
+    + "___Cf = magnitude(wallShearStress) / (0.5 * MachRef * MachRef);",
+    "solution.node_forces_per_unit_area": "double ___node_forces_per_unit_area[3];"
+    + "double ___normalMag = magnitude(nodeNormals);"
+    + "for (int i = 0; i < 3; i++){___node_forces_per_unit_area[i] = "
+    + "((primitiveVars[4] - pressureFreestream) * nodeNormals[i] / ___normalMag + wallViscousStress[i])"
+    + " * (velocityScale * velocityScale);}",
+    "solution.heat_transfer_coefficient_static_temperature": "double ___heat_transfer_coefficient_static_temperature;"
+    + "double ___temperatureTmp = "
+    + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    + "double ___temperatureSafeDivide = (___temperatureTmp - 1.0 < 0) ? "
+    + "___temperatureTmp - 1.0 - ___epsilon : "
+    + "___temperatureTmp - 1.0 + ___epsilon;"
+    + "___heat_transfer_coefficient_static_temperature = "
+    + "abs(___temperatureTmp - 1.0) > ___epsilon ? "
+    + "- wallHeatFlux / ___temperatureSafeDivide :  1.0 / ___epsilon;",
+    "solution.heat_transfer_coefficient_total_temperature": "double ___heat_transfer_coefficient_total_temperature;"
+    + "double ___temperatureTmp = "
+    + "primitiveVars[4] / (primitiveVars[0] * 1.0 / 1.4);"
+    + "double ___temperatureTotal = 1.0 + (1.4 - 1.0) / 2.0 * MachRef * MachRef;"
+    + f"double ___epsilon = {np.finfo(np.float64).eps};"
+    + "double ___temperatureSafeDivide = (___temperatureTmp - ___temperatureTotal < 0) ? "
+    + "___temperatureTmp - ___temperatureTotal - ___epsilon : "
+    + "___temperatureTmp - ___temperatureTotal + ___epsilon;"
+    + "double ___heat_transfer_coefficient_total_temperature = "
+    + "abs(___temperatureTmp - ___temperatureTotal) > ___epsilon ? "
+    + "___temperatureTotal = - wallHeatFlux / ___temperatureSafeDivide :  1.0 / ___epsilon;",
+    "solution.wall_shear_stress_magnitude": "double ___wall_shear_stress_magnitude;"
+    + "___wall_shear_stress_magnitude = magnitude(wallShearStress);",
 }
