@@ -90,6 +90,11 @@ from flow360.component.simulation.utils import (
     is_exact_instance,
     is_instance_of_type_in_union,
 )
+
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamic,
+)
+
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -884,6 +889,90 @@ def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
     return boundary
 
 
+
+def _get_default_mass_outflow_udd(entities, mass_flow_rate):
+    Kp = 1.0e-1
+    Ki = 0
+    start_step = 0
+
+    boundary_patches = [entity.name for entity in entities.stored_entities]
+    boundary_names = "_".join(boundary_patches)
+    print(boundary_names)
+    udd = UserDefinedDynamic(
+            name="massOutflowController_{}".format(boundary_names),
+            input_vars=["massFlowRate", "area"],
+            constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
+                       "initialStaticPressureRatio": 1.0},
+            output_vars={
+                "staticPressureRatio": "if (pseudoStep > {}) state[0]; else initialStaticPressureRatio;".format(
+                    start_step)},
+            state_vars_initial_value=["initialStaticPressureRatio", "0.0"],
+            update_law=[
+                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] : state[0] ; else state[0];".format(start_step),
+                #"state[0] + Kp * (massFlowRate - massFlowRateTarget)/area;",
+                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] +  Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1] : state[0] +  -1 * Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1]; else state[0];".format(start_step),
+                "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
+            ],
+            input_boundary_patches=entities.stored_entities,
+            output_target=entities.stored_entities[0]
+        )
+
+    return udd
+
+def _get_default_mass_inflow_udd(entities, mass_flow_rate):
+    Kp = 1.0
+    Ki = 0.0
+    start_step = 0
+    boundary_patches = [entity.name for entity in entities.stored_entities]
+    boundary_names = "_".join(boundary_patches)
+    print(boundary_names)
+    udd = UserDefinedDynamic(
+            name="massInflowController_{}".format(boundary_names),
+            input_vars=["massFlowRate", "area"],
+            constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
+                       "initialTotalPressureRatio": 1.0,
+                       "gamma" : 1.4},
+            output_vars={
+                "totalPressureRatio": "if (pseudoStep > {}) state[0]; else initialTotalPressureRatio;".format(
+                    start_step)},
+            state_vars_initial_value=["initialTotalPressureRatio", "0.0"],
+            update_law=[
+                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] : state[0] ; else state[0];".format(start_step),
+                #"state[0] - Kp * (massFlowRate - massFlowRateTarget)/area;",
+                #"if (massFlowRate - massFlowRateTarget < 0) state[0] + Kp * pow(1.0 + (gamma - 1.0)/2.0 * pow((massFlowRate - massFlowRateTarget)/area, 2.0), gamma/(gamma-1.0)); else state[0] - Kp * pow(1.0 + (gamma - 1.0)/2.0 * pow((massFlowRate - massFlowRateTarget)/area, 2.0), gamma/(gamma-1.0));",
+                #"if (massFlowRate - massFlowRateTarget < 0) state[0] + Kp * pow((massFlowRate - massFlowRateTarget)/area, 2.0); else state[0] - Kp * pow((massFlowRate - massFlowRateTarget)/area, 2.0);",
+                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] +  Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1] : state[0] +  -1 * Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1]; else state[0];".format(start_step),
+                #"state[0] - Ki * (massFlowRate - massFlowRateTarget)/area;",
+                #"if (pseudoStep > {0} ) state[1]; else state[1];".format(start_step)
+                #"if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
+                "if (massFlowRate > 0) state[0] - Kp * (pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2)); else state[0] - Kp * (-1.0 * pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2));",
+                #"if (pseudoStep > {}) (massFlowRate - massFlowRateTarget < 0) ? state[0] +  Kp * (pow(massFlowRate/area,2) - pow(massFlowRateTarget)/area, 2.0) + Ki * state[1]: state[0] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0) + Ki * state[1]; else state[0];".format(start_step),
+                "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget < 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0); else state[1];".format(start_step)
+            ],
+            input_boundary_patches=entities.stored_entities,
+            output_target=entities.stored_entities[0]
+        )
+
+    return udd
+
+def mass_flow_default_udd(models, user_defined_dynamics):
+    print('in append mass flow default udd')
+    if user_defined_dynamics is None:
+        user_defined_dynamics = []
+
+    for model in models:
+        if isinstance(model, Outflow):
+            if isinstance(model.spec, MassFlowRate):
+                print('isinstnace MassFlowRate')
+                udd = _get_default_mass_outflow_udd(model.entities, model.spec.value)
+                user_defined_dynamics.append(udd)
+        elif isinstance(model, Inflow):
+            if isinstance(model.spec, MassFlowRate):
+                udd = _get_default_mass_inflow_udd(model.entities, model.spec.value)
+                user_defined_dynamics.append(udd)
+    return user_defined_dynamics
+
+    
 # pylint: disable=too-many-branches, too-many-statements
 def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pressure_ratio):
     """Boundary translator"""
@@ -1055,6 +1144,7 @@ def get_solver_json(
     Get the solver json from the simulation parameters.
     """
 
+    print('Getting solver JSON')
     translated = {}
     ##:: Step 1: Get geometry:
     if input_params.reference_geometry:
@@ -1363,9 +1453,15 @@ def get_solver_json(
         translated["userDefinedFields"].append(udf_dict)
 
     ##:: Step 11: Get user defined dynamics
+    translated["userDefinedDynamics"] = []
+    
+    input_params.user_defined_dynamics = \
+        mass_flow_default_udd(input_params.models, input_params.user_defined_dynamics)
+
+    print("length udd: ", len(input_params.user_defined_dynamics))
     if input_params.user_defined_dynamics is not None:
-        translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:
+            print("converting UDD...")
             udd_dict = dump_dict(udd)
             udd_dict_translated = {}
             udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
