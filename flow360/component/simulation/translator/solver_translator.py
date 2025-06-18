@@ -909,7 +909,7 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
             state_vars_initial_value=["initialStaticPressureRatio", "0.0"],
             update_law=[
                 #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] : state[0] ; else state[0];".format(start_step),
-                #"state[0] + Kp * (massFlowRate - massFlowRateTarget)/area;",
+                "state[0] + Kp * (massFlowRate - massFlowRateTarget)/area;",
                 #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] +  Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1] : state[0] +  -1 * Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1]; else state[0];".format(start_step),
                 "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
             ],
