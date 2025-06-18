@@ -1055,7 +1055,7 @@ def test_udf_generator():
     # velocity scale =  100 m/s,
     assert (
         result.expression
-        == "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_in_SI[0] = (velocity[0] * 100.0); velocity_in_SI[1] = (velocity[1] * 100.0); velocity_in_SI[2] = (velocity[2] * 100.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_SI[0] = (___velocity[0] * 100.0); velocity_in_SI[1] = (___velocity[1] * 100.0); velocity_in_SI[2] = (___velocity[2] * 100.0);"
     )
 
     vel_cross_vec = UserVariable(
@@ -1064,7 +1064,7 @@ def test_udf_generator():
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
     assert (
         result.expression
-        == "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((velocity[1] * 3) * 0.001) - ((velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((velocity[2] * 1) * 0.001) - ((velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((velocity[0] * 2) * 0.001) - ((velocity[1] * 1) * 0.001)) * 10.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((___velocity[1] * 3) * 0.001) - ((___velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((___velocity[2] * 1) * 0.001) - ((___velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((___velocity[0] * 2) * 0.001) - ((___velocity[1] * 1) * 0.001)) * 10.0);"
     )
 
     vel_cross_vec = UserVariable(
