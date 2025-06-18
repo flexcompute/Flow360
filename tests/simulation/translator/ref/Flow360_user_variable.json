@@ -48,16 +48,16 @@
     },
     "timeStepping": {
         "CFL": {
-            "convergenceLimitingFactor": 0.25,
-            "max": 10000.0,
-            "maxRelativeChange": 1.0,
+            "type": "adaptive",
             "min": 0.1,
-            "type": "adaptive"
+            "max": 1000000.0,
+            "maxRelativeChange": 50.0,
+            "convergenceLimitingFactor": 1.0
         },
-        "maxPseudoSteps": 2000,
+        "physicalSteps": 123,
         "orderOfAccuracy": 2,
-        "physicalSteps": 1,
-        "timeStepSize": "inf"
+        "maxPseudoSteps": 20,
+        "timeStepSize": 300.0
     },
     "turbulenceModelSolver": {
         "CFLMultiplier": 2.0,

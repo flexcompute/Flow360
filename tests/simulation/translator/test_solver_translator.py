@@ -659,6 +659,7 @@ def test_param_with_user_variables():
     my_var = UserVariable(
         name="my_var", value=math.cross(some_dependent_variable_a, solution.velocity)
     )
+    my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=LiquidOperatingCondition(
@@ -682,6 +683,7 @@ def test_param_with_user_variables():
                     ],
                 )
             ],
+            time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
         )
     # Mimicking real workflow where the Param is serialized and then deserialized
     params_validated, _, _ = validate_model(
