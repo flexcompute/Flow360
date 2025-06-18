@@ -34,6 +34,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression[AnyNumericType]
+    postProcessing: bool = pd.Field()
 
 
 def save_user_variables(params):
