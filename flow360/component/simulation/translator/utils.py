@@ -8,6 +8,7 @@ from collections import OrderedDict
 from typing import Union
 
 import numpy as np
+import unyt as u
 
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
@@ -145,6 +146,19 @@ def remove_units_in_dict(input_dict):
     if isinstance(input_dict, list):
         return [remove_units_in_dict(item) for item in input_dict]
     return input_dict
+
+
+def translate_value_or_expression_object(
+    obj: Union[Expression, u.unyt_quantity, u.unyt_array], input_params: SimulationParams
+):
+    """Translate for an ValueOrExpression object"""
+    if isinstance(obj, Expression):
+        # Only allowing client-time evaluable expressions
+        evaluated = obj.evaluate(raise_on_non_evaluable=True)
+        converted = input_params.convert_unit(evaluated, "flow360").v.item()
+        return converted
+    # Non dimensionalized unyt objects
+    return obj.value.item()
 
 
 def inline_expressions_in_dict(input_dict, input_params):

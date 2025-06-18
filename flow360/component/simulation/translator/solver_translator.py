@@ -90,6 +90,7 @@ from flow360.component.simulation.translator.utils import (
     remove_units_in_dict,
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
+    translate_value_or_expression_object,
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
@@ -1227,7 +1228,7 @@ def get_solver_json(
             "physicalSteps": ts.steps,
             "orderOfAccuracy": ts.order_of_accuracy,
             "maxPseudoSteps": ts.max_pseudo_steps,
-            "timeStepSize": ts.step_size.value.item(),
+            "timeStepSize": translate_value_or_expression_object(ts.step_size, input_params),
         }
     elif isinstance(ts, Steady):
         translated["timeStepping"] = {
