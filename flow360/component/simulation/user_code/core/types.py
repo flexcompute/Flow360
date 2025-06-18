@@ -34,6 +34,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression[AnyNumericType]
+    model_config = pd.ConfigDict(extra="allow")  # For front end support
 
 
 def save_user_variables(params):
