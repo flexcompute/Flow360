@@ -3,8 +3,7 @@ from flow360.examples import BETEVTOL
 
 BETEVTOL.get_files()
 
-project = fl.Project.from_geometry("evtol.egads", name="eVTOL")
-
+project = fl.Project.from_geometry(BETEVTOL.geometry, name="BET eVTOL")
 
 geometry = project.geometry
 geometry.group_edges_by_tag("edgeId")

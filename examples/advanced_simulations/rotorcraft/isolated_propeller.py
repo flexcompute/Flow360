@@ -1,6 +1,9 @@
 import flow360 as fl
+from flow360.examples import IsolatedPropeller
 
-project = fl.Project.from_geometry("isolated_propeller.csm", name="Isolated Propeller")
+IsolatedPropeller.get_files()
+
+project = fl.Project.from_geometry(IsolatedPropeller.geometry, name="Isolated Propeller")
 
 geometry = project.geometry
 geometry.group_edges_by_tag("edgeId")
