@@ -94,7 +94,9 @@ with fl.SI_unit_system:
             steps=1000,
             step_size=0.0004,
             max_pseudo_steps=30,
-            CFL=fl.AdaptiveCFL(min=1, max=3000, max_relative_change=50, convergence_limiting_factor=0.1),
+            CFL=fl.AdaptiveCFL(
+                min=1, max=3000, max_relative_change=50, convergence_limiting_factor=0.1
+            ),
         ),
         outputs=[
             fl.SurfaceOutput(
