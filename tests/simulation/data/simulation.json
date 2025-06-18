@@ -1386,7 +1386,8 @@
 				"value": {
 					"type_name": "number",
 					"value": 1
-				}
+				},
+				"postProcessing": false
 			}
 		]
 	}

@@ -389,7 +389,15 @@ class SimulationParams(_ParamModelBase):
             return value
         if isinstance(asset_cache["project_variables"], Iterable):
             for variable_dict in asset_cache["project_variables"]:
-                UserVariable(name=variable_dict["name"], value=variable_dict["value"])
+                value_or_expression = {
+                    key: value
+                    for key, value in variable_dict["value"].items()
+                    if key != "postProcessing"
+                }
+                UserVariable(
+                    name=variable_dict["name"],
+                    value=value_or_expression,
+                )
         return value
 
     # pylint: disable=no-self-argument

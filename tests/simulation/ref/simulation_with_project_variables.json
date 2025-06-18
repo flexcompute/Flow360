@@ -246,7 +246,8 @@
                     "type_name": "number",
                     "value": 12.0,
                     "units": "m/s"
-                }
+                },
+                "postProcessing": false
             },
             {
                 "name": "aaa",
@@ -259,7 +260,8 @@
                         null
                     ],
                     "evaluated_units": "m/s"
-                }
+                },
+                "postProcessing": false
             },
             {
                 "name": "bbb",
@@ -273,7 +275,8 @@
                     ],
                     "evaluated_units": "m/s",
                     "output_units": "km/ms"
-                }
+                },
+                "postProcessing": true
             }
         ]
     }
