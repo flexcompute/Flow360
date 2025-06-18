@@ -50,20 +50,20 @@ grad_density = SolverVariable(
     solver_name="gradDensity",
     variable_type="Volume",
 )
-grad_velocity_x = SolverVariable(
-    name="solution.grad_velocity_x",
+grad_u = SolverVariable(
+    name="solution.grad_u",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityX",
     variable_type="Volume",
 )
-grad_velocity_y = SolverVariable(
-    name="solution.grad_velocity_y",
+grad_v = SolverVariable(
+    name="solution.grad_v",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityY",
     variable_type="Volume",
 )
-grad_velocity_z = SolverVariable(
-    name="solution.grad_velocity_z",
+grad_w = SolverVariable(
+    name="solution.grad_w",
     value=[float("NaN"), float("NaN"), float("NaN")] / u.s,
     solver_name="gradVelocityZ",
     variable_type="Volume",
