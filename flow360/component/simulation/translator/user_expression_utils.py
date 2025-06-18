@@ -22,19 +22,19 @@ udf_prepending_code = {
         + "gradDensity[1] = gradPrimitive[0][1];"
         + "gradDensity[2] = gradPrimitive[0][2];",
     },
-    "solution.grad_velocity_x": {
+    "solution.grad_u": {
         "declaration": "double gradVelocityX[3];",
         "computation": "gradVelocityX[0] = gradPrimitive[1][0] * velocityScale;"
         + "gradVelocityX[1] = gradPrimitive[1][1] * velocityScale;"
         + "gradVelocityX[2] = gradPrimitive[1][2] * velocityScale;",
     },
-    "solution.grad_velocity_y": {
+    "solution.grad_v": {
         "declaration": "double gradVelocityY[3];",
         "computation": "gradVelocityY[0] = gradPrimitive[2][0] * velocityScale;"
         + "gradVelocityY[1] = gradPrimitive[2][1] * velocityScale;"
         + "gradVelocityY[2] = gradPrimitive[2][2] * velocityScale;",
     },
-    "solution.grad_velocity_z": {
+    "solution.grad_w": {
         "declaration": "double gradVelocityZ[3];",
         "computation": "gradVelocityZ[0] = gradPrimitive[3][0] * velocityScale;"
         + "gradVelocityZ[1] = gradPrimitive[3][1] * velocityScale;"
