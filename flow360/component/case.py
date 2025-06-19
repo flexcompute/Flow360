@@ -542,6 +542,18 @@ class Case(CaseBase, Flow360Resource):
         return super().info
 
     @property
+<<<<<<< HEAD
+=======
+    def project_id(self) -> Optional[str]:
+        """Returns the project id of the case if case was run with V2 interface."""
+        if isinstance(self.info, CaseMeta):
+            return self.info.projectId
+        if isinstance(self.info, CaseMetaV2):
+            return self.info.project_id
+        raise ValueError("Case info is not of type CaseMeta or CaseMetaV2")
+
+    @property
+>>>>>>> 4c3d28a6 (Fixed a V1  issue where the caseMeta class have different projectID access (#1178))
     def volume_mesh(self) -> "VolumeMeshV2":
         """
         returns volume mesh
