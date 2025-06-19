@@ -21,6 +21,8 @@ from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
+    RenderCameraConfig,
+    RenderLightingConfig,
     Slice,
 )
 from flow360.component.simulation.outputs.output_fields import (
@@ -665,6 +667,49 @@ class SurfaceIntegralOutput(_OutputBase):
         return value
 
 
+class RenderOutput(_AnimationSettings):
+    """
+
+    :class:`RenderOutput` class for backend rendered output settings.
+
+    Example
+    -------
+
+    Define the :class:`RenderOutput` of :code:`qcriterion` on two isosurfaces:
+
+    >>> fl.RenderOutput(
+    ...     isosurfaces=[
+    ...         fl.Isosurface(
+    ...             name="Isosurface_T_0.1",
+    ...             iso_value=0.1,
+    ...             field="T",
+    ...         ),
+    ...         fl.Isosurface(
+    ...             name="Isosurface_p_0.5",
+    ...             iso_value=0.5,
+    ...             field="p",
+    ...         ),
+    ...     ],
+    ...     output_field="qcriterion",
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field("Render output", description="Name of the `IsosurfaceOutput`.")
+    entities: UniqueItemList[Isosurface] = pd.Field(
+        alias="isosurfaces",
+        description="List of :class:`~flow360.Isosurface` entities.",
+    )
+    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
+        description="List of output variables. Including "
+        ":ref:`universal output variables<UniversalVariablesV2>` and :class:`UserDefinedField`."
+    )
+    camera: RenderCameraConfig = pd.Field(description="Camera settings")
+    lighting: RenderLightingConfig = pd.Field(description="Lighting settings")
+    output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
+
+
 class ProbeOutput(_OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points.
@@ -1293,6 +1338,7 @@ OutputTypes = Annotated[
         AeroAcousticOutput,
         StreamlineOutput,
         TimeAverageStreamlineOutput,
+        RenderOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
