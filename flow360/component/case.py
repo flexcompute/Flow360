@@ -544,7 +544,11 @@ class Case(CaseBase, Flow360Resource):
     @property
     def project_id(self) -> Optional[str]:
         """Returns the project id of the case if case was run with V2 interface."""
-        return self.info.project_id
+        if isinstance(self.info, CaseMeta):
+            return self.info.projectId
+        if isinstance(self.info, CaseMetaV2):
+            return self.info.project_id
+        raise ValueError("Case info is not of type CaseMeta or CaseMetaV2")
 
     @property
     def volume_mesh(self) -> "VolumeMeshV2":
