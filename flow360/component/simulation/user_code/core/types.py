@@ -424,7 +424,7 @@ class UserVariable(Variable):
         """
         return hash(self.model_dump_json())
 
-    def in_unit(self, new_unit: Union[str, Unit] = None):
+    def in_units(self, new_unit: Union[str, Unit] = None):
         """Requesting the output of the variable to be in the given (new_unit) units."""
         if isinstance(new_unit, Unit):
             new_unit = str(new_unit)
@@ -448,7 +448,7 @@ class SolverVariable(Variable):
             default_context.set_alias(self.name, self.solver_name)
         return self
 
-    def in_unit(self, new_name: str, new_unit: Union[str, Unit] = None):
+    def in_units(self, new_name: str, new_unit: Union[str, Unit] = None):
         """
         Return a UserVariable that will generate results in the new_unit.
         If new_unit is not specified then the unit will be determined by the unit system.

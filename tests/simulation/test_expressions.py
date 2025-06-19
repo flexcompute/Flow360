@@ -1015,7 +1015,7 @@ def test_to_file_from_file_expression(
             outputs=[
                 VolumeOutput(
                     output_fields=[
-                        solution.mut.in_unit(new_name="mut_in_SI", new_unit="cm**2/min"),
+                        solution.mut.in_units(new_name="mut_in_SI", new_unit="cm**2/min"),
                         constant_variable,
                         constant_array,
                         constant_unyt_quantity,
@@ -1043,14 +1043,14 @@ def test_udf_generator():
         )
     # Scalar output
     result = user_variable_to_udf(
-        solution.mut.in_unit(new_name="mut_in_km", new_unit="km**2/s"), input_params=params
+        solution.mut.in_units(new_name="mut_in_km", new_unit="km**2/s"), input_params=params
     )
     # velocity scale = 100 m/s, length scale = 10m, mut_scale = 1000 m**2/s -> 0.01 *km**2/s
     assert result.expression == "mut_in_km = (mut * 0.001);"
 
     # Vector output
     result = user_variable_to_udf(
-        solution.velocity.in_unit(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
+        solution.velocity.in_units(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
     )
     # velocity scale =  100 m/s,
     assert (
@@ -1060,7 +1060,7 @@ def test_udf_generator():
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_unit(new_unit="m*km/s/s")
+    ).in_units(new_unit="m*km/s/s")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
     assert (
         result.expression
@@ -1069,7 +1069,7 @@ def test_udf_generator():
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_unit(new_unit="CGS_unit_system")
+    ).in_units(new_unit="CGS_unit_system")
     assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
 
 
@@ -1078,7 +1078,7 @@ def test_project_variables_serialization():
     aaa = UserVariable(
         name="aaa", value=[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]
     )
-    bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_unit(
+    bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_units(
         new_unit="km/ms"
     )
 
