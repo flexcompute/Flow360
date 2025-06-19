@@ -459,6 +459,7 @@ class SolverVariable(Variable):
             name=new_name,
             value=Expression(expression=self.name),
         )
+        print("The value class name is:", new_variable.value.__class__.__name__)
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
         return new_variable
 
