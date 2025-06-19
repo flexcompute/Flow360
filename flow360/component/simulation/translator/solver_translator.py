@@ -895,11 +895,12 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
     Ki = 0
     start_step = 0
 
-    boundary_patches = [entity.name for entity in entities.stored_entities]
-    boundary_names = "_".join(boundary_patches)
-    print(boundary_names)
-    udd = UserDefinedDynamic(
-            name="massOutflowController_{}".format(boundary_names),
+    #boundary_patches = [entity.name for entity in entities.stored_entities]
+    #boundary_names = "_".join(boundary_patches)
+    udd_list = []
+    for entity in entities.stored_entities: 
+        udd = UserDefinedDynamic(
+            name="massOutflowController_{}".format(entity.name),
             input_vars=["massFlowRate", "area"],
             constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
                        "initialStaticPressureRatio": 1.0},
@@ -914,20 +915,23 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
                 "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
             ],
             input_boundary_patches=entities.stored_entities,
-            output_target=entities.stored_entities[0]
+            output_target=entity
         )
+        udd_list.append(udd)
 
-    return udd
+    return udd_list
 
 def _get_default_mass_inflow_udd(entities, mass_flow_rate):
     Kp = 1.0e-2
     Ki = 0.0
     start_step = 0
-    boundary_patches = [entity.name for entity in entities.stored_entities]
-    boundary_names = "_".join(boundary_patches)
-    print(boundary_names)
-    udd = UserDefinedDynamic(
-            name="massInflowController_{}".format(boundary_names),
+    #boundary_patches = [entity.name for entity in entities.stored_entities]
+    #boundary_names = "_".join(boundary_patches)
+    #print(boundary_names)
+    udd_list = []
+    for entity in entities.stored_entities:
+        udd = UserDefinedDynamic(
+            name="massInflowController_{}".format(entity.name),
             input_vars=["massFlowRate", "area"],
             constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
                        "initialTotalPressureRatio": 1.0,
@@ -938,22 +942,23 @@ def _get_default_mass_inflow_udd(entities, mass_flow_rate):
             state_vars_initial_value=["initialTotalPressureRatio", "0.0"],
             update_law=[
                 #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] : state[0] ; else state[0];".format(start_step),
-                #"state[0] - Kp * (massFlowRate - massFlowRateTarget)/area;",
+                "state[0] - Kp * (massFlowRate - massFlowRateTarget)/area;",
                 #"if (massFlowRate - massFlowRateTarget < 0) state[0] + Kp * pow(1.0 + (gamma - 1.0)/2.0 * pow((massFlowRate - massFlowRateTarget)/area, 2.0), gamma/(gamma-1.0)); else state[0] - Kp * pow(1.0 + (gamma - 1.0)/2.0 * pow((massFlowRate - massFlowRateTarget)/area, 2.0), gamma/(gamma-1.0));",
                 #"if (massFlowRate - massFlowRateTarget < 0) state[0] + Kp * pow((massFlowRate - massFlowRateTarget)/area, 2.0); else state[0] - Kp * pow((massFlowRate - massFlowRateTarget)/area, 2.0);",
                 #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] +  Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1] : state[0] +  -1 * Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1]; else state[0];".format(start_step),
                 #"state[0] - Ki * (massFlowRate - massFlowRateTarget)/area;",
                 #"if (pseudoStep > {0} ) state[1]; else state[1];".format(start_step)
                 #"if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
-                "if (massFlowRate > 0) state[0] - Kp * (pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2)); else state[0] - Kp * (-1.0 * pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2));",
+                #"if (massFlowRate > 0) state[0] - Kp * (pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2)); else state[0] - Kp * (-1.0 * pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2));",
                 #"if (pseudoStep > {}) (massFlowRate - massFlowRateTarget < 0) ? state[0] +  Kp * (pow(massFlowRate/area,2) - pow(massFlowRateTarget)/area, 2.0) + Ki * state[1]: state[0] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0) + Ki * state[1]; else state[0];".format(start_step),
                 "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget < 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0); else state[1];".format(start_step)
             ],
             input_boundary_patches=entities.stored_entities,
-            output_target=entities.stored_entities[0]
+            output_target=entity
         )
+        udd_list.append(udd)
 
-    return udd
+    return udd_list
 
 def mass_flow_default_udd(models, user_defined_dynamics):
     print('in append mass flow default udd')
@@ -965,11 +970,11 @@ def mass_flow_default_udd(models, user_defined_dynamics):
             if isinstance(model.spec, MassFlowRate):
                 print('isinstnace MassFlowRate')
                 udd = _get_default_mass_outflow_udd(model.entities, model.spec.value)
-                user_defined_dynamics.append(udd)
+                user_defined_dynamics.extend(udd)
         elif isinstance(model, Inflow):
             if isinstance(model.spec, MassFlowRate):
                 udd = _get_default_mass_inflow_udd(model.entities, model.spec.value)
-                user_defined_dynamics.append(udd)
+                user_defined_dynamics.extend(udd)
     return user_defined_dynamics
 
     
