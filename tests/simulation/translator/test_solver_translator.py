@@ -61,16 +61,24 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import (
+    AmbientLight,
+    DirectionalLight,
+    Isosurface,
+    OrthographicProjection,
     Point,
     PointArray,
     PointArray2D,
+    RenderCameraConfig,
+    RenderLightingConfig,
     Slice,
+    StaticCamera,
 )
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
     MovingStatistic,
     ProbeOutput,
+    RenderOutput,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -187,6 +195,7 @@ def get_om6Wing_tutorial_param():
     my_wall = Surface(name="1", private_attribute_sub_components=["body01_face001"])
     my_symmetry_plane = Surface(name="2", private_attribute_sub_components=["body01_face002"])
     my_freestream = Surface(name="3", private_attribute_sub_components=["body01_face003"])
+    my_isosurface = Isosurface(name="iso", field="Mach", iso_value=0.5)
 
     # Create entity_info so selectors can be expanded
     entity_info = GeometryEntityInfo(
@@ -264,6 +273,20 @@ def get_om6Wing_tutorial_param():
                     ],
                     output_format="paraview",
                     output_fields=["Cp"],
+                ),
+                RenderOutput(
+                    entities=[my_isosurface],
+                    output_fields=["qcriterion"],
+                    camera=RenderCameraConfig(
+                        view=StaticCamera(position=(20, 20, 20), target=(0, 0, 0)),
+                        projection=OrthographicProjection(width=30, near=0.01, far=100),
+                    ),
+                    lighting=RenderLightingConfig(
+                        ambient=AmbientLight(intensity=0.4, color=(255, 255, 255)),
+                        directional=DirectionalLight(
+                            intensity=1.5, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
+                        ),
+                    ),
                 ),
             ],
         )
