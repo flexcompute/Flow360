@@ -897,7 +897,7 @@ def test_cross_function_use_case():
 
     print("\n3 (Units defined in components)\n")
     a.value = math.cross([3 * u.m, 2 * u.m, 1 * u.m], [2 * u.m, 2 * u.m, 1 * u.m])
-    assert a.value == [0 * u.m * u.m, -1 * u.m * u.m, 2 * u.m * u.m]
+    assert all(a.value == [0, -1, 2] * u.m * u.m)
 
     print("\n4 Serialized version\n")
     a.value = "math.cross([3, 2, 1] * u.m, solution.coordinate)"
@@ -1164,3 +1164,11 @@ def test_whitelisted_callables():
 
     assert compare_lists(solution_vars, WHITELISTED_CALLABLES["flow360.solution"]["callables"])
     assert compare_lists(control_vars, WHITELISTED_CALLABLES["flow360.control"]["callables"])
+
+
+def test_unique_dimensionality():
+    with pytest.raises(ValueError, match="All items in the list must have the same dimensionality"):
+        UserVariable(name="a", value=[1 * u.m, 1 * u.s])
+
+    a = UserVariable(name="a", value=[1 * u.m, 1 * u.mm])
+    assert all(a.value == [1, 0.001] * u.m)

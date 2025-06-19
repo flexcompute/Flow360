@@ -818,6 +818,12 @@ class ValueOrExpression(Expression, Generic[T]):
             except Exception:  # pylint:disable=broad-exception-caught
                 pass
 
+            # Handle list of unyt_quantities:
+            if isinstance(value, list) and all(isinstance(item, unyt_quantity) for item in value):
+                # ensure all items have the same dimensionality
+                if not all(item.units.dimensions == value[0].units.dimensions for item in value):
+                    raise ValueError("All items in the list must have the same dimensionality")
+                return unyt_array(value)
             return value
 
         def _serializer(value, info) -> dict:
