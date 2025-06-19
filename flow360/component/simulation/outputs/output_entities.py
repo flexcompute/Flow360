@@ -1,15 +1,15 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
-from flow360.component.simulation.unit_system import LengthType
-from flow360.component.types import Axis
+from flow360.component.simulation.unit_system import LengthType, AngleType
+from flow360.component.types import Axis, Vector, Color
 
 
 class _OutputItemBase(Flow360BaseModel):
@@ -178,3 +178,63 @@ class PointArray2D(_PointEntityBase):
     v_axis_vector: LengthType.Axis = pd.Field(description="The scaled v-axis of the parallelogram.")
     u_number_of_points: int = pd.Field(ge=2, description="The number of points along the u axis.")
     v_number_of_points: int = pd.Field(ge=2, description="The number of points along the v axis.")
+
+
+# Linear interpolation between keyframes
+class KeyframeCamera(Flow360BaseModel):
+    pass
+
+
+# Follow a cubic spline curve
+class SplineCamera(Flow360BaseModel):
+    pass
+
+
+# Orbit a point (start and end points specified in spherical coordinates)
+class OrbitCamera(Flow360BaseModel):
+    pass
+
+
+# Static camera setup in Cartesian coordinates
+class StaticCamera(Flow360BaseModel):
+    position: LengthType.Point = pd.Field(description="Position of the camera in the scene")
+    target: LengthType.Point = pd.Field(description="Target point of the camera")
+    up: Optional[Vector] = pd.Field((0, 1, 0), description="Up vector, if not specified assume Y+")
+
+
+# Ortho projection, parallel lines stay parallel
+class OrthographicProjection(Flow360BaseModel):
+    width: LengthType = pd.Field()
+    near: LengthType = pd.Field()
+    far: LengthType = pd.Field()
+
+
+# Perspective projection
+class PerspectiveProjection(Flow360BaseModel):
+    fov: AngleType = pd.Field()
+    near: LengthType = pd.Field()
+    far: LengthType = pd.Field()
+
+
+# Only basic static camera with ortho projection supported currently
+class RenderCameraConfig(Flow360BaseModel):
+    view: StaticCamera = pd.Field()
+    projection: OrthographicProjection = pd.Field()
+
+
+# Ambient light, added by default to all pixels in the scene, simulates global illumination
+class AmbientLight(Flow360BaseModel):
+    intensity: float = pd.Field()
+    color: Color = pd.Field()
+
+
+# Ambient light, added by default to all pixels in the scene, simulates global illumination
+class DirectionalLight(Flow360BaseModel):
+    intensity: float = pd.Field()
+    color: Color = pd.Field()
+    direction: Vector = pd.Field()
+
+
+class RenderLightingConfig(Flow360BaseModel):
+    ambient: AmbientLight = pd.Field()
+    directional: DirectionalLight = pd.Field()

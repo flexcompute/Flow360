@@ -40,12 +40,14 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.output_entities import Slice
+from flow360.component.simulation.outputs.output_entities import Slice, Isosurface, RenderCameraConfig, \
+    OrthographicProjection, StaticCamera, RenderLightingConfig, AmbientLight, DirectionalLight
 from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceOutput,
     UserDefinedField,
     VolumeOutput,
+    RenderOutput,
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -119,6 +121,7 @@ def get_om6Wing_tutorial_param():
     my_wall = Surface(name="1")
     my_symmetry_plane = Surface(name="2")
     my_freestream = Surface(name="3")
+    my_isosurface = Isosurface(name="iso", field="Mach", iso_value=0.5)
     with SI_unit_system:
         param = SimulationParams(
             reference_geometry=ReferenceGeometry(
@@ -182,6 +185,32 @@ def get_om6Wing_tutorial_param():
                     output_format="paraview",
                     output_fields=["Cp"],
                 ),
+                RenderOutput(
+                    entities=[my_isosurface],
+                    output_fields=["qcriterion"],
+                    camera=RenderCameraConfig(
+                        view=StaticCamera(
+                            position=(20, 20, 20),
+                            target=(0, 0, 0)
+                        ),
+                        projection=OrthographicProjection(
+                            width=30,
+                            near=0.01,
+                            far=100
+                        )
+                    ),
+                    lighting=RenderLightingConfig(
+                        ambient=AmbientLight(
+                            intensity=0.4,
+                            color=(255, 255, 255)
+                        ),
+                        directional=DirectionalLight(
+                            intensity=1.5,
+                            color=(255, 255, 255),
+                            direction=(-1.0, -1.0, -1.0)
+                        )
+                    )
+                )
             ],
         )
     return param
