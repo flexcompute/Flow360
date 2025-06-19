@@ -44,7 +44,7 @@ def save_user_variables(params):
     """
     # Get all output variables:
     post_processing_variables = set()
-    for item in params.outputs:
+    for item in params.outputs if params.outputs else []:
         if not "output_fields" in item.__class__.model_fields:
             continue
         for item in item.output_fields.items:
