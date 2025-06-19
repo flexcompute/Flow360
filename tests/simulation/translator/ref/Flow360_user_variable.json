@@ -97,19 +97,19 @@
             "name": "velocity_magnitude"
         },
         {
-            "expression": "Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach = (Mach * 1);",
-            "name": "Mach"
+            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1);",
+            "name": "Mach_SI"
         },
         {
-            "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity[0] = (velocity[0] * 200.0); velocity[1] = (velocity[1] * 200.0); velocity[2] = (velocity[2] * 200.0);",
-            "name": "velocity"
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_SI[0] = (___velocity[0] * 200.0); velocity_SI[1] = (___velocity[1] * 200.0); velocity_SI[2] = (___velocity[2] * 200.0);",
+            "name": "velocity_SI"
         },
         {
-            "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;uuu[0] = (velocity[0] * 0.0002); uuu[1] = (velocity[1] * 0.0002); uuu[2] = (velocity[2] * 0.0002);",
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;uuu[0] = (___velocity[0] * 0.0002); uuu[1] = (___velocity[1] * 0.0002); uuu[2] = (___velocity[2] * 0.0002);",
             "name": "uuu"
         },
         {
-            "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;my_var[0] = (((((2.0 * 1.0) / 200.0) * velocity[2]) - (((3.0 * 1.0) / 200.0) * velocity[1])) * 40000.0); my_var[1] = (((((3.0 * 1.0) / 200.0) * velocity[0]) - (((1.0 * 1.0) / 200.0) * velocity[2])) * 40000.0); my_var[2] = (((((1.0 * 1.0) / 200.0) * velocity[1]) - (((2.0 * 1.0) / 200.0) * velocity[0])) * 40000.0);",
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;my_var[0] = (((((2.0 * 1.0) / 200.0) * ___velocity[2]) - (((3.0 * 1.0) / 200.0) * ___velocity[1])) * 40000.0); my_var[1] = (((((3.0 * 1.0) / 200.0) * ___velocity[0]) - (((1.0 * 1.0) / 200.0) * ___velocity[2])) * 40000.0); my_var[2] = (((((1.0 * 1.0) / 200.0) * ___velocity[1]) - (((2.0 * 1.0) / 200.0) * ___velocity[0])) * 40000.0);",
             "name": "my_var"
         }
     ],
@@ -121,8 +121,8 @@
         "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
         "outputFields": [
-            "Mach",
-            "velocity",
+            "Mach_SI",
+            "velocity_SI",
             "uuu",
             "my_var"
         ],

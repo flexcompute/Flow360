@@ -580,14 +580,7 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         for name in expression.solver_variable_names():
             if not udf_prepending_code.get(name):
                 continue
-            if name.split(".")[-1] == variable.name:
-                # Avoid duplicate declaration if the intermediate variable name is
-                # the same as the solver_name.
-                prepending_code.append(udf_prepending_code[name]["computation"])
-                continue
-            prepending_code.append(
-                udf_prepending_code[name]["declaration"] + udf_prepending_code[name]["computation"]
-            )
+            prepending_code.append(udf_prepending_code[name])
         prepending_code = "".join(prepending_code)
         return prepending_code
 
