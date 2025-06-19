@@ -34,7 +34,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression[AnyNumericType]
-    model_config = pd.ConfigDict(extra="allow")  # For front end support
+    postProcessing: bool = pd.Field()
 
 
 def save_user_variables(params):
@@ -42,8 +42,19 @@ def save_user_variables(params):
     Save user variables to the project variables.
     Declared here since I do not want to import default_context everywhere.
     """
+    # Get all output variables:
+    post_processing_variables = set()
+    for item in params.outputs if params.outputs else []:
+        if not "output_fields" in item.__class__.model_fields:
+            continue
+        for item in item.output_fields.items:
+            if isinstance(item, UserVariable):
+                post_processing_variables.add(item.name)
+
     params.private_attribute_asset_cache.project_variables = [
-        VariableContextInfo(name=name, value=value)
+        VariableContextInfo(
+            name=name, value=value, postProcessing=name in post_processing_variables
+        )
         for name, value in default_context._values.items()  # pylint: disable=protected-access
         if "." not in name  # Skipping scoped variables (non-user variables)
     ]
