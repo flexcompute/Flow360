@@ -123,6 +123,16 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray,
     PointArray2D,
     Slice,
+    RenderCameraConfig,
+    RenderLightingConfig,
+    AmbientLight,
+    DirectionalLight,
+    OrthographicProjection,
+    PerspectiveProjection,
+    StaticCamera,
+    OrbitCamera,
+    SplineCamera,
+    KeyframeCamera
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -145,6 +155,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
+    RenderOutput
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
