@@ -1169,10 +1169,10 @@ def test_unique_dimensionality():
     with pytest.raises(
         ValueError, match="List must contain only all unyt_quantities or all numbers."
     ):
-        UserVariable(name="a", value=[1 * u.m, 1])
+        UserVariable(name="a", value=[1.0 * u.m, 1.0])
 
-    a = UserVariable(name="a", value=[1 * u.m, 1 * u.mm])
-    assert all(a.value == [1, 0.001] * u.m)
+    a = UserVariable(name="a", value=[1.0 * u.m, 1.0 * u.mm])
+    assert all(a.value == [1.0, 0.001] * u.m)
 
 
 @pytest.mark.parametrize(
