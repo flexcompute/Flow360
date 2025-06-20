@@ -1015,7 +1015,7 @@ def test_to_file_from_file_expression(
             outputs=[
                 VolumeOutput(
                     output_fields=[
-                        solution.mut.in_units(new_name="mut_in_SI", new_unit="cm**2/min"),
+                        solution.mut.in_units(new_name="mut_in_SI", new_unit="g/cm/min"),
                         constant_variable,
                         constant_array,
                         constant_unyt_quantity,
@@ -1043,10 +1043,11 @@ def test_udf_generator():
         )
     # Scalar output
     result = user_variable_to_udf(
-        solution.mut.in_units(new_name="mut_in_km", new_unit="km**2/s"), input_params=params
+        solution.mut.in_units(new_name="mut_in_km", new_unit="kg/km/s"), input_params=params
     )
-    # velocity scale = 100 m/s, length scale = 10m, mut_scale = 1000 m**2/s -> 0.01 *km**2/s
-    assert result.expression == "mut_in_km = (mut * 0.001);"
+    # velocity scale = 100 m/s, length scale = 10m, density scale = 1000 kg/m**3
+    # mut_scale = Rho*L*V -> 1000*10*100 * kg/m/s == 1000*10*100*1000 * kg/km/s
+    assert result.expression == "mut_in_km = (mut * 1000000000.0);"
 
     # Vector output
     result = user_variable_to_udf(
@@ -1060,11 +1061,12 @@ def test_udf_generator():
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_units(new_unit="m*km/s/s")
+    ).in_units(new_unit="m*km/s")
     result = user_variable_to_udf(vel_cross_vec, input_params=params)
+    # velocity scale = 100 m/s, length scale = 10m, scale = 1000m**2/s-->1 km*m/s
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((___velocity[1] * 3) * 0.001) - ((___velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((___velocity[2] * 1) * 0.001) - ((___velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((___velocity[0] * 2) * 0.001) - ((___velocity[1] * 1) * 0.001)) * 10.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((___velocity[1] * 3) * 0.001) - ((___velocity[2] * 2) * 0.001)) * 1.0); vel_cross_vec[1] = ((((___velocity[2] * 1) * 0.001) - ((___velocity[0] * 3) * 0.001)) * 1.0); vel_cross_vec[2] = ((((___velocity[0] * 2) * 0.001) - ((___velocity[1] * 1) * 0.001)) * 1.0);"
     )
 
     vel_cross_vec = UserVariable(
@@ -1155,6 +1157,54 @@ def test_overwriting_project_variables():
         UserVariable(name="a", value=2)
 
 
+def test_unique_dimensionality():
+    with pytest.raises(
+        ValueError, match="All items in the list must have the same dimensionality."
+    ):
+        UserVariable(name="a", value=[1 * u.m, 1 * u.s])
+
+    with pytest.raises(
+        ValueError, match="List must contain only all unyt_quantities or all numbers."
+    ):
+        UserVariable(name="a", value=[1 * u.m, 1])
+
+    a = UserVariable(name="a", value=[1 * u.m, 1 * u.mm])
+    assert all(a.value == [1, 0.001] * u.m)
+
+
+@pytest.mark.parametrize(
+    "bad_name, expected_msg",
+    [
+        ("", "Identifier cannot be empty."),
+        ("1stPlace", "Identifier must start with a letter (A-Z/a-z) or underscore (_)."),
+        ("bad-name", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("has space", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        (" leading", "Identifier must start with a letter (A-Z/a-z) or underscore (_)."),
+        ("trailing ", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("tab\tname", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("new\nline", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("name$", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("class", "'class' is a reserved keyword."),
+        ("namespace", "'namespace' is a reserved keyword."),
+        ("template", "'template' is a reserved keyword."),
+    ],
+)
+def test_invalid_names_raise(bad_name, expected_msg):
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        UserVariable(name=bad_name, value=0)
+
+
+def test_output_units_dimensionality():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Output units 'ms' have different dimensionality (time) than the expression (length)."
+        ),
+    ):
+        a = UserVariable(name="a", value="1 * u.m")
+        a.in_units(new_unit="ms")
+
+
 def test_whitelisted_callables():
     def get_user_variable_names(module):
         return [attr for attr in dir(module) if isinstance(getattr(module, attr), SolverVariable)]
@@ -1164,11 +1214,3 @@ def test_whitelisted_callables():
 
     assert compare_lists(solution_vars, WHITELISTED_CALLABLES["flow360.solution"]["callables"])
     assert compare_lists(control_vars, WHITELISTED_CALLABLES["flow360.control"]["callables"])
-
-
-def test_unique_dimensionality():
-    with pytest.raises(ValueError, match="All items in the list must have the same dimensionality"):
-        UserVariable(name="a", value=[1 * u.m, 1 * u.s])
-
-    a = UserVariable(name="a", value=[1 * u.m, 1 * u.mm])
-    assert all(a.value == [1, 0.001] * u.m)

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """This module allows users to write serializable, evaluable symbolic code for use in simulation params"""
 
 from __future__ import annotations
@@ -405,17 +406,51 @@ class UserVariable(Variable):
     """Class representing a user-defined symbolic variable"""
 
     name: str = pd.Field(frozen=True)
-
     type_name: Literal["UserVariable"] = pd.Field("UserVariable", frozen=True)
 
     @pd.field_validator("name", mode="after")
     @classmethod
-    def check_unscoped_name(cls, v):
-        """Ensure that the variable name is not scoped. Only solver side variables can be scoped."""
-        if "." in v:
+    def check_valid_user_variable_name(cls, v):
+        """Validate a variable identifier (ASCII only)."""
+        # Partial list of C++ keywords; extend as needed
+        RESERVED_KEYWORDS = {  # pylint:disable=invalid-name
+            "int",
+            "double",
+            "float",
+            "long",
+            "short",
+            "char",
+            "bool",
+            "void",
+            "class",
+            "for",
+            "while",
+            "if",
+            "else",
+            "return",
+            "namespace",
+            "template",
+            "typename",
+            "constexpr",
+            "virtual",
+        }
+        if not v:
+            raise ValueError("Identifier cannot be empty.")
+
+        # 2) First character must be letter or underscore
+        if not re.match(r"^[A-Za-z_]", v):
+            raise ValueError("Identifier must start with a letter (A-Z/a-z) or underscore (_).")
+
+        # 3) All characters must be letters, digits, or underscore
+        if re.search(r"[^A-Za-z0-9_]", v):
             raise ValueError(
-                "User variable name cannot contain dots (scoped variables not supported)."
+                "Identifier can only contain letters, digits (0-9), or underscore (_)."
             )
+
+        # 4) Not a C++ keyword
+        if v in RESERVED_KEYWORDS:
+            raise ValueError(f"'{v}' is a reserved keyword.")
+
         return v
 
     def __hash__(self):
@@ -424,10 +459,17 @@ class UserVariable(Variable):
         """
         return hash(self.model_dump_json())
 
-    def in_units(self, new_unit: Union[str, Unit] = None):
+    def in_units(
+        self,
+        new_unit: Union[
+            str, Literal["SI_unit_system", "CGS_unit_system", "Imperial_unit_system"], Unit
+        ] = None,
+    ):
         """Requesting the output of the variable to be in the given (new_unit) units."""
         if isinstance(new_unit, Unit):
             new_unit = str(new_unit)
+        if not isinstance(self.value, Expression):
+            raise ValueError("Cannot set output units for non expression value.")
         self.value.output_units = new_unit
         return self
 
@@ -448,7 +490,13 @@ class SolverVariable(Variable):
             default_context.set_alias(self.name, self.solver_name)
         return self
 
-    def in_units(self, new_name: str, new_unit: Union[str, Unit] = None):
+    def in_units(
+        self,
+        new_name: str,
+        new_unit: Union[
+            str, Literal["SI_unit_system", "CGS_unit_system", "Imperial_unit_system"], Unit
+        ] = None,
+    ):
         """
         Return a UserVariable that will generate results in the new_unit.
         If new_unit is not specified then the unit will be determined by the unit system.
@@ -459,7 +507,6 @@ class SolverVariable(Variable):
             name=new_name,
             value=Expression(expression=self.name),
         )
-        print("The value class name is:", new_variable.value.__class__.__name__)
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
         return new_variable
 
@@ -526,6 +573,26 @@ class Expression(Flow360BaseModel, Evaluable):
     def remove_leading_and_trailing_whitespace(cls, value: str) -> str:
         """Remove leading and trailing whitespace from the expression"""
         return value.strip()
+
+    @pd.model_validator(mode="after")
+    def check_output_units_matches_dimensionality(self) -> str:
+        """Check that the output units have the same dimensionality as the expression"""
+        print(f"self.output_units: {self.output_units}")
+        if not self.output_units:
+            return self
+        if self.output_units in ("SI_unit_system", "CGS_unit_system", "Imperial_unit_system"):
+            return self
+        output_units_dimensionality = u.Unit(self.output_units).dimensions
+        expression_dimensionality = self.dimensionality
+        print(f"output_units_dimensionality: {output_units_dimensionality}")
+        print(f"expression_dimensionality: {expression_dimensionality}")
+        if output_units_dimensionality != expression_dimensionality:
+            raise ValueError(
+                f"Output units '{self.output_units}' have different dimensionality "
+                f"{output_units_dimensionality} than the expression {expression_dimensionality}."
+            )
+
+        return self
 
     def evaluate(
         self,
@@ -727,8 +794,15 @@ class Expression(Flow360BaseModel, Evaluable):
     def dimensionality(self):
         """The physical dimensionality of the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-        assert isinstance(value, (unyt_array, unyt_quantity))
-        return value.units.dimensions
+        assert isinstance(
+            value, (unyt_array, unyt_quantity, list, Number)
+        ), "Non unyt array so no dimensionality"
+        if isinstance(value, (unyt_array, unyt_quantity)):
+            return value.units.dimensions
+        if isinstance(value, list):
+            _check_list_items_are_same_dimensionality(value)
+            return value[0].units.dimensions
+        return None
 
     @property
     def length(self):
@@ -792,6 +866,33 @@ class Expression(Flow360BaseModel, Evaluable):
 T = TypeVar("T")
 
 
+def _check_list_items_are_same_dimensionality(value: list) -> bool:
+    print(f"Checking list items are same dimensionality: {value}")
+    print(
+        "results for the ifs:",
+        all(isinstance(item, Expression) for item in value),
+        all(isinstance(item, unyt_quantity) for item in value),
+        any(isinstance(item, Number) for item in value)
+        and any(isinstance(item, unyt_quantity) for item in value),
+    )
+    if all(isinstance(item, Expression) for item in value):
+        _check_list_items_are_same_dimensionality(
+            [item.evaluate(raise_on_non_evaluable=False, force_evaluate=True) for item in value]
+        )
+        return
+    if all(isinstance(item, unyt_quantity) for item in value):
+        # ensure all items have the same dimensionality
+        if not all(item.units.dimensions == value[0].units.dimensions for item in value):
+            raise ValueError("All items in the list must have the same dimensionality.")
+        return
+    # Also raise when some elements is Number and others are unyt_quantity
+    if any(isinstance(item, Number) for item in value) and any(
+        isinstance(item, unyt_quantity) for item in value
+    ):
+        raise ValueError("List must contain only all unyt_quantities or all numbers.")
+    return
+
+
 class ValueOrExpression(Expression, Generic[T]):
     """Model accepting both value and expressions"""
 
@@ -820,11 +921,12 @@ class ValueOrExpression(Expression, Generic[T]):
                 pass
 
             # Handle list of unyt_quantities:
-            if isinstance(value, list) and all(isinstance(item, unyt_quantity) for item in value):
-                # ensure all items have the same dimensionality
-                if not all(item.units.dimensions == value[0].units.dimensions for item in value):
-                    raise ValueError("All items in the list must have the same dimensionality")
-                return unyt_array(value)
+            if isinstance(value, list):
+                # Only checking when list[unyt_quantity]
+                _check_list_items_are_same_dimensionality(value)
+                if all(isinstance(item, (unyt_quantity, Number)) for item in value):
+                    # try limiting the number of types we need to handle
+                    return unyt_array(value)
             return value
 
         def _serializer(value, info) -> dict:
