@@ -22,9 +22,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
-from flow360.component.simulation.utils import (
-    is_exact_instance,
-)
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -501,8 +499,8 @@ def _check_duplicate_isosurface_names(outputs):
             for entity in output.entities.items:
                 if entity.name in isosurface_names:
                     raise ValueError(
-                        f"Another time average isosurface with name: "
-                        "`{entity.name}` already exists, please rename the isosurface."
+                        "Another time average isosurface with name: "
+                        f"`{entity.name}` already exists, please rename the isosurface."
                     )
                 isosurface_time_avg_names.append(entity.name)
     return outputs
