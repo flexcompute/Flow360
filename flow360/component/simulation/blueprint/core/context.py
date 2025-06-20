@@ -152,3 +152,8 @@ class EvaluationContext:
     def clear(self):
         """Clear user variables from the context."""
         self._values = {name: value for name, value in self._values.items() if "." in name}
+
+    @property
+    def registered_names(self):
+        """Show the registered names in the context."""
+        return list(self._values.keys())

@@ -1148,13 +1148,16 @@ def test_project_variables_deserialization():
 
 
 def test_overwriting_project_variables():
-    UserVariable(name="a", value=1)
+    a = UserVariable(name="a", value=1)
 
     with pytest.raises(
         ValueError,
         match="Redeclaring user variable a with new value: 2.0. Previous value: 1.0",
     ):
         UserVariable(name="a", value=2)
+
+    a.value = 2
+    assert a.value == 2
 
 
 def test_unique_dimensionality():
@@ -1187,6 +1190,8 @@ def test_unique_dimensionality():
         ("class", "'class' is a reserved keyword."),
         ("namespace", "'namespace' is a reserved keyword."),
         ("template", "'template' is a reserved keyword."),
+        ("temperature", "'temperature' is a reserved solver side variable name."),
+        ("velocity", "'velocity' is a reserved solver side variable name."),
     ],
 )
 def test_invalid_names_raise(bad_name, expected_msg):

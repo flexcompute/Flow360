@@ -413,7 +413,7 @@ class UserVariable(Variable):
     def check_valid_user_variable_name(cls, v):
         """Validate a variable identifier (ASCII only)."""
         # Partial list of C++ keywords; extend as needed
-        RESERVED_KEYWORDS = {  # pylint:disable=invalid-name
+        RESERVED_SYNTAX_KEYWORDS = {  # pylint:disable=invalid-name
             "int",
             "double",
             "float",
@@ -448,8 +448,15 @@ class UserVariable(Variable):
             )
 
         # 4) Not a C++ keyword
-        if v in RESERVED_KEYWORDS:
+        if v in RESERVED_SYNTAX_KEYWORDS:
             raise ValueError(f"'{v}' is a reserved keyword.")
+
+        # 5) existing variable name:
+        solver_side_names = {
+            item.split(".")[-1] for item in default_context.registered_names if "." in item
+        }
+        if v in solver_side_names:
+            raise ValueError(f"'{v}' is a reserved solver side variable name.")
 
         return v
 
@@ -913,7 +920,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 if value.type_name == "number":
                     if value.units is not None:
                         # unyt objects
-                        return unyt_array(value.value, value.units)
+                        return unyt_array(value.value, value.units, dtype=np.float64)
                     return value.value
                 if value.type_name == "expression":
                     return expr_type(expression=value.expression, output_units=value.output_units)
@@ -926,7 +933,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 _check_list_items_are_same_dimensionality(value)
                 if all(isinstance(item, (unyt_quantity, Number)) for item in value):
                     # try limiting the number of types we need to handle
-                    return unyt_array(value)
+                    return unyt_array(value, dtype=np.float64)
             return value
 
         def _serializer(value, info) -> dict:
@@ -943,7 +950,7 @@ class ValueOrExpression(Expression, Generic[T]):
                 if isinstance(evaluated, list):
                     # May result from Expression which is actually a list of expressions
                     try:
-                        evaluated = u.unyt_array(evaluated)
+                        evaluated = u.unyt_array(evaluated, dtype=np.float64)
                     except u.exceptions.IterableUnitCoercionError:
                         # Inconsistent units for components of list
                         pass
