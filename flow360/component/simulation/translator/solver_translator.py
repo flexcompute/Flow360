@@ -733,12 +733,13 @@ def porous_media_entity_info_serializer(volume):
             "axes": [list(axes[0]), list(axes[1])],
             "center": volume.center.value.tolist(),
             "lengths": volume.size.value.tolist(),
+            "name": volume.name,
         }
 
     axes = volume.axes
     return {
         "zoneType": "mesh",
-        "zoneName": volume.full_name,
+        "name": volume.full_name,
         "axes": [list(axes[0]), list(axes[1])],
     }
 
@@ -747,6 +748,7 @@ def porous_media_translator(model: PorousMedium):
     """Porous media translator"""
     model_dict = remove_units_in_dict(dump_dict(model))
     porous_medium = {
+        "name": model_dict["name"],
         "DarcyCoefficient": list(model_dict["darcyCoefficient"]),
         "ForchheimerCoefficient": list(model_dict["forchheimerCoefficient"]),
     }
