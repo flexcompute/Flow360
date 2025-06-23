@@ -68,7 +68,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
-    VolumeOutput,
+    VolumeOutput, RenderOutput,
 )
 from flow360.component.simulation.primitives import Box, SurfacePair
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -82,7 +82,7 @@ from flow360.component.simulation.translator.utils import (
     remove_units_in_dict,
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
-    update_dict_recursively,
+    update_dict_recursively, get_all_entries_of_type,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import (
@@ -149,7 +149,7 @@ def init_average_output(
     return base
 
 
-def init_output_base(obj_list, class_type: Type, has_average_capability: bool, is_average: bool):
+def init_output_base(obj_list, class_type: Type, has_average_capability: bool, is_average: bool, no_format=False):
     """Initialize the common output attribute."""
 
     base = {"outputFields": []}
@@ -158,10 +158,11 @@ def init_output_base(obj_list, class_type: Type, has_average_capability: bool, i
         class_type,
         "output_format",
     )
-    assert output_format is not None
-    if output_format == "both":
-        output_format = "paraview,tecplot"
-    base["outputFormat"] = output_format
+    if not no_format:
+        assert output_format is not None
+        if output_format == "both":
+            output_format = "paraview,tecplot"
+        base["outputFormat"] = output_format
 
     if is_average:
         base = init_average_output(base, obj_list, class_type)
@@ -284,6 +285,14 @@ def inject_surface_slice_info(entity: Slice):
 
 
 def inject_isosurface_info(entity: Isosurface):
+    """inject entity info"""
+    return {
+        "surfaceField": entity.field,
+        "surfaceFieldMagnitude": entity.iso_value,
+    }
+
+
+def inject_render_info(entity: Isosurface):
     """inject entity info"""
     return {
         "surfaceField": entity.field,
@@ -436,6 +445,35 @@ def translate_isosurface_output(
         entity_injection_func=injection_function,
     )
     return translated_output
+
+
+def translate_render_output(output_params: list, injection_function):
+    """Translate render output settings."""
+
+    renders = get_all_entries_of_type(output_params, RenderOutput)
+
+    translated_outputs = []
+
+    for render in renders:
+        camera = render.camera.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+        lighting = render.lighting.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+
+        translated_output = {
+            "animationFrequency": render.frequency,
+            "animationFrequencyOffset": render.frequency_offset,
+            "isoSurfaces": translate_setting_and_apply_to_all_entities(
+                [render],
+                RenderOutput,
+                translation_func=translate_output_fields,
+                to_list=False,
+                entity_injection_func=injection_function,
+            ),
+            "camera": remove_units_in_dict(camera),
+            "lighting": remove_units_in_dict(lighting)
+        }
+        translated_outputs.append(translated_output)
+
+    return translated_outputs
 
 
 def translate_surface_slice_output(
@@ -633,6 +671,12 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step4: Get translated["isoSurfaceOutput"]
     if has_instance_in_list(outputs, IsosurfaceOutput):
         translated["isoSurfaceOutput"] = translate_isosurface_output(
+            outputs, inject_isosurface_info
+        )
+
+    ##:: Step4: Get translated["renderOutput"]
+    if has_instance_in_list(outputs, RenderOutput):
+        translated["renderOutput"] = translate_render_output(
             outputs, inject_isosurface_info
         )
 

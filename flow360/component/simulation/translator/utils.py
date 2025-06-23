@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import pydantic as pd
 from collections import OrderedDict
 from typing import Union
 
@@ -161,6 +162,17 @@ def getattr_by_path(obj, path: Union[str, list], *args):
         obj = getattr(obj, attr)
 
     return obj
+
+
+def get_all_entries_of_type(obj_list: list, class_type: type[pd.BaseModel]):
+    entries = []
+
+    if obj_list is not None:
+        for obj in obj_list:
+            if is_exact_instance(obj, class_type):
+                entries.append(obj)
+
+    return entries
 
 
 def get_global_setting_from_first_instance(
