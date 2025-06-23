@@ -36,11 +36,16 @@ udf_prepending_code = {
     + "primitiveVars[3] * primitiveVars[3]) / "
     + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);",
     "solution.mut_ratio": "double ___mut_ratio; ___mut_ratio = mut / mu;",
-    "solution.nu_hat": "double ___nu_hat;___nu_hat = solutionTurbulence * velocityScale;",
+    "solution.nu_hat": "double ___nu_hat;"
+    + "___nu_hat = solutionTurbulence * velocityScale * SpalartAllmaras_solutionRescale_0;",
     "solution.turbulence_kinetic_energy": "double ___turbulence_kinetic_energy;"
-    "___turbulence_kinetic_energy = solutionTurbulence[0] * pow(velocityScale, 2);",
+    "___turbulence_kinetic_energy = solutionTurbulence[0] * pow(velocityScale, 2) * kOmegaSST_solutionRescale_0;",
     "solution.specific_rate_of_dissipation": "double ___specific_rate_of_dissipation;"
-    + "___specific_rate_of_dissipation = solutionTurbulence[1] * velocityScale;",
+    + "___specific_rate_of_dissipation = solutionTurbulence[1] * velocityScale * kOmegaSST_solutionRescale_1;",
+    "solution.amplification_factor": "double ___amplification_factor;"
+    "___amplification_factor = solutionTransition[0] * AmplificationFactorTransport_solutionRescale_0;",
+    "solution.turbulence_intermittency": "double ___turbulence_intermittency;"
+    + "___turbulence_intermittency = solutionTransition[1] * AmplificationFactorTransport_solutionRescale_1;",
     "solution.velocity": "double ___velocity[3];"
     + "___velocity[0] = primitiveVars[1] * velocityScale;"
     + "___velocity[1] = primitiveVars[2] * velocityScale;"

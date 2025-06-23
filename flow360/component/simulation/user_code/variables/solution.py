@@ -114,13 +114,13 @@ specific_rate_of_dissipation = SolverVariable(
 amplification_factor = SolverVariable(
     name="solution.amplification_factor",
     value=float("NaN"),
-    solver_name="solutionTransition[0]",
+    solver_name="___amplification_factor",
     variable_type="Volume",
 )  # transition model variable: n, non-dimensional
 turbulence_intermittency = SolverVariable(
     name="solution.turbulence_intermittency",
     value=float("NaN"),
-    solver_name="solutionTransition[1]",
+    solver_name="___turbulence_intermittency",
     variable_type="Volume",
 )  # transition model variable: gamma, non-dimensional
 
