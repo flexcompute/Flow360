@@ -225,7 +225,7 @@ class Variable(Flow360BaseModel):
 
     name: str = pd.Field(frozen=True)
 
-    model_config = pd.ConfigDict(validate_assignment=True, extra="allow")
+    model_config = pd.ConfigDict(validate_assignment=True)
 
     @property
     def value(self):
@@ -414,6 +414,7 @@ class UserVariable(Variable):
     @deprecation_reminder("25.7.0")
     def check_value_is_not_legacy_variable(cls, v):
         """Check that the value is not a legacy variable"""
+        # pylint:disable=import-outside-toplevel
         from flow360.component.simulation.outputs.output_fields import AllFieldNames
 
         all_field_names = set(AllFieldNames.__args__)
@@ -594,6 +595,16 @@ class Expression(Flow360BaseModel, Evaluable):
         """Remove leading and trailing whitespace from the expression"""
         return value.strip()
 
+    @pd.field_validator("expression", mode="after")
+    @classmethod
+    def disable_relative_temperature_scale(cls, value: str) -> str:
+        """Disable relative temperature scale usage"""
+        if "u.degF" in value or "u.degC" in value:
+            raise ValueError(
+                "Relative temperature scale usage is not allowed. Please use u.R or u.K instead."
+            )
+        return value
+
     @pd.model_validator(mode="after")
     def check_output_units_matches_dimensionality(self) -> str:
         """Check that the output units have the same dimensionality as the expression"""
@@ -610,6 +621,19 @@ class Expression(Flow360BaseModel, Evaluable):
             )
 
         return self
+
+    @pd.field_validator("output_units", mode="after")
+    @classmethod
+    def disable_relative_temperature_scale_in_output_units(cls, value: str) -> str:
+        """Disable relative temperature scale usage in output units"""
+        print(">> value: ", value)
+        if not value:
+            return value
+        if "u.degF" in value or "u.degC" in value:
+            raise ValueError(
+                "Relative temperature scale usage is not allowed in output units. Please use u.R or u.K instead."
+            )
+        return value
 
     def evaluate(
         self,
@@ -857,7 +881,6 @@ class Expression(Flow360BaseModel, Evaluable):
             if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity)):
                 # Pure dimensionless constant
                 return None
-
             if unit_system_name in ("SI", "SI_unit_system"):
                 return numerical_value.in_base("mks").units
             if unit_system_name in ("Imperial", "Imperial_unit_system"):
@@ -877,10 +900,11 @@ class Expression(Flow360BaseModel, Evaluable):
                 unit_system_name: Literal["SI", "Imperial", "CGS"] = input_params.unit_system.name
             else:
                 unit_system_name = self.output_units
-            return get_unit_from_unit_system(self, unit_system_name)
-
-
-T = TypeVar("T")
+            # The unit system for inferring the units for input has different temperature unit
+            u.unit_systems.imperial_unit_system["temperature"] = u.Unit("R").expr
+            result = get_unit_from_unit_system(self, unit_system_name)
+            u.unit_systems.imperial_unit_system["temperature"] = u.Unit("degF").expr
+            return result
 
 
 def _check_list_items_are_same_dimensionality(value: list) -> bool:
@@ -908,6 +932,9 @@ def _check_list_items_are_same_dimensionality(value: list) -> bool:
     ):
         raise ValueError("List must contain only all unyt_quantities or all numbers.")
     return
+
+
+T = TypeVar("T")
 
 
 class ValueOrExpression(Expression, Generic[T]):

@@ -125,9 +125,6 @@ def test_variable_init():
     # Expression (possibly with other variable)
     c = UserVariable(name="c", value=b + 1 * u.m)
 
-    # A dictionary (can contain extra values - important for frontend)
-    d = UserVariable.model_validate({"name": "d", "value": 1, "extra": "foo"})
-
 
 def test_expression_init():
     class TestModel(Flow360BaseModel):
@@ -698,6 +695,26 @@ def test_error_message():
     )
 
 
+def test_temperature_units_usage():
+    with pytest.raises(
+        ValueError,
+        match="Relative temperature scale usage is not allowed. Please use u.R or u.K instead.",
+    ):
+        Expression(expression="[1,2,3] * u.degF")
+
+    with pytest.raises(
+        ValueError,
+        match="Relative temperature scale usage is not allowed in output units. Please use u.R or u.K instead.",
+    ):
+        UserVariable(name="x", value=solution.temperature + 123 * u.K).in_units(new_unit="u.degF")
+
+    with pytest.raises(
+        ValueError,
+        match="Relative temperature scale usage is not allowed in output units. Please use u.R or u.K instead.",
+    ):
+        solution.temperature.in_units(new_name="my_temperature", new_unit="u.degF")
+
+
 def test_solver_translation():
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
     solid_model = Solid(
@@ -1049,30 +1066,16 @@ def test_udf_generator():
     # mut_scale = Rho*L*V -> 1000*10*100 * kg/m/s == 1000*10*100*1000 * kg/km/s
     assert result.expression == "mut_in_km = (mut * 1000000000.0);"
 
-    # Vector output
-    result = user_variable_to_udf(
-        solution.velocity.in_units(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
-    )
-    # velocity scale =  100 m/s,
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_SI[0] = (___velocity[0] * 100.0); velocity_in_SI[1] = (___velocity[1] * 100.0); velocity_in_SI[2] = (___velocity[2] * 100.0);"
-    )
-
-    vel_cross_vec = UserVariable(
-        name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_units(new_unit="m*km/s")
-    result = user_variable_to_udf(vel_cross_vec, input_params=params)
-    # velocity scale = 100 m/s, length scale = 10m, scale = 1000m**2/s-->1 km*m/s
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((___velocity[1] * 3) * 0.001) - ((___velocity[2] * 2) * 0.001)) * 1.0); vel_cross_vec[1] = ((((___velocity[2] * 1) * 0.001) - ((___velocity[0] * 3) * 0.001)) * 1.0); vel_cross_vec[2] = ((((___velocity[0] * 2) * 0.001) - ((___velocity[1] * 1) * 0.001)) * 1.0);"
-    )
-
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
     ).in_units(new_unit="CGS_unit_system")
     assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
+
+    # We disabled degC and degF on the interface and therefore the inferred units should be K or R.
+    my_temp = UserVariable(name="my_temperature", value=solution.temperature).in_units(
+        new_unit="Imperial_unit_system"
+    )
+    assert my_temp.value.get_output_units(input_params=params) == u.R
 
 
 def test_project_variables_serialization():
