@@ -7,7 +7,7 @@ from typing import Any, Union
 import numpy as np
 from unyt import unyt_array, unyt_quantity
 
-from flow360.component.simulation.user_code.core.types import Expression
+from flow360.component.simulation.user_code.core.types import Expression, Variable
 
 
 def _handle_expression_list(value: list[Any]):
@@ -23,7 +23,7 @@ def _handle_expression_list(value: list[Any]):
     return value
 
 
-VectorInputType = Union[list[float], unyt_array, Expression]
+VectorInputType = Union[list[float], unyt_array, Expression, Variable]
 ScalarInputType = Union[float, unyt_quantity, Expression]
 
 
@@ -32,12 +32,20 @@ def cross(left: VectorInputType, right: VectorInputType):
     # Taking advantage of unyt as much as possible:
     if isinstance(left, unyt_array) and isinstance(right, unyt_array):
         return np.cross(left, right)
+    if len(left) != len(right):
+        raise ValueError(
+            f"Vectors ({left} | {right}) must have the same length to perform cross product. "
+        )
 
-    # Otherwise
-    result = [
-        left[1] * right[2] - left[2] * right[1],
-        left[2] * right[0] - left[0] * right[2],
-        left[0] * right[1] - left[1] * right[0],
-    ]
+    if len(left) == 3:
+        result = [
+            left[1] * right[2] - left[2] * right[1],
+            left[2] * right[0] - left[0] * right[2],
+            left[0] * right[1] - left[1] * right[0],
+        ]
+    elif len(left) == 2:
+        result = left[0] * right[1] - left[1] * right[0]
+    else:
+        raise ValueError(f"Vector length must be 2 or 3, got {len(left)}.")
 
     return _handle_expression_list(result)

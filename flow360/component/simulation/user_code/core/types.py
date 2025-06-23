@@ -402,6 +402,9 @@ class Variable(Flow360BaseModel):
             return False
         return self.model_dump_json() == other.model_dump_json()
 
+    def __len__(self):
+        return len(self.value)
+
 
 class UserVariable(Variable):
     """Class representing a user-defined symbolic variable"""
@@ -626,7 +629,6 @@ class Expression(Flow360BaseModel, Evaluable):
     @classmethod
     def disable_relative_temperature_scale_in_output_units(cls, value: str) -> str:
         """Disable relative temperature scale usage in output units"""
-        print(">> value: ", value)
         if not value:
             return value
         if "u.degF" in value or "u.degC" in value:
@@ -855,6 +857,9 @@ class Expression(Flow360BaseModel, Evaluable):
         if isinstance(value, list):
             return len(value)
         return 1 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
+
+    def __len__(self):
+        return self.length
 
     def get_output_units(self, input_params=None):
         """
