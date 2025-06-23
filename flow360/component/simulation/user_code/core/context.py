@@ -17,7 +17,6 @@ def _unit_list():
         if isinstance(value, (unyt_array, Unit)):
             if str(value) == "u.degF" or str(value) == "u.degC":
                 continue
-            print(">>> ADDING UNIT: ", str(value))
             symbols.add(str(value))
 
     return list(symbols)
@@ -113,7 +112,7 @@ WHITELISTED_CALLABLES = {
             "wall_distance",
             "CfVec",
             "Cf",
-            "heatflux",
+            "heat_flux",
             "node_normals",
             "node_forces_per_unit_area",
             "y_plus",

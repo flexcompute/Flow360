@@ -188,8 +188,8 @@ Cf = SolverVariable(
     solver_name="___Cf",
     variable_type="Surface",
 )
-heatflux = SolverVariable(
-    name="solution.heatflux",
+heat_flux = SolverVariable(
+    name="solution.heat_flux",
     value=float("NaN") * u.W / u.m**2,
     solver_name="heatFlux",
     variable_type="Surface",
