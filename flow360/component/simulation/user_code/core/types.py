@@ -412,7 +412,7 @@ class UserVariable(Variable):
     @classmethod
     def check_valid_user_variable_name(cls, v):
         """Validate a variable identifier (ASCII only)."""
-        # Partial list of C++ keywords; extend as needed
+        # Partial list of keywords; extend as needed
         RESERVED_SYNTAX_KEYWORDS = {  # pylint:disable=invalid-name
             "int",
             "double",
@@ -456,7 +456,7 @@ class UserVariable(Variable):
             item.split(".")[-1] for item in default_context.registered_names if "." in item
         }
         if v in solver_side_names:
-            raise ValueError(f"'{v}' is a reserved solver side variable name.")
+            raise ValueError(f"'{v}' cannot be a reserved solver side variable name.")
 
         return v
 
@@ -584,15 +584,12 @@ class Expression(Flow360BaseModel, Evaluable):
     @pd.model_validator(mode="after")
     def check_output_units_matches_dimensionality(self) -> str:
         """Check that the output units have the same dimensionality as the expression"""
-        print(f"self.output_units: {self.output_units}")
         if not self.output_units:
             return self
         if self.output_units in ("SI_unit_system", "CGS_unit_system", "Imperial_unit_system"):
             return self
         output_units_dimensionality = u.Unit(self.output_units).dimensions
         expression_dimensionality = self.dimensionality
-        print(f"output_units_dimensionality: {output_units_dimensionality}")
-        print(f"expression_dimensionality: {expression_dimensionality}")
         if output_units_dimensionality != expression_dimensionality:
             raise ValueError(
                 f"Output units '{self.output_units}' have different dimensionality "
