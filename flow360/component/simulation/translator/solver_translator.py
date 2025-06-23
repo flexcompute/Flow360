@@ -901,18 +901,15 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
     for entity in entities.stored_entities: 
         udd = UserDefinedDynamic(
             name="massOutflowController_{}".format(entity.name),
-            input_vars=["massFlowRate", "area"],
+            input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
             constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
-                       "initialStaticPressureRatio": 1.0},
+                       "initialStaticPressureRatio": 1.0, "gamma" : 1.4},
             output_vars={
                 "staticPressureRatio": "if (pseudoStep > {}) state[0]; else initialStaticPressureRatio;".format(
                     start_step)},
-            state_vars_initial_value=["initialStaticPressureRatio", "0.0"],
+            state_vars_initial_value=["initialStaticPressureRatio"],
             update_law=[
-                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] : state[0] ; else state[0];".format(start_step),
-                "state[0] + Kp * (massFlowRate - massFlowRateTarget)/area;",
-                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] +  Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1] : state[0] +  -1 * Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1]; else state[0];".format(start_step),
-                "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
+                "if (hasSupersonicFlow) (1.0 + Kp) * state[0]; else state[0] + Kp * (pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRate/area, 2), gamma/(gamma-1.0)) - pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRateTarget/area,2),gamma/(gamma-1.0)));",
             ],
             input_boundary_patches=entities.stored_entities,
             output_target=entity
@@ -932,26 +929,15 @@ def _get_default_mass_inflow_udd(entities, mass_flow_rate):
     for entity in entities.stored_entities:
         udd = UserDefinedDynamic(
             name="massInflowController_{}".format(entity.name),
-            input_vars=["massFlowRate", "area"],
+            input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
             constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
-                       "initialTotalPressureRatio": 1.0,
-                       "gamma" : 1.4},
+                       "initialTotalPressureRatio": 1.0, "gamma" : 1.4},
             output_vars={
                 "totalPressureRatio": "if (pseudoStep > {}) state[0]; else initialTotalPressureRatio;".format(
                     start_step)},
-            state_vars_initial_value=["initialTotalPressureRatio", "0.0"],
+            state_vars_initial_value=["initialTotalPressureRatio"],
             update_law=[
-                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] : state[0] ; else state[0];".format(start_step),
-                "state[0] - Kp * (massFlowRate - massFlowRateTarget)/area;",
-                #"if (massFlowRate - massFlowRateTarget < 0) state[0] + Kp * pow(1.0 + (gamma - 1.0)/2.0 * pow((massFlowRate - massFlowRateTarget)/area, 2.0), gamma/(gamma-1.0)); else state[0] - Kp * pow(1.0 + (gamma - 1.0)/2.0 * pow((massFlowRate - massFlowRateTarget)/area, 2.0), gamma/(gamma-1.0));",
-                #"if (massFlowRate - massFlowRateTarget < 0) state[0] + Kp * pow((massFlowRate - massFlowRateTarget)/area, 2.0); else state[0] - Kp * pow((massFlowRate - massFlowRateTarget)/area, 2.0);",
-                #"if (pseudoStep > {0}) (massFlowRate - massFlowRateTarget >= 0) ? state[0] +  Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1] : state[0] +  -1 * Kp * pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) + Ki * state[1]; else state[0];".format(start_step),
-                #"state[0] - Ki * (massFlowRate - massFlowRateTarget)/area;",
-                #"if (pseudoStep > {0} ) state[1]; else state[1];".format(start_step)
-                #"if (pseudoStep > {}) (massFlowRate - massFlowRateTarget >= 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 1.0); else state[1];".format(start_step),
-                #"if (massFlowRate > 0) state[0] - Kp * (pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2)); else state[0] - Kp * (-1.0 * pow(massFlowRate/area, 2) - pow(massFlowRateTarget/area,2));",
-                #"if (pseudoStep > {}) (massFlowRate - massFlowRateTarget < 0) ? state[0] +  Kp * (pow(massFlowRate/area,2) - pow(massFlowRateTarget)/area, 2.0) + Ki * state[1]: state[0] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0) + Ki * state[1]; else state[0];".format(start_step),
-                "if (pseudoStep > {}) (massFlowRate - massFlowRateTarget < 0) ? state[1] +  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0) : state[1] -  pow(abs(massFlowRate - massFlowRateTarget)/area, 2.0); else state[1];".format(start_step)
+                "if (hasSupersonicFlow) (1.0 - Kp) * state[0]; else state[0] - Kp * (pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRate/area, 2), gamma/(gamma-1.0)) - pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRateTarget/area,2),gamma/(gamma-1.0)));",
             ],
             input_boundary_patches=entities.stored_entities,
             output_target=entity
