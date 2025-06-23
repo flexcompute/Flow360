@@ -17,7 +17,6 @@ def _unit_list():
         if isinstance(value, (unyt_array, Unit)):
             if str(value) == "u.degF" or str(value) == "u.degC":
                 continue
-            print(">>> ADDING UNIT: ", str(value))
             symbols.add(str(value))
 
     return list(symbols)
