@@ -13,6 +13,7 @@ from .expressions import (
     RangeCallNode,
     SubscriptNode,
     TupleNode,
+    UnaryOpNode,
 )
 from .function import FunctionNode
 from .generator import expr_to_code, model_to_function, stmt_to_code
@@ -43,6 +44,7 @@ def _model_rebuild() -> None:
         "ListNode": ListNode,
         "ListCompNode": ListCompNode,
         "SubscriptNode": SubscriptNode,
+        "UnaryOpNode": UnaryOpNode,
         "ExpressionNodeType": ExpressionNodeType,
         # Statement types
         "AssignNode": AssignNode,

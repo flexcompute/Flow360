@@ -21,6 +21,7 @@ ExpressionNodeType = Annotated[
         "ListNode",
         "ListCompNode",
         "SubscriptNode",
+        "UnaryOpNode",
     ],
     pd.Field(discriminator="type"),
 ]
