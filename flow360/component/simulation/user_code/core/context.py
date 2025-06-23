@@ -113,7 +113,7 @@ WHITELISTED_CALLABLES = {
             "wall_distance",
             "CfVec",
             "Cf",
-            "heatflux",
+            "heat_flux",
             "node_normals",
             "node_forces_per_unit_area",
             "y_plus",
