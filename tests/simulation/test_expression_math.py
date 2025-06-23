@@ -8,17 +8,10 @@ import unyt as u
 import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.translator.solver_translator import (
-    user_variable_to_udf,
-)
-from flow360.component.simulation.unit_system import (
-    LengthType,
-    SI_unit_system,
-    VelocityType,
-)
+from flow360.component.simulation.unit_system import SI_unit_system, VelocityType
 from flow360.component.simulation.user_code.core.types import (
+    Expression,
     UserVariable,
     ValueOrExpression,
 )
@@ -81,36 +74,6 @@ def test_cross_product():
 
     with pytest.raises(ValueError, match="Vector length must be 2 or 3, got 4."):
         a.value = math.cross([1, 2, 2, 3], [3, 1, 2, 3] * u.m)
-
-
-def test_vector_solver_variable_cross_product_translation():
-    with open("data/simulation.json", "r+") as fh:
-        data = json.load(fh)
-
-    params, _, _ = validate_model(
-        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
-    )
-
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[LengthType.Vector] = pd.Field()
-
-    # From string
-    expr_1 = TestModel(field="math.cross([1, 2, 3], [1, 2, 3] * u.m)").field
-    assert str(expr_1) == "math.cross([1, 2, 3], [1, 2, 3] * u.m)"
-
-    # During solver translation both options are inlined the same way through partial evaluation
-    expr_1.to_solver_code(params)
-
-    # From python code
-    expr_2 = TestModel(field=math.cross([1, 2, 3], solution.coordinate)).field
-    assert (
-        str(expr_2) == "[2 * solution.coordinate[2] - 3 * solution.coordinate[1], "
-        "3 * solution.coordinate[0] - 1 * solution.coordinate[2], "
-        "1 * solution.coordinate[1] - 2 * solution.coordinate[0]]"
-    )
-
-    # During solver translation both options are inlined the same way through partial evaluation
-    expr_2.to_solver_code(params)
 
 
 def test_cross_function_use_case():
@@ -194,7 +157,7 @@ def test_cross_function_use_case():
         == "std::vector<float>({((((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 1) * 0.1) - (((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 2) * 0.1)), ((((((3 * 0.1) * coordinate[1]) - ((2 * 0.1) * coordinate[0])) * 3) * 0.1) - (((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 1) * 0.1)), ((((((2 * 0.1) * coordinate[2]) - ((1 * 0.1) * coordinate[1])) * 2) * 0.1) - (((((1 * 0.1) * coordinate[0]) - ((3 * 0.1) * coordinate[2])) * 3) * 0.1))})"
     )
 
-    print("\n7 Using other variabels in Python mode\n")
+    print("\n7 Using other variables in Python mode\n")
     b = UserVariable(name="b", value=math.cross([3, 2, 1] * u.m, solution.coordinate))
     a.value = math.cross(b, [3, 2, 1] * u.m)
     res = a.value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
@@ -240,17 +203,43 @@ def test_cross_function_use_case():
 # ---------------------------#
 # Dot product
 # ---------------------------#
+def test_dot_product():
+    x = UserVariable(name="x", value=[1, 2, 3] * u.m)
+    y = UserVariable(name="y", value=[1, 2, 3] * u.K)
 
+    # Python mode
+    assert math.dot(x, y).evaluate() == 14 * u.m * u.K
+    assert math.dot(x, [1, 2, 3] * u.m).evaluate() == 14 * u.m * u.m
+    assert math.dot([1, 2, 3] * u.m, [1, 2, 3] * u.m) == 14 * u.m * u.m
+    assert math.dot([1, 2] * u.m, [1, 2] * u.m) == 5 * u.m * u.m
+    assert math.dot([1 * u.m, 2 * u.m], [1 * u.s, 3 * u.s]) == 7 * u.m * u.s
+    assert (
+        str(math.dot(solution.coordinate, solution.velocity))
+        == "solution.coordinate[0] * solution.velocity[0] + "
+        "solution.coordinate[1] * solution.velocity[1] + "
+        "solution.coordinate[2] * solution.velocity[2]"
+    )
+    assert (
+        str(math.dot(solution.coordinate, x))
+        == "solution.coordinate[0] * x[0] + solution.coordinate[1] * x[1] + solution.coordinate[2] * x[2]"
+    )
 
-# def test_dot_product():
-#     x = UserVariable(name="x", value=[1, 2, 3] * u.m)
-#     y = UserVariable(name="y", value=[1, 2, 3] * u.K)
+    # String mode
+    assert Expression(expression="math.dot(x, y)").evaluate() == 14 * u.m * u.K
+    assert Expression(expression="math.dot(x, [1, 2, 3] * u.m)").evaluate() == 14 * u.m * u.m
+    assert (
+        Expression(expression="math.dot([1, 2, 3] * u.m, [1, 2, 3] * u.m)").evaluate()
+        == 14 * u.m * u.m
+    )
+    assert Expression(expression="math.dot([1, 2] * u.m, [1, 2] * u.m)").evaluate() == 5 * u.m * u.m
+    assert (
+        Expression(expression="math.dot([1* u.m, 2* u.m] , [1* u.s, 3* u.s])").evaluate()
+        == 7 * u.m * u.s
+    )  # We do not probably want to user to know this works though....
 
-#     assert math.dot(x, y) == 14 * u.m * u.K
-#     assert math.dot(x, [1, 2, 3] * u.m) == 14 * u.m * u.m
-#     assert math.dot([1, 2, 3] * u.m, y) == 14 * u.m * u.K
-#     assert math.dot([1, 2, 3] * u.m, [1, 2, 3] * u.m) == 14 * u.m * u.m
-#     assert math.dot([1, 2, 3] * u.m, [1, 2] * u.m) == 14 * u.m * u.m
-#     assert math.dot([1, 2] * u.m, [1, 2, 3] * u.m) == 14 * u.m * u.m
-#     assert math.dot([1, 2] * u.m, [1, 2] * u.m) == 5 * u.m * u.m
-#     assert math.dot([1, 2] * u.m, [1, 2, 3] * u.m) == 14 * u.m * u.m
+    # Error handling
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Vectors ([1 2] m | y) must have the same length to perform dot product."),
+    ):
+        math.dot([1, 2] * u.m, y)

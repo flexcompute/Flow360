@@ -27,15 +27,26 @@ VectorInputType = Union[list[float], unyt_array, Expression, Variable]
 ScalarInputType = Union[float, unyt_quantity, Expression]
 
 
+def _check_same_length(left: VectorInputType, right: VectorInputType, operation_name: str):
+    """For vector arithmetic operations, we need to check that the vectors have the same length."""
+    try:
+        len(left)
+    except Exception as e:
+        raise ValueError(f"Cannot get length information for {left}.") from e
+
+    if len(left) != len(right):
+        raise ValueError(
+            f"Vectors ({left} | {right}) must have the same length to perform {operation_name}."
+        )
+
+
 def cross(left: VectorInputType, right: VectorInputType):
     """Customized Cross function to work with the `Expression` and Variables"""
     # Taking advantage of unyt as much as possible:
     if isinstance(left, unyt_array) and isinstance(right, unyt_array):
         return np.cross(left, right)
-    if len(left) != len(right):
-        raise ValueError(
-            f"Vectors ({left} | {right}) must have the same length to perform cross product. "
-        )
+
+    _check_same_length(left, right, "cross product")
 
     if len(left) == 3:
         result = [
@@ -49,3 +60,18 @@ def cross(left: VectorInputType, right: VectorInputType):
         raise ValueError(f"Vector length must be 2 or 3, got {len(left)}.")
 
     return _handle_expression_list(result)
+
+
+def dot(left: VectorInputType, right: VectorInputType):
+    """Customized Dot function to work with the `Expression` and Variables"""
+    # Taking advantage of unyt as much as possible:
+    if isinstance(left, unyt_array) and isinstance(right, unyt_array):
+        return np.dot(left, right)
+
+    _check_same_length(left, right, "dot product")
+
+    result = left[0] * right[0]
+    for i in range(1, len(left)):
+        result += left[i] * right[i]
+
+    return result

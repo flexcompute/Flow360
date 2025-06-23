@@ -656,8 +656,15 @@ def test_param_with_user_variables():
     some_dependent_variable_a = UserVariable(
         name="some_dependent_variable_a", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
     )
-    my_var = UserVariable(
-        name="my_var", value=math.cross(some_dependent_variable_a, solution.velocity)
+    cross_res = UserVariable(
+        name="cross_res", value=math.cross(some_dependent_variable_a, solution.velocity)
+    )
+    dot_res = UserVariable(
+        name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
+    )
+    print(
+        ">>>> dot_res.value.evaluate()",
+        dot_res.value.evaluate(force_evaluate=False, raise_on_non_evaluable=False),
     )
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     with SI_unit_system:
@@ -681,7 +688,8 @@ def test_param_with_user_variables():
                         UserVariable(name="uuu", value=solution.velocity).in_units(
                             new_unit="km/ms"
                         ),
-                        my_var,
+                        cross_res,
+                        dot_res,
                     ],
                 )
             ],
