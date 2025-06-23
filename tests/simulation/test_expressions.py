@@ -1193,6 +1193,7 @@ def test_unique_dimensionality():
         ("temperature", "'temperature' is a reserved solver side variable name."),
         ("velocity", "'velocity' is a reserved (legacy) output field name."),
         ("rho", "'rho' is a reserved (legacy) output field name."),
+        ("pressure", "'pressure' is a reserved (legacy) output field name."),
     ],
 )
 def test_invalid_names_raise(bad_name, expected_msg):
