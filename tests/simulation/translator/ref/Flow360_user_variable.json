@@ -115,6 +115,10 @@
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;dot_res = ((((((1.0 * 1.0) / 200.0) * ___velocity[0]) + (((2.0 * 1.0) / 200.0) * ___velocity[1])) + (((3.0 * 1.0) / 200.0) * ___velocity[2])) * 40000.0);",
             "name": "dot_res"
+        },
+        {
+            "expression": "double ___temperature;double ___epsilon = 2.220446049250313e-16;___temperature = (primitiveVars[0] < ___epsilon && HeatEquation_solution != nullptr) ? HeatEquation_solution[0] : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
+            "name": "my_temperature"
         }
     ],
     "usingLiquidAsMaterial": true,
@@ -129,7 +133,8 @@
             "velocity_SI",
             "uuu",
             "cross_res",
-            "dot_res"
+            "dot_res",
+            "my_temperature"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1

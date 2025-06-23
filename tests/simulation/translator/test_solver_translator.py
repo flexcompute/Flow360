@@ -667,6 +667,9 @@ def test_param_with_user_variables():
         dot_res.value.evaluate(force_evaluate=False, raise_on_non_evaluable=False),
     )
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
+    my_temperature = UserVariable(
+        name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
+    )
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=LiquidOperatingCondition(
@@ -690,6 +693,7 @@ def test_param_with_user_variables():
                         ),
                         cross_res,
                         dot_res,
+                        my_temperature,
                     ],
                 )
             ],

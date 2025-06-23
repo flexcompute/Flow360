@@ -913,14 +913,6 @@ class Expression(Flow360BaseModel, Evaluable):
 
 
 def _check_list_items_are_same_dimensionality(value: list) -> bool:
-    print(f"Checking list items are same dimensionality: {value}")
-    print(
-        "results for the ifs:",
-        all(isinstance(item, Expression) for item in value),
-        all(isinstance(item, unyt_quantity) for item in value),
-        any(isinstance(item, Number) for item in value)
-        and any(isinstance(item, unyt_quantity) for item in value),
-    )
     if all(isinstance(item, Expression) for item in value):
         _check_list_items_are_same_dimensionality(
             [item.evaluate(raise_on_non_evaluable=False, force_evaluate=True) for item in value]
