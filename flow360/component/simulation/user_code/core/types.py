@@ -20,6 +20,7 @@ from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
 from flow360.component.simulation.blueprint.core.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater_utils import deprecation_reminder
 from flow360.component.simulation.user_code.core.context import default_context
 from flow360.component.simulation.user_code.core.utils import (
     handle_syntax_error,
@@ -410,6 +411,18 @@ class UserVariable(Variable):
 
     @pd.field_validator("name", mode="after")
     @classmethod
+    @deprecation_reminder("25.7.0")
+    def check_value_is_not_legacy_variable(cls, v):
+        """Check that the value is not a legacy variable"""
+        from flow360.component.simulation.outputs.output_fields import AllFieldNames
+
+        all_field_names = set(AllFieldNames.__args__)
+        if v in all_field_names:
+            raise ValueError(f"'{v}' is a reserved (legacy) output field name.")
+        return v
+
+    @pd.field_validator("name", mode="after")
+    @classmethod
     def check_valid_user_variable_name(cls, v):
         """Validate a variable identifier (ASCII only)."""
         # Partial list of keywords; extend as needed
@@ -456,7 +469,7 @@ class UserVariable(Variable):
             item.split(".")[-1] for item in default_context.registered_names if "." in item
         }
         if v in solver_side_names:
-            raise ValueError(f"'{v}' cannot be a reserved solver side variable name.")
+            raise ValueError(f"'{v}' is a reserved solver side variable name.")
 
         return v
 
