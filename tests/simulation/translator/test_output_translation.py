@@ -47,7 +47,7 @@ from flow360.component.simulation.user_code.variables import solution
 
 @pytest.fixture()
 def vel_in_km_per_hr():
-    return solution.velocity.in_unit(new_name="velocity_in_km_per_hr", new_unit=u.km / u.hr)
+    return solution.velocity.in_units(new_name="velocity_in_km_per_hr", new_unit=u.km / u.hr)
 
 
 @pytest.fixture()

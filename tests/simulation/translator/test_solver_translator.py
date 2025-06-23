@@ -678,7 +678,9 @@ def test_param_with_user_variables():
                     output_fields=[
                         solution.Mach,
                         solution.velocity,
-                        UserVariable(name="uuu", value=solution.velocity).in_unit(new_unit="km/ms"),
+                        UserVariable(name="uuu", value=solution.velocity).in_units(
+                            new_unit="km/ms"
+                        ),
                         my_var,
                     ],
                 )

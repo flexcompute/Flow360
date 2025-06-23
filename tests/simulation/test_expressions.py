@@ -125,9 +125,6 @@ def test_variable_init():
     # Expression (possibly with other variable)
     c = UserVariable(name="c", value=b + 1 * u.m)
 
-    # A dictionary (can contain extra values - important for frontend)
-    d = UserVariable.model_validate({"name": "d", "value": 1, "extra": "foo"})
-
 
 def test_expression_init():
     class TestModel(Flow360BaseModel):
@@ -698,6 +695,26 @@ def test_error_message():
     )
 
 
+def test_temperature_units_usage():
+    with pytest.raises(
+        ValueError,
+        match="Relative temperature scale usage is not allowed. Please use u.R or u.K instead.",
+    ):
+        Expression(expression="[1,2,3] * u.degF")
+
+    with pytest.raises(
+        ValueError,
+        match="Relative temperature scale usage is not allowed in output units. Please use u.R or u.K instead.",
+    ):
+        UserVariable(name="x", value=solution.temperature + 123 * u.K).in_units(new_unit="u.degF")
+
+    with pytest.raises(
+        ValueError,
+        match="Relative temperature scale usage is not allowed in output units. Please use u.R or u.K instead.",
+    ):
+        solution.temperature.in_units(new_name="my_temperature", new_unit="u.degF")
+
+
 def test_solver_translation():
     timestepping_unsteady = Unsteady(steps=12, step_size=0.1 * u.s)
     solid_model = Solid(
@@ -897,7 +914,7 @@ def test_cross_function_use_case():
 
     print("\n3 (Units defined in components)\n")
     a.value = math.cross([3 * u.m, 2 * u.m, 1 * u.m], [2 * u.m, 2 * u.m, 1 * u.m])
-    assert a.value == [0 * u.m * u.m, -1 * u.m * u.m, 2 * u.m * u.m]
+    assert all(a.value == [0, -1, 2] * u.m * u.m)
 
     print("\n4 Serialized version\n")
     a.value = "math.cross([3, 2, 1] * u.m, solution.coordinate)"
@@ -1015,7 +1032,7 @@ def test_to_file_from_file_expression(
             outputs=[
                 VolumeOutput(
                     output_fields=[
-                        solution.mut.in_unit(new_name="mut_in_SI", new_unit="cm**2/min"),
+                        solution.mut.in_units(new_name="mut_in_SI", new_unit="g/cm/min"),
                         constant_variable,
                         constant_array,
                         constant_unyt_quantity,
@@ -1043,34 +1060,22 @@ def test_udf_generator():
         )
     # Scalar output
     result = user_variable_to_udf(
-        solution.mut.in_unit(new_name="mut_in_km", new_unit="km**2/s"), input_params=params
+        solution.mut.in_units(new_name="mut_in_km", new_unit="kg/km/s"), input_params=params
     )
-    # velocity scale = 100 m/s, length scale = 10m, mut_scale = 1000 m**2/s -> 0.01 *km**2/s
-    assert result.expression == "mut_in_km = (mut * 0.001);"
-
-    # Vector output
-    result = user_variable_to_udf(
-        solution.velocity.in_unit(new_name="velocity_in_SI", new_unit="m/s"), input_params=params
-    )
-    # velocity scale =  100 m/s,
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_SI[0] = (___velocity[0] * 100.0); velocity_in_SI[1] = (___velocity[1] * 100.0); velocity_in_SI[2] = (___velocity[2] * 100.0);"
-    )
+    # velocity scale = 100 m/s, length scale = 10m, density scale = 1000 kg/m**3
+    # mut_scale = Rho*L*V -> 1000*10*100 * kg/m/s == 1000*10*100*1000 * kg/km/s
+    assert result.expression == "mut_in_km = (mut * 1000000000.0);"
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_unit(new_unit="m*km/s/s")
-    result = user_variable_to_udf(vel_cross_vec, input_params=params)
-    assert (
-        result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_cross_vec[0] = ((((___velocity[1] * 3) * 0.001) - ((___velocity[2] * 2) * 0.001)) * 10.0); vel_cross_vec[1] = ((((___velocity[2] * 1) * 0.001) - ((___velocity[0] * 3) * 0.001)) * 10.0); vel_cross_vec[2] = ((((___velocity[0] * 2) * 0.001) - ((___velocity[1] * 1) * 0.001)) * 10.0);"
-    )
-
-    vel_cross_vec = UserVariable(
-        name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
-    ).in_unit(new_unit="CGS_unit_system")
+    ).in_units(new_unit="CGS_unit_system")
     assert vel_cross_vec.value.get_output_units(input_params=params) == u.cm**2 / u.s
+
+    # We disabled degC and degF on the interface and therefore the inferred units should be K or R.
+    my_temp = UserVariable(name="my_temperature", value=solution.temperature).in_units(
+        new_unit="Imperial_unit_system"
+    )
+    assert my_temp.value.get_output_units(input_params=params) == u.R
 
 
 def test_project_variables_serialization():
@@ -1078,7 +1083,7 @@ def test_project_variables_serialization():
     aaa = UserVariable(
         name="aaa", value=[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]
     )
-    bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_unit(
+    bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_units(
         new_unit="km/ms"
     )
 
@@ -1146,13 +1151,68 @@ def test_project_variables_deserialization():
 
 
 def test_overwriting_project_variables():
-    UserVariable(name="a", value=1)
+    a = UserVariable(name="a", value=1)
 
     with pytest.raises(
         ValueError,
         match="Redeclaring user variable a with new value: 2.0. Previous value: 1.0",
     ):
         UserVariable(name="a", value=2)
+
+    a.value = 2
+    assert a.value == 2
+
+
+def test_unique_dimensionality():
+    with pytest.raises(
+        ValueError, match="All items in the list must have the same dimensionality."
+    ):
+        UserVariable(name="a", value=[1 * u.m, 1 * u.s])
+
+    with pytest.raises(
+        ValueError, match="List must contain only all unyt_quantities or all numbers."
+    ):
+        UserVariable(name="a", value=[1.0 * u.m, 1.0])
+
+    a = UserVariable(name="a", value=[1.0 * u.m, 1.0 * u.mm])
+    assert all(a.value == [1.0, 0.001] * u.m)
+
+
+@pytest.mark.parametrize(
+    "bad_name, expected_msg",
+    [
+        ("", "Identifier cannot be empty."),
+        ("1stPlace", "Identifier must start with a letter (A-Z/a-z) or underscore (_)."),
+        ("bad-name", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("has space", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        (" leading", "Identifier must start with a letter (A-Z/a-z) or underscore (_)."),
+        ("trailing ", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("tab\tname", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("new\nline", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("name$", "Identifier can only contain letters, digits (0-9), or underscore (_)."),
+        ("class", "'class' is a reserved keyword."),
+        ("namespace", "'namespace' is a reserved keyword."),
+        ("template", "'template' is a reserved keyword."),
+        ("temperature", "'temperature' is a reserved solver side variable name."),
+        ("velocity", "'velocity' is a reserved (legacy) output field name."),
+        ("rho", "'rho' is a reserved (legacy) output field name."),
+        ("pressure", "'pressure' is a reserved (legacy) output field name."),
+    ],
+)
+def test_invalid_names_raise(bad_name, expected_msg):
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        UserVariable(name=bad_name, value=0)
+
+
+def test_output_units_dimensionality():
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Output units 'ms' have different dimensionality (time) than the expression (length)."
+        ),
+    ):
+        a = UserVariable(name="a", value="1 * u.m")
+        a.in_units(new_unit="ms")
 
 
 def test_whitelisted_callables():
