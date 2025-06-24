@@ -662,10 +662,7 @@ def test_param_with_user_variables():
     dot_res = UserVariable(
         name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
     )
-    print(
-        ">>>> dot_res.value.evaluate()",
-        dot_res.value.evaluate(force_evaluate=False, raise_on_non_evaluable=False),
-    )
+    sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
@@ -694,6 +691,7 @@ def test_param_with_user_variables():
                         cross_res,
                         dot_res,
                         my_temperature,
+                        sqrt_res,
                     ],
                 )
             ],
