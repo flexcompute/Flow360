@@ -590,7 +590,6 @@ def test_time_average_isosurface_output(
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    print(json.dumps(translated, indent=4))
 
     assert sorted(time_average_isosurface_output_config[1].items()) == sorted(
         translated["timeAverageIsoSurfaceOutput"].items()
