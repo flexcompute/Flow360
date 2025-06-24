@@ -7,11 +7,7 @@ from .convergence import Convergence
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
 from .drivaer import DrivAer
-<<<<<<< HEAD
-=======
-from .evtol import EVTOL
 from .isolated_propeller import IsolatedPropeller
->>>>>>> 6465b518 (added isolated propeller and bet evtol examples (#1174))
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .quadcopter import Quadcopter
@@ -37,11 +33,7 @@ __all__ = [
     "Cylinder2D",
     "Cylinder3D",
     "DrivAer",
-<<<<<<< HEAD
-=======
-    "EVTOL",
     "IsolatedPropeller",
->>>>>>> 6465b518 (added isolated propeller and bet evtol examples (#1174))
     "MonitorsAndSlices",
     "OM6wing",
     "RotatingSpheres",
