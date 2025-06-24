@@ -749,5 +749,4 @@ def test_param_with_user_variables():
         params_validated,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_user_variable_heat.json",
-        debug=True,
     )
