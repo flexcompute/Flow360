@@ -1,11 +1,13 @@
 from .actuator_disk import ActuatorDisk
 from .airplane import Airplane
+from .bet_evtol import BETEVTOL
 from .bet_example_data import BETExampleData
 from .bet_line import BETLine
 from .convergence import Convergence
 from .cylinder2D import Cylinder2D
 from .cylinder3D import Cylinder3D
 from .drivaer import DrivAer
+from .isolated_propeller import IsolatedPropeller
 from .monitors import MonitorsAndSlices
 from .om6wing import OM6wing
 from .quadcopter import Quadcopter
@@ -24,12 +26,14 @@ from .tutorial_UDD_forces_moments import TutorialUDDForcesMoments
 __all__ = [
     "ActuatorDisk",
     "Airplane",
+    "BETEVTOL",
     "BETExampleData",
     "BETLine",
     "Convergence",
     "Cylinder2D",
     "Cylinder3D",
     "DrivAer",
+    "IsolatedPropeller",
     "MonitorsAndSlices",
     "OM6wing",
     "RotatingSpheres",
