@@ -22,8 +22,6 @@ from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
-    RenderCameraConfig,
-    RenderLightingConfig,
     Slice,
 )
 from flow360.component.simulation.outputs.output_fields import (
@@ -34,6 +32,13 @@ from flow360.component.simulation.outputs.output_fields import (
     SurfaceFieldNames,
     VolumeFieldNames,
     get_field_values,
+)
+from flow360.component.simulation.outputs.output_render_types import (
+    RenderCameraConfig,
+    RenderEnvironmentConfig,
+    RenderLightingConfig,
+    RenderMaterialConfig,
+    Transform,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
@@ -711,9 +716,11 @@ class RenderOutput(_AnimationSettings):
     """
 
     name: Optional[str] = pd.Field("Render output", description="Name of the `IsosurfaceOutput`.")
-    entities: UniqueItemList[Isosurface] = pd.Field(
-        alias="isosurfaces",
-        description="List of :class:`~flow360.Isosurface` entities.",
+    isosurfaces: Optional[UniqueItemList[Isosurface]] = pd.Field(
+        None, description="List of :class:`~flow360.Isosurface` entities."
+    )
+    surfaces: Optional[EntityList[Surface]] = pd.Field(
+        None, description="List of of :class:`~flow360.Surface` entities."
     )
     output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
         description="List of output variables. Including "
@@ -721,6 +728,11 @@ class RenderOutput(_AnimationSettings):
     )
     camera: RenderCameraConfig = pd.Field(description="Camera settings")
     lighting: RenderLightingConfig = pd.Field(description="Lighting settings")
+    environment: RenderEnvironmentConfig = pd.Field(description="Environment settings")
+    materials: RenderMaterialConfig = pd.Field(description="Material settings")
+    transform: Optional[Transform] = pd.Field(
+        None, description="Optional model transform to apply to all entities"
+    )
     output_type: Literal["RenderOutput"] = pd.Field("RenderOutput", frozen=True)
 
 

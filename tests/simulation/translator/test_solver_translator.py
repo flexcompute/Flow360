@@ -61,16 +61,23 @@ from flow360.component.simulation.operating_condition.operating_condition import
     ThermalState,
 )
 from flow360.component.simulation.outputs.output_entities import (
-    AmbientLight,
-    DirectionalLight,
     Isosurface,
-    OrthographicProjection,
     Point,
     PointArray,
     PointArray2D,
-    RenderCameraConfig,
-    RenderLightingConfig,
     Slice,
+)
+from flow360.component.simulation.outputs.output_render_types import (
+    AmbientLight,
+    DirectionalLight,
+    OrthographicProjection,
+    PBRMaterial,
+    RenderCameraConfig,
+    RenderEnvironmentConfig,
+    RenderLightingConfig,
+    RenderMaterialConfig,
+    SkyboxBackground,
+    SkyboxTexture,
     StaticCamera,
 )
 from flow360.component.simulation.outputs.outputs import (
@@ -275,7 +282,7 @@ def get_om6Wing_tutorial_param():
                     output_fields=["Cp"],
                 ),
                 RenderOutput(
-                    entities=[my_isosurface],
+                    isosurfaces=[my_isosurface],
                     output_fields=["qcriterion"],
                     camera=RenderCameraConfig(
                         view=StaticCamera(position=(20, 20, 20), target=(0, 0, 0)),
@@ -286,6 +293,20 @@ def get_om6Wing_tutorial_param():
                         directional=DirectionalLight(
                             intensity=1.5, color=(255, 255, 255), direction=(-1.0, -1.0, -1.0)
                         ),
+                    ),
+                    environment=RenderEnvironmentConfig(
+                        background=SkyboxBackground(texture=SkyboxTexture.SKY)
+                    ),
+                    materials=RenderMaterialConfig(
+                        materials=[
+                            PBRMaterial(
+                                color=(245, 245, 246),
+                                alpha=1.0,
+                                roughness=0.3,
+                                f0=(0.56, 0.56, 0.56),
+                            )
+                        ],
+                        mappings={"iso": 0},
                     ),
                 ),
             ],
