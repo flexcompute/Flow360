@@ -400,7 +400,56 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
 
+<<<<<<< HEAD
 class SurfaceIntegralOutput(Flow360BaseModel):
+=======
+class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
+    """
+
+    :class:`TimeAverageIsosurfaceOutput` class for isosurface output settings.
+
+    Example
+    -------
+
+    Define the :class:`TimeAverageIsosurfaceOutput` of :code:`qcriterion` on two isosurfaces:
+
+    - :code:`TimeAverageIsosurface_T_0.1` is the :class:`Isosurface` with its temperature equals
+      to 1.5 non-dimensional temperature;
+    - :code:`TimeAverageIsosurface_p_0.5` is the :class:`Isosurface` with its pressure equals
+      to 0.5 non-dimensional pressure.
+
+    >>> fl.TimeAverageIsosurfaceOutput(
+    ...     isosurfaces=[
+    ...         fl.Isosurface(
+    ...             name="TimeAverageIsosurface_T_0.1",
+    ...             iso_value=0.1,
+    ...             field="T",
+    ...         ),
+    ...         fl.Isosurface(
+    ...             name="TimeAverageIsosurface_p_0.5",
+    ...             iso_value=0.5,
+    ...             field="p",
+    ...         ),
+    ...     ],
+    ...     output_fields=["qcriterion"],
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Time Average Isosurface output", description="Name of `TimeAverageIsosurfaceOutput`."
+    )
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging."
+    )
+    output_type: Literal["TimeAverageIsosurfaceOutput"] = pd.Field(
+        "TimeAverageIsosurfaceOutput", frozen=True
+    )
+
+
+class SurfaceIntegralOutput(_OutputBase):
+>>>>>>> cdce2c95 ([FL-939] Add TimeAverageIsosurfaceOutput (#1182))
     """
 
     :class:`SurfaceIntegralOutput` class for surface integral output settings.
@@ -905,6 +954,7 @@ OutputTypes = Annotated[
         SliceOutput,
         TimeAverageSliceOutput,
         IsosurfaceOutput,
+        TimeAverageIsosurfaceOutput,
         SurfaceIntegralOutput,
         ProbeOutput,
         SurfaceProbeOutput,
@@ -920,6 +970,7 @@ TimeAverageOutputTypes = (
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     TimeAverageSliceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
 )
