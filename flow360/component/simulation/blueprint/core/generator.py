@@ -121,7 +121,7 @@ def _call_model(expr, syntax, name_translator):
         args_str = ", ".join(args)
         if expr.kwargs:
             raise ValueError("Named arguments are not supported in C++ syntax")
-        return f"{expr.func_qualname}({args_str})"
+        return f"{name_translator(expr.func_qualname)}({args_str})"
 
     raise ValueError(
         f"Unsupported syntax type, available {[syntax.name for syntax in TargetSyntax]}"
