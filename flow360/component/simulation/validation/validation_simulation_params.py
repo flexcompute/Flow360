@@ -497,7 +497,7 @@ def _check_duplicate_isosurface_names(outputs):
                 isosurface_names.append(entity.name)
         if is_exact_instance(output, TimeAverageIsosurfaceOutput):
             for entity in output.entities.items:
-                if entity.name in isosurface_names:
+                if entity.name in isosurface_time_avg_names:
                     raise ValueError(
                         "Another time average isosurface with name: "
                         f"`{entity.name}` already exists, please rename the isosurface."
