@@ -19,7 +19,6 @@ from flow360.plugins.report.utils import (
     Delta,
     Expression,
     GetAttribute,
-    Grouper,
     Variable,
 )
 from flow360.plugins.report.uvf_shutter import (
@@ -49,7 +48,6 @@ __all__ = [
     "FrontLeftBottomCamera",
     "FrontLeftTopCamera",
     "GetAttribute",
-    "Grouper",
     "LeftCamera",
     "ManualLimit",
     "NonlinearResiduals",
