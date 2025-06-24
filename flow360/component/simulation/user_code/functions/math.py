@@ -84,6 +84,41 @@ def dot(left: VectorInputType, right: VectorInputType):
     return result
 
 
+def magnitude(value: VectorInputType):
+    """Customized Magnitude function to work with the `Expression` and Variables"""
+    # Taking advantage of unyt as much as possible:
+    if isinstance(value, unyt_array):
+        return np.linalg.norm(value)
+
+    result = value[0] ** 2
+    for i in range(1, len(value)):
+        result += value[i] ** 2
+
+    return result**0.5
+
+
+def subtract(left: VectorInputType, right: VectorInputType):
+    """Customized Subtract function to work with the `Expression` and Variables"""
+    # Taking advantage of unyt as much as possible:
+    if isinstance(left, unyt_array) and isinstance(right, unyt_array):
+        return left - right
+
+    _check_same_length(left, right, "subtract")
+
+    if len(left) == 3:
+        result = [
+            left[0] - right[0],
+            left[1] - right[1],
+            left[2] - right[2],
+        ]
+    elif len(left) == 2:
+        result = [left[0] - right[0], left[1] - right[1]]
+    else:
+        raise ValueError(f"Vector length must be 2 or 3, got {len(left)}.")
+
+    return _handle_expression_list(result)
+
+
 ########## Scalar functions ##########
 def ensure_scalar_input(func):
     """Decorator to check if the input is a scalar and raise an error if so."""
@@ -114,3 +149,122 @@ def sqrt(value: ScalarInputType):
     if isinstance(value, (unyt_quantity, Number)):
         return np.sqrt(value)
     return Expression(expression=f"math.sqrt({value})")
+
+
+# pylint: disable=redefined-builtin
+def pow(base: ScalarInputType, exponent: ScalarInputType):
+    # pylint: disable=fixme
+    # TODO: Needs to ensure the exponent is a float or a unyt_quantity/Expression with units "1"
+    """Customized Power function to work with the `Expression` and Variables"""
+    if isinstance(base, (unyt_quantity, Number)) and isinstance(exponent, Number):
+        return np.power(base, exponent)
+    return Expression(expression=f"math.pow({base}, {exponent})")
+
+
+@ensure_scalar_input
+def log(value: ScalarInputType):
+    """Customized Log function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.log(value)
+    return Expression(expression=f"math.log({value})")
+
+
+@ensure_scalar_input
+def exp(value: ScalarInputType):
+    """Customized Exponential function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.exp(value)
+    return Expression(expression=f"math.exp({value})")
+
+
+@ensure_scalar_input
+def sin(value: ScalarInputType):
+    """Customized Sine function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.sin(value)
+    return Expression(expression=f"math.sin({value})")
+
+
+@ensure_scalar_input
+def cos(value: ScalarInputType):
+    """Customized Cosine function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.cos(value)
+    return Expression(expression=f"math.cos({value})")
+
+
+@ensure_scalar_input
+def tan(value: ScalarInputType):
+    """Customized Tangent function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.tan(value)
+    return Expression(expression=f"math.tan({value})")
+
+
+@ensure_scalar_input
+def asin(value: ScalarInputType):
+    """Customized ArcSine function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.arcsin(value)
+    return Expression(expression=f"math.asin({value})")
+
+
+@ensure_scalar_input
+def acos(value: ScalarInputType):
+    """Customized ArcCosine function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.arccos(value)
+    return Expression(expression=f"math.acos({value})")
+
+
+@ensure_scalar_input
+def atan(value: ScalarInputType):
+    """Customized ArcTangent function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.arctan(value)
+    return Expression(expression=f"math.atan({value})")
+
+
+@ensure_scalar_input
+def min(value: ScalarInputType):
+    """Customized Min function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.min(value)
+    return Expression(expression=f"math.min({value})")
+
+
+@ensure_scalar_input
+def max(value: ScalarInputType):
+    """Customized Max function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.max(value)
+    return Expression(expression=f"math.max({value})")
+
+
+@ensure_scalar_input
+def abs(value: ScalarInputType):
+    """Customized Absolute function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.abs(value)
+    return Expression(expression=f"math.abs({value})")
+
+
+@ensure_scalar_input
+def ceil(value: ScalarInputType):
+    """Customized Ceil function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.ceil(value)
+    return Expression(expression=f"math.ceil({value})")
+
+
+@ensure_scalar_input
+def floor(value: ScalarInputType):
+    """Customized Floor function to work with the `Expression` and Variables"""
+    if isinstance(value, (unyt_quantity, Number)):
+        return np.floor(value)
+    return Expression(expression=f"math.floor({value})")
+
+
+def pi():
+    """Customized Pi function to work with the `Expression` and Variables"""
+    return np.pi

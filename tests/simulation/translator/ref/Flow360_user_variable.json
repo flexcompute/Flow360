@@ -48,15 +48,15 @@
     },
     "timeStepping": {
         "CFL": {
-            "type": "adaptive",
-            "min": 0.1,
+            "convergenceLimitingFactor": 1.0,
             "max": 1000000.0,
             "maxRelativeChange": 50.0,
-            "convergenceLimitingFactor": 1.0
+            "min": 0.1,
+            "type": "adaptive"
         },
-        "physicalSteps": 123,
-        "orderOfAccuracy": 2,
         "maxPseudoSteps": 20,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 123,
         "timeStepSize": 300.0
     },
     "turbulenceModelSolver": {
@@ -121,8 +121,24 @@
             "name": "my_temperature"
         },
         {
-            "name": "sqrt_res",
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;sqrt_res = (sqrt(___velocity[2]) * 14.142135623730951);"
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;sqrt_res = (sqrt(___velocity[2]) * 14.142135623730951);",
+            "name": "sqrt_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;abs_res = ((abs(___velocity[0]) * 3.141592653589793) * 200.0);",
+            "name": "abs_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;power_res = (pow(___velocity[1], 1.5) * 2828.42712474619);",
+            "name": "power_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;magnitude_res = (pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5) * 200.0);",
+            "name": "magnitude_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;subtract_res[0] = ((((1.0 * 1.0) / 200.0) - ___velocity[0]) * 200.0); subtract_res[1] = ((((2.0 * 1.0) / 200.0) - ___velocity[1]) * 200.0); subtract_res[2] = ((((3.0 * 1.0) / 200.0) - ___velocity[2]) * 200.0);",
+            "name": "subtract_res"
         }
     ],
     "usingLiquidAsMaterial": true,
@@ -139,7 +155,11 @@
             "cross_res",
             "dot_res",
             "my_temperature",
-            "sqrt_res"
+            "sqrt_res",
+            "abs_res",
+            "power_res",
+            "magnitude_res",
+            "subtract_res"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1

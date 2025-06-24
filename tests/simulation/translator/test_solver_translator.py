@@ -663,6 +663,12 @@ def test_param_with_user_variables():
         name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
     )
     sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
+    power_res = UserVariable(name="power_res", value=math.pow(solution.velocity[1], 1.5))
+    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * math.pi())
+    magnitude_res = UserVariable(name="magnitude_res", value=math.magnitude(solution.velocity))
+    subtract_res = UserVariable(
+        name="subtract_res", value=math.subtract(some_dependent_variable_a, solution.velocity)
+    )
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
@@ -692,6 +698,10 @@ def test_param_with_user_variables():
                         dot_res,
                         my_temperature,
                         sqrt_res,
+                        abs_res,
+                        power_res,
+                        magnitude_res,
+                        subtract_res,
                     ],
                 )
             ],
@@ -706,7 +716,5 @@ def test_param_with_user_variables():
 
     assert params_validated
     translate_and_compare(
-        params_validated,
-        mesh_unit=1 * u.m,
-        ref_json_file="Flow360_user_variable.json",
+        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=True
     )
