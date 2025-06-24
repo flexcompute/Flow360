@@ -55,7 +55,7 @@ def _import_solution(_) -> Any:
 
 
 WHITELISTED_CALLABLES = {
-    "flow360_math": {"prefix": "fn.", "callables": ["cross", "dot"], "evaluate": True},
+    "flow360_math": {"prefix": "fn.", "callables": [], "evaluate": True},
     "flow360.units": {"prefix": "u.", "callables": _unit_list(), "evaluate": True},
     "flow360.control": {
         "prefix": "control.",
