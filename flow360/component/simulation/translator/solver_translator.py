@@ -457,6 +457,8 @@ def translate_render_output(output_params: list, injection_function):
     for render in renders:
         camera = render.camera.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
         lighting = render.lighting.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+        environment = render.environment.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+        materials = render.materials.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
 
         translated_output = {
             "animationFrequency": render.frequency,
@@ -467,10 +469,25 @@ def translate_render_output(output_params: list, injection_function):
                 translation_func=translate_output_fields,
                 to_list=False,
                 entity_injection_func=injection_function,
+                entity_list_attribute_name="isosurfaces"
+            ),
+            "surfaces": translate_setting_and_apply_to_all_entities(
+                [render],
+                RenderOutput,
+                translation_func=translate_output_fields,
+                to_list=False,
+                entity_list_attribute_name="surfaces"
             ),
             "camera": remove_units_in_dict(camera),
-            "lighting": remove_units_in_dict(lighting)
+            "lighting": remove_units_in_dict(lighting),
+            "environment": remove_units_in_dict(environment),
+            "materials": remove_units_in_dict(materials),
         }
+
+        if render.transform:
+            transform = render.transform.model_dump(exclude_none=True, exclude_unset=True, by_alias=True)
+            translated_output["transform"] = remove_units_in_dict(transform)
+
         translated_outputs.append(translated_output)
 
     return translated_outputs

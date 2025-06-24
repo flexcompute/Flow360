@@ -107,16 +107,26 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray,
     PointArray2D,
     Slice,
+)
+from flow360.component.simulation.outputs.output_render_types import (
     RenderCameraConfig,
     RenderLightingConfig,
+    RenderEnvironmentConfig,
+    RenderMaterialConfig,
     AmbientLight,
     DirectionalLight,
     OrthographicProjection,
     PerspectiveProjection,
     StaticCamera,
-    OrbitCamera,
-    SplineCamera,
-    KeyframeCamera
+    AnimatedCamera,
+    Keyframe,
+    SolidBackground,
+    SkyboxBackground,
+    SkyboxTexture,
+    PBRMaterial,
+    FieldMaterial,
+    ColorKey,
+    Transform
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
