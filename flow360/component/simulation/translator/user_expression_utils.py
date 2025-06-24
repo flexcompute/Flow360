@@ -76,9 +76,11 @@ udf_prepending_code = {
     "solution.entropy": "double ___entropy;"
     + "___entropy = log(primitiveVars[4] / (1.0 / 1.4) / pow(primitiveVars[0], 1.4));",
     "solution.temperature": "double ___temperature;"
+    "___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
+    "solution.temperature_solid": "double ___temperature;"
     + f"double ___epsilon = {np.finfo(np.float64).eps};"
-    "___temperature = (primitiveVars[0] < ___epsilon && HeatEquation_solution != nullptr) ? "
-    "HeatEquation_solution[0] : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
+    "___temperature = (primitiveVars[0] < ___epsilon) ? "
+    "solutionHeatSolver : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));",
     "solution.vorticity": "double ___vorticity[3];"
     + "___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;"
     + "___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;"
