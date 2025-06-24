@@ -24,6 +24,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
@@ -471,6 +472,100 @@ def isosurface_output_config():
     )
 
 
+@pytest.fixture()
+def time_average_isosurface_output_config():
+    return (
+        [
+            TimeAverageIsosurfaceOutput(
+                entities=[
+                    Isosurface(
+                        name="isosurface 10",
+                        iso_value=0.0001,
+                        field="T",
+                    ),
+                    Isosurface(
+                        name="isosurface 14",
+                        iso_value=20.431,
+                        field="qcriterion",
+                    ),
+                    Isosurface(
+                        name="isosurface 15",
+                        iso_value=0.1,
+                        field="velocity_x",
+                    ),
+                    Isosurface(
+                        name="isosurface 16",
+                        iso_value=0.2,
+                        field="vorticity_z",
+                    ),
+                ],
+                output_fields=["Cp"],
+                frequency=332,
+                frequency_offset=222,
+                output_format="paraview",
+            ),
+            TimeAverageIsosurfaceOutput(
+                entities=[
+                    Isosurface(
+                        name="isosurface 01",
+                        iso_value=0.0001,
+                        field="nuHat",
+                    ),
+                    Isosurface(
+                        name="isosurface 02",
+                        iso_value=1e4,
+                        field="qcriterion",
+                    ),
+                ],
+                frequency=332,
+                frequency_offset=222,
+                output_format="paraview",
+                output_fields=["T", "primitiveVars"],
+            ),
+        ],
+        {
+            "animationFrequencyTimeAverage": 332,
+            "animationFrequencyTimeAverageOffset": 222,
+            "startAverageIntegrationStep": -1,
+            "computeTimeAverages": True,
+            "isoSurfaces": {
+                "isosurface 01": {
+                    "outputFields": ["T", "primitiveVars"],
+                    "surfaceField": "nuHat",
+                    "surfaceFieldMagnitude": 0.0001,
+                },
+                "isosurface 02": {
+                    "outputFields": ["T", "primitiveVars"],
+                    "surfaceField": "qcriterion",
+                    "surfaceFieldMagnitude": 10000.0,
+                },
+                "isosurface 10": {
+                    "outputFields": ["Cp"],
+                    "surfaceField": "T",
+                    "surfaceFieldMagnitude": 0.0001,
+                },
+                "isosurface 14": {
+                    "outputFields": ["Cp"],
+                    "surfaceField": "qcriterion",
+                    "surfaceFieldMagnitude": 20.431,
+                },
+                "isosurface 15": {
+                    "outputFields": ["Cp"],
+                    "surfaceField": "velocity_x",
+                    "surfaceFieldMagnitude": 0.1,
+                },
+                "isosurface 16": {
+                    "outputFields": ["Cp"],
+                    "surfaceField": "vorticity_z",
+                    "surfaceFieldMagnitude": 0.2,
+                },
+            },
+            "outputFields": [],
+            "outputFormat": "paraview",
+        },
+    )
+
+
 def test_isosurface_output(
     isosurface_output_config,
 ):
@@ -482,6 +577,22 @@ def test_isosurface_output(
 
     assert sorted(isosurface_output_config[1].items()) == sorted(
         translated["isoSurfaceOutput"].items()
+    )
+
+
+def test_time_average_isosurface_output(
+    time_average_isosurface_output_config,
+):
+    with SI_unit_system:
+        param = SimulationParams(
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
+            outputs=time_average_isosurface_output_config[0],
+        )
+    translated = {"boundaries": {}}
+    translated = translate_output(param, translated)
+
+    assert sorted(time_average_isosurface_output_config[1].items()) == sorted(
+        translated["timeAverageIsoSurfaceOutput"].items()
     )
 
 

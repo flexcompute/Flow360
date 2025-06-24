@@ -62,6 +62,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
@@ -438,6 +439,27 @@ def translate_isosurface_output(
     return translated_output
 
 
+def translate_time_average_isosurface_output(
+    output_params: list,
+    injection_function,
+):
+    """Translate time average isosurface output settings."""
+    translated_output = init_output_base(
+        output_params,
+        TimeAverageIsosurfaceOutput,
+        has_average_capability=True,
+        is_average=True,
+    )
+    translated_output["isoSurfaces"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        TimeAverageIsosurfaceOutput,
+        translation_func=translate_output_fields,
+        to_list=False,
+        entity_injection_func=injection_function,
+    )
+    return translated_output
+
+
 def translate_surface_slice_output(
     output_params: list,
     output_class: Union[SurfaceSliceOutput],
@@ -633,6 +655,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step4: Get translated["isoSurfaceOutput"]
     if has_instance_in_list(outputs, IsosurfaceOutput):
         translated["isoSurfaceOutput"] = translate_isosurface_output(
+            outputs, inject_isosurface_info
+        )
+    if has_instance_in_list(outputs, TimeAverageIsosurfaceOutput):
+        translated["timeAverageIsoSurfaceOutput"] = translate_time_average_isosurface_output(
             outputs, inject_isosurface_info
         )
 
