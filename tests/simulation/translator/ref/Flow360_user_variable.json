@@ -113,7 +113,7 @@
             "name": "my_var"
         },
         {
-            "expression": "double ___temperature;double ___epsilon = 2.220446049250313e-16;___temperature = (primitiveVars[0] < ___epsilon && HeatEquation_solution != nullptr) ? HeatEquation_solution[0] : primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
+            "expression": "double ___temperature;___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
             "name": "my_temperature"
         }
     ],

@@ -34,6 +34,7 @@ from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
     Fluid,
+    Solid,
     VolumeModelTypes,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -661,6 +662,15 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams is steady state
         """
         return isinstance(self.time_stepping, Steady)
+
+    def has_solid(self):
+        """
+        returns True when SimulationParams has Solid model
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, Solid) for item in self.models)
 
     def has_actuator_disks(self):
         """

@@ -5,7 +5,7 @@ import unittest
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.material import Water
+from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -47,7 +47,11 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import ReferenceGeometry, Surface
+from flow360.component.simulation.primitives import (
+    GenericVolume,
+    ReferenceGeometry,
+    Surface,
+)
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
@@ -113,7 +117,12 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 assertions = unittest.TestCase("__init__")
 
 from flow360.component.simulation.framework.updater_utils import compare_values
-from flow360.component.simulation.models.volume_models import AngleExpression, Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngleExpression,
+    HeatEquationInitialCondition,
+    Rotation,
+    Solid,
+)
 from flow360.component.simulation.primitives import GenericVolume
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 
@@ -703,4 +712,41 @@ def test_param_with_user_variables():
         params_validated,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_user_variable.json",
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            models=[
+                Solid(
+                    volumes=[GenericVolume(name="CHTSolid")],
+                    material=aluminum,
+                    volumetric_heat_source="0",
+                    initial_condition=HeatEquationInitialCondition(temperature="10"),
+                ),
+            ],
+            outputs=[
+                VolumeOutput(
+                    name="output_heat",
+                    output_fields=[
+                        my_temperature,
+                    ],
+                )
+            ],
+            time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
+        )
+
+    params_validated, _, _ = validate_model(
+        params_as_dict=param.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+    )
+
+    assert params_validated
+    translate_and_compare(
+        params_validated,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_user_variable_heat.json",
     )
