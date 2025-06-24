@@ -662,7 +662,7 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams is steady state
         """
         return isinstance(self.time_stepping, Steady)
-    
+
     def has_solid(self):
         """
         returns True when SimulationParams has Solid model
