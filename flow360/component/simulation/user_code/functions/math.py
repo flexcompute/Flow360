@@ -190,17 +190,7 @@ def add(left: VectorInputType, right: VectorInputType):
     _check_same_length(left, right, "add")
     _check_same_dimensionality(left, right, "add")
 
-    if len(left) == 3:
-        result = [
-            left[0] + right[0],
-            left[1] + right[1],
-            left[2] + right[2],
-        ]
-    elif len(left) == 2:
-        result = [left[0] + right[0], left[1] + right[1]]
-    else:
-        raise ValueError(f"Vector length must be 2 or 3, got {len(left)}.")
-
+    result = [left[i] + right[i] for i in range(len(left))]
     return _handle_expression_list(result)
 
 
@@ -213,17 +203,7 @@ def subtract(left: VectorInputType, right: VectorInputType):
     _check_same_length(left, right, "subtract")
     _check_same_dimensionality(left, right, "subtract")
 
-    if len(left) == 3:
-        result = [
-            left[0] - right[0],
-            left[1] - right[1],
-            left[2] - right[2],
-        ]
-    elif len(left) == 2:
-        result = [left[0] - right[0], left[1] - right[1]]
-    else:
-        raise ValueError(f"Vector length must be 2 or 3, got {len(left)}.")
-
+    result = [left[i] - right[i] for i in range(len(left))]
     return _handle_expression_list(result)
 
 
@@ -371,8 +351,15 @@ def atan(value: ScalarInputType):
 def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Min function to work with the `Expression` and Variables"""
     _check_same_dimensionality(value1=value1, value2=value2, operation_name="min")
+    print(type(value1), type(value2))
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.minimum(value1, value2)
+    if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
+        print(f"math.min({value1},{value2.value} * u.{value2.units})")
+        return Expression(expression=f"math.min({value1},{value2.value} * u.{value2.units})")
+    if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
+        print(f"math.min({value1.value} * u.{value1.units},{value2})")
+        return Expression(expression=f"math.min({value1.value} * u.{value1.units},{value2})")
     return Expression(expression=f"math.min({value1},{value2})")
 
 
@@ -382,6 +369,12 @@ def max(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=re
     _check_same_dimensionality(value1=value1, value2=value2, operation_name="max")
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.maximum(value1, value2)
+    if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
+        print(f"math.max({value1},{value2.value} * u.{value2.units})")
+        return Expression(expression=f"math.max({value1},{value2.value} * u.{value2.units})")
+    if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
+        print(f"math.max({value1.value} * u.{value1.units},{value2})")
+        return Expression(expression=f"math.max({value1.value} * u.{value1.units},{value2})")
     return Expression(expression=f"math.max({value1},{value2})")
 
 

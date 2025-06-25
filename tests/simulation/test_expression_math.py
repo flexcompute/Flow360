@@ -1467,6 +1467,71 @@ def test_max_different_dimensionality_errors():
 
 
 # ---------------------------#
+# Min/Max edge cases
+# ---------------------------#
+def test_min_max_edge_cases():
+    """Test min and max functions with various edge cases."""
+
+    # Test with empty list input (should raise IndexError from _get_input_value_dimensionality)
+    with pytest.raises(IndexError, match="list index out of range"):
+        math.min([], [])
+
+    with pytest.raises(IndexError, match="list index out of range"):
+        math.max([], [])
+
+    # Test with mixed scalar/expression/variable inputs
+    x = UserVariable(name="x", value=10)
+    y = UserVariable(name="y", value=5 * u.m)
+
+    # Scalar and UserVariable
+    result = math.min(15, x)
+    assert isinstance(result, Expression)
+    assert str(result) == "math.min(15, x)"
+    assert result.evaluate() == 10
+
+    result = math.max(x, 15)
+    assert isinstance(result, Expression)
+    assert str(result) == "math.max(x, 15)"
+    assert result.evaluate() == 15
+
+    result = math.min(15 * u.m, y)
+    assert isinstance(result, Expression)
+    assert str(result) == "math.min(15 * u.m, y)"
+    assert result.evaluate() == 5 * u.m
+
+    result = math.max(y, 15 * u.m)
+    assert isinstance(result, Expression)
+    assert str(result) == "math.max(y, 15 * u.m)"
+    assert result.evaluate() == 15 * u.m
+
+    # Expression and scalar
+    result = math.min(Expression(expression="x + 5"), 12)
+    assert isinstance(result, Expression)
+    assert str(result) == "math.min(x + 5, 12)"
+    assert result.evaluate() == 12
+
+    result = math.max(Expression(expression="y * 2"), 8 * u.m)
+    assert isinstance(result, Expression)
+    assert str(result) == "math.max(y * 2, 8 * u.m)"
+    assert result.evaluate() == 10 * u.m
+
+    # Test with NaN/Inf inputs (should behave like numpy)
+    assert np.isnan(math.min(np.nan, 5))
+    assert np.isnan(math.max(np.nan, 5))
+    assert math.min(np.inf, 5) == 5
+    assert math.max(np.inf, 5) == np.inf
+    assert math.min(-np.inf, 5) == -np.inf
+    assert math.max(-np.inf, 5) == 5
+
+    assert np.isnan(math.min(np.nan * u.m, 5 * u.m))
+    assert np.isnan(math.max(np.nan * u.m, 5 * u.m))
+    assert math.min(np.inf * u.m, 5 * u.m) == 5 * u.m
+    assert math.max(np.inf * u.m, 5 * u.m) == np.inf * u.m
+    assert math.min(-np.inf * u.m, 5 * u.m) == -np.inf * u.m
+    assert math.max(-np.inf * u.m, 5 * u.m) == 5 * u.m
+
+
+# ---------------------------#
 # Absolute value function
 # ---------------------------#
 def test_abs_scalar_input():
