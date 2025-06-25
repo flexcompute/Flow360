@@ -17,10 +17,12 @@ from flow360.component.simulation.outputs.outputs import (
     ProbeOutput,
     SliceOutput,
     SurfaceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageOutputTypes,
     VolumeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -477,6 +479,7 @@ def _check_duplicate_isosurface_names(outputs):
     if outputs is None:
         return outputs
     isosurface_names = []
+    isosurface_time_avg_names = []
     for output in outputs:
         if isinstance(output, IsosurfaceOutput):
             for entity in output.entities.items:
@@ -485,9 +488,19 @@ def _check_duplicate_isosurface_names(outputs):
                         "The name `qcriterion` is reserved for the autovis isosurface from solver, "
                         "please rename the isosurface."
                     )
+        if is_exact_instance(output, IsosurfaceOutput):
+            for entity in output.entities.items:
                 if entity.name in isosurface_names:
                     raise ValueError(
                         f"Another isosurface with name: `{entity.name}` already exists, please rename the isosurface."
                     )
                 isosurface_names.append(entity.name)
+        if is_exact_instance(output, TimeAverageIsosurfaceOutput):
+            for entity in output.entities.items:
+                if entity.name in isosurface_time_avg_names:
+                    raise ValueError(
+                        "Another time average isosurface with name: "
+                        f"`{entity.name}` already exists, please rename the isosurface."
+                    )
+                isosurface_time_avg_names.append(entity.name)
     return outputs

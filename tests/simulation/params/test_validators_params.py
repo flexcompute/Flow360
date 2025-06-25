@@ -64,6 +64,7 @@ from flow360.component.simulation.outputs.outputs import (
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageSliceOutput,
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
@@ -1879,5 +1880,15 @@ def test_check_duplicate_isosurface_names():
             outputs=[
                 IsosurfaceOutput(isosurfaces=[isosurface1], output_fields=["Mach"]),
                 IsosurfaceOutput(isosurfaces=[isosurface2], output_fields=["pressure"]),
+            ],
+        )
+
+    message = f"Another time average isosurface with name: `{isosurface2.name}` already exists, please rename the isosurface."
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        SimulationParams(
+            time_stepping=Unsteady(steps=12, step_size=0.1 * u.s),
+            outputs=[
+                TimeAverageIsosurfaceOutput(isosurfaces=[isosurface1], output_fields=["Mach"]),
+                TimeAverageIsosurfaceOutput(isosurfaces=[isosurface2], output_fields=["pressure"]),
             ],
         )
