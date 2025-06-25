@@ -988,10 +988,8 @@ def test_overwriting_project_variables():
     assert a.value == 2
 
 
-def test_unique_dimensionality():
-    with pytest.raises(
-        ValueError, match="All items in the list must have the same dimensionality."
-    ):
+def test_unique_dimensions():
+    with pytest.raises(ValueError, match="All items in the list must have the same dimensions."):
         UserVariable(name="a", value=[1 * u.m, 1 * u.s])
 
     with pytest.raises(
@@ -1029,11 +1027,11 @@ def test_invalid_names_raise(bad_name, expected_msg):
         UserVariable(name=bad_name, value=0)
 
 
-def test_output_units_dimensionality():
+def test_output_units_dimensions():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Output units 'ms' have different dimensionality (time) than the expression (length)."
+            "Output units 'ms' have different dimensions (time) than the expression (length)."
         ),
     ):
         a = UserVariable(name="a", value="1 * u.m")

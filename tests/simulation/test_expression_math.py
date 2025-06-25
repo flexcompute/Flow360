@@ -311,7 +311,7 @@ def test_add_vector():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values ([1 2 3] s | y) must have the same dimensinality to perform add operation."
+            "Input values ([1 2 3] s | y) must have the same dimensions to perform add operation."
         ),
     ):
         math.add([1, 2, 3] * u.s, y)
@@ -368,10 +368,115 @@ def test_subtract_vector():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values ([1 2 3] s | y) must have the same dimensinality to perform subtract operation."
+            "Input values ([1 2 3] s | y) must have the same dimensions to perform subtract operation."
         ),
     ):
         math.subtract([1, 2, 3] * u.s, y)
+
+
+# ---------------------------#
+# Add and Subtract edge cases
+# ---------------------------#
+def test_add_subtract_edge_cases():
+    """Test add and subtract functions with various edge cases."""
+
+    # Test with empty lists
+    assert math.add([], []) == []
+    assert math.subtract([], []) == []
+
+    # Test with NaN/Inf values in unyt_arrays
+    assert np.array_equal(
+        math.add([np.nan, 1.0] * u.m, [2.0, np.inf] * u.m), [np.nan, np.inf] * u.m, equal_nan=True
+    )
+    assert np.array_equal(
+        math.subtract([np.nan, 1.0] * u.m, [2.0, np.inf] * u.m),
+        [np.nan, -np.inf] * u.m,
+        equal_nan=True,
+    )
+    assert np.array_equal(
+        math.add([np.inf, 1.0] * u.m, [2.0, -np.inf] * u.m), [np.inf, -np.inf] * u.m, equal_nan=True
+    )
+    assert np.array_equal(
+        math.subtract([np.inf, 1.0] * u.m, [2.0, -np.inf] * u.m),
+        [np.inf, np.inf] * u.m,
+        equal_nan=True,
+    )
+
+    # Test with NaN/Inf values in plain lists (will be handled as numbers)
+    # Note: np.isnan on a list returns a boolean array, so we check np.all(np.isnan(...))
+    add_result_nan = math.add([np.nan, 1.0], [2.0, 3.0])
+    assert np.array_equal(add_result_nan, [np.nan, 4.0], equal_nan=True)
+    sub_result_nan = math.subtract([np.nan, 1.0], [2.0, 3.0])
+    assert np.array_equal(sub_result_nan, [np.nan, -2.0], equal_nan=True)
+
+    assert np.all(math.add([np.inf, 1.0], [2.0, 3.0]) == [np.inf, 4.0])
+    assert np.all(math.subtract([np.inf, 1.0], [2.0, 3.0]) == [np.inf, -2.0])
+
+    # Test with mixed Expression/Variable and scalar/unyt_quantity within vector elements
+    x_var = UserVariable(name="x_var", value=10 * u.m)
+    y_unyt = 20 * u.m
+    expr_val = Expression(expression="x_var + 5 * u.m")  # Evaluates to 15
+
+    vec1 = [x_var, y_unyt, expr_val]
+    vec2 = [5 * u.m, 10 * u.m, 3 * u.m]
+
+    # Add
+    result_add = math.add(vec1, vec2)
+    assert isinstance(result_add, Expression)
+    assert str(result_add) == "[x_var + 5 * u.m, 30 * u.m, x_var + 5 * u.m + 3 * u.m]"
+    evaluated_add = result_add.evaluate()
+    assert isinstance(evaluated_add, list)
+    assert len(evaluated_add) == 3
+    assert evaluated_add[0] == 15 * u.m
+    assert evaluated_add[1] == 30 * u.m
+    assert evaluated_add[2] == 18 * u.m
+
+    # Subtract
+    result_sub = math.subtract(vec1, vec2)
+    assert isinstance(result_sub, Expression)
+    assert str(result_sub) == "[x_var - 5 * u.m, 10 * u.m, x_var + 5 * u.m - 3 * u.m]"
+    evaluated_sub = result_sub.evaluate()
+    assert isinstance(evaluated_sub, list)
+    assert len(evaluated_sub) == 3
+    assert evaluated_sub[0] == 5 * u.m
+    assert evaluated_sub[1] == 10 * u.m
+    assert evaluated_sub[2] == 12 * u.m
+
+    # Test with solution variables mixed with other types in vector elements
+    sol_vec = [solution.velocity[0], solution.velocity[1], solution.velocity[2]]
+    num_vec = [1 * u.m / u.s, 2 * u.m / u.s, 3 * u.m / u.s]
+
+    result_add_sol = math.add(sol_vec, num_vec)
+    assert isinstance(result_add_sol, Expression)
+    assert (
+        str(result_add_sol)
+        == "[solution.velocity[0] + 1 * u.m / u.s, solution.velocity[1] + 2 * u.m / u.s, solution.velocity[2] + 3 * u.m / u.s]"
+    )
+
+    result_sub_sol = math.subtract(sol_vec, num_vec)
+    assert isinstance(result_sub_sol, Expression)
+    assert (
+        str(result_sub_sol)
+        == "[solution.velocity[0] - 1 * u.m / u.s, solution.velocity[1] - 2 * u.m / u.s, solution.velocity[2] - 3 * u.m / u.s]"
+    )
+
+    # Test with mixed dimensions within a list, but consistent across inputs (should pass _check_same_dimensions on first element)
+    list_mixed_units_1 = [1, 2 * u.m]
+    list_mixed_units_2 = [3, 4 * u.m]
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Each item in the input value ([1, unyt_quantity(2, 'm')]) must have the same dimensions to perform add operation."
+        ),
+    ):
+        math.add(list_mixed_units_1, list_mixed_units_2)
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Each item in the input value ([3, unyt_quantity(4, 'm')]) must have the same dimensions to perform subtract operation"
+        ),
+    ):
+        math.subtract(list_mixed_units_2, list_mixed_units_1)
 
 
 # ---------------------------#
@@ -908,11 +1013,11 @@ def test_exp_edge_cases():
     assert math.exp(np.inf * u.dimensionless) == np.inf * u.dimensionless
     assert math.exp(-np.inf * u.dimensionless) == 0.0 * u.dimensionless
 
-    # Test with incorrect dimensionality (should raise ValueError from _check_operation_dimensionality)
+    # Test with incorrect dimensions (should raise ValueError from _check_operation_dimensions)
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (5 m) must be 1 to perform exp operation."
+            "The dimensions of the input value (5 m) must be 1 to perform exp operation."
         ),
     ):
         math.exp(5 * u.m)
@@ -921,7 +1026,7 @@ def test_exp_edge_cases():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_length) must be 1 to perform exp operation."
+            "The dimensions of the input value (x_length) must be 1 to perform exp operation."
         ),
     ):
         math.exp(x_length)
@@ -930,7 +1035,7 @@ def test_exp_edge_cases():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (7 * u.m) must be 1 to perform exp operation."
+            "The dimensions of the input value (7 * u.m) must be 1 to perform exp operation."
         ),
     ):
         math.exp(expr_length)
@@ -939,7 +1044,7 @@ def test_exp_edge_cases():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (solution.velocity[0]) must be 1 to perform exp operation."
+            "The dimensions of the input value (solution.velocity[0]) must be 1 to perform exp operation."
         ),
     ):
         math.exp(solution.velocity[0])
@@ -988,14 +1093,14 @@ def test_sin_non_scalar_input_errors():
         math.sin(x)
 
 
-def test_sin_dimensionality_errors():
-    """Test sin function raise errors for incorrect dimensionality."""
+def test_sin_dimensions_errors():
+    """Test sin function raise errors for incorrect dimensions."""
 
-    # Test sin with incorrect dimensionality
+    # Test sin with incorrect dimensions
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (5 m) must be one of ((angle), 1) to perform sin operation."
+            "The dimensions of the input value (5 m) must be one of ((angle), 1) to perform sin operation."
         ),
     ):
         math.sin(5 * u.m)
@@ -1003,7 +1108,7 @@ def test_sin_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_length) must be one of ((angle), 1) to perform sin operation."
+            "The dimensions of the input value (x_length) must be one of ((angle), 1) to perform sin operation."
         ),
     ):
         math.sin(x_length)
@@ -1011,14 +1116,14 @@ def test_sin_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (7 * u.m) must be one of ((angle), 1) to perform sin operation."
+            "The dimensions of the input value (7 * u.m) must be one of ((angle), 1) to perform sin operation."
         ),
     ):
         math.sin(expr_length)
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (solution.Cp * math.sqrt(solution.mut)) must be one of ((angle), 1) to perform sin operation."
+            "The dimensions of the input value (solution.Cp * math.sqrt(solution.mut)) must be one of ((angle), 1) to perform sin operation."
         ),
     ):
         math.sin(solution.Cp * math.sqrt(solution.mut))
@@ -1064,14 +1169,14 @@ def test_cos_non_scalar_input_errors():
         math.cos(x)
 
 
-def test_cos_dimensionality_errors():
-    """Test cos function raise errors for incorrect dimensionality."""
+def test_cos_dimensions_errors():
+    """Test cos function raise errors for incorrect dimensions."""
 
-    # Test cos with incorrect dimensionality
+    # Test cos with incorrect dimensions
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (10 s) must be one of ((angle), 1) to perform cos operation."
+            "The dimensions of the input value (10 s) must be one of ((angle), 1) to perform cos operation."
         ),
     ):
         math.cos(10 * u.s)
@@ -1079,7 +1184,7 @@ def test_cos_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_time) must be one of ((angle), 1) to perform cos operation."
+            "The dimensions of the input value (x_time) must be one of ((angle), 1) to perform cos operation."
         ),
     ):
         math.cos(x_time)
@@ -1087,14 +1192,14 @@ def test_cos_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (10 * u.s) must be one of ((angle), 1) to perform cos operation."
+            "The dimensions of the input value (10 * u.s) must be one of ((angle), 1) to perform cos operation."
         ),
     ):
         math.cos(expr_time)
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (solution.Cf * math.sqrt(solution.velocity[0])) must be one of ((angle), 1) to perform cos operation."
+            "The dimensions of the input value (solution.Cf * math.sqrt(solution.velocity[0])) must be one of ((angle), 1) to perform cos operation."
         ),
     ):
         math.cos(solution.Cf * math.sqrt(solution.velocity[0]))
@@ -1139,12 +1244,12 @@ def test_tan_non_scalar_input_errors():
         math.tan(x)
 
 
-def test_tan_dimensionality_errors():
-    """Test tan function raise errors for incorrect dimensionality."""
+def test_tan_dimensions_errors():
+    """Test tan function raise errors for incorrect dimensions."""
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 kg) must be one of ((angle), 1) to perform tan operation."
+            "The dimensions of the input value (2 kg) must be one of ((angle), 1) to perform tan operation."
         ),
     ):
         math.tan(2 * u.kg)
@@ -1152,7 +1257,7 @@ def test_tan_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_mass) must be one of ((angle), 1) to perform tan operation."
+            "The dimensions of the input value (x_mass) must be one of ((angle), 1) to perform tan operation."
         ),
     ):
         math.tan(x_mass)
@@ -1160,14 +1265,14 @@ def test_tan_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 * u.kg) must be one of ((angle), 1) to perform tan operation."
+            "The dimensions of the input value (2 * u.kg) must be one of ((angle), 1) to perform tan operation."
         ),
     ):
         math.tan(expr_mass)
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (solution.Cf * math.sqrt(solution.entropy)) must be one of ((angle), 1) to perform cos operation."
+            "The dimensions of the input value (solution.Cf * math.sqrt(solution.entropy)) must be one of ((angle), 1) to perform cos operation."
         ),
     ):
         math.cos(solution.Cf * math.sqrt(solution.entropy))
@@ -1216,12 +1321,12 @@ def test_asin_non_scalar_input_errors():
         math.asin(x)
 
 
-def test_asin_dimensionality_errors():
-    """Test asin function raise errors for incorrect dimensionality."""
+def test_asin_dimensions_errors():
+    """Test asin function raise errors for incorrect dimensions."""
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 K) must be 1 to perform asin operation."
+            "The dimensions of the input value (2 K) must be 1 to perform asin operation."
         ),
     ):
         math.asin(2 * u.K)
@@ -1229,7 +1334,7 @@ def test_asin_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_temperature) must be 1 to perform asin operation."
+            "The dimensions of the input value (x_temperature) must be 1 to perform asin operation."
         ),
     ):
         math.asin(x_temperature)
@@ -1237,7 +1342,7 @@ def test_asin_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 * u.K) must be 1 to perform asin operation."
+            "The dimensions of the input value (2 * u.K) must be 1 to perform asin operation."
         ),
     ):
         math.asin(expr_temperature)
@@ -1283,12 +1388,12 @@ def test_acos_non_scalar_input_errors():
         math.acos(x)
 
 
-def test_acos_dimensionality_errors():
-    """Test tan function raise errors for incorrect dimensionality."""
+def test_acos_dimensions_errors():
+    """Test tan function raise errors for incorrect dimensions."""
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 K) must be 1 to perform acos operation."
+            "The dimensions of the input value (2 K) must be 1 to perform acos operation."
         ),
     ):
         math.acos(2 * u.K)
@@ -1296,7 +1401,7 @@ def test_acos_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_temperature) must be 1 to perform acos operation."
+            "The dimensions of the input value (x_temperature) must be 1 to perform acos operation."
         ),
     ):
         math.acos(x_temperature)
@@ -1304,7 +1409,7 @@ def test_acos_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 * u.K) must be 1 to perform acos operation."
+            "The dimensions of the input value (2 * u.K) must be 1 to perform acos operation."
         ),
     ):
         math.acos(expr_temperature)
@@ -1350,12 +1455,12 @@ def test_atan_non_scalar_input_errors():
         math.atan(x)
 
 
-def test_atan_dimensionality_errors():
-    """Test tan function raise errors for incorrect dimensionality."""
+def test_atan_dimensions_errors():
+    """Test tan function raise errors for incorrect dimensions."""
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 K) must be 1 to perform atan operation."
+            "The dimensions of the input value (2 K) must be 1 to perform atan operation."
         ),
     ):
         math.atan(2 * u.K)
@@ -1363,7 +1468,7 @@ def test_atan_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (x_temperature) must be 1 to perform atan operation."
+            "The dimensions of the input value (x_temperature) must be 1 to perform atan operation."
         ),
     ):
         math.atan(x_temperature)
@@ -1371,10 +1476,87 @@ def test_atan_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The dimensionality of the input value (2 * u.K) must be 1 to perform atan operation."
+            "The dimensions of the input value (2 * u.K) must be 1 to perform atan operation."
         ),
     ):
         math.atan(expr_temperature)
+
+
+def test_trig_functions_edge_cases():
+    """Test sin, cos, and tan functions with NaN/Inf inputs."""
+
+    # Test with NaN/Inf inputs (should behave like numpy)
+    assert np.isnan(math.sin(np.nan))
+    assert np.isnan(math.cos(np.nan))
+    assert np.isnan(math.tan(np.nan))
+
+    # For inf, numpy trig functions raise a warning and return nan
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in sin"):
+        assert np.isnan(math.sin(np.inf))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in cos"):
+        assert np.isnan(math.cos(np.inf))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in tan"):
+        assert np.isnan(math.tan(np.inf))
+
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in sin"):
+        assert np.isnan(math.sin(-np.inf))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in cos"):
+        assert np.isnan(math.cos(-np.inf))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in tan"):
+        assert np.isnan(math.tan(-np.inf))
+
+    # Test with unyt quantities
+    assert np.isnan(math.sin(np.nan * u.rad))
+    assert np.isnan(math.cos(np.nan * u.rad))
+    assert np.isnan(math.tan(np.nan * u.rad))
+
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in sin"):
+        assert np.isnan(math.sin(np.inf * u.rad))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in cos"):
+        assert np.isnan(math.cos(np.inf * u.rad))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in tan"):
+        assert np.isnan(math.tan(np.inf * u.rad))
+
+
+def test_inverse_trig_functions_edge_cases():
+    """Test asin, acos, and atan functions with NaN/Inf and out-of-domain inputs."""
+
+    # Test with NaN/Inf inputs (should behave like numpy)
+    assert np.isnan(math.asin(np.nan))
+    assert np.isnan(math.acos(np.nan))
+    assert np.isnan(math.atan(np.nan))
+
+    assert math.atan(np.inf) == pytest.approx(np.pi / 2)
+    assert math.atan(-np.inf) == pytest.approx(-np.pi / 2)
+
+    # For asin/acos, inf is outside the domain [-1, 1]
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arcsin"):
+        assert np.isnan(math.asin(np.inf))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arccos"):
+        assert np.isnan(math.acos(np.inf))
+
+    # Test with values outside the domain [-1, 1] for asin and acos
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arcsin"):
+        assert np.isnan(math.asin(2.0))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arcsin"):
+        assert np.isnan(math.asin(-2.0))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arccos"):
+        assert np.isnan(math.acos(2.0))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arccos"):
+        assert np.isnan(math.acos(-2.0))
+
+    # Test with unyt quantities
+    assert np.isnan(math.asin(np.nan * u.dimensionless))
+    assert np.isnan(math.acos(np.nan * u.dimensionless))
+    assert np.isnan(math.atan(np.nan * u.dimensionless))
+
+    assert math.atan(np.inf * u.dimensionless) == pytest.approx(np.pi / 2)
+    assert math.atan(-np.inf * u.dimensionless) == pytest.approx(-np.pi / 2)
+
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arcsin"):
+        assert np.isnan(math.asin(2.0 * u.dimensionless))
+    with pytest.warns(RuntimeWarning, match="invalid value encountered in arccos"):
+        assert np.isnan(math.acos(2.0 * u.dimensionless))
 
 
 # ---------------------------#
@@ -1422,14 +1604,14 @@ def test_min_non_scalar_input_errors():
         math.min(x, y)
 
 
-def test_min_different_dimensionality_errors():
+def test_min_different_dimensions_errors():
     """Test min function raises errors for non-scalar inputs."""
 
     # Test with lists/arrays
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values (1 | 4 s) must have the same dimensinality to perform min operation."
+            "Input values (1 | 4 s) must have the same dimensions to perform min operation."
         ),
     ):
         math.min(1, 4 * u.s)
@@ -1438,7 +1620,7 @@ def test_min_different_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values (1 m | 4 K) must have the same dimensinality to perform min operation."
+            "Input values (1 m | 4 K) must have the same dimensions to perform min operation."
         ),
     ):
         math.min(u.unyt_quantity(1, u.m), u.unyt_quantity(4, u.K))
@@ -1449,7 +1631,7 @@ def test_min_different_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values (x | y) must have the same dimensinality to perform min operation."
+            "Input values (x | y) must have the same dimensions to perform min operation."
         ),
     ):
         math.min(x, y)
@@ -1497,14 +1679,14 @@ def test_max_non_scalar_input_errors():
         math.max(x, y)
 
 
-def test_max_different_dimensionality_errors():
+def test_max_different_dimensions_errors():
     """Test max function raises errors for non-scalar inputs."""
 
     # Test with lists/arrays
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values (1 | 4 s) must have the same dimensinality to perform max operation."
+            "Input values (1 | 4 s) must have the same dimensions to perform max operation."
         ),
     ):
         math.max(1, 4 * u.s)
@@ -1513,7 +1695,7 @@ def test_max_different_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values (1 m | 4 K) must have the same dimensinality to perform max operation."
+            "Input values (1 m | 4 K) must have the same dimensions to perform max operation."
         ),
     ):
         math.max(u.unyt_quantity(1, u.m), u.unyt_quantity(4, u.K))
@@ -1524,7 +1706,7 @@ def test_max_different_dimensionality_errors():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input values (x | y) must have the same dimensinality to perform max operation."
+            "Input values (x | y) must have the same dimensions to perform max operation."
         ),
     ):
         math.max(x, y)
@@ -1536,7 +1718,7 @@ def test_max_different_dimensionality_errors():
 def test_min_max_edge_cases():
     """Test min and max functions with various edge cases."""
 
-    # Test with empty list input (should raise IndexError from _get_input_value_dimensionality)
+    # Test with empty list input (should raise IndexError from _get_input_value_dimensions)
     with pytest.raises(ValueError, match=re.escape("Scalar function (min) on [] not supported.")):
         math.min([], [])
 
@@ -1716,6 +1898,55 @@ def test_floor_non_scalar_input_errors():
     # Test with unyt arrays
     with pytest.raises(ValueError, match="Scalar function"):
         math.floor(u.unyt_array([1, 2, 3], u.m))
+
+    # Test with variables containing arrays
+    x = UserVariable(name="x", value=[1, 2, 3] * u.m)
+    with pytest.raises(ValueError, match="Scalar function"):
+        math.floor(x)
+
+
+def test_ceil_floor_edge_cases():
+    """Test ceil and floor functions with various edge cases."""
+
+    # Test with empty list input (should raise ValueError from ensure_scalar_input)
+    with pytest.raises(ValueError, match=re.escape("Scalar function (ceil) on [] not supported.")):
+        math.ceil([])
+
+    with pytest.raises(ValueError, match=re.escape("Scalar function (floor) on [] not supported.")):
+        math.floor([])
+
+    # Test with None (should raise ValueError from ensure_scalar_input)
+    with pytest.raises(
+        ValueError, match=re.escape("Scalar function (ceil) on None not supported.")
+    ):
+        math.ceil(None)
+
+    with pytest.raises(
+        ValueError, match=re.escape("Scalar function (floor) on None not supported.")
+    ):
+        math.floor(None)
+
+    # Test with string (should raise ValueError from ensure_scalar_input)
+    with pytest.raises(
+        ValueError, match=re.escape("Scalar function (ceil) on not a number not supported.")
+    ):
+        math.ceil("not a number")
+
+    with pytest.raises(
+        ValueError, match=re.escape("Scalar function (floor) on not a number not supported.")
+    ):
+        math.floor("not a number")
+
+    # Test with NaN/Inf inputs (should behave like numpy)
+    assert np.isnan(math.ceil(np.nan))
+    assert np.isnan(math.floor(np.nan))
+    assert math.ceil(np.inf) == np.inf
+    assert math.floor(np.inf) == np.inf
+    assert math.ceil(-np.inf) == -np.inf
+    assert math.floor(-np.inf) == -np.inf
+
+    assert np.isnan(math.ceil(np.nan * u.m))
+    assert np.isnan(math.floor(np.nan * u.m))
 
     # Test with variables containing arrays
     x = UserVariable(name="x", value=[1, 2, 3] * u.m)

@@ -51,14 +51,14 @@ def _check_same_length(left: VectorInputType, right: VectorInputType, operation_
         )
 
 
-def _get_input_value_dimensionality(value: Union[ScalarInputType, VectorInputType]):
-    """Get the dimensionality of the input value"""
+def _get_input_value_dimensions(value: Union[ScalarInputType, VectorInputType]):
+    """Get the dimensions of the input value"""
     if isinstance(value, list) and len(value) > 0:
-        return _get_input_value_dimensionality(value=value[0])
+        return _get_input_value_dimensions(value=value[0])
     if isinstance(value, Variable):
-        return _get_input_value_dimensionality(value=value.value)
+        return _get_input_value_dimensions(value=value.value)
     if isinstance(value, Expression):
-        return value.dimensionality
+        return value.dimensions
     if isinstance(value, (unyt_array, unyt_quantity)):
         return value.units.dimensions
     if isinstance(value, Number):
@@ -66,62 +66,70 @@ def _get_input_value_dimensionality(value: Union[ScalarInputType, VectorInputTyp
     return None
 
 
-def _compare_operation_dimensionality(
-    value: Union[ScalarInputType, VectorInputType], dimensionality
-):
+def _compare_operation_dimensions(value: Union[ScalarInputType, VectorInputType], dimensions):
     """
     For certain scalar/vector arithmetic operations,
-    we need to check that the scalar/vector has the specify dimensionality.
+    we need to check that the scalar/vector has the specify dimensions.
     """
-    value_dimensionality = _get_input_value_dimensionality(value=value)
-    if value_dimensionality:
-        return value_dimensionality == dimensionality
+    value_dimensions = _get_input_value_dimensions(value=value)
+    if value_dimensions:
+        return value_dimensions == dimensions
     return False
 
 
-def _check_same_dimensionality(
+def _check_same_dimensions(
     value1: Union[ScalarInputType, VectorInputType],
     value2: Union[ScalarInputType, VectorInputType],
     operation_name: str,
 ):
     """
     For certain scalar/vector arithmetic operations,
-    we need to check that the scalars/vectors have the same dimensionality.
+    we need to check that the scalars/vectors have the same dimensions.
     """
-    value1_dimensionality = _get_input_value_dimensionality(value=value1)
-    value2_dimensionality = _get_input_value_dimensionality(value=value2)
-    if value1_dimensionality != value2_dimensionality:
+
+    def _check_list_same_dimensions(value):
+        if not isinstance(value, list) or len(value) <= 1:
+            return
+        value_0_dim = _get_input_value_dimensions(value=value[0])
+        if not all(_get_input_value_dimensions(value=item) == value_0_dim for item in value):
+            raise ValueError(
+                f"Each item in the input value ({value}) must have the same dimensions to perform {operation_name} operation."
+            )
+
+    _check_list_same_dimensions(value=value1)
+    _check_list_same_dimensions(value=value2)
+    value1_dimensions = _get_input_value_dimensions(value=value1)
+    value2_dimensions = _get_input_value_dimensions(value=value2)
+    print(value1_dimensions, value2_dimensions)
+    if value1_dimensions != value2_dimensions:
         raise ValueError(
-            f"Input values ({value1} | {value2}) must have the same dimensinality to perform {operation_name} operation."
+            f"Input values ({value1} | {value2}) must have the same dimensions to perform {operation_name} operation."
         )
 
 
-def _check_operation_dimensionality(
+def _check_operation_dimensions(
     value: Union[ScalarInputType, VectorInputType],
-    dimensionalities: list,
+    dimensions: list,
     operation_name: str,
 ):
     """
     For certain scalar/vector arithmetic operations,
-    we need to check that the scalar/vector satisfies the specific dimensionality.
+    we need to check that the scalar/vector satisfies the specific dimensions.
     """
 
-    if len(dimensionalities) == 1:
-        dimensionalities_err_msg = str(dimensionalities[0])
+    if len(dimensions) == 1:
+        dimensions_err_msg = str(dimensions[0])
     else:
-        dimensionalities_err_msg = (
-            "one of ("
-            + ", ".join([str(dimensionality) for dimensionality in dimensionalities])
-            + ")"
+        dimensions_err_msg = (
+            "one of (" + ", ".join([str(dimension) for dimension in dimensions]) + ")"
         )
 
     if not any(
-        _compare_operation_dimensionality(value=value, dimensionality=dimensionality)
-        for dimensionality in dimensionalities
+        _compare_operation_dimensions(value=value, dimensions=dimension) for dimension in dimensions
     ):
         raise ValueError(
-            f"The dimensionality of the input value ({value}) "
-            f"must be {dimensionalities_err_msg} to perform {operation_name} operation."
+            f"The dimensions of the input value ({value}) "
+            f"must be {dimensions_err_msg} to perform {operation_name} operation."
         )
 
 
@@ -192,7 +200,7 @@ def add(left: VectorInputType, right: VectorInputType):
         return left + right
 
     _check_same_length(left, right, "add")
-    _check_same_dimensionality(left, right, "add")
+    _check_same_dimensions(left, right, "add")
 
     result = [left[i] + right[i] for i in range(len(left))]
     return _handle_expression_list(result)
@@ -205,7 +213,7 @@ def subtract(left: VectorInputType, right: VectorInputType):
         return left - right
 
     _check_same_length(left, right, "subtract")
-    _check_same_dimensionality(left, right, "subtract")
+    _check_same_dimensions(left, right, "subtract")
 
     result = [left[i] - right[i] for i in range(len(left))]
     return _handle_expression_list(result)
@@ -249,9 +257,9 @@ def sqrt(value: ScalarInputType):
 @ensure_scalar_input
 def log(value: ScalarInputType):
     """Customized Log function to work with the `Expression` and Variables"""
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.dimensionless],
+        dimensions=[dimensions.dimensionless],
         operation_name="log",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -262,9 +270,9 @@ def log(value: ScalarInputType):
 @ensure_scalar_input
 def exp(value: ScalarInputType):
     """Customized Exponential function to work with the `Expression` and Variables"""
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.dimensionless],
+        dimensions=[dimensions.dimensionless],
         operation_name="exp",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -276,9 +284,9 @@ def exp(value: ScalarInputType):
 def sin(value: ScalarInputType):
     """Customized Sine function to work with the `Expression` and Variables"""
     # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.angle, dimensions.dimensionless],
+        dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="sin",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -290,9 +298,9 @@ def sin(value: ScalarInputType):
 def cos(value: ScalarInputType):
     """Customized Cosine function to work with the `Expression` and Variables"""
     # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.angle, dimensions.dimensionless],
+        dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="cos",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -304,9 +312,9 @@ def cos(value: ScalarInputType):
 def tan(value: ScalarInputType):
     """Customized Tangent function to work with the `Expression` and Variables"""
     # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.angle, dimensions.dimensionless],
+        dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="tan",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -317,9 +325,9 @@ def tan(value: ScalarInputType):
 @ensure_scalar_input
 def asin(value: ScalarInputType):
     """Customized ArcSine function to work with the `Expression` and Variables"""
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.dimensionless],
+        dimensions=[dimensions.dimensionless],
         operation_name="asin",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -330,9 +338,9 @@ def asin(value: ScalarInputType):
 @ensure_scalar_input
 def acos(value: ScalarInputType):
     """Customized ArcCosine function to work with the `Expression` and Variables"""
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.dimensionless],
+        dimensions=[dimensions.dimensionless],
         operation_name="acos",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -343,9 +351,9 @@ def acos(value: ScalarInputType):
 @ensure_scalar_input
 def atan(value: ScalarInputType):
     """Customized ArcTangent function to work with the `Expression` and Variables"""
-    _check_operation_dimensionality(
+    _check_operation_dimensions(
         value=value,
-        dimensionalities=[dimensions.dimensionless],
+        dimensions=[dimensions.dimensionless],
         operation_name="atan",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -356,7 +364,7 @@ def atan(value: ScalarInputType):
 @ensure_scalar_input
 def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Min function to work with the `Expression` and Variables"""
-    _check_same_dimensionality(value1=value1, value2=value2, operation_name="min")
+    _check_same_dimensions(value1=value1, value2=value2, operation_name="min")
     print(type(value1), type(value2))
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.minimum(value1, value2)
@@ -370,7 +378,7 @@ def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=re
 @ensure_scalar_input
 def max(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Max function to work with the `Expression` and Variables"""
-    _check_same_dimensionality(value1=value1, value2=value2, operation_name="max")
+    _check_same_dimensions(value1=value1, value2=value2, operation_name="max")
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.maximum(value1, value2)
     if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
