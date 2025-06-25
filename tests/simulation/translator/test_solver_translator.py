@@ -2,6 +2,7 @@ import json
 import os
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
@@ -672,8 +673,8 @@ def test_param_with_user_variables():
         name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
     )
     sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
-    power_res = UserVariable(name="power_res", value=math.pow(solution.velocity[1], 1.5))
-    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * math.pi())
+    power_res = UserVariable(name="power_res", value=solution.velocity[1] ** 1.5)
+    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * np.pi)
     magnitude_res = UserVariable(name="magnitude_res", value=math.magnitude(solution.velocity))
     subtract_res = UserVariable(
         name="subtract_res", value=math.subtract(some_dependent_variable_a, solution.velocity)

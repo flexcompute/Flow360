@@ -95,10 +95,17 @@ def __soft_fail_truediv__(self, other):
     return NotImplemented
 
 
+def __soft_fail_pow__(self, other):
+    if not isinstance(other, Expression) and not isinstance(other, Variable):
+        return np.ndarray.__pow__(self, other)  # pylint: disable=too-many-function-args
+    return NotImplemented
+
+
 unyt_array.__add__ = __soft_fail_add__
 unyt_array.__sub__ = __soft_fail_sub__
 unyt_array.__mul__ = __soft_fail_mul__
 unyt_array.__truediv__ = __soft_fail_truediv__
+unyt_array.__pow__ = __soft_fail_pow__
 
 
 def _convert_numeric(value):
@@ -322,7 +329,6 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} % {str_arg}")
 
-    @check_vector_arithmetic
     def __pow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
@@ -378,8 +384,8 @@ class Variable(Flow360BaseModel):
 
     @check_vector_arithmetic
     def __rpow__(self, other):
-        (arg, parenthesize) = _convert_argument(other)
-        str_arg = arg if not parenthesize else f"({arg})"
+        (arg, _) = _convert_argument(other)
+        str_arg = f"({arg})"  # Always parenthesize to ensure base is evaluated first
         return Expression(expression=f"{str_arg} ** {self.name}")
 
     def __getitem__(self, item):
@@ -820,8 +826,8 @@ class Expression(Flow360BaseModel, Evaluable):
         return Expression(expression=f"{str_arg} % ({self.expression})")
 
     def __rpow__(self, other):
-        (arg, parenthesize) = _convert_argument(other)
-        str_arg = arg if not parenthesize else f"({arg})"
+        (arg, _) = _convert_argument(other)
+        str_arg = f"({arg})"  # Always parenthesize to ensure base is evaluated first
         return Expression(expression=f"{str_arg} ** ({self.expression})")
 
     def __getitem__(self, index):
@@ -863,7 +869,7 @@ class Expression(Flow360BaseModel, Evaluable):
         if isinstance(value, list):
             _check_list_items_are_same_dimensionality(value)
             return value[0].units.dimensions
-        return None
+        return u.Unit("dimensionless").dimensions
 
     @property
     def length(self):

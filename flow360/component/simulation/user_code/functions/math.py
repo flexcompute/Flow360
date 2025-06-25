@@ -87,9 +87,19 @@ def dot(left: VectorInputType, right: VectorInputType):
 def magnitude(value: VectorInputType):
     """Customized Magnitude function to work with the `Expression` and Variables"""
     # Taking advantage of unyt as much as possible:
+
+    _get_input_array_length(value)
+
     if isinstance(value, unyt_array):
         return np.linalg.norm(value)
 
+    # For solution variables and expressions, return an Expression
+    if isinstance(value, Expression) or (
+        isinstance(value, Variable) and hasattr(value, "solver_name")
+    ):
+        return Expression(expression=f"math.magnitude({value})")
+
+    # For regular lists/arrays and UserVariables, compute the magnitude
     result = value[0] ** 2
     for i in range(1, len(value)):
         result += value[i] ** 2
@@ -151,16 +161,6 @@ def sqrt(value: ScalarInputType):
     return Expression(expression=f"math.sqrt({value})")
 
 
-# pylint: disable=redefined-builtin
-def pow(base: ScalarInputType, exponent: ScalarInputType):
-    # pylint: disable=fixme
-    # TODO: Needs to ensure the exponent is a float or a unyt_quantity/Expression with units "1"
-    """Customized Power function to work with the `Expression` and Variables"""
-    if isinstance(base, (unyt_quantity, Number)) and isinstance(exponent, Number):
-        return np.power(base, exponent)
-    return Expression(expression=f"math.pow({base}, {exponent})")
-
-
 @ensure_scalar_input
 def log(value: ScalarInputType):
     """Customized Log function to work with the `Expression` and Variables"""
@@ -180,6 +180,7 @@ def exp(value: ScalarInputType):
 @ensure_scalar_input
 def sin(value: ScalarInputType):
     """Customized Sine function to work with the `Expression` and Variables"""
+    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     if isinstance(value, (unyt_quantity, Number)):
         return np.sin(value)
     return Expression(expression=f"math.sin({value})")
@@ -188,6 +189,7 @@ def sin(value: ScalarInputType):
 @ensure_scalar_input
 def cos(value: ScalarInputType):
     """Customized Cosine function to work with the `Expression` and Variables"""
+    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     if isinstance(value, (unyt_quantity, Number)):
         return np.cos(value)
     return Expression(expression=f"math.cos({value})")
@@ -196,6 +198,7 @@ def cos(value: ScalarInputType):
 @ensure_scalar_input
 def tan(value: ScalarInputType):
     """Customized Tangent function to work with the `Expression` and Variables"""
+    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     if isinstance(value, (unyt_quantity, Number)):
         return np.tan(value)
     return Expression(expression=f"math.tan({value})")
@@ -226,7 +229,7 @@ def atan(value: ScalarInputType):
 
 
 @ensure_scalar_input
-def min(value: ScalarInputType):
+def min(value: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Min function to work with the `Expression` and Variables"""
     if isinstance(value, (unyt_quantity, Number)):
         return np.min(value)
@@ -234,7 +237,7 @@ def min(value: ScalarInputType):
 
 
 @ensure_scalar_input
-def max(value: ScalarInputType):
+def max(value: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Max function to work with the `Expression` and Variables"""
     if isinstance(value, (unyt_quantity, Number)):
         return np.max(value)
@@ -242,7 +245,7 @@ def max(value: ScalarInputType):
 
 
 @ensure_scalar_input
-def abs(value: ScalarInputType):
+def abs(value: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Absolute function to work with the `Expression` and Variables"""
     if isinstance(value, (unyt_quantity, Number)):
         return np.abs(value)
@@ -265,6 +268,4 @@ def floor(value: ScalarInputType):
     return Expression(expression=f"math.floor({value})")
 
 
-def pi():
-    """Customized Pi function to work with the `Expression` and Variables"""
-    return np.pi
+# TODO: Unit tests for translation
