@@ -606,7 +606,7 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
     expression_length = expression.length
     prepending_code = _prepare_prepending_code(expression=expression)
 
-    if expression_length == 1:
+    if expression_length == 0:  # Scalar output requested
         expression = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
         if offset != 0:
             expression = (expression + offset) * coefficient

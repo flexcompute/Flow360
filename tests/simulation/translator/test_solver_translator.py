@@ -2,6 +2,7 @@ import json
 import os
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
@@ -665,8 +666,18 @@ def test_param_with_user_variables():
     some_dependent_variable_a = UserVariable(
         name="some_dependent_variable_a", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
     )
-    my_var = UserVariable(
-        name="my_var", value=math.cross(some_dependent_variable_a, solution.velocity)
+    cross_res = UserVariable(
+        name="cross_res", value=math.cross(some_dependent_variable_a, solution.velocity)
+    )
+    dot_res = UserVariable(
+        name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
+    )
+    sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
+    power_res = UserVariable(name="power_res", value=solution.velocity[1] ** 1.5)
+    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * np.pi)
+    magnitude_res = UserVariable(name="magnitude_res", value=math.magnitude(solution.velocity))
+    subtract_res = UserVariable(
+        name="subtract_res", value=math.subtract(some_dependent_variable_a, solution.velocity)
     )
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     my_temperature = UserVariable(
@@ -693,8 +704,14 @@ def test_param_with_user_variables():
                         UserVariable(name="uuu", value=solution.velocity).in_units(
                             new_unit="km/ms"
                         ),
-                        my_var,
+                        cross_res,
+                        dot_res,
                         my_temperature,
+                        sqrt_res,
+                        abs_res,
+                        power_res,
+                        magnitude_res,
+                        subtract_res,
                     ],
                 )
             ],
@@ -709,9 +726,7 @@ def test_param_with_user_variables():
 
     assert params_validated
     translate_and_compare(
-        params_validated,
-        mesh_unit=1 * u.m,
-        ref_json_file="Flow360_user_variable.json",
+        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=True
     )
 
     with SI_unit_system:
