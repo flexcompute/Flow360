@@ -449,7 +449,8 @@ def test_sqrt_non_scalar_input_errors():
 def test_sqrt_edge_cases():
     """Test sqrt function with edge cases."""
 
-    math.sqrt([])
+    with pytest.raises(ValueError, match=re.escape("Scalar function (sqrt) on [] not supported.")):
+        math.sqrt([])
 
     # Test with None (should raise TypeError from numpy)
     with pytest.raises(
@@ -879,6 +880,69 @@ def test_exp_with_expressions(scaling_provider):
     y = UserVariable(name="y", value=2 * u.m / u.m)
     result = math.exp(y * math.log(math.exp(2)))
     assert str(result) == "math.exp(y * 2.0)"
+
+
+def test_exp_edge_cases():
+    """Test exp function with edge cases."""
+
+    # Test with empty list input (should raise ValueError from ensure_scalar_input)
+    with pytest.raises(ValueError, match=re.escape("Scalar function (exp) on [] not supported.")):
+        math.exp([])
+
+    # Test with None (should raise ValueError from ensure_scalar_input)
+    with pytest.raises(ValueError, match=re.escape("Scalar function (exp) on None not supported.")):
+        math.exp(None)
+
+    # Test with string (should raise ValueError from ensure_scalar_input)
+    with pytest.raises(
+        ValueError, match=re.escape("Scalar function (exp) on not a number not supported.")
+    ):
+        math.exp("not a number")
+
+    # Test with NaN/Inf inputs (should behave like numpy)
+    assert np.isnan(math.exp(np.nan))
+    assert math.exp(np.inf) == np.inf
+    assert math.exp(-np.inf) == 0.0
+
+    assert np.isnan(math.exp(np.nan * u.dimensionless))
+    assert math.exp(np.inf * u.dimensionless) == np.inf * u.dimensionless
+    assert math.exp(-np.inf * u.dimensionless) == 0.0 * u.dimensionless
+
+    # Test with incorrect dimensionality (should raise ValueError from _check_operation_dimensionality)
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The dimensionality of the input value (5 m) must be 1 to perform exp operation."
+        ),
+    ):
+        math.exp(5 * u.m)
+
+    x_length = UserVariable(name="x_length", value=6 * u.m)
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The dimensionality of the input value (x_length) must be 1 to perform exp operation."
+        ),
+    ):
+        math.exp(x_length)
+
+    expr_length = Expression(expression="7 * u.m")
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The dimensionality of the input value (7 * u.m) must be 1 to perform exp operation."
+        ),
+    ):
+        math.exp(expr_length)
+
+    # Test with solution variable that is not dimensionless
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The dimensionality of the input value (solution.velocity[0]) must be 1 to perform exp operation."
+        ),
+    ):
+        math.exp(solution.velocity[0])
 
 
 # ---------------------------#
@@ -1473,10 +1537,10 @@ def test_min_max_edge_cases():
     """Test min and max functions with various edge cases."""
 
     # Test with empty list input (should raise IndexError from _get_input_value_dimensionality)
-    with pytest.raises(IndexError, match="list index out of range"):
+    with pytest.raises(ValueError, match=re.escape("Scalar function (min) on [] not supported.")):
         math.min([], [])
 
-    with pytest.raises(IndexError, match="list index out of range"):
+    with pytest.raises(ValueError, match=re.escape("Scalar function (max) on [] not supported.")):
         math.max([], [])
 
     # Test with mixed scalar/expression/variable inputs

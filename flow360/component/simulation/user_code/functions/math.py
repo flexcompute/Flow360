@@ -8,7 +8,11 @@ from typing import Any, Union
 import numpy as np
 from unyt import dimensions, unyt_array, unyt_quantity
 
-from flow360.component.simulation.user_code.core.types import Expression, Variable
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    Variable,
+    _convert_numeric,
+)
 
 
 def _handle_expression_list(value: list[Any]):
@@ -49,7 +53,7 @@ def _check_same_length(left: VectorInputType, right: VectorInputType, operation_
 
 def _get_input_value_dimensionality(value: Union[ScalarInputType, VectorInputType]):
     """Get the dimensionality of the input value"""
-    if isinstance(value, list):
+    if isinstance(value, list) and len(value) > 0:
         return _get_input_value_dimensionality(value=value[0])
     if isinstance(value, Variable):
         return _get_input_value_dimensionality(value=value.value)
@@ -214,6 +218,8 @@ def ensure_scalar_input(func):
     def wrapper(*args, **kwargs):
 
         def is_scalar(input_value):
+            if isinstance(input_value, list):
+                return False
             if isinstance(input_value, Number):
                 return True
             if isinstance(input_value, unyt_quantity):
@@ -355,11 +361,9 @@ def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=re
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.minimum(value1, value2)
     if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
-        print(f"math.min({value1},{value2.value} * u.{value2.units})")
-        return Expression(expression=f"math.min({value1},{value2.value} * u.{value2.units})")
+        return Expression(expression=f"math.min({value1},{_convert_numeric(value2)})")
     if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
-        print(f"math.min({value1.value} * u.{value1.units},{value2})")
-        return Expression(expression=f"math.min({value1.value} * u.{value1.units},{value2})")
+        return Expression(expression=f"math.min({_convert_numeric(value1)},{value2})")
     return Expression(expression=f"math.min({value1},{value2})")
 
 
@@ -370,11 +374,9 @@ def max(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=re
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.maximum(value1, value2)
     if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
-        print(f"math.max({value1},{value2.value} * u.{value2.units})")
-        return Expression(expression=f"math.max({value1},{value2.value} * u.{value2.units})")
+        return Expression(expression=f"math.max({value1},{_convert_numeric(value2)})")
     if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
-        print(f"math.max({value1.value} * u.{value1.units},{value2})")
-        return Expression(expression=f"math.max({value1.value} * u.{value1.units},{value2})")
+        return Expression(expression=f"math.max({_convert_numeric(value1)},{value2})")
     return Expression(expression=f"math.max({value1},{value2})")
 
 
