@@ -75,7 +75,7 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
             for entity in expanded_entities if expanded_entities else []:
                 registry.register(entity)
 
-        elif isinstance(field, list):
+        elif isinstance(field, (list, tuple)):
             for item in field:
                 if isinstance(item, Flow360BaseModel):
                     register_entity_list(item, registry)
@@ -93,6 +93,10 @@ def _update_entity_full_name(
     Update Surface/Boundary with zone name from volume mesh metadata.
     """
     for field in model.__dict__.values():
+        # Skip the AssetCache since updating there makes no difference
+        if isinstance(field, AssetCache):
+            continue
+
         if isinstance(field, target_entity_type):
             # pylint: disable=protected-access
             field._update_entity_info_with_metadata(volume_mesh_meta_data)
@@ -104,9 +108,13 @@ def _update_entity_full_name(
                 if isinstance(entity, target_entity_type):
                     entity._update_entity_info_with_metadata(volume_mesh_meta_data)
 
-        elif isinstance(field, list):
+        elif isinstance(field, (list, tuple)):
             for item in field:
-                if isinstance(item, Flow360BaseModel):
+                if isinstance(item, target_entity_type):
+                    item._update_entity_info_with_metadata(  # pylint: disable=protected-access
+                        volume_mesh_meta_data
+                    )
+                elif isinstance(item, Flow360BaseModel):
                     _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
 
         elif isinstance(field, Flow360BaseModel):
