@@ -7,6 +7,8 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import (
     Freestream,
+    Periodic,
+    Rotational,
     SlipWall,
     Wall,
 )
@@ -14,7 +16,7 @@ from flow360.component.simulation.models.volume_models import AngularVelocity, R
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.primitives import Cylinder, GhostSurface, Surface
+from flow360.component.simulation.primitives import Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -84,9 +86,16 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
                         Surface(name="blade1"),
                         Surface(name="blade2"),
                         Surface(name="blade3"),
-                        Surface(name="blade4"),
-                        Surface(name="blade5"),
                     ]
+                ),
+                Periodic(
+                    surface_pairs=[
+                        (
+                            Surface(name="blade4"),
+                            Surface(name="blade5"),
+                        )
+                    ],
+                    spec=Rotational(),
                 ),
                 Freestream(entities=[auto_farfield.farfield]),
             ],
@@ -129,4 +138,10 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
     )
 
     translated = get_solver_json(params, mesh_unit="m")
+
     assert list(translated["volumeZones"].keys()) == ["rotatingBlock-rotating_zone"]
+    assert "rotatingBlock-rotating_zone/blade4" in translated["boundaries"]
+    assert translated["boundaries"]["rotatingBlock-rotating_zone/blade4"] == {
+        "type": "RotationallyPeriodic",
+        "pairedPatchName": "rotatingBlock-rotating_zone/blade5",
+    }
