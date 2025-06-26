@@ -80,7 +80,13 @@ from tests.utils import to_file_from_file_test
 
 @pytest.fixture(autouse=True)
 def reset_context():
-    context.default_context.clear()
+    """Clear user variables from the context."""
+    for name in context.default_context._values.keys():
+        if "." not in name:
+            context.default_context._dependency_graph.remove_variable(name)
+    context.default_context._values = {
+        name: value for name, value in context.default_context._values.items() if "." in name
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -768,7 +774,9 @@ def test_cyclic_dependencies():
 
     # If we try to create a cyclic dependency we throw a validation error
     # The error contains info about the cyclic dependency, so here its x -> y -> x
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(
+        pd.ValidationError, match=re.escape("Circular dependency detected among: ['x', 'y']")
+    ):
         x.value = y
 
     z = UserVariable(name="z", value=4)
