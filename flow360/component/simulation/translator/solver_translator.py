@@ -223,7 +223,6 @@ def rotation_translator(model: Rotation, params: SimulationParams):
         volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.full_name
     spec = dump_dict(model)["spec"]
     if spec is not None:
-        print(">>> model.spec = ", model.spec, type(model.spec))
         spec_value = spec.get("value", None)
         if isinstance(spec_value, str):
             volume_zone["referenceFrame"]["thetaRadians"] = spec_value
