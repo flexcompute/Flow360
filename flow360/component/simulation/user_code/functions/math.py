@@ -3,7 +3,7 @@ Math.h for Flow360 Expression system
 """
 
 from numbers import Number
-from typing import Any, Union
+from typing import Any, Literal, Union
 
 import numpy as np
 from unyt import dimensions, unyt_array, unyt_quantity
@@ -107,7 +107,7 @@ def _check_same_dimensions(
         )
 
 
-def _check_operation_dimensions(
+def _check_value_dimensions(
     value: Union[ScalarInputType, VectorInputType],
     ref_dimensions: list,
     operation_name: str,
@@ -132,6 +132,19 @@ def _check_operation_dimensions(
             f"The dimensions of the input value ({value}) "
             f"must be {dimensions_err_msg} to perform {operation_name} operation."
         )
+
+
+def _create_min_max_expression(
+    value1: ScalarInputType, value2: ScalarInputType, operation_name: Literal["min", "max"]
+):
+    _check_same_dimensions(value1=value1, value2=value2, operation_name=operation_name)
+    if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
+        return np.maximum(value1, value2) if operation_name == "max" else np.minimum(value1, value2)
+    if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
+        return Expression(expression=f"math.{operation_name}({value1},{_convert_numeric(value2)})")
+    if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
+        return Expression(expression=f"math.{operation_name}({_convert_numeric(value1)},{value2})")
+    return Expression(expression=f"math.{operation_name}({value1},{value2})")
 
 
 def cross(left: VectorInputType, right: VectorInputType):
@@ -258,7 +271,7 @@ def sqrt(value: ScalarInputType):
 @ensure_scalar_input
 def log(value: ScalarInputType):
     """Customized Log function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.dimensionless],
         operation_name="log",
@@ -271,7 +284,7 @@ def log(value: ScalarInputType):
 @ensure_scalar_input
 def exp(value: ScalarInputType):
     """Customized Exponential function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.dimensionless],
         operation_name="exp",
@@ -284,7 +297,7 @@ def exp(value: ScalarInputType):
 @ensure_scalar_input
 def sin(value: ScalarInputType):
     """Customized Sine function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="sin",
@@ -297,7 +310,7 @@ def sin(value: ScalarInputType):
 @ensure_scalar_input
 def cos(value: ScalarInputType):
     """Customized Cosine function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="cos",
@@ -310,7 +323,7 @@ def cos(value: ScalarInputType):
 @ensure_scalar_input
 def tan(value: ScalarInputType):
     """Customized Tangent function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="tan",
@@ -323,7 +336,7 @@ def tan(value: ScalarInputType):
 @ensure_scalar_input
 def asin(value: ScalarInputType):
     """Customized ArcSine function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.dimensionless],
         operation_name="asin",
@@ -336,7 +349,7 @@ def asin(value: ScalarInputType):
 @ensure_scalar_input
 def acos(value: ScalarInputType):
     """Customized ArcCosine function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.dimensionless],
         operation_name="acos",
@@ -349,7 +362,7 @@ def acos(value: ScalarInputType):
 @ensure_scalar_input
 def atan(value: ScalarInputType):
     """Customized ArcTangent function to work with the `Expression` and Variables"""
-    _check_operation_dimensions(
+    _check_value_dimensions(
         value=value,
         ref_dimensions=[dimensions.dimensionless],
         operation_name="atan",
@@ -362,27 +375,13 @@ def atan(value: ScalarInputType):
 @ensure_scalar_input
 def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Min function to work with the `Expression` and Variables"""
-    _check_same_dimensions(value1=value1, value2=value2, operation_name="min")
-    if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
-        return np.minimum(value1, value2)
-    if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
-        return Expression(expression=f"math.min({value1},{_convert_numeric(value2)})")
-    if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
-        return Expression(expression=f"math.min({_convert_numeric(value1)},{value2})")
-    return Expression(expression=f"math.min({value1},{value2})")
+    return _create_min_max_expression(value1, value2, "min")
 
 
 @ensure_scalar_input
 def max(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Max function to work with the `Expression` and Variables"""
-    _check_same_dimensions(value1=value1, value2=value2, operation_name="max")
-    if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
-        return np.maximum(value1, value2)
-    if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
-        return Expression(expression=f"math.max({value1},{_convert_numeric(value2)})")
-    if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
-        return Expression(expression=f"math.max({_convert_numeric(value1)},{value2})")
-    return Expression(expression=f"math.max({value1},{value2})")
+    return _create_min_max_expression(value1, value2, "max")
 
 
 @ensure_scalar_input
