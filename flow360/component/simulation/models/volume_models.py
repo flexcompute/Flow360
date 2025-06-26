@@ -63,6 +63,7 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -128,7 +129,9 @@ class AngularVelocity(SingleAttributeModel):
     """
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
-    value: AngularVelocityType = pd.Field(description="The value of the angular velocity.")
+    value: ValueOrExpression[AngularVelocityType] = pd.Field(
+        description="The value of the angular velocity."
+    )
 
 
 class FromUserDefinedDynamics(Flow360BaseModel):

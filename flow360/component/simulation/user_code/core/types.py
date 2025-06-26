@@ -6,7 +6,17 @@ from __future__ import annotations
 import ast
 import re
 from numbers import Number
-from typing import Annotated, Any, Generic, List, Literal, Optional, TypeVar, Union
+from typing import (
+    Annotated,
+    Any,
+    ClassVar,
+    Generic,
+    List,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pydantic as pd
@@ -35,8 +45,11 @@ class VariableContextInfo(Flow360BaseModel):
     """Variable context info for project variables."""
 
     name: str
-    value: ValueOrExpression[AnyNumericType]
+    value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
     postProcessing: bool = pd.Field()
+
+    # TODO: This should be removed once front end figure out what to store here.
+    model_config = pd.ConfigDict(extra="allow")
 
 
 def save_user_variables(params):
@@ -247,7 +260,9 @@ class Variable(Flow360BaseModel):
         Set the value of the variable in the global context.
         In parallel to `set_value` this supports syntax like `my_user_var.value = 10.0`.
         """
-        new_value = pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(value)
+        new_value = pd.TypeAdapter(
+            ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
+        ).validate_python(value)
         # Not checking overwrite here since it is user controlled explicit assignment operation
         default_context.set(self.name, new_value)
         _check_cyclic_dependencies(variable_name=self.name)
@@ -262,9 +277,9 @@ class Variable(Flow360BaseModel):
             raise ValueError("`name` is required for variable declaration.")
 
         if "value" in values:
-            new_value = pd.TypeAdapter(ValueOrExpression[AnyNumericType]).validate_python(
-                values.pop("value")
-            )
+            new_value = pd.TypeAdapter(
+                ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
+            ).validate_python(values.pop("value"))
             # Check overwriting, skip for solver variables:
             if values["name"] in default_context.user_variable_names:
                 diff = new_value != default_context.get(values["name"])
@@ -963,13 +978,48 @@ T = TypeVar("T")
 class ValueOrExpression(Expression, Generic[T]):
     """Model accepting both value and expressions"""
 
+    _cfg: ClassVar[dict] = {}
+
+    @classmethod
+    def configure(cls, **flags):
+        """
+        Create a new subclass with the given flags.
+        """
+        name = f"{cls.__name__}[{','.join(f'{k}={v}' for k,v in flags.items())}]"
+        return type(name, (cls,), {"_cfg": {**cls._cfg, **flags}})
+
     def __class_getitem__(cls, typevar_values):  # pylint:disable=too-many-statements
+        cfg = cls._cfg
+        # By default all value or expression should be able to be evaluated at compile-time
+        allow_run_time_expression = bool(cfg.get("allow_run_time_expression", False))
+
         def _internal_validator(value: Expression):
             try:
                 result = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
-            pd.TypeAdapter(typevar_values).validate_python(result, context={"allow_inf_nan": True})
+
+            # Detect run-time expressions
+            if allow_run_time_expression is False:
+                run_time_expression = False
+                if isinstance(result, unyt_quantity) and np.isnan(result.value):
+                    run_time_expression = True
+                elif isinstance(result, unyt_array) and np.isnan(result.value).any():
+                    run_time_expression = True
+                elif isinstance(result, Number) and np.isnan(result):
+                    run_time_expression = True
+                elif isinstance(result, list) and any(np.isnan(item) for item in result):
+                    run_time_expression = True
+
+                if run_time_expression:
+                    raise ValueError(
+                        "Run-time expression is not allowed in this field. "
+                        "Please ensure this field does not depend on any control or solver variables."
+                    )
+
+            pd.TypeAdapter(typevar_values).validate_python(
+                result, context={"allow_inf_nan": allow_run_time_expression}
+            )
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
@@ -986,6 +1036,17 @@ class ValueOrExpression(Expression, Generic[T]):
                     return expr_type(expression=value.expression, output_units=value.output_units)
             except Exception:  # pylint:disable=broad-exception-caught
                 pass
+
+            @deprecation_reminder("25.8.0")
+            def _handle_legacy_unyt_values(value):
+                """Handle {"units":..., "value":...} from legacy input. This is much easier than writing the updater."""
+                if isinstance(value, dict) and "units" in value and "value" in value:
+                    return unyt_array(value["value"], value["units"], dtype=np.float64), True
+                return value, False
+
+            value, is_legacy_unyt_value = _handle_legacy_unyt_values(value)
+            if is_legacy_unyt_value:
+                return value
 
             # Handle list of unyt_quantities:
             if isinstance(value, list):
