@@ -43,6 +43,8 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
+    Isosurface,
+    IsosurfaceOutput,
     SliceOutput,
     SurfaceOutput,
     UserDefinedField,
@@ -706,6 +708,11 @@ def test_param_with_user_variables():
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
     )
+    iso_field_pressure = UserVariable(
+        name="iso_field_pressure",
+        value=0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2,
+    )
+    iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa)
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=LiquidOperatingCondition(
@@ -749,7 +756,14 @@ def test_param_with_user_variables():
                         min_res,
                         max_res,
                     ],
-                )
+                ),
+                IsosurfaceOutput(
+                    name="iso_pressure",
+                    entities=[iso1],
+                    output_fields=[
+                        UserVariable(name="ppp", value=solution.pressure).in_units(new_unit="psf"),
+                    ],
+                ),
             ],
             time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
         )

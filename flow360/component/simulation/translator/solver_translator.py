@@ -310,11 +310,15 @@ def inject_surface_slice_info(entity: Slice):
     }
 
 
-def inject_isosurface_info(entity: Isosurface):
+def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     """inject entity info"""
     return {
-        "surfaceField": entity.field,
-        "surfaceFieldMagnitude": entity.iso_value,
+        "surfaceField": (
+            entity.field if not isinstance(entity.field, UserVariable) else entity.field.name
+        ),
+        "surfaceFieldMagnitude": translate_value_or_expression_object(
+            entity.iso_value, input_params
+        ),
     }
 
 
@@ -456,6 +460,7 @@ def translate_slice_output(
 
 
 def translate_isosurface_output(
+    input_params: SimulationParams,
     output_params: list,
     injection_function,
 ):
@@ -472,11 +477,13 @@ def translate_isosurface_output(
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
+        entity_injection_input_params=input_params,
     )
     return translated_output
 
 
 def translate_time_average_isosurface_output(
+    input_params: SimulationParams,
     output_params: list,
     injection_function,
 ):
@@ -493,6 +500,7 @@ def translate_time_average_isosurface_output(
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
+        entity_injection_input_params=input_params,
     )
     return translated_output
 
@@ -703,13 +711,18 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     user_variable_udfs = {}
     if input_params.outputs:
         for output in input_params.outputs:
-            if not hasattr(output, "output_fields") or not output.output_fields:
-                continue
-            for output_field in output.output_fields.items:
-                if not isinstance(output_field, UserVariable):
-                    continue
-                udf_from_user_variable = user_variable_to_udf(output_field, input_params)
-                user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+            if hasattr(output, "output_fields") and output.output_fields:
+                for output_field in output.output_fields.items:
+                    if not isinstance(output_field, UserVariable):
+                        continue
+                    udf_from_user_variable = user_variable_to_udf(output_field, input_params)
+                    user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+            if isinstance(output, IsosurfaceOutput):
+                for isosurface in output.entities.items:
+                    if not isinstance(isosurface.field, UserVariable):
+                        continue
+                    udf_from_user_variable = user_variable_to_udf(isosurface.field, input_params)
+                    user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
     return generated_udfs + list(user_variable_udfs.values())
 
 
@@ -794,11 +807,11 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step4: Get translated["isoSurfaceOutput"]
     if has_instance_in_list(outputs, IsosurfaceOutput):
         translated["isoSurfaceOutput"] = translate_isosurface_output(
-            outputs, inject_isosurface_info
+            input_params, outputs, inject_isosurface_info
         )
     if has_instance_in_list(outputs, TimeAverageIsosurfaceOutput):
         translated["timeAverageIsoSurfaceOutput"] = translate_time_average_isosurface_output(
-            outputs, inject_isosurface_info
+            input_params, outputs, inject_isosurface_info
         )
 
     ##:: Step5: Get translated["monitorOutput"]

@@ -52,7 +52,7 @@ def _check_output_fields(params):
         allowed_items = natively_supported + additional_fields
 
         for item in output.output_fields.items:
-            if isinstance(item, str) and item not in allowed_items and isinstance(item, str):
+            if isinstance(item, str) and item not in allowed_items:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a"
                     f" valid output field name. Allowed fields are {allowed_items}."
@@ -67,7 +67,7 @@ def _check_output_fields(params):
                 + additional_fields
             )
             for entity in output.entities.items:
-                if entity.field not in allowed_items:
+                if isinstance(entity.field, str) and entity.field not in allowed_items:
                     raise ValueError(
                         f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a"
                         f" valid iso field name. Allowed fields are {allowed_items}."
@@ -106,7 +106,10 @@ def _check_output_fields_valid_given_turbulence_model(params):
 
         if output.output_type == "IsosurfaceOutput":
             for entity in output.entities.items:
-                if entity.field in invalid_output_fields[turbulence_model]:
+                if (
+                    isinstance(entity.field, str)
+                    and entity.field in invalid_output_fields[turbulence_model]
+                ):
                     raise ValueError(
                         f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a valid"
                         f" iso field when using turbulence model: {turbulence_model}."

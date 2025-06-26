@@ -24,6 +24,21 @@
         "v": "v",
         "w": "w"
     },
+    "isoSurfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "isoSurfaces": {
+            "iso_pressure": {
+                "outputFields": [
+                    "ppp"
+                ],
+                "surfaceField": "iso_field_pressure",
+                "surfaceFieldMagnitude": 2.5e-07
+            }
+        },
+        "outputFields": [],
+        "outputFormat": "paraview"
+    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,
@@ -191,6 +206,14 @@
         {
             "expression": "double ___vorticity[3];___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;max_res = (max(___vorticity[0], ___vorticity[1]) * 200.0);",
             "name": "max_res"
+        },
+        {
+            "expression": "ppp = (primitiveVars[4] * 835417.3693260051);",
+            "name": "ppp"
+        },
+        {
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_pressure = ((((0.5 * ___Cp) * primitiveVars[0]) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 40000000.0);",
+            "name": "iso_field_pressure"
         }
     ],
     "usingLiquidAsMaterial": true,
