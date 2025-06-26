@@ -109,6 +109,10 @@
             "name": "uuu"
         },
         {
+            "expression": "double ___temperature;___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
+            "name": "my_temperature"
+        },
+        {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;cross_res[0] = (((((2.0 * 1.0) / 200.0) * ___velocity[2]) - (((3.0 * 1.0) / 200.0) * ___velocity[1])) * 40000.0); cross_res[1] = (((((3.0 * 1.0) / 200.0) * ___velocity[0]) - (((1.0 * 1.0) / 200.0) * ___velocity[2])) * 40000.0); cross_res[2] = (((((1.0 * 1.0) / 200.0) * ___velocity[1]) - (((2.0 * 1.0) / 200.0) * ___velocity[0])) * 40000.0);",
             "name": "cross_res"
         },
@@ -117,20 +121,8 @@
             "name": "dot_res"
         },
         {
-            "expression": "double ___temperature;___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
-            "name": "my_temperature"
-        },
-        {
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;sqrt_res = (sqrt(___velocity[2]) * 14.142135623730951);",
-            "name": "sqrt_res"
-        },
-        {
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;abs_res = ((abs(___velocity[0]) * 3.141592653589793) * 200.0);",
-            "name": "abs_res"
-        },
-        {
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;power_res = (pow(___velocity[1], 1.5) * 2828.42712474619);",
-            "name": "power_res"
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;add_res[0] = ((((1.0 * 1.0) / 200.0) + ___velocity[0]) * 200.0); add_res[1] = ((((2.0 * 1.0) / 200.0) + ___velocity[1]) * 200.0); add_res[2] = ((((3.0 * 1.0) / 200.0) + ___velocity[2]) * 200.0);",
+            "name": "add_res"
         },
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;magnitude_res = (pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5) * 200.0);",
@@ -139,6 +131,66 @@
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;subtract_res[0] = ((((1.0 * 1.0) / 200.0) - ___velocity[0]) * 200.0); subtract_res[1] = ((((2.0 * 1.0) / 200.0) - ___velocity[1]) * 200.0); subtract_res[2] = ((((3.0 * 1.0) / 200.0) - ___velocity[2]) * 200.0);",
             "name": "subtract_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;sqrt_res = (sqrt(___velocity[2]) * 14.142135623730951);",
+            "name": "sqrt_res"
+        },
+        {
+            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);log_res = (log(___Mach) * 1);",
+            "name": "log_res"
+        },
+        {
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}exp_res = (exp(___CfVec[0]) * 1);",
+            "name": "exp_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;power_res = (pow(___velocity[1], 1.5) * 2828.42712474619);",
+            "name": "power_res"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;abs_res = ((abs(___velocity[0]) * 3.141592653589793) * 200.0);",
+            "name": "abs_res"
+        },
+        {
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}sin_float_res = (sin((___CfVec[0] * 3.141592653589793)) * 1);",
+            "name": "sin_float_res"
+        },
+        {
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}cos_deg_res = (cos(((___CfVec[1] * 3.141592653589793) * 0.017453292519943295)) * 1);",
+            "name": "cos_deg_res"
+        },
+        {
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}tan_rad_res = (tan(((___CfVec[2] * 3.141592653589793) * 1.0)) * 1);",
+            "name": "tan_rad_res"
+        },
+        {
+            "expression": "double ___mut_ratio; ___mut_ratio = mut / mu;asin_res = (asin(___mut_ratio) * 1);",
+            "name": "asin_res"
+        },
+        {
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);acos_res = (acos(___Cp) * 1);",
+            "name": "acos_res"
+        },
+        {
+            "expression": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);atan_res = (atan(___Cpt) * 1);",
+            "name": "atan_res"
+        },
+        {
+            "expression": "floor_res = (floor(primitiveVars[4]) * 40000000.0);",
+            "name": "floor_res"
+        },
+        {
+            "expression": "ceil_res = (ceil(primitiveVars[0]) * 1000.0);",
+            "name": "ceil_res"
+        },
+        {
+            "expression": "double ___vorticity[3];___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;min_res = (min(___vorticity[2], ___vorticity[1]) * 200.0);",
+            "name": "min_res"
+        },
+        {
+            "expression": "double ___vorticity[3];___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;max_res = (max(___vorticity[0], ___vorticity[1]) * 200.0);",
+            "name": "max_res"
         }
     ],
     "usingLiquidAsMaterial": true,
@@ -152,14 +204,27 @@
             "Mach_SI",
             "velocity_SI",
             "uuu",
+            "my_temperature",
             "cross_res",
             "dot_res",
-            "my_temperature",
-            "sqrt_res",
-            "abs_res",
-            "power_res",
+            "add_res",
             "magnitude_res",
-            "subtract_res"
+            "subtract_res",
+            "sqrt_res",
+            "log_res",
+            "exp_res",
+            "power_res",
+            "abs_res",
+            "sin_float_res",
+            "cos_deg_res",
+            "tan_rad_res",
+            "asin_res",
+            "acos_res",
+            "atan_res",
+            "floor_res",
+            "ceil_res",
+            "min_res",
+            "max_res"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
