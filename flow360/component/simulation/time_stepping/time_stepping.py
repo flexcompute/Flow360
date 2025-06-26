@@ -141,7 +141,7 @@ class Steady(Flow360BaseModel):
         Populate CFL's None fields with default
         """
         if "CFL" not in values:
-            return values  # will be handeled by default value
+            return values  # will be handled by default value
         cfl_input = values["CFL"]
         if isinstance(cfl_input, AdaptiveCFL):
             cfl_input = _apply_default_to_none(cfl_input, AdaptiveCFL.default_steady())
@@ -192,7 +192,7 @@ class Unsteady(Flow360BaseModel):
         Populate CFL's None fields with default
         """
         if "CFL" not in values:
-            return values  # will be handeled by default value
+            return values  # will be handled by default value
         cfl_input = values["CFL"]
         if isinstance(cfl_input, AdaptiveCFL):
             cfl_input = _apply_default_to_none(cfl_input, AdaptiveCFL.default_unsteady())

@@ -188,20 +188,6 @@ def _to_25_6_1(params_as_dict):
             velocity_direction = model["spec"].pop("velocity_direction", None)
             if velocity_direction:
                 model["velocity_direction"] = velocity_direction
-
-    # What version is this?
-    if "reference_geometry" in params_as_dict and "area" in params_as_dict["reference_geometry"]:
-        if (
-            params_as_dict["reference_geometry"]["area"] is not None
-            and "type_name" not in params_as_dict["reference_geometry"]["area"]
-        ):
-            params_as_dict["reference_geometry"]["area"]["type_name"] = "number"
-
-    # Add similar logic for step_size in time_stepping
-    if "time_stepping" in params_as_dict and "step_size" in params_as_dict["time_stepping"]:
-        if "type_name" not in params_as_dict["time_stepping"]["step_size"]:
-            params_as_dict["time_stepping"]["step_size"]["type_name"] = "number"
-
     return params_as_dict
 
 

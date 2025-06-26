@@ -342,6 +342,14 @@ def test_constrained_scalar_type():
         model.field = -x
 
 
+def test_disallow_run_time_expressions():
+    class TestModel(Flow360BaseModel):
+        field: ValueOrExpression[float] = pd.Field()
+
+    with pytest.raises(ValueError, match="Run-time expression is not allowed in this field."):
+        TestModel(field=solution.Cp)
+
+
 def test_constrained_dimensioned_type():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[LengthType.Positive] = pd.Field()
@@ -406,21 +414,6 @@ def test_vector_types():
         model.moment = x
 
 
-def test_solver_builtin():
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[float] = pd.Field()
-
-    x = UserVariable(name="x", value=4)
-
-    model = TestModel(field=x * u.m + solution.y_plus * u.cm)
-
-    assert str(model.field) == "x * u.m + solution.y_plus * u.cm"
-
-    # Raises when trying to evaluate with a message about this variable being blacklisted
-    with pytest.raises(ValueError):
-        model.field.evaluate()
-
-
 def test_serializer(
     constant_variable,
     constant_array,
@@ -430,7 +423,9 @@ def test_serializer(
 ):
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[VelocityType] = pd.Field()
-        non_dim_field: Optional[ValueOrExpression[float]] = pd.Field(default=None)
+        non_dim_field: Optional[
+            ValueOrExpression.configure(allow_run_time_expression=True)[float]  # type: ignore
+        ] = pd.Field(default=None)
 
     x = UserVariable(name="x", value=4)
     cp = UserVariable(name="my_cp", value=solution.Cp)
@@ -915,7 +910,7 @@ def test_project_variables_serialization():
     with SI_unit_system:
         params = SimulationParams(
             operating_condition=AerospaceCondition(
-                velocity_magnitude=10 * u.m / u.s,
+                velocity_magnitude=Expression(expression="10 * u.m / u.s"),
                 reference_velocity_magnitude=10 * u.m / u.s,
             ),
             outputs=[
