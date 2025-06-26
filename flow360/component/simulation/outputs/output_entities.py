@@ -99,13 +99,18 @@ class Isosurface(_OutputItemBase):
     )
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
-    iso_value: Union[ValueOrExpression[AnyNumericType], float] = pd.Field(
+    iso_value: ValueOrExpression[AnyNumericType] = pd.Field(
         description="Expect non-dimensional value."
     )
 
     @pd.field_validator("field", mode="before")
     @classmethod
-    def _convert_solver_variables_as_user_variables(cls, value):
+    def _preprocess_expression_and_solver_variable(cls, value):
+        if isinstance(value, Expression):
+            raise ValueError(
+                f"Expression ({value}) cannot be directly used as isosurface field, "
+                "please define a UserVariable first."
+            )
         return solver_variable_to_user_variable(value)
 
     @pd.field_validator("field", mode="after")
@@ -113,7 +118,7 @@ class Isosurface(_OutputItemBase):
     def check_expression_length(cls, v):
         """Ensure the isofield is a scalar."""
         if isinstance(v, UserVariable) and len(v) != 0:
-            raise ValueError(f"The isosurface field must be defined with a scalar variable.")
+            raise ValueError(f"The isosurface field ({v}) must be defined with a scalar variable.")
         return v
 
     @pd.field_validator("field", mode="after")

@@ -1130,14 +1130,13 @@ def is_runtime_expression(value):
     """Check if the input value is a runtime expression."""
     if isinstance(value, unyt_quantity) and np.isnan(value.value):
         return True
-    elif isinstance(value, unyt_array) and np.isnan(value.value).any():
+    if isinstance(value, unyt_array) and np.isnan(value.value).any():
         return True
-    elif isinstance(value, Number) and np.isnan(value):
+    if isinstance(value, Number) and np.isnan(value):
         return True
-    elif isinstance(value, list) and any(np.isnan(item) for item in value):
+    if isinstance(value, list) and any(np.isnan(item) for item in value):
         return any(np.isnan(item) for item in value)
-    else:
-        return False
+    return False
 
 
 def get_input_value_dimensions(
