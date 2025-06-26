@@ -891,15 +891,7 @@ class Expression(Flow360BaseModel, Evaluable):
     @property
     def length(self):
         """The number of elements in the expression. 0 for scalar and anything else for vector."""
-        value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-        assert isinstance(
-            value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
-        ), f"Unexpected evaluated result type: {type(value)}"
-        if isinstance(value, list):
-            return len(value)
-        if isinstance(value, np.ndarray):
-            return 0 if value.shape == () else value.shape[0]
-        return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
+        return get_input_value_length(self)
 
     def __len__(self):
         return self.length
@@ -1161,6 +1153,22 @@ def get_input_value_dimensions(
         value,
         value.__class__.__name__,
     )
+
+
+def get_input_value_length(
+    value: Union[float, list[float], unyt_array, unyt_quantity, Expression, Variable],
+):
+    """Get the length of the input value."""
+    if isinstance(value, Expression):
+        value = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+    assert isinstance(
+        value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
+    ), f"Unexpected evaluated result type: {type(value)}"
+    if isinstance(value, list):
+        return len(value)
+    if isinstance(value, np.ndarray):
+        return 0 if value.shape == () else value.shape[0]
+    return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
 
 def solver_variable_to_user_variable(item):

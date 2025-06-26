@@ -141,13 +141,13 @@ def test_isosurface_single_iso_value():
     uv_vel = UserVariable(name="uv_vel", value=solution.velocity[0])
     with pytest.raises(
         ValueError,
-        match=re.escape("The iso_value ([1] m/s) must be defined with a single variable."),
+        match=re.escape("The iso_value ([1] m/s) must be defined with a single value."),
     ):
         Isosurface(name="test_iso_list", field=uv_vel, iso_value=[1 * u.m / u.s])
 
     with pytest.raises(
         ValueError,
-        match=re.escape("The iso_value ([1 2] m/s) must be defined with a single variable."),
+        match=re.escape("The iso_value ([1 2] m/s) must be defined with a single value."),
     ):
         Isosurface(name="test_iso_unyt_array", field=uv_vel, iso_value=[1, 2] * u.m / u.s)
 

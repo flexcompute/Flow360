@@ -4,7 +4,6 @@ from abc import ABCMeta
 from typing import Literal, Union
 
 import pydantic as pd
-from unyt import unyt_quantity
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
@@ -15,8 +14,8 @@ from flow360.component.simulation.user_code.core.types import (
     Expression,
     UserVariable,
     ValueOrExpression,
-    Variable,
     get_input_value_dimensions,
+    get_input_value_length,
     is_runtime_expression,
     solver_variable_to_user_variable,
 )
@@ -93,7 +92,7 @@ class Isosurface(_OutputItemBase):
     ====
     """
 
-    field: Union[IsoSurfaceFieldNames, str, Variable] = pd.Field(
+    field: Union[IsoSurfaceFieldNames, str, UserVariable] = pd.Field(
         description="Isosurface field variable. One of :code:`p`, :code:`rho`, "
         ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`,"
         " :code:`nuHat` or one of scalar field defined in :class:`UserDefinedField`."
@@ -141,9 +140,9 @@ class Isosurface(_OutputItemBase):
     @classmethod
     def check_single_iso_value(cls, v):
         """Ensure the iso_value is a single value."""
-        if isinstance(v, (unyt_quantity, float)) or (isinstance(v, Expression) and len(v) == 0):
+        if get_input_value_length(v) == 0:
             return v
-        raise ValueError(f"The iso_value ({v}) must be defined with a single variable.")
+        raise ValueError(f"The iso_value ({v}) must be defined with a single value.")
 
     @pd.field_validator("iso_value", mode="after")
     @classmethod
