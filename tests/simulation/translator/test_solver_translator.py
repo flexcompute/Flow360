@@ -672,12 +672,35 @@ def test_param_with_user_variables():
     dot_res = UserVariable(
         name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
     )
-    sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
-    power_res = UserVariable(name="power_res", value=solution.velocity[1] ** 1.5)
-    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * np.pi)
     magnitude_res = UserVariable(name="magnitude_res", value=math.magnitude(solution.velocity))
+    add_res = UserVariable(
+        name="add_res", value=math.add(some_dependent_variable_a, solution.velocity)
+    )
     subtract_res = UserVariable(
         name="subtract_res", value=math.subtract(some_dependent_variable_a, solution.velocity)
+    )
+    sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
+    power_res = UserVariable(name="power_res", value=solution.velocity[1] ** 1.5)
+    log_res = UserVariable(name="log_res", value=math.log(solution.Mach))
+    exp_res = UserVariable(name="exp_res", value=math.exp(solution.CfVec[0]))
+    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * np.pi)
+    sin_float_res = UserVariable(name="sin_float_res", value=math.sin(solution.CfVec[0] * np.pi))
+    cos_deg_res = UserVariable(
+        name="cos_deg_res", value=math.cos(solution.CfVec[1] * np.pi * u.deg)
+    )
+    tan_rad_res = UserVariable(
+        name="tan_rad_res", value=math.tan(solution.CfVec[2] * np.pi * u.rad)
+    )
+    asin_res = UserVariable(name="asin_res", value=math.asin(solution.mut_ratio))
+    acos_res = UserVariable(name="acos_res", value=math.acos(solution.Cp))
+    atan_res = UserVariable(name="atan_res", value=math.atan(solution.Cpt))
+    floor_res = UserVariable(name="floor_res", value=math.floor(solution.pressure))
+    ceil_res = UserVariable(name="ceil_res", value=math.ceil(solution.density))
+    min_res = UserVariable(
+        name="min_res", value=math.min(solution.vorticity[2], solution.vorticity[1])
+    )
+    max_res = UserVariable(
+        name="max_res", value=math.max(solution.vorticity[0], solution.vorticity[1])
     )
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     my_temperature = UserVariable(
@@ -704,14 +727,27 @@ def test_param_with_user_variables():
                         UserVariable(name="uuu", value=solution.velocity).in_units(
                             new_unit="km/ms"
                         ),
+                        my_temperature,
                         cross_res,
                         dot_res,
-                        my_temperature,
-                        sqrt_res,
-                        abs_res,
-                        power_res,
+                        add_res,
                         magnitude_res,
                         subtract_res,
+                        sqrt_res,
+                        log_res,
+                        exp_res,
+                        power_res,
+                        abs_res,
+                        sin_float_res,
+                        cos_deg_res,
+                        tan_rad_res,
+                        asin_res,
+                        acos_res,
+                        atan_res,
+                        floor_res,
+                        ceil_res,
+                        min_res,
+                        max_res,
                     ],
                 )
             ],

@@ -48,6 +48,7 @@ class VariableContextInfo(Flow360BaseModel):
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
     postProcessing: bool = pd.Field()
 
+    # pylint: disable=fixme
     # TODO: This should be removed once front end figure out what to store here.
     model_config = pd.ConfigDict(extra="allow")
 
@@ -643,18 +644,18 @@ class Expression(Flow360BaseModel, Evaluable):
         return value
 
     @pd.model_validator(mode="after")
-    def check_output_units_matches_dimensionality(self) -> str:
-        """Check that the output units have the same dimensionality as the expression"""
+    def check_output_units_matches_dimensions(self) -> str:
+        """Check that the output units have the same dimensions as the expression"""
         if not self.output_units:
             return self
         if self.output_units in ("SI_unit_system", "CGS_unit_system", "Imperial_unit_system"):
             return self
-        output_units_dimensionality = u.Unit(self.output_units).dimensions
-        expression_dimensionality = self.dimensionality
-        if output_units_dimensionality != expression_dimensionality:
+        output_units_dimensions = u.Unit(self.output_units).dimensions
+        expression_dimensions = self.dimensions
+        if output_units_dimensions != expression_dimensions:
             raise ValueError(
-                f"Output units '{self.output_units}' have different dimensionality "
-                f"{output_units_dimensionality} than the expression {expression_dimensionality}."
+                f"Output units '{self.output_units}' have different dimensions "
+                f"{output_units_dimensions} than the expression {expression_dimensions}."
             )
 
         return self
@@ -873,16 +874,16 @@ class Expression(Flow360BaseModel, Evaluable):
         return super().__eq__(other)
 
     @property
-    def dimensionality(self):
-        """The physical dimensionality of the expression."""
+    def dimensions(self):
+        """The physical dimensions of the expression."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
         assert isinstance(
             value, (unyt_array, unyt_quantity, list, Number)
-        ), "Non unyt array so no dimensionality"
+        ), "Non unyt array so no dimensions"
         if isinstance(value, (unyt_array, unyt_quantity)):
             return value.units.dimensions
         if isinstance(value, list):
-            _check_list_items_are_same_dimensionality(value)
+            _check_list_items_are_same_dimensions(value)
             return value[0].units.dimensions
         return u.Unit("dimensionless").dimensions
 
@@ -891,10 +892,12 @@ class Expression(Flow360BaseModel, Evaluable):
         """The number of elements in the expression. 0 for scalar and anything else for vector."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
         assert isinstance(
-            value, (unyt_array, unyt_quantity, list, Number)
+            value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
         ), f"Unexpected evaluated result type: {type(value)}"
         if isinstance(value, list):
             return len(value)
+        if isinstance(value, np.ndarray):
+            return 0 if value.shape == () else value.shape[0]
         return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
     def __len__(self):
@@ -905,12 +908,12 @@ class Expression(Flow360BaseModel, Evaluable):
         Get the output units of the expression.
 
         - If self.output_units is None, derive the default output unit based on the
-        value's dimensionality and current unit system.
+        value's dimensions and current unit system.
 
         - If self.output_units is valid u.Unit string, deserialize it and return it.
 
         - If self.output_units is valid unit system name, derive the default output
-        unit based on the value's dimensionality and the **given** unit system.
+        unit based on the value's dimensions and the **given** unit system.
 
         - If expression is a number constant, return None.
 
@@ -918,7 +921,7 @@ class Expression(Flow360BaseModel, Evaluable):
         """
 
         def get_unit_from_unit_system(expression: Expression, unit_system_name: str):
-            """Derive the default output unit based on the value's dimensionality and current unit system"""
+            """Derive the default output unit based on the value's dimensions and current unit system"""
             numerical_value = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
             if isinstance(numerical_value, list):
                 numerical_value = numerical_value[0]
@@ -951,16 +954,16 @@ class Expression(Flow360BaseModel, Evaluable):
             return result
 
 
-def _check_list_items_are_same_dimensionality(value: list) -> bool:
+def _check_list_items_are_same_dimensions(value: list) -> bool:
     if all(isinstance(item, Expression) for item in value):
-        _check_list_items_are_same_dimensionality(
+        _check_list_items_are_same_dimensions(
             [item.evaluate(raise_on_non_evaluable=False, force_evaluate=True) for item in value]
         )
         return
     if all(isinstance(item, unyt_quantity) for item in value):
-        # ensure all items have the same dimensionality
+        # ensure all items have the same dimensions
         if not all(item.units.dimensions == value[0].units.dimensions for item in value):
-            raise ValueError("All items in the list must have the same dimensionality.")
+            raise ValueError("All items in the list must have the same dimensions.")
         return
     # Also raise when some elements is Number and others are unyt_quantity
     if any(isinstance(item, Number) for item in value) and any(
@@ -1049,7 +1052,7 @@ class ValueOrExpression(Expression, Generic[T]):
             # Handle list of unyt_quantities:
             if isinstance(value, list):
                 # Only checking when list[unyt_quantity]
-                _check_list_items_are_same_dimensionality(value)
+                _check_list_items_are_same_dimensions(value)
                 if all(isinstance(item, (unyt_quantity, Number)) for item in value):
                     # try limiting the number of types we need to handle
                     return unyt_array(value, dtype=np.float64)

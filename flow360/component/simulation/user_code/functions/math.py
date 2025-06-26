@@ -3,12 +3,16 @@ Math.h for Flow360 Expression system
 """
 
 from numbers import Number
-from typing import Any, Union
+from typing import Any, Literal, Union
 
 import numpy as np
-from unyt import unyt_array, unyt_quantity
+from unyt import dimensions, unyt_array, unyt_quantity
 
-from flow360.component.simulation.user_code.core.types import Expression, Variable
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    Variable,
+    _convert_numeric,
+)
 
 
 def _handle_expression_list(value: list[Any]):
@@ -25,7 +29,7 @@ def _handle_expression_list(value: list[Any]):
 
 
 VectorInputType = Union[list[float], unyt_array, Expression, Variable]
-ScalarInputType = Union[float, unyt_quantity, Expression]
+ScalarInputType = Union[float, unyt_quantity, Expression, Variable]
 
 
 def _get_input_array_length(value):
@@ -43,8 +47,104 @@ def _check_same_length(left: VectorInputType, right: VectorInputType, operation_
     right_length = _get_input_array_length(right)
     if left_length != right_length:
         raise ValueError(
-            f"Vectors ({left} | {right}) must have the same length to perform {operation_name}."
+            f"Vectors ({left} | {right}) must have the same length to perform {operation_name} operation."
         )
+
+
+def _get_input_value_dimensions(value: Union[ScalarInputType, VectorInputType]):
+    """Get the dimensions of the input value"""
+    if isinstance(value, list) and len(value) > 0:
+        return _get_input_value_dimensions(value=value[0])
+    if isinstance(value, Variable):
+        return _get_input_value_dimensions(value=value.value)
+    if isinstance(value, Expression):
+        return value.dimensions
+    if isinstance(value, (unyt_array, unyt_quantity)):
+        return value.units.dimensions
+    if isinstance(value, Number):
+        return dimensions.dimensionless
+    return None
+
+
+def _compare_operation_dimensions(value: Union[ScalarInputType, VectorInputType], ref_dimensions):
+    """
+    For certain scalar/vector arithmetic operations,
+    we need to check that the scalar/vector has the specify dimensions.
+    """
+    value_dimensions = _get_input_value_dimensions(value=value)
+    if value_dimensions:
+        return value_dimensions == ref_dimensions
+    return False
+
+
+def _check_same_dimensions(
+    value1: Union[ScalarInputType, VectorInputType],
+    value2: Union[ScalarInputType, VectorInputType],
+    operation_name: str,
+):
+    """
+    For certain scalar/vector arithmetic operations,
+    we need to check that the scalars/vectors have the same dimensions.
+    """
+
+    def _check_list_same_dimensions(value):
+        if not isinstance(value, list) or len(value) <= 1:
+            return
+        value_0_dim = _get_input_value_dimensions(value=value[0])
+        if not all(_get_input_value_dimensions(value=item) == value_0_dim for item in value):
+            raise ValueError(
+                f"Each item in the input value ({value}) must have the same dimensions "
+                f"to perform {operation_name} operation."
+            )
+
+    _check_list_same_dimensions(value=value1)
+    _check_list_same_dimensions(value=value2)
+    value1_dimensions = _get_input_value_dimensions(value=value1)
+    value2_dimensions = _get_input_value_dimensions(value=value2)
+    if value1_dimensions != value2_dimensions:
+        raise ValueError(
+            f"Input values ({value1} | {value2}) must have the same dimensions to perform {operation_name} operation."
+        )
+
+
+def _check_value_dimensions(
+    value: Union[ScalarInputType, VectorInputType],
+    ref_dimensions: list,
+    operation_name: str,
+):
+    """
+    For certain scalar/vector arithmetic operations,
+    we need to check that the scalar/vector satisfies the specific dimensions.
+    """
+
+    if len(ref_dimensions) == 1:
+        dimensions_err_msg = str(ref_dimensions[0])
+    else:
+        dimensions_err_msg = (
+            "one of (" + ", ".join([str(dimension) for dimension in ref_dimensions]) + ")"
+        )
+
+    if not any(
+        _compare_operation_dimensions(value=value, ref_dimensions=dimension)
+        for dimension in ref_dimensions
+    ):
+        raise ValueError(
+            f"The dimensions of the input value ({value}) "
+            f"must be {dimensions_err_msg} to perform {operation_name} operation."
+        )
+
+
+def _create_min_max_expression(
+    value1: ScalarInputType, value2: ScalarInputType, operation_name: Literal["min", "max"]
+):
+    _check_same_dimensions(value1=value1, value2=value2, operation_name=operation_name)
+    if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
+        return np.maximum(value1, value2) if operation_name == "max" else np.minimum(value1, value2)
+    if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):
+        return Expression(expression=f"math.{operation_name}({value1},{_convert_numeric(value2)})")
+    if isinstance(value2, (Expression, Variable)) and isinstance(value1, unyt_quantity):
+        return Expression(expression=f"math.{operation_name}({_convert_numeric(value1)},{value2})")
+    return Expression(expression=f"math.{operation_name}({value1},{value2})")
 
 
 def cross(left: VectorInputType, right: VectorInputType):
@@ -107,6 +207,19 @@ def magnitude(value: VectorInputType):
     return result**0.5
 
 
+def add(left: VectorInputType, right: VectorInputType):
+    """Customized Add function to work with the `Expression` and Variables"""
+    # Taking advantage of unyt as much as possible:
+    if isinstance(left, unyt_array) and isinstance(right, unyt_array):
+        return left + right
+
+    _check_same_length(left, right, "add")
+    _check_same_dimensions(left, right, "add")
+
+    result = [left[i] + right[i] for i in range(len(left))]
+    return _handle_expression_list(result)
+
+
 def subtract(left: VectorInputType, right: VectorInputType):
     """Customized Subtract function to work with the `Expression` and Variables"""
     # Taking advantage of unyt as much as possible:
@@ -114,18 +227,9 @@ def subtract(left: VectorInputType, right: VectorInputType):
         return left - right
 
     _check_same_length(left, right, "subtract")
+    _check_same_dimensions(left, right, "subtract")
 
-    if len(left) == 3:
-        result = [
-            left[0] - right[0],
-            left[1] - right[1],
-            left[2] - right[2],
-        ]
-    elif len(left) == 2:
-        result = [left[0] - right[0], left[1] - right[1]]
-    else:
-        raise ValueError(f"Vector length must be 2 or 3, got {len(left)}.")
-
+    result = [left[i] - right[i] for i in range(len(left))]
     return _handle_expression_list(result)
 
 
@@ -133,9 +237,11 @@ def subtract(left: VectorInputType, right: VectorInputType):
 def ensure_scalar_input(func):
     """Decorator to check if the input is a scalar and raise an error if so."""
 
-    def wrapper(value):
+    def wrapper(*args, **kwargs):
 
         def is_scalar(input_value):
+            if isinstance(input_value, list):
+                return False
             if isinstance(input_value, Number):
                 return True
             if isinstance(input_value, unyt_quantity):
@@ -146,9 +252,10 @@ def ensure_scalar_input(func):
             except Exception:  # pylint: disable=broad-exception-caught
                 return False
 
-        if not is_scalar(value):
-            raise ValueError(f"Scalar function ({func.__name__}) on {value} not supported.")
-        return func(value)
+        for arg in args:
+            if not is_scalar(arg):
+                raise ValueError(f"Scalar function ({func.__name__}) on {arg} not supported.")
+        return func(*args, **kwargs)
 
     return wrapper
 
@@ -164,6 +271,11 @@ def sqrt(value: ScalarInputType):
 @ensure_scalar_input
 def log(value: ScalarInputType):
     """Customized Log function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.dimensionless],
+        operation_name="log",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.log(value)
     return Expression(expression=f"math.log({value})")
@@ -172,6 +284,11 @@ def log(value: ScalarInputType):
 @ensure_scalar_input
 def exp(value: ScalarInputType):
     """Customized Exponential function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.dimensionless],
+        operation_name="exp",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.exp(value)
     return Expression(expression=f"math.exp({value})")
@@ -180,6 +297,11 @@ def exp(value: ScalarInputType):
 @ensure_scalar_input
 def sin(value: ScalarInputType):
     """Customized Sine function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.angle, dimensions.dimensionless],
+        operation_name="sin",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.sin(value)
     return Expression(expression=f"math.sin({value})")
@@ -188,6 +310,11 @@ def sin(value: ScalarInputType):
 @ensure_scalar_input
 def cos(value: ScalarInputType):
     """Customized Cosine function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.angle, dimensions.dimensionless],
+        operation_name="cos",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.cos(value)
     return Expression(expression=f"math.cos({value})")
@@ -196,6 +323,11 @@ def cos(value: ScalarInputType):
 @ensure_scalar_input
 def tan(value: ScalarInputType):
     """Customized Tangent function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.angle, dimensions.dimensionless],
+        operation_name="tan",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.tan(value)
     return Expression(expression=f"math.tan({value})")
@@ -204,6 +336,11 @@ def tan(value: ScalarInputType):
 @ensure_scalar_input
 def asin(value: ScalarInputType):
     """Customized ArcSine function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.dimensionless],
+        operation_name="asin",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.arcsin(value)
     return Expression(expression=f"math.asin({value})")
@@ -212,6 +349,11 @@ def asin(value: ScalarInputType):
 @ensure_scalar_input
 def acos(value: ScalarInputType):
     """Customized ArcCosine function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.dimensionless],
+        operation_name="acos",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.arccos(value)
     return Expression(expression=f"math.acos({value})")
@@ -220,25 +362,26 @@ def acos(value: ScalarInputType):
 @ensure_scalar_input
 def atan(value: ScalarInputType):
     """Customized ArcTangent function to work with the `Expression` and Variables"""
+    _check_value_dimensions(
+        value=value,
+        ref_dimensions=[dimensions.dimensionless],
+        operation_name="atan",
+    )
     if isinstance(value, (unyt_quantity, Number)):
         return np.arctan(value)
     return Expression(expression=f"math.atan({value})")
 
 
 @ensure_scalar_input
-def min(value: ScalarInputType):  # pylint: disable=redefined-builtin
+def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Min function to work with the `Expression` and Variables"""
-    if isinstance(value, (unyt_quantity, Number)):
-        return np.min(value)
-    return Expression(expression=f"math.min({value})")
+    return _create_min_max_expression(value1, value2, "min")
 
 
 @ensure_scalar_input
-def max(value: ScalarInputType):  # pylint: disable=redefined-builtin
+def max(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Max function to work with the `Expression` and Variables"""
-    if isinstance(value, (unyt_quantity, Number)):
-        return np.max(value)
-    return Expression(expression=f"math.max({value})")
+    return _create_min_max_expression(value1, value2, "max")
 
 
 @ensure_scalar_input

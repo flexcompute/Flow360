@@ -131,7 +131,7 @@ def _check_if_input_has_delta_unit(quant):
 # pylint: disable=no-member
 def _has_dimensions(quant, dim, expect_delta_unit: bool):
     """
-    Checks the argument has the right dimensionality.
+    Checks the argument has the right dimensions.
     """
 
     try:
