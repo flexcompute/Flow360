@@ -316,8 +316,10 @@ def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
         "surfaceField": (
             entity.field if not isinstance(entity.field, UserVariable) else entity.field.name
         ),
-        "surfaceFieldMagnitude": translate_value_or_expression_object(
-            entity.iso_value, input_params
+        "surfaceFieldMagnitude": (
+            translate_value_or_expression_object(entity.iso_value, input_params)
+            if not isinstance(entity.iso_value, Number)
+            else entity.iso_value
         ),
     }
 
