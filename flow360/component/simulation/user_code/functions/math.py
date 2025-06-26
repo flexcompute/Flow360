@@ -66,14 +66,14 @@ def _get_input_value_dimensions(value: Union[ScalarInputType, VectorInputType]):
     return None
 
 
-def _compare_operation_dimensions(value: Union[ScalarInputType, VectorInputType], dimensions):
+def _compare_operation_dimensions(value: Union[ScalarInputType, VectorInputType], ref_dimensions):
     """
     For certain scalar/vector arithmetic operations,
     we need to check that the scalar/vector has the specify dimensions.
     """
     value_dimensions = _get_input_value_dimensions(value=value)
     if value_dimensions:
-        return value_dimensions == dimensions
+        return value_dimensions == ref_dimensions
     return False
 
 
@@ -93,7 +93,8 @@ def _check_same_dimensions(
         value_0_dim = _get_input_value_dimensions(value=value[0])
         if not all(_get_input_value_dimensions(value=item) == value_0_dim for item in value):
             raise ValueError(
-                f"Each item in the input value ({value}) must have the same dimensions to perform {operation_name} operation."
+                f"Each item in the input value ({value}) must have the same dimensions "
+                f"to perform {operation_name} operation."
             )
 
     _check_list_same_dimensions(value=value1)
@@ -109,7 +110,7 @@ def _check_same_dimensions(
 
 def _check_operation_dimensions(
     value: Union[ScalarInputType, VectorInputType],
-    dimensions: list,
+    ref_dimensions: list,
     operation_name: str,
 ):
     """
@@ -117,15 +118,16 @@ def _check_operation_dimensions(
     we need to check that the scalar/vector satisfies the specific dimensions.
     """
 
-    if len(dimensions) == 1:
-        dimensions_err_msg = str(dimensions[0])
+    if len(ref_dimensions) == 1:
+        dimensions_err_msg = str(ref_dimensions[0])
     else:
         dimensions_err_msg = (
-            "one of (" + ", ".join([str(dimension) for dimension in dimensions]) + ")"
+            "one of (" + ", ".join([str(dimension) for dimension in ref_dimensions]) + ")"
         )
 
     if not any(
-        _compare_operation_dimensions(value=value, dimensions=dimension) for dimension in dimensions
+        _compare_operation_dimensions(value=value, ref_dimensions=dimension)
+        for dimension in ref_dimensions
     ):
         raise ValueError(
             f"The dimensions of the input value ({value}) "
@@ -259,7 +261,7 @@ def log(value: ScalarInputType):
     """Customized Log function to work with the `Expression` and Variables"""
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.dimensionless],
+        ref_dimensions=[dimensions.dimensionless],
         operation_name="log",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -272,7 +274,7 @@ def exp(value: ScalarInputType):
     """Customized Exponential function to work with the `Expression` and Variables"""
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.dimensionless],
+        ref_dimensions=[dimensions.dimensionless],
         operation_name="exp",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -283,10 +285,9 @@ def exp(value: ScalarInputType):
 @ensure_scalar_input
 def sin(value: ScalarInputType):
     """Customized Sine function to work with the `Expression` and Variables"""
-    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.angle, dimensions.dimensionless],
+        ref_dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="sin",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -297,10 +298,9 @@ def sin(value: ScalarInputType):
 @ensure_scalar_input
 def cos(value: ScalarInputType):
     """Customized Cosine function to work with the `Expression` and Variables"""
-    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.angle, dimensions.dimensionless],
+        ref_dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="cos",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -311,10 +311,9 @@ def cos(value: ScalarInputType):
 @ensure_scalar_input
 def tan(value: ScalarInputType):
     """Customized Tangent function to work with the `Expression` and Variables"""
-    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.angle, dimensions.dimensionless],
+        ref_dimensions=[dimensions.angle, dimensions.dimensionless],
         operation_name="tan",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -327,7 +326,7 @@ def asin(value: ScalarInputType):
     """Customized ArcSine function to work with the `Expression` and Variables"""
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.dimensionless],
+        ref_dimensions=[dimensions.dimensionless],
         operation_name="asin",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -340,7 +339,7 @@ def acos(value: ScalarInputType):
     """Customized ArcCosine function to work with the `Expression` and Variables"""
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.dimensionless],
+        ref_dimensions=[dimensions.dimensionless],
         operation_name="acos",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -353,7 +352,7 @@ def atan(value: ScalarInputType):
     """Customized ArcTangent function to work with the `Expression` and Variables"""
     _check_operation_dimensions(
         value=value,
-        dimensions=[dimensions.dimensionless],
+        ref_dimensions=[dimensions.dimensionless],
         operation_name="atan",
     )
     if isinstance(value, (unyt_quantity, Number)):
@@ -410,6 +409,3 @@ def floor(value: ScalarInputType):
     if isinstance(value, (unyt_quantity, Number)):
         return np.floor(value)
     return Expression(expression=f"math.floor({value})")
-
-
-# TODO: Unit tests for translation

@@ -876,10 +876,12 @@ class Expression(Flow360BaseModel, Evaluable):
         """The number of elements in the expression. 0 for scalar and anything else for vector."""
         value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
         assert isinstance(
-            value, (unyt_array, unyt_quantity, list, Number)
+            value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
         ), f"Unexpected evaluated result type: {type(value)}"
         if isinstance(value, list):
             return len(value)
+        if isinstance(value, np.ndarray):
+            return 0 if value.shape == () else value.shape[0]
         return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
     def __len__(self):
