@@ -101,7 +101,6 @@ def _check_same_dimensions(
     _check_list_same_dimensions(value=value2)
     value1_dimensions = _get_input_value_dimensions(value=value1)
     value2_dimensions = _get_input_value_dimensions(value=value2)
-    print(value1_dimensions, value2_dimensions)
     if value1_dimensions != value2_dimensions:
         raise ValueError(
             f"Input values ({value1} | {value2}) must have the same dimensions to perform {operation_name} operation."
@@ -364,7 +363,6 @@ def atan(value: ScalarInputType):
 def min(value1: ScalarInputType, value2: ScalarInputType):  # pylint: disable=redefined-builtin
     """Customized Min function to work with the `Expression` and Variables"""
     _check_same_dimensions(value1=value1, value2=value2, operation_name="min")
-    print(type(value1), type(value2))
     if isinstance(value1, (unyt_quantity, Number)) and isinstance(value2, (unyt_quantity, Number)):
         return np.minimum(value1, value2)
     if isinstance(value1, (Expression, Variable)) and isinstance(value2, unyt_quantity):

@@ -48,6 +48,7 @@ class VariableContextInfo(Flow360BaseModel):
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
     postProcessing: bool = pd.Field()
 
+    # pylint: disable=fixme
     # TODO: This should be removed once front end figure out what to store here.
     model_config = pd.ConfigDict(extra="allow")
 
