@@ -955,7 +955,7 @@ class Expression(Flow360BaseModel, Evaluable):
             return result
 
 
-def _check_list_items_are_same_dimensions(value: list) -> bool:
+def _check_list_items_are_same_dimensions(value: list):
     if all(isinstance(item, Expression) for item in value):
         _check_list_items_are_same_dimensions(
             [item.evaluate(raise_on_non_evaluable=False, force_evaluate=True) for item in value]
@@ -1043,6 +1043,8 @@ class ValueOrExpression(Expression, Generic[T]):
             # Handle list of unyt_quantities:
             if isinstance(value, list):
                 # Only checking when list[unyt_quantity]
+                if len(value) == 0:
+                    raise ValueError("Empty list is not allowed.")
                 _check_list_items_are_same_dimensions(value)
                 if all(isinstance(item, (unyt_quantity, Number)) for item in value):
                     # try limiting the number of types we need to handle

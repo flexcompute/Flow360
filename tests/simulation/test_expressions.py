@@ -125,6 +125,9 @@ def test_variable_init():
     # Expression (possibly with other variable)
     c = UserVariable(name="c", value=b + 1 * u.m)
 
+    with pytest.raises(ValueError, match="Empty list is not allowed."):
+        UserVariable(name="d", value=[])
+
 
 def test_expression_init():
     class TestModel(Flow360BaseModel):
