@@ -909,7 +909,7 @@ def _get_default_mass_outflow_udd(entities, mass_flow_rate):
                     start_step)},
             state_vars_initial_value=["initialStaticPressureRatio"],
             update_law=[
-                "if (hasSupersonicFlow) (1.0 + Kp) * state[0]; else state[0] + Kp * (pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRate/area, 2), gamma/(gamma-1.0)) - pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRateTarget/area,2),gamma/(gamma-1.0)));",
+                "if (hasSupersonicFlow) (1.0 + Kp) * state[0]; else state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area);"
             ],
             input_boundary_patches=entities.stored_entities,
             output_target=entity
@@ -937,7 +937,7 @@ def _get_default_mass_inflow_udd(entities, mass_flow_rate):
                     start_step)},
             state_vars_initial_value=["initialTotalPressureRatio"],
             update_law=[
-                "if (hasSupersonicFlow) (1.0 - Kp) * state[0]; else state[0] - Kp * (pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRate/area, 2), gamma/(gamma-1.0)) - pow(1.0 + (gamma - 1.0)/2.0 * pow(massFlowRateTarget/area,2),gamma/(gamma-1.0)));",
+                "if (hasSupersonicFlow) (1.0 - Kp) * state[0]; else state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area);"
             ],
             input_boundary_patches=entities.stored_entities,
             output_target=entity
