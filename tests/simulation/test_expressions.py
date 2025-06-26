@@ -1044,3 +1044,15 @@ def test_whitelisted_callables():
 
     assert compare_lists(solution_vars, WHITELISTED_CALLABLES["flow360.solution"]["callables"])
     assert compare_lists(control_vars, WHITELISTED_CALLABLES["flow360.control"]["callables"])
+
+
+def test_deserialization_with_wrong_syntax():
+    with open("data/simulation_with_wrong_expr_syntax.json", "r+") as fh:
+        data = json.load(fh)
+
+    _, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+
+    assert len(errors) == 1
+    assert r"Value error, invalid decimal literal at line 1, column 2" in errors[0]["msg"]

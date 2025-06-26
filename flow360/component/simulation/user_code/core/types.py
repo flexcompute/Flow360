@@ -1023,8 +1023,12 @@ class ValueOrExpression(Expression, Generic[T]):
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
 
         def _deserialize(value) -> Self:
+            # Try to see if the value is already a SerializedValueOrExpression
             try:
                 value = SerializedValueOrExpression.model_validate(value)
+            except Exception:  # pylint:disable=broad-exception-caught
+                pass
+            if isinstance(value, SerializedValueOrExpression):
                 if value.type_name == "number":
                     if value.units is not None:
                         # unyt objects
@@ -1032,8 +1036,6 @@ class ValueOrExpression(Expression, Generic[T]):
                     return value.value
                 if value.type_name == "expression":
                     return expr_type(expression=value.expression, output_units=value.output_units)
-            except Exception:  # pylint:disable=broad-exception-caught
-                pass
 
             @deprecation_reminder("25.8.0")
             def _handle_legacy_unyt_values(value):
