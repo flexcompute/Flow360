@@ -4,6 +4,7 @@ from abc import ABCMeta
 from typing import Literal, Union
 
 import pydantic as pd
+from unyt import unyt_quantity
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
@@ -100,7 +101,7 @@ class Isosurface(_OutputItemBase):
     # pylint: disable=fixme
     # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
     iso_value: ValueOrExpression[AnyNumericType] = pd.Field(
-        description="Expect non-dimensional value."
+        description="Expect non-dimensional value.",
     )
 
     @pd.field_validator("field", mode="before")
@@ -138,6 +139,14 @@ class Isosurface(_OutputItemBase):
 
     @pd.field_validator("iso_value", mode="after")
     @classmethod
+    def check_single_iso_value(cls, v):
+        """Ensure the iso_value is a single value."""
+        if isinstance(v, (unyt_quantity, float)) or (isinstance(v, Expression) and len(v) == 0):
+            return v
+        raise ValueError(f"The iso_value ({v}) must be defined with a single variable.")
+
+    @pd.field_validator("iso_value", mode="after")
+    @classmethod
     def check_iso_value_dimensions(cls, v, info: pd.ValidationInfo):
         """Ensure the iso_value has the same dimensions as the field."""
 
@@ -151,7 +160,7 @@ class Isosurface(_OutputItemBase):
         if field_dimensions != value_dimensions:
             raise ValueError(
                 f"The iso_value ({v}, dimensions:{value_dimensions}) should have the same dimensions as "
-                f"the isosurface field (dimensions: {field_dimensions})."
+                f"the isosurface field ({field}, dimensions: {field_dimensions})."
             )
         return v
 
