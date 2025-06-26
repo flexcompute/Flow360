@@ -169,9 +169,15 @@ def _replace_ghost_surfaces(params: SimulationParams):
                                 ghost_entities_from_metadata=ghost_entities_from_metadata,
                             )
 
-            elif isinstance(field, list):
+            elif isinstance(field, (list, tuple)):
                 for item in field:
-                    if isinstance(item, Flow360BaseModel):
+                    if isinstance(item, GhostSurface):
+                        # pylint: disable=protected-access
+                        item = _replace_the_ghost_surface(
+                            ghost_surface=item,
+                            ghost_entities_from_metadata=ghost_entities_from_metadata,
+                        )
+                    elif isinstance(item, Flow360BaseModel):
                         _find_ghost_surfaces(
                             model=item, ghost_entities_from_metadata=ghost_entities_from_metadata
                         )
