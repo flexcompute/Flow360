@@ -180,7 +180,6 @@ def exp(value: ScalarInputType):
 @ensure_scalar_input
 def sin(value: ScalarInputType):
     """Customized Sine function to work with the `Expression` and Variables"""
-    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     if isinstance(value, (unyt_quantity, Number)):
         return np.sin(value)
     return Expression(expression=f"math.sin({value})")
@@ -189,7 +188,6 @@ def sin(value: ScalarInputType):
 @ensure_scalar_input
 def cos(value: ScalarInputType):
     """Customized Cosine function to work with the `Expression` and Variables"""
-    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     if isinstance(value, (unyt_quantity, Number)):
         return np.cos(value)
     return Expression(expression=f"math.cos({value})")
@@ -198,7 +196,6 @@ def cos(value: ScalarInputType):
 @ensure_scalar_input
 def tan(value: ScalarInputType):
     """Customized Tangent function to work with the `Expression` and Variables"""
-    # TODO: Add check that the value has dimension angle, also does converting to solver unit works for angles?
     if isinstance(value, (unyt_quantity, Number)):
         return np.tan(value)
     return Expression(expression=f"math.tan({value})")
@@ -266,6 +263,3 @@ def floor(value: ScalarInputType):
     if isinstance(value, (unyt_quantity, Number)):
         return np.floor(value)
     return Expression(expression=f"math.floor({value})")
-
-
-# TODO: Unit tests for translation

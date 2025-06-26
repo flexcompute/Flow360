@@ -56,8 +56,10 @@
             "units": "degree"
         },
         "velocity_magnitude": {
-            "value": 10.0,
-            "units": "m/s"
+            "type_name": "expression",
+            "expression": "10 * u.m / u.s",
+            "evaluated_value": 10.0,
+            "evaluated_units": "m/s"
         },
         "thermal_state": {
             "type_name": "ThermalState",

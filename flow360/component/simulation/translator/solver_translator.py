@@ -33,6 +33,7 @@ from flow360.component.simulation.models.surface_models import (
 )
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
+    AngularVelocity,
     BETDisk,
     Fluid,
     NavierStokesInitialCondition,
@@ -211,7 +212,7 @@ def rotation_entity_info_serializer(volume):
     }
 
 
-def rotation_translator(model: Rotation):
+def rotation_translator(model: Rotation, params: SimulationParams):
     """Rotation translator"""
     volume_zone = {
         "modelType": "FluidDynamics",
@@ -222,6 +223,7 @@ def rotation_translator(model: Rotation):
         volume_zone["referenceFrame"]["parentVolumeName"] = model.parent_volume.full_name
     spec = dump_dict(model)["spec"]
     if spec is not None:
+        print(">>> model.spec = ", model.spec, type(model.spec))
         spec_value = spec.get("value", None)
         if isinstance(spec_value, str):
             volume_zone["referenceFrame"]["thetaRadians"] = spec_value
@@ -230,6 +232,10 @@ def rotation_translator(model: Rotation):
             and spec_value.get("units", "") == "flow360_angular_velocity_unit"
         ):
             volume_zone["referenceFrame"]["omegaRadians"] = spec_value["value"]
+        elif isinstance(model.spec, AngularVelocity):
+            volume_zone["referenceFrame"]["omegaRadians"] = translate_value_or_expression_object(
+                model.spec.value, params
+            )
     return volume_zone
 
 
@@ -1214,7 +1220,7 @@ def get_solver_json(
     translated["freestream"] = {
         "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.__class__.model_fields else 0,
         "betaAngle": op.beta.to("degree").v.item() if "beta" in op.__class__.model_fields else 0,
-        "Mach": op.velocity_magnitude.v.item(),
+        "Mach": translate_value_or_expression_object(op.velocity_magnitude, input_params),
         "Temperature": (
             op.thermal_state.temperature.to("K").v.item()
             if not isinstance(op, LiquidOperatingCondition)
@@ -1379,6 +1385,7 @@ def get_solver_json(
                 rotation_translator,
                 to_list=False,
                 entity_injection_func=rotation_entity_info_serializer,
+                translation_func_params=input_params,
             )
         )
         translated["volumeZones"] = volume_zones

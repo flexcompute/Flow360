@@ -915,7 +915,7 @@ def test_project_variables_serialization():
     with SI_unit_system:
         params = SimulationParams(
             operating_condition=AerospaceCondition(
-                velocity_magnitude=10 * u.m / u.s,
+                velocity_magnitude=Expression(expression="10 * u.m / u.s"),
                 reference_velocity_magnitude=10 * u.m / u.s,
             ),
             outputs=[

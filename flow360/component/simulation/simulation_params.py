@@ -592,9 +592,11 @@ class SimulationParams(_ParamModelBase):
             # Provides an imaginary "speed of sound"
             # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
             # To ensure incompressible range.
-            if self.operating_condition.velocity_magnitude.value != 0:
+            # pylint: disable=protected-access
+            if self.operating_condition._evaluated_velocity_magnitude.value != 0:
                 return (
-                    self.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+                    self.operating_condition._evaluated_velocity_magnitude
+                    / LIQUID_IMAGINARY_FREESTREAM_MACH
                 ).to("m/s")
             return (
                 self.operating_condition.reference_velocity_magnitude

@@ -961,13 +961,28 @@ T = TypeVar("T")
 class ValueOrExpression(Expression, Generic[T]):
     """Model accepting both value and expressions"""
 
-    def __class_getitem__(cls, typevar_values):  # pylint:disable=too-many-statements
+    def __class_getitem__(cls, template_args):  # pylint:disable=too-many-statements
+        # ————————————————————— Parse our subscription args —————————————————————
+        # if user did ValueOrExpression[T, False] then params is a tuple:
+        if (
+            isinstance(template_args, tuple)
+            and len(template_args) == 2
+            and isinstance(template_args[1], bool)
+        ):
+            # pylint:disable=self-assigning-variable
+            typevar_values, allow_inf_nan = template_args
+        else:
+            typevar_values, allow_inf_nan = template_args, True
+            # TODO: Change default to False
+
         def _internal_validator(value: Expression):
             try:
                 result = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
-            pd.TypeAdapter(typevar_values).validate_python(result, context={"allow_inf_nan": True})
+            pd.TypeAdapter(typevar_values).validate_python(
+                result, context={"allow_inf_nan": allow_inf_nan}
+            )
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
@@ -984,6 +999,17 @@ class ValueOrExpression(Expression, Generic[T]):
                     return expr_type(expression=value.expression, output_units=value.output_units)
             except Exception:  # pylint:disable=broad-exception-caught
                 pass
+
+            @deprecation_reminder("25.8.0")
+            def _handle_legacy_unyt_values(value):
+                """Handle {"units":..., "value":...} from legacy input. This is much easier than writing the updater."""
+                if isinstance(value, dict) and "units" in value and "value" in value:
+                    return unyt_array(value["value"], value["units"], dtype=np.float64), True
+                return value, False
+
+            value, is_legacy_unyt_value = _handle_legacy_unyt_values(value)
+            if is_legacy_unyt_value:
+                return value
 
             # Handle list of unyt_quantities:
             if isinstance(value, list):
