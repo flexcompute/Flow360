@@ -11,7 +11,9 @@ from unyt import dimensions, unyt_array, unyt_quantity
 from flow360.component.simulation.user_code.core.types import (
     Expression,
     Variable,
+    _check_list_items_are_same_dimensions,
     _convert_numeric,
+    get_input_value_dimensions,
 )
 
 
@@ -51,27 +53,12 @@ def _check_same_length(left: VectorInputType, right: VectorInputType, operation_
         )
 
 
-def _get_input_value_dimensions(value: Union[ScalarInputType, VectorInputType]):
-    """Get the dimensions of the input value"""
-    if isinstance(value, list) and len(value) > 0:
-        return _get_input_value_dimensions(value=value[0])
-    if isinstance(value, Variable):
-        return _get_input_value_dimensions(value=value.value)
-    if isinstance(value, Expression):
-        return value.dimensions
-    if isinstance(value, (unyt_array, unyt_quantity)):
-        return value.units.dimensions
-    if isinstance(value, Number):
-        return dimensions.dimensionless
-    return None
-
-
 def _compare_operation_dimensions(value: Union[ScalarInputType, VectorInputType], ref_dimensions):
     """
     For certain scalar/vector arithmetic operations,
     we need to check that the scalar/vector has the specify dimensions.
     """
-    value_dimensions = _get_input_value_dimensions(value=value)
+    value_dimensions = get_input_value_dimensions(value=value)
     if value_dimensions:
         return value_dimensions == ref_dimensions
     return False
@@ -90,8 +77,10 @@ def _check_same_dimensions(
     def _check_list_same_dimensions(value):
         if not isinstance(value, list) or len(value) <= 1:
             return
-        value_0_dim = _get_input_value_dimensions(value=value[0])
-        if not all(_get_input_value_dimensions(value=item) == value_0_dim for item in value):
+        try:
+            _check_list_items_are_same_dimensions(value=value)
+        except ValueError:
+            # pylint:disable = raise-missing-from
             raise ValueError(
                 f"Each item in the input value ({value}) must have the same dimensions "
                 f"to perform {operation_name} operation."
@@ -99,9 +88,8 @@ def _check_same_dimensions(
 
     _check_list_same_dimensions(value=value1)
     _check_list_same_dimensions(value=value2)
-    value1_dimensions = _get_input_value_dimensions(value=value1)
-    value2_dimensions = _get_input_value_dimensions(value=value2)
-    print(value1_dimensions, value2_dimensions)
+    value1_dimensions = get_input_value_dimensions(value=value1)
+    value2_dimensions = get_input_value_dimensions(value=value2)
     if value1_dimensions != value2_dimensions:
         raise ValueError(
             f"Input values ({value1} | {value2}) must have the same dimensions to perform {operation_name} operation."

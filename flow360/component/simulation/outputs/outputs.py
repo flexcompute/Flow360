@@ -36,10 +36,10 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     Surface,
 )
-from flow360.component.simulation.unit_system import LengthType, unit_system_manager
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
-    SolverVariable,
     UserVariable,
+    solver_variable_to_user_variable,
 )
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -127,17 +127,6 @@ class _OutputBase(Flow360BaseModel):
     @classmethod
     def _convert_solver_variables_as_user_variables(cls, value):
         # Handle both dict/list (deserialization) and UniqueItemList (python object)
-        def solver_variable_to_user_variable(item):
-            if isinstance(item, SolverVariable):
-                if unit_system_manager.current is None:
-                    raise ValueError(
-                        f"Solver variable {item.name} cannot be used without a unit system."
-                    )
-                unit_system_name = unit_system_manager.current.name
-                name = item.name.split(".")[-1] if "." in item.name else item.name
-                return UserVariable(name=f"{name}_{unit_system_name}", value=item)
-            return item
-
         # If input is a dict (from deserialization so no SolverVariable expected)
         if isinstance(value, dict):
             return value

@@ -24,13 +24,14 @@ import unyt as u
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
-from unyt import Unit, unyt_array, unyt_quantity
+from unyt import Unit, dimensions, unyt_array, unyt_quantity
 
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
 from flow360.component.simulation.blueprint.core.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater_utils import deprecation_reminder
+from flow360.component.simulation.unit_system import unit_system_manager
 from flow360.component.simulation.user_code.core.context import default_context
 from flow360.component.simulation.user_code.core.utils import (
     handle_syntax_error,
@@ -1001,17 +1002,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
             # Detect run-time expressions
             if allow_run_time_expression is False:
-                run_time_expression = False
-                if isinstance(result, unyt_quantity) and np.isnan(result.value):
-                    run_time_expression = True
-                elif isinstance(result, unyt_array) and np.isnan(result.value).any():
-                    run_time_expression = True
-                elif isinstance(result, Number) and np.isnan(result):
-                    run_time_expression = True
-                elif isinstance(result, list) and any(np.isnan(item) for item in result):
-                    run_time_expression = True
-
-                if run_time_expression:
+                if is_runtime_expression(result):
                     raise ValueError(
                         "Run-time expression is not allowed in this field. "
                         "Please ensure this field does not depend on any control or solver variables."
@@ -1133,3 +1124,49 @@ class ValueOrExpression(Expression, Generic[T]):
             PlainSerializer(_serializer),
         ]
         return union_type
+
+
+def is_runtime_expression(value):
+    """Check if the input value is a runtime expression."""
+    if isinstance(value, unyt_quantity) and np.isnan(value.value):
+        return True
+    elif isinstance(value, unyt_array) and np.isnan(value.value).any():
+        return True
+    elif isinstance(value, Number) and np.isnan(value):
+        return True
+    elif isinstance(value, list) and any(np.isnan(item) for item in value):
+        return any(np.isnan(item) for item in value)
+    else:
+        return False
+
+
+def get_input_value_dimensions(
+    value: Union[float, list[float], unyt_array, unyt_quantity, Expression, Variable],
+):
+    """Get the dimensions of the input value."""
+    if isinstance(value, list):
+        return get_input_value_dimensions(value=value[0]) if len(value) > 0 else None
+    if isinstance(value, Variable):
+        return get_input_value_dimensions(value=value.value)
+    if isinstance(value, Expression):
+        return value.dimensions
+    if isinstance(value, (unyt_array, unyt_quantity)):
+        return value.units.dimensions
+    if isinstance(value, Number):
+        return dimensions.dimensionless
+    raise ValueError(
+        "Cannot get input value's dimensions due to the unknown value type: ",
+        value,
+        value.__class__.__name__,
+    )
+
+
+def solver_variable_to_user_variable(item):
+    """Convert the solver variable to a user variable using the current unit system."""
+    if isinstance(item, SolverVariable):
+        if unit_system_manager.current is None:
+            raise ValueError(f"Solver variable {item.name} cannot be used without a unit system.")
+        unit_system_name = unit_system_manager.current.name
+        name = item.name.split(".")[-1] if "." in item.name else item.name
+        return UserVariable(name=f"{name}_{unit_system_name}", value=item)
+    return item
