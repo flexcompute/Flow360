@@ -86,15 +86,13 @@ from flow360.component.simulation.translator.utils import (
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
+    UserDefinedDynamic,
+)
 from flow360.component.simulation.utils import (
     is_exact_instance,
     is_instance_of_type_in_union,
 )
-
-from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
-    UserDefinedDynamic,
-)
-
 from flow360.exceptions import Flow360TranslationError
 
 
@@ -889,81 +887,87 @@ def _append_turbulence_quantities_to_dict(model, model_dict, boundary):
     return boundary
 
 
-
 def _get_default_mass_outflow_udd(entities, mass_flow_rate):
-    Kp = 1.0e-2
-    Ki = 0
-    start_step = 0
-
-    #boundary_patches = [entity.name for entity in entities.stored_entities]
-    #boundary_names = "_".join(boundary_patches)
-    udd_list = []
-    for entity in entities.stored_entities: 
-        udd = UserDefinedDynamic(
-            name="massOutflowController_{}".format(entity.name),
-            input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
-            constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
-                       "initialStaticPressureRatio": 1.0, "gamma" : 1.4},
-            output_vars={
-                "staticPressureRatio": "if (pseudoStep > {}) state[0]; else initialStaticPressureRatio;".format(
-                    start_step)},
-            state_vars_initial_value=["initialStaticPressureRatio"],
-            update_law=[
-                "if (hasSupersonicFlow) (1.0 + Kp) * state[0]; else state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area);"
-            ],
-            input_boundary_patches=entities.stored_entities,
-            output_target=entity
-        )
-        udd_list.append(udd)
-
-    return udd_list
-
-def _get_default_mass_inflow_udd(entities, mass_flow_rate):
-    Kp = 1.0e-2
-    Ki = 0.0
-    start_step = 0
-    #boundary_patches = [entity.name for entity in entities.stored_entities]
-    #boundary_names = "_".join(boundary_patches)
-    #print(boundary_names)
+    """Default mass outflow UDD translator"""
+    proportional_coefficient = 1.0e-2
     udd_list = []
     for entity in entities.stored_entities:
         udd = UserDefinedDynamic(
-            name="massInflowController_{}".format(entity.name),
+            name=f"massOutflowController_{entity.name}",
             input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
-            constants={"massFlowRateTarget": mass_flow_rate, "Kp": Kp, "Ki": Ki,
-                       "initialTotalPressureRatio": 1.0, "gamma" : 1.4},
+            constants={
+                "massFlowRateTarget": mass_flow_rate,
+                "Kp": proportional_coefficient,
+                "initialStaticPressureRatio": 1.0,
+            },
             output_vars={
-                "totalPressureRatio": "if (pseudoStep > {}) state[0]; else initialTotalPressureRatio;".format(
-                    start_step)},
-            state_vars_initial_value=["initialTotalPressureRatio"],
+                "staticPressureRatio": "if (pseudoStep > 0) state[0]; else initialStaticPressureRatio;"
+            },
+            state_vars_initial_value=["initialStaticPressureRatio"],
             update_law=[
-                "if (hasSupersonicFlow) (1.0 - Kp) * state[0]; else state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area);"
+                "if (hasSupersonicFlow) (1.0 + Kp) * state[0]; else state[0] + "
+                + "Kp * (massFlowRate/area - massFlowRateTarget/area);"
             ],
             input_boundary_patches=entities.stored_entities,
-            output_target=entity
+            output_target=entity,
         )
         udd_list.append(udd)
 
     return udd_list
 
-def mass_flow_default_udd(models, user_defined_dynamics):
-    print('in append mass flow default udd')
-    if user_defined_dynamics is None:
-        user_defined_dynamics = []
 
+def _get_default_mass_inflow_udd(entities, mass_flow_rate):
+    """Default mass inflow UDD translator"""
+    proportional_coefficient = 1.0e-2
+    udd_list = []
+    for entity in entities.stored_entities:
+        udd = UserDefinedDynamic(
+            name=f"massInflowController_{entity.name}",
+            input_vars=["massFlowRate", "area", "hasSupersonicFlow"],
+            constants={
+                "massFlowRateTarget": mass_flow_rate,
+                "Kp": proportional_coefficient,
+                "initialTotalPressureRatio": 1.0,
+            },
+            output_vars={
+                "totalPressureRatio": "if (pseudoStep > 0) state[0]; else initialTotalPressureRatio;"
+            },
+            state_vars_initial_value=["initialTotalPressureRatio"],
+            update_law=[
+                "if (hasSupersonicFlow) (1.0 - Kp) * state[0]; else state[0] - "
+                + "Kp * (massFlowRate/area - massFlowRateTarget/area);"
+            ],
+            input_boundary_patches=entities.stored_entities,
+            output_target=entity,
+        )
+        udd_list.append(udd)
+
+    return udd_list
+
+
+def mass_flow_default_udd(models, user_defined_dynamics):
+    """Default mass flow rate translator"""
+    mass_flow_user_defined_dynamics = []
     for model in models:
         if isinstance(model, Outflow):
             if isinstance(model.spec, MassFlowRate):
-                print('isinstnace MassFlowRate')
                 udd = _get_default_mass_outflow_udd(model.entities, model.spec.value)
-                user_defined_dynamics.extend(udd)
+                mass_flow_user_defined_dynamics.extend(udd)
         elif isinstance(model, Inflow):
             if isinstance(model.spec, MassFlowRate):
                 udd = _get_default_mass_inflow_udd(model.entities, model.spec.value)
-                user_defined_dynamics.extend(udd)
+                mass_flow_user_defined_dynamics.extend(udd)
+
+    if len(mass_flow_user_defined_dynamics) == 0:
+        return user_defined_dynamics
+
+    if user_defined_dynamics is None:
+        user_defined_dynamics = []
+
+    user_defined_dynamics.extend(mass_flow_user_defined_dynamics)
     return user_defined_dynamics
 
-    
+
 # pylint: disable=too-many-branches, too-many-statements
 def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pressure_ratio):
     """Boundary translator"""
@@ -1135,7 +1139,6 @@ def get_solver_json(
     Get the solver json from the simulation parameters.
     """
 
-    print('Getting solver JSON')
     translated = {}
     ##:: Step 1: Get geometry:
     if input_params.reference_geometry:
@@ -1444,15 +1447,13 @@ def get_solver_json(
         translated["userDefinedFields"].append(udf_dict)
 
     ##:: Step 11: Get user defined dynamics
-    translated["userDefinedDynamics"] = []
-    
-    input_params.user_defined_dynamics = \
-        mass_flow_default_udd(input_params.models, input_params.user_defined_dynamics)
+    input_params.user_defined_dynamics = mass_flow_default_udd(
+        input_params.models, input_params.user_defined_dynamics
+    )
 
-    print("length udd: ", len(input_params.user_defined_dynamics))
     if input_params.user_defined_dynamics is not None:
+        translated["userDefinedDynamics"] = []
         for udd in input_params.user_defined_dynamics:
-            print("converting UDD...")
             udd_dict = dump_dict(udd)
             udd_dict_translated = {}
             udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
