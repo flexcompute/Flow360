@@ -4,6 +4,7 @@ import os
 import pytest
 import unyt as u
 
+import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import Wall
@@ -26,12 +27,12 @@ from flow360.component.simulation.user_code.core.types import (
 )
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.volume_mesh import VolumeMeshV2
-import flow360.component.simulation.user_code.core.context as context
 
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
 
 def reset_context():
     """Clear user variables from the context."""
@@ -41,6 +42,7 @@ def reset_context():
     context.default_context._values = {
         name: value for name, value in context.default_context._values.items() if "." in name
     }
+
 
 def volume_mesh():
     return VolumeMeshV2.from_local_storage(

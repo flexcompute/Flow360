@@ -1,12 +1,21 @@
+"""
+This module implements a dependency graph for user variables.
+"""
+
 import ast
 import copy
 from collections import defaultdict, deque
-from typing import Dict, Set, Optional, Any, List
+from typing import Any, Dict, List, Optional, Set
+
 from pydantic import ValidationError
-from pydantic_core import InitErrorDetails, core_schema
+from pydantic_core import InitErrorDetails
 
 
 class DependencyGraph:
+    """
+    A dependency graph for variables.
+    """
+
     def __init__(self):
         # adjacency list: key = variable u, value = set of variables v that depend on u
         self._graph: Dict[str, Set[str]] = defaultdict(set)
@@ -70,6 +79,7 @@ class DependencyGraph:
             self._deps.clear()
             names = {item["name"] for item in vars_list}
             for name in names:
+                # pylint: disable=pointless-statement
                 self._graph[name]
                 self._deps[name]
 
@@ -80,7 +90,9 @@ class DependencyGraph:
                     deps = self._extract_deps(expr, names)
                     for dep in deps:
                         if dep not in names:
-                            raise ValueError(f"Expression for {name!r} references unknown variable {dep!r}")
+                            raise ValueError(
+                                f"Expression for {name!r} references unknown variable {dep!r}"
+                            )
                         self._graph[dep].add(name)
                         self._deps[name].add(dep)
 
@@ -114,7 +126,9 @@ class DependencyGraph:
                 deps = self._extract_deps(expression, set(self._graph.keys()))
                 for dep in deps:
                     if dep not in self._graph:
-                        raise ValueError(f"Expression for {name!r} references unknown variable {dep!r}")
+                        raise ValueError(
+                            f"Expression for {name!r} references unknown variable {dep!r}"
+                        )
                     self._graph[dep].add(name)
                     self._deps[name].add(dep)
 
@@ -160,7 +174,9 @@ class DependencyGraph:
                 deps = self._extract_deps(expression, set(self._graph.keys()))
                 for dep in deps:
                     if dep not in self._graph:
-                        raise ValueError(f"Expression for {name!r} references unknown variable {dep!r}")
+                        raise ValueError(
+                            f"Expression for {name!r} references unknown variable {dep!r}"
+                        )
                     self._graph[dep].add(name)
                     self._deps[name].add(dep)
 

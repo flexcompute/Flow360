@@ -33,6 +33,7 @@ def reset_context():
         name: value for name, value in context.default_context._values.items() if "." in name
     }
 
+
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
