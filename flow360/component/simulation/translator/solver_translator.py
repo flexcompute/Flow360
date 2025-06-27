@@ -614,7 +614,7 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
 
     def _prepare_prepending_code(expression: Expression):
         prepending_code = []
-        for name in expression.solver_variable_names():
+        for name in sorted(expression.solver_variable_names()):
             if not udf_prepending_code.get(name):
                 continue
             if name == "solution.temperature" and input_params.has_solid():
