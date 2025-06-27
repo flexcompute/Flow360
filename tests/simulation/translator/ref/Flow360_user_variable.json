@@ -33,14 +33,21 @@
                     "velocity_km_per_hr"
                 ],
                 "surfaceField": "iso_field_random_units",
-                "surfaceFieldMagnitude": 5e-05
+                "surfaceFieldMagnitude": 10.0
             },
             "iso_pressure": {
                 "outputFields": [
                     "ppp"
                 ],
                 "surfaceField": "iso_field_pressure",
-                "surfaceFieldMagnitude": 2.5e-07
+                "surfaceFieldMagnitude": 10.0
+            },
+            "iso_surf_velocity_mag": {
+                "outputFields": [
+                    "velocity_mile_per_hr"
+                ],
+                "surfaceField": "iso_field_velocity_mag",
+                "surfaceFieldMagnitude": 10.0
             }
         },
         "outputFields": [],
@@ -227,8 +234,16 @@
             "name": "velocity_km_per_hr"
         },
         {
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_random_units = (((___velocity[0] * 2) * 0.001) * 200000.0);",
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_random_units = (((___velocity[0] * 2) * 0.00045359237000000004) * 200000.0);",
             "name": "iso_field_random_units"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_mile_per_hr[0] = (___velocity[0] * 447.38725841088046); velocity_mile_per_hr[1] = (___velocity[1] * 447.38725841088046); velocity_mile_per_hr[2] = (___velocity[2] * 447.38725841088046);",
+            "name": "velocity_mile_per_hr"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_velocity_mag = (pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5) * 200.0);",
+            "name": "iso_field_velocity_mag"
         }
     ],
     "usingLiquidAsMaterial": true,

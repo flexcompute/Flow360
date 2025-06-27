@@ -312,15 +312,17 @@ def inject_surface_slice_info(entity: Slice):
 
 def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     """inject entity info"""
+
+    if isinstance(entity.field, UserVariable):
+        units = entity.field.value.get_output_units(input_params=input_params)
+        surface_field = entity.field.name
+        surface_magnitude = entity.iso_value.to(units).v.item()
+    else:
+        surface_field = entity.field
+        surface_magnitude = entity.iso_value
     return {
-        "surfaceField": (
-            entity.field if not isinstance(entity.field, UserVariable) else entity.field.name
-        ),
-        "surfaceFieldMagnitude": (
-            translate_value_or_expression_object(entity.iso_value, input_params)
-            if not isinstance(entity.iso_value, Number)
-            else entity.iso_value
-        ),
+        "surfaceField": surface_field,
+        "surfaceFieldMagnitude": surface_magnitude,
     }
 
 
