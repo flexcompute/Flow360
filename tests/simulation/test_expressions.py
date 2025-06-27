@@ -36,6 +36,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.services import (
     ValidationCalledBy,
+    clear_context,
     validate_expression,
     validate_model,
 )
@@ -82,12 +83,7 @@ from tests.utils import to_file_from_file_test
 @pytest.fixture(autouse=True)
 def reset_context():
     """Clear user variables from the context."""
-    for name in context.default_context._values.keys():
-        if "." not in name:
-            context.default_context._dependency_graph.remove_variable(name)
-    context.default_context._values = {
-        name: value for name, value in context.default_context._values.items() if "." in name
-    }
+    clear_context()
 
 
 @pytest.fixture(autouse=True)
@@ -1128,8 +1124,8 @@ class TestDependencyGraph:
         """Test loading variables from a simple list."""
         graph = DependencyGraph()
         vars_list = [
-            {"name": "x", "value": {"type_name": "number", "value": 1}},
-            {"name": "y", "value": {"type_name": "expression", "expression": "x + 1"}},
+            {"name": "x", "value": "1"},
+            {"name": "y", "value": "x + 1"},
         ]
 
         graph.load_from_list(vars_list)
@@ -1144,10 +1140,10 @@ class TestDependencyGraph:
         """Test loading variables with complex dependency relationships."""
         graph = DependencyGraph()
         vars_list = [
-            {"name": "a", "value": {"type_name": "number", "value": 1}},
-            {"name": "b", "value": {"type_name": "expression", "expression": "a + 1"}},
-            {"name": "c", "value": {"type_name": "expression", "expression": "b * 2"}},
-            {"name": "d", "value": {"type_name": "expression", "expression": "a + c"}},
+            {"name": "a", "value": "1"},
+            {"name": "b", "value": "a + 1"},
+            {"name": "c", "value": "b * 2"},
+            {"name": "d", "value": "a + c"},
         ]
 
         graph.load_from_list(vars_list)
@@ -1167,7 +1163,7 @@ class TestDependencyGraph:
         """Test loading with reference to unknown variable."""
         graph = DependencyGraph()
         vars_list = [
-            {"name": "x", "value": {"type_name": "expression", "expression": "y + 1"}},
+            {"name": "x", "value": "y + 1"},
         ]
 
         # The DependencyGraph only creates dependencies for variables that exist in the graph
@@ -1189,7 +1185,7 @@ class TestDependencyGraph:
 
         # Load new data
         vars_list = [
-            {"name": "new_var", "value": {"type_name": "number", "value": 1}},
+            {"name": "new_var", "value": "1"},
         ]
         graph.load_from_list(vars_list)
 
@@ -1400,12 +1396,12 @@ class TestDependencyGraph:
 
         # Try to load data that would create a cycle
         vars_list = [
-            {"name": "a", "value": {"type_name": "number", "value": 1}},
-            {"name": "b", "value": {"type_name": "expression", "expression": "a + 1"}},
-            {"name": "c", "value": {"type_name": "expression", "expression": "b + 1"}},
+            {"name": "a", "value": "1"},
+            {"name": "b", "value": "a + 1"},
+            {"name": "c", "value": "b + 1"},
             {
                 "name": "a",
-                "value": {"type_name": "expression", "expression": "c + 1"},
+                "value": "c + 1",
             },  # This creates a cycle
         ]
 

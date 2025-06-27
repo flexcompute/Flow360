@@ -12,6 +12,7 @@ import pydantic as pd
 from unyt import unyt_array
 
 # Required for correct global scope initialization
+from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -797,17 +798,50 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
     return updated_params_as_dict, errors
 
 
-# pylint: disable=too-many-branches
+def clear_context():
+    """
+    Clear out `UserVariable` in the `context` and its dependency graph.
+    """
+
+    from flow360.component.simulation.user_code.core import (  # pylint: disable=import-outside-toplevel
+        context,
+    )
+
+    # pylint: disable=protected-access
+    for name in context.default_context._values.keys():
+        if "." not in name:
+            context.default_context._dependency_graph.remove_variable(name)
+    context.default_context._values = {
+        name: value for name, value in context.default_context._values.items() if "." in name
+    }
+
+
 def validate_expression(variables: list[dict], expressions: list[str]):
+    # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     """
     Validate all given expressions using the specified variable space (which is also validated)
     """
+    clear_context()
+
     errors = []
     values = []
     units = []
 
+    # Build variable dependency graph
+    dependency_graph = DependencyGraph()
+    dependency_graph.load_from_list(variables)
+    sorted_variable_names = dependency_graph.topology_sort()
+    # Sort `variables` by variable dependency graph
+    variable_list = []
+    for variable_name in sorted_variable_names:
+        variable_list.append(
+            next(
+                (var for var in variables if var["name"] == variable_name),
+                None,
+            )
+        )
     # Populate variable scope
-    for i, variable in enumerate(variables):
+    for i, variable in enumerate(variable_list):
         loc_hint = ["variables", str(i)]
         try:
             variable = UserVariable(name=variable["name"], value=variable["value"])
