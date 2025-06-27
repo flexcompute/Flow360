@@ -178,6 +178,26 @@ class SerializedValueOrExpression(Flow360BaseModel):
     output_units: Optional[str] = pd.Field(None, description="See definition in `Expression`.")
 
 
+class UnytQuantity(unyt_quantity):
+    """UnytQuantity wrapper to enable pydantic compatibility"""
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any):
+        """Minimal validator for pydantic compatibility"""
+        if isinstance(value, unyt_quantity):
+            return value
+        if isinstance(value, unyt_array):
+            # When deserialized unyt_quantity() gives unyt_array
+            if value.shape == ():
+                return unyt_quantity(value.value, value.units)
+        raise ValueError("Input should be a valid unit quantity.")
+
+
 # This is a wrapper to allow using unyt arrays with pydantic models
 class UnytArray(unyt_array):
     """UnytArray wrapper to enable pydantic compatibility"""
