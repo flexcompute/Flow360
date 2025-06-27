@@ -197,8 +197,9 @@ def translate_and_compare(
         print(">>> translated = ", translated)
         print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
-    assert compare_values(ref_dict, translated, atol=atol, rtol=rtol,
-                          ignore_keys="userDefinedDynamics")
+    assert compare_values(
+        ref_dict, translated, atol=atol, rtol=rtol, ignore_keys="userDefinedDynamics"
+    )
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
