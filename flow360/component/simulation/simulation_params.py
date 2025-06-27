@@ -391,9 +391,19 @@ class SimulationParams(_ParamModelBase):
             return value
         if not isinstance(asset_cache["project_variables"], Iterable):
             return value
-        # Build dependency graph and sort variables
+
+        # ==== Build dependency graph and sort variables ====
         dependency_graph = DependencyGraph()
-        dependency_graph.load_from_list(asset_cache["project_variables"])
+        # Pad the project variables into proper schema
+        variable_list = []
+        for var in asset_cache["project_variables"]:
+            if "expression" in var["value"]:
+                # Expression type
+                variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
+            else:
+                # Number type (#units ignored since it does not affect the dependency graph)
+                variable_list.append({"name": var["name"], "value": str(var["value"]["value"])})
+        dependency_graph.load_from_list(variable_list)
         sorted_variables = dependency_graph.topology_sort()
 
         for variable_name in sorted_variables:

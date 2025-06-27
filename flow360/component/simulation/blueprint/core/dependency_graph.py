@@ -70,6 +70,16 @@ class DependencyGraph:
         """
         Load variables from a list of dicts, clear existing graph, build dependencies,
         and restore on error.
+
+        Expected schema of the variable list:
+        ``` JSON
+        [
+            {
+                "name": str,
+                "value": str
+            }
+        ]
+        ```
         """
         # backup state
         old_graph = copy.deepcopy(self._graph)
@@ -85,16 +95,15 @@ class DependencyGraph:
 
             for item in vars_list:
                 name = item["name"]
-                if item["value"]["type_name"] == "expression":
-                    expr = item["value"]["expression"]
-                    deps = self._extract_deps(expr, names)
-                    for dep in deps:
-                        if dep not in names:
-                            raise ValueError(
-                                f"Expression for {name!r} references unknown variable {dep!r}"
-                            )
-                        self._graph[dep].add(name)
-                        self._deps[name].add(dep)
+                expr = item["value"]
+                deps = self._extract_deps(expr, names)
+                for dep in deps:
+                    if dep not in names:
+                        raise ValueError(
+                            f"Expression for {name!r} references unknown variable {dep!r}"
+                        )
+                    self._graph[dep].add(name)
+                    self._deps[name].add(dep)
 
             self._check_for_cycle()
         except Exception:

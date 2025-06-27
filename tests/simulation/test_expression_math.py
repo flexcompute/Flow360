@@ -12,6 +12,7 @@ from flow360.component.simulation.models.material import Water
 from flow360.component.simulation.operating_condition.operating_condition import (
     LiquidOperatingCondition,
 )
+from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system, VelocityType
 from flow360.component.simulation.user_code.core.types import (
@@ -26,12 +27,7 @@ from flow360.component.simulation.user_code.variables import solution
 @pytest.fixture(autouse=True)
 def reset_context():
     """Clear user variables from the context."""
-    for name in context.default_context._values.keys():
-        if "." not in name:
-            context.default_context._dependency_graph.remove_variable(name)
-    context.default_context._values = {
-        name: value for name, value in context.default_context._values.items() if "." in name
-    }
+    clear_context()
 
 
 @pytest.fixture(autouse=True)

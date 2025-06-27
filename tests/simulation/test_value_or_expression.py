@@ -15,7 +15,11 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
 )
 from flow360.component.simulation.primitives import ReferenceGeometry
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    clear_context,
+    validate_model,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
@@ -36,12 +40,7 @@ def change_test_dir(request, monkeypatch):
 
 def reset_context():
     """Clear user variables from the context."""
-    for name in context.default_context._values.keys():
-        if "." not in name:
-            context.default_context._dependency_graph.remove_variable(name)
-    context.default_context._values = {
-        name: value for name, value in context.default_context._values.items() if "." in name
-    }
+    clear_context()
 
 
 def volume_mesh():
