@@ -55,7 +55,11 @@ from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     Surface,
 )
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    clear_context,
+    validate_model,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
@@ -659,9 +663,7 @@ import flow360.component.simulation.user_code.core.context as context
 
 @pytest.fixture()
 def reset_context():
-    context.default_context._values = {
-        name: item for (name, item) in context.default_context._values.items() if "." in name
-    }
+    clear_context()
 
 
 def test_param_with_user_variables():

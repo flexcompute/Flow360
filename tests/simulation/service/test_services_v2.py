@@ -1265,3 +1265,31 @@ def test_get_default_report_config_json():
     with open("ref/default_report_config.json", "r") as fp:
         ref_dict = json.load(fp)
     assert compare_values(report_config_dict, ref_dict, ignore_keys=["formatter"])
+
+
+def test_validate_expression():
+    variables = [
+        {"name": "x", "value": "1.0"},
+        {"name": "y", "value": "2.0"},
+    ]
+    expressions = ["x + y", "x - y"]
+    errors, _, _ = services.validate_expression(variables, expressions)
+    assert not errors
+
+    # Ensure that successive calls does not trigger redefinition of variable errors:
+    variables = [
+        {"name": "x", "value": "5.0"},  # redefinition of x
+        {"name": "y", "value": "2.0"},
+    ]
+    expressions = ["x + y", "x - y"]
+    errors, _, _ = services.validate_expression(variables, expressions)
+    assert not errors
+
+    # Ensure that wrong ordering of variables does not trigger missing variable errors:
+    variables = [
+        {"name": "x", "value": "y"},  # redefinition of x
+        {"name": "y", "value": "2.0"},
+    ]
+    expressions = ["x + y", "x - y"]
+    errors, _, _ = services.validate_expression(variables, expressions)
+    assert not errors
