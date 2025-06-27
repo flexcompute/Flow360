@@ -9,6 +9,7 @@ from typing import Annotated, Iterable, List, Optional, Union
 import pydantic as pd
 import unyt as u
 
+from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
     unit_converter,
@@ -388,17 +389,29 @@ class SimulationParams(_ParamModelBase):
         asset_cache: dict = value["private_attribute_asset_cache"]
         if "project_variables" not in asset_cache.keys():
             return value
-        if isinstance(asset_cache["project_variables"], Iterable):
-            for variable_dict in asset_cache["project_variables"]:
-                value_or_expression = {
-                    key: value
-                    for key, value in variable_dict["value"].items()
-                    if key != "postProcessing"
-                }
-                UserVariable(
-                    name=variable_dict["name"],
-                    value=value_or_expression,
-                )
+        if not isinstance(asset_cache["project_variables"], Iterable):
+            return value
+        # Build dependency graph and sort variables
+        dependency_graph = DependencyGraph()
+        dependency_graph.load_from_list(asset_cache["project_variables"])
+        sorted_variables = dependency_graph.topology_sort()
+
+        for variable_name in sorted_variables:
+            variable_dict = next(
+                (var for var in asset_cache["project_variables"] if var["name"] == variable_name),
+                None,
+            )
+            if variable_dict is None:
+                continue
+            value_or_expression = {
+                key: value
+                for key, value in variable_dict["value"].items()
+                if key != "postProcessing"
+            }
+            UserVariable(
+                name=variable_dict["name"],
+                value=value_or_expression,
+            )
         return value
 
     # pylint: disable=no-self-argument

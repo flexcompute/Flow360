@@ -537,7 +537,7 @@ def _translate_simulation_json(
     translation_func=None,
 ):
     """
-    Get JSON for surface meshing from a given simulaiton JSON.
+    Get JSON for surface meshing from a given simulation JSON.
 
     """
     translated_dict = None
@@ -552,7 +552,7 @@ def _translate_simulation_json(
         translated_dict = translation_func(input_params, mesh_unit)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
-    except Exception as err:  # tranlsation itself is not supposed to raise any other exception
+    except Exception as err:  # translation itself is not supposed to raise any other exception
         raise ValueError(
             f"Unexpected error translating to {target_name} json: " + str(err)
         ) from err
@@ -566,7 +566,7 @@ def _translate_simulation_json(
 
 
 def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for surface meshing from a given simulaiton JSON."""
+    """Get JSON for surface meshing from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -576,7 +576,7 @@ def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit
 
 
 def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for volume meshing from a given simulaiton JSON."""
+    """Get JSON for volume meshing from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -586,7 +586,7 @@ def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit)
 
 
 def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for case from a given simulaiton JSON."""
+    """Get JSON for case from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
