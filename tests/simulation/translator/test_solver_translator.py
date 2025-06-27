@@ -784,11 +784,12 @@ def test_param_with_user_variables():
             time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
         )
     # Mimicking real workflow where the Param is serialized and then deserialized
-    params_validated, _, _ = validate_model(
+    params_validated, errors, _ = validate_model(
         params_as_dict=param.model_dump(mode="json"),
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type=None,
     )
+    assert not errors, print(">>>", errors)
 
     assert params_validated
     translate_and_compare(

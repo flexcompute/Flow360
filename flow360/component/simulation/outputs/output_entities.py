@@ -10,8 +10,8 @@ from flow360.component.simulation.framework.entity_base import EntityBase, gener
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
-    AnyNumericType,
     Expression,
+    UnytQuantity,
     UserVariable,
     ValueOrExpression,
     get_input_value_dimensions,
@@ -98,8 +98,7 @@ class Isosurface(_OutputItemBase):
         " :code:`nuHat` or one of scalar field defined in :class:`UserDefinedField`."
     )
     # pylint: disable=fixme
-    # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
-    iso_value: ValueOrExpression[AnyNumericType] = pd.Field(
+    iso_value: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="Expect non-dimensional value.",
     )
 
@@ -142,7 +141,7 @@ class Isosurface(_OutputItemBase):
         """Ensure the iso_value is a single value."""
         if get_input_value_length(v) == 0:
             return v
-        raise ValueError(f"The iso_value ({v}) must be defined with a single value.")
+        raise ValueError(f"The iso_value ({v}) must be scalar expression.")
 
     @pd.field_validator("iso_value", mode="after")
     @classmethod

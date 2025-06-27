@@ -5,7 +5,7 @@ import pytest
 
 from flow360 import SI_unit_system, u
 from flow360.component.simulation.outputs.output_entities import Isosurface
-from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 
@@ -141,15 +141,25 @@ def test_isosurface_single_iso_value():
     uv_vel = UserVariable(name="uv_vel", value=solution.velocity[0])
     with pytest.raises(
         ValueError,
-        match=re.escape("The iso_value ([1] m/s) must be defined with a single value."),
+        match=re.escape("Input should be a valid "),
     ):
         Isosurface(name="test_iso_list", field=uv_vel, iso_value=[1 * u.m / u.s])
 
     with pytest.raises(
         ValueError,
-        match=re.escape("The iso_value ([1 2] m/s) must be defined with a single value."),
+        match=re.escape("Input should be a valid "),
     ):
         Isosurface(name="test_iso_unyt_array", field=uv_vel, iso_value=[1, 2] * u.m / u.s)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Input should be a valid "),
+    ):
+        Isosurface(
+            name="test_iso_unyt_array",
+            field=uv_vel,
+            iso_value=Expression(expression="[1,2,3]*u.m/u.s"),
+        )
 
 
 def test_isosurface_check_iso_value_dimensions():
