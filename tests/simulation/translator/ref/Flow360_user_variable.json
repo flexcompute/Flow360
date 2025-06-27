@@ -28,6 +28,13 @@
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "isoSurfaces": {
+            "iso_field_random_units": {
+                "outputFields": [
+                    "velocity_km_per_hr"
+                ],
+                "surfaceField": "iso_field_random_units",
+                "surfaceFieldMagnitude": 5e-05
+            },
             "iso_pressure": {
                 "outputFields": [
                     "ppp"
@@ -214,6 +221,14 @@
         {
             "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_pressure = ((((0.5 * ___Cp) * primitiveVars[0]) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 40000000.0);",
             "name": "iso_field_pressure"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_km_per_hr = (___velocity[0] * 720.0);",
+            "name": "velocity_km_per_hr"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_random_units = (((___velocity[0] * 2) * 0.001) * 200000.0);",
+            "name": "iso_field_random_units"
         }
     ],
     "usingLiquidAsMaterial": true,

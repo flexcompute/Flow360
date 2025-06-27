@@ -713,6 +713,13 @@ def test_param_with_user_variables():
         value=0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2,
     )
     iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa)
+    iso_field_random_units = UserVariable(
+        name="iso_field_random_units",
+        value=solution.velocity[0] * 2 * u.kg,
+    )
+    iso2 = Isosurface(
+        name="iso_field_random_units", field=iso_field_random_units, iso_value=10 * u.kg * u.m / u.s
+    )
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=LiquidOperatingCondition(
@@ -762,6 +769,15 @@ def test_param_with_user_variables():
                     entities=[iso1],
                     output_fields=[
                         UserVariable(name="ppp", value=solution.pressure).in_units(new_unit="psf"),
+                    ],
+                ),
+                IsosurfaceOutput(
+                    name="iso_random",
+                    entities=[iso2],
+                    output_fields=[
+                        UserVariable(
+                            name="velocity_km_per_hr", value=solution.velocity[0]
+                        ).in_units(new_unit="km/hr"),
                     ],
                 ),
             ],

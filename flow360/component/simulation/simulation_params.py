@@ -644,6 +644,7 @@ class SimulationParams(_ParamModelBase):
             mass_unit=self.base_mass,
             time_unit=self.base_time,
             temperature_unit=self.base_temperature,
+            angle_unit="rad",
         )
 
     @property

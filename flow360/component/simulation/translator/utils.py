@@ -155,7 +155,7 @@ def translate_value_or_expression_object(
     if isinstance(obj, Expression):
         # Only allowing client-time evaluable expressions
         evaluated = obj.evaluate(raise_on_non_evaluable=True)
-        converted = input_params.convert_unit(evaluated, "flow360").v.item()
+        converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v.item()
         return converted
     # Non dimensionalized unyt objects
     return obj.value.item()
