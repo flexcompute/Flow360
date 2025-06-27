@@ -4,6 +4,7 @@ from typing import Any, Optional
 
 import pydantic as pd
 
+from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
 
 
@@ -42,6 +43,7 @@ class EvaluationContext:
         self._data_models = {}
         self._resolver = resolver
         self._aliases: dict[str, str] = {}
+        self._dependency_graph = DependencyGraph()
 
     def get(self, name: str, resolve: bool = True) -> Any:
         """
@@ -102,6 +104,11 @@ class EvaluationContext:
             value (Any): The value to assign.
             data_model (BaseModel, optional): The type of the associate with this entry (for non-user variables)
         """
+        if name in self._values:
+            self._dependency_graph.update_expression(name, str(value))
+        else:
+            self._dependency_graph.add_variable(name, str(value))
+
         self._values[name] = value
 
         if data_model:
@@ -148,10 +155,6 @@ class EvaluationContext:
     def user_variable_names(self):
         """Get the set of user variables in the context."""
         return {name for name in self._values.keys() if "." not in name}
-
-    def clear(self):
-        """Clear user variables from the context."""
-        self._values = {name: value for name, value in self._values.items() if "." in name}
 
     @property
     def registered_names(self):

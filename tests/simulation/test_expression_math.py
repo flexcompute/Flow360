@@ -25,7 +25,13 @@ from flow360.component.simulation.user_code.variables import solution
 
 @pytest.fixture(autouse=True)
 def reset_context():
-    context.default_context.clear()
+    """Clear user variables from the context."""
+    for name in context.default_context._values.keys():
+        if "." not in name:
+            context.default_context._dependency_graph.remove_variable(name)
+    context.default_context._values = {
+        name: value for name, value in context.default_context._values.items() if "." in name
+    }
 
 
 @pytest.fixture(autouse=True)

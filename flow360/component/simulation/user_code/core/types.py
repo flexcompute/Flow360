@@ -221,26 +221,6 @@ def check_vector_arithmetic(func):
     return wrapper
 
 
-def _check_cyclic_dependencies(*, variable_name: str) -> None:
-    visited = set()
-    stack = [(variable_name, [variable_name])]
-    while stack:
-        (current_name, current_path) = stack.pop()
-        current_value = default_context.get(current_name)
-        if isinstance(current_value, Expression):
-            used_names = current_value.user_variable_names()
-            if [name for name in used_names if name in current_path]:
-                path_string = " -> ".join(current_path + [current_path[0]])
-                details = InitErrorDetails(
-                    type="value_error",
-                    ctx={"error": f"Cyclic dependency between variables {path_string}"},
-                )
-                raise pd.ValidationError.from_exception_data("Variable value error", [details])
-            stack.extend(
-                [(name, current_path + [name]) for name in used_names if name not in visited]
-            )
-
-
 class Variable(Flow360BaseModel):
     """Base class representing a symbolic variable"""
 
@@ -266,7 +246,6 @@ class Variable(Flow360BaseModel):
         ).validate_python(value)
         # Not checking overwrite here since it is user controlled explicit assignment operation
         default_context.set(self.name, new_value)
-        _check_cyclic_dependencies(variable_name=self.name)
 
     @pd.model_validator(mode="before")
     @classmethod
@@ -302,7 +281,6 @@ class Variable(Flow360BaseModel):
                 values["name"],
                 new_value,
             )
-            _check_cyclic_dependencies(variable_name=values["name"])
 
         return values
 

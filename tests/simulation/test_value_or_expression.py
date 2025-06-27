@@ -4,6 +4,7 @@ import os
 import pytest
 import unyt as u
 
+import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import Wall
@@ -33,6 +34,16 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
+def reset_context():
+    """Clear user variables from the context."""
+    for name in context.default_context._values.keys():
+        if "." not in name:
+            context.default_context._dependency_graph.remove_variable(name)
+    context.default_context._values = {
+        name: value for name, value in context.default_context._values.items() if "." in name
+    }
+
+
 def volume_mesh():
     return VolumeMeshV2.from_local_storage(
         mesh_id=None,
@@ -50,7 +61,7 @@ def asset_cache():
 
 
 def operating_condition_with_expression():
-    default_context.clear()
+    reset_context()
     vm = volume_mesh()
     vel = UserVariable(name="my_speed", value=3.6 * u.km / u.hr)
     with SI_unit_system:
@@ -63,7 +74,7 @@ def operating_condition_with_expression():
 
 
 def liquid_operating_condition_with_expression():
-    default_context.clear()
+    reset_context()
     vm = volume_mesh()
     vel = UserVariable(name="my_speed_2", value=600 * u.m / u.min)
     with SI_unit_system:
@@ -77,7 +88,7 @@ def liquid_operating_condition_with_expression():
 
 
 def generic_operating_condition_with_expression():
-    default_context.clear()
+    reset_context()
     vm = volume_mesh()
     vel = UserVariable(name="my_speed_3", value=314 * u.km / u.hr)
     with SI_unit_system:
@@ -90,7 +101,7 @@ def generic_operating_condition_with_expression():
 
 
 def reference_area_with_expression():
-    default_context.clear()
+    reset_context()
     vm = volume_mesh()
     var = UserVariable(name="area_var", value=(150 * u.cm) ** 2)
     with SI_unit_system:
@@ -104,7 +115,7 @@ def reference_area_with_expression():
 
 
 def angular_velocity_with_expression():
-    default_context.clear()
+    reset_context()
     vm = volume_mesh()
     vm["fluid"].axis = (0, 1, 0)
     vm["fluid"].center = (1, 1, 2) * u.cm
@@ -123,7 +134,7 @@ def angular_velocity_with_expression():
 
 
 def time_stepping_with_expression():
-    default_context.clear()
+    reset_context()
     vm = volume_mesh()
     var = UserVariable(name="time_step_size_var", value=math.sqrt(100) * u.s)
     with SI_unit_system:
