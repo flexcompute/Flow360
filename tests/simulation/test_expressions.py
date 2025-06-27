@@ -18,6 +18,7 @@ from flow360 import (
     u,
 )
 from flow360.component.project_utils import save_user_variables
+from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_lists
@@ -80,7 +81,13 @@ from tests.utils import to_file_from_file_test
 
 @pytest.fixture(autouse=True)
 def reset_context():
-    context.default_context.clear()
+    """Clear user variables from the context."""
+    for name in context.default_context._values.keys():
+        if "." not in name:
+            context.default_context._dependency_graph.remove_variable(name)
+    context.default_context._values = {
+        name: value for name, value in context.default_context._values.items() if "." in name
+    }
 
 
 @pytest.fixture(autouse=True)
@@ -768,7 +775,9 @@ def test_cyclic_dependencies():
 
     # If we try to create a cyclic dependency we throw a validation error
     # The error contains info about the cyclic dependency, so here its x -> y -> x
-    with pytest.raises(pd.ValidationError):
+    with pytest.raises(
+        pd.ValidationError, match=re.escape("Circular dependency detected among: ['x', 'y']")
+    ):
         x.value = y
 
     z = UserVariable(name="z", value=4)
@@ -1042,3 +1051,455 @@ def test_whitelisted_callables():
 
     assert compare_lists(solution_vars, WHITELISTED_CALLABLES["flow360.solution"]["callables"])
     assert compare_lists(control_vars, WHITELISTED_CALLABLES["flow360.control"]["callables"])
+
+
+# DependencyGraph Tests
+class TestDependencyGraph:
+    """Test suite for DependencyGraph class."""
+
+    def test_init(self):
+        """Test DependencyGraph initialization."""
+        graph = DependencyGraph()
+        assert graph._graph == {}
+        assert graph._deps == {}
+
+    def test_extract_deps_simple(self):
+        """Test dependency extraction from simple expressions."""
+        graph = DependencyGraph()
+        all_names = {"x", "y", "z"}
+
+        # Simple variable reference
+        deps = graph._extract_deps("x", all_names)
+        assert deps == {"x"}
+
+        # Expression with multiple variables
+        deps = graph._extract_deps("x + y * z", all_names)
+        assert deps == {"x", "y", "z"}
+
+        # Expression with unknown variables (should be filtered out)
+        deps = graph._extract_deps("x + unknown_var", all_names)
+        assert deps == {"x"}
+
+    def test_extract_deps_complex_expressions(self):
+        """Test dependency extraction from complex expressions."""
+        graph = DependencyGraph()
+        all_names = {"a", "b", "c", "d", "e"}
+
+        # Complex mathematical expression
+        deps = graph._extract_deps("(a + b) * c / (d - e)", all_names)
+        assert deps == {"a", "b", "c", "d", "e"}
+
+        # Function calls
+        deps = graph._extract_deps("abs(a) + max(b, c)", all_names)
+        assert deps == {"a", "b", "c"}
+
+        # Nested expressions
+        deps = graph._extract_deps("a + (b * (c + d))", all_names)
+        assert deps == {"a", "b", "c", "d"}
+
+    def test_extract_deps_syntax_error(self):
+        """Test dependency extraction with syntax errors."""
+        graph = DependencyGraph()
+        all_names = {"x", "y"}
+
+        # Invalid syntax should return empty set
+        deps = graph._extract_deps("x +", all_names)
+        assert deps == set()
+
+        deps = graph._extract_deps("x + * y", all_names)
+        assert deps == set()
+
+    def test_load_from_list_simple(self):
+        """Test loading variables from a simple list."""
+        graph = DependencyGraph()
+        vars_list = [
+            {"name": "x", "value": {"type_name": "number", "value": 1}},
+            {"name": "y", "value": {"type_name": "expression", "expression": "x + 1"}},
+        ]
+
+        graph.load_from_list(vars_list)
+
+        # Check dependencies
+        assert "x" in graph._graph
+        assert "y" in graph._graph
+        assert "y" in graph._graph["x"]  # y depends on x
+        assert "x" in graph._deps["y"]  # y depends on x
+
+    def test_load_from_list_complex_dependencies(self):
+        """Test loading variables with complex dependency relationships."""
+        graph = DependencyGraph()
+        vars_list = [
+            {"name": "a", "value": {"type_name": "number", "value": 1}},
+            {"name": "b", "value": {"type_name": "expression", "expression": "a + 1"}},
+            {"name": "c", "value": {"type_name": "expression", "expression": "b * 2"}},
+            {"name": "d", "value": {"type_name": "expression", "expression": "a + c"}},
+        ]
+
+        graph.load_from_list(vars_list)
+
+        # Check dependency relationships
+        assert "b" in graph._graph["a"]  # b depends on a
+        assert "c" in graph._graph["b"]  # c depends on b
+        assert "d" in graph._graph["a"]  # d depends on a
+        assert "d" in graph._graph["c"]  # d depends on c
+
+        assert "a" in graph._deps["b"]  # b depends on a
+        assert "b" in graph._deps["c"]  # c depends on b
+        assert "a" in graph._deps["d"]  # d depends on a
+        assert "c" in graph._deps["d"]  # d depends on c
+
+    def test_load_from_list_unknown_variable_reference(self):
+        """Test loading with reference to unknown variable."""
+        graph = DependencyGraph()
+        vars_list = [
+            {"name": "x", "value": {"type_name": "expression", "expression": "y + 1"}},
+        ]
+
+        # The DependencyGraph only creates dependencies for variables that exist in the graph
+        # Since 'y' is not in the vars_list, no dependency is created
+        graph.load_from_list(vars_list)
+
+        # Check that x exists but has no dependencies
+        assert "x" in graph._graph
+        assert "x" in graph._deps
+        assert graph._graph["x"] == set()
+        assert graph._deps["x"] == set()
+
+    def test_load_from_list_clear_existing(self):
+        """Test that loading clears existing graph."""
+        graph = DependencyGraph()
+
+        # Add some initial data
+        graph.add_variable("old_var", "1")
+
+        # Load new data
+        vars_list = [
+            {"name": "new_var", "value": {"type_name": "number", "value": 1}},
+        ]
+        graph.load_from_list(vars_list)
+
+        # Check old data is gone
+        assert "old_var" not in graph._graph
+        assert "new_var" in graph._graph
+
+    def test_add_variable_simple(self):
+        """Test adding a simple variable."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+
+        assert "x" in graph._graph
+        assert "x" in graph._deps
+        assert graph._graph["x"] == set()
+        assert graph._deps["x"] == set()
+
+    def test_add_variable_with_expression(self):
+        """Test adding a variable with an expression."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        assert "y" in graph._graph["x"]  # y depends on x
+        assert "x" in graph._deps["y"]  # y depends on x
+
+    def test_add_variable_overwrite(self):
+        """Test overwriting an existing variable."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        # Overwrite y with new expression
+        graph.add_variable("y", "x * 2")
+
+        assert "y" in graph._graph["x"]  # y still depends on x
+        assert "x" in graph._deps["y"]  # y depends on x
+
+        # Overwrite y with no expression
+        graph.add_variable("y")
+
+        assert "y" not in graph._graph["x"]  # y no longer depends on x
+        assert "x" not in graph._deps["y"]  # y no longer depends on x
+
+    def test_add_variable_unknown_dependency(self):
+        """Test adding variable with unknown dependency."""
+        graph = DependencyGraph()
+
+        # The DependencyGraph only creates dependencies for variables that exist in the graph
+        # Since 'x' is not in the graph, no dependency is created
+        graph.add_variable("y", "x + 1")
+
+        # Check that y exists but has no dependencies
+        assert "y" in graph._graph
+        assert "y" in graph._deps
+        assert graph._graph["y"] == set()
+        assert graph._deps["y"] == set()
+
+    def test_remove_variable(self):
+        """Test removing a variable."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+        graph.add_variable("z", "y + 1")
+
+        # Remove y
+        graph.remove_variable("y")
+
+        assert "y" not in graph._graph
+        assert "y" not in graph._deps
+        assert "y" not in graph._graph["x"]  # y's dependency on x is removed
+        assert "z" not in graph._graph["y"]  # z's dependency on y is removed
+
+    def test_remove_variable_nonexistent(self):
+        """Test removing a nonexistent variable."""
+        graph = DependencyGraph()
+
+        with pytest.raises(KeyError, match="Variable 'nonexistent' does not exist"):
+            graph.remove_variable("nonexistent")
+
+    def test_update_expression(self):
+        """Test updating an existing variable's expression."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        # Update y's expression
+        graph.update_expression("y", "x * 2")
+
+        assert "y" in graph._graph["x"]  # y still depends on x
+        assert "x" in graph._deps["y"]  # y depends on x
+
+        # Remove expression
+        graph.update_expression("y", None)
+
+        assert "y" not in graph._graph["x"]  # y no longer depends on x
+        assert "x" not in graph._deps["y"]  # y no longer depends on x
+
+    def test_update_expression_nonexistent(self):
+        """Test updating expression for nonexistent variable."""
+        graph = DependencyGraph()
+
+        with pytest.raises(KeyError, match="Variable 'nonexistent' does not exist"):
+            graph.update_expression("nonexistent", "1 + 1")
+
+    def test_update_expression_unknown_dependency(self):
+        """Test updating expression with unknown dependency."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+
+        # The DependencyGraph only creates dependencies for variables that exist in the graph
+        # Since 'y' is not in the graph, no dependency is created
+        graph.update_expression("x", "y + 1")
+
+        # Check that x exists but has no dependencies
+        assert "x" in graph._graph
+        assert "x" in graph._deps
+        assert graph._graph["x"] == set()
+        assert graph._deps["x"] == set()
+
+    def test_check_for_cycle_simple(self):
+        """Test cycle detection with simple cycle."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        # This should not raise an error (no cycle)
+        graph._check_for_cycle()
+
+        # Create a cycle manually
+        graph._graph["y"].add("x")
+        graph._deps["x"].add("y")
+
+        with pytest.raises(
+            pd.ValidationError, match="Circular dependency detected among: \\['x', 'y'\\]"
+        ):
+            graph._check_for_cycle()
+
+    def test_check_for_cycle_complex(self):
+        """Test cycle detection with complex cycle."""
+        graph = DependencyGraph()
+        graph.add_variable("a")
+        graph.add_variable("b", "a + 1")
+        graph.add_variable("c", "b + 1")
+        graph.add_variable("d", "c + 1")
+
+        # Create a cycle: a -> b -> c -> d -> a
+        graph._graph["d"].add("a")
+        graph._deps["a"].add("d")
+
+        with pytest.raises(
+            pd.ValidationError, match="Circular dependency detected among: \\['a', 'b', 'c', 'd'\\]"
+        ):
+            graph._check_for_cycle()
+
+    def test_topology_sort_simple(self):
+        """Test topological sorting with simple dependencies."""
+        graph = DependencyGraph()
+        graph.add_variable("a")
+        graph.add_variable("b", "a + 1")
+        graph.add_variable("c", "b + 1")
+
+        order = graph.topology_sort()
+
+        # Check that dependencies come before dependents
+        assert order.index("a") < order.index("b")
+        assert order.index("b") < order.index("c")
+
+    def test_topology_sort_complex(self):
+        """Test topological sorting with complex dependencies."""
+        graph = DependencyGraph()
+        graph.add_variable("a")
+        graph.add_variable("b", "a + 1")
+        graph.add_variable("c", "a + 1")
+        graph.add_variable("d", "b + c")
+        graph.add_variable("e", "d + 1")
+
+        order = graph.topology_sort()
+
+        # Check dependency order
+        assert order.index("a") < order.index("b")
+        assert order.index("a") < order.index("c")
+        assert order.index("b") < order.index("d")
+        assert order.index("c") < order.index("d")
+        assert order.index("d") < order.index("e")
+
+    def test_topology_sort_with_cycle(self):
+        """Test topological sorting with cycle detection."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        # Create a cycle
+        graph._graph["y"].add("x")
+        graph._deps["x"].add("y")
+
+        with pytest.raises(
+            pd.ValidationError, match="Circular dependency detected among: \\['x', 'y'\\]"
+        ):
+            graph.topology_sort()
+
+    def test_load_from_list_restore_on_error(self):
+        """Test that graph state is restored on error during load."""
+        graph = DependencyGraph()
+
+        # Add initial state
+        graph.add_variable("initial", "1")
+
+        # Try to load data that would create a cycle
+        vars_list = [
+            {"name": "a", "value": {"type_name": "number", "value": 1}},
+            {"name": "b", "value": {"type_name": "expression", "expression": "a + 1"}},
+            {"name": "c", "value": {"type_name": "expression", "expression": "b + 1"}},
+            {
+                "name": "a",
+                "value": {"type_name": "expression", "expression": "c + 1"},
+            },  # This creates a cycle
+        ]
+
+        with pytest.raises(pd.ValidationError, match="Circular dependency detected"):
+            graph.load_from_list(vars_list)
+
+        # Check that initial state is preserved
+        assert "initial" in graph._graph
+        assert "a" not in graph._graph
+        assert "b" not in graph._graph
+        assert "c" not in graph._graph
+
+    def test_add_variable_restore_on_error(self):
+        """Test that graph state is restored on error during add."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        # Try to add variable that creates a cycle
+        with pytest.raises(pd.ValidationError, match="Circular dependency detected"):
+            graph.add_variable("x", "y + 1")  # This creates x -> y -> x cycle
+
+        # Check that graph state is unchanged
+        assert "y" in graph._graph["x"]  # y still depends on x
+        assert "x" in graph._deps["y"]  # y depends on x
+
+    def test_update_expression_restore_on_error(self):
+        """Test that graph state is restored on error during update."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+        graph.add_variable("y", "x + 1")
+
+        # Try to update with expression that creates a cycle
+        with pytest.raises(pd.ValidationError, match="Circular dependency detected"):
+            graph.update_expression("x", "y + 1")  # This creates x -> y -> x cycle
+
+        # Check that original dependency is preserved
+        assert "y" in graph._graph["x"]  # y still depends on x
+        assert "x" in graph._deps["y"]  # y depends on x
+
+    def test_self_reference_cycle(self):
+        """Test cycle detection with self-reference."""
+        graph = DependencyGraph()
+        graph.add_variable("x")
+
+        # Try to create self-reference
+        with pytest.raises(
+            pd.ValidationError, match="Circular dependency detected among: \\['x'\\]"
+        ):
+            graph.update_expression("x", "x + 1")
+
+    def test_empty_graph_operations(self):
+        """Test operations on empty graph."""
+        graph = DependencyGraph()
+
+        # Topological sort of empty graph
+        order = graph.topology_sort()
+        assert order == []
+
+        # Add variable to empty graph
+        graph.add_variable("x", "1")
+        assert "x" in graph._graph
+        assert "x" in graph._deps
+
+    def test_isolated_variables(self):
+        """Test handling of variables with no dependencies."""
+        graph = DependencyGraph()
+        graph.add_variable("a")
+        graph.add_variable("b")
+        graph.add_variable("c", "a + b")
+
+        order = graph.topology_sort()
+
+        # a and b can come in any order, but c must come after both
+        assert order.index("a") < order.index("c")
+        assert order.index("b") < order.index("c")
+
+    def test_multiple_dependencies(self):
+        """Test variables with multiple dependencies."""
+        graph = DependencyGraph()
+        graph.add_variable("a")
+        graph.add_variable("b")
+        graph.add_variable("c")
+        graph.add_variable("d", "a + b + c")
+
+        order = graph.topology_sort()
+
+        # d must come after all its dependencies
+        assert order.index("a") < order.index("d")
+        assert order.index("b") < order.index("d")
+        assert order.index("c") < order.index("d")
+
+    def test_dependency_extraction_edge_cases(self):
+        """Test dependency extraction with edge cases."""
+        graph = DependencyGraph()
+        all_names = {"x", "y", "z"}
+
+        # Empty expression
+        deps = graph._extract_deps("", all_names)
+        assert deps == set()
+
+        # Expression with no variables
+        deps = graph._extract_deps("1 + 2 * 3", all_names)
+        assert deps == set()
+
+        # Expression with only unknown variables
+        deps = graph._extract_deps("unknown1 + unknown2", all_names)
+        assert deps == set()
+
+        # Expression with mixed known and unknown variables
+        deps = graph._extract_deps("x + unknown + y", all_names)
+        assert deps == {"x", "y"}
