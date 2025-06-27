@@ -599,26 +599,20 @@ class Flow360BaseModel(pd.BaseModel):
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
                 dimension = value.units.dimensions
-                try:
-                    if dimension not in registry_lookup.converted_fields:
-                        flow360_conv_system = unit_converter(
-                            value.units.dimensions,
-                            params=params,
-                            required_by=[*required_by, loc_name],
-                        )
-                        # Calling unit_converter is always additive on the global conversion system
-                        # so we can only keep track of the most recent registry and use it
-                        registry_lookup.registry = (
-                            flow360_conv_system.registry  # pylint:disable=no-member
-                        )
-                        registry_lookup.converted_fields.add(dimension)
-                    value.units.registry = registry_lookup.registry
-                    solver_values[property_name] = value.in_base(unit_system="flow360_v2")
-                except ValueError:
-                    # For random unit that is not supported by flow360_conv_system.
-                    solver_values[property_name] = value.in_base(
-                        unit_system=params.flow360_unit_system
+                if dimension not in registry_lookup.converted_fields:
+                    flow360_conv_system = unit_converter(
+                        value.units.dimensions,
+                        params=params,
+                        required_by=[*required_by, loc_name],
                     )
+                    # Calling unit_converter is always additive on the global conversion system
+                    # so we can only keep track of the most recent registry and use it
+                    registry_lookup.registry = (
+                        flow360_conv_system.registry  # pylint:disable=no-member
+                    )
+                    registry_lookup.converted_fields.add(dimension)
+                value.units.registry = registry_lookup.registry
+                solver_values[property_name] = value.in_base(unit_system="flow360_v2")
             else:
                 solver_values[property_name] = copy.copy(value)
 
