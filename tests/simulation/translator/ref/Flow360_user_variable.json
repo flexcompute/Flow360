@@ -33,7 +33,7 @@
                     "velocity_km_per_hr"
                 ],
                 "surfaceField": "iso_field_random_units",
-                "surfaceFieldMagnitude": 10.0
+                "surfaceFieldMagnitude": 4.535923700000001
             },
             "iso_pressure": {
                 "outputFields": [
