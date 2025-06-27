@@ -43,7 +43,7 @@
 			"typeName": "expression",
 			"value": 1,
 			"units": "mm**2",
-			"expression": "11 + fl.alphaAngle"
+			"expression": "11 "
 		}
 	},
 	"operating_condition": {
@@ -1422,19 +1422,10 @@
 		"use_geometry_AI": false,
 		"project_variables": [
 			{
-				"name": "aa",
-				"value": {
-					"type_name": "expression",
-					"expression": "10c"
-				},
-				"postProcessing": false,
-				"description": "test a"
-			},
-			{
 				"name": "b",
 				"value": {
 					"type_name": "expression",
-					"expression": "10 + fl.alphaAngle",
+					"expression": "10 + alphaAngle",
 					"output_units": "SI_unit_system"
 				},
 				"postProcessing": true,

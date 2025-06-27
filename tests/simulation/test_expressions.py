@@ -1062,7 +1062,10 @@ def test_deserialization_with_wrong_syntax():
     )
 
     assert len(errors) == 1
-    assert r"Value error, invalid" in errors[0]["msg"]  # Python version affects the error message
+    assert (
+        r"Value error, expression evaluation failed: Name 'alphaAngle' is not defined"
+        in errors[0]["msg"]
+    )  # Python version affects the error message and also
 
 
 # DependencyGraph Tests
