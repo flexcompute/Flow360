@@ -194,10 +194,16 @@ heat_flux = SolverVariable(
     solver_name="heatFlux",
     variable_type="Surface",
 )
-node_normals = SolverVariable(
-    name="solution.node_normals",
-    value=[float("NaN"), float("NaN"), float("NaN")],
+node_area_vector = SolverVariable(
+    name="solution.node_area_vector",
+    value=[float("NaN"), float("NaN"), float("NaN")] * u.m**2,
     solver_name="nodeNormals",
+    variable_type="Surface",
+)
+node_unit_normal = SolverVariable(
+    name="solution.node_unit_normal",
+    value=[float("NaN"), float("NaN"), float("NaN")],
+    solver_name="___node_unit_normal",
     variable_type="Surface",
 )
 node_forces_per_unit_area = SolverVariable(

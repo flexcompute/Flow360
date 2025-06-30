@@ -89,6 +89,10 @@ udf_prepending_code = {
     + "{___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}",
     "solution.Cf": "double ___Cf;"
     + "___Cf = magnitude(wallShearStress) / (0.5 * MachRef * MachRef);",
+    "solution.node_unit_normal": "double ___node_unit_normal[3];"
+    + "double ___normalMag = magnitude(nodeNormals);"
+    + "for (int i = 0; i < 3; i++){___node_unit_normal[i] = "
+    + "nodeNormals[i] / ___normalMag;}",
     "solution.node_forces_per_unit_area": "double ___node_forces_per_unit_area[3];"
     + "double ___normalMag = magnitude(nodeNormals);"
     + "for (int i = 0; i < 3; i++){___node_forces_per_unit_area[i] = "
