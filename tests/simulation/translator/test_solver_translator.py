@@ -809,6 +809,16 @@ def test_param_with_user_variables():
     )
     assert not errors, print(">>>", errors)
 
+    translated = get_solver_json(params_validated, mesh_unit=1 * u.m)
+    units = iso_field_random_units.value.get_output_units(input_params=params_validated)
+    assert units == u.kg * u.m / u.s
+    assert (
+        translated["isoSurfaceOutput"]["isoSurfaces"]["iso_field_random_units"][
+            "surfaceFieldMagnitude"
+        ]
+        == params_validated.outputs[2].entities.items[0].iso_value.to(units).v.item()
+    )
+
     assert params_validated
     translate_and_compare(
         params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=True
