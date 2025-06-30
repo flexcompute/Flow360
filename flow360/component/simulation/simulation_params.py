@@ -70,6 +70,10 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
     unyt_quantity,
 )
+from flow360.component.simulation.user_code.core.types import (
+    batch_get_user_variable_units,
+    get_post_processing_variables,
+)
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -101,6 +105,7 @@ from flow360.error_messages import (
     use_unit_system_for_simulation_msg,
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
+from flow360.log import log
 from flow360.version import __version__
 
 from .validation.validation_context import (
@@ -713,3 +718,53 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams has user defined dynamics
         """
         return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0
+
+    def display_output_units(self) -> None:
+        """
+        Display all the output units for UserVariables used in `outputs`.
+        """
+        if not self.outputs:
+            return
+
+        post_processing_variables = get_post_processing_variables(self)
+
+        # Sort for consistent behavior
+        post_processing_variables = sorted(post_processing_variables)
+        name_units_pair = batch_get_user_variable_units(post_processing_variables, self)
+
+        if not name_units_pair:
+            return
+
+        # Calculate column widths dynamically
+        name_column_width = max(len("Variable Name"), max(len(name) for name in name_units_pair))
+        unit_column_width = max(
+            len("Unit"), max(len(str(unit)) for unit in name_units_pair.values())
+        )
+
+        # Ensure minimum column widths
+        name_column_width = max(name_column_width, 15)
+        unit_column_width = max(unit_column_width, 10)
+
+        # Create the table header
+        header = f"{'Variable Name':<{name_column_width}} | {'Unit':<{unit_column_width}}"
+        separator = "-" * len(header)
+
+        # Print the table
+        log.info("")
+        log.info("Units of output `UserVariables`:")
+        log.info(separator)
+        log.info(header)
+        log.info(separator)
+
+        # Print each row
+        for name, unit in name_units_pair.items():
+            log.info(f"{name:<{name_column_width}} | {str(unit):<{unit_column_width}}")
+
+        log.info(separator)
+        log.info("")
+
+    def pre_submit_summary(self):
+        """
+        Display a summary of the simulation params before submission.
+        """
+        self.display_output_units()

@@ -17,7 +17,6 @@ from flow360 import (
     math,
     u,
 )
-from flow360.component.project_utils import save_user_variables
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -75,6 +74,7 @@ from flow360.component.simulation.user_code.core.types import (
     SolverVariable,
     UserVariable,
     ValueOrExpression,
+    save_user_variables,
 )
 from flow360.component.simulation.user_code.variables import control, solution
 from tests.utils import to_file_from_file_test
@@ -871,6 +871,7 @@ def test_to_file_from_file_expression(
         )
 
     to_file_from_file_test(params)
+    params.display_output_units()
 
 
 def assert_ignore_space(expected: str, actual: str):
