@@ -46,6 +46,7 @@ from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
     SliceOutput,
+    SurfaceIntegralOutput,
     SurfaceOutput,
     UserDefinedField,
     VolumeOutput,
@@ -797,6 +798,18 @@ def test_param_with_user_variables():
                             new_unit="mile/hr"
                         ),
                     ],
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral",
+                    output_fields=[
+                        UserVariable(
+                            name="MassFluxProjected",
+                            value=-1
+                            * solution.density
+                            * math.dot(solution.velocity, solution.node_unit_normal),
+                        )
+                    ],
+                    surfaces=Surface(name="VOLUME/LEFT"),
                 ),
             ],
             time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),

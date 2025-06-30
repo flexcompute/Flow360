@@ -97,6 +97,8 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.utils import (
     is_exact_instance,
     is_instance_of_type_in_union,
@@ -719,7 +721,14 @@ def process_output_fields_for_udf(input_params: SimulationParams):
                 for output_field in output.output_fields.items:
                     if not isinstance(output_field, UserVariable):
                         continue
-                    udf_from_user_variable = user_variable_to_udf(output_field, input_params)
+                    if isinstance(output, SurfaceIntegralOutput):
+                        output_field_copy = output_field.copy()
+                        output_field_copy.value *= math.magnitude(solution.node_area_vector)
+                        udf_from_user_variable = user_variable_to_udf(
+                            output_field_copy, input_params
+                        )
+                    else:
+                        udf_from_user_variable = user_variable_to_udf(output_field, input_params)
                     user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
             if isinstance(output, IsosurfaceOutput):
                 for isosurface in output.entities.items:
