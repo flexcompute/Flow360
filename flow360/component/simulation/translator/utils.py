@@ -165,7 +165,7 @@ def inline_expressions_in_dict(input_dict, input_params):
     """Inline all client-time evaluable expressions in the provided dict to their evaluated values"""
     if isinstance(input_dict, dict):
         new_dict = {}
-        if "expression" in input_dict.keys():
+        if "type_name" in input_dict.keys() and input_dict["type_name"] == "Expression":
             expression = Expression(expression=input_dict["expression"])
             evaluated = expression.evaluate(raise_on_non_evaluable=False)
             converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
