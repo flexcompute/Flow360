@@ -337,7 +337,7 @@ def initialize_variable_space(value: dict):
     # Pad the project variables into proper schema
     variable_list = []
     for var in asset_cache["project_variables"]:
-        if "expression" in var["value"]:
+        if "type_name" in var["value"] and var["value"]["type_name"] == "expression":
             # Expression type
             variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
         else:
