@@ -4,12 +4,11 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, Iterable, List, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 import unyt as u
 
-from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.conversion import (
     LIQUID_IMAGINARY_FREESTREAM_MACH,
     unit_converter,
@@ -71,7 +70,6 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
     unyt_quantity,
 )
-from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -380,55 +378,11 @@ class SimulationParams(_ParamModelBase):
             converted = value.in_base(unit_system=target_system)
         return converted
 
-    # We have no way forcing validator call order so this is a workaround
-    @classmethod
-    def initialize_variable_space(cls, value: dict):
-        """Load all user variables from private attributes when a simulation params object is initialized"""
-        if "private_attribute_asset_cache" not in value.keys():
-            return value
-        asset_cache: dict = value["private_attribute_asset_cache"]
-        if "project_variables" not in asset_cache.keys():
-            return value
-        if not isinstance(asset_cache["project_variables"], Iterable):
-            return value
-
-        # ==== Build dependency graph and sort variables ====
-        dependency_graph = DependencyGraph()
-        # Pad the project variables into proper schema
-        variable_list = []
-        for var in asset_cache["project_variables"]:
-            if "expression" in var["value"]:
-                # Expression type
-                variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
-            else:
-                # Number type (#units ignored since it does not affect the dependency graph)
-                variable_list.append({"name": var["name"], "value": str(var["value"]["value"])})
-        dependency_graph.load_from_list(variable_list)
-        sorted_variables = dependency_graph.topology_sort()
-
-        for variable_name in sorted_variables:
-            variable_dict = next(
-                (var for var in asset_cache["project_variables"] if var["name"] == variable_name),
-                None,
-            )
-            if variable_dict is None:
-                continue
-            value_or_expression = {
-                key: value
-                for key, value in variable_dict["value"].items()
-                if key != "postProcessing"
-            }
-            UserVariable(
-                name=variable_dict["name"],
-                value=value_or_expression,
-            )
-        return value
-
     # pylint: disable=no-self-argument
     @pd.field_validator("models", mode="after")
     @classmethod
     def apply_default_fluid_settings(cls, v):
-        """Apply default Fluid() settings if not found in models"""
+        """Apply default Fluid() settings if not found in mode`ls"""
         if v is None:
             v = []
         assert isinstance(v, list)
