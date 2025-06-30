@@ -1185,7 +1185,6 @@ def test_output_fields_with_user_defined_fields():
                 )
             ]
         )
-    assert params
 
     msg = (
         "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are "
