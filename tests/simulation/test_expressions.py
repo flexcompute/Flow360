@@ -37,7 +37,6 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.services import (
     ValidationCalledBy,
     clear_context,
-    validate_expression,
     validate_model,
 )
 from flow360.component.simulation.translator.solver_translator import (
@@ -682,15 +681,13 @@ def test_error_message():
     ):
         UserVariable(name="x", value=solution.velocity + [1, 2, 3] * u.cm / u.ms)
 
-    errors, _, _ = validate_expression(
-        variables=[], expressions=["solution.velocity + [1, 2, 3] * u.cm / u.ms"]
-    )
-    assert len(errors) == 1
-    assert errors[0]["type"] == "value_error"
-    assert (
-        "Vector operation (__add__ between solution.velocity and [1 2 3] cm/ms) not supported for variables. Please write expression for each component."
-        in errors[0]["msg"]
-    )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Vector operation (__add__ between solution.velocity and [1 2 3] cm/ms) not supported for variables. Please write expression for each component."
+        ),
+    ):
+        UserVariable(name="xx", value="solution.velocity + [1, 2, 3] * u.cm / u.ms")
 
 
 def test_temperature_units_usage():

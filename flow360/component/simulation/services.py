@@ -4,12 +4,9 @@
 import json
 import os
 from enum import Enum
-from numbers import Number
 from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
 
-import numpy as np
 import pydantic as pd
-from unyt import unyt_array
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
@@ -857,80 +854,6 @@ def clear_context():
     context.default_context._values = {
         name: value for name, value in context.default_context._values.items() if "." in name
     }
-
-
-def validate_expression(variables: list[dict], expressions: list[str]):
-    # pylint: disable=too-many-branches, too-many-locals, too-many-statements
-    """
-    Validate all given expressions using the specified variable space (which is also validated)
-    """
-    clear_context()
-
-    errors = []
-    values = []
-    units = []
-
-    # Build variable dependency graph
-    dependency_graph = DependencyGraph()
-    dependency_graph.load_from_list(variables)
-    sorted_variable_names = dependency_graph.topology_sort()
-    # Sort `variables` by variable dependency graph
-    variable_list = []
-    for variable_name in sorted_variable_names:
-        variable_list.append(
-            next(
-                (var for var in variables if var["name"] == variable_name),
-                None,
-            )
-        )
-    # Populate variable scope
-    for i, variable in enumerate(variable_list):
-        loc_hint = ["variables", str(i)]
-        try:
-            variable = UserVariable(name=variable["name"], value=variable["value"])
-            if variable and isinstance(variable.value, Expression):
-                _ = variable.value.evaluate(raise_on_non_evaluable=False)
-        except pd.ValidationError as err:
-            errors.extend(err.errors())
-        except Exception as err:  # pylint: disable=broad-exception-caught
-            handle_generic_exception(err, errors, loc_hint)
-
-    for i, expression in enumerate(expressions):
-        loc_hint = ["expressions", str(i)]
-        value = None
-        unit = None
-        try:
-            expression_object = Expression(expression=expression)
-            result = expression_object.evaluate(raise_on_non_evaluable=False)
-            if isinstance(result, (list, np.ndarray)):
-                if np.isnan(result).all():
-                    pass
-            elif isinstance(result, Number) and np.isnan(result):
-                pass
-            elif isinstance(result, Number):
-                value = result
-            elif isinstance(result, unyt_array):
-                if result.size == 1:
-                    value = float(result.value)
-                else:
-                    value = tuple(result.value.tolist())
-                unit = str(result.units.expr)
-            elif isinstance(result, np.ndarray):
-                if result.size == 1:
-                    value = float(result[0])
-                else:
-                    value = tuple(result.tolist())
-
-            # Test symbolically
-            expression_object.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
-        except pd.ValidationError as err:
-            errors.extend(err.errors())
-        except Exception as err:  # pylint: disable=broad-exception-caught
-            handle_generic_exception(err, errors, loc_hint)
-        values.append(value)
-        units.append(unit)
-
-    return errors, values, units
 
 
 def _serialize_unit_in_dict(data):
