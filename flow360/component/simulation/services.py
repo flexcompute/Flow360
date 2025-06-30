@@ -5,7 +5,7 @@ import json
 import os
 from enum import Enum
 from numbers import Number
-from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pydantic as pd
@@ -323,6 +323,49 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
+def initialize_variable_space(value: dict):
+    """Load all user variables from private attributes when a simulation params object is initialized"""
+    if "private_attribute_asset_cache" not in value.keys():
+        return value
+    asset_cache: dict = value["private_attribute_asset_cache"]
+    if "project_variables" not in asset_cache.keys():
+        return value
+    if not isinstance(asset_cache["project_variables"], Iterable):
+        return value
+
+    clear_context()
+
+    # ==== Build dependency graph and sort variables ====
+    dependency_graph = DependencyGraph()
+    # Pad the project variables into proper schema
+    variable_list = []
+    for var in asset_cache["project_variables"]:
+        if "expression" in var["value"]:
+            # Expression type
+            variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
+        else:
+            # Number type (#units ignored since it does not affect the dependency graph)
+            variable_list.append({"name": var["name"], "value": str(var["value"]["value"])})
+    dependency_graph.load_from_list(variable_list)
+    sorted_variables = dependency_graph.topology_sort()
+
+    for variable_name in sorted_variables:
+        variable_dict = next(
+            (var for var in asset_cache["project_variables"] if var["name"] == variable_name),
+            None,
+        )
+        if variable_dict is None:
+            continue
+        value_or_expression = {
+            key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
+        }
+        UserVariable(
+            name=variable_dict["name"],
+            value=value_or_expression,
+        )
+    return value
+
+
 def validate_model(
     *,
     params_as_dict,
@@ -376,7 +419,7 @@ def validate_model(
 
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
-        SimulationParams.initialize_variable_space(updated_param_as_dict)
+        initialize_variable_space(updated_param_as_dict)
 
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):

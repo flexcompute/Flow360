@@ -273,7 +273,7 @@ class Variable(Flow360BaseModel):
 
                 if diff:
                     raise ValueError(
-                        f"Redeclaring user variable {values['name']} with new value: {new_value}. "
+                        f"Redeclaring user variable '{values['name']}' with new value: {new_value}. "
                         f"Previous value: {default_context.get(values['name'])}"
                     )
             # Call the setter
