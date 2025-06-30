@@ -1331,6 +1331,8 @@ class Project(pd.BaseModel):
             tags=all_tags,
         ).submit()
 
+        params.pre_submit_summary()
+
         draft.update_simulation_params(params)
 
         try:

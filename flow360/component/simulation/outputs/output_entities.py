@@ -16,9 +16,9 @@ from flow360.component.simulation.user_code.core.types import (
     ValueOrExpression,
     get_input_value_dimensions,
     get_input_value_length,
-    is_runtime_expression,
     solver_variable_to_user_variable,
 )
+from flow360.component.simulation.user_code.core.utils import is_runtime_expression
 from flow360.component.types import Axis
 
 

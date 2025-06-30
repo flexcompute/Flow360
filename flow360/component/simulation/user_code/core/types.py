@@ -36,6 +36,7 @@ from flow360.component.simulation.user_code.core.context import default_context
 from flow360.component.simulation.user_code.core.utils import (
     handle_syntax_error,
     is_number_string,
+    is_runtime_expression,
     split_keep_delimiters,
 )
 
@@ -52,30 +53,6 @@ class VariableContextInfo(Flow360BaseModel):
     # pylint: disable=fixme
     # TODO: This should be removed once front end figure out what to store here.
     model_config = pd.ConfigDict(extra="allow")
-
-
-def save_user_variables(params):
-    """
-    Save user variables to the project variables.
-    Declared here since I do not want to import default_context everywhere.
-    """
-    # Get all output variables:
-    post_processing_variables = set()
-    for item in params.outputs if params.outputs else []:
-        if not "output_fields" in item.__class__.model_fields:
-            continue
-        for item in item.output_fields.items:
-            if isinstance(item, UserVariable):
-                post_processing_variables.add(item.name)
-
-    params.private_attribute_asset_cache.project_variables = [
-        VariableContextInfo(
-            name=name, value=value, postProcessing=name in post_processing_variables
-        )
-        for name, value in default_context._values.items()  # pylint: disable=protected-access
-        if "." not in name  # Skipping scoped variables (non-user variables)
-    ]
-    return params
 
 
 def update_global_context(value: List[VariableContextInfo]):
@@ -567,6 +544,22 @@ class SolverVariable(Variable):
         )
         new_variable.value.output_units = new_unit  # pylint:disable=assigning-non-slot
         return new_variable
+
+
+def get_input_value_length(
+    value: Union[Number, list[float], unyt_array, unyt_quantity, Expression, Variable],
+):
+    """Get the length of the input value."""
+    if isinstance(value, Expression):
+        value = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+    assert isinstance(
+        value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
+    ), f"Unexpected evaluated result type: {type(value)}"
+    if isinstance(value, list):
+        return len(value)
+    if isinstance(value, np.ndarray):
+        return 0 if value.shape == () else value.shape[0]
+    return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
 
 class Expression(Flow360BaseModel, Evaluable):
@@ -1124,17 +1117,57 @@ class ValueOrExpression(Expression, Generic[T]):
         return union_type
 
 
-def is_runtime_expression(value):
-    """Check if the input value is a runtime expression."""
-    if isinstance(value, unyt_quantity) and np.isnan(value.value):
-        return True
-    if isinstance(value, unyt_array) and np.isnan(value.value).any():
-        return True
-    if isinstance(value, Number) and np.isnan(value):
-        return True
-    if isinstance(value, list) and any(np.isnan(item) for item in value):
-        return any(np.isnan(item) for item in value)
-    return False
+def get_post_processing_variables(params) -> set[str]:
+    """
+    Get all the post processing related variables from the simulation params.
+    """
+    post_processing_variables = set()
+    for item in params.outputs if params.outputs else []:
+        if item.output_type in ("IsosurfaceOutput", "TimeAverageIsosurfaceOutput"):
+            for isosurface in item.entities.items:
+                post_processing_variables.add(isosurface.field.name)
+        if not "output_fields" in item.__class__.model_fields:
+            continue
+        for item in item.output_fields.items:
+            if isinstance(item, UserVariable):
+                post_processing_variables.add(item.name)
+    return post_processing_variables
+
+
+def save_user_variables(params):
+    """
+    Save user variables to the project variables.
+    Declared here since I do not want to import default_context everywhere.
+    """
+    # Get all output variables which will be tagged with postProcessing=True:
+    post_processing_variables = get_post_processing_variables(params)
+
+    params.private_attribute_asset_cache.project_variables = [
+        VariableContextInfo(
+            name=name, value=value, postProcessing=name in post_processing_variables
+        )
+        for name, value in default_context._values.items()  # pylint: disable=protected-access
+        if "." not in name  # Skipping scoped variables (non-user variables)
+    ]
+    return params
+
+
+def batch_get_user_variable_units(variable_names: list[str], params):
+    """
+    Get the units of a list of user variables.
+    """
+    result = {}
+    for name in variable_names:
+        value = default_context.get(name)
+        if isinstance(value, Expression):
+            result[name] = value.get_output_units(params)
+        elif isinstance(value, unyt_array):
+            result[name] = value.units
+        elif isinstance(value, Number):
+            result[name] = "dimensionless"
+        else:
+            raise ValueError(f"Unknown variable type: {value}")
+    return result
 
 
 def get_input_value_dimensions(
@@ -1156,22 +1189,6 @@ def get_input_value_dimensions(
         value,
         value.__class__.__name__,
     )
-
-
-def get_input_value_length(
-    value: Union[Number, list[float], unyt_array, unyt_quantity, Expression, Variable],
-):
-    """Get the length of the input value."""
-    if isinstance(value, Expression):
-        value = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-    assert isinstance(
-        value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
-    ), f"Unexpected evaluated result type: {type(value)}"
-    if isinstance(value, list):
-        return len(value)
-    if isinstance(value, np.ndarray):
-        return 0 if value.shape == () else value.shape[0]
-    return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
 
 def solver_variable_to_user_variable(item):

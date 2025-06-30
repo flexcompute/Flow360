@@ -1,9 +1,12 @@
 """Utility functions for the user code module"""
 
 import re
+from numbers import Number
 
+import numpy as np
 import pydantic as pd
 from pydantic_core import InitErrorDetails
+from unyt import unyt_array, unyt_quantity
 
 
 def is_number_string(s: str) -> bool:
@@ -45,3 +48,16 @@ def handle_syntax_error(se: SyntaxError, source: str):
             )
         ],
     )
+
+
+def is_runtime_expression(value):
+    """Check if the input value is a runtime expression."""
+    if isinstance(value, unyt_quantity) and np.isnan(value.value):
+        return True
+    if isinstance(value, unyt_array) and np.isnan(value.value).any():
+        return True
+    if isinstance(value, Number) and np.isnan(value):
+        return True
+    if isinstance(value, list) and any(np.isnan(item) for item in value):
+        return any(np.isnan(item) for item in value)
+    return False
