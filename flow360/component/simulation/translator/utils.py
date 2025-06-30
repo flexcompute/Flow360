@@ -155,7 +155,7 @@ def translate_value_or_expression_object(
     if isinstance(obj, Expression):
         # Only allowing client-time evaluable expressions
         evaluated = obj.evaluate(raise_on_non_evaluable=True)
-        converted = input_params.convert_unit(evaluated, "flow360").v.item()
+        converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v.item()
         return converted
     # Non dimensionalized unyt objects
     return obj.value.item()
@@ -168,7 +168,7 @@ def inline_expressions_in_dict(input_dict, input_params):
         if "expression" in input_dict.keys():
             expression = Expression(expression=input_dict["expression"])
             evaluated = expression.evaluate(raise_on_non_evaluable=False)
-            converted = input_params.convert_unit(evaluated, "flow360").v
+            converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
             new_dict = converted
             return new_dict
         for key, value in input_dict.items():
@@ -177,7 +177,7 @@ def inline_expressions_in_dict(input_dict, input_params):
             if isinstance(value, dict) and "expression" in value.keys():
                 expression = Expression(expression=value["expression"])
                 evaluated = expression.evaluate(raise_on_non_evaluable=False)
-                converted = input_params.convert_unit(evaluated, "flow360").v
+                converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
                 if isinstance(converted, np.ndarray):
                     if converted.ndim == 0:
                         converted = float(converted)

@@ -24,13 +24,14 @@ import unyt as u
 from pydantic import BeforeValidator, Discriminator, PlainSerializer, Tag
 from pydantic_core import InitErrorDetails, core_schema
 from typing_extensions import Self
-from unyt import Unit, unyt_array, unyt_quantity
+from unyt import Unit, dimensions, unyt_array, unyt_quantity
 
 from flow360.component.simulation.blueprint import Evaluable, expr_to_model
 from flow360.component.simulation.blueprint.core import EvaluationContext, expr_to_code
 from flow360.component.simulation.blueprint.core.types import TargetSyntax
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater_utils import deprecation_reminder
+from flow360.component.simulation.unit_system import unit_system_manager
 from flow360.component.simulation.user_code.core.context import default_context
 from flow360.component.simulation.user_code.core.utils import (
     handle_syntax_error,
@@ -175,6 +176,26 @@ class SerializedValueOrExpression(Flow360BaseModel):
     evaluated_value: Union[Optional[Number], list[Optional[Number]]] = pd.Field(None)
     evaluated_units: Optional[str] = pd.Field(None)
     output_units: Optional[str] = pd.Field(None, description="See definition in `Expression`.")
+
+
+class UnytQuantity(unyt_quantity):
+    """UnytQuantity wrapper to enable pydantic compatibility"""
+
+    # pylint: disable=unused-argument
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        return core_schema.no_info_plain_validator_function(cls.validate)
+
+    @classmethod
+    def validate(cls, value: Any):
+        """Minimal validator for pydantic compatibility"""
+        if isinstance(value, unyt_quantity):
+            return value
+        if isinstance(value, unyt_array):
+            # When deserialized unyt_quantity() gives unyt_array
+            if value.shape == ():
+                return unyt_quantity(value.value, value.units)
+        raise ValueError("Input should be a valid unit quantity.")
 
 
 # This is a wrapper to allow using unyt arrays with pydantic models
@@ -868,15 +889,7 @@ class Expression(Flow360BaseModel, Evaluable):
     @property
     def length(self):
         """The number of elements in the expression. 0 for scalar and anything else for vector."""
-        value = self.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-        assert isinstance(
-            value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
-        ), f"Unexpected evaluated result type: {type(value)}"
-        if isinstance(value, list):
-            return len(value)
-        if isinstance(value, np.ndarray):
-            return 0 if value.shape == () else value.shape[0]
-        return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
+        return get_input_value_length(self)
 
     def __len__(self):
         return self.length
@@ -932,7 +945,7 @@ class Expression(Flow360BaseModel, Evaluable):
             return result
 
 
-def _check_list_items_are_same_dimensions(value: list) -> bool:
+def _check_list_items_are_same_dimensions(value: list):
     if all(isinstance(item, Expression) for item in value):
         _check_list_items_are_same_dimensions(
             [item.evaluate(raise_on_non_evaluable=False, force_evaluate=True) for item in value]
@@ -980,17 +993,7 @@ class ValueOrExpression(Expression, Generic[T]):
 
             # Detect run-time expressions
             if allow_run_time_expression is False:
-                run_time_expression = False
-                if isinstance(result, unyt_quantity) and np.isnan(result.value):
-                    run_time_expression = True
-                elif isinstance(result, unyt_array) and np.isnan(result.value).any():
-                    run_time_expression = True
-                elif isinstance(result, Number) and np.isnan(result):
-                    run_time_expression = True
-                elif isinstance(result, list) and any(np.isnan(item) for item in result):
-                    run_time_expression = True
-
-                if run_time_expression:
+                if is_runtime_expression(result):
                     raise ValueError(
                         "Run-time expression is not allowed in this field. "
                         "Please ensure this field does not depend on any control or solver variables."
@@ -1032,6 +1035,8 @@ class ValueOrExpression(Expression, Generic[T]):
             # Handle list of unyt_quantities:
             if isinstance(value, list):
                 # Only checking when list[unyt_quantity]
+                if len(value) == 0:
+                    raise ValueError("Empty list is not allowed.")
                 _check_list_items_are_same_dimensions(value)
                 if all(isinstance(item, (unyt_quantity, Number)) for item in value):
                     # try limiting the number of types we need to handle
@@ -1114,3 +1119,64 @@ class ValueOrExpression(Expression, Generic[T]):
             PlainSerializer(_serializer),
         ]
         return union_type
+
+
+def is_runtime_expression(value):
+    """Check if the input value is a runtime expression."""
+    if isinstance(value, unyt_quantity) and np.isnan(value.value):
+        return True
+    if isinstance(value, unyt_array) and np.isnan(value.value).any():
+        return True
+    if isinstance(value, Number) and np.isnan(value):
+        return True
+    if isinstance(value, list) and any(np.isnan(item) for item in value):
+        return any(np.isnan(item) for item in value)
+    return False
+
+
+def get_input_value_dimensions(
+    value: Union[float, list[float], unyt_array, unyt_quantity, Expression, Variable],
+):
+    """Get the dimensions of the input value."""
+    if isinstance(value, list):
+        return get_input_value_dimensions(value=value[0]) if len(value) > 0 else None
+    if isinstance(value, Variable):
+        return get_input_value_dimensions(value=value.value)
+    if isinstance(value, Expression):
+        return value.dimensions
+    if isinstance(value, (unyt_array, unyt_quantity)):
+        return value.units.dimensions
+    if isinstance(value, Number):
+        return dimensions.dimensionless
+    raise ValueError(
+        "Cannot get input value's dimensions due to the unknown value type: ",
+        value,
+        value.__class__.__name__,
+    )
+
+
+def get_input_value_length(
+    value: Union[Number, list[float], unyt_array, unyt_quantity, Expression, Variable],
+):
+    """Get the length of the input value."""
+    if isinstance(value, Expression):
+        value = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+    assert isinstance(
+        value, (unyt_array, unyt_quantity, list, Number, np.ndarray)
+    ), f"Unexpected evaluated result type: {type(value)}"
+    if isinstance(value, list):
+        return len(value)
+    if isinstance(value, np.ndarray):
+        return 0 if value.shape == () else value.shape[0]
+    return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
+
+
+def solver_variable_to_user_variable(item):
+    """Convert the solver variable to a user variable using the current unit system."""
+    if isinstance(item, SolverVariable):
+        if unit_system_manager.current is None:
+            raise ValueError(f"Solver variable {item.name} cannot be used without a unit system.")
+        unit_system_name = unit_system_manager.current.name
+        name = item.name.split(".")[-1] if "." in item.name else item.name
+        return UserVariable(name=f"{name}_{unit_system_name}", value=item)
+    return item

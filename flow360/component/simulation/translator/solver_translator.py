@@ -310,11 +310,19 @@ def inject_surface_slice_info(entity: Slice):
     }
 
 
-def inject_isosurface_info(entity: Isosurface):
+def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     """inject entity info"""
+
+    if isinstance(entity.field, UserVariable):
+        units = entity.field.value.get_output_units(input_params=input_params)
+        surface_field = entity.field.name
+        surface_magnitude = entity.iso_value.to(units).v.item()
+    else:
+        surface_field = entity.field
+        surface_magnitude = entity.iso_value
     return {
-        "surfaceField": entity.field,
-        "surfaceFieldMagnitude": entity.iso_value,
+        "surfaceField": surface_field,
+        "surfaceFieldMagnitude": surface_magnitude,
     }
 
 
@@ -456,6 +464,7 @@ def translate_slice_output(
 
 
 def translate_isosurface_output(
+    input_params: SimulationParams,
     output_params: list,
     injection_function,
 ):
@@ -472,11 +481,13 @@ def translate_isosurface_output(
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
+        entity_injection_input_params=input_params,
     )
     return translated_output
 
 
 def translate_time_average_isosurface_output(
+    input_params: SimulationParams,
     output_params: list,
     injection_function,
 ):
@@ -493,6 +504,7 @@ def translate_time_average_isosurface_output(
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
+        entity_injection_input_params=input_params,
     )
     return translated_output
 
@@ -604,7 +616,7 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
 
     def _prepare_prepending_code(expression: Expression):
         prepending_code = []
-        for name in expression.solver_variable_names():
+        for name in sorted(expression.solver_variable_names()):
             if not udf_prepending_code.get(name):
                 continue
             if name == "solution.temperature" and input_params.has_solid():
@@ -703,13 +715,18 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     user_variable_udfs = {}
     if input_params.outputs:
         for output in input_params.outputs:
-            if not hasattr(output, "output_fields") or not output.output_fields:
-                continue
-            for output_field in output.output_fields.items:
-                if not isinstance(output_field, UserVariable):
-                    continue
-                udf_from_user_variable = user_variable_to_udf(output_field, input_params)
-                user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+            if hasattr(output, "output_fields") and output.output_fields:
+                for output_field in output.output_fields.items:
+                    if not isinstance(output_field, UserVariable):
+                        continue
+                    udf_from_user_variable = user_variable_to_udf(output_field, input_params)
+                    user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+            if isinstance(output, IsosurfaceOutput):
+                for isosurface in output.entities.items:
+                    if not isinstance(isosurface.field, UserVariable):
+                        continue
+                    udf_from_user_variable = user_variable_to_udf(isosurface.field, input_params)
+                    user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
     return generated_udfs + list(user_variable_udfs.values())
 
 
@@ -794,11 +811,11 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step4: Get translated["isoSurfaceOutput"]
     if has_instance_in_list(outputs, IsosurfaceOutput):
         translated["isoSurfaceOutput"] = translate_isosurface_output(
-            outputs, inject_isosurface_info
+            input_params, outputs, inject_isosurface_info
         )
     if has_instance_in_list(outputs, TimeAverageIsosurfaceOutput):
         translated["timeAverageIsoSurfaceOutput"] = translate_time_average_isosurface_output(
-            outputs, inject_isosurface_info
+            input_params, outputs, inject_isosurface_info
         )
 
     ##:: Step5: Get translated["monitorOutput"]

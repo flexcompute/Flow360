@@ -43,6 +43,8 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
+    Isosurface,
+    IsosurfaceOutput,
     SliceOutput,
     SurfaceOutput,
     UserDefinedField,
@@ -708,6 +710,25 @@ def test_param_with_user_variables():
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
     )
+    iso_field_pressure = UserVariable(
+        name="iso_field_pressure",
+        value=0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2,
+    )
+    iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa)
+    iso_field_random_units = UserVariable(
+        name="iso_field_random_units",
+        value=solution.velocity[0] * 2 * u.lb,
+    )
+    iso2 = Isosurface(
+        name="iso_field_random_units", field=iso_field_random_units, iso_value=10 * u.lb * u.m / u.s
+    )
+    iso_field_velocity = UserVariable(
+        name="iso_field_velocity_mag",
+        value=math.magnitude(solution.velocity),
+    )
+    iso3 = Isosurface(
+        name="iso_surf_velocity_mag", field=iso_field_velocity, iso_value=10 * u.m / u.s
+    )
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=LiquidOperatingCondition(
@@ -751,15 +772,51 @@ def test_param_with_user_variables():
                         min_res,
                         max_res,
                     ],
-                )
+                ),
+                IsosurfaceOutput(
+                    name="iso_pressure",
+                    entities=[iso1],
+                    output_fields=[
+                        UserVariable(name="ppp", value=solution.pressure).in_units(new_unit="psf"),
+                    ],
+                ),
+                IsosurfaceOutput(
+                    name="iso_random",
+                    entities=[iso2],
+                    output_fields=[
+                        UserVariable(
+                            name="velocity_km_per_hr", value=solution.velocity[0]
+                        ).in_units(new_unit="km/hr"),
+                    ],
+                ),
+                IsosurfaceOutput(
+                    name="iso_velocity_mag",
+                    entities=[iso3],
+                    output_fields=[
+                        UserVariable(name="velocity_mile_per_hr", value=solution.velocity).in_units(
+                            new_unit="mile/hr"
+                        ),
+                    ],
+                ),
             ],
             time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
         )
     # Mimicking real workflow where the Param is serialized and then deserialized
-    params_validated, _, _ = validate_model(
+    params_validated, errors, _ = validate_model(
         params_as_dict=param.model_dump(mode="json"),
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type=None,
+    )
+    assert not errors, print(">>>", errors)
+
+    translated = get_solver_json(params_validated, mesh_unit=1 * u.m)
+    units = iso_field_random_units.value.get_output_units(input_params=params_validated)
+    assert units == u.kg * u.m / u.s
+    assert (
+        translated["isoSurfaceOutput"]["isoSurfaces"]["iso_field_random_units"][
+            "surfaceFieldMagnitude"
+        ]
+        == params_validated.outputs[2].entities.items[0].iso_value.to(units).v.item()
     )
 
     assert params_validated
