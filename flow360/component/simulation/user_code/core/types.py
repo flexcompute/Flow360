@@ -987,6 +987,9 @@ class ValueOrExpression(Expression, Generic[T]):
 
         def _internal_validator(value: Expression):
             try:
+                # Symbolicly validate
+                value.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+                # Numerically validate
                 result = value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
             except Exception as err:
                 raise ValueError(f"expression evaluation failed: {err}") from err
