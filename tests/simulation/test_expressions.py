@@ -983,7 +983,7 @@ def test_overwriting_project_variables():
 
     with pytest.raises(
         ValueError,
-        match="Redeclaring user variable a with new value: 2.0. Previous value: 1.0",
+        match="Redeclaring user variable 'a' with new value: 2.0. Previous value: 1.0",
     ):
         UserVariable(name="a", value=2)
 
