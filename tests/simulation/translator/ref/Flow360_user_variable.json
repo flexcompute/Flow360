@@ -60,7 +60,7 @@
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": false,
                 "outputFields": [
-                    "MassFluxProjected"
+                    "MassFluxProjected_integral"
                 ],
                 "surfaces": [
                     "VOLUME/LEFT"
@@ -91,6 +91,24 @@
     },
     "outputRescale": {
         "velocityScale": 20.0
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "VOLUME/LEFT": {
+                "outputFields": [
+                    "MassFluxProjected"
+                ]
+            }
+        },
+        "writeSingleFile": false
     },
     "timeStepping": {
         "CFL": {
@@ -263,8 +281,12 @@
             "name": "iso_field_velocity_mag"
         },
         {
-            "expression": "double ___node_unit_normal[3];double ___normalMag = magnitude(nodeNormals);for (int i = 0; i < 3; i++){___node_unit_normal[i] = nodeNormals[i] / ___normalMag;}double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;MassFluxProjected = (((((-1 * primitiveVars[0]) * (((___velocity[0] * ___node_unit_normal[0]) + (___velocity[1] * ___node_unit_normal[1])) + (___velocity[2] * ___node_unit_normal[2]))) * pow(((pow(nodeNormals[0], 2) + pow(nodeNormals[1], 2)) + pow(nodeNormals[2], 2)), 0.5)) * pow(((pow(nodeNormals[0], 2) + pow(nodeNormals[1], 2)) + pow(nodeNormals[2], 2)), 0.5)) * 200000.0);",
+            "expression": "double ___node_unit_normal[3];double ___normalMag = magnitude(nodeNormals);for (int i = 0; i < 3; i++){___node_unit_normal[i] = nodeNormals[i] / ___normalMag;}double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;MassFluxProjected = (((-1 * primitiveVars[0]) * (((___velocity[0] * ___node_unit_normal[0]) + (___velocity[1] * ___node_unit_normal[1])) + (___velocity[2] * ___node_unit_normal[2]))) * 200000.0);",
             "name": "MassFluxProjected"
+        },
+        {
+            "expression": "double ___node_unit_normal[3];double ___normalMag = magnitude(nodeNormals);for (int i = 0; i < 3; i++){___node_unit_normal[i] = nodeNormals[i] / ___normalMag;}double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;MassFluxProjected_integral = ((((-1 * primitiveVars[0]) * (((___velocity[0] * ___node_unit_normal[0]) + (___velocity[1] * ___node_unit_normal[1])) + (___velocity[2] * ___node_unit_normal[2]))) * pow(((pow(nodeNormals[0], 2) + pow(nodeNormals[1], 2)) + pow(nodeNormals[2], 2)), 0.5)) * 200000.0);",
+            "name": "MassFluxProjected_integral"
         }
     ],
     "usingLiquidAsMaterial": true,

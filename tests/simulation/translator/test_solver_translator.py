@@ -124,6 +124,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 
 assertions = unittest.TestCase("__init__")
 
+import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -133,6 +134,11 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.primitives import GenericVolume
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 @pytest.fixture()
@@ -659,14 +665,6 @@ def test_liquid_simulation_translation():
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
 
 
-import flow360.component.simulation.user_code.core.context as context
-
-
-@pytest.fixture()
-def reset_context():
-    clear_context()
-
-
 def test_param_with_user_variables():
     some_dependent_variable_a = UserVariable(
         name="some_dependent_variable_a", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
@@ -710,6 +708,10 @@ def test_param_with_user_variables():
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
+    )
+    surface_integral_variable = UserVariable(
+        name="MassFluxProjected",
+        value=-1 * solution.density * math.dot(solution.velocity, solution.node_unit_normal),
     )
     iso_field_pressure = UserVariable(
         name="iso_field_pressure",
@@ -799,17 +801,15 @@ def test_param_with_user_variables():
                         ),
                     ],
                 ),
+                SurfaceOutput(
+                    name="surface_output",
+                    output_fields=[surface_integral_variable],
+                    entities=Surface(name="VOLUME/LEFT"),
+                ),
                 SurfaceIntegralOutput(
                     name="MassFluxIntegral",
-                    output_fields=[
-                        UserVariable(
-                            name="MassFluxProjected",
-                            value=-1
-                            * solution.density
-                            * math.dot(solution.velocity, solution.node_unit_normal),
-                        )
-                    ],
-                    surfaces=Surface(name="VOLUME/LEFT"),
+                    output_fields=[surface_integral_variable],
+                    entities=Surface(name="VOLUME/LEFT"),
                 ),
             ],
             time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),

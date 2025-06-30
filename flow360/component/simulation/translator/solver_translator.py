@@ -262,7 +262,11 @@ def translate_output_fields(
     for output_field in output_model.output_fields.items:
         if isinstance(output_field, UserVariable):
             # Remove the UserVariable object and add its name
-            output_fields.append(output_field.name)
+            output_fields.append(
+                output_field.name
+                if not isinstance(output_model, SurfaceIntegralOutput)
+                else output_field.name + "_integral"
+            )
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
     return {"outputFields": output_fields}
@@ -722,10 +726,12 @@ def process_output_fields_for_udf(input_params: SimulationParams):
                     if not isinstance(output_field, UserVariable):
                         continue
                     if isinstance(output, SurfaceIntegralOutput):
-                        output_field_copy = output_field.copy()
-                        output_field_copy.value *= math.magnitude(solution.node_area_vector)
+                        user_variable_integral = UserVariable(
+                            name=output_field.name + "_integral",
+                            value=output_field.value * math.magnitude(solution.node_area_vector),
+                        )
                         udf_from_user_variable = user_variable_to_udf(
-                            output_field_copy, input_params
+                            user_variable_integral, input_params
                         )
                     else:
                         udf_from_user_variable = user_variable_to_udf(output_field, input_params)
