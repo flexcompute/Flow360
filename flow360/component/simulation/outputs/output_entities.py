@@ -141,7 +141,7 @@ class Isosurface(_OutputItemBase):
         """Ensure the iso_value is a single value."""
         if get_input_value_length(v) == 0:
             return v
-        raise ValueError(f"The iso_value ({v}) must be scalar expression.")
+        raise ValueError(f"The iso_value ({v}) must be a scalar.")
 
     @pd.field_validator("iso_value", mode="after")
     @classmethod

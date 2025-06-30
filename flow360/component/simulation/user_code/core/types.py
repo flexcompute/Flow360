@@ -1156,7 +1156,7 @@ def get_input_value_dimensions(
 
 
 def get_input_value_length(
-    value: Union[float, list[float], unyt_array, unyt_quantity, Expression, Variable],
+    value: Union[Number, list[float], unyt_array, unyt_quantity, Expression, Variable],
 ):
     """Get the length of the input value."""
     if isinstance(value, Expression):
