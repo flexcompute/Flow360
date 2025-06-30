@@ -871,7 +871,7 @@ def test_to_file_from_file_expression(
         )
 
     to_file_from_file_test(params)
-    params.display_output_units()
+    params.display_output_units()  # Just to make sure not exception.
 
 
 def assert_ignore_space(expected: str, actual: str):
