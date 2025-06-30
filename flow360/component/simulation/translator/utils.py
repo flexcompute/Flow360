@@ -29,7 +29,7 @@ def preprocess_input(func):
     def wrapper(input_params, mesh_unit, *args, **kwargs):
         # pylint: disable=no-member
         if func.__name__ == "get_solver_json":
-            preprocess_exclude = ["meshing", "iso_value", "project_variables"]
+            preprocess_exclude = ["meshing"]
         elif func.__name__ in ("get_surface_meshing_json", "get_volume_meshing_json"):
             preprocess_exclude = [
                 "reference_geometry",

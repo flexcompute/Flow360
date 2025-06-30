@@ -9,7 +9,10 @@ from flow360.component.simulation.entity_info import (
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.unique_list import UniqueStringList
@@ -59,6 +62,22 @@ class AssetCache(Flow360BaseModel):
         if self.project_entity_info is None:
             return None
         return self.project_entity_info.get_boundaries()
+
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_asset_cache = exclude + ["project_variables"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_asset_cache,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
 
 
 def find_instances(obj, target_type):

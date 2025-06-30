@@ -10,7 +10,10 @@ from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
@@ -439,6 +442,22 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
         ":ref:`universal output variables<UniversalVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
+
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_isosurface_output = exclude + ["iso_value"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_isosurface_output,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
 
 
 class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
