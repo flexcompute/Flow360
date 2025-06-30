@@ -609,8 +609,8 @@ class BETDisk(MultiConstructorBaseModel):
     To generate the sectional polars the BET translators can be used which are
     outlined :ref:`here <BET_Translators>`
     with best-practices for the sectional polars inputs available :ref:`here <secPolars_bestPractices>`.
-    A case study of the XV-15 rotor using the steady BET Disk method is available
-    in :ref:`Case Studies <XV15BETDisk_caseStudy>`.
+    A validation study of the XV-15 rotor using the steady BET Disk method is available
+    in :ref:`Validation Studies <XV15BETDiskValidationStudy>`.
     Because a transient BET Line simulation is simply a time-accurate version of a steady-state
     BET Disk simulation, most of the parameters below are applicable to both methods.
 
