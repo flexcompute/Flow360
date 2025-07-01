@@ -213,3 +213,18 @@ def test_isosurface_check_iso_value_dimensions():
         ),
     ):
         Isosurface(name="test_iso_dim_mismatch", field=uv_pressure, iso_value=10.0 * u.m)
+
+
+def test_isosurface_check_iso_value_for_string_field():
+    """
+    Test that an Isosurface field defined with a string field has a nondimensional iso_value.
+    """
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The isosurface field (T) specified by string can only be "
+            "used with a nondimensional iso_value."
+        ),
+    ):
+        Isosurface(name="test_iso_dim_mismatch", field="T", iso_value=10.0 * u.K)

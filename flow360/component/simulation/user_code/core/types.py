@@ -997,7 +997,7 @@ class Expression(Flow360BaseModel, Evaluable):
                 numerical_value = numerical_value[0]
             if not isinstance(numerical_value, (u.unyt_array, u.unyt_quantity)):
                 # Pure dimensionless constant
-                return None
+                return u.Unit("dimensionless")
             if unit_system_name in ("SI", "SI_unit_system"):
                 return numerical_value.in_base("mks").units
             if unit_system_name in ("Imperial", "Imperial_unit_system"):
