@@ -876,3 +876,31 @@ def test_param_with_user_variables():
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_user_variable_heat.json",
     )
+
+
+def test_isosurface_iso_value_in_unit_system():
+    """
+    [Frontend] Test that an Isosurface with the unit system as 
+    iso_value's units can be validated and translated.
+    """
+
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_isosurface.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+    params_validated, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+        validation_level="Case",
+    )
+    assert not errors, print(">>>", errors)
+
+    translate_and_compare(
+        params_validated,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_user_variable_isosurface.json",
+        debug=True,
+    )

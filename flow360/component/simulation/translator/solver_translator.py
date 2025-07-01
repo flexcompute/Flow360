@@ -321,7 +321,11 @@ def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     if isinstance(entity.field, UserVariable):
         units = entity.field.value.get_output_units(input_params=input_params)
         surface_field = entity.field.name
-        surface_magnitude = entity.iso_value.to(units).v.item()
+        surface_magnitude = (
+            entity.iso_value.to(units).v.item()
+            if not isinstance(entity.iso_value, float)
+            else entity.iso_value
+        )
     else:
         surface_field = entity.field
         surface_magnitude = entity.iso_value

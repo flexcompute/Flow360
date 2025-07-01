@@ -1,0 +1,279 @@
+{
+    "actuatorDisks": [
+        {
+            "axisThrust": [
+                -1.0,
+                0.0,
+                0.0
+            ],
+            "center": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "forcePerArea": {
+                "circumferential": [
+                    -5.531604620568226e-12,
+                    -0.0020009746641920533,
+                    -0.002952277367252184,
+                    -0.003088901336796339,
+                    -0.0029036259049267043,
+                    -0.0026430406752107794,
+                    -0.00239218573795995,
+                    -0.0021730542199788865,
+                    -0.0019869790380436275,
+                    -0.0018279620666619913,
+                    -0.0016885389718881514,
+                    -0.0015603123780330518,
+                    -0.0014350182010852415,
+                    -0.0013046456112207165,
+                    -0.0011625300245592747,
+                    -0.0010044860824241482,
+                    -0.0008291008930327344,
+                    -0.0006375074356446677,
+                    -0.0004326781146705185,
+                    -0.0002186783262772104,
+                    -0.0
+                ],
+                "radius": [
+                    6.541490006056935e-09,
+                    0.01176559660811629,
+                    0.023485766202301642,
+                    0.03502422774076318,
+                    0.04635372501514235,
+                    0.057401574803149606,
+                    0.06809963658388855,
+                    0.07837522713506967,
+                    0.08816929133858269,
+                    0.0974182313749243,
+                    0.1060675348273773,
+                    0.11406268927922471,
+                    0.1213537250151423,
+                    0.1278952150211993,
+                    0.1336508176862508,
+                    0.13858419139915198,
+                    0.1426589945487583,
+                    0.1458570563294973,
+                    0.1481511205330103,
+                    0.1495366444579043,
+                    0.15
+                ],
+                "thrust": [
+                    0.004575739438020082,
+                    0.005344520067175259,
+                    0.007032044311381894,
+                    0.008710826002579062,
+                    0.01000951815124362,
+                    0.010931011440225478,
+                    0.011571191934789766,
+                    0.012012549852848404,
+                    0.012308668583814266,
+                    0.012484224688601168,
+                    0.012538513122611578,
+                    0.01244967750332182,
+                    0.012174710110282089,
+                    0.011660027554079523,
+                    0.010854866623691398,
+                    0.009723270044643288,
+                    0.008260302504752431,
+                    0.006493108221024029,
+                    0.004476116636387996,
+                    0.0022832869291260455,
+                    0.0
+                ]
+            },
+            "thickness": 0.03
+        }
+    ],
+    "boundaries": {
+        "fluid/body": {
+            "heatFlux": -0.001,
+            "roughnessHeight": 0.0,
+            "type": "NoSlipWall"
+        },
+        "fluid/farfield": {
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.049999999999999996,
+        "Temperature": 288.15,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "muRef": 4e-08
+    },
+    "geometry": {
+        "momentCenter": [
+            0.45,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            0.07200000000000001,
+            1.2,
+            1.2
+        ],
+        "refArea": 0.016286016316209486
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "isoSurfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "isoSurfaces": {
+            "iso_surf_Cp": {
+                "outputFields": [
+                    "pressure_psi",
+                    "iso_field_Cp"
+                ],
+                "surfaceField": "iso_field_Cp",
+                "surfaceFieldMagnitude": 0.5
+            },
+            "iso_surf_math_pressure": {
+                "outputFields": [
+                    "pressure_psf",
+                    "iso_field_math_pressure"
+                ],
+                "surfaceField": "iso_field_math_pressure",
+                "surfaceFieldMagnitude": 62.656302699450386
+            },
+            "iso_surf_pressure": {
+                "outputFields": [
+                    "pressure_psi",
+                    "iso_field_pressure"
+                ],
+                "surfaceField": "iso_field_pressure",
+                "surfaceFieldMagnitude": 2125.0
+            },
+            "iso_surf_random_units": {
+                "outputFields": [
+                    "velocity_km_per_hr",
+                    "iso_field_random_units"
+                ],
+                "surfaceField": "iso_field_random_units",
+                "surfaceFieldMagnitude": 328.0839895013123
+            }
+        },
+        "outputFields": [],
+        "outputFormat": "paraview"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": 0.33,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 35
+        },
+        "lowMachPreconditioner": true,
+        "lowMachPreconditionerThreshold": 0.049999999999999996,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "timeStepping": {
+        "CFL": {
+            "convergenceLimitingFactor": 1.0,
+            "max": 1000000.0,
+            "maxRelativeChange": 50.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "maxPseudoSteps": 20,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 2,
+        "timeStepSize": 170.14700290410642
+    },
+    "transitionModelSolver": {
+        "CFLMultiplier": 2.0,
+        "Ncrit": 8.15,
+        "absoluteTolerance": 1e-07,
+        "equationEvalFrequency": 4,
+        "linearSolver": {
+            "maxIterations": 20
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "AmplificationFactorTransport",
+        "orderOfAccuracy": 2,
+        "reconstructionGradientLimiter": 1.0,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "turbulenceModelSolver": {
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "ZDES": false,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "gridSizeForLES": "maxEdgeLength",
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
+            "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3
+        },
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "relativeTolerance": 0.0,
+        "rotationCorrection": false,
+        "updateJacobianFrequency": 2
+    },
+    "userDefinedFields": [
+        {
+            "expression": "pressure_psf = (primitiveVars[4] * 2962.7035389425037);",
+            "name": "pressure_psf"
+        },
+        {
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_math_pressure = ((((0.5 * ___Cp) * primitiveVars[0]) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 2962.7035389425037);",
+            "name": "iso_field_math_pressure"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_km_per_hr = (___velocity[0] * 1225.0584209095646);",
+            "name": "velocity_km_per_hr"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_random_units = (((___velocity[0] * 2) * 0.3702794857142857) * 3015.1552904307623);",
+            "name": "iso_field_random_units"
+        },
+        {
+            "expression": "pressure_psi = (primitiveVars[4] * 20.574330131545164);",
+            "name": "pressure_psi"
+        },
+        {
+            "expression": "iso_field_pressure = (primitiveVars[4] * 2962.7035389425037);",
+            "name": "iso_field_pressure"
+        },
+        {
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);iso_field_Cp = (___Cp * 1.0);",
+            "name": "iso_field_Cp"
+        }
+    ],
+    "usingLiquidAsMaterial": false
+}
