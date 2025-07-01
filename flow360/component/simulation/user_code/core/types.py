@@ -599,11 +599,11 @@ _feature_requirement_map = {
         "Liquid operating condition is used.",
     ),
     "control.physicalStep": (
-        lambda x: x.feature_usage.time_stepping == "Unsteady",
+        lambda x: x.time_stepping == "Unsteady",
         "Unsteady time stepping is not used.",
     ),
     "control.timeStepSize": (
-        lambda x: x.feature_usage.time_stepping == "Unsteady",
+        lambda x: x.time_stepping == "Unsteady",
         "Unsteady time stepping is not used.",
     ),
     "control.theta": (
