@@ -840,7 +840,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
             output_fields_processed = []
             for output_field in output.output_fields.items:
                 if isinstance(output_field, UserVariable):
-                    expression = output_field.value
+                    expression = Expression.model_validate(output_field.value)
                     if expression.length == 0:
                         expression_processed = expression * math.magnitude(
                             solution.node_area_vector
@@ -857,8 +857,8 @@ def translate_output(input_params: SimulationParams, translated: dict):
                             value=expression_processed,
                         )
                     )
-                    continue
-                output_fields_processed.append(output_field)
+                else:
+                    output_fields_processed.append(output_field)
             output.output_fields.items = output_fields_processed
 
         integral_output = translate_monitor_output(
