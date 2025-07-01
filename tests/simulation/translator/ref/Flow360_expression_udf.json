@@ -95,7 +95,7 @@
     "userDefinedFields": [
         {
             "name": "Mach_SI",
-            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1);"
+            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1.0);"
         },
         {
             "name": "velocity_SI",

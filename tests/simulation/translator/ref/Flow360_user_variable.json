@@ -164,7 +164,7 @@
             "name": "velocity_magnitude"
         },
         {
-            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1);",
+            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1.0);",
             "name": "Mach_SI"
         },
         {
@@ -204,7 +204,7 @@
             "name": "sqrt_res"
         },
         {
-            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);log_res = (log(___Mach) * 1);",
+            "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);log_res = (log(___Mach) * 1.0);",
             "name": "log_res"
         },
         {
@@ -216,15 +216,15 @@
             "name": "abs_res"
         },
         {
-            "expression": "double ___mut_ratio; ___mut_ratio = mut / mu;asin_res = (asin(___mut_ratio) * 1);",
+            "expression": "double ___mut_ratio; ___mut_ratio = mut / mu;asin_res = (asin(___mut_ratio) * 1.0);",
             "name": "asin_res"
         },
         {
-            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);acos_res = (acos(___Cp) * 1);",
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);acos_res = (acos(___Cp) * 1.0);",
             "name": "acos_res"
         },
         {
-            "expression": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);atan_res = (atan(___Cpt) * 1);",
+            "expression": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);atan_res = (atan(___Cpt) * 1.0);",
             "name": "atan_res"
         },
         {
@@ -272,19 +272,19 @@
             "name": "MassFluxProjected_integral"
         },
         {
-            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}exp_res = (exp(___CfVec[0]) * 1);",
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}exp_res = (exp(___CfVec[0]) * 1.0);",
             "name": "exp_res"
         },
         {
-            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}sin_float_res = (sin((___CfVec[0] * 3.141592653589793)) * 1);",
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}sin_float_res = (sin((___CfVec[0] * 3.141592653589793)) * 1.0);",
             "name": "sin_float_res"
         },
         {
-            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}cos_deg_res = (cos(((___CfVec[1] * 3.141592653589793) * 0.017453292519943295)) * 1);",
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}cos_deg_res = (cos(((___CfVec[1] * 3.141592653589793) * 0.017453292519943295)) * 1.0);",
             "name": "cos_deg_res"
         },
         {
-            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}tan_rad_res = (tan(((___CfVec[2] * 3.141592653589793) * 1.0)) * 1);",
+            "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}tan_rad_res = (tan(((___CfVec[2] * 3.141592653589793) * 1.0)) * 1.0);",
             "name": "tan_rad_res"
         }
     ],

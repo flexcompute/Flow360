@@ -127,7 +127,6 @@ class Isosurface(_OutputItemBase):
             value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
         if units in ("CGS", "CGS_unit_system"):
             value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
-        print("hhhh", value)
         return value
 
     @pd.field_validator("field", mode="after")
