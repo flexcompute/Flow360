@@ -40,7 +40,7 @@ from flow360.component.simulation.user_code.core.utils import (
     split_keep_delimiters,
 )
 
-_solver_variables: set[str] = set()
+_solver_variables: dict[str, str] = {}
 
 
 class VariableContextInfo(Flow360BaseModel):
@@ -520,7 +520,7 @@ class SolverVariable(Variable):
     def update_context(self):
         """Auto updating context when new variable is declared"""
         default_context.set(self.name, self.value, Variable)
-        _solver_variables.add(self.name)
+        _solver_variables.update({self.name: self.variable_type})
         if self.solver_name:
             default_context.set_alias(self.name, self.solver_name)
         return self
@@ -708,11 +708,15 @@ class Expression(Flow360BaseModel, Evaluable):
 
         return names
 
-    def solver_variable_names(self):
+    def solver_variable_names(
+        self, variable_type: Literal["Volume", "Surface", "Scalar", "All"] = "All"
+    ):
         """Get list of solver variable names used in expression."""
         expr = expr_to_model(self.expression, default_context)
         names = expr.used_names()
         names = [name for name in names if name in _solver_variables]
+        if variable_type != "All":
+            names = [name for name in names if _solver_variables[name] == variable_type]
         return names
 
     def to_solver_code(self, params):
