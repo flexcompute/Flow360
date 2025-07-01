@@ -760,12 +760,8 @@ def test_param_with_user_variables():
                         subtract_res,
                         sqrt_res,
                         log_res,
-                        exp_res,
                         power_res,
                         abs_res,
-                        sin_float_res,
-                        cos_deg_res,
-                        tan_rad_res,
                         asin_res,
                         acos_res,
                         atan_res,
@@ -798,6 +794,16 @@ def test_param_with_user_variables():
                         UserVariable(name="velocity_mile_per_hr", value=solution.velocity).in_units(
                             new_unit="mile/hr"
                         ),
+                    ],
+                ),
+                SurfaceOutput(
+                    name="surface_output",
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[
+                        exp_res,
+                        sin_float_res,
+                        cos_deg_res,
+                        tan_rad_res,
                     ],
                 ),
             ],

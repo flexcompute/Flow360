@@ -41,6 +41,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
+    Expression,
     UserVariable,
     solver_variable_to_user_variable,
 )
@@ -112,6 +113,30 @@ class UserDefinedField(Flow360BaseModel):
 
 class _OutputBase(Flow360BaseModel):
     output_fields: UniqueItemList[str] = pd.Field()
+
+    @pd.field_validator("output_fields", mode="after")
+    @classmethod
+    def _validate_improper_surface_field_usage(cls, value: UniqueItemList):
+        if any(
+            output_type in cls.__name__
+            for output_type in ["SurfaceProbeOutput", "SurfaceOutput", "SurfaceSliceOutput"]
+        ):
+            return value
+        for output_item in value.items:
+            if not isinstance(output_item, UserVariable) or not isinstance(
+                output_item.value, Expression
+            ):
+                continue
+            surface_solver_variable_names = output_item.value.solver_variable_names(
+                variable_type="Surface"
+            )
+            if len(surface_solver_variable_names) > 0:
+                raise ValueError(
+                    f"Variable `{output_item}` cannot be used in `{cls.__name__}` "
+                    + "since it contains Surface solver variable(s): "
+                    + f"{', '.join(sorted(surface_solver_variable_names))}.",
+                )
+        return value
 
     @pd.field_validator("output_fields", mode="after")
     @classmethod
