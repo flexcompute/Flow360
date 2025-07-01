@@ -46,6 +46,7 @@ from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
     SliceOutput,
+    SurfaceIntegralOutput,
     SurfaceOutput,
     UserDefinedField,
     VolumeOutput,
@@ -123,6 +124,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 
 assertions = unittest.TestCase("__init__")
 
+import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.volume_models import (
     AngleExpression,
@@ -132,6 +134,11 @@ from flow360.component.simulation.models.volume_models import (
 )
 from flow360.component.simulation.primitives import GenericVolume
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 @pytest.fixture()
@@ -660,14 +667,6 @@ def test_liquid_simulation_translation():
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
 
 
-import flow360.component.simulation.user_code.core.context as context
-
-
-@pytest.fixture()
-def reset_context():
-    clear_context()
-
-
 def test_param_with_user_variables():
     some_dependent_variable_a = UserVariable(
         name="some_dependent_variable_a", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
@@ -719,6 +718,10 @@ def test_param_with_user_variables():
     )
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
+    )
+    surface_integral_variable = UserVariable(
+        name="MassFluxProjected",
+        value=-1 * solution.density * math.dot(solution.velocity, solution.node_unit_normal),
     )
     iso_field_pressure = UserVariable(
         name="iso_field_pressure",
@@ -808,6 +811,11 @@ def test_param_with_user_variables():
                         ),
                     ],
                 ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral",
+                    output_fields=[surface_integral_variable],
+                    entities=Surface(name="VOLUME/LEFT"),
+                ),
                 SurfaceOutput(
                     name="surface_output",
                     entities=Surface(name="fluid/body"),
@@ -879,4 +887,36 @@ def test_param_with_user_variables():
         params_validated,
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_user_variable_heat.json",
+    )
+
+
+def test_isosurface_iso_value_in_unit_system():
+    """
+    [Frontend] Test that an Isosurface with the unit system as
+    iso_value's units can be validated and translated.
+    """
+
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_isosurface.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+    params_validated, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+        validation_level="Case",
+    )
+    assert not errors, print(">>>", errors)
+    assert params_validated.outputs[0].entities.items[0].iso_value == 3000 * u.Pa
+    assert params_validated.outputs[1].entities.items[0].iso_value == 45.359237 * u.cm * u.g / u.s
+    assert params_validated.outputs[2].entities.items[0].iso_value == 2125 * u.psf
+    assert params_validated.outputs[3].entities.items[0].iso_value == 0.5 * u.dimensionless
+
+    translate_and_compare(
+        params_validated,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_user_variable_isosurface.json",
+        debug=True,
     )

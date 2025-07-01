@@ -4,6 +4,7 @@ from abc import ABCMeta
 from typing import Literal, Union
 
 import pydantic as pd
+import unyt as u
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
@@ -112,6 +113,22 @@ class Isosurface(_OutputItemBase):
             )
         return solver_variable_to_user_variable(value)
 
+    @pd.field_validator("iso_value", mode="before")
+    @classmethod
+    def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
+        if not isinstance(value, dict) or info.data.get("field") is None or "units" not in value:
+            return value
+        units = value["units"]
+        field = info.data["field"]
+        field_dimensions = get_input_value_dimensions(value=field)
+        if units == "SI_unit_system":
+            value["units"] = u.unit_systems.mks_unit_system[field_dimensions]
+        if units == "Imperial_unit_system":
+            value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
+        if units == "CGS_unit_system":
+            value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
+        return value
+
     @pd.field_validator("field", mode="after")
     @classmethod
     def check_expression_length(cls, v):
@@ -159,6 +176,19 @@ class Isosurface(_OutputItemBase):
             raise ValueError(
                 f"The iso_value ({v}, dimensions:{value_dimensions}) should have the same dimensions as "
                 f"the isosurface field ({field}, dimensions: {field_dimensions})."
+            )
+        return v
+
+    @pd.field_validator("iso_value", mode="after")
+    @classmethod
+    def check_iso_value_for_string_field(cls, v, info: pd.ValidationInfo):
+        """Ensure the iso_value is float when string field is used."""
+
+        field = info.data.get("field", None)
+        if isinstance(field, str) and not isinstance(v, float):
+            raise ValueError(
+                f"The isosurface field ({field}) specified by string "
+                "can only be used with a nondimensional iso_value."
             )
         return v
 
