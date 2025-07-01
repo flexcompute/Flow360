@@ -880,7 +880,7 @@ def test_param_with_user_variables():
 
 def test_isosurface_iso_value_in_unit_system():
     """
-    [Frontend] Test that an Isosurface with the unit system as 
+    [Frontend] Test that an Isosurface with the unit system as
     iso_value's units can be validated and translated.
     """
 
@@ -897,6 +897,10 @@ def test_isosurface_iso_value_in_unit_system():
         validation_level="Case",
     )
     assert not errors, print(">>>", errors)
+    assert params_validated.outputs[0].entities.items[0].iso_value == 3000 * u.Pa
+    assert params_validated.outputs[1].entities.items[0].iso_value == 45.359237 * u.cm * u.g / u.s
+    assert params_validated.outputs[2].entities.items[0].iso_value == 2125 * u.psf
+    assert params_validated.outputs[3].entities.items[0].iso_value == 0.5 * u.dimensionless
 
     translate_and_compare(
         params_validated,
