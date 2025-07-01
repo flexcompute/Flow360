@@ -495,5 +495,4 @@ def test_feature_requirement_map(param_as_dict: dict, expected_error_msg: str):
         validation_level="Case",
     )
     assert len(errors) == 1
-    print(errors[0])
     assert expected_error_msg in errors[0]["msg"]
