@@ -132,7 +132,7 @@ def test_surface_user_variables_in_output_fields():
         name="uv_surface1", value=math.dot(solution.velocity, solution.CfVec)
     )
     uv_surface2 = UserVariable(
-        name="uv_surface2", value=solution.node_forces_per_unit_area[0] * solution.Cp
+        name="uv_surface2", value=solution.node_forces_per_unit_area[0] * solution.Cp * solution.Cf
     )
 
     with imperial_unit_system:
@@ -147,8 +147,8 @@ def test_surface_user_variables_in_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Output field `uv_surface1` cannot be used in `VolumeOutput` "
-            + "since it contains a Surface solver variable `solution.CfVec`."
+            "Variable `uv_surface1` cannot be used in `VolumeOutput` "
+            + "since it contains Surface solver variable(s): solution.CfVec."
         ),
     ):
         with imperial_unit_system:
@@ -159,9 +159,9 @@ def test_surface_user_variables_in_output_fields():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Output field `uv_surface2` cannot be used in `ProbeOutput` "
-            + "since it contains a Surface solver variable "
-            + "`solution.node_forces_per_unit_area`."
+            "Variable `uv_surface2` cannot be used in `ProbeOutput` "
+            + "since it contains Surface solver variable(s): "
+            + "solution.Cf, solution.node_forces_per_unit_area."
         ),
     ):
         with imperial_unit_system:

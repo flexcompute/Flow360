@@ -45,9 +45,6 @@ from flow360.component.simulation.user_code.core.types import (
     UserVariable,
     solver_variable_to_user_variable,
 )
-from flow360.component.simulation.user_code.variables.solution import (
-    SurfaceSpecificVariables,
-)
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
@@ -119,7 +116,7 @@ class _OutputBase(Flow360BaseModel):
 
     @pd.field_validator("output_fields", mode="after")
     @classmethod
-    def _validate_user_variable_output_fields(cls, value: UniqueItemList):
+    def _validate_improper_surface_field_usage(cls, value: UniqueItemList):
         if any(
             output_type in cls.__name__
             for output_type in ["SurfaceProbeOutput", "SurfaceOutput", "SurfaceSliceOutput"]
@@ -130,12 +127,14 @@ class _OutputBase(Flow360BaseModel):
                 output_item.value, Expression
             ):
                 continue
-            for name in sorted(output_item.value.solver_variable_names()):
-                if name in SurfaceSpecificVariables:
-                    raise ValueError(
-                        f"Output field `{output_item}` cannot be used in `{cls.__name__}` "
-                        + f"since it contains a Surface solver variable `{name}`.",
-                    )
+            surface_solver_variable_names = output_item.value.solver_variable_names(
+                variable_type="Surface"
+            )
+            if len(surface_solver_variable_names) > 0:
+                raise ValueError(
+                    f"Variable `{output_item}` cannot be used in `{cls.__name__}` "
+                    + f"since it contains Surface solver variable(s): {', '.join(sorted(surface_solver_variable_names))}.",
+                )
         return value
 
     @pd.field_validator("output_fields", mode="after")

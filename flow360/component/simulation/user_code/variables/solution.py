@@ -229,13 +229,6 @@ heat_transfer_coefficient_total_temperature = SolverVariable(
 )
 
 
-SurfaceSpecificVariables = [
-    var.name
-    for var in globals().values()
-    if isinstance(var, SolverVariable) and var.variable_type == "Surface"
-]
-
-
 # TODO
 # pylint:disable = fixme
 # velocity_relative = SolverVariable(
