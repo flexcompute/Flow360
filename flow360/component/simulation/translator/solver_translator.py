@@ -596,7 +596,6 @@ def user_variable_to_udf(
         expression = Expression.model_validate(_convert_numeric(variable.value))
     else:
         expression = variable.value
-    print(">>><<<", expression)
 
     def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
         y2 = (2.0 * target_unit).in_units(source_unit).value
