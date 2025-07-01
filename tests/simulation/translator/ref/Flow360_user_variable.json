@@ -159,6 +159,22 @@
             "name": "uuu"
         },
         {
+            "name": "const_value",
+            "expression": "const_value = ((200.0 * 1.0) / 200.0);"
+        },
+        {
+            "name": "const_value_dimensionless",
+            "expression": "const_value_dimensionless = 1.123;"
+        },
+        {
+            "name": "const_array",
+            "expression": "const_array[0] = ((200.0 * 1.0) / 200.0); const_array[1] = ((400.0 * 1.0) / 200.0); const_array[2] = ((600.0 * 1.0) / 200.0);"
+        },
+        {
+            "name": "const_array_dimensionless",
+            "expression": "const_array_dimensionless[0] = (1.0 * 1.0); const_array_dimensionless[1] = (2.0 * 1.0); const_array_dimensionless[2] = (3.0 * 1.0);"
+        },
+        {
             "expression": "double ___temperature;___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
             "name": "my_temperature"
         },
@@ -278,6 +294,10 @@
             "Mach_SI",
             "velocity_SI",
             "uuu",
+            "const_value",
+            "const_value_dimensionless",
+            "const_array",
+            "const_array_dimensionless",
             "my_temperature",
             "cross_res",
             "dot_res",

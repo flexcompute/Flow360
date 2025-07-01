@@ -709,6 +709,14 @@ def test_param_with_user_variables():
         name="max_res", value=math.max(solution.vorticity[0], solution.vorticity[1])
     )
     my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
+    const_value = UserVariable(name="const_value", value=1.0 * u.m / u.s)
+    const_value_dimensionless = UserVariable(name="const_value_dimensionless", value=1.123)
+    const_array = UserVariable(
+        name="const_array", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
+    )
+    const_array_dimensionless = UserVariable(
+        name="const_array_dimensionless", value=[1.0, 2.0, 3.0]
+    )
     my_temperature = UserVariable(
         name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
     )
@@ -752,6 +760,10 @@ def test_param_with_user_variables():
                         UserVariable(name="uuu", value=solution.velocity).in_units(
                             new_unit="km/ms"
                         ),
+                        const_value,
+                        const_value_dimensionless,
+                        const_array,
+                        const_array_dimensionless,
                         my_temperature,
                         cross_res,
                         dot_res,

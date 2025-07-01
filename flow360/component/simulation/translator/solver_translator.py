@@ -1,10 +1,8 @@
 """Flow360 solver setting parameter translator."""
 
 # pylint: disable=too-many-lines
-from numbers import Number
 from typing import Type, Union
 
-import numpy as np
 import unyt as u
 
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
@@ -96,7 +94,11 @@ from flow360.component.simulation.translator.utils import (
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    UserVariable,
+    _convert_numeric,
+)
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -585,26 +587,16 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
-def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams):
+def user_variable_to_udf(
+    variable: UserVariable, input_params: SimulationParams
+):  # pylint:disable=too-many-branches
     # pylint:disable=too-many-statements
     """Convert user variable to UDF"""
     if not isinstance(variable.value, Expression):
-        # Likely number of unyt object
-        # We should add validator for this for output fields.
-        raise ValueError("Did not find expression in user variable")
-
-    numerical_value = variable.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-
-    is_constant = False
-    if isinstance(numerical_value, Number) and not np.isnan(numerical_value):  # not NaN
-        is_constant = True
-    elif isinstance(numerical_value, u.unyt_quantity) and not np.isnan(numerical_value.value):
-        is_constant = True
-    elif isinstance(numerical_value, u.unyt_array) and not np.any(np.isnan(numerical_value.value)):
-        is_constant = True
-
-    if is_constant:
-        raise ValueError("Constant value found in user variable.")
+        expression = Expression.model_validate(_convert_numeric(variable.value))
+    else:
+        expression = variable.value
+    print(">>><<<", expression)
 
     def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
         y2 = (2.0 * target_unit).in_units(source_unit).value
@@ -629,8 +621,6 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         prepending_code = "".join(prepending_code)
         return prepending_code
 
-    expression: Expression = variable.value
-
     requested_unit: Union[u.Unit, None] = expression.get_output_units(input_params=input_params)
     if requested_unit is None:
         # Number constant output requested
@@ -654,6 +644,9 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
             expression = (expression + offset) * coefficient
         else:
             expression = expression * coefficient
+        if not isinstance(expression, Expression):
+            # Enforce constant as Expression
+            expression = Expression.model_validate(_convert_numeric(expression))
         expression = expression.to_solver_code(params=input_params)
         return UserDefinedField(
             name=variable.name, expression=f"{prepending_code}{variable.name} = " + expression + ";"
@@ -668,7 +661,14 @@ def user_variable_to_udf(variable: UserVariable, input_params: SimulationParams)
         expression = [(item + offset) * coefficient for item in expression]
     else:
         expression = [item * coefficient for item in expression]
-    expression = [item.to_solver_code(params=input_params) for item in expression]
+    for i, item in enumerate(expression):
+        if isinstance(item, Expression):
+            expression[i] = item.to_solver_code(params=input_params)
+        else:
+            expression[i] = Expression.model_validate(_convert_numeric(item)).to_solver_code(
+                params=input_params
+            )
+
     expression = [f"{variable.name}[{i}] = " + item for i, item in enumerate(expression)]
     return UserDefinedField(
         name=variable.name, expression=prepending_code + "; ".join(expression) + ";"
