@@ -726,7 +726,13 @@ class Expression(Flow360BaseModel, Evaluable):
 
     @pd.model_validator(mode="after")
     def ensure_dependent_feature_enabled(self) -> str:
-        """Ensure that all dependent features are enabled for all the solver variables."""
+        """
+        Ensure that all dependent features are enabled for all the solver variables.
+        Remaining checks:
+        1. variable valid source check.
+        2. variable location check.
+
+        """
         validation_info = get_validation_info()
         if validation_info is None:
             return self
