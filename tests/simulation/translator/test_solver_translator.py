@@ -801,13 +801,13 @@ def test_param_with_user_variables():
                         ),
                     ],
                 ),
-                SurfaceOutput(
-                    name="surface_output",
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral",
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
                 ),
-                SurfaceIntegralOutput(
-                    name="MassFluxIntegral",
+                SurfaceOutput(
+                    name="surface_output",
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
                 ),

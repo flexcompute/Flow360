@@ -262,11 +262,7 @@ def translate_output_fields(
     for output_field in output_model.output_fields.items:
         if isinstance(output_field, UserVariable):
             # Remove the UserVariable object and add its name
-            output_fields.append(
-                output_field.name
-                if not isinstance(output_model, SurfaceIntegralOutput)
-                else output_field.name + "_integral"
-            )
+            output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
     return {"outputFields": output_fields}
@@ -725,16 +721,7 @@ def process_output_fields_for_udf(input_params: SimulationParams):
                 for output_field in output.output_fields.items:
                     if not isinstance(output_field, UserVariable):
                         continue
-                    if isinstance(output, SurfaceIntegralOutput):
-                        user_variable_integral = UserVariable(
-                            name=output_field.name + "_integral",
-                            value=output_field.value * math.magnitude(solution.node_area_vector),
-                        )
-                        udf_from_user_variable = user_variable_to_udf(
-                            user_variable_integral, input_params
-                        )
-                    else:
-                        udf_from_user_variable = user_variable_to_udf(output_field, input_params)
+                    udf_from_user_variable = user_variable_to_udf(output_field, input_params)
                     user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
             if isinstance(output, IsosurfaceOutput):
                 for isosurface in output.entities.items:
@@ -777,7 +764,7 @@ def translate_streamline_output(output_params: list):
 
 
 def translate_output(input_params: SimulationParams, translated: dict):
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     """Translate output settings."""
     outputs = input_params.outputs
 
@@ -844,6 +831,33 @@ def translate_output(input_params: SimulationParams, translated: dict):
             outputs, TimeAverageProbeOutput, inject_probe_info
         )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
+        for output in outputs:
+            if not isinstance(output, SurfaceIntegralOutput):
+                continue
+            output_fields_processed = []
+            for output_field in output.output_fields.items:
+                if isinstance(output_field, UserVariable):
+                    expression = output_field.value
+                    if expression.length == 0:
+                        expression_processed = expression * math.magnitude(
+                            solution.node_area_vector
+                        )
+                    else:
+                        expression_processed = [
+                            expression[i] * math.magnitude(solution.node_area_vector)
+                            for i in range(expression.length)
+                        ]
+
+                    output_fields_processed.append(
+                        UserVariable(
+                            name=output_field.name + "_integral",
+                            value=expression_processed,
+                        )
+                    )
+                    continue
+                output_fields_processed.append(output_field)
+            output.output_fields.items = output_fields_processed
+
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
