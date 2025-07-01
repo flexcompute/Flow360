@@ -119,7 +119,12 @@ class _OutputBase(Flow360BaseModel):
     def _validate_improper_surface_field_usage(cls, value: UniqueItemList):
         if any(
             output_type in cls.__name__
-            for output_type in ["SurfaceProbeOutput", "SurfaceOutput", "SurfaceSliceOutput"]
+            for output_type in [
+                "SurfaceProbeOutput",
+                "SurfaceOutput",
+                "SurfaceSliceOutput",
+                "SurfaceIntegralOutput",
+            ]
         ):
             return value
         for output_item in value.items:

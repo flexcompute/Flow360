@@ -53,6 +53,23 @@
         "outputFields": [],
         "outputFormat": "paraview"
     },
+    "monitorOutput": {
+        "monitors": {
+            "MassFluxIntegral": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": false,
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ],
+                "surfaces": [
+                    "VOLUME/LEFT"
+                ],
+                "type": "surfaceIntegral"
+            }
+        },
+        "outputFields": []
+    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,
@@ -249,6 +266,10 @@
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_velocity_mag = (pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5) * 200.0);",
             "name": "iso_field_velocity_mag"
+        },
+        {
+            "expression": "double ___node_unit_normal[3];double ___normalMag = magnitude(nodeNormals);for (int i = 0; i < 3; i++){___node_unit_normal[i] = nodeNormals[i] / ___normalMag;}double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;MassFluxProjected_integral = ((((-1 * primitiveVars[0]) * (((___velocity[0] * ___node_unit_normal[0]) + (___velocity[1] * ___node_unit_normal[1])) + (___velocity[2] * ___node_unit_normal[2]))) * pow(((pow(nodeNormals[0], 2) + pow(nodeNormals[1], 2)) + pow(nodeNormals[2], 2)), 0.5)) * 200000.0);",
+            "name": "MassFluxProjected_integral"
         },
         {
             "expression": "double ___CfVec[3]; for (int i = 0; i < 3; i++){___CfVec[i] = wallShearStress[i] / (0.5 * MachRef * MachRef);}exp_res = (exp(___CfVec[0]) * 1);",

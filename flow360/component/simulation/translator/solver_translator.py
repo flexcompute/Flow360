@@ -97,6 +97,8 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -765,7 +767,7 @@ def translate_streamline_output(output_params: list):
 
 
 def translate_output(input_params: SimulationParams, translated: dict):
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     """Translate output settings."""
     outputs = input_params.outputs
 
@@ -832,6 +834,33 @@ def translate_output(input_params: SimulationParams, translated: dict):
             outputs, TimeAverageProbeOutput, inject_probe_info
         )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
+        for output in outputs:
+            if not isinstance(output, SurfaceIntegralOutput):
+                continue
+            output_fields_processed = []
+            for output_field in output.output_fields.items:
+                if isinstance(output_field, UserVariable):
+                    expression = Expression.model_validate(output_field.value)
+                    if expression.length == 0:
+                        expression_processed = expression * math.magnitude(
+                            solution.node_area_vector
+                        )
+                    else:
+                        expression_processed = [
+                            expression[i] * math.magnitude(solution.node_area_vector)
+                            for i in range(expression.length)
+                        ]
+
+                    output_fields_processed.append(
+                        UserVariable(
+                            name=output_field.name + "_integral",
+                            value=expression_processed,
+                        )
+                    )
+                else:
+                    output_fields_processed.append(output_field)
+            output.output_fields.items = output_fields_processed
+
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
