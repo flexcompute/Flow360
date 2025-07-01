@@ -7,13 +7,19 @@ import unyt as u
 import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.models.solver_numerics import KOmegaSST
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import AngularVelocity, Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngularVelocity,
+    Fluid,
+    Rotation,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     LiquidOperatingCondition,
 )
+from flow360.component.simulation.outputs.outputs import VolumeOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.services import (
     ValidationCalledBy,
@@ -30,6 +36,7 @@ from flow360.component.simulation.user_code.core.types import (
     save_user_variables,
 )
 from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.volume_mesh import VolumeMeshV2
 
 
@@ -191,3 +198,40 @@ def test_e2e_dump_validate_and_translate(param_dict: dict, ref_dict_path: str):
     except FileNotFoundError as e:
         print("=======\n", json.dumps(translated, indent=2), "\n=======")
         raise e
+
+
+def param_with_SST():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=KOmegaSST()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[solution.nu_hat])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+@pytest.mark.parametrize(
+    "param_as_dict, expected_error_msg",
+    [
+        (
+            param_with_SST(),
+            "`solution.nu_hat` cannot be used because Spalart-Allmaras turbulence solver is not used.",
+        ),
+    ],
+)
+def test_feature_requirement_map(param_as_dict: dict, expected_error_msg: str):
+    """Test feature requirement map."""
+    _, errors, _ = validate_model(
+        params_as_dict=param_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+    assert len(errors) == 1
+    print(errors[0])
+    assert expected_error_msg in errors[0]["msg"]

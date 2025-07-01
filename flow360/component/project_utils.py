@@ -303,7 +303,7 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     params, errors, _ = services.validate_model(
-        params_as_dict=params.model_dump(),
+        params_as_dict=params.model_dump(exclude_none=True),
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type=root_item_type,
         validation_level=validation_level,
