@@ -121,11 +121,11 @@ class Isosurface(_OutputItemBase):
         units = value["units"]
         field = info.data["field"]
         field_dimensions = get_input_value_dimensions(value=field)
-        if units in ("SI", "SI_unit_system"):
+        if units == "SI_unit_system":
             value["units"] = u.unit_systems.mks_unit_system[field_dimensions]
-        if units in ("Imperial", "Imperial_unit_system"):
+        if units == "Imperial_unit_system":
             value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
-        if units in ("CGS", "CGS_unit_system"):
+        if units == "CGS_unit_system":
             value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
         return value
 
