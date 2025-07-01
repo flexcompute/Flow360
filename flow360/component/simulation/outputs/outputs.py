@@ -133,7 +133,8 @@ class _OutputBase(Flow360BaseModel):
             if len(surface_solver_variable_names) > 0:
                 raise ValueError(
                     f"Variable `{output_item}` cannot be used in `{cls.__name__}` "
-                    + f"since it contains Surface solver variable(s): {', '.join(sorted(surface_solver_variable_names))}.",
+                    + "since it contains Surface solver variable(s): "
+                    + f"{', '.join(sorted(surface_solver_variable_names))}.",
                 )
         return value
 
