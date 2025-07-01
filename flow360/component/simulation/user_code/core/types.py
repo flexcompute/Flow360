@@ -39,6 +39,9 @@ from flow360.component.simulation.user_code.core.utils import (
     is_runtime_expression,
     split_keep_delimiters,
 )
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 
 _solver_variables: dict[str, str] = {}
 
@@ -562,6 +565,62 @@ def get_input_value_length(
     return 0 if isinstance(value, (unyt_quantity, Number)) else value.shape[0]
 
 
+_feature_requirement_map = {
+    "solution.nu_hat": (
+        lambda x: x.feature_usage.turbulence_model_type == "SpalartAllmaras",
+        "Spalart-Allmaras turbulence solver is not used.",
+    ),
+    "solution.turbulence_kinetic_energy": (
+        lambda x: x.feature_usage.turbulence_model_type == "kOmegaSST",
+        "k-omega turbulence solver is not used.",
+    ),
+    "solution.specific_rate_of_dissipation": (
+        lambda x: x.feature_usage.turbulence_model_type == "kOmegaSST",
+        "k-omega turbulence solver is not used.",
+    ),
+    "solution.amplification_factor": (
+        lambda x: x.feature_usage.transition_model_type == "AmplificationFactorTransport",
+        "Amplification factor transition model is not used.",
+    ),
+    "solution.turbulence_intermittency": (
+        lambda x: x.feature_usage.transition_model_type == "AmplificationFactorTransport",
+        "Amplification factor transition model is not used.",
+    ),
+    "solution.density": (
+        lambda x: x.using_liquid_as_material is False,
+        "Liquid operating condition is used.",
+    ),
+    "solution.temperature": (
+        lambda x: x.using_liquid_as_material is False,
+        "Liquid operating condition is used.",
+    ),
+    "solution.Mach": (
+        lambda x: x.using_liquid_as_material is False,
+        "Liquid operating condition is used.",
+    ),
+    "control.physicalStep": (
+        lambda x: x.time_stepping == "Unsteady",
+        "Unsteady time stepping is not used.",
+    ),
+    "control.timeStepSize": (
+        lambda x: x.time_stepping == "Unsteady",
+        "Unsteady time stepping is not used.",
+    ),
+    "control.theta": (
+        lambda x: x.feature_usage.rotation_zone_count == 0,
+        "Rotation zone is not used.",
+    ),
+    "control.omega": (
+        lambda x: x.feature_usage.rotation_zone_count == 0,
+        "Rotation zone is not used.",
+    ),
+    "control.omegaDot": (
+        lambda x: x.feature_usage.rotation_zone_count == 0,
+        "Rotation zone is not used.",
+    ),
+}
+
+
 class Expression(Flow360BaseModel, Evaluable):
     """
     A symbolic, validated representation of a mathematical expression.
@@ -606,6 +665,7 @@ class Expression(Flow360BaseModel, Evaluable):
                 type="value_error", ctx={"error": f"Invalid type {type(value)}"}
             )
             raise pd.ValidationError.from_exception_data("Expression type error", [details])
+
         try:
             # To ensure the expression is valid (also checks for
             expr_to_model(expression, default_context)
@@ -663,6 +723,28 @@ class Expression(Flow360BaseModel, Evaluable):
                 "Relative temperature scale usage is not allowed in output units. Please use u.R or u.K instead."
             )
         return value
+
+    @pd.model_validator(mode="after")
+    def ensure_dependent_feature_enabled(self) -> str:
+        """
+        Ensure that all dependent features are enabled for all the solver variables.
+        Remaining checks:
+        1. variable valid source check.
+        2. variable location check.
+
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+
+        for solver_variable_name in self.solver_variable_names():
+            if solver_variable_name in _feature_requirement_map:
+                if not _feature_requirement_map[solver_variable_name][0](validation_info):
+                    raise ValueError(
+                        f"`{solver_variable_name}` cannot be used "
+                        f"because {_feature_requirement_map[solver_variable_name][1]}"
+                    )
+        return self
 
     def evaluate(
         self,

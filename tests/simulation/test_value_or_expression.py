@@ -7,13 +7,23 @@ import unyt as u
 import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
+from flow360.component.simulation.models.solver_numerics import (
+    KOmegaSST,
+    NoneSolver,
+    SpalartAllmaras,
+)
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import AngularVelocity, Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngularVelocity,
+    Fluid,
+    Rotation,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     LiquidOperatingCondition,
 )
+from flow360.component.simulation.outputs.outputs import VolumeOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.services import (
     ValidationCalledBy,
@@ -30,6 +40,7 @@ from flow360.component.simulation.user_code.core.types import (
     save_user_variables,
 )
 from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import control, solution
 from flow360.component.volume_mesh import VolumeMeshV2
 
 
@@ -191,3 +202,297 @@ def test_e2e_dump_validate_and_translate(param_dict: dict, ref_dict_path: str):
     except FileNotFoundError as e:
         print("=======\n", json.dumps(translated, indent=2), "\n=======")
         raise e
+
+
+def param_with_SST():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=KOmegaSST()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[solution.nu_hat])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_SpalartAllmaras():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[
+                VolumeOutput(name="output", output_fields=[solution.turbulence_kinetic_energy])
+            ],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_SpalartAllmaras_specific_dissipation():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[
+                VolumeOutput(name="output", output_fields=[solution.specific_rate_of_dissipation])
+            ],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_without_transition_model():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(
+                    turbulence_model_solver=SpalartAllmaras(),
+                    transition_model_solver=NoneSolver(),
+                ),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[solution.amplification_factor])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_without_transition_model_intermittency():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(
+                    turbulence_model_solver=SpalartAllmaras(),
+                    transition_model_solver=NoneSolver(),
+                ),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[
+                VolumeOutput(name="output", output_fields=[solution.turbulence_intermittency])
+            ],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_liquid_operating_condition_density():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[solution.density])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_liquid_operating_condition_temperature():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[solution.temperature])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_liquid_operating_condition_mach():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=LiquidOperatingCondition(velocity_magnitude=10 * u.m / u.s),
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[solution.Mach])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_steady_time_stepping_physical_step():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[control.physicalStep])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_steady_time_stepping_time_step_size():
+    reset_context()
+    vm = volume_mesh()
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[control.timeStepSize])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_rotation_zone_theta():
+    reset_context()
+    vm = volume_mesh()
+    vm["fluid"].axis = (0, 1, 0)
+    vm["fluid"].center = (1, 1, 2) * u.cm
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+                Rotation(
+                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
+                ),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[control.theta])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_rotation_zone_omega():
+    reset_context()
+    vm = volume_mesh()
+    vm["fluid"].axis = (0, 1, 0)
+    vm["fluid"].center = (1, 1, 2) * u.cm
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+                Rotation(
+                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
+                ),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[control.omega])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+def param_with_rotation_zone_omega_dot():
+    reset_context()
+    vm = volume_mesh()
+    vm["fluid"].axis = (0, 1, 0)
+    vm["fluid"].center = (1, 1, 2) * u.cm
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+                Rotation(
+                    name="rotation", entities=vm["fluid"], spec=AngularVelocity(value=100 * u.rpm)
+                ),
+            ],
+            outputs=[VolumeOutput(name="output", output_fields=[control.omegaDot])],
+            private_attribute_asset_cache=asset_cache(),
+        )
+    return save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+
+@pytest.mark.parametrize(
+    "param_as_dict, expected_error_msg",
+    [
+        (
+            param_with_SST(),
+            "`solution.nu_hat` cannot be used because Spalart-Allmaras turbulence solver is not used.",
+        ),
+        (
+            param_with_SpalartAllmaras(),
+            "`solution.turbulence_kinetic_energy` cannot be used because k-omega turbulence solver is not used.",
+        ),
+        (
+            param_with_SpalartAllmaras_specific_dissipation(),
+            "`solution.specific_rate_of_dissipation` cannot be used because k-omega turbulence solver is not used.",
+        ),
+        (
+            param_without_transition_model(),
+            "`solution.amplification_factor` cannot be used because Amplification factor transition model is not used.",
+        ),
+        (
+            param_without_transition_model_intermittency(),
+            "`solution.turbulence_intermittency` cannot be used because Amplification factor transition model is not used.",
+        ),
+        (
+            param_with_liquid_operating_condition_density(),
+            "`solution.density` cannot be used because Liquid operating condition is used.",
+        ),
+        (
+            param_with_liquid_operating_condition_temperature(),
+            "`solution.temperature` cannot be used because Liquid operating condition is used.",
+        ),
+        (
+            param_with_liquid_operating_condition_mach(),
+            "`solution.Mach` cannot be used because Liquid operating condition is used.",
+        ),
+        (
+            param_with_steady_time_stepping_physical_step(),
+            "`control.physicalStep` cannot be used because Unsteady time stepping is not used.",
+        ),
+        (
+            param_with_steady_time_stepping_time_step_size(),
+            "`control.timeStepSize` cannot be used because Unsteady time stepping is not used.",
+        ),
+        (
+            param_with_rotation_zone_theta(),
+            "`control.theta` cannot be used because Rotation zone is not used.",
+        ),
+        (
+            param_with_rotation_zone_omega(),
+            "`control.omega` cannot be used because Rotation zone is not used.",
+        ),
+        (
+            param_with_rotation_zone_omega_dot(),
+            "`control.omegaDot` cannot be used because Rotation zone is not used.",
+        ),
+    ],
+)
+def test_feature_requirement_map(param_as_dict: dict, expected_error_msg: str):
+    """Test feature requirement map."""
+    _, errors, _ = validate_model(
+        params_as_dict=param_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+    assert len(errors) == 1
+    assert expected_error_msg in errors[0]["msg"]
