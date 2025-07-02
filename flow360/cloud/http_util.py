@@ -6,7 +6,6 @@ http.get(path)
 from functools import wraps
 import os
 
-from pybase64 import get_version
 import requests
 
 from ..environment import Env
