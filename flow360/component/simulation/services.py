@@ -320,7 +320,7 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(value: dict):
+def initialize_variable_space(value: dict, validated_by: ValidationCalledBy):
     """Load all user variables from private attributes when a simulation params object is initialized"""
     if "private_attribute_asset_cache" not in value.keys():
         return value
@@ -330,7 +330,8 @@ def initialize_variable_space(value: dict):
     if not isinstance(asset_cache["variable_context"], Iterable):
         return value
 
-    clear_context()
+    if validated_by == ValidationCalledBy.SERVICE:
+        clear_context()
 
     # ==== Build dependency graph and sort variables ====
     dependency_graph = DependencyGraph()
@@ -356,10 +357,20 @@ def initialize_variable_space(value: dict):
         value_or_expression = {
             key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
         }
-        UserVariable(
-            name=variable_dict["name"],
-            value=value_or_expression,
-        )
+        try:
+            UserVariable(
+                name=variable_dict["name"],
+                value=value_or_expression,
+            )
+        except ValueError as e:
+            # pylint:disable = raise-missing-from
+            if "Redeclaring user variable" in str(e):
+                raise ValueError(
+                    f"The user variable '{variable_dict['name']}' is redeclared when "
+                    "loading the same user variable with a different value from SimulationParams. "
+                    "Please rename the user variable."
+                )
+            raise
     return value
 
 
@@ -416,7 +427,7 @@ def validate_model(
 
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
-        initialize_variable_space(updated_param_as_dict)
+        initialize_variable_space(updated_param_as_dict, validated_by)
 
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
