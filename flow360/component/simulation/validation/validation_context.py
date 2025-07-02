@@ -111,6 +111,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         "using_liquid_as_material",
         "time_stepping",
         "feature_usage",
+        "referenced_expressions",
     ]
 
     @classmethod
@@ -171,7 +172,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         # 4. Usage of BETDisk
         return FeatureUsageInfo(param_as_dict=param_as_dict)
 
-    def __init__(self, param_as_dict: dict):
+    def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
@@ -182,6 +183,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
         self.feature_usage = self._get_feature_usage_info(param_as_dict=param_as_dict)
+        self.referenced_expressions = referenced_expressions
 
 
 class ValidationContext:

@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import ast
+import copy
 import re
+from enum import Enum
 from numbers import Number
 from typing import (
     Annotated,
@@ -734,7 +736,7 @@ class Expression(Flow360BaseModel, Evaluable):
 
         """
         validation_info = get_validation_info()
-        if validation_info is None:
+        if validation_info is None or self.expression not in validation_info.referenced_expressions:
             return self
 
         for solver_variable_name in self.solver_variable_names():
@@ -1288,3 +1290,94 @@ def solver_variable_to_user_variable(item):
         name = item.name.split(".")[-1] if "." in item.name else item.name
         return UserVariable(name=f"{name}_{unit_system_name}", value=item)
     return item
+
+
+def get_referenced_expressions_and_user_variables(param_as_dict: dict):
+    """
+    Get all the expressions that are mentioned/referenced in the params dict
+    (excluding the ones that are in the asset cache)
+    Two sources:
+    1. Field is `Expression`.
+    2. Field is `UserVariable` and `value` is an `Expression`.
+    `Expression` and `UserVariable` are both identified by their schema.
+    """
+
+    class ExpressionUsage(Enum):
+        """
+        Enum to identify the usage of an expression.
+        """
+
+        VALUE_OR_EXPRESSION = "ValueOrExpression"
+        EXPRESSION_AS_IS = "ExpressionAsIs"
+
+    def _is_user_variable(field: dict) -> bool:
+        return "type_name" in field and field["type_name"] == "UserVariable"
+
+    def _is_expression(field: dict) -> bool:
+        # Two possible cases:
+        # ValueOrExpression:
+        if "type_name" in field and field["type_name"] == "expression":
+            return ExpressionUsage.VALUE_OR_EXPRESSION
+        # Expression as is (no such usage as of now)
+        if sorted(field.keys()) == ["expression", "output_units"] or sorted(field.keys()) == [
+            "expression"
+        ]:
+            return ExpressionUsage.EXPRESSION_AS_IS
+        return False
+
+    def _collect_expressions_recursive(data, collected_expressions: list, used_variables: list):
+        """Recursively collect expressions from nested data structures."""
+        if isinstance(data, dict):
+            # Check if this dict is a UserVariable
+            if _is_user_variable(data):
+                variable_name = data.get("name", {})
+                try:
+                    value = default_context.get(variable_name)
+                    if isinstance(value, Expression):
+                        collected_expressions.append(str(value))
+                    if "." not in variable_name and variable_name not in used_variables:
+                        used_variables.append(variable_name)
+                except ValueError:
+                    # An undefined variable is found. Validation will handle this.
+                    pass
+
+            # Check if this dict is an Expression
+            elif _is_expression(data):
+                usage = _is_expression(data)
+                if usage == ExpressionUsage.VALUE_OR_EXPRESSION:
+                    collected_expressions.append(data.get("expression"))
+                elif usage == ExpressionUsage.EXPRESSION_AS_IS:
+                    collected_expressions.append(data.get("expression"))
+
+            # Recursively process all values in the dict
+            for value in data.values():
+                _collect_expressions_recursive(value, collected_expressions, used_variables)
+
+        elif isinstance(data, list):
+            # Recursively process all items in the list
+            for item in data:
+                _collect_expressions_recursive(item, collected_expressions, used_variables)
+
+    if (
+        "private_attribute_asset_cache" not in param_as_dict
+        or "project_variables" not in param_as_dict["private_attribute_asset_cache"]
+    ):
+        return [], []
+
+    used_variables = []
+    collected_expressions = []
+    param_as_dict_without_project_variables = copy.deepcopy(param_as_dict)
+    param_as_dict_without_project_variables["private_attribute_asset_cache"][
+        "project_variables"
+    ] = []
+    _collect_expressions_recursive(
+        param_as_dict_without_project_variables, collected_expressions, used_variables
+    )
+
+    # Remove duplicates while preserving order
+    unique_expressions = []
+    for expr in collected_expressions:
+        if expr is not None and expr not in unique_expressions:
+            unique_expressions.append(expr)
+
+    return unique_expressions, used_variables

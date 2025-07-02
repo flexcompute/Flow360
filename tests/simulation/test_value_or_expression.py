@@ -23,7 +23,8 @@ from flow360.component.simulation.operating_condition.operating_condition import
     GenericReferenceCondition,
     LiquidOperatingCondition,
 )
-from flow360.component.simulation.outputs.outputs import VolumeOutput
+from flow360.component.simulation.outputs.output_entities import Isosurface
+from flow360.component.simulation.outputs.outputs import IsosurfaceOutput, VolumeOutput
 from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.services import (
     ValidationCalledBy,
@@ -35,8 +36,9 @@ from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import (
+    Expression,
     UserVariable,
-    default_context,
+    get_referenced_expressions_and_user_variables,
     save_user_variables,
 )
 from flow360.component.simulation.user_code.functions import math
@@ -496,3 +498,61 @@ def test_feature_requirement_map(param_as_dict: dict, expected_error_msg: str):
     )
     assert len(errors) == 1
     assert expected_error_msg in errors[0]["msg"]
+
+
+def test_get_referenced_expressions():
+    reset_context()
+    vm = volume_mesh()
+    vm["fluid"].axis = (0, 1, 0)
+    vm["fluid"].center = (1, 1, 2) * u.cm
+    UserVariable(name="unused_var", value=100 * u.rpm)
+    UserVariable(name="unused_var2", value=solution.turbulence_kinetic_energy)  # Should not raise
+    var = UserVariable(name="vel_mag", value=math.magnitude(solution.velocity) - 5 * u.cm / u.ms)
+    iso_field = UserVariable(name="iso_field", value=var + 123 * u.m / u.s)
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[
+                VolumeOutput(name="vol_output", output_fields=[solution.velocity, iso_field]),
+                IsosurfaceOutput(
+                    name="iso_surface",
+                    entities=[
+                        Isosurface(name="iso_surface", field=iso_field, iso_value=1200 * u.m / u.s)
+                    ],
+                    output_fields=[solution.Mach],
+                ),
+            ],
+            time_stepping=Unsteady(step_size=Expression(expression="(123 - 5) * u.s"), steps=10),
+            private_attribute_asset_cache=asset_cache(),
+        )
+    param_as_dict = save_user_variables(params).model_dump(mode="json", exclude_none=True)
+
+    context_var_names = [
+        item["name"] for item in param_as_dict["private_attribute_asset_cache"]["project_variables"]
+    ]
+    assert "unused_var" in context_var_names
+    assert "unused_var2" in context_var_names
+
+    expressions, used_variables = get_referenced_expressions_and_user_variables(param_as_dict)
+    assert sorted(expressions) == [
+        "(123 - 5) * u.s",
+        "solution.Mach",
+        "solution.velocity",
+        "vel_mag + 123 * u.m / u.s",
+    ], f"Expressions: {expressions}"
+    assert sorted(used_variables) == [
+        "Mach_SI",
+        "iso_field",
+        "velocity_SI",
+    ], f"Used variables: {used_variables}"
+
+    _, error, _ = validate_model(
+        params_as_dict=param_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+    assert error is None, f"Error: {error}"

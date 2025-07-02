@@ -62,7 +62,10 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
-from flow360.component.simulation.user_code.core.types import Expression, UserVariable
+from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
+    get_referenced_expressions_and_user_variables,
+)
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -320,15 +323,15 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(value: dict):
+def initialize_variable_space(param_as_dict: dict):
     """Load all user variables from private attributes when a simulation params object is initialized"""
-    if "private_attribute_asset_cache" not in value.keys():
-        return value
-    asset_cache: dict = value["private_attribute_asset_cache"]
+    if "private_attribute_asset_cache" not in param_as_dict.keys():
+        return param_as_dict
+    asset_cache: dict = param_as_dict["private_attribute_asset_cache"]
     if "project_variables" not in asset_cache.keys():
-        return value
+        return param_as_dict
     if not isinstance(asset_cache["project_variables"], Iterable):
-        return value
+        return param_as_dict
 
     clear_context()
 
@@ -360,7 +363,7 @@ def initialize_variable_space(value: dict):
             name=variable_dict["name"],
             value=value_or_expression,
         )
-    return value
+    return param_as_dict
 
 
 def validate_model(
@@ -409,16 +412,23 @@ def validate_model(
 
     try:
         # pylint: disable=protected-access
-        # Note: Need to run updater first to accomodate possible schema change in input caches.
+        # Note: Need to run updater first to accommodate possible schema change in input caches.
         updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
             params_as_dict
         )
 
+        # Multi-constructor model support
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
         initialize_variable_space(updated_param_as_dict)
 
-        additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
+        referenced_expressions, _ = get_referenced_expressions_and_user_variables(
+            updated_param_as_dict
+        )
+
+        additional_info = ParamsValidationInfo(
+            param_as_dict=updated_param_as_dict, referenced_expressions=referenced_expressions
+        )
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
