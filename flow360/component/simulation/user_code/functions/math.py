@@ -436,3 +436,6 @@ def floor(value: ScalarInputType):
     if isinstance(value, (unyt_quantity, Number)):
         return np.floor(value)
     return Expression(expression=f"math.floor({value})")
+
+
+pi = np.pi
