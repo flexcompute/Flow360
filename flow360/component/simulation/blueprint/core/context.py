@@ -68,7 +68,6 @@ class EvaluationContext:
             try:
                 if not resolve:
                     raise ValueError(f"{name} was not defined explicitly in the context")
-                print(f"Resolving {name}")
                 val = self.resolve(name)
                 # If successful, store it so we don't need to import again
                 self._values[name] = val
