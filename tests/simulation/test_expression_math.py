@@ -1954,3 +1954,41 @@ def test_ceil_floor_edge_cases():
     x = UserVariable(name="x", value=[1, 2, 3] * u.m)
     with pytest.raises(ValueError, match="Scalar function"):
         math.floor(x)
+
+
+# ---------------------------#
+# Pi constant
+# ---------------------------#
+def test_pi_constant():
+    """Test pi constant with various usage patterns."""
+
+    # Test direct access to pi
+    assert math.pi == np.pi
+    assert math.pi == pytest.approx(3.141592653589793)
+
+    # Test pi in expressions
+    x = UserVariable(name="x", value=2 * u.m)
+    result = x * math.pi
+    assert str(result) == "x * 3.141592653589793"
+    assert result.evaluate() == 2 * np.pi * u.m
+
+    # Test pi in trigonometric functions
+    assert math.sin(math.pi) == pytest.approx(0.0)
+    assert math.cos(math.pi) == pytest.approx(-1.0)
+    assert math.sin(math.pi / 2) == pytest.approx(1.0)
+
+    # Test pi with unyt quantities
+    result = math.pi * u.rad
+    assert result == np.pi * u.rad
+
+    # Test pi with solution variables
+    result = solution.coordinate[0] * math.pi
+    assert str(result) == "solution.coordinate[0] * 3.141592653589793"
+
+    # Test pi in scaling context
+    with SI_unit_system:
+        result = math.pi * 10 * u.m
+        assert result == np.pi * 10 * u.m
+
+    expr = Expression(expression="math.pi*x")
+    assert expr.evaluate() == 2 * np.pi * u.m
