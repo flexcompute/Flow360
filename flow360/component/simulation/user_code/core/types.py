@@ -815,6 +815,8 @@ class Expression(Flow360BaseModel, Evaluable):
             if match:
                 unit_name = match.group(1)
                 unit = Unit(unit_name)
+                if unit == u.dimensionless:  # pylint:disable=no-member
+                    return "1.0"
                 conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
                 return str(conversion_factor)
 
