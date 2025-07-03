@@ -320,9 +320,8 @@ def test_validate_error_from_initialize_variable_space():
         {
             "type": "value_error",
             "loc": ["unknown"],
-            "msg": "The user variable 'my_time_stepping_var' is redeclared when "
-            "loading the same user variable with a different value from SimulationParams. "
-            "Please rename the user variable.",
+            "msg": "Loading user variable 'my_time_stepping_var' from simulation.json "
+            "which is already defined in local context. Please change your local user variable definition.",
         }
     ]
     assert len(errors) == len(expected_errors)
@@ -332,7 +331,7 @@ def test_validate_error_from_initialize_variable_space():
         assert err["msg"] == exp_err["msg"]
 
     services.clear_context()
-    a = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    _ = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
     _, errors, _ = services.validate_model(
         params_as_dict=param_dict,
         validated_by=services.ValidationCalledBy.SERVICE,
