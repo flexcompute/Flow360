@@ -72,7 +72,9 @@ class EvaluationContext:
                 # If successful, store it so we don't need to import again
                 self._values[name] = val
             except ValueError as err:
-                raise NameError(f"Name '{name}' is not defined") from err
+                raise NameError(
+                    f"Name '{name}' is not defined. Allowed names: {self._values.keys()}"
+                ) from err
         return self._values[name]
 
     def get_data_model(self, name: str) -> Optional[pd.BaseModel]:

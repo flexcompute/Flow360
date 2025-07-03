@@ -422,7 +422,7 @@ def validate_model(
 
         initialize_variable_space(updated_param_as_dict)
 
-        referenced_expressions, _ = get_referenced_expressions_and_user_variables(
+        referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
         )
 

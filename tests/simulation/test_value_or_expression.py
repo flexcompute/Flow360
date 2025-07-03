@@ -29,6 +29,7 @@ from flow360.component.simulation.primitives import ReferenceGeometry
 from flow360.component.simulation.services import (
     ValidationCalledBy,
     clear_context,
+    initialize_variable_space,
     validate_model,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -507,8 +508,13 @@ def test_get_referenced_expressions():
     vm["fluid"].center = (1, 1, 2) * u.cm
     UserVariable(name="unused_var", value=100 * u.rpm)
     UserVariable(name="unused_var2", value=solution.turbulence_kinetic_energy)  # Should not raise
+    fv = UserVariable(
+        name="forbidden_var", value=solution.specific_rate_of_dissipation
+    )  # Should raise (convoluted)
+    uv3 = UserVariable(name="used_var3", value=fv + 12 / u.hr)
+
     var = UserVariable(name="vel_mag", value=math.magnitude(solution.velocity) - 5 * u.cm / u.ms)
-    iso_field = UserVariable(name="iso_field", value=var + 123 * u.m / u.s)
+    iso_field = UserVariable(name="iso_field", value=var + 123 * u.m / u.s - uv3 * 2 * u.cm)
     with SI_unit_system:
         params = SimulationParams(
             models=[
@@ -531,23 +537,23 @@ def test_get_referenced_expressions():
     param_as_dict = save_user_variables(params).model_dump(mode="json", exclude_none=True)
 
     context_var_names = [
-        item["name"] for item in param_as_dict["private_attribute_asset_cache"]["project_variables"]
+        item["name"] for item in param_as_dict["private_attribute_asset_cache"]["variable_context"]
     ]
     assert "unused_var" in context_var_names
     assert "unused_var2" in context_var_names
 
-    expressions, used_variables = get_referenced_expressions_and_user_variables(param_as_dict)
+    initialize_variable_space(param_as_dict)
+    expressions = get_referenced_expressions_and_user_variables(param_as_dict)
+
     assert sorted(expressions) == [
         "(123 - 5) * u.s",
+        "forbidden_var + 12 * 1 / u.hr",
+        "math.magnitude(solution.velocity) - 5 * u.cm / u.ms",
         "solution.Mach",
+        "solution.specific_rate_of_dissipation",
         "solution.velocity",
-        "vel_mag + 123 * u.m / u.s",
+        "vel_mag + 123 * u.m / u.s - used_var3 * 2 * u.cm",
     ], f"Expressions: {expressions}"
-    assert sorted(used_variables) == [
-        "Mach_SI",
-        "iso_field",
-        "velocity_SI",
-    ], f"Used variables: {used_variables}"
 
     _, error, _ = validate_model(
         params_as_dict=param_as_dict,
@@ -555,4 +561,9 @@ def test_get_referenced_expressions():
         root_item_type="VolumeMesh",
         validation_level="Case",
     )
-    assert error is None, f"Error: {error}"
+    assert len(error) == 1
+    assert error[0]["loc"] == ("private_attribute_asset_cache", "variable_context", 2, "value")
+    assert (
+        error[0]["msg"]
+        == "Value error, `solution.specific_rate_of_dissipation` cannot be used because k-omega turbulence solver is not used."
+    )
