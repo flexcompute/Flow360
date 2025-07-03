@@ -73,6 +73,8 @@ from flow360.component.simulation.user_code.core.types import (
     SolverVariable,
     UserVariable,
     ValueOrExpression,
+    get_user_variable,
+    remove_user_variable,
     save_user_variables,
 )
 from flow360.component.simulation.user_code.variables import control, solution
@@ -1515,3 +1517,78 @@ class TestDependencyGraph:
         # Expression with mixed known and unknown variables
         deps = graph._extract_deps("x + unknown + y", all_names)
         assert deps == {"x", "y"}
+
+
+def test_remove_variable_with_yes_confirmation(monkeypatch, capsys):
+    # Simulate user typing 'yes'
+    monkeypatch.setattr("builtins.input", lambda _: "yes")
+
+    var_a = UserVariable(name="var_a", value=solution.Cpt)
+    var_b = UserVariable(name="var_b", value=var_a**2)
+    var_c = UserVariable(name="var_c", value=var_a**3)
+    var_d = UserVariable(name="var_d", value=var_b**2 + var_a + var_c)
+
+    remove_user_variable(name="var_b")
+
+    captured = capsys.readouterr()
+    assert "--- Confirmation Required ---" in captured.out
+    assert "The following variables will be removed:\n  - var_b\n  - var_d\n" in captured.out
+    assert "--- Proceeding with removal ---" in captured.out
+    assert "Removed 'var_b' from values." in captured.out
+    assert "Removed 'var_d' from values." in captured.out
+
+    assert var_a == get_user_variable("var_a")
+    with pytest.raises(NameError, match="Name 'var_b' is not defined"):
+        get_user_variable("var_b")
+    assert var_c == get_user_variable("var_c")
+    with pytest.raises(NameError, match="Name 'var_d' is not defined"):
+        get_user_variable("var_d")
+
+    remove_user_variable(name="var_a")
+    captured = capsys.readouterr()
+    assert "--- Confirmation Required ---" in captured.out
+    assert "The following variables will be removed:\n  - var_a\n  - var_c\n" in captured.out
+    assert "--- Proceeding with removal ---" in captured.out
+    assert "Removed 'var_a' from values." in captured.out
+    assert "Removed 'var_c' from values." in captured.out
+
+    with pytest.raises(NameError, match="Name 'var_a' is not defined"):
+        get_user_variable("var_a")
+    with pytest.raises(NameError, match="Name 'var_c' is not defined"):
+        get_user_variable("var_c")
+
+    var_d = UserVariable(name="var_d", value=solution.Cp)
+    remove_user_variable(name="var_d")
+    with pytest.raises(NameError, match="Name 'var_d' is not defined"):
+        get_user_variable("var_d")
+
+
+def test_remove_variable_with_no_confirmation(monkeypatch, capsys):
+    # Simulate user typing 'no'
+    monkeypatch.setattr("builtins.input", lambda _: "no")
+
+    var_a = UserVariable(name="var_a", value=solution.Cpt)
+    var_b = UserVariable(name="var_b", value=var_a**2)
+    var_c = UserVariable(name="var_c", value=var_a**3)
+    var_d = UserVariable(name="var_d", value=var_b**2 + var_a + var_c)
+
+    remove_user_variable(name="var_a")
+
+    # Optionally, check the output messages (stdout)
+    captured = capsys.readouterr()
+    assert "--- Confirmation Required ---" in captured.out
+    assert (
+        "The following variables will be removed:\n  - var_a\n  - var_b\n  - var_c\n  - var_d\n"
+        in captured.out
+    )
+    assert "Operation cancelled. No variables were removed." in captured.out
+
+    assert var_a == get_user_variable("var_a")
+    assert var_b == get_user_variable("var_b")
+    assert var_c == get_user_variable("var_c")
+    assert var_d == get_user_variable("var_d")
+
+
+def test_remove_non_existent_variable():
+    with pytest.raises(NameError, match="There is no variable named 'non_existent_var'."):
+        remove_user_variable("non_existent_var")
