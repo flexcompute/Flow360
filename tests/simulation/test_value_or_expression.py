@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import pytest
 import unyt as u
@@ -567,3 +568,15 @@ def test_get_referenced_expressions():
         error[0]["msg"]
         == "Value error, `solution.specific_rate_of_dissipation` cannot be used because k-omega turbulence solver is not used."
     )
+
+
+def test_integer_validation():
+    with SI_unit_system:
+        AerospaceCondition(velocity_magnitude=10)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Value error, arg '10' does not match (length)/(time) dimension."),
+    ):
+        with SI_unit_system:
+            AerospaceCondition(velocity_magnitude=Expression(expression="10"))
