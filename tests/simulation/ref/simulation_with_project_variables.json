@@ -241,7 +241,7 @@
     "private_attribute_asset_cache": {
         "use_inhouse_mesher": false,
         "use_geometry_AI": false,
-        "project_variables": [
+        "variable_context": [
             {
                 "name": "ccc",
                 "value": {
