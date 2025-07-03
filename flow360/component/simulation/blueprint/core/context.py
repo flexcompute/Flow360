@@ -7,6 +7,7 @@ import pydantic as pd
 
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
+from flow360.log import log
 
 
 class ReturnValue(Exception):
@@ -102,10 +103,10 @@ class EvaluationContext:
         if not _is_recursive_call:
             all_affected_vars = self._get_all_variables_to_remove(name)
 
-            print("\n--- Confirmation Required ---")
-            print("The following variables will be removed:")
+            log.info("--- Confirmation Required ---")
+            log.info("The following variables will be removed:")
             for var in sorted(list(all_affected_vars)):  # Sort for consistent display
-                print(f"  - {var}")
+                log.info(f"  - {var}")
 
             if len(all_affected_vars) > 1:
                 confirmation = (
@@ -122,9 +123,9 @@ class EvaluationContext:
                 )
 
             if confirmation not in ["yes", "y"]:
-                print("Operation cancelled. No variables were removed.")
+                log.info("Operation cancelled. No variables were removed.")
                 return
-            print("--- Proceeding with removal ---")
+            log.info("--- Proceeding with removal ---")
 
         current_dependents = self._dependency_graph._graph.get(name, set()).copy()
 
@@ -132,13 +133,8 @@ class EvaluationContext:
             self.remove(name=dep, _is_recursive_call=True)  # Pass the flag
 
         self._dependency_graph.remove_variable(name=name)
-        if name in self._values:
-            del self._values[name]
-            print(f"Removed '{name}' from values.")
-        else:
-            print(
-                f"'{name}' was already removed from values or not found (might be a phantom dependent)."
-            )
+        self._values.pop(name)
+        log.info(f"Removed '{name}' from values.")
 
     def get_data_model(self, name: str) -> Optional[pd.BaseModel]:
         """Get the Validation model for the given name."""

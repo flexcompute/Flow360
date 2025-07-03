@@ -1532,7 +1532,9 @@ def test_remove_variable_with_yes_confirmation(monkeypatch, capsys):
 
     captured = capsys.readouterr()
     assert "--- Confirmation Required ---" in captured.out
-    assert "The following variables will be removed:\n  - var_b\n  - var_d\n" in captured.out
+    assert "The following variables will be removed:" in captured.out
+    assert "- var_b" in captured.out
+    assert "- var_d" in captured.out
     assert "--- Proceeding with removal ---" in captured.out
     assert "Removed 'var_b' from values." in captured.out
     assert "Removed 'var_d' from values." in captured.out
@@ -1547,7 +1549,9 @@ def test_remove_variable_with_yes_confirmation(monkeypatch, capsys):
     remove_user_variable(name="var_a")
     captured = capsys.readouterr()
     assert "--- Confirmation Required ---" in captured.out
-    assert "The following variables will be removed:\n  - var_a\n  - var_c\n" in captured.out
+    assert "The following variables will be removed:" in captured.out
+    assert "- var_a" in captured.out
+    assert "- var_c" in captured.out
     assert "--- Proceeding with removal ---" in captured.out
     assert "Removed 'var_a' from values." in captured.out
     assert "Removed 'var_c' from values." in captured.out
@@ -1577,10 +1581,11 @@ def test_remove_variable_with_no_confirmation(monkeypatch, capsys):
     # Optionally, check the output messages (stdout)
     captured = capsys.readouterr()
     assert "--- Confirmation Required ---" in captured.out
-    assert (
-        "The following variables will be removed:\n  - var_a\n  - var_b\n  - var_c\n  - var_d\n"
-        in captured.out
-    )
+    assert ("The following variables will be removed:") in captured.out
+    assert "- var_a" in captured.out
+    assert "- var_b" in captured.out
+    assert "- var_c" in captured.out
+    assert "- var_d" in captured.out
     assert "Operation cancelled. No variables were removed." in captured.out
 
     assert var_a == get_user_variable("var_a")
