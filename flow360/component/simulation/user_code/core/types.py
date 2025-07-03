@@ -1380,7 +1380,6 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
     ):
         return [], []
 
-    used_variables: set[str] = set()
     used_expressions: set[str] = set()
     param_as_dict_without_project_variables = copy.deepcopy(param_as_dict)
     param_as_dict_without_project_variables["private_attribute_asset_cache"][
