@@ -55,11 +55,14 @@ class UnitSystemManager:
     :class: Class to manage global unit system context and switch currently used unit systems
     """
 
+    __slots__ = ("_current", "_suspended")
+
     def __init__(self):
         """
         Initialize the UnitSystemManager.
         """
         self._current = None
+        self._suspended = None
 
     @property
     def current(self) -> UnitSystem:
@@ -77,6 +80,19 @@ class UnitSystemManager:
         :return:
         """
         self._current = unit_system
+
+    def suspend(self):
+        """
+        Suspend the current UnitSystem.
+        """
+        self._suspended = self._current
+        self._current = None
+
+    def resume(self):
+        """
+        Resume the current UnitSystem.
+        """
+        self._current = self._suspended
 
 
 unit_system_manager = UnitSystemManager()

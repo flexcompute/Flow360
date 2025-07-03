@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import pytest
 import unyt as u
@@ -35,6 +36,7 @@ from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import (
+    Expression,
     UserVariable,
     default_context,
     save_user_variables,
@@ -496,3 +498,15 @@ def test_feature_requirement_map(param_as_dict: dict, expected_error_msg: str):
     )
     assert len(errors) == 1
     assert expected_error_msg in errors[0]["msg"]
+
+
+def test_integer_validation():
+    with SI_unit_system:
+        AerospaceCondition(velocity_magnitude=10)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Value error, arg '10' does not match (length)/(time) dimension."),
+    ):
+        with SI_unit_system:
+            AerospaceCondition(velocity_magnitude=Expression(expression="10"))
