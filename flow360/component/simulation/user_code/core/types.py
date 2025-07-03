@@ -1150,10 +1150,12 @@ class ValueOrExpression(Expression, Generic[T]):
                         "Run-time expression is not allowed in this field. "
                         "Please ensure this field does not depend on any control or solver variables."
                     )
-
+            # Temporary suspend unit system to expose dimension problem
+            unit_system_manager.suspend()
             pd.TypeAdapter(typevar_values).validate_python(
                 result, context={"allow_inf_nan": allow_run_time_expression}
             )
+            unit_system_manager.resume()
             return value
 
         expr_type = Annotated[Expression, pd.AfterValidator(_internal_validator)]
