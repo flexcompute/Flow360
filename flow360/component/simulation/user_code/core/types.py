@@ -1213,7 +1213,8 @@ def get_post_processing_variables(params) -> set[str]:
     for item in params.outputs if params.outputs else []:
         if item.output_type in ("IsosurfaceOutput", "TimeAverageIsosurfaceOutput"):
             for isosurface in item.entities.items:
-                post_processing_variables.add(isosurface.field.name)
+                if isinstance(isosurface.field, UserVariable):
+                    post_processing_variables.add(isosurface.field.name)
         if not "output_fields" in item.__class__.model_fields:
             continue
         for item in item.output_fields.items:
