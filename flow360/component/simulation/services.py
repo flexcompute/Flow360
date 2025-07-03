@@ -366,7 +366,8 @@ def initialize_variable_space(value: dict, validated_by: ValidationCalledBy):
             # pylint:disable = raise-missing-from
             if "Redeclaring user variable" in str(e):
                 raise ValueError(
-                    f"Loading user variable '{variable_dict['name']}' from simulation.json which is already defined in local context. Please change your local user variable definition."
+                    f"Loading user variable '{variable_dict['name']}' from simulation.json which is "
+                    "already defined in local context. Please change your local user variable definition."
                 )
             raise e
     return value
