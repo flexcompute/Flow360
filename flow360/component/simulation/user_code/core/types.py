@@ -1230,7 +1230,7 @@ def save_user_variables(params):
     # Get all output variables which will be tagged with postProcessing=True:
     post_processing_variables = get_post_processing_variables(params)
 
-    params.private_attribute_asset_cache.project_variables = [
+    params.private_attribute_asset_cache.variable_context = [
         VariableContextInfo(
             name=name, value=value, postProcessing=name in post_processing_variables
         )

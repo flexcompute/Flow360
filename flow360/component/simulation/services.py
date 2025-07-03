@@ -325,9 +325,9 @@ def initialize_variable_space(value: dict):
     if "private_attribute_asset_cache" not in value.keys():
         return value
     asset_cache: dict = value["private_attribute_asset_cache"]
-    if "project_variables" not in asset_cache.keys():
+    if "variable_context" not in asset_cache.keys():
         return value
-    if not isinstance(asset_cache["project_variables"], Iterable):
+    if not isinstance(asset_cache["variable_context"], Iterable):
         return value
 
     clear_context()
@@ -336,7 +336,7 @@ def initialize_variable_space(value: dict):
     dependency_graph = DependencyGraph()
     # Pad the project variables into proper schema
     variable_list = []
-    for var in asset_cache["project_variables"]:
+    for var in asset_cache["variable_context"]:
         if "type_name" in var["value"] and var["value"]["type_name"] == "expression":
             # Expression type
             variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
@@ -348,7 +348,7 @@ def initialize_variable_space(value: dict):
 
     for variable_name in sorted_variables:
         variable_dict = next(
-            (var for var in asset_cache["project_variables"] if var["name"] == variable_name),
+            (var for var in asset_cache["variable_context"] if var["name"] == variable_name),
             None,
         )
         if variable_dict is None:

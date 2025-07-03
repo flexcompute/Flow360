@@ -1380,7 +1380,7 @@
 		},
 		"use_inhouse_mesher": false,
 		"use_geometry_AI": false,
-		"project_variables": [
+		"variable_context": [
 			{
 				"name": "x",
 				"value": {
