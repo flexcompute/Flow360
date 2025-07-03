@@ -50,7 +50,7 @@ class AssetCache(Flow360BaseModel):
     use_geometry_AI: bool = pd.Field(
         False, description="Flag whether user requested the use of GAI."
     )
-    project_variables: Optional[VariableContextList] = pd.Field(
+    variable_context: Optional[VariableContextList] = pd.Field(
         None, description="List of user variables that are used in all the `Expression` instances."
     )
 
@@ -71,7 +71,7 @@ class AssetCache(Flow360BaseModel):
         required_by: List[str] = None,
         registry_lookup: RegistryLookup = None,
     ) -> Flow360BaseModel:
-        exclude_asset_cache = exclude + ["project_variables"]
+        exclude_asset_cache = exclude + ["variable_context"]
         return super().preprocess(
             params=params,
             exclude=exclude_asset_cache,

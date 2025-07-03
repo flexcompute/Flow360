@@ -1232,7 +1232,7 @@ def save_user_variables(params):
     # Get all output variables which will be tagged with postProcessing=True:
     post_processing_variables = get_post_processing_variables(params)
 
-    params.private_attribute_asset_cache.project_variables = [
+    params.private_attribute_asset_cache.variable_context = [
         VariableContextInfo(
             name=name, value=value, postProcessing=name in post_processing_variables
         )
@@ -1360,7 +1360,7 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
 
     if (
         "private_attribute_asset_cache" not in param_as_dict
-        or "project_variables" not in param_as_dict["private_attribute_asset_cache"]
+        or "variable_context" not in param_as_dict["private_attribute_asset_cache"]
     ):
         return [], []
 
@@ -1368,7 +1368,7 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
     collected_expressions = []
     param_as_dict_without_project_variables = copy.deepcopy(param_as_dict)
     param_as_dict_without_project_variables["private_attribute_asset_cache"][
-        "project_variables"
+        "variable_context"
     ] = []
     _collect_expressions_recursive(
         param_as_dict_without_project_variables, collected_expressions, used_variables
