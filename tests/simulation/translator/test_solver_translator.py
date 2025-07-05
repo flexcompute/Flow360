@@ -930,7 +930,12 @@ def test_isosurface_iso_value_in_unit_system():
     )
     assert len(errors) == 2
     assert errors[0]["loc"] == ("outputs", 2, "entities", "items", 0, "field")
-    assert errors[0]["msg"] == "Value error, The isosurface field (uuu) must be defined with a scalar variable."
+    assert (
+        errors[0]["msg"]
+        == "Value error, The isosurface field (uuu) must be defined with a scalar variable."
+    )
     assert errors[1]["loc"] == ("outputs", 2, "entities", "items", 0, "iso_value")
-    assert errors[1]["msg"] == "Value error, The isosurface field is invalid and therefore unit deductions is not possible."
-    
+    assert (
+        errors[1]["msg"]
+        == "Value error, The isosurface field is invalid and therefore unit deductions is not possible."
+    )
