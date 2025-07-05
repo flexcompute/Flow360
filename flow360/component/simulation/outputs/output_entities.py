@@ -116,8 +116,22 @@ class Isosurface(_OutputItemBase):
     @pd.field_validator("iso_value", mode="before")
     @classmethod
     def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
-        if not isinstance(value, dict) or info.data.get("field") is None or "units" not in value:
+        if (
+            not isinstance(value, dict)
+            or "units" not in value
+            or value["units"]
+            not in (
+                "SI_unit_system",
+                "Imperial_unit_system",
+                "CGS_unit_system",
+            )
+        ):
             return value
+        if info.data.get("field") is None:
+            # `field` validation failed.
+            raise ValueError(
+                "The isosurface field is invalid and therefore unit deductions is not possible."
+            )
         units = value["units"]
         field = info.data["field"]
         field_dimensions = get_input_value_dimensions(value=field)

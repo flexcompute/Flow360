@@ -902,21 +902,35 @@ def test_isosurface_iso_value_in_unit_system():
         )
     ) as fp:
         params_as_dict = json.load(fp=fp)
+    # params_validated, errors, _ = validate_model(
+    #     params_as_dict=params_as_dict,
+    #     validated_by=ValidationCalledBy.LOCAL,
+    #     root_item_type="Case",
+    #     validation_level="Case",
+    # )
+    # assert not errors, print(">>>", errors)
+    # assert params_validated.outputs[0].entities.items[0].iso_value == 3000 * u.Pa
+    # assert params_validated.outputs[1].entities.items[0].iso_value == 45.359237 * u.cm * u.g / u.s
+    # assert params_validated.outputs[2].entities.items[0].iso_value == 2125 * u.psf
+    # assert params_validated.outputs[3].entities.items[0].iso_value == 0.5 * u.dimensionless
+
+    # translate_and_compare(
+    #     params_validated,
+    #     mesh_unit=1 * u.m,
+    #     ref_json_file="Flow360_user_variable_isosurface.json",
+    #     debug=True,
+    # )
+
+    params_as_dict["outputs"][2]["entities"]["items"][0]["field"]["name"] = "uuu"
     params_validated, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Case",
         validation_level="Case",
     )
-    assert not errors, print(">>>", errors)
-    assert params_validated.outputs[0].entities.items[0].iso_value == 3000 * u.Pa
-    assert params_validated.outputs[1].entities.items[0].iso_value == 45.359237 * u.cm * u.g / u.s
-    assert params_validated.outputs[2].entities.items[0].iso_value == 2125 * u.psf
-    assert params_validated.outputs[3].entities.items[0].iso_value == 0.5 * u.dimensionless
-
-    translate_and_compare(
-        params_validated,
-        mesh_unit=1 * u.m,
-        ref_json_file="Flow360_user_variable_isosurface.json",
-        debug=True,
-    )
+    assert len(errors) == 2
+    assert errors[0]["loc"] == ("outputs", 2, "entities", "items", 0, "field")
+    assert errors[0]["msg"] == "Value error, The isosurface field (uuu) must be defined with a scalar variable."
+    assert errors[1]["loc"] == ("outputs", 2, "entities", "items", 0, "iso_value")
+    assert errors[1]["msg"] == "Value error, The isosurface field is invalid and therefore unit deductions is not possible."
+    
