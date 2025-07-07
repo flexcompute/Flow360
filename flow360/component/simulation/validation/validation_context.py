@@ -74,6 +74,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         "use_geometry_AI",
         "using_liquid_as_material",
         "time_stepping",
+        "project_length_unit",
     ]
 
     @classmethod
@@ -125,6 +126,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
             return TimeSteppingType.STEADY
         except KeyError:
             return TimeSteppingType.UNSET
+        
+    @classmethod
+    def _get_project_length_unit_(cls, param_as_dict: dict):
+        try:
+            return param_as_dict["private_attribute_asset_cache"]["project_length_unit"]
+        except KeyError:
+            return None
 
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
@@ -136,6 +144,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
             param_as_dict=param_as_dict
         )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
+        self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
+
 
 
 class ValidationContext:
