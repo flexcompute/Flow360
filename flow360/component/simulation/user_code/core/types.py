@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import copy
 import re
+import textwrap
 from enum import Enum
 from numbers import Number
 from typing import (
@@ -44,6 +45,7 @@ from flow360.component.simulation.user_code.core.utils import (
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
+from flow360.log import log
 
 _solver_variables: dict[str, str] = {}
 
@@ -66,6 +68,72 @@ def update_global_context(value: List[VariableContextInfo]):
     for item in value:
         default_context.set(item.name, item.value)
     return value
+
+
+def get_user_variable(name: str):
+    """Get the user variable from the global context."""
+    return UserVariable(name=name, value=default_context.get(name))
+
+
+def remove_user_variable(name: str):
+    """Remove the variable from the global context."""
+    return default_context.remove(name)
+
+
+def show_user_variables():
+    """Show the user variables from the global context with name and value in two columns, wrapping long values."""
+    # pylint: disable=too-many-locals
+    user_variables = {
+        name: default_context.get(name) for name in sorted(default_context.user_variable_names)
+    }
+
+    if not user_variables.keys():
+        log.info("No user variables are currently defined.")
+        return
+
+    header_index = "Idx"
+    header_name = "Name"
+    header_value = "Value"
+
+    max_name_width = max(max(len(name) for name in user_variables.keys()), len(header_name))
+
+    terminal_width = 100
+
+    value_col_width = max(terminal_width - (len(header_index) + 1 + max_name_width), 20)
+
+    formatted_header = (
+        f"{header_index:>{len(header_index)}}. "
+        f"{header_name:<{max_name_width}} "
+        f"{header_value}"
+    )
+    separator = f"{'-'*(len(header_index)+1)} " f"{'-'*max_name_width} " f"{'-'*value_col_width}"
+
+    output_lines = [formatted_header, separator]
+
+    for idx, (name, value) in enumerate(user_variables.items()):
+        value_str = str(value)
+
+        value_lines_raw = value_str.splitlines()
+
+        wrapped_value_lines = []
+        for line in value_lines_raw:
+            wrapped_line_parts = textwrap.wrap(line, width=value_col_width)
+            wrapped_value_lines.extend(wrapped_line_parts)
+
+        first_value_line = wrapped_value_lines[0] if wrapped_value_lines else ""
+
+        output_lines.append(
+            f"{idx+1:>{len(header_index)}}. {name:<{max_name_width}} {first_value_line}"
+        )
+
+        indent_for_wrapped_lines = " " * (len(header_index) + max_name_width + 2)
+
+        for subsequent_line in wrapped_value_lines[1:]:
+            output_lines.append(f"{indent_for_wrapped_lines}{subsequent_line}")
+
+    output_lines = "\n".join(output_lines)
+
+    log.info(f"The current defined user variables are:\n{output_lines}")
 
 
 def __soft_fail_add__(self, other):
@@ -1217,7 +1285,8 @@ def get_post_processing_variables(params) -> set[str]:
     for item in params.outputs if params.outputs else []:
         if item.output_type in ("IsosurfaceOutput", "TimeAverageIsosurfaceOutput"):
             for isosurface in item.entities.items:
-                post_processing_variables.add(isosurface.field.name)
+                if isinstance(isosurface.field, UserVariable):
+                    post_processing_variables.add(isosurface.field.name)
         if not "output_fields" in item.__class__.model_fields:
             continue
         for item in item.output_fields.items:

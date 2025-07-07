@@ -543,7 +543,7 @@ def test_get_referenced_expressions():
     assert "unused_var" in context_var_names
     assert "unused_var2" in context_var_names
 
-    initialize_variable_space(param_as_dict)
+    initialize_variable_space(param_as_dict, validated_by=ValidationCalledBy.SERVICE)
     expressions = get_referenced_expressions_and_user_variables(param_as_dict)
 
     assert sorted(expressions) == [

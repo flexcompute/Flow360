@@ -323,7 +323,7 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(param_as_dict: dict):
+def initialize_variable_space(param_as_dict: dict, validated_by: ValidationCalledBy):
     """Load all user variables from private attributes when a simulation params object is initialized"""
     if "private_attribute_asset_cache" not in param_as_dict.keys():
         return param_as_dict
@@ -333,7 +333,8 @@ def initialize_variable_space(param_as_dict: dict):
     if not isinstance(asset_cache["variable_context"], Iterable):
         return param_as_dict
 
-    clear_context()
+    if validated_by == ValidationCalledBy.SERVICE:
+        clear_context()
 
     # ==== Build dependency graph and sort variables ====
     dependency_graph = DependencyGraph()
@@ -359,10 +360,19 @@ def initialize_variable_space(param_as_dict: dict):
         value_or_expression = {
             key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
         }
-        UserVariable(
-            name=variable_dict["name"],
-            value=value_or_expression,
-        )
+        try:
+            UserVariable(
+                name=variable_dict["name"],
+                value=value_or_expression,
+            )
+        except ValueError as e:
+            # pylint:disable = raise-missing-from
+            if "Redeclaring user variable" in str(e):
+                raise ValueError(
+                    f"Loading user variable '{variable_dict['name']}' from simulation.json which is "
+                    "already defined in local context. Please change your local user variable definition."
+                )
+            raise e
     return param_as_dict
 
 
@@ -420,7 +430,7 @@ def validate_model(
         # Multi-constructor model support
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
-        initialize_variable_space(updated_param_as_dict)
+        initialize_variable_space(updated_param_as_dict, validated_by)
 
         referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
