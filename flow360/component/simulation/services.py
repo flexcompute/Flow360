@@ -323,7 +323,7 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(param_as_dict: dict, validated_by: ValidationCalledBy):
+def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = False):
     """Load all user variables from private attributes when a simulation params object is initialized"""
     if "private_attribute_asset_cache" not in param_as_dict.keys():
         return param_as_dict
@@ -333,7 +333,7 @@ def initialize_variable_space(param_as_dict: dict, validated_by: ValidationCalle
     if not isinstance(asset_cache["variable_context"], Iterable):
         return param_as_dict
 
-    if validated_by == ValidationCalledBy.SERVICE:
+    if is_clear_context:
         clear_context()
 
     # ==== Build dependency graph and sort variables ====
@@ -430,7 +430,8 @@ def validate_model(
         # Multi-constructor model support
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
-        initialize_variable_space(updated_param_as_dict, validated_by)
+        is_clear_context = validated_by == ValidationCalledBy.SERVICE
+        initialize_variable_space(updated_param_as_dict, is_clear_context)
 
         referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
