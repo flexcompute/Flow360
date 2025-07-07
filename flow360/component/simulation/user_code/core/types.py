@@ -751,9 +751,24 @@ class Expression(Flow360BaseModel, Evaluable):
 
     @pd.field_validator("expression", mode="after")
     @classmethod
-    def remove_leading_and_trailing_whitespace(cls, value: str) -> str:
+    def sanitize_expression(cls, value: str) -> str:
         """Remove leading and trailing whitespace from the expression"""
-        return value.strip()
+        return value.strip().rstrip("; \n\t")
+
+    @pd.field_validator("expression", mode="after")
+    @classmethod
+    def disable_confusing_operators(cls, value: str) -> str:
+        """Disable confusing operators. This ideally should be warnings but we do not have warning system yet."""
+        if "^" in value:
+            raise ValueError(
+                "^ operator is not allowed in expressions. For power operator, please use ** instead."
+            )
+        # This has no possible usage yet.
+        if "&" in value:
+            raise ValueError(
+                "& operator is not allowed in expressions."  # . For logical AND use 'and' instead."
+            )
+        return value
 
     @pd.field_validator("expression", mode="after")
     @classmethod

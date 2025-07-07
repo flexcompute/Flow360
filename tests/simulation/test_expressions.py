@@ -1518,6 +1518,32 @@ class TestDependencyGraph:
         deps = graph._extract_deps("x + unknown + y", all_names)
         assert deps == {"x", "y"}
 
+    def test_trailing_semicolon(self):
+        graph = DependencyGraph()
+        input_variable_list = [
+            {"name": "contains_unit_sudu", "value": "[math.ceil(math.sqrt(81)) + math.floor(5.5)]"},
+            {"name": "post_processing_variables", "value": "1+1"},
+            {"name": "gamma", "value": "1.4"},
+            {"name": "pow1", "value": "gamma/(gamma-1)"},
+            {"name": "pow2", "value": "(gamma-1) / 2"},
+            {"name": "primitiveVar", "value": "[1,2,3,4,5]"},
+            {"name": "v", "value": "90"},
+            {
+                "name": "TotalPressureCoeff",
+                "value": "(gamma*primitiveVar[4]*(1+pow2*solution.Mach*solution.Mach)^pow1-(1+pow2*MachRefSq)^pow1)/(gamma/2*MachRefSq);",
+            },
+            {"name": "MachRefSq", "value": "control.MachRef*control.MachRef"},
+        ]
+        graph.load_from_list(input_variable_list)
+        order = graph.topology_sort()
+        assert order.index("gamma") < order.index("pow1")
+        assert order.index("gamma") < order.index("pow2")
+        assert order.index("gamma") < order.index("TotalPressureCoeff")
+        assert order.index("primitiveVar") < order.index("TotalPressureCoeff")
+        assert order.index("pow2") < order.index("TotalPressureCoeff")
+        assert order.index("pow1") < order.index("TotalPressureCoeff")
+        assert order.index("MachRefSq") < order.index("TotalPressureCoeff")
+
 
 def test_remove_variable_with_yes_confirmation(monkeypatch, capsys):
     # Simulate user typing 'yes'
@@ -1597,3 +1623,257 @@ def test_remove_variable_with_no_confirmation(monkeypatch, capsys):
 def test_remove_non_existent_variable():
     with pytest.raises(NameError, match="There is no variable named 'non_existent_var'."):
         remove_user_variable("non_existent_var")
+
+
+def test_sanitize_expression_validator():
+    """Test the sanitize_expression validator that removes whitespace and trailing characters."""
+
+    # Test basic whitespace removal
+    assert Expression.sanitize_expression("  x + y  ") == "x + y"
+    assert Expression.sanitize_expression("\t x + y \t") == "x + y"
+    assert Expression.sanitize_expression("\n x + y \n") == "x + y"
+
+    # Test trailing semicolon removal
+    assert Expression.sanitize_expression("x + y;") == "x + y"
+    assert Expression.sanitize_expression("x + y ;") == "x + y"
+    assert Expression.sanitize_expression("x + y;\t") == "x + y"
+    assert Expression.sanitize_expression("x + y;\n") == "x + y"
+
+    # Test multiple trailing characters
+    assert Expression.sanitize_expression("x + y; \n\t") == "x + y"
+    assert Expression.sanitize_expression("x + y \t\n;") == "x + y"
+
+    # Test no changes needed
+    assert Expression.sanitize_expression("x + y") == "x + y"
+    assert Expression.sanitize_expression("") == ""
+
+    # Test with complex expressions
+    assert Expression.sanitize_expression("  (a + b) * c / d;  ") == "(a + b) * c / d"
+    assert (
+        Expression.sanitize_expression("\t math.sqrt(x**2 + y**2); \n") == "math.sqrt(x**2 + y**2)"
+    )
+
+    # Test with units
+    assert Expression.sanitize_expression("  velocity * u.m / u.s;  ") == "velocity * u.m / u.s"
+
+    # Test with mixed whitespace characters
+    assert Expression.sanitize_expression("  \t\n x + y \n\t ;  ") == "x + y"
+
+
+def test_disable_confusing_operators_validator():
+    """Test the disable_confusing_operators validator that prevents use of ^ and & operators."""
+
+    # Test valid expressions (should pass through unchanged)
+    assert Expression.disable_confusing_operators("x + y") == "x + y"
+    assert Expression.disable_confusing_operators("x ** y") == "x ** y"  # Valid power operator
+    assert Expression.disable_confusing_operators("x and y") == "x and y"  # Valid logical AND
+    assert Expression.disable_confusing_operators("math.sqrt(x)") == "math.sqrt(x)"
+    assert Expression.disable_confusing_operators("") == ""
+
+    # Test ^ operator (should raise ValueError)
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("x ^ y")
+
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("2 ^ 3")
+
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("x + y ^ z")
+
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("(x + y) ^ 2")
+
+    # Test & operator (should raise ValueError)
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators("x & y")
+
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators("a & b & c")
+
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators("x + y & z")
+
+    # Test both operators in same expression (should catch first one)
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("x ^ y & z")
+
+    # Test operators in complex expressions
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("math.sqrt(x ^ 2 + y ^ 2)")
+
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators("(a + b) & (c + d)")
+
+    # Test operators in string literals (should still be caught)
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators("'x ^ y'")
+
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators("'x & y'")
+
+
+def test_expression_validators_integration():
+    """Test that the validators work together when processing expression strings."""
+
+    # Test sanitization and operator validation work together
+    # This should pass: sanitize removes whitespace and semicolon, no invalid operators
+    sanitized = Expression.sanitize_expression("  x + y;  ")
+    assert sanitized == "x + y"
+    # Should pass operator validation
+    assert Expression.disable_confusing_operators(sanitized) == "x + y"
+
+    # This should pass: sanitize removes whitespace, ** is valid power operator
+    sanitized = Expression.sanitize_expression("  x ** y;  ")
+    assert sanitized == "x ** y"
+    # Should pass operator validation
+    assert Expression.disable_confusing_operators(sanitized) == "x ** y"
+
+    # This should fail: sanitize removes whitespace but ^ is still invalid
+    sanitized = Expression.sanitize_expression("  x ^ y;  ")
+    assert sanitized == "x ^ y"
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators(sanitized)
+
+    # This should fail: sanitize removes whitespace but & is still invalid
+    sanitized = Expression.sanitize_expression("  x & y;  ")
+    assert sanitized == "x & y"
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators(sanitized)
+
+    # Test with complex expressions
+    sanitized = Expression.sanitize_expression("  (a + b) ** 2;  ")
+    assert sanitized == "(a + b) ** 2"
+    assert Expression.disable_confusing_operators(sanitized) == "(a + b) ** 2"
+
+    # Test with units
+    sanitized = Expression.sanitize_expression("  velocity ** 2 * u.m / u.s;  ")
+    assert sanitized == "velocity ** 2 * u.m / u.s"
+    assert Expression.disable_confusing_operators(sanitized) == "velocity ** 2 * u.m / u.s"
+
+    # Test edge cases
+    sanitized = Expression.sanitize_expression("  ;  ")  # Just whitespace and semicolon
+    assert sanitized == ""
+    assert Expression.disable_confusing_operators(sanitized) == ""
+
+    # Test with math functions
+    sanitized = Expression.sanitize_expression("  math.sqrt(x ** 2 + y ** 2);  ")
+    assert sanitized == "math.sqrt(x ** 2 + y ** 2)"
+    assert Expression.disable_confusing_operators(sanitized) == "math.sqrt(x ** 2 + y ** 2)"
+
+
+def test_expression_validators_with_user_variables():
+    """Test validators work correctly with UserVariable expressions."""
+
+    # Create a user variable
+    x = UserVariable(name="x", value=5)
+
+    # Test valid expressions
+    sanitized = Expression.sanitize_expression("  x + 1;  ")
+    assert sanitized == "x + 1"
+    assert Expression.disable_confusing_operators(sanitized) == "x + 1"
+
+    sanitized = Expression.sanitize_expression("  x ** 2;  ")
+    assert sanitized == "x ** 2"
+    assert Expression.disable_confusing_operators(sanitized) == "x ** 2"
+
+    # Test invalid expressions
+    sanitized = Expression.sanitize_expression("  x ^ 2;  ")
+    assert sanitized == "x ^ 2"
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators(sanitized)
+
+    sanitized = Expression.sanitize_expression("  x & 1;  ")
+    assert sanitized == "x & 1"
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators(sanitized)
+
+    # Test with complex user variable expressions
+    y = UserVariable(name="y", value=x + 1)
+    sanitized = Expression.sanitize_expression("  y ** 2 + x;  ")
+    assert sanitized == "y ** 2 + x"
+    assert Expression.disable_confusing_operators(sanitized) == "y ** 2 + x"
+
+
+def test_expression_validators_edge_cases():
+    """Test validators with edge cases and boundary conditions."""
+
+    # Test empty string
+    sanitized = Expression.sanitize_expression("")
+    assert sanitized == ""
+    assert Expression.disable_confusing_operators(sanitized) == ""
+
+    # Test string with only whitespace and special characters
+    sanitized = Expression.sanitize_expression("  \t\n;  ")
+    assert sanitized == ""
+    assert Expression.disable_confusing_operators(sanitized) == ""
+
+    # Test string with only valid operators
+    sanitized = Expression.sanitize_expression("  + - * / ** // %  ")
+    assert sanitized == "+ - * / ** // %"
+    assert Expression.disable_confusing_operators(sanitized) == "+ - * / ** // %"
+
+    # Test string with mixed valid and invalid operators
+    sanitized = Expression.sanitize_expression("x + y ^ z")
+    assert sanitized == "x + y ^ z"
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators(sanitized)
+
+    sanitized = Expression.sanitize_expression("x + y & z")
+    assert sanitized == "x + y & z"
+    with pytest.raises(ValueError, match="& operator is not allowed in expressions."):
+        Expression.disable_confusing_operators(sanitized)
+
+    # Test with very long expressions
+    long_expr = "  " + "x + " * 100 + "y;" + "  "
+    expected = "x + " * 100 + "y"
+    sanitized = Expression.sanitize_expression(long_expr)
+    assert sanitized == expected
+    assert Expression.disable_confusing_operators(sanitized) == expected
+
+    # Test with unicode characters (should still work)
+    sanitized = Expression.sanitize_expression("  α + β;  ")
+    assert sanitized == "α + β"
+    assert Expression.disable_confusing_operators(sanitized) == "α + β"
+
+    # Test with numbers and operators
+    sanitized = Expression.sanitize_expression("  123 ** 456;  ")
+    assert sanitized == "123 ** 456"
+    assert Expression.disable_confusing_operators(sanitized) == "123 ** 456"
+
+    sanitized = Expression.sanitize_expression("  123 ^ 456;  ")
+    assert sanitized == "123 ^ 456"
+    with pytest.raises(
+        ValueError,
+        match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
+    ):
+        Expression.disable_confusing_operators(sanitized)

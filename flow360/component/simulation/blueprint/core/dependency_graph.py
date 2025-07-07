@@ -16,6 +16,8 @@ class DependencyGraph:
     A dependency graph for variables.
     """
 
+    __slots__ = ("_graph", "_deps")
+
     def __init__(self):
         # adjacency list: key = variable u, value = set of variables v that depend on u
         self._graph: Dict[str, Set[str]] = defaultdict(set)
@@ -28,6 +30,8 @@ class DependencyGraph:
         Parse the expression into an AST and collect all Name nodes,
         then filter them against the set of known variable names.
         """
+        # trailing semicolon breaks the AST parser
+        expression = expression.rstrip("; \n\t")
         try:
             tree = ast.parse(expression, mode="eval")
         except SyntaxError:
@@ -52,7 +56,7 @@ class DependencyGraph:
 
         while queue:
             u = queue.popleft()
-            for v in self._graph.get(u, ()):  # type: ignore
+            for v in self._graph.get(u, ()):
                 indegree[v] -= 1
                 if indegree[v] == 0:
                     processed.add(v)
