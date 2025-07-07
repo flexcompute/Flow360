@@ -126,7 +126,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
             return TimeSteppingType.STEADY
         except KeyError:
             return TimeSteppingType.UNSET
-        
+
     @classmethod
     def _get_project_length_unit_(cls, param_as_dict: dict):
         try:
@@ -145,7 +145,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
-
 
 
 class ValidationContext:
