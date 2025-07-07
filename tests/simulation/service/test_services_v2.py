@@ -4,10 +4,12 @@ import re
 import pytest
 from unyt import Unit
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation import services
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.unit_system import _PredefinedUnitSystem
+from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
@@ -302,6 +304,40 @@ def test_validate_errors():
         root_item_type="Geometry",
     )
     json.dumps(errors)
+
+
+def test_validate_error_from_initialize_variable_space():
+    with open("../translator/data/simulation_isosurface.json", "r") as fp:
+        param_dict = json.load(fp)
+
+    a = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    _, errors, _ = services.validate_model(
+        params_as_dict=param_dict,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": ["unknown"],
+            "msg": "Loading user variable 'my_time_stepping_var' from simulation.json "
+            "which is already defined in local context. Please change your local user variable definition.",
+        }
+    ]
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["msg"] == exp_err["msg"]
+
+    services.clear_context()
+    _ = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    _, errors, _ = services.validate_model(
+        params_as_dict=param_dict,
+        validated_by=services.ValidationCalledBy.SERVICE,
+        root_item_type="VolumeMesh",
+    )
+    assert errors is None
 
 
 def test_validate_error_from_multi_constructor():

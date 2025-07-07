@@ -1,11 +1,13 @@
 """Evaluation context that contains references to known symbols"""
 
+import collections
 from typing import Any, Optional
 
 import pydantic as pd
 
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
+from flow360.log import log
 
 
 class ReturnValue(Exception):
@@ -74,6 +76,65 @@ class EvaluationContext:
             except ValueError as err:
                 raise NameError(f"Name '{name}' is not defined") from err
         return self._values[name]
+
+    def _get_all_variables_to_remove(self, start_name: str) -> set[str]:
+        # pylint: disable=protected-access
+        to_remove = {start_name}
+        queue = collections.deque([start_name])
+
+        while queue:
+            current_name = queue.popleft()
+            dependents_of_current = self._dependency_graph._graph.get(current_name, set())
+
+            for dep in dependents_of_current:
+                if dep not in to_remove:
+                    to_remove.add(dep)
+                    queue.append(dep)
+        return to_remove
+
+    def remove(self, name: str, _is_recursive_call: bool = False) -> None:
+        """
+        Remove the variable with the input name in the context.
+        The variables that depends on this variable are also removed recursively.
+        """
+        # pylint: disable=protected-access
+        if name not in self._values:
+            raise NameError(f"There is no variable named '{name}'.")
+        if not _is_recursive_call:
+            all_affected_vars = self._get_all_variables_to_remove(name)
+
+            log.info("--- Confirmation Required ---")
+            log.info("The following variables will be removed:")
+            for var in sorted(list(all_affected_vars)):  # Sort for consistent display
+                log.info(f"  - {var}")
+
+            if len(all_affected_vars) > 1:
+                confirmation = (
+                    input(
+                        f"Are you sure you want to remove '{name}' and "
+                        f"its {len(all_affected_vars) - 1} dependent variable(s)? (yes/no): "
+                    )
+                    .lower()
+                    .strip()
+                )
+            else:
+                confirmation = (
+                    input(f"Are you sure you want to remove '{name}'? (yes/no): ").lower().strip()
+                )
+
+            if confirmation not in ["yes", "y"]:
+                log.info("Operation cancelled. No variables were removed.")
+                return
+            log.info("--- Proceeding with removal ---")
+
+        current_dependents = self._dependency_graph._graph.get(name, set()).copy()
+
+        for dep in current_dependents:
+            self.remove(name=dep, _is_recursive_call=True)  # Pass the flag
+
+        self._dependency_graph.remove_variable(name=name)
+        self._values.pop(name)
+        log.info(f"Removed '{name}' from values.")
 
     def get_data_model(self, name: str) -> Optional[pd.BaseModel]:
         """Get the Validation model for the given name."""
