@@ -31,7 +31,7 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 from flow360.component.simulation.entity_info import Surface
-
+from flow360.component.simulation.framework.entity_base import EntityList
 
 RefinementTypes = Annotated[
     Union[
@@ -285,7 +285,7 @@ class GeometrySettings(Flow360BaseModel):
     Geometry settings for the surface mesh generation.
     """
 
-    entities: List[Surface] = pd.Field(
+    entities: EntityList[Surface] = pd.Field(
         default=[],
         description="List of entities to be wrapped.",
     )

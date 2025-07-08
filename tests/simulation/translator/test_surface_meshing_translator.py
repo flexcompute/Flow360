@@ -447,16 +447,7 @@ def airplane_surface_mesh_with_wrapping():
                     geometry=[
                         GeometrySettings(
                             entities=[
-                                my_geometry["body01_face001"],
-                                my_geometry["body01_face002"],
-                                my_geometry["body01_face003"],
-                                my_geometry["body01_face004"],
-                                my_geometry["body01_face005"],
-                                my_geometry["body01_face006"],
-                                my_geometry["body01_face007"],
-                                my_geometry["body01_face008"],
-                                my_geometry["body01_face009"],
-                                my_geometry["body01_face010"],
+                                my_geometry["*"],
                             ],
                             spec={
                                 "spacing": {"min": 5, "max": 50},

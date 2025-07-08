@@ -143,7 +143,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             "bodies": []
         }
         for geometry_settings in input_params.meshing.wrapping_settings.geometry:
-            for entity in geometry_settings.entities:
+            for entity in geometry_settings.entities.stored_entities:
                 translated["geometry"]["bodies"].append({
                     "bodyName": entity.name,
                     **geometry_settings.spec
