@@ -30,6 +30,9 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
+from flow360.component.simulation.entity_info import Surface
+
+
 RefinementTypes = Annotated[
     Union[
         SurfaceEdgeRefinement,
@@ -178,6 +181,150 @@ class MeshingDefaults(Flow360BaseModel):
         return value
 
 
+class MeshQuality(Flow360BaseModel):
+    """
+    Mesh quality settings for the surface mesh generation.
+    """
+
+    max_non_ortho: float = pd.Field(
+        85,
+        description="Maximum non-orthogonality allowed in the mesh.",
+    )
+    
+    max_boundary_skewness: float = pd.Field(
+        20,
+        description="Maximum boundary skewness allowed in the mesh.",
+    )
+    
+    max_internal_skewness: float = pd.Field(
+        50,
+        description="Maximum internal skewness allowed in the mesh.",
+    )
+    
+    max_concave: float = pd.Field(
+        50,
+        description="Maximum concavity allowed in the mesh.",
+    )
+    
+    min_vol: float = pd.Field(
+        -1e+30,
+        description="Minimum volume allowed in the mesh.",
+    )
+    
+    min_tet_quality: float = pd.Field(
+        -1e+30,
+        description="Minimum tetrahedral quality allowed in the mesh.",
+    )
+    
+    min_area: float = pd.Field(
+        -1,
+        description="Minimum area allowed in the mesh.",
+    )
+    
+    min_twist: float = pd.Field(
+        -2,
+        description="Minimum twist allowed in the mesh.",
+    )
+    
+    min_determinant: float = pd.Field(
+        0,
+        description="Minimum determinant allowed in the mesh.",
+    )
+    
+    min_vol_ratio: float = pd.Field(
+        0,
+        description="Minimum volume ratio allowed in the mesh.",
+    )
+    
+    min_face_weight: float = pd.Field(
+        0,
+        description="Minimum face weight allowed in the mesh.",
+    )
+    
+    min_triangle_twist: float = pd.Field(
+        -1,
+        description="Minimum triangle twist allowed in the mesh.",
+    )
+    
+    n_smooth_scale: int = pd.Field(
+        4,
+        description="Number of smoothing scale iterations.",
+    )
+    
+    error_reduction: float = pd.Field(
+        0.75,
+        description="Error reduction factor for mesh smoothing.",
+    )
+    
+    min_vol_collapse_ratio: float = pd.Field(
+        0,
+        description="Minimum volume collapse ratio allowed in the mesh.",
+    )
+
+class SnapControls(Flow360BaseModel):
+    """
+    Snap controls for the surface mesh generation.
+    """
+
+    tolerance: Optional[pd.PositiveFloat] = pd.Field(
+        2,
+        description="Tolerance for the surface mesh generation.",
+    )
+
+    n_feature_snap_iter: int = pd.Field(
+        15,
+        description="Number of feature snap iterations.",
+    )
+    multi_region_feature_snap: bool = pd.Field(
+        True,
+        description="Whether to use multi-region feature snap.",
+    )
+
+class GeometrySettings(Flow360BaseModel):
+    """
+    Geometry settings for the surface mesh generation.
+    """
+
+    entities: List[Surface] = pd.Field(
+        default=[],
+        description="List of entities to be wrapped.",
+    )
+
+    spec: dict = pd.Field(
+        default={},
+        description="Specification for the geometry settings. Example: "
+        '{"spacing": {"min": 5, "max": 50}, '
+        '"edges": {"edgeSpacing": 2, "includedAngle": 140, "minElem": 3, "minLen": 10}, '
+        '"gap": 0.001, "regions": [], "gapSpacingReduction": null, "includedAngle": 140}',
+    )
+
+
+
+class WrappingSettings(Flow360BaseModel):
+    geometry: Optional[List[GeometrySettings]] = pd.Field(
+        default=None,
+        description="List of settings  geometry entities to be wrapped.",
+    )
+
+    mesh_quality: MeshQuality = pd.Field(
+        MeshQuality(),
+        description="Mesh quality settings for the surface mesh generation.",
+    )
+
+    snap_controls: SnapControls = pd.Field(
+        SnapControls(),
+        description="Snap controls for the surface mesh generation.",
+    )
+    location_in_mesh: Optional[LengthType.Point] = pd.Field(
+        None,
+        description="Point in the mesh that will be used to determine side for wrapping.",
+    )
+    cad_is_fluid: bool = pd.Field(
+        False,
+        description="Whether the CAD represents a fluid or solid.",
+    )
+
+
 class MeshingParams(Flow360BaseModel):
     """
     Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
@@ -241,6 +388,10 @@ class MeshingParams(Flow360BaseModel):
     # Will add more to the Union
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
         default=None, description="Creation of new volume zones."
+    )
+
+    wrapping_settings: Optional[WrappingSettings] = pd.Field(
+        default=None, description="Wrapping settings for the surface mesh generation."
     )
 
     @pd.field_validator("volume_zones", mode="after")

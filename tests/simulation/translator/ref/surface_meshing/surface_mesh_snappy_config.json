@@ -1,0 +1,275 @@
+{
+    "meshingMethod": "wrapping",
+    "curvatureResolutionAngle": 12.00000000000000,
+    "growthRate": 1.2,
+    "faces": {
+        "body01_face001": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face002": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face003": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face004": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face005": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face006": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face007": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face008": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face009": {
+            "maxEdgeLength": 1.0
+        },
+        "body01_face010": {
+            "maxEdgeLength": 1.0
+        }
+    },
+    "boundaries": {
+        "body01_face001": {
+          "boundaryName": "Wing"
+        },
+        "body01_face002": {
+          "boundaryName": "Wing"
+        },
+        "body01_face003": {
+          "boundaryName": "Wing"
+        },
+        "body01_face004": {
+          "boundaryName": "Wing"
+        },
+        "body01_face005": {
+          "boundaryName": "Fuselage"
+        },
+        "body01_face006": {
+          "boundaryName": "Fuselage"
+        },
+        "body01_face007": {
+          "boundaryName": "Fuselage"
+        },
+        "body01_face008": {
+          "boundaryName": "Stab"
+        },
+        "body01_face009": {
+          "boundaryName": "Stab"
+        },
+        "body01_face010": {
+          "boundaryName": "Fin"
+        }
+    },
+    "geometry": {
+        "bodies": [
+            {
+                "bodyName": "body01_face001",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face002",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face003",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face004",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face005",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face006",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face007",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face008",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face009",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            },
+            {
+                "bodyName": "body01_face010",
+                "spacing": {
+                    "min": 5,
+                    "max": 50
+                },
+                "edges": {
+                    "edgeSpacing": 2,
+                    "includedAngle": 140,
+                    "minElem": 3,
+                    "minLen": 10
+                },
+                "gap": 0.001,
+                "regions": [],
+                "gapSpacingReduction": null,
+                "includedAngle": 140
+            }
+        ]
+    },
+    "locationInMesh": [
+        3000,
+        0,
+        800
+    ],
+    "cadIsFluid": true,
+    "mesherSettings": {
+        "snappyHexMesh": {
+            "snapControls": {
+                "tolerance": 2,
+                "nFeatureSnapIter": 15,
+                "multiRegionFeatureSnap": true
+            }
+        },
+        "meshQuality": {
+            "maxNonOrtho": 85,
+            "maxBoundarySkewness": 20,
+            "maxInternalSkewness": 50,
+            "maxConcave": 50,
+            "minVol": -1e+30,
+            "minTetQuality": -1e+30,
+            "minArea": -1,
+            "minTwist": -2,
+            "minDeterminant": 0,
+            "minVolRatio": 0,
+            "minFaceWeight": 0,
+            "minTriangleTwist": -1,
+            "nSmoothScale": 4,
+            "errorReduction": 0.75,
+            "minVolCollapseRatio": 0
+        }
+    }
+}

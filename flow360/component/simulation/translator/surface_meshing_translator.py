@@ -134,4 +134,27 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         for face_id in surface.private_attribute_sub_components:
             translated["boundaries"][face_id] = {"boundaryName": surface.name}
 
+
+
+    ##:: >> Step 7: Get wrapping settings (for snappy)
+    if input_params.meshing.wrapping_settings is not None:
+        translated["meshingMethod"] = "wrapping"
+        translated["geometry"] = {
+            "bodies": []
+        }
+        for geometry_settings in input_params.meshing.wrapping_settings.geometry:
+            for entity in geometry_settings.entities:
+                translated["geometry"]["bodies"].append({
+                    "bodyName": entity.name,
+                    **geometry_settings.spec
+                })
+        translated["mesherSettings"] = {
+            "snappyHexMesh": {
+                "snapControls": input_params.meshing.wrapping_settings.snap_controls.model_dump(by_alias=True),
+            },
+            "meshQuality": input_params.meshing.wrapping_settings.mesh_quality.model_dump(by_alias=True),
+        }
+        translated["locationInMesh"] = input_params.meshing.wrapping_settings.location_in_mesh.value.tolist()
+        translated["cadIsFluid"] = input_params.meshing.wrapping_settings.cad_is_fluid
+
     return translated

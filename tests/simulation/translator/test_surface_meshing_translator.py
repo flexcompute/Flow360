@@ -18,6 +18,10 @@ from flow360.component.simulation.meshing_param.face_params import SurfaceRefine
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+    WrappingSettings,
+    GeometrySettings,
+    MeshQuality,
+    SnapControls,
 )
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -425,6 +429,80 @@ def rotor_surface_mesh():
     return param
 
 
+@pytest.fixture()
+def airplane_surface_mesh_with_wrapping():
+    my_geometry = TempGeometry("geometry.egads")
+    from numpy import pi
+
+    with SI_unit_system:
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=my_geometry._get_entity_info()
+            ),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=100 * u.cm,
+                ),
+                wrapping_settings=WrappingSettings(
+                    geometry=[
+                        GeometrySettings(
+                            entities=[
+                                my_geometry["body01_face001"],
+                                my_geometry["body01_face002"],
+                                my_geometry["body01_face003"],
+                                my_geometry["body01_face004"],
+                                my_geometry["body01_face005"],
+                                my_geometry["body01_face006"],
+                                my_geometry["body01_face007"],
+                                my_geometry["body01_face008"],
+                                my_geometry["body01_face009"],
+                                my_geometry["body01_face010"],
+                            ],
+                            spec={
+                                "spacing": {"min": 5, "max": 50},
+                                "edges": {
+                                    "edgeSpacing": 2,
+                                    "includedAngle": 140,
+                                    "minElem": 3,
+                                    "minLen": 10
+                                },
+                                "gap": 0.001,
+                                "regions": [],
+                                "gapSpacingReduction": None,
+                                "includedAngle": 140
+                            }
+                        )
+                    ],
+                    mesh_quality=MeshQuality(
+                        max_non_ortho=85,
+                        max_boundary_skewness=20,
+                        max_internal_skewness=50,
+                        max_concave=50,
+                        min_vol=-1e+30,
+                        min_tet_quality=-1e+30,
+                        min_area=-1,
+                        min_twist=-2,
+                        min_determinant=0,
+                        min_vol_ratio=0,
+                        min_face_weight=0,
+                        min_triangle_twist=-1,
+                        n_smooth_scale=4,
+                        error_reduction=0.75,
+                        min_vol_collapse_ratio=0
+                    ),
+                    snap_controls=SnapControls(
+                        tolerance=2,
+                        n_feature_snap_iter=15,
+                        multi_region_feature_snap=True
+                    ),
+                    location_in_mesh=(3000, 0, 800) * u.m,
+                    cad_is_fluid=True
+                )
+            ),
+        )
+    return param
+
+
 def _translate_and_compare(param, mesh_unit, ref_json_file: str):
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
@@ -433,7 +511,24 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str):
         )
     ) as fh:
         ref_dict = json.load(fh)
-    assert compare_values(ref_dict, translated)
+    
+    print("\n" + "="*80)
+    print("REFERENCE JSON:")
+    print("="*80)
+    print(json.dumps(ref_dict, indent=2))
+    
+    print("\n" + "="*80)
+    print("GENERATED JSON:")
+    print("="*80)
+    print(json.dumps(translated, indent=2))
+    
+    print("\n" + "="*80)
+    print("COMPARISON RESULT:")
+    print("="*80)
+    result = compare_values(ref_dict, translated)
+    print(f"Comparison result: {result}")
+    
+    assert result
 
 
 def test_om6wing_tutorial(
@@ -474,4 +569,12 @@ def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
         rotor_surface_mesh,
         get_rotor_geometry.mesh_unit,
         "rotor.json",
+    )
+
+
+def test_wrapping_settings(get_airplane_geometry, airplane_surface_mesh_with_wrapping):
+    _translate_and_compare(
+        airplane_surface_mesh_with_wrapping,
+        get_airplane_geometry.mesh_unit,
+        "surface_mesh_snappy_config.json",
     )
