@@ -28,7 +28,7 @@ from .statements import (
     StatementNodeType,
     TupleUnpackNode,
 )
-from .types import Evaluable, TargetSyntax
+from .types import Evaluable
 
 
 def _model_rebuild() -> None:

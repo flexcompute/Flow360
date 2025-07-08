@@ -7,6 +7,7 @@ from enum import Enum
 from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
 
 import pydantic as pd
+from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
@@ -350,7 +351,7 @@ def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = Fals
     dependency_graph.load_from_list(variable_list)
     sorted_variables = dependency_graph.topology_sort()
 
-    for variable_name in sorted_variables:
+    for idx, variable_name in enumerate(sorted_variables):
         variable_dict = next(
             (var for var in asset_cache["variable_context"] if var["name"] == variable_name),
             None,
@@ -365,14 +366,26 @@ def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = Fals
                 name=variable_dict["name"],
                 value=value_or_expression,
             )
-        except ValueError as e:
+        except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
             if "Redeclaring user variable" in str(e):
                 raise ValueError(
                     f"Loading user variable '{variable_dict['name']}' from simulation.json which is "
                     "already defined in local context. Please change your local user variable definition."
                 )
-            raise e
+            error_detail: dict = e.errors()[0]
+            raise pd.ValidationError.from_exception_data(
+                "Invalid user variable/expression",
+                line_errors=[
+                    ErrorDetails(
+                        type=error_detail["type"],
+                        loc=("private_attribute_asset_cache", "variable_context", idx),
+                        msg=error_detail["msg"],
+                        ctx=error_detail["ctx"],
+                    ),
+                ],
+            )
+
     return param_as_dict
 
 

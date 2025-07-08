@@ -1064,7 +1064,8 @@ def test_deserialization_with_wrong_syntax():
     assert (
         r"Value error, expression evaluation failed: Name 'alphaAngle' is not defined"
         in errors[0]["msg"]
-    )  # Python version affects the error message and also
+    )
+    assert errors[0]["loc"] == ("private_attribute_asset_cache", "variable_context", 0)
 
 
 # DependencyGraph Tests

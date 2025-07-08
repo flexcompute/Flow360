@@ -1,7 +1,8 @@
 """Evaluation context that contains references to known symbols"""
 
 import collections
-from typing import Any, Optional
+from copy import deepcopy
+from typing import Any, List, Optional, Tuple
 
 import pydantic as pd
 
@@ -21,6 +22,41 @@ class ReturnValue(Exception):
         self.value = value
 
 
+def _levenshtein_distance(a: str, b: str) -> int:
+    """Compute the Levenshtein distance between two strings."""
+    if len(a) < len(b):
+        return _levenshtein_distance(a=b, b=a)
+    if not b:
+        return len(a)
+    prev_row = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        row = [i]
+        for j, cb in enumerate(b, 1):
+            insert = prev_row[j] + 1
+            delete = row[j - 1] + 1
+            replace = prev_row[j - 1] + (ca != cb)
+            row.append(min(insert, delete, replace))
+        prev_row = row
+    return prev_row[-1]
+
+
+def _find_closest_levenshtein(target: str, candidates: List[str]) -> Optional[Tuple[str, int]]:
+    """
+    Return (best_match, distance) where `best_match` is the candidate
+    with the smallest edit distance to `target`. If `candidates` is empty,
+    returns None.
+    """
+    if not candidates:
+        return None
+
+    best = (None, float("inf"))
+    for candidate in candidates:
+        d = _levenshtein_distance(target, candidate)
+        if d < best[1]:
+            best = (candidate, d)
+    return best  # type: ignore
+
+
 class EvaluationContext:
     """
     Manages variable scope and access during function evaluation.
@@ -28,6 +64,14 @@ class EvaluationContext:
     This class stores named values and optionally resolves names through a
     `CallableResolver` when not already defined in the context.
     """
+
+    __slots__ = (
+        "_values",
+        "_data_models",
+        "_resolver",
+        "_aliases",
+        "_dependency_graph",
+    )
 
     def __init__(
         self, resolver: CallableResolver, initial_values: Optional[dict[str, Any]] = None
@@ -75,7 +119,8 @@ class EvaluationContext:
                 self._values[name] = val
             except ValueError as err:
                 raise NameError(
-                    f"Name '{name}' is not defined. Allowed names: {self._values.keys()}"
+                    f"Name '{name}' is not defined. Are you referring to: "
+                    f"`{_find_closest_levenshtein(name, self._values.keys())[0]}`?"
                 ) from err
         return self._values[name]
 
@@ -212,7 +257,7 @@ class EvaluationContext:
             EvaluationContext: A new context instance with the same resolver and a copy
             of the current variable values.
         """
-        return EvaluationContext(self._resolver, dict(self._values))
+        return deepcopy(self)
 
     @property
     def user_variable_names(self):

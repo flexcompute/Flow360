@@ -5,7 +5,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import re
 from itertools import chain
 from typing import Any, List, Literal, Set, get_origin
 
@@ -30,9 +29,6 @@ DISCRIMINATOR_NAMES = [
     "output_type",
     "private_attribute_entity_type_name",
 ]
-
-# matches every virtual path part that Pydantic adds for function validators
-_FUNCTION_SEGMENT = re.compile(r"^function-")
 
 
 def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup):
@@ -168,7 +164,7 @@ class Flow360BaseModel(pd.BaseModel):
         # pylint: disable=fixme
         # TODO: Remove alias_generator since it is only for translator
         alias_generator=pd.AliasGenerator(
-            alias=snake_to_camel,
+            serialization_alias=snake_to_camel,
         ),
     )
 
@@ -332,45 +328,26 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def populate_ctx_to_error_messages(cls, values, handler, info) -> Any:
         """
-        this validator:
-         - populates ctx messages of fields tagged with "relevant_for" context it will populate to all child messages
-         - flattens ``loc`` by removing any segment that starts with "function-"
+        this validator populates ctx messages of fields tagged with "relevant_for" context
+        it will populate to all child messages
         """
         try:
             return handler(values)
         except pd.ValidationError as e:
-            raw_errors = e.errors()
+            validation_errors = e.errors()
             relevant_for = cls._get_field_context(info, "relevant_for")
-            cleaned_errors: list[InitErrorDetails] = []
-
-            for error in raw_errors:
-
-                new_loc = tuple(
-                    seg
-                    for seg in error["loc"]
-                    if not (isinstance(seg, str) and _FUNCTION_SEGMENT.match(seg))
-                )
-
-                ctx = error.get("ctx", {})
-                if relevant_for is not None and ctx.get("relevant_for") is None:
-                    # Enforce the relevant_for to be a list for consistency
-                    ctx["relevant_for"] = (
-                        relevant_for if isinstance(relevant_for, list) else [relevant_for]
-                    )
-
-                cleaned_errors.append(
-                    InitErrorDetails(
-                        type=error["type"],
-                        loc=new_loc,
-                        msg=error["msg"],
-                        input=error.get("input"),
-                        ctx=ctx,
-                    )
-                )
-
+            if relevant_for is not None:
+                for i, error in enumerate(validation_errors):
+                    ctx = error.get("ctx", {})
+                    if ctx.get("relevant_for") is None:
+                        # Enforce the relevant_for to be a list for consistency
+                        ctx["relevant_for"] = (
+                            relevant_for if isinstance(relevant_for, list) else [relevant_for]
+                        )
+                    validation_errors[i]["ctx"] = ctx
             raise pd.ValidationError.from_exception_data(
-                title=cls.__class__.__name__, line_errors=cleaned_errors
-            ) from None
+                title=cls.__class__.__name__, line_errors=validation_errors
+            )
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference
