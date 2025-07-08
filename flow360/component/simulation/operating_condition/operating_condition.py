@@ -443,7 +443,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
             validation_info = get_validation_info()
             if validation_info is None or validation_info.project_length_unit is None:
                 raise ValueError("Project length unit must be provided.")
-            project_length_unit = LengthType.validate(validation_info.project_length_unit)
+            project_length_unit = validation_info.project_length_unit
 
         material = Air()
 

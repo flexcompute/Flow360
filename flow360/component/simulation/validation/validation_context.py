@@ -21,6 +21,8 @@ from typing import Any, Callable, List, Literal, Union
 
 from pydantic import Field
 
+from flow360.component.simulation.unit_system import LengthType
+
 SURFACE_MESH = "SurfaceMesh"
 VOLUME_MESH = "VolumeMesh"
 CASE = "Case"
@@ -130,7 +132,13 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     @classmethod
     def _get_project_length_unit_(cls, param_as_dict: dict):
         try:
-            return param_as_dict["private_attribute_asset_cache"]["project_length_unit"]
+            project_length_unit_dict = param_as_dict["private_attribute_asset_cache"][
+                "project_length_unit"
+            ]
+            if project_length_unit_dict:
+                # pylint: disable=no-member
+                return LengthType.validate(project_length_unit_dict)
+            return None
         except KeyError:
             return None
 
