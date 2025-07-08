@@ -118,10 +118,14 @@ class EvaluationContext:
                 # If successful, store it so we don't need to import again
                 self._values[name] = val
             except ValueError as err:
-                raise NameError(
-                    f"Name '{name}' is not defined. Are you referring to: "
-                    f"`{_find_closest_levenshtein(name, self._values.keys())[0]}`?"
-                ) from err
+                closest_name, distance = _find_closest_levenshtein(
+                    name, list(self._values.keys()) + ["math.pi"]
+                )
+                error_message = f"Name '{name}' is not defined."
+                if distance < 4:
+                    # Else the recommended name might not make sense.
+                    error_message += f" Did you mean: `{closest_name}`?"
+                raise NameError(error_message) from err
         return self._values[name]
 
     def _get_all_variables_to_remove(self, start_name: str) -> set[str]:

@@ -130,7 +130,7 @@ class Isosurface(_OutputItemBase):
         if info.data.get("field") is None:
             # `field` validation failed.
             raise ValueError(
-                "The isosurface field is invalid and therefore unit deductions is not possible."
+                "The isosurface field is invalid and therefore unit inference is not possible."
             )
         units = value["units"]
         field = info.data["field"]
