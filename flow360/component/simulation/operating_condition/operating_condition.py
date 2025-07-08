@@ -1,7 +1,5 @@
 """Operating conditions for the simulation framework."""
 
-from __future__ import annotations
-
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
@@ -381,9 +379,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
         cls,
         mach: pd.PositiveFloat,
         reynolds_mesh_unit: pd.PositiveFloat,
-        project_length_unit: LengthType.Positive = None,
-        alpha: Optional[AngleType] = 0 * u.deg,
-        beta: Optional[AngleType] = 0 * u.deg,
+        project_length_unit: Optional[LengthType.Positive],
+        alpha: AngleType = 0 * u.deg,
+        beta: AngleType = 0 * u.deg,
         temperature: AbsoluteTemperatureType = 288.15 * u.K,
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
