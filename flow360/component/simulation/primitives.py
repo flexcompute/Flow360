@@ -15,7 +15,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
+from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid, EntityList
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -643,5 +643,12 @@ class SurfacePair(Flow360BaseModel):
     def __str__(self):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
 
+
+class SnappyBody(Flow360BaseModel):
+    """
+    Represents a group of faces forming a body for snappyHexMesh.
+    Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid keywords with a body::region naming scheme.
+    """
+    body_name: str = pd.Field()
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]

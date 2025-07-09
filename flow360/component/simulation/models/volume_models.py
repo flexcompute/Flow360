@@ -3,6 +3,7 @@
 # pylint: disable=too-many-lines
 import os
 import re
+import inspect
 from abc import ABCMeta
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
@@ -17,6 +18,7 @@ from flow360.component.simulation.framework.expressions import (
 )
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
+    get_class_method
 )
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,

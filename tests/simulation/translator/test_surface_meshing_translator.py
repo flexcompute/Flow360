@@ -18,6 +18,11 @@ from flow360.component.simulation.meshing_param.face_params import SurfaceRefine
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+    SnappySurfaceMeshingParams,
+    VolumeMeshingParams
+)
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    SnappySurfaceDefaults
 )
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -29,6 +34,8 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.meshing_param.volume_params import UserDefinedFarfield, AutomatedFarfield
+
 from tests.simulation.conftest import AssetBase
 
 
@@ -83,6 +90,24 @@ class TempGeometry(AssetBase):
                     "body01_edge007": {},
                 },
                 "mesh_unit": {"units": "inch", "value": 1.0},
+            }
+        elif self.fname == "tester.stl":
+            return {
+                "surfaces": {
+                    "body01_face001": {},
+                    "body01_face002": {},
+                    "body01_face003": {},
+                    "body01_face004": {},
+                    "body01_face005": {},
+                    "body01_face006": {},
+                    "body01_face007": {},
+                    "body01_face008": {},
+                    "body01_face009": {},
+                    "body01_face010": {},
+                    "body01_face011": {},
+                    "body01_face012": {},
+                },
+                "mesh_unit": {"units": "mm", "value": 1.0},
             }
         else:
             raise ValueError("Invalid file name")
@@ -184,6 +209,68 @@ class TempGeometry(AssetBase):
                 ],
             )
             r
+        elif self.fname == "tester.stl":
+            return GeometryEntityInfo(
+                face_ids=[
+                    "body0::patch0",
+                    "body0::patch1",
+                    "body1::patch0"
+                ],
+                edge_ids=[],
+                face_attribute_names=["dummy"],
+                face_group_tag="dummy",
+                grouped_faces=[
+                    [
+                        Surface(
+                            name="body0::patch0",
+                            private_attribute_sub_components=[
+                                "body01_face001",
+                                "body01_face002",
+                            ],
+                        ),
+                        Surface(
+                            name="body0::patch1",
+                            private_attribute_sub_components=[
+                                "body01_face003",
+                            ],
+                        ),
+                        Surface(
+                            name="body1::patch0",
+                            private_attribute_sub_components=[
+                                "body01_face004",
+                                "body01_face005",
+                                "body01_face006",
+                            ],
+                        ),
+                        Surface(
+                            name="body1::patch1",
+                            private_attribute_sub_components=[
+                                "body01_face007",
+                            ],
+                        ),
+                        Surface(
+                            name="body1::patch2",
+                            private_attribute_sub_components=[
+                                "body01_face008",
+                                "body01_face009",
+                            ],
+                        ),
+                        Surface(
+                            name="body2::patch0",
+                            private_attribute_sub_components=[
+                                "body01_face010",
+                            ],
+                        ),
+                        Surface(
+                            name="body3::patch0",
+                            private_attribute_sub_components=[
+                                "body01_face011",
+                                "body01_face012",
+                            ],
+                        ),
+                    ]
+                ],
+            )
         else:
             raise ValueError("Invalid file name")
 
@@ -424,6 +511,29 @@ def rotor_surface_mesh():
         )
     return param
 
+@pytest.fixture()
+def snappy_all_defaults():
+    test_geometry = TempGeometry("tester.stl")
+    with SI_unit_system:
+        surf_meshing_params = SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceDefaults(
+                min_spacing=3 * u.mm,
+                max_spacing=4 * u.mm,
+                gap_resolution= 1 * u.mm
+            )
+        )
+
+        volume_meshing_params = VolumeMeshingParams(
+            volume_zones=[AutomatedFarfield(method="auto")]
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info()
+            ),
+            meshing=(surf_meshing_params, volume_meshing_params)
+        )
+    return param
 
 def _translate_and_compare(param, mesh_unit, ref_json_file: str):
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)

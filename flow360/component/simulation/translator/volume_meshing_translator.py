@@ -21,7 +21,7 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
-
+from flow360.component.simulation.meshing_param.params import VolumeMeshingParams, MeshingParams
 
 def unifrom_refinement_translator(obj: UniformRefinement):
     """
@@ -147,6 +147,12 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     Get JSON for surface meshing.
 
     """
+    volume_zones = None
+    refinements = None 
+    refinement_factor = None
+    defaults = None
+    gap_treatment_strength = None
+
     translated = {}
 
     if input_params.meshing is None:
@@ -155,34 +161,46 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             None,
             ["meshing"],
         )
+    
+    if isinstance(input_params.meshing, tuple) and isinstance(input_params.meshing[1], VolumeMeshingParams):
+        volume_zones = input_params.meshing[1].volume_zones
+        refinements = input_params.meshing[1].refinements
+        refinement_factor = input_params.meshing[1].refinement_factor
+        defaults = input_params.meshing[1]
+        gap_treatment_strength = input_params.meshing[1].gap_treatment_strength
 
-    if input_params.meshing.volume_zones is None:
+    if isinstance(input_params.meshing, MeshingParams):
+        volume_zones = input_params.meshing.volume_zones
+        refinements = input_params.meshing.refinements
+        refinement_factor = input_params.meshing.refinement_factor
+        defaults = input_params.meshing.defaults
+        gap_treatment_strength = input_params.meshing.gap_treatment_strength
+
+    if volume_zones is None:
         raise Flow360TranslationError(
             "volume_zones cannot be None for volume meshing",
-            input_params.meshing.volume_zones,
+            volume_zones,
             ["meshing", "volume_zones"],
         )
 
-    if input_params.meshing.refinements is None:
+    if refinements is None:
         raise Flow360TranslationError(
             "No `refinements` found in the input",
-            input_params.meshing.refinements,
+            refinements,
             ["meshing", "refinements"],
         )
 
-    meshing_params = input_params.meshing
-
     ##::  Step 1:  Get refinementFactor
-    if meshing_params.refinement_factor is None:
+    if refinement_factor is None:
         raise Flow360TranslationError(
             "No `refinement_factor` found for volume meshing.",
             None,
             ["meshing", "refinement_factor"],
         )
-    translated["refinementFactor"] = meshing_params.refinement_factor
+    translated["refinementFactor"] = refinement_factor
 
     ##::  Step 2:  Get farfield
-    for zone in input_params.meshing.volume_zones:
+    for zone in volume_zones:
         if isinstance(zone, UserDefinedFarfield):
             translated["farfield"] = {"type": "user-defined"}
             break
@@ -201,42 +219,42 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ##:: Step 3: Get volumetric global settings
     translated["volume"] = {}
 
-    if meshing_params.defaults.boundary_layer_first_layer_thickness is None:
+    if defaults.boundary_layer_first_layer_thickness is None:
         # `first_layer_thickness` can be locally overridden so after completeness check, we can
         # get away with the first instance's value if global one does not exist.
         default_first_layer_thickness = get_global_setting_from_first_instance(
-            meshing_params.refinements,
+            refinements,
             BoundaryLayer,
             "first_layer_thickness",
         )
     else:
-        default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness
+        default_first_layer_thickness = defaults.boundary_layer_first_layer_thickness
 
     translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
 
     # growthRate can only be global
-    translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
+    translated["volume"]["growthRate"] = defaults.boundary_layer_growth_rate
 
-    translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
+    translated["volume"]["gapTreatmentStrength"] = gap_treatment_strength
 
     if input_params.private_attribute_asset_cache.use_inhouse_mesher:
-        number_of_boundary_layers = meshing_params.defaults.number_of_boundary_layers
+        number_of_boundary_layers = defaults.number_of_boundary_layers
         translated["volume"]["numBoundaryLayers"] = (
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = meshing_params.defaults.planar_face_tolerance
+        translated["volume"]["planarFaceTolerance"] = defaults.planar_face_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         UniformRefinement,
         unifrom_refinement_translator,
         to_list=True,
         entity_injection_func=refinement_entitity_injector,
     )
     rotor_disk_refinement = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         AxisymmetricRefinement,
         cylindrical_refinement_translator,
         to_list=True,
@@ -253,14 +271,14 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         rotor_disk_names = [item["name"] for item in rotor_disk_refinement]
 
     faces_aniso_setting = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         BoundaryLayer,
         boundary_layer_translator,
         to_list=False,
     )
 
     faces_passive_setting = translate_setting_and_apply_to_all_entities(
-        meshing_params.refinements,
+        refinements,
         PassiveSpacing,
         passive_spacing_translator,
         to_list=False,
@@ -272,7 +290,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
-        meshing_params.volume_zones,
+        volume_zones,
         RotationCylinder,
         rotation_cylinder_translator,
         to_list=True,

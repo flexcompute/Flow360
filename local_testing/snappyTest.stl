@@ -1,0 +1,96 @@
+solid body0::patch0
+  facet normal 1 0 0
+    outer loop
+      vertex 100 100 100
+      vertex 100 100 -100
+      vertex 100 -100 -100
+    endloop
+  endfacet
+  facet normal 1 0 0
+    outer loop
+      vertex 100 100 100
+      vertex 100 -100 -100
+      vertex 100 -100 100
+    endloop
+  endfacet
+endsolid body0::patch0
+solid body0::patch1
+  facet normal 0 1 0
+    outer loop
+      vertex 100 100 100
+      vertex -100 100 100
+      vertex -100 100 -100
+    endloop
+  endfacet
+  facet normal 0 1 0
+    outer loop
+      vertex 100 100 100
+      vertex -100 100 -100
+      vertex 100 100 -100
+    endloop
+  endfacet
+endsolid body0::patch1
+solid body1::patch0
+  facet normal -1 0 0
+    outer loop
+      vertex -100 100 100
+      vertex -100 -100 100
+      vertex -100 -100 -100
+    endloop
+  endfacet
+  facet normal -1 0 0
+    outer loop
+      vertex -100 100 100
+      vertex -100 -100 -100
+      vertex -100 100 -100
+    endloop
+  endfacet
+endsolid body1::patch0
+solid body2::patch0
+  facet normal 0 -1 0
+    outer loop
+      vertex 100 -100 100
+      vertex 100 -100 -100
+      vertex -100 -100 -100
+    endloop
+  endfacet
+  facet normal 0 -1 0
+    outer loop
+      vertex 100 -100 100
+      vertex -100 -100 -100
+      vertex -100 -100 100
+    endloop
+  endfacet
+endsolid body2::patch0
+solid body2::patch1
+  facet normal 0 0 1
+    outer loop
+      vertex 100 100 100
+      vertex 100 -100 100
+      vertex -100 -100 100
+    endloop
+  endfacet
+  facet normal 0 0 1
+    outer loop
+      vertex 100 100 100
+      vertex -100 -100 100
+      vertex -100 100 100
+    endloop
+  endfacet
+endsolid body2::patch1
+solid body0::patch2
+  facet normal 0 0 -1
+    outer loop
+      vertex 100 100 -100
+      vertex -100 100 -100
+      vertex -100 -100 -100
+    endloop
+  endfacet
+  facet normal 0 0 -1
+    outer loop
+      vertex 100 100 -100
+      vertex -100 -100 -100
+      vertex 100 -100 -100
+    endloop
+  endfacet
+endsolid body0::patch2
