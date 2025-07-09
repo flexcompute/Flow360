@@ -3,6 +3,7 @@ http utils. Example:
 http.get(path)
 """
 
+import os
 from functools import wraps
 
 import requests
@@ -17,6 +18,11 @@ from ..log import log
 from ..user_config import UserConfig
 from ..version import __version__
 from .security import api_key
+
+
+def get_user_agent():
+    """Get the user agent the current environment."""
+    return os.environ.get("FLOW360_AGENT", f"Python-Client/{__version__}")
 
 
 def api_key_auth(request):
@@ -51,6 +57,7 @@ def api_key_auth(request):
     request.headers["flow360-python-version"] = __version__
     if Env.impersonate:
         request.headers["FLOW360ACCESSUSER"] = Env.impersonate
+    request.headers["User-Agent"] = get_user_agent()
     return request
 
 
