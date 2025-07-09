@@ -402,6 +402,41 @@ class Table(ReportItem):
             df.to_csv(f"{self.section_title}.csv", index=False)
 
 
+class Image(ReportItem):
+
+    image: str = Field(
+        description="Name of the image."
+    )
+    type_name: Literal["Image"] = Field("Image", frozen=True)
+
+
+    def _add_figure(self, doc: Document, file_name, caption, dpi=None):
+
+        file_name = self._downsample_png(file_name, dpi=dpi)
+
+        fig = Figure(position="!ht")
+        fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
+        fig.add_caption(caption)
+        doc.append(fig)
+
+    def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
+        """
+        Returns doc item for Image.
+        """
+
+        if settings is not None:
+            dpi = settings.dpi
+        else:
+            dpi = None
+        
+        self._add_figure(
+            context.doc, self.image, self.caption, dpi=dpi
+        )
+
+        context.doc.append(NoEscape(r"\FloatBarrier"))
+        context.doc.append(NoEscape(r"\clearpage"))
+
+
 class PatternCaption(Flow360BaseModel):
     """
     Class for setting up chart caption.
