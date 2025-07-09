@@ -3,8 +3,8 @@ http utils. Example:
 http.get(path)
 """
 
-from functools import wraps
 import os
+from functools import wraps
 
 import requests
 
