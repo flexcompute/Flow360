@@ -114,7 +114,7 @@ def test_validate_service():
         "private_attribute_constructor": "from_mach_reynolds",
         "private_attribute_input_cache": {
             "mach": 0.84,
-            "reynolds_mesh_unit": 10.0,
+            "reynolds": 10.0,
             "alpha": {"value": 3.06, "units": "degree"},
             "beta": {"value": 0.0, "units": "degree"},
             "temperature": {"value": 288.15, "units": "K"},
