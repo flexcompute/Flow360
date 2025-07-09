@@ -37,6 +37,7 @@ from flow360.component.simulation.framework.updater_utils import deprecation_rem
 from flow360.component.simulation.unit_system import unit_system_manager
 from flow360.component.simulation.user_code.core.context import default_context
 from flow360.component.simulation.user_code.core.utils import (
+    SOLVER_INTERNAL_VARIABLES,
     handle_syntax_error,
     is_number_string,
     is_runtime_expression,
@@ -556,6 +557,9 @@ class UserVariable(Variable):
         solver_side_names = {
             item.split(".")[-1] for item in default_context.registered_names if "." in item
         }
+        print("0. solver_side_names = ", solver_side_names)
+        solver_side_names = solver_side_names.union(SOLVER_INTERNAL_VARIABLES)
+        print("1. solver_side_names = ", solver_side_names)
         if v in solver_side_names:
             raise ValueError(f"'{v}' is a reserved solver side variable name.")
 
