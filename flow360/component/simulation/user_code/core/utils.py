@@ -99,7 +99,6 @@ SOLVER_INTERNAL_VARIABLES = {
     "forceX",
     "forceY",
     "forceZ",
-    "forceZ",
     "wallFunctionMetric",
     "massFlowRate",
     "staticPressureRatio",
