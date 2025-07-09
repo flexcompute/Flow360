@@ -105,6 +105,46 @@ def test_validate_service():
     }
     params_data_from_geo["version"] = "24.11.0"
 
+    params_data_op_from_mach_reynolds = params_data_from_vm.copy()
+    params_data_op_from_mach_reynolds["private_attribute_asset_cache"]["project_length_unit"] = {
+        "value": 0.8059,
+        "units": "m",
+    }
+    params_data_op_from_mach_reynolds["operating_condition"] = {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "from_mach_reynolds",
+        "private_attribute_input_cache": {
+            "mach": 0.84,
+            "reynolds_mesh_unit": 10.0,
+            "alpha": {"value": 3.06, "units": "degree"},
+            "beta": {"value": 0.0, "units": "degree"},
+            "temperature": {"value": 288.15, "units": "K"},
+        },
+        "alpha": {"value": 3.06, "units": "degree"},
+        "beta": {"value": 0.0, "units": "degree"},
+        "velocity_magnitude": {
+            "type_name": "number",
+            "value": 285.84696487889875,
+            "units": "m/s",
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {"value": 288.15, "units": "K"},
+            "density": {"value": 7.767260032496146e-07, "units": "Pa*s**2/m**2"},
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {"value": 1.716e-05, "units": "Pa*s"},
+                    "reference_temperature": {"value": 273.15, "units": "K"},
+                    "effective_temperature": {"value": 110.4, "units": "K"},
+                },
+            },
+        },
+    }
+
     _, errors, _ = services.validate_model(
         params_as_dict=params_data_from_geo,
         validated_by=services.ValidationCalledBy.LOCAL,
@@ -115,6 +155,15 @@ def test_validate_service():
 
     _, errors, _ = services.validate_model(
         params_as_dict=params_data_from_vm,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
+    )
+
+    assert errors is None
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data_op_from_mach_reynolds,
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level=CASE,

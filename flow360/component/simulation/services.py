@@ -348,10 +348,10 @@ def validate_model(
             params_as_dict
         )
 
-        updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
-
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
+
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
+            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
             validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()

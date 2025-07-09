@@ -21,6 +21,8 @@ from typing import Any, Callable, List, Literal, Union
 
 from pydantic import Field
 
+from flow360.component.simulation.unit_system import LengthType
+
 SURFACE_MESH = "SurfaceMesh"
 VOLUME_MESH = "VolumeMesh"
 CASE = "Case"
@@ -68,7 +70,18 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
     on mesher option (auto or quasi 3d).
     """
 
+<<<<<<< HEAD
     __slots__ = ["auto_farfield_method", "is_beta_mesher", "time_stepping"]
+=======
+    __slots__ = [
+        "auto_farfield_method",
+        "is_beta_mesher",
+        "use_geometry_AI",
+        "using_liquid_as_material",
+        "time_stepping",
+        "project_length_unit",
+    ]
+>>>>>>> c62a9687 (Add Project Length To ValidationInfo (#1233))
 
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
@@ -101,10 +114,24 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return TimeSteppingType.UNSET
 
+    @classmethod
+    def _get_project_length_unit_(cls, param_as_dict: dict):
+        try:
+            project_length_unit_dict = param_as_dict["private_attribute_asset_cache"][
+                "project_length_unit"
+            ]
+            if project_length_unit_dict:
+                # pylint: disable=no-member
+                return LengthType.validate(project_length_unit_dict)
+            return None
+        except KeyError:
+            return None
+
     def __init__(self, param_as_dict: dict):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
+        self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
 
 
 class ValidationContext:
