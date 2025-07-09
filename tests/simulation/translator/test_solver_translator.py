@@ -924,7 +924,7 @@ def test_isosurface_iso_value_in_unit_system():
     params_as_dict["outputs"][2]["entities"]["items"][0]["field"]["name"] = "uuu"
     params_validated, errors, _ = validate_model(
         params_as_dict=params_as_dict,
-        validated_by=ValidationCalledBy.LOCAL,
+        validated_by=ValidationCalledBy.SERVICE,
         root_item_type="Case",
         validation_level="Case",
     )

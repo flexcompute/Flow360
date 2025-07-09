@@ -89,7 +89,7 @@ _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
 
 
-class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
+class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes
     """
     Model that provides the information for each individual validator that is out of their scope.
 
@@ -175,6 +175,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         # 4. Usage of BETDisk
         return FeatureUsageInfo(param_as_dict=param_as_dict)
 
+    @classmethod
     def _get_project_length_unit_(cls, param_as_dict: dict):
         try:
             project_length_unit_dict = param_as_dict["private_attribute_asset_cache"][
