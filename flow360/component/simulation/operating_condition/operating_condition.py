@@ -378,17 +378,10 @@ class AerospaceCondition(MultiConstructorBaseModel):
     def from_mach_reynolds(
         cls,
         mach: pd.PositiveFloat,
-<<<<<<< HEAD
         reynolds: pd.PositiveFloat,
-        project_length_unit: LengthType.Positive,
-        alpha: Optional[AngleType] = 0 * u.deg,
-        beta: Optional[AngleType] = 0 * u.deg,
-=======
-        reynolds_mesh_unit: pd.PositiveFloat,
         project_length_unit: Optional[LengthType.Positive],
         alpha: AngleType = 0 * u.deg,
         beta: AngleType = 0 * u.deg,
->>>>>>> c62a9687 (Add Project Length To ValidationInfo (#1233))
         temperature: AbsoluteTemperatureType = 288.15 * u.K,
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
