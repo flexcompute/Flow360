@@ -446,7 +446,6 @@ def test_serializer(
     assert serialized["field"]["type_name"] == "expression"
     assert serialized["field"]["expression"] == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
     assert serialized["non_dim_field"]["expression"] == "my_cp"
-    assert serialized["non_dim_field"]["evaluated_value"] == None  # Not NaN anymore
 
     model = TestModel(field=4 * u.m / u.s)
 
@@ -496,8 +495,6 @@ def test_deserializer(
     model = {
         "type_name": "expression",
         "expression": "x * u.m / u.s + 4 * x ** 2 * u.m / u.s",
-        "evaluated_value": 68.0,
-        "evaluated_units": "m/s",
     }
 
     deserialized = TestModel(field=model)
@@ -514,8 +511,6 @@ def test_deserializer(
     model = {
         "name": "constant_unyt_quantity",
         "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
             "expression": None,
             "output_units": None,
             "type_name": "number",
@@ -530,8 +525,6 @@ def test_deserializer(
     model = {
         "name": "constant_unyt_array",
         "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
             "expression": None,
             "output_units": None,
             "type_name": "number",
@@ -546,8 +539,6 @@ def test_deserializer(
     model = {
         "name": "constant_variable",
         "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
             "expression": None,
             "output_units": None,
             "type_name": "number",
@@ -562,8 +553,6 @@ def test_deserializer(
     model = {
         "name": "constant_array",
         "value": {
-            "evaluated_units": None,
-            "evaluated_value": None,
             "expression": None,
             "output_units": None,
             "type_name": "number",
@@ -578,8 +567,6 @@ def test_deserializer(
     model = {
         "name": "solution_variable",
         "value": {
-            "evaluated_units": "m/s",
-            "evaluated_value": [None, None, None],
             "expression": "solution.velocity",
             "output_units": None,
             "type_name": "expression",
@@ -793,8 +780,6 @@ def test_auto_alias():
     unaliased = {
         "type_name": "expression",
         "expression": "(x * u.m) / u.s + (((4 * (x ** 2)) * u.m) / u.s)",
-        "evaluated_value": 68.0,
-        "evaluated_units": "m/s",
     }
 
     aliased = {
@@ -974,7 +959,7 @@ def test_project_variables_deserialization():
         .output_fields.items[0]
         .value.evaluate(force_evaluate=False, raise_on_non_evaluable=False)
         .expression
-        == "[solution.velocity[0] + 12.0 * u.m / u.s + 14 * u.m / u.s, solution.velocity[1], solution.velocity[2]]"
+        == "[solution.velocity[0] + 12 * u.m / u.s + 14 * u.m / u.s, solution.velocity[1], solution.velocity[2]]"
     )  # Fully resolvable
 
 

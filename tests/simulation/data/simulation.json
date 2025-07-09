@@ -52,9 +52,7 @@
 		},
 		"area": {
 			"type_name": "expression",
-			"expression": "x * u.m**2",
-			"evaluated_value": 1,
-			"evaluated_units": "m**2"
+			"expression": "x * u.m**2"
 		}
 	},
 	"operating_condition": {

@@ -232,8 +232,6 @@ class SerializedValueOrExpression(Flow360BaseModel):
     value: Optional[Union[Number, list[Number]]] = pd.Field(None)
     units: Optional[str] = pd.Field(None)
     expression: Optional[str] = pd.Field(None)
-    evaluated_value: Union[Optional[Number], list[Optional[Number]]] = pd.Field(None)
-    evaluated_units: Optional[str] = pd.Field(None)
     output_units: Optional[str] = pd.Field(None, description="See definition in `Expression`.")
 
 
@@ -1242,25 +1240,6 @@ class ValueOrExpression(Expression, Generic[T]):
                     except u.exceptions.IterableUnitCoercionError:
                         # Inconsistent units for components of list
                         pass
-
-                if isinstance(evaluated, Number):
-                    serialized.evaluated_value = (
-                        evaluated if not np.isnan(evaluated) else None  # NaN-None handling
-                    )
-                elif isinstance(evaluated, unyt_array):
-                    if evaluated.size == 1:
-                        serialized.evaluated_value = (
-                            float(evaluated.value)
-                            if not np.isnan(evaluated.value)
-                            else None  # NaN-None handling
-                        )
-                    else:
-                        serialized.evaluated_value = tuple(
-                            item if not np.isnan(item) else None
-                            for item in evaluated.value.tolist()
-                        )
-
-                    serialized.evaluated_units = str(evaluated.units.expr)
             else:
                 serialized = SerializedValueOrExpression(type_name="number")
                 # Note: NaN handling should be unnecessary since it would
