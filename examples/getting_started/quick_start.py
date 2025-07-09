@@ -8,7 +8,7 @@ from flow360.examples import Airplane
 # This initializes a project with the specified geometry and assigns it a name.
 project = fl.Project.from_geometry(
     Airplane.geometry,
-    name="Python Project (Geometry, from file)",
+    name="Python Project (Geometry, from file) 21.0",
 )
 geo = project.geometry  # Access the geometry of the project
 
