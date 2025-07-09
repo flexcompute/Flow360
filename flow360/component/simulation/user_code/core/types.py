@@ -62,6 +62,14 @@ class VariableContextInfo(Flow360BaseModel):
     # TODO: This should be removed once front end figure out what to store here.
     model_config = pd.ConfigDict(extra="allow")
 
+    @pd.field_validator("value", mode="after")
+    @classmethod
+    def convert_number_to_expression(cls, value: AnyNumericType) -> ValueOrExpression:
+        """So that frontend can properly display the value of the variable."""
+        if not isinstance(value, Expression):
+            return Expression.model_validate(_convert_numeric(value))
+        return value
+
 
 def update_global_context(value: List[VariableContextInfo]):
     """Once the project variables are validated, update the global context."""
@@ -557,9 +565,7 @@ class UserVariable(Variable):
         solver_side_names = {
             item.split(".")[-1] for item in default_context.registered_names if "." in item
         }
-        print("0. solver_side_names = ", solver_side_names)
         solver_side_names = solver_side_names.union(SOLVER_INTERNAL_VARIABLES)
-        print("1. solver_side_names = ", solver_side_names)
         if v in solver_side_names:
             raise ValueError(f"'{v}' is a reserved solver side variable name.")
 

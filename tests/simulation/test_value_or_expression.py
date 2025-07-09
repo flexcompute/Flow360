@@ -580,3 +580,35 @@ def test_integer_validation():
     ):
         with SI_unit_system:
             AerospaceCondition(velocity_magnitude=Expression(expression="10"))
+
+
+def test_param_with_number_expression_in_and_out():
+    reset_context()
+    vm = volume_mesh()
+    vm["fluid"].axis = (0, 1, 0)
+    vm["fluid"].center = (1, 1, 2) * u.cm
+    my_step_size = UserVariable(name="my_step_size", value=[9, 38 + 2, 0] * u.s)
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            time_stepping=Unsteady(step_size=math.magnitude(my_step_size), steps=10),
+            private_attribute_asset_cache=asset_cache(),
+        )
+    processed_params: SimulationParams = save_user_variables(params)
+    assert (
+        processed_params.private_attribute_asset_cache.variable_context[0].value.expression
+        == "[9, 40, 0] * u.s"
+    )
+    params_as_dict = processed_params.model_dump(mode="json", exclude_none=True)
+    reset_context()
+    new_params, _, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="Case",
+    )
+
+    assert new_params.time_stepping.step_size.evaluate() == 41 * u.s
