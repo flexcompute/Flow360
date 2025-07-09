@@ -178,7 +178,9 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         def is_optional_argument(annotation) -> bool:
             # Ensure the annotation has been parsed as the typing object
             # Avoid the unnecessary use of from __future__ import annotations
-            assert not isinstance(arg_obj.annotation, str)
+            assert not isinstance(
+                arg_obj.annotation, str
+            ), "[Internal] Invalid string type annotation. Please check importing future."
             if get_origin(annotation) is Union and type(None) in get_args(annotation):
                 return True
             return False
@@ -191,7 +193,7 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         # Filter the input_kwargs using constructor signatures
         # If the argument is not found in input_kwargs:
         # 1. Error out if the argument is required
-        # 2. Use default value if the argument is optional, use None if no default value
+        # 2. Use default value if available, else use None if `Optional`
         input_kwargs_filtered = {}
         for arg_name, arg_obj in constructor_args.items():
             if arg_name in input_kwargs.keys():
