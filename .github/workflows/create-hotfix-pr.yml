@@ -5,7 +5,7 @@ on:
     types:
       - closed # Trigger when a PR is closed
     branches:
-      - develop # Only when the PR targets the 'develop' branch
+      - main # Only when the PR targets the 'main' branch
 
 jobs:
   create_hotfix_pr:
