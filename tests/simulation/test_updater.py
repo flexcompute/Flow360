@@ -487,14 +487,14 @@ def test_updater_to_25_4_1():
     assert params_new["meshing"]["defaults"]["geometry_accuracy"]["units"] == "m"
 
 
-def test_updater_to_25_6_0():
+def test_updater_to_25_6_1():
     with open("../data/simulation/simulation_pre_25_6_0.json", "r") as fp:
         params = json.load(fp)
 
-    def _update_to_25_6_0(pre_update_param_as_dict):
+    def _update_to_25_6_1(pre_update_param_as_dict):
         params_new = updater(
             version_from=f"25.5.1",
-            version_to=f"25.6.0",
+            version_to=f"25.6.1",
             params_as_dict=pre_update_param_as_dict,
         )
         return params_new
@@ -508,21 +508,21 @@ def test_updater_to_25_6_0():
         assert params_new
 
     pre_update_param_as_dict = copy.deepcopy(params)
-    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    params_new = _update_to_25_6_1(pre_update_param_as_dict)
     assert params_new["models"][2]["velocity_direction"] == [0, -1, 0]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
 
     pre_update_param_as_dict = copy.deepcopy(params)
     pre_update_param_as_dict["models"][2]["spec"]["velocity_direction"] = None
-    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    params_new = _update_to_25_6_1(pre_update_param_as_dict)
     assert "velocity_direction" not in params_new["models"][2]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
 
     pre_update_param_as_dict = copy.deepcopy(params)
     pre_update_param_as_dict["models"][2]["spec"].pop("velocity_direction")
-    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    params_new = _update_to_25_6_1(pre_update_param_as_dict)
     assert "velocity_direction" not in params_new["models"][2]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
@@ -530,7 +530,7 @@ def test_updater_to_25_6_0():
     pre_update_param_as_dict = copy.deepcopy(params)
     pre_update_param_as_dict["models"][2]["spec"].pop("velocity_direction")
     pre_update_param_as_dict["models"][2]["velocity_direction"] = [0, -1, 0]
-    params_new = _update_to_25_6_0(pre_update_param_as_dict)
+    params_new = _update_to_25_6_1(pre_update_param_as_dict)
     assert params_new["models"][2]["velocity_direction"] == [0, -1, 0]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)

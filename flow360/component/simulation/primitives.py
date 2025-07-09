@@ -21,6 +21,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.types import Axis
 
@@ -87,7 +88,7 @@ class ReferenceGeometry(Flow360BaseModel):
     moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."
     )
-    area: Optional[AreaType.Positive] = pd.Field(
+    area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
         None, description="The reference area of the geometry."
     )
 

@@ -3,6 +3,8 @@
 # pylint: disable=too-many-lines
 from typing import Type, Union
 
+import unyt as u
+
 from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
@@ -29,6 +31,7 @@ from flow360.component.simulation.models.surface_models import (
 )
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
+    AngularVelocity,
     BETDisk,
     Fluid,
     NavierStokesInitialCondition,
@@ -74,18 +77,30 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import Box, SurfacePair
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.translator.user_expression_utils import (
+    udf_prepending_code,
+)
 from flow360.component.simulation.translator.utils import (
     _get_key_name,
     convert_tuples_to_lists,
     get_global_setting_from_first_instance,
     has_instance_in_list,
+    inline_expressions_in_dict,
     preprocess_input,
     remove_units_in_dict,
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
+    translate_value_or_expression_object,
     update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    UserVariable,
+    _convert_numeric,
+)
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -204,7 +219,7 @@ def rotation_entity_info_serializer(volume):
     }
 
 
-def rotation_translator(model: Rotation):
+def rotation_translator(model: Rotation, params: SimulationParams):
     """Rotation translator"""
     volume_zone = {
         "modelType": "FluidDynamics",
@@ -223,6 +238,10 @@ def rotation_translator(model: Rotation):
             and spec_value.get("units", "") == "flow360_angular_velocity_unit"
         ):
             volume_zone["referenceFrame"]["omegaRadians"] = spec_value["value"]
+        elif isinstance(model.spec, AngularVelocity):
+            volume_zone["referenceFrame"]["omegaRadians"] = translate_value_or_expression_object(
+                model.spec.value, params
+            )
     return volume_zone
 
 
@@ -240,11 +259,22 @@ def translate_output_fields(
     ],
 ):
     """Get output fields"""
-    return {"outputFields": append_component_to_output_fields(output_model.output_fields.items)}
+    output_fields = []
+
+    for item in append_component_to_output_fields(output_model.output_fields.items):
+        output_fields.append(item)
+
+    for output_field in output_model.output_fields.items:
+        if isinstance(output_field, UserVariable):
+            # Remove the UserVariable object and add its name
+            output_fields.append(output_field.name)
+    # Filter out the UserVariable Dicts
+    output_fields = [item for item in output_fields if isinstance(item, str)]
+    return {"outputFields": output_fields}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
-    """Translate non-entitties part of SurfaceProbeOutput"""
+    """Translate non-entities part of SurfaceProbeOutput"""
     dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
         surface.full_name for surface in entity.target_surfaces.stored_entities
@@ -287,11 +317,23 @@ def inject_surface_slice_info(entity: Slice):
     }
 
 
-def inject_isosurface_info(entity: Isosurface):
+def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     """inject entity info"""
+
+    if isinstance(entity.field, UserVariable):
+        units = entity.field.value.get_output_units(input_params=input_params)
+        surface_field = entity.field.name
+        surface_magnitude = (
+            entity.iso_value.to(units).v.item()
+            if not isinstance(entity.iso_value, float)
+            else entity.iso_value
+        )
+    else:
+        surface_field = entity.field
+        surface_magnitude = entity.iso_value
     return {
-        "surfaceField": entity.field,
-        "surfaceFieldMagnitude": entity.iso_value,
+        "surfaceField": surface_field,
+        "surfaceFieldMagnitude": surface_magnitude,
     }
 
 
@@ -358,13 +400,24 @@ def translate_volume_output(
         is_average=volume_output_class is TimeAverageVolumeOutput,
     )
     # Get outputFields
+    output_fields = []
+
+    output_fields = append_component_to_output_fields(
+        get_global_setting_from_first_instance(
+            output_params, volume_output_class, "output_fields"
+        ).model_dump()["items"]
+    )
+
+    for output_field in get_global_setting_from_first_instance(
+        output_params, volume_output_class, "output_fields"
+    ).items:
+        if isinstance(output_field, UserVariable):
+            output_fields.append(output_field.name)
+    # Filter out the UserVariable Dicts
+    output_fields = [item for item in output_fields if isinstance(item, str)]
     volume_output.update(
         {
-            "outputFields": append_component_to_output_fields(
-                get_global_setting_from_first_instance(
-                    output_params, volume_output_class, "output_fields"
-                ).model_dump()["items"]
-            ),
+            "outputFields": output_fields,
         }
     )
     return volume_output
@@ -422,6 +475,7 @@ def translate_slice_output(
 
 
 def translate_isosurface_output(
+    input_params: SimulationParams,
     output_params: list,
     injection_function,
 ):
@@ -438,11 +492,13 @@ def translate_isosurface_output(
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
+        entity_injection_input_params=input_params,
     )
     return translated_output
 
 
 def translate_time_average_isosurface_output(
+    input_params: SimulationParams,
     output_params: list,
     injection_function,
 ):
@@ -459,6 +515,7 @@ def translate_time_average_isosurface_output(
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
+        entity_injection_input_params=input_params,
     )
     return translated_output
 
@@ -536,7 +593,95 @@ def translate_acoustic_output(output_params: list):
     return None
 
 
+def user_variable_to_udf(
+    variable: UserVariable, input_params: SimulationParams
+):  # pylint:disable=too-many-branches
+    # pylint:disable=too-many-statements
+    """Convert user variable to UDF"""
+    if not isinstance(variable.value, Expression):
+        expression = Expression.model_validate(_convert_numeric(variable.value))
+    else:
+        expression = variable.value
+
+    def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
+        y2 = (2.0 * target_unit).in_units(source_unit).value
+        y1 = (1.0 * target_unit).in_units(source_unit).value
+        x2 = 2.0
+        x1 = 1.0
+
+        coefficient = (y2 - y1) / (x2 - x1)
+        offset = y1 / coefficient - x1
+
+        return coefficient, offset
+
+    def _prepare_prepending_code(expression: Expression):
+        prepending_code = []
+        for name in sorted(expression.solver_variable_names()):
+            if not udf_prepending_code.get(name):
+                continue
+            if name == "solution.temperature" and input_params.has_solid():
+                prepending_code.append(udf_prepending_code["solution.temperature_solid"])
+                continue
+            prepending_code.append(udf_prepending_code[name])
+        prepending_code = "".join(prepending_code)
+        return prepending_code
+
+    requested_unit: Union[u.Unit, None] = expression.get_output_units(input_params=input_params)
+    if requested_unit is None:
+        # Number constant output requested
+        coefficient = 1
+        offset = 0
+    else:
+        flow360_unit_system = input_params.flow360_unit_system
+        # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
+        flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
+        flow360_unit = flow360_unit_system[requested_unit.dimensions]
+        coefficient, offset = _compute_coefficient_and_offset(
+            source_unit=requested_unit, target_unit=flow360_unit
+        )
+
+    expression_length = expression.length
+    prepending_code = _prepare_prepending_code(expression=expression)
+
+    if expression_length == 0:  # Scalar output requested
+        expression = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+        if offset != 0:
+            expression = (expression + offset) * coefficient
+        else:
+            expression = expression * coefficient
+        if not isinstance(expression, Expression):
+            # Enforce constant as Expression
+            expression = Expression.model_validate(_convert_numeric(expression))
+        expression = expression.to_solver_code(params=input_params)
+        return UserDefinedField(
+            name=variable.name, expression=f"{prepending_code}{variable.name} = " + expression + ";"
+        )
+
+    # Vector output requested
+    expression = [
+        expression[i].evaluate(raise_on_non_evaluable=False, force_evaluate=False)
+        for i in range(expression_length)
+    ]
+    if offset != 0:
+        expression = [(item + offset) * coefficient for item in expression]
+    else:
+        expression = [item * coefficient for item in expression]
+    for i, item in enumerate(expression):
+        if isinstance(item, Expression):
+            expression[i] = item.to_solver_code(params=input_params)
+        else:
+            expression[i] = Expression.model_validate(_convert_numeric(item)).to_solver_code(
+                params=input_params
+            )
+
+    expression = [f"{variable.name}[{i}] = " + item for i, item in enumerate(expression)]
+    return UserDefinedField(
+        name=variable.name, expression=prepending_code + "; ".join(expression) + ";"
+    )
+
+
 def process_output_fields_for_udf(input_params: SimulationParams):
+    # pylint:disable=too-many-branches
     """
     Process all output fields from different output types and generate additional
     UserDefinedFields for dimensioned fields.
@@ -574,7 +719,23 @@ def process_output_fields_for_udf(input_params: SimulationParams):
         if udf_expression:
             generated_udfs.append(UserDefinedField(name=field_name, expression=udf_expression))
 
-    return generated_udfs
+    # UserVariable handling:
+    user_variable_udfs = {}
+    if input_params.outputs:
+        for output in input_params.outputs:
+            if hasattr(output, "output_fields") and output.output_fields:
+                for output_field in output.output_fields.items:
+                    if not isinstance(output_field, UserVariable):
+                        continue
+                    udf_from_user_variable = user_variable_to_udf(output_field, input_params)
+                    user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+            if isinstance(output, IsosurfaceOutput):
+                for isosurface in output.entities.items:
+                    if not isinstance(isosurface.field, UserVariable):
+                        continue
+                    udf_from_user_variable = user_variable_to_udf(isosurface.field, input_params)
+                    user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
+    return generated_udfs + list(user_variable_udfs.values())
 
 
 def translate_streamline_output(output_params: list):
@@ -609,7 +770,7 @@ def translate_streamline_output(output_params: list):
 
 
 def translate_output(input_params: SimulationParams, translated: dict):
-    # pylint: disable=too-many-branches,too-many-statements
+    # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     """Translate output settings."""
     outputs = input_params.outputs
 
@@ -658,11 +819,11 @@ def translate_output(input_params: SimulationParams, translated: dict):
     ##:: Step4: Get translated["isoSurfaceOutput"]
     if has_instance_in_list(outputs, IsosurfaceOutput):
         translated["isoSurfaceOutput"] = translate_isosurface_output(
-            outputs, inject_isosurface_info
+            input_params, outputs, inject_isosurface_info
         )
     if has_instance_in_list(outputs, TimeAverageIsosurfaceOutput):
         translated["timeAverageIsoSurfaceOutput"] = translate_time_average_isosurface_output(
-            outputs, inject_isosurface_info
+            input_params, outputs, inject_isosurface_info
         )
 
     ##:: Step5: Get translated["monitorOutput"]
@@ -676,6 +837,33 @@ def translate_output(input_params: SimulationParams, translated: dict):
             outputs, TimeAverageProbeOutput, inject_probe_info
         )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
+        for output in outputs:
+            if not isinstance(output, SurfaceIntegralOutput):
+                continue
+            output_fields_processed = []
+            for output_field in output.output_fields.items:
+                if isinstance(output_field, UserVariable):
+                    expression = Expression.model_validate(output_field.value)
+                    if expression.length == 0:
+                        expression_processed = expression * math.magnitude(
+                            solution.node_area_vector
+                        )
+                    else:
+                        expression_processed = [
+                            expression[i] * math.magnitude(solution.node_area_vector)
+                            for i in range(expression.length)
+                        ]
+
+                    output_fields_processed.append(
+                        UserVariable(
+                            name=output_field.name + "_integral",
+                            value=expression_processed,
+                        )
+                    )
+                else:
+                    output_fields_processed.append(output_field)
+            output.output_fields.items = output_fields_processed
+
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
@@ -1142,7 +1330,10 @@ def get_solver_json(
     translated = {}
     ##:: Step 1: Get geometry:
     if input_params.reference_geometry:
-        geometry = remove_units_in_dict(dump_dict(input_params.reference_geometry))
+        geometry = inline_expressions_in_dict(
+            dump_dict(input_params.reference_geometry), input_params
+        )
+        geometry = remove_units_in_dict(geometry)
         translated["geometry"] = {}
         if input_params.reference_geometry.area is not None:
             translated["geometry"]["refArea"] = geometry["area"]
@@ -1161,7 +1352,7 @@ def get_solver_json(
     translated["freestream"] = {
         "alphaAngle": op.alpha.to("degree").v.item() if "alpha" in op.__class__.model_fields else 0,
         "betaAngle": op.beta.to("degree").v.item() if "beta" in op.__class__.model_fields else 0,
-        "Mach": op.velocity_magnitude.v.item(),
+        "Mach": translate_value_or_expression_object(op.velocity_magnitude, input_params),
         "Temperature": (
             op.thermal_state.temperature.to("K").v.item()
             if not isinstance(op, LiquidOperatingCondition)
@@ -1197,7 +1388,7 @@ def get_solver_json(
             "physicalSteps": ts.steps,
             "orderOfAccuracy": ts.order_of_accuracy,
             "maxPseudoSteps": ts.max_pseudo_steps,
-            "timeStepSize": ts.step_size.value.item(),
+            "timeStepSize": translate_value_or_expression_object(ts.step_size, input_params),
         }
     elif isinstance(ts, Steady):
         translated["timeStepping"] = {
@@ -1326,6 +1517,7 @@ def get_solver_json(
                 rotation_translator,
                 to_list=False,
                 entity_injection_func=rotation_entity_info_serializer,
+                translation_func_params=input_params,
             )
         )
         translated["volumeZones"] = volume_zones

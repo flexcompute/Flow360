@@ -21,6 +21,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
@@ -287,6 +288,9 @@ def set_up_params_for_uploading(
 
     params = _set_up_default_reference_geometry(params, length_unit)
 
+    # Convert all reference of UserVariables to VariableToken
+    params = save_user_variables(params)
+
     return params
 
 
@@ -299,7 +303,7 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     params, errors, _ = services.validate_model(
-        params_as_dict=params.model_dump(),
+        params_as_dict=params.model_dump(exclude_none=True),
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type=root_item_type,
         validation_level=validation_level,

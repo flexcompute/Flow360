@@ -25,6 +25,10 @@ from flow360.component.simulation.unit_system import (
     VelocityType,
     ViscosityType,
 )
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    ValueOrExpression,
+)
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     CaseField,
@@ -203,7 +207,7 @@ class GenericReferenceCondition(MultiConstructorBaseModel):
     type_name: Literal["GenericReferenceCondition"] = pd.Field(
         "GenericReferenceCondition", frozen=True
     )
-    velocity_magnitude: Optional[VelocityType.Positive] = ConditionalField(
+    velocity_magnitude: Optional[ValueOrExpression[VelocityType.Positive]] = ConditionalField(
         context=CASE,
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
@@ -279,7 +283,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     type_name: Literal["AerospaceCondition"] = pd.Field("AerospaceCondition", frozen=True)
     alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
-    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
+    velocity_magnitude: Optional[ValueOrExpression[VelocityType.NonNegative]] = ConditionalField(
         description="Freestream velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified.",
         context=CASE,
@@ -474,15 +478,26 @@ class AerospaceCondition(MultiConstructorBaseModel):
             reference_velocity_magnitude=reference_velocity_magnitude,
         )
 
+    @property
+    def _evaluated_velocity_magnitude(self) -> VelocityType.Positive:
+        if isinstance(self.velocity_magnitude, Expression):
+            return self.velocity_magnitude.evaluate(
+                raise_on_non_evaluable=True, force_evaluate=True
+            )
+        return self.velocity_magnitude
+
     @pd.model_validator(mode="after")
     @context_validator(context=CASE)
     def check_valid_reference_velocity(self) -> Self:
         """Ensure reference velocity is provided when freestream velocity is 0."""
-        if (
-            self.velocity_magnitude is not None
-            and self.velocity_magnitude.value == 0
-            and self.reference_velocity_magnitude is None
-        ):
+        if self.velocity_magnitude is None:
+            return self
+        if self.reference_velocity_magnitude is not None:
+            return self
+
+        evaluated_velocity_magnitude = self._evaluated_velocity_magnitude
+
+        if evaluated_velocity_magnitude.value == 0:
             raise ValueError(
                 "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
             )
@@ -491,7 +506,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
     @property
     def mach(self) -> pd.PositiveFloat:
         """Computes Mach number."""
-        return (self.velocity_magnitude / self.thermal_state.speed_of_sound).value
+        return (self._evaluated_velocity_magnitude / self.thermal_state.speed_of_sound).value
 
     @pd.field_validator("alpha", "beta", "thermal_state", mode="after")
     @classmethod
@@ -518,7 +533,7 @@ class AerospaceCondition(MultiConstructorBaseModel):
 
         return (
             self.thermal_state.density
-            * self.velocity_magnitude
+            * self._evaluated_velocity_magnitude
             * length_unit
             / self.thermal_state.dynamic_viscosity
         ).value
@@ -547,7 +562,7 @@ class LiquidOperatingCondition(Flow360BaseModel):
     )
     alpha: AngleType = ConditionalField(0 * u.deg, description="The angle of attack.", context=CASE)
     beta: AngleType = ConditionalField(0 * u.deg, description="The side slip angle.", context=CASE)
-    velocity_magnitude: Optional[VelocityType.NonNegative] = ConditionalField(
+    velocity_magnitude: Optional[ValueOrExpression[VelocityType.NonNegative]] = ConditionalField(
         context=CASE,
         description="Incoming flow velocity magnitude. Used as reference velocity magnitude"
         + " when :py:attr:`reference_velocity_magnitude` is not specified. Cannot change once specified.",
@@ -564,17 +579,28 @@ class LiquidOperatingCondition(Flow360BaseModel):
         description="Type of liquid material used.",
     )
 
+    @property
+    def _evaluated_velocity_magnitude(self) -> VelocityType.Positive:
+        if isinstance(self.velocity_magnitude, Expression):
+            return self.velocity_magnitude.evaluate(
+                raise_on_non_evaluable=True, force_evaluate=True
+            )
+        return self.velocity_magnitude
+
     @pd.model_validator(mode="after")
     @context_validator(context=CASE)
     def check_valid_reference_velocity(self) -> Self:
-        """Ensure reference velocity is provided when inflow velocity is 0."""
-        if (
-            self.velocity_magnitude is not None
-            and self.velocity_magnitude.value == 0
-            and self.reference_velocity_magnitude is None
-        ):
+        """Ensure reference velocity is provided when freestream velocity is 0."""
+        if self.velocity_magnitude is None:
+            return self
+        if self.reference_velocity_magnitude is not None:
+            return self
+
+        evaluated_velocity_magnitude = self._evaluated_velocity_magnitude
+
+        if evaluated_velocity_magnitude.value == 0:
             raise ValueError(
-                "Reference velocity magnitude must be provided when inflow velocity magnitude is 0."
+                "Reference velocity magnitude/Mach must be provided when freestream velocity magnitude/Mach is 0."
             )
         return self
 

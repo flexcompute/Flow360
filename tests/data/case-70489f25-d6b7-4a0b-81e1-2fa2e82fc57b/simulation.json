@@ -561,7 +561,8 @@
     "reference_geometry": {
         "area": {
             "units": "m**2",
-            "value": 70685.83470577035
+            "value": 70685.83470577035,
+            "type_name":"number"
         },
         "moment_center": {
             "units": "m",

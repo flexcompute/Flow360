@@ -49,11 +49,47 @@ class TimeSteppingType(Enum):
     UNSET = "Unset"
 
 
+class FeatureUsageInfo:
+    """
+    Model that provides the information for each individual feature usage.
+    """
+
+    # pylint: disable=too-few-public-methods
+    __slots__ = [
+        "turbulence_model_type",
+        "transition_model_type",
+        "rotation_zone_count",
+        "bet_disk_count",
+    ]
+
+    def __init__(self, param_as_dict: dict):
+        self.turbulence_model_type = None
+        self.transition_model_type = None
+        self.rotation_zone_count = 0
+        self.bet_disk_count = 0
+
+        if "models" in param_as_dict and param_as_dict["models"]:
+            for model in param_as_dict["models"]:
+                if model["type"] == "Fluid":
+                    self.turbulence_model_type = model.get("turbulence_model_solver", {}).get(
+                        "type_name", None
+                    )
+                    self.transition_model_type = model.get("transition_model_solver", {}).get(
+                        "type_name", None
+                    )
+
+                if model["type"] == "Rotation":
+                    self.rotation_zone_count += 1
+
+                if model["type"] == "BETDisk":
+                    self.bet_disk_count += 1
+
+
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
 
 
-class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
+class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes
     """
     Model that provides the information for each individual validator that is out of their scope.
 
@@ -76,6 +112,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         "use_geometry_AI",
         "using_liquid_as_material",
         "time_stepping",
+        "feature_usage",
+        "referenced_expressions",
         "project_length_unit",
     ]
 
@@ -130,6 +168,14 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
             return TimeSteppingType.UNSET
 
     @classmethod
+    def _get_feature_usage_info(cls, param_as_dict: dict):
+        # 1. Turbulence model type
+        # 2. Transition model type
+        # 3. Usage of Rotation zone
+        # 4. Usage of BETDisk
+        return FeatureUsageInfo(param_as_dict=param_as_dict)
+
+    @classmethod
     def _get_project_length_unit_(cls, param_as_dict: dict):
         try:
             project_length_unit_dict = param_as_dict["private_attribute_asset_cache"][
@@ -142,7 +188,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return None
 
-    def __init__(self, param_as_dict: dict):
+    def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
@@ -152,6 +198,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
             param_as_dict=param_as_dict
         )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
+        self.feature_usage = self._get_feature_usage_info(param_as_dict=param_as_dict)
+        self.referenced_expressions = referenced_expressions
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
 
 

@@ -2,10 +2,11 @@ import json
 import os
 import unittest
 
+import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.material import Water
+from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
     KOmegaSSTModelConstants,
@@ -42,16 +43,31 @@ from flow360.component.simulation.operating_condition.operating_condition import
 )
 from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.outputs.outputs import (
+    Isosurface,
+    IsosurfaceOutput,
     SliceOutput,
+    SurfaceIntegralOutput,
     SurfaceOutput,
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import ReferenceGeometry, Surface
+from flow360.component.simulation.primitives import (
+    GenericVolume,
+    ReferenceGeometry,
+    Surface,
+)
+from flow360.component.simulation.services import (
+    ValidationCalledBy,
+    clear_context,
+    validate_model,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
@@ -108,10 +124,21 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 
 assertions = unittest.TestCase("__init__")
 
+import flow360.component.simulation.user_code.core.context as context
 from flow360.component.simulation.framework.updater_utils import compare_values
-from flow360.component.simulation.models.volume_models import AngleExpression, Rotation
+from flow360.component.simulation.models.volume_models import (
+    AngleExpression,
+    HeatEquationInitialCondition,
+    Rotation,
+    Solid,
+)
 from flow360.component.simulation.primitives import GenericVolume
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 @pytest.fixture()
@@ -503,6 +530,24 @@ def test_user_defined_field():
         )
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_udf.json")
 
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            outputs=[
+                VolumeOutput(
+                    name="output",
+                    output_fields=[
+                        solution.Mach,
+                        solution.velocity,
+                        UserVariable(name="uuu", value=solution.velocity),
+                    ],
+                )
+            ],
+        )
+    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_expression_udf.json")
+
 
 def test_boundaries():
     operating_condition = AerospaceCondition.from_mach(
@@ -620,3 +665,277 @@ def test_liquid_simulation_translation():
         # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
         # t_seconds = (0.005 s * t)
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
+
+
+def test_param_with_user_variables():
+    some_dependent_variable_a = UserVariable(
+        name="some_dependent_variable_a", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
+    )
+    cross_res = UserVariable(
+        name="cross_res", value=math.cross(some_dependent_variable_a, solution.velocity)
+    )
+    dot_res = UserVariable(
+        name="dot_res", value=math.dot(some_dependent_variable_a, solution.velocity)
+    )
+    magnitude_res = UserVariable(name="magnitude_res", value=math.magnitude(solution.velocity))
+    add_res = UserVariable(
+        name="add_res", value=math.add(some_dependent_variable_a, solution.velocity)
+    )
+    subtract_res = UserVariable(
+        name="subtract_res", value=math.subtract(some_dependent_variable_a, solution.velocity)
+    )
+    sqrt_res = UserVariable(name="sqrt_res", value=math.sqrt(solution.velocity[2]))
+    power_res = UserVariable(name="power_res", value=solution.velocity[1] ** 1.5)
+    log_res = UserVariable(name="log_res", value=math.log(solution.Mach))
+    exp_res = UserVariable(name="exp_res", value=math.exp(solution.CfVec[0]))
+    abs_res = UserVariable(name="abs_res", value=math.abs(solution.velocity[0]) * np.pi)
+    sin_float_res = UserVariable(name="sin_float_res", value=math.sin(solution.CfVec[0] * np.pi))
+    cos_deg_res = UserVariable(
+        name="cos_deg_res", value=math.cos(solution.CfVec[1] * np.pi * u.deg)
+    )
+    tan_rad_res = UserVariable(
+        name="tan_rad_res", value=math.tan(solution.CfVec[2] * np.pi * u.rad)
+    )
+    asin_res = UserVariable(name="asin_res", value=math.asin(solution.mut_ratio))
+    acos_res = UserVariable(name="acos_res", value=math.acos(solution.Cp))
+    atan_res = UserVariable(name="atan_res", value=math.atan(solution.Cpt))
+    floor_res = UserVariable(name="floor_res", value=math.floor(solution.pressure))
+    ceil_res = UserVariable(name="ceil_res", value=math.ceil(solution.density))
+    min_res = UserVariable(
+        name="min_res", value=math.min(solution.vorticity[2], solution.vorticity[1])
+    )
+    max_res = UserVariable(
+        name="max_res", value=math.max(solution.vorticity[0], solution.vorticity[1])
+    )
+    my_time_stepping_var = UserVariable(name="my_time_stepping_var", value=1.0 * u.s)
+    const_value = UserVariable(name="const_value", value=1.0 * u.m / u.s)
+    const_value_dimensionless = UserVariable(name="const_value_dimensionless", value=1.123)
+    const_array = UserVariable(
+        name="const_array", value=[1.0 * u.m / u.s, 2.0 * u.m / u.s, 3.0 * u.m / u.s]
+    )
+    const_array_dimensionless = UserVariable(
+        name="const_array_dimensionless", value=[1.0, 2.0, 3.0]
+    )
+    my_temperature = UserVariable(
+        name="my_temperature", value=(solution.temperature + (-10 * u.K)) * 1.8
+    )
+    surface_integral_variable = UserVariable(
+        name="MassFluxProjected",
+        value=-1 * solution.density * math.dot(solution.velocity, solution.node_unit_normal),
+    )
+    iso_field_pressure = UserVariable(
+        name="iso_field_pressure",
+        value=0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2,
+    )
+    iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa)
+    iso_field_random_units = UserVariable(
+        name="iso_field_random_units",
+        value=solution.velocity[0] * 2 * u.lb,
+    )
+    iso2 = Isosurface(
+        name="iso_field_random_units", field=iso_field_random_units, iso_value=10 * u.lb * u.m / u.s
+    )
+    iso_field_velocity = UserVariable(
+        name="iso_field_velocity_mag",
+        value=math.magnitude(solution.velocity),
+    )
+    iso3 = Isosurface(
+        name="iso_surf_velocity_mag", field=iso_field_velocity, iso_value=10 * u.m / u.s
+    )
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=LiquidOperatingCondition(
+                velocity_magnitude=10 * u.m / u.s,
+                alpha=5 * u.deg,
+                beta=2 * u.deg,
+                material=Water(name="my_water", density=1.000 * 10**3 * u.kg / u.m**3),
+            ),
+            models=[
+                Wall(entities=Surface(name="fluid/body")),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+            outputs=[
+                VolumeOutput(
+                    name="output",
+                    output_fields=[
+                        solution.Mach,
+                        solution.velocity,
+                        UserVariable(name="uuu", value=solution.velocity).in_units(
+                            new_unit="km/ms"
+                        ),
+                        const_value,
+                        const_value_dimensionless,
+                        const_array,
+                        const_array_dimensionless,
+                        my_temperature,
+                        cross_res,
+                        dot_res,
+                        add_res,
+                        magnitude_res,
+                        subtract_res,
+                        sqrt_res,
+                        log_res,
+                        power_res,
+                        abs_res,
+                        asin_res,
+                        acos_res,
+                        atan_res,
+                        floor_res,
+                        ceil_res,
+                        min_res,
+                        max_res,
+                    ],
+                ),
+                IsosurfaceOutput(
+                    name="iso_pressure",
+                    entities=[iso1],
+                    output_fields=[
+                        UserVariable(name="ppp", value=solution.pressure).in_units(new_unit="psf"),
+                    ],
+                ),
+                IsosurfaceOutput(
+                    name="iso_random",
+                    entities=[iso2],
+                    output_fields=[
+                        UserVariable(
+                            name="velocity_km_per_hr", value=solution.velocity[0]
+                        ).in_units(new_unit="km/hr"),
+                    ],
+                ),
+                IsosurfaceOutput(
+                    name="iso_velocity_mag",
+                    entities=[iso3],
+                    output_fields=[
+                        UserVariable(name="velocity_mile_per_hr", value=solution.velocity).in_units(
+                            new_unit="mile/hr"
+                        ),
+                    ],
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral",
+                    output_fields=[surface_integral_variable],
+                    entities=Surface(name="VOLUME/LEFT"),
+                ),
+                SurfaceOutput(
+                    name="surface_output",
+                    entities=Surface(name="fluid/body"),
+                    output_fields=[
+                        exp_res,
+                        sin_float_res,
+                        cos_deg_res,
+                        tan_rad_res,
+                    ],
+                ),
+            ],
+            time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
+        )
+    # Mimicking real workflow where the Param is serialized and then deserialized
+    params_validated, errors, _ = validate_model(
+        params_as_dict=param.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+    )
+    assert not errors, print(">>>", errors)
+
+    translated = get_solver_json(params_validated, mesh_unit=1 * u.m)
+    units = iso_field_random_units.value.get_output_units(input_params=params_validated)
+    assert units == u.kg * u.m / u.s
+    assert (
+        translated["isoSurfaceOutput"]["isoSurfaces"]["iso_field_random_units"][
+            "surfaceFieldMagnitude"
+        ]
+        == params_validated.outputs[2].entities.items[0].iso_value.to(units).v.item()
+    )
+
+    assert params_validated
+    translate_and_compare(
+        params_validated, mesh_unit=1 * u.m, ref_json_file="Flow360_user_variable.json", debug=True
+    )
+
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition.from_mach(
+                mach=0.84,
+            ),
+            models=[
+                Solid(
+                    volumes=[GenericVolume(name="CHTSolid")],
+                    material=aluminum,
+                    volumetric_heat_source="0",
+                    initial_condition=HeatEquationInitialCondition(temperature="10"),
+                ),
+            ],
+            outputs=[
+                VolumeOutput(
+                    name="output_heat",
+                    output_fields=[
+                        my_temperature,
+                    ],
+                )
+            ],
+            time_stepping=Unsteady(step_size=my_time_stepping_var + 0.5 * u.s, steps=123),
+        )
+
+    params_validated, _, _ = validate_model(
+        params_as_dict=param.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type=None,
+    )
+
+    assert params_validated
+    translate_and_compare(
+        params_validated,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_user_variable_heat.json",
+    )
+
+
+def test_isosurface_iso_value_in_unit_system():
+    """
+    [Frontend] Test that an Isosurface with the unit system as
+    iso_value's units can be validated and translated.
+    """
+
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_isosurface.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+    params_validated, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+        validation_level="Case",
+    )
+    assert not errors, print(">>>", errors)
+    assert params_validated.outputs[0].entities.items[0].iso_value == 3000 * u.Pa
+    assert params_validated.outputs[1].entities.items[0].iso_value == 45.359237 * u.cm * u.g / u.s
+    assert params_validated.outputs[2].entities.items[0].iso_value == 2125 * u.psf
+    assert params_validated.outputs[3].entities.items[0].iso_value == 0.5 * u.dimensionless
+
+    translate_and_compare(
+        params_validated,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_user_variable_isosurface.json",
+        debug=True,
+    )
+
+    params_as_dict["outputs"][2]["entities"]["items"][0]["field"]["name"] = "uuu"
+    params_validated, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.SERVICE,
+        root_item_type="Case",
+        validation_level="Case",
+    )
+    assert len(errors) == 2
+    assert errors[0]["loc"] == ("outputs", 2, "entities", "items", 0, "field")
+    assert (
+        errors[0]["msg"]
+        == "Value error, The isosurface field (uuu) must be defined with a scalar variable."
+    )
+    assert errors[1]["loc"] == ("outputs", 2, "entities", "items", 0, "iso_value")
+    assert (
+        errors[1]["msg"]
+        == "Value error, The isosurface field is invalid and therefore unit inference is not possible."
+    )
