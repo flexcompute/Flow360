@@ -4,11 +4,22 @@ from abc import ABCMeta
 from typing import Literal, Union
 
 import pydantic as pd
+import unyt as u
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
 from flow360.component.simulation.outputs.output_fields import IsoSurfaceFieldNames
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    UnytQuantity,
+    UserVariable,
+    ValueOrExpression,
+    get_input_value_dimensions,
+    get_input_value_length,
+    solver_variable_to_user_variable,
+)
+from flow360.component.simulation.user_code.core.utils import is_runtime_expression
 from flow360.component.types import Axis
 
 
@@ -82,14 +93,118 @@ class Isosurface(_OutputItemBase):
     ====
     """
 
-    field: Union[IsoSurfaceFieldNames, str] = pd.Field(
+    field: Union[IsoSurfaceFieldNames, str, UserVariable] = pd.Field(
         description="Isosurface field variable. One of :code:`p`, :code:`rho`, "
         ":code:`Mach`, :code:`qcriterion`, :code:`s`, :code:`T`, :code:`Cp`, :code:`mut`,"
         " :code:`nuHat` or one of scalar field defined in :class:`UserDefinedField`."
     )
     # pylint: disable=fixme
-    # TODO: Maybe we need some unit helper function to help user figure out what is the value to use here?
-    iso_value: float = pd.Field(description="Expect non-dimensional value.")
+    iso_value: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
+        description="Expect non-dimensional value.",
+    )
+
+    @pd.field_validator("field", mode="before")
+    @classmethod
+    def _preprocess_expression_and_solver_variable(cls, value):
+        if isinstance(value, Expression):
+            raise ValueError(
+                f"Expression ({value}) cannot be directly used as isosurface field, "
+                "please define a UserVariable first."
+            )
+        return solver_variable_to_user_variable(value)
+
+    @pd.field_validator("iso_value", mode="before")
+    @classmethod
+    def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
+        if (
+            not isinstance(value, dict)
+            or "units" not in value
+            or value["units"]
+            not in (
+                "SI_unit_system",
+                "Imperial_unit_system",
+                "CGS_unit_system",
+            )
+        ):
+            return value
+        if info.data.get("field") is None:
+            # `field` validation failed.
+            raise ValueError(
+                "The isosurface field is invalid and therefore unit inference is not possible."
+            )
+        units = value["units"]
+        field = info.data["field"]
+        field_dimensions = get_input_value_dimensions(value=field)
+        if units == "SI_unit_system":
+            value["units"] = u.unit_systems.mks_unit_system[field_dimensions]
+        if units == "Imperial_unit_system":
+            value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
+        if units == "CGS_unit_system":
+            value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
+        return value
+
+    @pd.field_validator("field", mode="after")
+    @classmethod
+    def check_expression_length(cls, v):
+        """Ensure the isofield is a scalar."""
+        if isinstance(v, UserVariable) and len(v) != 0:
+            raise ValueError(f"The isosurface field ({v}) must be defined with a scalar variable.")
+        return v
+
+    @pd.field_validator("field", mode="after")
+    @classmethod
+    def check_runtime_expression(cls, v):
+        """Ensure the isofield is a runtime expression but not a constant value."""
+        if isinstance(v, UserVariable):
+            if not isinstance(v.value, Expression):
+                raise ValueError(f"The isosurface field ({v}) cannot be a constant value.")
+            try:
+                result = v.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
+            except Exception as err:
+                raise ValueError(f"expression evaluation failed for the isofield: {err}") from err
+            if not is_runtime_expression(result):
+                raise ValueError(f"The isosurface field ({v}) cannot be a constant value.")
+        return v
+
+    @pd.field_validator("iso_value", mode="after")
+    @classmethod
+    def check_single_iso_value(cls, v):
+        """Ensure the iso_value is a single value."""
+        if get_input_value_length(v) == 0:
+            return v
+        raise ValueError(f"The iso_value ({v}) must be a scalar.")
+
+    @pd.field_validator("iso_value", mode="after")
+    @classmethod
+    def check_iso_value_dimensions(cls, v, info: pd.ValidationInfo):
+        """Ensure the iso_value has the same dimensions as the field."""
+
+        field = info.data.get("field", None)
+        if not isinstance(field, UserVariable):
+            return v
+        value_dimensions = get_input_value_dimensions(value=v)
+        if value_dimensions is None:
+            return v
+        field_dimensions = get_input_value_dimensions(value=field)
+        if field_dimensions != value_dimensions:
+            raise ValueError(
+                f"The iso_value ({v}, dimensions:{value_dimensions}) should have the same dimensions as "
+                f"the isosurface field ({field}, dimensions: {field_dimensions})."
+            )
+        return v
+
+    @pd.field_validator("iso_value", mode="after")
+    @classmethod
+    def check_iso_value_for_string_field(cls, v, info: pd.ValidationInfo):
+        """Ensure the iso_value is float when string field is used."""
+
+        field = info.data.get("field", None)
+        if isinstance(field, str) and not isinstance(v, float):
+            raise ValueError(
+                f"The isosurface field ({field}) specified by string "
+                "can only be used with a nondimensional iso_value."
+            )
+        return v
 
 
 class Point(_PointEntityBase):

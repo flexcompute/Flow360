@@ -366,6 +366,7 @@ def get_field_values(field_type) -> List[str]:
     return values
 
 
+<<<<<<< HEAD
 def _distribute_shared_output_fields(solver_values: dict, item_names: str):
     if "output_fields" not in solver_values or solver_values["output_fields"] is None:
         return
@@ -378,3 +379,27 @@ def _distribute_shared_output_fields(solver_values: dict, item_names: str):
                     item.output_fields = []
                 if field not in item.output_fields:
                     item.output_fields.append(field)
+=======
+def append_component_to_output_fields(output_fields: List[str]) -> List[str]:
+    """
+    If "velocity" or "vorticity" is in the list, append their respective magnitude in output
+
+    Parameters:
+    -----------
+    output_fields : List[str]
+        The list of output fields to modify.
+
+    Returns:
+    --------
+    List[str]
+        The modified list of output fields with the component appended.
+    """
+    output_fields_with_component = []
+    for field in output_fields:
+        output_fields_with_component.append(field)
+        if field == "velocity" and "velocity_magnitude" not in output_fields:
+            output_fields_with_component.append("velocity_magnitude")
+        if field == "vorticity" and "vorticityMagnitude" not in output_fields:
+            output_fields_with_component.append("vorticityMagnitude")
+    return output_fields_with_component
+>>>>>>> 3e15b6c8 (User expression support [POC] (#789) (#841))

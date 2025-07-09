@@ -1,12 +1,15 @@
 """Simulation services module."""
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code, too-many-lines
 import json
 from enum import Enum
-from typing import Any, Collection, Dict, Literal, Optional, Tuple, Union
+from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
 
 import pydantic as pd
+from pydantic_core import ErrorDetails
 
+# Required for correct global scope initialization
+from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -19,7 +22,9 @@ from flow360.component.simulation.models.surface_models import Freestream, Wall
 from flow360.component.simulation.models.volume_models import (  # pylint: disable=unused-import
     BETDisk,
 )
-from flow360.component.simulation.operating_condition.operating_condition import (  # pylint: disable=unused-import
+
+# pylint: disable=unused-import
+from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
     ThermalState,
@@ -31,6 +36,8 @@ from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
 )
+
+# Required for correct global scope initialization
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -48,6 +55,10 @@ from flow360.component.simulation.unit_system import (
     u,
     unit_system_manager,
 )
+from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
+    get_referenced_expressions_and_user_variables,
+)
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_context import (
     ALL,
@@ -56,6 +67,9 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.exceptions import Flow360RuntimeError, Flow360TranslationError
 from flow360.version import __version__
+
+# Required for correct global scope initialization
+
 
 unit_system_map = {
     "SI": SI_unit_system,
@@ -297,6 +311,71 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
+def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = False):
+    """Load all user variables from private attributes when a simulation params object is initialized"""
+    if "private_attribute_asset_cache" not in param_as_dict.keys():
+        return param_as_dict
+    asset_cache: dict = param_as_dict["private_attribute_asset_cache"]
+    if "variable_context" not in asset_cache.keys():
+        return param_as_dict
+    if not isinstance(asset_cache["variable_context"], Iterable):
+        return param_as_dict
+
+    if is_clear_context:
+        clear_context()
+
+    # ==== Build dependency graph and sort variables ====
+    dependency_graph = DependencyGraph()
+    # Pad the project variables into proper schema
+    variable_list = []
+    for var in asset_cache["variable_context"]:
+        if "type_name" in var["value"] and var["value"]["type_name"] == "expression":
+            # Expression type
+            variable_list.append({"name": var["name"], "value": var["value"]["expression"]})
+        else:
+            # Number type (#units ignored since it does not affect the dependency graph)
+            variable_list.append({"name": var["name"], "value": str(var["value"]["value"])})
+    dependency_graph.load_from_list(variable_list)
+    sorted_variables = dependency_graph.topology_sort()
+
+    for idx, variable_name in enumerate(sorted_variables):
+        variable_dict = next(
+            (var for var in asset_cache["variable_context"] if var["name"] == variable_name),
+            None,
+        )
+        if variable_dict is None:
+            continue
+        value_or_expression = {
+            key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
+        }
+        try:
+            UserVariable(
+                name=variable_dict["name"],
+                value=value_or_expression,
+            )
+        except pd.ValidationError as e:
+            # pylint:disable = raise-missing-from
+            if "Redeclaring user variable" in str(e):
+                raise ValueError(
+                    f"Loading user variable '{variable_dict['name']}' from simulation.json which is "
+                    "already defined in local context. Please change your local user variable definition."
+                )
+            error_detail: dict = e.errors()[0]
+            raise pd.ValidationError.from_exception_data(
+                "Invalid user variable/expression",
+                line_errors=[
+                    ErrorDetails(
+                        type=error_detail["type"],
+                        loc=("private_attribute_asset_cache", "variable_context", idx),
+                        msg=error_detail["msg"],
+                        ctx=error_detail["ctx"],
+                    ),
+                ],
+            )
+
+    return param_as_dict
+
+
 def validate_model(
     *,
     params_as_dict,
@@ -343,15 +422,31 @@ def validate_model(
 
     try:
         # pylint: disable=protected-access
-        # Note: Need to run updater first to accomodate possible schema change in input caches.
+        # Note: Need to run updater first to accommodate possible schema change in input caches.
         updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
             params_as_dict
         )
 
+<<<<<<< HEAD
         updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
 
         additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
+=======
+        is_clear_context = validated_by == ValidationCalledBy.SERVICE
+        initialize_variable_space(updated_param_as_dict, is_clear_context)
+
+        referenced_expressions = get_referenced_expressions_and_user_variables(
+            updated_param_as_dict
+        )
+
+        additional_info = ParamsValidationInfo(
+            param_as_dict=updated_param_as_dict, referenced_expressions=referenced_expressions
+        )
+        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
+            # Multi-constructor model support
+            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
+>>>>>>> 3e15b6c8 (User expression support [POC] (#789) (#841))
             validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
@@ -396,7 +491,9 @@ def clean_unrelated_setting_from_params_dict(params: dict, root_item_type: str) 
     return params
 
 
-def handle_generic_exception(err: Exception, validation_errors: Optional[list]) -> list:
+def handle_generic_exception(
+    err: Exception, validation_errors: Optional[list], loc_prefix: Optional[list[str]] = None
+) -> list:
     """
     Handles generic exceptions during validation, adding to validation errors.
 
@@ -406,6 +503,8 @@ def handle_generic_exception(err: Exception, validation_errors: Optional[list]) 
         The exception caught during validation.
     validation_errors : list or None
         Current list of validation errors, may be None.
+    loc_prefix : list or None
+        Prefix of the location of the generic error to help locate the issue
 
     Returns
     -------
@@ -418,7 +517,7 @@ def handle_generic_exception(err: Exception, validation_errors: Optional[list]) 
     validation_errors.append(
         {
             "type": err.__class__.__name__.lower().replace("error", "_error"),
-            "loc": ["unknown"],
+            "loc": ["unknown"] if loc_prefix is None else loc_prefix,
             "msg": str(err),
             "ctx": {},
         }
@@ -506,7 +605,7 @@ def _translate_simulation_json(
     translation_func=None,
 ):
     """
-    Get JSON for surface meshing from a given simulaiton JSON.
+    Get JSON for surface meshing from a given simulation JSON.
 
     """
     translated_dict = None
@@ -521,7 +620,7 @@ def _translate_simulation_json(
         translated_dict = translation_func(input_params, mesh_unit)
     except Flow360TranslationError as err:
         raise ValueError(str(err)) from err
-    except Exception as err:  # tranlsation itself is not supposed to raise any other exception
+    except Exception as err:  # translation itself is not supposed to raise any other exception
         raise ValueError(
             f"Unexpected error translating to {target_name} json: " + str(err)
         ) from err
@@ -535,7 +634,7 @@ def _translate_simulation_json(
 
 
 def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for surface meshing from a given simulaiton JSON."""
+    """Get JSON for surface meshing from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -545,7 +644,7 @@ def simulation_to_surface_meshing_json(input_params: SimulationParams, mesh_unit
 
 
 def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for volume meshing from a given simulaiton JSON."""
+    """Get JSON for volume meshing from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -555,7 +654,7 @@ def simulation_to_volume_meshing_json(input_params: SimulationParams, mesh_unit)
 
 
 def simulation_to_case_json(input_params: SimulationParams, mesh_unit):
-    """Get JSON for case from a given simulaiton JSON."""
+    """Get JSON for case from a given simulation JSON."""
     return _translate_simulation_json(
         input_params,
         mesh_unit,
@@ -764,3 +863,174 @@ def update_simulation_json(*, params_as_dict: dict, target_python_api_version: s
         # Expected exceptions
         errors.append(str(e))
     return updated_params_as_dict, errors
+<<<<<<< HEAD
+=======
+
+
+def clear_context():
+    """
+    Clear out `UserVariable` in the `context` and its dependency graph.
+    """
+
+    from flow360.component.simulation.user_code.core import (  # pylint: disable=import-outside-toplevel
+        context,
+    )
+
+    # pylint: disable=protected-access
+    for name in context.default_context._values.keys():
+        if "." not in name:
+            context.default_context._dependency_graph.remove_variable(name)
+    context.default_context._values = {
+        name: value for name, value in context.default_context._values.items() if "." in name
+    }
+
+
+def _serialize_unit_in_dict(data):
+    """
+    Recursively serialize unit type data in a dictionary or list.
+
+    For unyt_quantity objects, converts them to {"value": item.value, "units": item.units.expr}
+    Handles nested dictionaries, lists, and other basic types.
+
+    Parameters:
+    -----------
+    data : any
+        The data to serialize, can be a dictionary, list, unyt_quantity or other basic types
+
+    Returns:
+    --------
+    any
+        The serialized data with unyt_quantity objects converted to dictionaries
+    """
+
+    if isinstance(data, (u.unyt_quantity, u.unyt_array)):
+        return _dimensioned_type_serializer(data)
+
+    if isinstance(data, dict):
+        return {key: _serialize_unit_in_dict(value) for key, value in data.items()}
+
+    if isinstance(data, list):
+        return [_serialize_unit_in_dict(item) for item in data]
+
+    return data
+
+
+def _validate_unit_string(unit_str: str, unit_type: Union[AngleType, LengthType]) -> bool:
+    """
+    Validate the unit string from request against the specified unit type.
+    """
+    try:
+        unit_dict = json.loads(unit_str)
+        return unit_type.validate(unit_dict)
+    except json.JSONDecodeError:
+        return unit_type.validate(unit_str)
+
+
+def translate_dfdc_xrotor_bet_disk(
+    *,
+    geometry_file_content: str,
+    length_unit: str,
+    angle_unit: str,
+    file_format: str,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for an XROTOR or DFDC input file.
+    Returns the dict of BETDisk.
+    """
+    # pylint: disable=no-member
+    errors = []
+    bet_dict_list = []
+    try:
+        length_unit = _validate_unit_string(length_unit, LengthType)
+        angle_unit = _validate_unit_string(angle_unit, AngleType)
+        bet_disk_dict = translate_xrotor_dfdc_to_bet_dict(
+            geometry_file_content=geometry_file_content,
+            length_unit=length_unit,
+            angle_unit=angle_unit,
+            file_format=file_format,
+        )
+        bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
+    except (pd.ValidationError, Flow360ValueError, ValueError) as e:
+        # Expected exceptions
+        errors.append(str(e))
+    return bet_dict_list, errors
+
+
+def translate_xfoil_c81_bet_disk(
+    *,
+    geometry_file_content: str,
+    polar_file_contents_dict: dict,
+    length_unit: str,
+    angle_unit: str,
+    file_format: str,
+) -> list[dict]:
+    """
+    Run the BET Disk translator for an XFOIL or C81 input file.
+    Returns the dict of BETDisk.
+    """
+    # pylint: disable=no-member
+    errors = []
+    bet_dict_list = []
+    try:
+        length_unit = _validate_unit_string(length_unit, LengthType)
+        angle_unit = _validate_unit_string(angle_unit, AngleType)
+        polar_file_name_list = generate_polar_file_name_list(
+            geometry_file_content=geometry_file_content
+        )
+        polar_file_contents_list = []
+        polar_file_extensions = []
+        for file_name_list in polar_file_name_list:
+            file_contents_list = []
+            for file_name in file_name_list:
+                if file_name not in polar_file_contents_dict.keys():
+                    raise ValueError(
+                        f"The {file_format} polar file: {file_name} is missing. Please check the uploaded polar files."
+                    )
+                file_contents_list.append(polar_file_contents_dict.get(file_name))
+            polar_file_contents_list.append(file_contents_list)
+            polar_file_extensions.append(os.path.splitext(file_name_list[0])[1])
+        bet_disk_dict = translate_xfoil_c81_to_bet_dict(
+            geometry_file_content=geometry_file_content,
+            polar_file_contents_list=polar_file_contents_list,
+            polar_file_extensions=polar_file_extensions,
+            length_unit=length_unit,
+            angle_unit=angle_unit,
+            file_format=file_format,
+        )
+        bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
+    except (pd.ValidationError, Flow360ValueError, ValueError) as e:
+        # Expected exceptions
+        errors.append(str(e))
+    return bet_dict_list, errors
+
+
+def get_default_report_config() -> dict:
+    """
+    Get the default report config
+    Returns
+    -------
+    dict
+        default report config
+    """
+    return get_default_report_summary_template().model_dump(
+        exclude_none=True,
+    )
+
+
+def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
+    """Deduct the root item entity type from simulation.json"""
+    try:
+        entity_info_type = param_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+            "type_name"
+        ]
+        if entity_info_type == "GeometryEntityInfo":
+            return "Geometry"
+        if entity_info_type == "SurfaceMeshEntityInfo":
+            return "SurfaceMesh"
+        if entity_info_type == "VolumeMeshEntityInfo":
+            return "VolumeMesh"
+        raise ValueError(f"[INTERNAL] Invalid type of the entity info found: {entity_info_type}")
+    except KeyError:
+        # pylint:disable = raise-missing-from
+        raise ValueError("[INTERNAL] Failed to get the root item from the simulation.json!!!")
+>>>>>>> 3e15b6c8 (User expression support [POC] (#789) (#841))

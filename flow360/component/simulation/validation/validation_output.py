@@ -5,23 +5,36 @@ Validation for output parameters
 from typing import List, Literal, Union, get_args, get_origin
 
 from flow360.component.simulation.models.volume_models import Fluid
-from flow360.component.simulation.outputs.outputs import AeroAcousticOutput
+from flow360.component.simulation.outputs.outputs import (
+    AeroAcousticOutput,
+    SurfaceIntegralOutput,
+)
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 
 
 def _check_output_fields(params):
     """Check the specified output fields for each output item is valid."""
 
+    # pylint: disable=too-many-branches
     if params.outputs is None:
         return params
 
-    has_surface_integral_output = any(
-        output.output_type == "SurfaceIntegralOutput" for output in params.outputs
-    )
+    has_legacy_user_defined_field_in_surface_integral_output = False
+    for output in params.outputs:
+        if isinstance(output, SurfaceIntegralOutput):
+            for output_field in output.output_fields.items:
+                if isinstance(output_field, str):
+                    has_legacy_user_defined_field_in_surface_integral_output = True
+                    break
     has_user_defined_fields = len(params.user_defined_fields) > 0
 
-    if has_surface_integral_output and has_user_defined_fields is False:
-        raise ValueError("`SurfaceIntegralOutput` can only be used with `UserDefinedField`.")
+    if (
+        has_legacy_user_defined_field_in_surface_integral_output
+        and has_user_defined_fields is False
+    ):
+        raise ValueError(
+            "The legacy string output fields in `SurfaceIntegralOutput` must be used with `UserDefinedField`."
+        )
 
     def extract_literal_values(annotation):
         origin = get_origin(annotation)
@@ -52,7 +65,7 @@ def _check_output_fields(params):
         allowed_items = natively_supported + additional_fields
 
         for item in output.output_fields.items:
-            if item not in allowed_items:
+            if isinstance(item, str) and item not in allowed_items:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a"
                     f" valid output field name. Allowed fields are {allowed_items}."
@@ -65,7 +78,7 @@ def _check_output_fields(params):
                 + additional_fields
             )
             for entity in output.entities.items:
-                if entity.field not in allowed_items:
+                if isinstance(entity.field, str) and entity.field not in allowed_items:
                     raise ValueError(
                         f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a"
                         f" valid iso field name. Allowed fields are {allowed_items}."
@@ -96,7 +109,7 @@ def _check_output_fields_valid_given_turbulence_model(params):
         if output.output_type in ("AeroAcousticOutput", "StreamlineOutput"):
             continue
         for item in output.output_fields.items:
-            if item in invalid_output_fields[turbulence_model]:
+            if isinstance(item, str) and item in invalid_output_fields[turbulence_model]:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}:, {item} is not a valid"
                     f" output field when using turbulence model: {turbulence_model}."
@@ -104,7 +117,10 @@ def _check_output_fields_valid_given_turbulence_model(params):
 
         if output.output_type == "IsosurfaceOutput":
             for entity in output.entities.items:
-                if entity.field in invalid_output_fields[turbulence_model]:
+                if (
+                    isinstance(entity.field, str)
+                    and entity.field in invalid_output_fields[turbulence_model]
+                ):
                     raise ValueError(
                         f"In `outputs`[{output_index}] {output.output_type}:, {entity.field} is not a valid"
                         f" iso field when using turbulence model: {turbulence_model}."

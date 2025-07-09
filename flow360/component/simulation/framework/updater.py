@@ -176,6 +176,24 @@ def _to_25_4_1(params_as_dict):
     return params_as_dict
 
 
+<<<<<<< HEAD
+=======
+def _to_25_6_1(params_as_dict):
+    # Known: There can not be velocity_direction both under Inflow AND TotalPressure
+
+    # Move the velocity_direction under TotalPressure to the Inflow level.
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Inflow" or model.get("velocity_direction", None):
+            continue
+
+        if model.get("spec") and model["spec"].get("type_name") == "TotalPressure":
+            velocity_direction = model["spec"].pop("velocity_direction", None)
+            if velocity_direction:
+                model["velocity_direction"] = velocity_direction
+    return params_as_dict
+
+
+>>>>>>> 3e15b6c8 (User expression support [POC] (#789) (#841))
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -184,6 +202,10 @@ VERSION_MILESTONES = [
     (Flow360Version("25.2.1"), _to_25_2_1),
     (Flow360Version("25.2.3"), _to_25_2_3),
     (Flow360Version("25.4.1"), _to_25_4_1),
+<<<<<<< HEAD
+=======
+    (Flow360Version("25.6.1"), _to_25_6_1),
+>>>>>>> 3e15b6c8 (User expression support [POC] (#789) (#841))
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
