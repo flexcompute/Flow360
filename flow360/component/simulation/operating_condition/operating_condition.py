@@ -1,7 +1,5 @@
 """Operating conditions for the simulation framework."""
 
-from __future__ import annotations
-
 from typing import Literal, Optional, Tuple, Union
 
 import pydantic as pd
@@ -32,6 +30,7 @@ from flow360.component.simulation.validation.validation_context import (
     CaseField,
     ConditionalField,
     context_validator,
+    get_validation_info,
 )
 from flow360.log import log
 
@@ -380,9 +379,9 @@ class AerospaceCondition(MultiConstructorBaseModel):
         cls,
         mach: pd.PositiveFloat,
         reynolds_mesh_unit: pd.PositiveFloat,
-        project_length_unit: LengthType.Positive,
-        alpha: Optional[AngleType] = 0 * u.deg,
-        beta: Optional[AngleType] = 0 * u.deg,
+        project_length_unit: Optional[LengthType.Positive],
+        alpha: AngleType = 0 * u.deg,
+        beta: AngleType = 0 * u.deg,
         temperature: AbsoluteTemperatureType = 288.15 * u.K,
         reference_mach: Optional[pd.PositiveFloat] = None,
     ):
@@ -437,6 +436,12 @@ class AerospaceCondition(MultiConstructorBaseModel):
 
         if temperature.units is u.K and temperature.value == 288.15:
             log.info("Default value of 288.15 K will be used as temperature.")
+
+        if project_length_unit is None:
+            validation_info = get_validation_info()
+            if validation_info is None or validation_info.project_length_unit is None:
+                raise ValueError("Project length unit must be provided.")
+            project_length_unit = validation_info.project_length_unit
 
         material = Air()
 
