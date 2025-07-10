@@ -1,7 +1,6 @@
 {
     "hash": "ee73ecfc20d107965f83cca84b85c05729bcdff677410ed51a4f2913b27f1397",
     "meshing": {
-        "type": "MeshingParams",
         "defaults": {
             "boundary_layer_first_layer_thickness": {
                 "units": "m",

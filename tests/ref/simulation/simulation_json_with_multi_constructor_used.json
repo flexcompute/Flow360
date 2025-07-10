@@ -1,6 +1,5 @@
 {
     "meshing": {
-        "type": "MeshingParams",
         "gap_treatment_strength": 0.0,
         "refinement_factor": 1.45,
         "refinements": [
