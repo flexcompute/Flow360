@@ -8,7 +8,7 @@
 import abc
 import inspect
 from functools import wraps
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union, get_args, get_origin
 
 import pydantic as pd
 
@@ -174,6 +174,17 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
     """Parse the dictionary, construct the object and return obj dict."""
     constructor_name = model_as_dict.get("private_attribute_constructor", None)
     if constructor_name is not None and constructor_name != "default":
+
+        def is_optional_argument(annotation) -> bool:
+            # Ensure the annotation has been parsed as the typing object
+            # Avoid the unnecessary use of from __future__ import annotations
+            assert not isinstance(
+                arg_obj.annotation, str
+            ), "[Internal] Invalid string type annotation. Please check importing future."
+            if get_origin(annotation) is Union and type(None) in get_args(annotation):
+                return True
+            return False
+
         model_cls = get_class_by_name(model_as_dict.get("type_name"), global_vars)
         input_kwargs = model_as_dict.get("private_attribute_input_cache")
 
@@ -182,14 +193,20 @@ def model_custom_constructor_parser(model_as_dict, global_vars):
         # Filter the input_kwargs using constructor signatures
         # If the argument is not found in input_kwargs:
         # 1. Error out if the argument is required
-        # 2. Use default value if the argument is optional
-        input_kwargs_filtered = {
-            arg_name: input_kwargs[arg_name]
-            for arg_name in constructor_args.keys()
-            if arg_name in input_kwargs.keys()
-        }
+        # 2. Use default value if available, else use None if `Optional`
+        input_kwargs_filtered = {}
+        for arg_name, arg_obj in constructor_args.items():
+            if arg_name in input_kwargs.keys():
+                input_kwargs_filtered[arg_name] = input_kwargs[arg_name]
+            elif (
+                is_optional_argument(arg_obj.annotation)
+                and arg_obj.default is inspect.Parameter.empty
+            ):
+                input_kwargs_filtered[arg_name] = None
         try:
-            model_dict = constructor(**input_kwargs_filtered).model_dump(exclude_none=True)
+            model_dict = constructor(**input_kwargs_filtered).model_dump(
+                mode="json", exclude_none=True
+            )
             # Make sure we do not generate a new ID.
             if "private_attribute_id" in model_as_dict:
                 model_dict["private_attribute_id"] = model_as_dict["private_attribute_id"]
