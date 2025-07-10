@@ -325,6 +325,7 @@ class Flow360BaseModel(pd.BaseModel):
         return value
 
     @pd.field_validator("*", mode="wrap")
+    
     @classmethod
     def populate_ctx_to_error_messages(cls, values, handler, info) -> Any:
         """
@@ -658,7 +659,7 @@ class Flow360BaseModel(pd.BaseModel):
                     exclude=exclude,
                     registry_lookup=registry_lookup,
                 )
-            elif isinstance(value, list):
+            elif isinstance(value, (list, tuple)):
                 # Use the helper to handle nested lists.
                 solver_values[property_name] = _preprocess_nested_list(
                     value, [loc_name], params, exclude, registry_lookup

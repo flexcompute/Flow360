@@ -1,0 +1,164 @@
+{
+    "geometry": {
+        "bodies": [
+            {
+                "bodyName": "body0",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0",
+                        "spacing": {
+                            "min": 20,
+                            "max": 40
+                        },
+                        "gapSpacingReduction": 3,
+                        "edges":{
+                            "edgeSpacing": 4,
+                            "minElem": 3
+                        }
+                    },
+                    {
+                        "patchName": "patch1",
+                        "edges":{
+                            "edgeSpacing": [
+                                [
+                                    1,
+                                    3
+                                ],
+                                [
+                                    3,
+                                    5
+                                ]
+                            ],
+                            "minLen": 6
+                        }
+                    }
+                ]
+            },
+            {
+                "bodyName": "body1",
+                "gap": 2,
+                "spacing": {
+                    "min": 5,
+                    "max": 10
+                },
+                "edges":{
+                        "edgeSpacing": 4,
+                        "minElem": 3
+                    },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    },
+                    {
+                        "patchName": "patch1",
+                        "spacing": {
+                            "min": 20,
+                            "max": 40
+                        },
+                        "gapSpacingReduction": 3,
+                        "edges":{
+                            "edgeSpacing": [
+                                [
+                                    1,
+                                    3
+                                ],
+                                [
+                                    3,
+                                    5
+                                ]
+                            ],
+                            "minLen": 6
+                        }
+                    },
+                    {
+                        "patchName": "patch2"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body2",
+                "gap": 0.5,
+                "gapSpacingReduction": 0.2,
+                "spacing": {
+                    "min": 1,
+                    "max": 2
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body3",
+                "gap": 2,
+                "spacing": {
+                    "min": 5,
+                    "max": 10
+                },
+                "edges":{
+                    "edgeSpacing": [
+                        [
+                            1,
+                            3
+                        ],
+                        [
+                            3,
+                            5
+                        ]
+                    ],
+                    "minLen": 6
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            }
+        ]
+    },
+    "mesherSettings": {
+        "snappyHexMesh": {
+            "castellatedMeshControls": {
+                "resolveFeatureAngle": 25,
+                "nCellsBetweenLevels": 1,
+                "minRefinementCells": 10
+            },
+            "snapControls": {
+                "nSmoothPatch": 3,
+                "tolerance": 2,
+                "nSolveIter": 30,
+                "nRelaxIter": 5,
+                "nFeatureSnapIter": 15,
+                "multiRegionFeatureSnap": true
+            }
+        },
+    "meshQuality": {
+            "maxNonOrtho": 85,
+            "maxBoundarySkewness": 20,
+            "maxInternalSkewness": 50,
+            "maxConcave": 50,
+            "minVol": -1e+30,
+            "minTetQuality": -1e+30,
+            "minArea": -1,
+            "minTwist": -2,
+            "minDeterminant": -1e5,
+            "minVolRatio": 0,
+            "minFaceWeight": 0,
+            "minTriangleTwist": -1,
+            "nSmoothScale": 4,
+            "errorReduction": 0.75,
+            "minVolCollapseRatio": 0
+        }
+    },
+    "smoothingControls": {
+        "lambda": 0.7,
+        "mu": 0.71,
+        "iter": 5
+    }
+}
