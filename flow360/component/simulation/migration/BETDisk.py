@@ -23,8 +23,7 @@ def _parse_flow360_bet_disk_dict(
     freestream_temperature,
     bet_disk_name: str,
     bet_disk_index: int = 0,
-    add_index: bool = False,
-    index_offset: int = 0,
+    index_offset: int = None,
 ):
     """
     Read in the provided Flow360 BETDisk config.
@@ -75,7 +74,7 @@ def _parse_flow360_bet_disk_dict(
     cylinder_dict = {
         "name": (
             f"bet_cylinder_{bet_disk_index + index_offset}"
-            if add_index
+            if index_offset is not None
             else f"bet_cylinder_{bet_disk_name}"
         ),
         "axis": flow360_bet_disk_dict["axisOfRotation"],
@@ -92,7 +91,9 @@ def _parse_flow360_bet_disk_dict(
     }
 
     updated_bet_dict["name"] = (
-        f"{bet_disk_name}{bet_disk_index + index_offset}" if add_index else bet_disk_name
+        f"{bet_disk_name}{bet_disk_index + index_offset}"
+        if index_offset is not None
+        else bet_disk_name
     )
 
     updated_bet_dict["twists"] = [
@@ -254,7 +255,6 @@ def read_all_v1_BETDisks(
             freestream_temperature=freestream_temperature,
             bet_disk_index=bet_disk_index,
             bet_disk_name=bet_disk_name_prefix,
-            add_index=True,
             index_offset=index_offest,
         )
         bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
