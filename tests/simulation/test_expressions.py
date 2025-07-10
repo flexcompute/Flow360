@@ -682,7 +682,6 @@ def test_error_message():
         UserVariable(name="xx", value="solution.velocity + [1, 2, 3] * u.cm / u.ms")
 
 
-
 def test_temperature_units_usage():
     with pytest.raises(
         ValueError,

@@ -277,12 +277,14 @@ class UnytArray(unyt_array):
 
 AnyNumericType = Union[float, UnytArray, list]
 
+
 def _is_array(item):
     if isinstance(item, unyt_array) and item.shape != ():
         return True
     if isinstance(item, list):
         return True
     return False
+
 
 def check_vector_binary_arithmetic(func):
     """Decorator to check if vector arithmetic is being attempted and raise an error if so."""
@@ -297,18 +299,6 @@ def check_vector_binary_arithmetic(func):
 
     return wrapper
 
-def check_vector_unary_arithmetic(func):
-    """Decorator to check if vector arithmetic is being attempted and raise an error if so."""
-
-    def wrapper(self):
-        if _is_array(self.value):
-            raise ValueError(
-                f"Vector operation ({func.__name__} on {self.name}) not "
-                "supported for variables. Please write expression for each component."
-            )
-        return func(self)
-
-    return wrapper
 
 class Variable(Flow360BaseModel):
     """Base class representing a symbolic variable"""
