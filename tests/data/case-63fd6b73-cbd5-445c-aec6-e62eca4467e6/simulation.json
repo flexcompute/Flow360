@@ -4,7 +4,6 @@
 		"name": "SI"
 	},
 	"meshing": {
-		"type": "MeshingParams",
 		"defaults": {
 			"surface_edge_growth_rate": 1.2,
 			"surface_max_edge_length": {
