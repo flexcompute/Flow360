@@ -15,7 +15,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid, EntityList
+from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -650,5 +650,13 @@ class SnappyBody(Flow360BaseModel):
     Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid keywords with a body::region naming scheme.
     """
     body_name: str = pd.Field()
+
+
+class MeshZone(Flow360BaseModel):
+   """
+   Represents a separate zone in the mesh, defined by a point insie it.
+   """
+   point_in_mesh: LengthType.Point 
+   name: str
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]

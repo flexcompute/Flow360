@@ -33,7 +33,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySnapControls,
     SnappySmoothControls
 )
-from flow360.component.simulation.primitives import Edge, Surface, SnappyBody, Box
+from flow360.component.simulation.primitives import Edge, Surface, SnappyBody, Box, MeshZone
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -657,7 +657,11 @@ def snappy_settings():
                 iterations=5,
                 min_elem=3,
                 min_len=30*u.mm
-            )
+            ),
+            zones=[
+                MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 
+                MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003]*u.m)
+            ]
         )
 
         volume_meshing_params = BetaVolumeMeshingParams(

@@ -234,6 +234,12 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                     "z": bounding_box.center[2] + (bounding_box.size[2] / 2)
                 }
             }
+        # points in mesh
+
+        zones = surface_meshing_params.zones
+
+        if zones is not None:
+            translated["locationInMesh"] = {zone.name: list(zone.point_in_mesh) for zone in zones}
 
 
     elif isinstance(input_params.meshing, MeshingParams):

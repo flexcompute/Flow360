@@ -37,7 +37,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySmoothControls
     )
 from flow360.component.simulation.unit_system import AngleType, LengthType
-from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.primitives import Box, MeshZone
 
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -263,7 +263,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(SnappyCastellatedMeshControls())
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
     bounding_box: Optional[Box] = pd.Field(None)
-    points_in_mesh: Optional[dict[str, LengthType.Point]] = pd.Field(None)
+    zones: Optional[List[MeshZone]] = pd.Field(None)
     cad_is_fluid: bool = pd.Field(False)
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([]) 
 
