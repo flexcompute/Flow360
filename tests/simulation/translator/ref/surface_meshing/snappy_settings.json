@@ -67,35 +67,54 @@
     "mesherSettings": {
         "snappyHexMesh": {
             "castellatedMeshControls": {
-                "resolveFeatureAngle": 25,
-                "nCellsBetweenLevels": 1,
-                "minRefinementCells": 10
+                "resolveFeatureAngle": 10,
+                "nCellsBetweenLevels": 3,
+                "minRefinementCells": 50
             },
             "snapControls": {
-                "nSmoothPatch": 3,
-                "tolerance": 2,
-                "nSolveIter": 30,
-                "nRelaxIter": 5,
-                "nFeatureSnapIter": 15,
-                "multiRegionFeatureSnap": true
+                "nSmoothPatch": 5,
+                "tolerance": 4,
+                "nSolveIter": 20,
+                "nRelaxIter": 2,
+                "nFeatureSnapIter": 10,
+                "multiRegionFeatureSnap": false
             }
     },
     "meshQuality": {
-            "maxNonOrtho": 85,
-            "maxBoundarySkewness": 20,
-            "maxInternalSkewness": 50,
-            "maxConcave": 50,
-            "minVol": -1e+30,
-            "minTetQuality": -1e+30,
-            "minArea": -1,
-            "minTwist": -2,
-            "minDeterminant": -1e5,
-            "minVolRatio": 0,
-            "minFaceWeight": 0,
-            "minTriangleTwist": -1,
-            "nSmoothScale": 4,
-            "errorReduction": 0.75,
-            "minVolCollapseRatio": 0
+            "maxNonOrtho": 55,
+            "maxBoundarySkewness": 30,
+            "maxInternalSkewness": 70,
+            "maxConcave": 20,
+            "minVol": 1e-2,
+            "minTetQuality": 0.15,
+            "minArea": 2,
+            "minTwist": 0.3,
+            "minDeterminant": 0.5,
+            "minVolRatio": 0.1,
+            "minFaceWeight": 0.3,
+            "minTriangleTwist": 0.1,
+            "nSmoothScale": 6,
+            "errorReduction": 0.4,
+            "minVolCollapseRatio": 0.5
         }
+    },
+    "boundingBox": {
+        "min": {
+            "x": -200,
+            "y": -400,
+            "z": -300
+        },
+        "max": {
+            "x": 200,
+            "y": 400,
+            "z": 300
+        }
+    },
+    "smoothingControls": {
+        "lambda": 0.3,
+        "mu": 0.31,
+        "iter": 5,
+        "minElem": 3,
+        "minLen": 30
     }
 }

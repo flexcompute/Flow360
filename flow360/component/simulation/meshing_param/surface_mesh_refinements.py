@@ -12,27 +12,29 @@ class SnappyBodyRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappyBodyRefinement"] = pd.Field(
         "SnappyBodyRefinement", frozen=True
     )
-    gap: LengthType = pd.Field(1 * u.mm)
+    gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
     entities: List[SnappyBody] = pd.Field(alias="bodies")
-    min_spacing: LengthType = pd.Field()
-    max_spacing: LengthType = pd.Field()
+    min_spacing: Optional[LengthType.Positive] = pd.Field(None)
+    max_spacing: Optional[LengthType.Positive] = pd.Field(None)
+    proximity_spacing: Optional[LengthType.Positive] = pd.Field(None)
 
 
 class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Union[LengthType, List[LengthType]] = pd.Field()
-    distances: Optional[List[LengthType]] = pd.Field([])
-    min_elem: Optional[pd.NonNegativeInt] = pd.Field(0)
-    min_len: Optional[LengthType] = pd.Field(0)
-    entities: Union[EntityList[Surface], List[SnappyBody]] = pd.Field([])
+    spacing: Optional[Union[LengthType.Positive, List[LengthType.Positive]]] = pd.Field(None)
+    distances: Optional[List[LengthType.Positive]] = pd.Field(None)
+    min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
+    min_len: Optional[LengthType.NonNegative] = pd.Field(None)
+    bodies: List[SnappyBody] = pd.Field([])
+    regions: EntityList[Surface] = pd.Field([])
 
-class SnappySurfaceRefinement(Flow360BaseModel):
+class SnappyRegionRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field(
         "SnappySurfaceRefinement", frozen=True
     )
-    min_spacing: LengthType = pd.Field()
-    max_spacing: LengthType = pd.Field()
-    entities: EntityList[Surface] = pd.Field([])
-    # TODO: add gap level increment or equivalent
+    min_spacing: Optional[LengthType.Positive] = pd.Field(None)
+    max_spacing: Optional[LengthType.Positive] = pd.Field(None)
+    entities: EntityList[Surface] = pd.Field([], alias="regions")
+    proximity_spacing: Optional[LengthType.Positive] = pd.Field(None)

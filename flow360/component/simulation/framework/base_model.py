@@ -659,7 +659,7 @@ class Flow360BaseModel(pd.BaseModel):
                     exclude=exclude,
                     registry_lookup=registry_lookup,
                 )
-            elif isinstance(value, list):
+            elif isinstance(value, (list, tuple)):
                 # Use the helper to handle nested lists.
                 solver_values[property_name] = _preprocess_nested_list(
                     value, [loc_name], params, exclude, registry_lookup

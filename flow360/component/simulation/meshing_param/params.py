@@ -17,7 +17,7 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
     SnappySurfaceEdgeRefinement,
-    SnappySurfaceRefinement
+    SnappyRegionRefinement
 )
 
 from flow360.component.simulation.meshing_param.volume_params import (
@@ -31,9 +31,10 @@ from flow360.component.simulation.meshing_param.volume_params import (
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
     SnappyQualityMetrics, 
-    SnapControls, 
-    CastellatedMeshControls,
-    SnappySurfaceDefaults
+    SnappySnapControls, 
+    SnappyCastellatedMeshControls,
+    SnappySurfaceDefaults,
+    SnappySmoothControls
     )
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.primitives import Box
@@ -75,7 +76,7 @@ SnappySurfaceRefinementTypes = Annotated[
     Union[
         SnappyBodyRefinement,
         SnappySurfaceEdgeRefinement,
-        SnappySurfaceRefinement,
+        SnappyRegionRefinement,
     ], 
     pd.Field(discriminator="refinement_type")
 ]
@@ -254,9 +255,10 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         "SnappySurfaceMeshingParams", frozen=True
     )
     defaults: SnappySurfaceDefaults = pd.Field()
-    quality_metrics: SnappyQualityMetrics = pd.Field(SnappyQualityMetrics()),
-    snap_controls: SnapControls = pd.Field(SnapControls())
-    castellated_mesh_controls: CastellatedMeshControls = pd.Field(CastellatedMeshControls())
+    quality_metrics: SnappyQualityMetrics = pd.Field(SnappyQualityMetrics())
+    snap_controls: SnappySnapControls = pd.Field(SnappySnapControls())
+    castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(SnappyCastellatedMeshControls())
+    smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
     bounding_box: Optional[Box] = pd.Field(None)
     points_in_mesh: Optional[dict[str, LengthType.Point]] = pd.Field(None)
     cad_is_fluid: bool = pd.Field(False)
