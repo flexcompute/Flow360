@@ -535,6 +535,19 @@ def test_updater_to_25_6_1():
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
 
+    pre_update_param_as_dict = copy.deepcopy(params)
+    params_new = _update_to_25_6_1(pre_update_param_as_dict)
+    reynolds = params["operating_condition"]["private_attribute_input_cache"]["reynolds"]
+    assert "reynolds" not in params_new["operating_condition"]["private_attribute_input_cache"]
+    assert (
+        "reynolds_mesh_unit" in params_new["operating_condition"]["private_attribute_input_cache"]
+    )
+    assert (
+        params_new["operating_condition"]["private_attribute_input_cache"]["reynolds_mesh_unit"]
+        == reynolds
+    )
+    _ensure_validity(params_new)
+
 
 def test_deserialization_with_updater():
     # From 24.11.0 to 25.2.0

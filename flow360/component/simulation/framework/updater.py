@@ -188,6 +188,27 @@ def _to_25_6_1(params_as_dict):
             velocity_direction = model["spec"].pop("velocity_direction", None)
             if velocity_direction:
                 model["velocity_direction"] = velocity_direction
+
+    if not params_as_dict.get("operating_condition"):
+        return params_as_dict
+    if (
+        not params_as_dict["operating_condition"].get("private_attribute_constructor")
+        == "from_mach_reynolds"
+    ):
+        return params_as_dict
+    if (
+        not params_as_dict["operating_condition"]
+        .get("private_attribute_input_cache", {})
+        .get("reynolds")
+    ):
+        return params_as_dict
+    reynolds_mesh_unit = params_as_dict["operating_condition"]["private_attribute_input_cache"].pop(
+        "reynolds", None
+    )
+    if reynolds_mesh_unit:
+        params_as_dict["operating_condition"]["private_attribute_input_cache"][
+            "reynolds_mesh_unit"
+        ] = reynolds_mesh_unit
     return params_as_dict
 
 
