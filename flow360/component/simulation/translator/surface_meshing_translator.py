@@ -154,7 +154,9 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             },
             "meshQuality": input_params.meshing.wrapping_settings.mesh_quality.model_dump(by_alias=True),
         }
-        translated["locationInMesh"] = input_params.meshing.wrapping_settings.location_in_mesh.value.tolist()
+        location_in_mesh = input_params.meshing.wrapping_settings.location_in_mesh
+        if location_in_mesh is not None:
+            translated["locationInMesh"] = location_in_mesh.value.tolist()
         translated["cadIsFluid"] = input_params.meshing.wrapping_settings.cad_is_fluid
 
     return translated
