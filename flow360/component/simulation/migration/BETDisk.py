@@ -15,13 +15,15 @@ from flow360.component.simulation.unit_system import AbsoluteTemperatureType, Le
 from flow360.log import log
 
 
+# pylint: disable=too-many-arguments
 def _parse_flow360_bet_disk_dict(
     *,
     flow360_bet_disk_dict: dict,
     mesh_unit,
     freestream_temperature,
+    bet_disk_name: str,
     bet_disk_index: int = 0,
-    bet_disk_name: str = None,
+    index_offset: int = None,
 ):
     """
     Read in the provided Flow360 BETDisk config.
@@ -71,8 +73,8 @@ def _parse_flow360_bet_disk_dict(
 
     cylinder_dict = {
         "name": (
-            f"bet_cylinder_{bet_disk_index+1}"
-            if not bet_disk_name
+            f"bet_cylinder_{bet_disk_index + index_offset}"
+            if index_offset is not None
             else f"bet_cylinder_{bet_disk_name}"
         ),
         "axis": flow360_bet_disk_dict["axisOfRotation"],
@@ -88,7 +90,11 @@ def _parse_flow360_bet_disk_dict(
         if key not in keys_to_remove
     }
 
-    updated_bet_dict["name"] = f"BETDisk_{bet_disk_index+1}" if not bet_disk_name else bet_disk_name
+    updated_bet_dict["name"] = (
+        f"{bet_disk_name}{bet_disk_index + index_offset}"
+        if index_offset is not None
+        else bet_disk_name
+    )
 
     updated_bet_dict["twists"] = [
         {
@@ -146,7 +152,7 @@ def read_single_v1_BETDisk(
     file_path: str,
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
     freestream_temperature: AbsoluteTemperatureType,
-    bet_disk_name: str = "BETDisk",
+    bet_disk_name: str = "Disk",
 ) -> BETDisk:
     """
     Constructs a single :class: `BETDisk` instance from a given V1 (legacy) Flow360 input.
@@ -176,7 +182,7 @@ def read_single_v1_BETDisk(
     ...     file_path="BET_Flow360.json",
     ...     mesh_unit=fl.u.m,
     ...     freestream_temperature = 288.15 * fl.u.K,
-    ...     bet_disk_name: str = "BETDisk"
+    ...     bet_disk_name: str = "Disk"
     ... )
     """
 
@@ -200,6 +206,8 @@ def read_all_v1_BETDisks(
     file_path: str,
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
     freestream_temperature: AbsoluteTemperatureType,
+    bet_disk_name_prefix: str = "Disk",
+    index_offest: int = 0,
 ) -> list[BETDisk]:
     """
     Read in Legacy V1 Flow360.json and convert its BETDisks settings to a list of :class: `BETDisk` instances
@@ -212,6 +220,10 @@ def read_all_v1_BETDisks(
         Length unit used for LengthType BETDisk parameters.
     freestream_temperature: AbsoluteTemperatureType
         Freestream temperature.
+    bet_disk_name_prefix: str = "Disk",
+        The prefix for the name of each BETDisk object.
+    index_offset: int = 0
+        The index offset for the name of each BETDisk object.
 
     Examples
     --------
@@ -242,6 +254,8 @@ def read_all_v1_BETDisks(
             mesh_unit=mesh_unit,
             freestream_temperature=freestream_temperature,
             bet_disk_index=bet_disk_index,
+            bet_disk_name=bet_disk_name_prefix,
+            index_offset=index_offest,
         )
         bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
         bet_disk_index += 1
