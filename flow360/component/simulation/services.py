@@ -440,6 +440,7 @@ def validate_model(
             params_as_dict
         )
 
+<<<<<<< HEAD
         is_clear_context = validated_by == ValidationCalledBy.SERVICE
         initialize_variable_space(updated_param_as_dict, is_clear_context)
 
@@ -452,6 +453,11 @@ def validate_model(
         )
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             # Multi-constructor model support
+=======
+        additional_info = ParamsValidationInfo(param_as_dict=updated_param_as_dict)
+
+        with ValidationContext(levels=validation_levels_to_use, info=additional_info):
+>>>>>>> 7d30db8c ([Hotfix 25.5]: Add Project Length To ValidationInfo (#1236))
             updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
             validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:

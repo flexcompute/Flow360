@@ -112,8 +112,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "use_geometry_AI",
         "using_liquid_as_material",
         "time_stepping",
+<<<<<<< HEAD
         "feature_usage",
         "referenced_expressions",
+=======
+>>>>>>> 7d30db8c ([Hotfix 25.5]: Add Project Length To ValidationInfo (#1236))
         "project_length_unit",
     ]
 
@@ -168,6 +171,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return TimeSteppingType.UNSET
 
     @classmethod
+<<<<<<< HEAD
     def _get_feature_usage_info(cls, param_as_dict: dict):
         # 1. Turbulence model type
         # 2. Transition model type
@@ -176,6 +180,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return FeatureUsageInfo(param_as_dict=param_as_dict)
 
     @classmethod
+=======
+>>>>>>> 7d30db8c ([Hotfix 25.5]: Add Project Length To ValidationInfo (#1236))
     def _get_project_length_unit_(cls, param_as_dict: dict):
         try:
             project_length_unit_dict = param_as_dict["private_attribute_asset_cache"][
@@ -188,7 +194,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         except KeyError:
             return None
 
+<<<<<<< HEAD
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
+=======
+    def __init__(self, param_as_dict: dict):
+>>>>>>> 7d30db8c ([Hotfix 25.5]: Add Project Length To ValidationInfo (#1236))
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
@@ -198,8 +208,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict=param_as_dict
         )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
+<<<<<<< HEAD
         self.feature_usage = self._get_feature_usage_info(param_as_dict=param_as_dict)
         self.referenced_expressions = referenced_expressions
+=======
+>>>>>>> 7d30db8c ([Hotfix 25.5]: Add Project Length To ValidationInfo (#1236))
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
 
 
