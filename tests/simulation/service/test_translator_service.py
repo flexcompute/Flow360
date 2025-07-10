@@ -39,7 +39,6 @@ from flow360.component.simulation.validation.validation_context import (
 def test_simulation_to_surface_meshing_json():
     param_data = {
         "meshing": {
-            "type": "MeshingParams",
             "defaults": {
                 "curvature_resolution_angle": {"units": "degree", "value": 10.0},
                 "surface_max_edge_length": {"units": "cm", "value": 15.0},
@@ -137,7 +136,6 @@ def test_simulation_to_surface_meshing_json():
 def test_simulation_to_volume_meshing_json():
     param_data = {
         "meshing": {
-            "type": "MeshingParams",
             "refinement_factor": 1.45,
             "defaults": {
                 "boundary_layer_first_layer_thickness": {"units": "m", "value": 1.35e-06},
@@ -487,7 +485,6 @@ def test_simulation_to_case_json():
         "unit_system": {"name": "SI"},
         "version": "24.2.0",
         "meshing": {
-            "type": "MeshingParams",
             "refinement_factor": 1,
             "defaults": {
                 "surface_edge_growth_rate": 1.2,
@@ -677,7 +674,6 @@ def test_simulation_to_case_vm_workflow():
 def test_simulation_to_all_translation_2():
     params_as_dict = {
         "meshing": {
-            "type": "MeshingParams",
             "refinement_factor": 1,
             "defaults": {
                 "surface_edge_growth_rate": 1.2,
