@@ -24,6 +24,7 @@ def _parse_flow360_bet_disk_dict(
     bet_disk_name: str,
     bet_disk_index: int = 0,
     add_index: bool = False,
+    index_offset: int = 0,
 ):
     """
     Read in the provided Flow360 BETDisk config.
@@ -73,7 +74,9 @@ def _parse_flow360_bet_disk_dict(
 
     cylinder_dict = {
         "name": (
-            f"bet_cylinder_{bet_disk_index}" if add_index else f"bet_cylinder_{bet_disk_name}"
+            f"bet_cylinder_{bet_disk_index + index_offset}"
+            if add_index
+            else f"bet_cylinder_{bet_disk_name}"
         ),
         "axis": flow360_bet_disk_dict["axisOfRotation"],
         "center": flow360_bet_disk_dict["centerOfRotation"] * mesh_unit,
@@ -88,7 +91,9 @@ def _parse_flow360_bet_disk_dict(
         if key not in keys_to_remove
     }
 
-    updated_bet_dict["name"] = f"{bet_disk_name}{bet_disk_index}" if add_index else bet_disk_name
+    updated_bet_dict["name"] = (
+        f"{bet_disk_name}{bet_disk_index + index_offset}" if add_index else bet_disk_name
+    )
 
     updated_bet_dict["twists"] = [
         {
@@ -201,6 +206,7 @@ def read_all_v1_BETDisks(
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
     freestream_temperature: AbsoluteTemperatureType,
     bet_disk_name_prefix: str = "Disk",
+    index_offest: int = 0,
 ) -> list[BETDisk]:
     """
     Read in Legacy V1 Flow360.json and convert its BETDisks settings to a list of :class: `BETDisk` instances
@@ -215,6 +221,8 @@ def read_all_v1_BETDisks(
         Freestream temperature.
     bet_disk_name_prefix: str = "Disk",
         The prefix for the name of each BETDisk object.
+    index_offset: int = 0
+        The index offset for the name of each BETDisk object.
 
     Examples
     --------
@@ -247,6 +255,7 @@ def read_all_v1_BETDisks(
             bet_disk_index=bet_disk_index,
             bet_disk_name=bet_disk_name_prefix,
             add_index=True,
+            index_offset=index_offest,
         )
         bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
         bet_disk_index += 1

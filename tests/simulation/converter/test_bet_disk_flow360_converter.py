@@ -89,6 +89,22 @@ def test_full_flow360_bet_convert():
     assert list_of_disks[1].entities.stored_entities[0].name == "bet_cylinder_1"
     assert all([isinstance(item, BETDisk) for item in list_of_disks])
 
+    list_of_disks = read_all_v1_BETDisks(
+        file_path="./data/full_flow360.json",
+        mesh_unit=1 * u.cm,
+        freestream_temperature=288.15 * u.K,
+        bet_disk_name_prefix="BETDisk_",
+        index_offest=1,
+    )
+
+    assert isinstance(list_of_disks, list)
+    assert len(list_of_disks) == 2
+    assert list_of_disks[0].name == "BETDisk_1"
+    assert list_of_disks[1].name == "BETDisk_2"
+    assert list_of_disks[0].entities.stored_entities[0].name == "bet_cylinder_1"
+    assert list_of_disks[1].entities.stored_entities[0].name == "bet_cylinder_2"
+    assert all([isinstance(item, BETDisk) for item in list_of_disks])
+
     with pytest.raises(
         ValueError,
         match=re.escape("Cannot find 'BETDisk' key in the supplied JSON file."),
