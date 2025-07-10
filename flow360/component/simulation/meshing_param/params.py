@@ -319,7 +319,7 @@ class WrappingSettings(Flow360BaseModel):
         None,
         description="Point in the mesh that will be used to determine side for wrapping.",
     )
-    cad_is_fluid: bool = pd.Field(
+    cad_is_fluid: Optional[bool] = pd.Field(
         False,
         description="Whether the CAD represents a fluid or solid.",
     )
