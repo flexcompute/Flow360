@@ -1,6 +1,7 @@
 {
     "hash": "257826b8a647b8cfc872f2693774f20d2880a9a1f541f9dcefd020e586ea987c",
     "meshing": {
+        "type": "MeshingParams",
         "gap_treatment_strength": 0.0,
         "refinement_factor": 1.45,
         "refinements": [

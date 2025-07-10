@@ -25,6 +25,7 @@ def test_validate_service():
 
     params_data_from_vm = {
         "meshing": {
+            "type": "MeshingParams",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
             "defaults": {"surface_edge_growth_rate": 1.5},
@@ -125,6 +126,7 @@ def test_validate_service():
 def test_validate_error():
     params_data = {
         "meshing": {
+            "type": "MeshingParams",
             "farfield": "invalid",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
@@ -191,6 +193,7 @@ def test_validate_error():
 def test_validate_multiple_errors():
     params_data = {
         "meshing": {
+            "type": "MeshingParams",
             "farfield": "invalid",
             "refinement_factor": 1.0,
             "gap_treatment_strength": 0.2,
@@ -745,6 +748,7 @@ def test_validate_init_data_vm_workflow_errors():
 def test_front_end_JSON_with_multi_constructor():
     params_data = {
         "meshing": {
+            "type": "MeshingParams",
             "defaults": {
                 "boundary_layer_first_layer_thickness": "1*m",
                 "surface_max_edge_length": "1*m",
@@ -899,6 +903,7 @@ def test_front_end_JSON_with_multi_constructor():
 def test_generate_process_json():
     params_data = {
         "meshing": {
+            "type": "MeshingParams",
             "defaults": {
                 # "boundary_layer_first_layer_thickness": "1*m",
                 # "surface_max_edge_length": "1*m",

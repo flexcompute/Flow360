@@ -13,7 +13,7 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.exceptions import Flow360TranslationError
 from flow360.log import log
-from flow360.component.simulation.meshing_param.params import SnappySurfaceMeshingParams, MeshingParams
+from flow360.component.simulation.meshing_param.params import SnappySurfaceMeshingParams, MeshingParams, ModularMeshingWorkflow
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
     SnappyRegionRefinement,
@@ -134,9 +134,9 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             ["meshing"],
         )
 
-    if isinstance(input_params.meshing, tuple) and isinstance(input_params.meshing[0], SnappySurfaceMeshingParams):
+    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(input_params.meshing.surface_meshing, SnappySurfaceMeshingParams):
 
-        surface_meshing_params = input_params.meshing[0]
+        surface_meshing_params = input_params.meshing.surface_meshing
         # extract geometry information in body: {patch0, ...} format
         bodies = {}
         for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:

@@ -26,9 +26,7 @@ from flow360.component.simulation.framework.updater import updater
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
-    VolumeMeshingParams,
-    SnappySurfaceMeshingParams,
-    PWSurfaceMeshingParams
+    ModularMeshingWorkflow
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -118,7 +116,6 @@ from .validation.validation_context import (
 )
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
-SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams, PWSurfaceMeshingParams], pd.Field(discriminator="type")]
 
 
 class _ParamModelBase(Flow360BaseModel):
@@ -242,9 +239,10 @@ class _ParamModelBase(Flow360BaseModel):
 class SimulationParams(_ParamModelBase):
     """All-in-one class for surface meshing + volume meshing + case configurations"""
 
-    meshing: Optional[Union[MeshingParams, tuple[SurfaceMeshingParams, VolumeMeshingParams]]] = ConditionalField(
+    meshing: Optional[Union[MeshingParams, ModularMeshingWorkflow]] = ConditionalField(
         None,
         context=[SURFACE_MESH, VOLUME_MESH],
+        discriminator="type",
         description="Surface and volume meshing parameters. See :class:`MeshingParams` for more details.",
     )
 
@@ -532,8 +530,8 @@ class SimulationParams(_ParamModelBase):
             volume_zones = None
             if isinstance(self.meshing, MeshingParams):
                 volume_zones = self.meshing.volume_zones
-            if isinstance(self.meshing, tuple) and isinstance(self.meshing[1], VolumeMeshingParams):
-                volume_zones = self.meshing[1].volume_zones
+            if isinstance(self.meshing, ModularMeshingWorkflow):
+                volume_zones = self.meshing.volume_meshing.volume_zones
             if volume_zones is not None:
                 for volume in volume_zones:
                     if isinstance(volume, AutomatedFarfield):

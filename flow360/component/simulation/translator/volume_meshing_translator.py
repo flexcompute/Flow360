@@ -21,7 +21,7 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
-from flow360.component.simulation.meshing_param.params import VolumeMeshingParams, MeshingParams
+from flow360.component.simulation.meshing_param.params import BetaVolumeMeshingParams, MeshingParams
 
 def unifrom_refinement_translator(obj: UniformRefinement):
     """
@@ -162,7 +162,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             ["meshing"],
         )
     
-    if isinstance(input_params.meshing, tuple) and isinstance(input_params.meshing[1], VolumeMeshingParams):
+    if isinstance(input_params.meshing, tuple) and isinstance(input_params.meshing[1], BetaVolumeMeshingParams):
         volume_zones = input_params.meshing[1].volume_zones
         refinements = input_params.meshing[1].refinements
         refinement_factor = input_params.meshing[1].refinement_factor

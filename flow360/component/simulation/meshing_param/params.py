@@ -92,6 +92,7 @@ VolumeRefinementTypes = Annotated[
 ]
 
 
+
 class MeshingParams(Flow360BaseModel):
     """
     Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
@@ -123,7 +124,9 @@ class MeshingParams(Flow360BaseModel):
 
     ====
     """
-
+    type: Literal["MeshingParams"] = pd.Field(
+        "MeshingParams", frozen=True
+    )
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -265,7 +268,10 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([]) 
 
 
-class VolumeMeshingParams(Flow360BaseModel):
+class BetaVolumeMeshingParams(Flow360BaseModel):
+    type: Literal["BetaVolumeMeshingParams"] = pd.Field(
+        "BetaVolumeMeshingParams", frozen=True
+    )
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -394,3 +400,15 @@ class VolumeMeshingParams(Flow360BaseModel):
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
         return None
+    
+
+SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams, PWSurfaceMeshingParams], pd.Field(discriminator="type")]
+VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
+
+
+class ModularMeshingWorkflow(Flow360BaseModel):
+    type: Literal["ModularMeshingWorkflow"] = pd.Field(
+        "ModularMeshingWorkflow", frozen=True
+    )
+    surface_meshing: SurfaceMeshingParams = pd.Field()
+    volume_meshing: VolumeMeshingParams = pd.Field()

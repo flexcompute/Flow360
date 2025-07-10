@@ -188,7 +188,10 @@ def _to_25_6_0(params_as_dict):
             velocity_direction = model["spec"].pop("velocity_direction", None)
             if velocity_direction:
                 model["velocity_direction"] = velocity_direction
-
+    if params_as_dict.get("meshing"):
+        meshing = params_as_dict.get("meshing")
+        meshing["type"] = "MeshingParams"
+        
     return params_as_dict
 
 

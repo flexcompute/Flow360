@@ -23,7 +23,8 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
     SnappySurfaceMeshingParams,
-    VolumeMeshingParams
+    BetaVolumeMeshingParams,
+    ModularMeshingWorkflow
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceDefaults,
@@ -529,7 +530,7 @@ def snappy_all_defaults():
             )
         )
 
-        volume_meshing_params = VolumeMeshingParams(
+        volume_meshing_params = BetaVolumeMeshingParams(
             volume_zones=[AutomatedFarfield(method="auto")]
         )
 
@@ -537,7 +538,10 @@ def snappy_all_defaults():
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=(surf_meshing_params, volume_meshing_params)
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=volume_meshing_params
+            )
         )
     return param
 
@@ -591,7 +595,7 @@ def snappy_basic_refinements():
             smooth_controls=SnappySmoothControls()
         )
 
-        volume_meshing_params = VolumeMeshingParams(
+        volume_meshing_params = BetaVolumeMeshingParams(
             volume_zones=[AutomatedFarfield(method="auto")]
         )
 
@@ -599,7 +603,10 @@ def snappy_basic_refinements():
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=(surf_meshing_params, volume_meshing_params)
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=volume_meshing_params
+            )
         )
     return param
 
@@ -653,7 +660,7 @@ def snappy_settings():
             )
         )
 
-        volume_meshing_params = VolumeMeshingParams(
+        volume_meshing_params = BetaVolumeMeshingParams(
             volume_zones=[AutomatedFarfield(method="auto")]
         )
 
@@ -661,7 +668,10 @@ def snappy_settings():
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=(surf_meshing_params, volume_meshing_params)
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=volume_meshing_params
+            )
         )
     return param
 
