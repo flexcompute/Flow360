@@ -126,7 +126,7 @@ WHITELISTED_CALLABLES = {
 }
 
 # Define allowed modules
-ALLOWED_MODULES = {"u", "fl", "control", "solution", "math"}
+ALLOWED_MODULES = {"u", "math", "control", "solution"}
 
 ALLOWED_CALLABLES = {
     **{
