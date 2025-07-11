@@ -7,7 +7,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 
-from typing import Annotated, List, Optional, Union
+from typing import Optional
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
 import flow360.component.simulation.units as u

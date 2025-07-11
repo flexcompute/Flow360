@@ -36,7 +36,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceDefaults,
     SnappySmoothControls
     )
-from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.primitives import Box, MeshZone
 
 from flow360.component.simulation.validation.validation_context import (
@@ -410,5 +410,11 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     type: Literal["ModularMeshingWorkflow"] = pd.Field(
         "ModularMeshingWorkflow", frozen=True
     )
-    surface_meshing: SurfaceMeshingParams = pd.Field()
-    volume_meshing: VolumeMeshingParams = pd.Field()
+    surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
+        default=None,
+        context=SURFACE_MESH
+    )
+    volume_meshing: Optional[VolumeMeshingParams] = ContextField(
+        default=None,
+        context=VOLUME_MESH
+    )

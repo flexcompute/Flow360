@@ -530,17 +530,12 @@ def snappy_all_defaults():
             )
         )
 
-        volume_meshing_params = BetaVolumeMeshingParams(
-            volume_zones=[AutomatedFarfield(method="auto")]
-        )
-
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
             meshing=ModularMeshingWorkflow(
-                surface_meshing=surf_meshing_params,
-                volume_meshing=volume_meshing_params
+                surface_meshing=surf_meshing_params
             )
         )
     return param
@@ -595,17 +590,12 @@ def snappy_basic_refinements():
             smooth_controls=SnappySmoothControls()
         )
 
-        volume_meshing_params = BetaVolumeMeshingParams(
-            volume_zones=[AutomatedFarfield(method="auto")]
-        )
-
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
             meshing=ModularMeshingWorkflow(
-                surface_meshing=surf_meshing_params,
-                volume_meshing=volume_meshing_params
+                surface_meshing=surf_meshing_params
             )
         )
     return param
@@ -665,17 +655,12 @@ def snappy_settings():
             ]
         )
 
-        volume_meshing_params = BetaVolumeMeshingParams(
-            volume_zones=[AutomatedFarfield(method="auto")]
-        )
-
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
-                volume_meshing=volume_meshing_params
             )
         )
     return param
