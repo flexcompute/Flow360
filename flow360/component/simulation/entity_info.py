@@ -39,6 +39,12 @@ GhostSurfaceTypes = Annotated[
 ]
 
 
+BoundingBoxType = Annotated[
+    list[Annotated[list[float], pd.Field(min_length=3, max_length=3)]],
+    pd.Field(min_length=2, max_length=2, description="[[xmin, ymin, zmin], [xmax, ymax, zmax]]"),
+]
+
+
 class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
 
@@ -129,6 +135,8 @@ class GeometryEntityInfo(EntityInfoModel):
     body_group_tag: Optional[str] = pd.Field(None, frozen=True)
     face_group_tag: Optional[str] = pd.Field(None, frozen=True)
     edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
+
+    global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
     def group_in_registry(
         self,
@@ -532,6 +540,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
     type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
     boundaries: list[Surface] = pd.Field([])
     ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
+    global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:
