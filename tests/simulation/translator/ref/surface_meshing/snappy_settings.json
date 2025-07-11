@@ -116,7 +116,8 @@
         "mu": 0.31,
         "iter": 5,
         "minElem": 3,
-        "minLen": 30
+        "minLen": 30,
+        "includedAngle": 120
     },
     "locationInMesh": {
         "fluid": [0, 0, 0],

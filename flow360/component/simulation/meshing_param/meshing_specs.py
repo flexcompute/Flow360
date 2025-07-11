@@ -192,3 +192,4 @@ class SnappySmoothControls(Flow360BaseModel):
     iterations:Optional[pd.NonNegativeInt] = pd.Field(5)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
+    included_angle: Optional[AngleType.Positive] = pd.Field(150 * u.deg)

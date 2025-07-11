@@ -576,6 +576,7 @@ def snappy_basic_refinements():
                 SnappySurfaceEdgeRefinement(
                     spacing=4*u.mm,
                     min_elem=3,
+                    included_angle=120*u.deg,
                     regions=[test_geometry["body0::patch0"]],
                     bodies=[SnappyBody(body_name="body1")]
                 ),
@@ -647,7 +648,8 @@ def snappy_settings():
                 mu_factor=0.31,
                 iterations=5,
                 min_elem=3,
-                min_len=30*u.mm
+                min_len=30*u.mm,
+                included_angle=120*u.deg
             ),
             zones=[
                 MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 

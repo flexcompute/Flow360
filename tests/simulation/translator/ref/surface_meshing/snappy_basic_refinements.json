@@ -18,7 +18,8 @@
                         "gapSpacingReduction": 3,
                         "edges":{
                             "edgeSpacing": 4,
-                            "minElem": 3
+                            "minElem": 3,
+                            "includedAngle": 120
                         }
                     },
                     {
@@ -34,7 +35,8 @@
                                     5
                                 ]
                             ],
-                            "minLen": 6
+                            "minLen": 6,
+                            "includedAngle": 150
                         }
                     }
                 ]
@@ -48,7 +50,8 @@
                 },
                 "edges":{
                         "edgeSpacing": 4,
-                        "minElem": 3
+                        "minElem": 3,
+                        "includedAngle": 120
                     },
                 "regions": [
                     {
@@ -72,7 +75,8 @@
                                     5
                                 ]
                             ],
-                            "minLen": 6
+                            "minLen": 6,
+                            "includedAngle": 150
                         }
                     },
                     {
@@ -112,7 +116,8 @@
                             5
                         ]
                     ],
-                    "minLen": 6
+                    "minLen": 6,
+                    "includedAngle": 150
                 },
                 "regions": [
                     {
@@ -160,6 +165,7 @@
     "smoothingControls": {
         "lambda": 0.7,
         "mu": 0.71,
-        "iter": 5
+        "iter": 5,
+        "includedAngle": 150
     }
 }

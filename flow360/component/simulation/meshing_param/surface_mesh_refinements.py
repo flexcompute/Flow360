@@ -4,7 +4,7 @@ from abc import ABCMeta
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from typing import List, Optional, Union, Literal
 from typing_extensions import Self
-
+import flow360.component.simulation.units as u
 from flow360.log import log
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface, SnappyBody
@@ -17,15 +17,17 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
 
     @pd.model_validator(mode="after")
     def _check_spacing_order(self) -> Self:
-        if self.min_spacing > self.max_spacing:
-            raise ValueError("Minimum spacing must be lower than maximum spacing.")
+        if self.min_spacing and self.max_spacing:
+            if self.min_spacing > self.max_spacing:
+                raise ValueError("Minimum spacing must be lower than maximum spacing.")
         return self
     
     @pd.model_validator(mode="after")
     def _check_proximity_spacing(self) -> Self:
-        if self.proximity_spacing > self.min_spacing:
-            log.warning(f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing ({self.min_spacing}), setting proximity spacing to minimal spacing.")
-            self.proximity_spacing = self.min_spacing
+        if self.min_spacing and self.proximity_spacing:
+            if self.proximity_spacing > self.min_spacing:
+                log.warning(f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing ({self.min_spacing}), setting proximity spacing to minimal spacing.")
+                self.proximity_spacing = self.min_spacing
         return self
 
 class SnappyBodyRefinement(SnappyEntityRefinement):
@@ -49,12 +51,13 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     distances: Optional[List[LengthType.Positive]] = pd.Field(None)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
+    included_angle: AngleType.Positive = pd.Field(150 * u.deg)
     bodies: List[SnappyBody] = pd.Field([])
     regions: EntityList[Surface] = pd.Field([])
 
     @pd.model_validator(mode="after")
     def _check_spacing_format(self) -> Self:
         if isinstance(self.spacing, List):
-            if not self.distances or len(self.distances) == len(self.spacing):
+            if not self.distances or len(self.distances) != len(self.spacing):
                 raise ValueError(f"When using a distance spacing specification both spacing ({self.spacing}) and distances ({self.distances}) fields must be Lists and the same length.")
-            return self
+        return self

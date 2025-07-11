@@ -77,7 +77,7 @@ def apply_SnappyBodyRefinement(refinement:SnappyBodyRefinement, translated):
                 body["spacing"]["max"] = refinement.max_spacing.value.item()
 
 def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, translated, defaults):
-    edges = {}
+    edges = {"includedAngle": refinement.included_angle.to("degree").value.item()}
     if refinement.min_elem is not None:
         edges["minElem"] = refinement.min_elem
     if refinement.min_len is not None:
@@ -213,12 +213,14 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                 "lambda": smoothing_settings.lambda_factor if smoothing_settings.lambda_factor is not None else 0,
                 "mu": smoothing_settings.mu_factor if smoothing_settings.mu_factor is not None else 0,
                 "iter": smoothing_settings.iterations if smoothing_settings.iterations is not None else 0,
+                "includedAngle": smoothing_settings.included_angle.to("degree").value.item() if smoothing_settings.included_angle is not None else False
             }
 
             if smoothing_settings.min_elem is not None:
                 translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem
             if smoothing_settings.min_len is not None:
                 translated["smoothingControls"]["minLen"] = smoothing_settings.min_len.value.item()
+
 
         # bounding box
         bounding_box = surface_meshing_params.bounding_box
