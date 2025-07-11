@@ -890,6 +890,30 @@ def test_udf_generator():
     )
     assert my_temp.value.get_output_units(input_params=params) == u.R
 
+    # Test __pow__ on SolverVariable:
+    vel_sq = UserVariable(name="vel_sq", value=solution.velocity**2)
+    result = user_variable_to_udf(vel_sq, input_params=params)
+    assert (
+        result.expression
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_sq[0] = (pow(___velocity[0], 2) * 10000.0); vel_sq[1] = (pow(___velocity[1], 2) * 10000.0); vel_sq[2] = (pow(___velocity[2], 2) * 10000.0);"
+    )
+
+    # Test __neg__ on SolverVariable:
+    neg_vel = UserVariable(name="neg_vel", value=-solution.velocity)
+    result = user_variable_to_udf(neg_vel, input_params=params)
+    assert (
+        result.expression
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;neg_vel[0] = (-___velocity[0] * 100.0); neg_vel[1] = (-___velocity[1] * 100.0); neg_vel[2] = (-___velocity[2] * 100.0);"
+    )
+
+    # Test __pos__ on SolverVariable:
+    pos_vel = UserVariable(name="pos_vel", value=+solution.velocity)
+    result = user_variable_to_udf(pos_vel, input_params=params)
+    assert (
+        result.expression
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 100.0); pos_vel[1] = (+___velocity[1] * 100.0); pos_vel[2] = (+___velocity[2] * 100.0);"
+    )
+
 
 def test_project_variables_serialization():
     ccc = UserVariable(name="ccc", value=12 * u.m / u.s)

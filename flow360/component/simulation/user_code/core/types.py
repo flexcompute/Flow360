@@ -278,18 +278,19 @@ class UnytArray(unyt_array):
 AnyNumericType = Union[float, UnytArray, list]
 
 
-def check_vector_arithmetic(func):
+def _is_array(item):
+    if isinstance(item, unyt_array) and item.shape != ():
+        return True
+    if isinstance(item, list):
+        return True
+    return False
+
+
+def check_vector_binary_arithmetic(func):
     """Decorator to check if vector arithmetic is being attempted and raise an error if so."""
 
     def wrapper(self, other):
-        def is_array(item):
-            if isinstance(item, unyt_array) and item.shape != ():
-                return True
-            if isinstance(item, list):
-                return True
-            return False
-
-        if is_array(self.value) or is_array(other):
+        if _is_array(self.value) or _is_array(other):
             raise ValueError(
                 f"Vector operation ({func.__name__} between {self.name} and {other}) not "
                 "supported for variables. Please write expression for each component."
@@ -362,19 +363,19 @@ class Variable(Flow360BaseModel):
 
         return values
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __add__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} + {str_arg}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __sub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} - {str_arg}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __mul__(self, other):
         if isinstance(other, Number) and other == 0:
             return Expression(expression="0")
@@ -383,19 +384,19 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} * {str_arg}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} / {str_arg}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{self.name} // {str_arg}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
@@ -404,30 +405,36 @@ class Variable(Flow360BaseModel):
     def __pow__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
+        if _is_array(self.value):
+            components = [f"{self.name}[{i}] ** {str_arg}" for i in range(len(self.value))]
+            return Expression(expression=f"[{','.join(components)}]")
         return Expression(expression=f"{self.name} ** {str_arg}")
 
     def __neg__(self):
+        if _is_array(self.value):
+            components = [f"-{self.name}[{i}]" for i in range(len(self.value))]
+            return Expression(expression=f"[{','.join(components)}]")
         return Expression(expression=f"-{self.name}")
 
     def __pos__(self):
+        if _is_array(self.value):
+            components = [f"+{self.name}[{i}]" for i in range(len(self.value))]
+            return Expression(expression=f"[{','.join(components)}]")
         return Expression(expression=f"+{self.name}")
 
-    def __abs__(self):
-        return Expression(expression=f"abs({self.name})")
-
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __radd__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} + {self.name}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __rsub__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} - {self.name}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __rmul__(self, other):
         if isinstance(other, Number) and other == 0:
             return Expression(expression="0")
@@ -436,25 +443,25 @@ class Variable(Flow360BaseModel):
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} * {self.name}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __rtruediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} / {self.name}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __rfloordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} // {self.name}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __rmod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
         return Expression(expression=f"{str_arg} % {self.name}")
 
-    @check_vector_arithmetic
+    @check_vector_binary_arithmetic
     def __rpow__(self, other):
         (arg, _) = _convert_argument(other)
         str_arg = f"({arg})"  # Always parenthesize to ensure base is evaluated first
