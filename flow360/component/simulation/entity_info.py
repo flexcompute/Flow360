@@ -24,7 +24,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     Surface,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
 from flow360.log import log
 
@@ -36,12 +36,6 @@ DraftEntityTypes = Annotated[
 GhostSurfaceTypes = Annotated[
     Union[GhostSphere, GhostCircularPlane],
     pd.Field(discriminator="private_attribute_entity_type_name"),
-]
-
-
-BoundingBoxType = Annotated[
-    list[Annotated[list[float], pd.Field(min_length=3, max_length=3)]],
-    pd.Field(min_length=2, max_length=2, description="[[xmin, ymin, zmin], [xmax, ymax, zmax]]"),
 ]
 
 

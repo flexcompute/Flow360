@@ -19,9 +19,10 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
-from pydantic import Field
+from pydantic import Field, TypeAdapter
 
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import BoundingBoxType
 
 SURFACE_MESH = "SurfaceMesh"
 VOLUME_MESH = "VolumeMesh"
@@ -115,6 +116,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "feature_usage",
         "referenced_expressions",
         "project_length_unit",
+        "global_bounding_box",
+        "planar_face_tolerance",
     ]
 
     @classmethod
@@ -188,6 +191,26 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         except KeyError:
             return None
 
+    @classmethod
+    def _get_global_bounding_box(cls, param_as_dict: dict):
+        try:
+            global_bounding_box = param_as_dict["private_attribute_asset_cache"][
+                "project_entity_info"
+            ]["global_bounding_box"]
+            if global_bounding_box:
+                # pylint: disable=no-member
+                return TypeAdapter(BoundingBoxType).validate_python(global_bounding_box)
+            return None
+        except KeyError:
+            return None
+
+    @classmethod
+    def _get_planar_face_tolerance(cls, param_as_dict: dict):
+        planar_face_tolerance = (
+            param_as_dict.get("meshing", {}).get("defaults", {}).get("planar_face_tolerance", None)
+        )
+        return planar_face_tolerance
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -201,6 +224,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.feature_usage = self._get_feature_usage_info(param_as_dict=param_as_dict)
         self.referenced_expressions = referenced_expressions
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
+        self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
+        self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
 
 
 class ValidationContext:
