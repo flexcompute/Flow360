@@ -643,7 +643,8 @@ def snappy_settings():
                 n_solve_iter=20,
                 n_relax_iter=2,
                 n_feature_snap_iter=10,
-                multi_region_feature_snap=False
+                multi_region_feature_snap=False,
+                strict_region_snap=True
             ),
             castellated_mesh_controls=SnappyCastellatedMeshControls(
                 resolve_feature_angle=10 *u.deg,

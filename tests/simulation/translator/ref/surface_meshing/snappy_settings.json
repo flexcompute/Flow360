@@ -77,7 +77,8 @@
                 "nSolveIter": 20,
                 "nRelaxIter": 2,
                 "nFeatureSnapIter": 10,
-                "multiRegionFeatureSnap": false
+                "multiRegionFeatureSnap": false,
+                "strictRegionSnap": true
             }
     },
     "meshQuality": {
