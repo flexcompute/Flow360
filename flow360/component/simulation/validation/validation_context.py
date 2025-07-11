@@ -120,6 +120,15 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "planar_face_tolerance",
     ]
 
+    @staticmethod
+    def _get_value_with_path(param_as_dict: dict, path: list[str]):
+        value = param_as_dict
+        for key in path:
+            value = value.get(key, None)
+            if value is None:
+                return None
+        return value
+
     @classmethod
     def _get_auto_farfield_method_(cls, param_as_dict: dict):
         volume_zones = None
@@ -193,21 +202,19 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_global_bounding_box(cls, param_as_dict: dict):
-        try:
-            global_bounding_box = param_as_dict["private_attribute_asset_cache"][
-                "project_entity_info"
-            ]["global_bounding_box"]
-            if global_bounding_box:
-                # pylint: disable=no-member
-                return TypeAdapter(BoundingBoxType).validate_python(global_bounding_box)
-            return None
-        except KeyError:
-            return None
+        global_bounding_box = cls._get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "global_bounding_box"],
+        )
+        if global_bounding_box:
+            # pylint: disable=no-member
+            return TypeAdapter(BoundingBoxType).validate_python(global_bounding_box)
+        return None
 
     @classmethod
     def _get_planar_face_tolerance(cls, param_as_dict: dict):
-        planar_face_tolerance = (
-            param_as_dict.get("meshing", {}).get("defaults", {}).get("planar_face_tolerance", None)
+        planar_face_tolerance = cls._get_value_with_path(
+            param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
         )
         return planar_face_tolerance
 
