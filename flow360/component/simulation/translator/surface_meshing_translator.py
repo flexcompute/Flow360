@@ -183,6 +183,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                     "nRelaxIter": snap_controls.n_relax_iter,
                     "nFeatureSnapIter": snap_controls.n_feature_snap_iter,
                     "multiRegionFeatureSnap": snap_controls.multi_region_feature_snap,
+                    "strictRegionSnap": snap_controls.strict_region_snap
                 }
             },
             "meshQuality": {
@@ -203,8 +204,6 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                 "minVolCollapseRatio": quality_settings.min_vol_collapse_ratio if quality_settings.min_vol_collapse_ratio is not None else 0
             }
         }
-        if snap_controls.strict_region_snap is not None:
-            translated["mesherSettings"]["snappyHexMesh"]["snapControls"]["strictRegionSnap"] = snap_controls.strict_region_snap
         # smoothing settings
         smoothing_settings = surface_meshing_params.smooth_controls
 

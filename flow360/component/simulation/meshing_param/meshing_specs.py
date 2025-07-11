@@ -183,7 +183,7 @@ class SnappySnapControls(Flow360BaseModel):
     n_relax_iter: pd.NonNegativeInt = pd.Field(5)
     n_feature_snap_iter: pd.NonNegativeInt = pd.Field(15)
     multi_region_feature_snap: bool = pd.Field(True)
-    strict_region_snap: Optional[bool] = pd.Field(False)
+    strict_region_snap: bool = pd.Field(False)
 
 
 class SnappySmoothControls(Flow360BaseModel):
