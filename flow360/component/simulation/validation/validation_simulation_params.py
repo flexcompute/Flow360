@@ -372,14 +372,21 @@ def _check_complete_boundary_condition_and_unknown_surface(
     missing_boundaries = asset_boundaries - used_boundaries
     unknown_boundaries = used_boundaries - asset_boundaries
 
-    if missing_boundaries:
+    validation_info = get_validation_info()
+    if validation_info is not None and validation_info.is_beta_mesher is True:
+        # We need to find proper way to check symmetric
+        allowed_difference = {"symmetric"}
+    else:
+        allowed_difference = set()
+
+    if missing_boundaries and missing_boundaries != allowed_difference:
         missing_list = ", ".join(sorted(missing_boundaries))
         raise ValueError(
             f"The following boundaries do not have a boundary condition: {missing_list}. "
             "Please add them to a boundary condition model in the `models` section."
         )
 
-    if unknown_boundaries:
+    if unknown_boundaries and unknown_boundaries != allowed_difference:
         unknown_list = ", ".join(sorted(unknown_boundaries))
         raise ValueError(
             f"The following boundaries are not known `Surface` "

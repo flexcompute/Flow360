@@ -23,6 +23,9 @@ from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.types import Axis
 
 
@@ -579,6 +582,44 @@ class GhostSurface(_SurfaceEntityBase):
     private_attribute_entity_type_name: Literal["GhostSurface"] = pd.Field(
         "GhostSurface", frozen=True
     )
+
+    @pd.model_validator(mode="after")
+    def check_symmetric_boundary_existence(self):
+        """Check according to the criteria if the symmetric plane exists."""
+        validation_info = get_validation_info()
+
+        if (
+            validation_info is None
+            or not validation_info.is_beta_mesher
+            or self.name != "symmetric"
+        ):
+            return self
+
+        if validation_info.global_bounding_box is None:
+            # This likely means the user try to use inhouse mesher on old cloud resources.
+            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out.
+            return self
+
+        y_max = validation_info.global_bounding_box[1][1]
+        y_min = validation_info.global_bounding_box[0][1]
+
+        largest_dimension = -np.inf
+        for dim in range(3):
+            dimension = (
+                validation_info.global_bounding_box[dim][1]
+                - validation_info.global_bounding_box[dim][0]
+            )
+            largest_dimension = max(largest_dimension, dimension)
+
+        tolerance = largest_dimension * validation_info.planar_face_tolerance
+
+        if abs(y_max) > tolerance and abs(y_min) > tolerance:
+            raise ValueError(
+                f"`symmetric` boundary not usable: model spans y=[{y_min:.3f}, {y_max:.3f}], but tolerance from y=0 is "
+                f"{validation_info.planar_face_tolerance:.3f}x{largest_dimension:.3f}={tolerance:.3f}."
+            )
+
+        return self
 
 
 # pylint: disable=missing-class-docstring
