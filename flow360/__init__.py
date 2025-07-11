@@ -22,9 +22,24 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
     SurfaceRefinement,
 )
-from flow360.component.simulation.meshing_param.params import (
+from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
+    SnappySurfaceDefaults,
+    SnappySnapControls,
+    SnappyCastellatedMeshControls,
+    SnappyQualityMetrics,
+    SnappySmoothControls
+)
+from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+    SnappyBodyRefinement,
+    SnappyRegionRefinement,
+    SnappySurfaceEdgeRefinement
+)
+from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
+    ModularMeshingWorkflow,
+    SnappySurfaceMeshingParams,
+    BetaVolumeMeshingParams
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -134,6 +149,8 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ReferenceGeometry,
     Transformation,
+    SnappyBody,
+    MeshZone
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -279,4 +296,17 @@ __all__ = [
     "Transformation",
     "WallRotation",
     "report",
+    "ModularMeshingWorkflow",
+    "SnappySurfaceDefaults",
+    "SnappySnapControls",
+    "SnappyCastellatedMeshControls",
+    "SnappyQualityMetrics",
+    "SnappySmoothControls",
+    "SnappyBodyRefinement",
+    "SnappyRegionRefinement",
+    "SnappySurfaceEdgeRefinement",
+    "SnappyBody",
+    "MeshZone",
+    "SnappySurfaceMeshingParams",
+    "BetaVolumeMeshingParams"
 ]
