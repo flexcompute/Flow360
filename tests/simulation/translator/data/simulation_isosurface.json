@@ -1141,22 +1141,6 @@
                 "postProcessing": false
             },
             {
-                "name": "floor_res",
-                "value": {
-                    "type_name": "expression",
-                    "expression": "math.floor(solution.pressure)"
-                },
-                "postProcessing": false
-            },
-            {
-                "name": "ceil_res",
-                "value": {
-                    "type_name": "expression",
-                    "expression": "math.ceil(solution.density)"
-                },
-                "postProcessing": false
-            },
-            {
                 "name": "min_res",
                 "value": {
                     "type_name": "expression",

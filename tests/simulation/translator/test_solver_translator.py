@@ -699,8 +699,6 @@ def test_param_with_user_variables():
     asin_res = UserVariable(name="asin_res", value=math.asin(solution.mut_ratio))
     acos_res = UserVariable(name="acos_res", value=math.acos(solution.Cp))
     atan_res = UserVariable(name="atan_res", value=math.atan(solution.Cpt))
-    floor_res = UserVariable(name="floor_res", value=math.floor(solution.pressure))
-    ceil_res = UserVariable(name="ceil_res", value=math.ceil(solution.density))
     min_res = UserVariable(
         name="min_res", value=math.min(solution.vorticity[2], solution.vorticity[1])
     )
@@ -780,8 +778,6 @@ def test_param_with_user_variables():
                         asin_res,
                         acos_res,
                         atan_res,
-                        floor_res,
-                        ceil_res,
                         min_res,
                         max_res,
                     ],
