@@ -422,20 +422,4 @@ def abs(value: ScalarInputType):  # pylint: disable=redefined-builtin
     return Expression(expression=f"math.abs({value})")
 
 
-@ensure_scalar_input
-def ceil(value: ScalarInputType):
-    """Customized Ceil function to work with the `Expression` and Variables"""
-    if isinstance(value, (unyt_quantity, Number)):
-        return np.ceil(value)
-    return Expression(expression=f"math.ceil({value})")
-
-
-@ensure_scalar_input
-def floor(value: ScalarInputType):
-    """Customized Floor function to work with the `Expression` and Variables"""
-    if isinstance(value, (unyt_quantity, Number)):
-        return np.floor(value)
-    return Expression(expression=f"math.floor({value})")
-
-
 pi = np.pi
