@@ -14,7 +14,8 @@ import flow360.component.simulation.units as u
 
 from flow360.component.simulation.unit_system import AngleType, LengthType, AreaType
 
-from typing import Optional, Self
+from typing import Optional
+from typing_extensions import Self
 
 import pydantic as pd
 
