@@ -316,6 +316,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
 
+    validation_info = get_validation_info()
+
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
 
     # Filter out the ones that will be deleted by mesher
@@ -331,13 +333,13 @@ def _check_complete_boundary_condition_and_unknown_surface(
         if automated_farfield_method == "auto":
             asset_boundary_entities += [
                 item
-                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
-                if item.name not in ("symmetric-1", "symmetric-2")
+                for item in validation_info.validated_ghost_entities
+                if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
             ]
         elif automated_farfield_method == "quasi-3d":
             asset_boundary_entities += [
                 item
-                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
+                for item in validation_info.validated_ghost_entities
                 if item.name != "symmetric"
             ]
 
@@ -372,21 +374,14 @@ def _check_complete_boundary_condition_and_unknown_surface(
     missing_boundaries = asset_boundaries - used_boundaries
     unknown_boundaries = used_boundaries - asset_boundaries
 
-    validation_info = get_validation_info()
-    if validation_info is not None and validation_info.is_beta_mesher is True:
-        # We need to find proper way to check symmetric
-        allowed_difference = {"symmetric"}
-    else:
-        allowed_difference = set()
-
-    if missing_boundaries and missing_boundaries != allowed_difference:
+    if missing_boundaries:
         missing_list = ", ".join(sorted(missing_boundaries))
         raise ValueError(
             f"The following boundaries do not have a boundary condition: {missing_list}. "
             "Please add them to a boundary condition model in the `models` section."
         )
 
-    if unknown_boundaries and unknown_boundaries != allowed_difference:
+    if unknown_boundaries:
         unknown_list = ", ".join(sorted(unknown_boundaries))
         raise ValueError(
             f"The following boundaries are not known `Surface` "

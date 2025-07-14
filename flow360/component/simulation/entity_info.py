@@ -533,7 +533,6 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
 
     type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
     boundaries: list[Surface] = pd.Field([])
-    ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
     global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
     # pylint: disable=arguments-differ

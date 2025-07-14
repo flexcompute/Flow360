@@ -93,6 +93,7 @@ from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
     VOLUME_MESH,
+    ParamsValidationInfo,
     ValidationContext,
 )
 
@@ -773,7 +774,14 @@ def test_incomplete_BC_volume_mesh():
             r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
-        with ValidationContext(ALL):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+                validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
+            ),
+        ):
             with SI_unit_system:
                 SimulationParams(
                     meshing=MeshingParams(
@@ -815,27 +823,27 @@ def test_incomplete_BC_surface_mesh():
         ),
     )
 
-    with ValidationContext(ALL):
-        # i_will_be_deleted won't trigger "no bc assigned" error
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    ),
-                    volume_zones=[auto_farfield],
+    # i_will_be_deleted won't trigger "no bc assigned" error
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 ),
-                models=[
-                    Fluid(),
-                    Wall(entities=wall_1),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    SlipWall(entities=[no_bc]),
-                    Freestream(entities=auto_farfield.farfield),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall_1),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+                SlipWall(entities=[no_bc]),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+        params
 
     with pytest.raises(
         ValueError,
@@ -843,7 +851,14 @@ def test_incomplete_BC_surface_mesh():
             r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
         ),
     ):
-        with ValidationContext(ALL):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+                validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
+            ),
+        ):
             with SI_unit_system:
                 SimulationParams(
                     meshing=MeshingParams(
@@ -868,7 +883,14 @@ def test_incomplete_BC_surface_mesh():
             r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
-        with ValidationContext(ALL):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+                validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
+            ),
+        ):
             with SI_unit_system:
                 SimulationParams(
                     meshing=MeshingParams(
