@@ -244,14 +244,6 @@
             "name": "atan_res"
         },
         {
-            "expression": "floor_res = (floor(primitiveVars[4]) * 40000000.0);",
-            "name": "floor_res"
-        },
-        {
-            "expression": "ceil_res = (ceil(primitiveVars[0]) * 1000.0);",
-            "name": "ceil_res"
-        },
-        {
             "expression": "double ___vorticity[3];___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;min_res = (min(___vorticity[2], ___vorticity[1]) * 200.0);",
             "name": "min_res"
         },
@@ -332,8 +324,6 @@
             "asin_res",
             "acos_res",
             "atan_res",
-            "floor_res",
-            "ceil_res",
             "min_res",
             "max_res"
         ],
