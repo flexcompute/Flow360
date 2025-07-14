@@ -21,7 +21,7 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
-from flow360.component.simulation.meshing_param.params import BetaVolumeMeshingParams, MeshingParams
+from flow360.component.simulation.meshing_param.params import BetaVolumeMeshingParams, MeshingParams, ModularMeshingWorkflow
 
 def unifrom_refinement_translator(obj: UniformRefinement):
     """
@@ -162,12 +162,13 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             ["meshing"],
         )
     
-    if isinstance(input_params.meshing, tuple) and isinstance(input_params.meshing[1], BetaVolumeMeshingParams):
-        volume_zones = input_params.meshing[1].volume_zones
-        refinements = input_params.meshing[1].refinements
-        refinement_factor = input_params.meshing[1].refinement_factor
-        defaults = input_params.meshing[1]
-        gap_treatment_strength = input_params.meshing[1].gap_treatment_strength
+    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(input_params.meshing.volume_meshing, BetaVolumeMeshingParams):
+        volume_zones = input_params.meshing.volume_meshing.volume_zones
+        refinements = input_params.meshing.volume_meshing.refinements
+        refinement_factor = input_params.meshing.volume_meshing.refinement_factor
+        defaults = input_params.meshing.volume_meshing.defaults
+        gap_treatment_strength = input_params.meshing.volume_meshing.defaults.gap_treatment_strength
+        planar_tolerance = input_params.meshing.volume_meshing.planar_face_tolerance
 
     if isinstance(input_params.meshing, MeshingParams):
         volume_zones = input_params.meshing.volume_zones
@@ -175,6 +176,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         refinement_factor = input_params.meshing.refinement_factor
         defaults = input_params.meshing.defaults
         gap_treatment_strength = input_params.meshing.gap_treatment_strength
+        planar_tolerance = input_params.meshing.defaults.planar_face_tolerance
 
     if volume_zones is None:
         raise Flow360TranslationError(
@@ -243,7 +245,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = defaults.planar_face_tolerance
+        translated["volume"]["planarFaceTolerance"] = planar_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(

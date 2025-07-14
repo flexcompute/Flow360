@@ -24,11 +24,12 @@ from flow360.component.simulation.meshing_param.face_params import (
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
     MeshingDefaults,
-    SnappySurfaceDefaults,
+    SnappySurfaceMeshingDefaults,
     SnappySnapControls,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
-    SnappySmoothControls
+    SnappySmoothControls,
+    BetaVolumeMeshingDefaults
 )
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
@@ -297,7 +298,7 @@ __all__ = [
     "WallRotation",
     "report",
     "ModularMeshingWorkflow",
-    "SnappySurfaceDefaults",
+    "SnappySurfaceMeshingDefaults",
     "SnappySnapControls",
     "SnappyCastellatedMeshControls",
     "SnappyQualityMetrics",
@@ -308,5 +309,6 @@ __all__ = [
     "SnappyBody",
     "MeshZone",
     "SnappySurfaceMeshingParams",
-    "BetaVolumeMeshingParams"
+    "BetaVolumeMeshingParams",
+    "BetaVolumeMeshingDefaults"
 ]

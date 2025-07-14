@@ -1,7 +1,11 @@
 import pydantic as pd
 import pytest
 
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams, 
+    BetaVolumeMeshingParams, 
+    ModularMeshingWorkflow
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -50,6 +54,40 @@ def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
                 )
             )
 
+        with CGS_unit_system:
+            cylinder_1 = Cylinder(
+                name="1",
+                outer_radius=12,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            cylinder_2 = Cylinder(
+                name="2",
+                outer_radius=2,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=BetaVolumeMeshingParams(
+                        volume_zones=[
+                            RotationCylinder(
+                                entities=[cylinder_1, cylinder_2],
+                                spacing_axial=20,
+                                spacing_radial=0.2,
+                                spacing_circumferential=20,
+                                enclosed_entities=[
+                                    Surface(name="hub"),
+                                ],
+                            ),
+                            AutomatedFarfield(),
+                        ],
+                    )
+                )
+            )
+
 
 def test_limit_cylinder_entity_name_length_in_rotation_cylinder():
     with pytest.raises(
@@ -81,6 +119,33 @@ def test_limit_cylinder_entity_name_length_in_rotation_cylinder():
                     ],
                 )
             )
+
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="very_long_cylinder_name",
+                outer_radius=12,
+                height=2,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_zones=[
+                        RotationCylinder(
+                            entities=[cylinder],
+                            spacing_axial=20,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],)
+                )
+            )
+
 
 
 def test_reuse_of_same_cylinder():
@@ -121,6 +186,40 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=BetaVolumeMeshingParams
+                    (volume_zones=[
+                        RotationCylinder(
+                            entities=[cylinder],
+                            spacing_axial=20,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
+                    refinements=[
+                        AxisymmetricRefinement(
+                            entities=[cylinder],
+                            spacing_axial=0.1,
+                            spacing_radial=0.2,
+                            spacing_circumferential=0.3,
+                        )
+                    ],)
+                )
+            )
+
     with CGS_unit_system:
         cylinder = Cylinder(
             name="Okay to reuse",
@@ -152,6 +251,38 @@ def test_reuse_of_same_cylinder():
             )
         )
 
+    with CGS_unit_system:
+        cylinder = Cylinder(
+            name="Okay to reuse",
+            outer_radius=1,
+            height=12,
+            axis=(0, 1, 0),
+            center=(0, 5, 0),
+        )
+        SimulationParams(
+            meshing=ModularMeshingWorkflow(
+                volume_meshing=BetaVolumeMeshingParams
+                (volume_zones=[
+                    RotationCylinder(
+                        entities=[cylinder],
+                        spacing_axial=20,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20,
+                        enclosed_entities=[
+                            Surface(name="hub"),
+                        ],
+                    ),
+                    AutomatedFarfield(),
+                ],
+                refinements=[
+                    UniformRefinement(
+                        entities=[cylinder],
+                        spacing=0.1,
+                    )
+                ],)
+            )
+        )
+
     with pytest.raises(
         pd.ValidationError,
         match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
@@ -180,6 +311,34 @@ def test_reuse_of_same_cylinder():
 
     with pytest.raises(
         pd.ValidationError,
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `UniformRefinement` at the same time is not allowed.",
+    ):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=BetaVolumeMeshingParams
+                    (refinements=[
+                        UniformRefinement(entities=[cylinder], spacing=0.1),
+                        AxisymmetricRefinement(
+                            entities=[cylinder],
+                            spacing_axial=0.1,
+                            spacing_radial=0.1,
+                            spacing_circumferential=0.1,
+                        ),
+                    ],)
+                )
+            )
+
+
+    with pytest.raises(
+        pd.ValidationError,
         match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
     ):
         with CGS_unit_system:
@@ -198,3 +357,25 @@ def test_reuse_of_same_cylinder():
                     ],
                 )
             )
+    with pytest.raises(
+        pd.ValidationError,
+        match=r" Volume entity `I am reused` is used multiple times in `UniformRefinement`.",
+    ):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="I am reused",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            SimulationParams(
+                meshing=ModularMeshingWorkflow(
+                    volume_meshing=BetaVolumeMeshingParams
+                    (refinements=[
+                        UniformRefinement(entities=[cylinder], spacing=0.1),
+                        UniformRefinement(entities=[cylinder], spacing=0.2),
+                    ],)
+                )
+            )
+

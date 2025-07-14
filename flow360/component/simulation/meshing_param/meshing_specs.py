@@ -14,7 +14,7 @@ import flow360.component.simulation.units as u
 
 from flow360.component.simulation.unit_system import AngleType, LengthType, AreaType
 
-from typing import Optional
+from typing import Optional, Self
 
 import pydantic as pd
 
@@ -148,11 +148,50 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
     
-class SnappySurfaceDefaults(Flow360BaseModel):
+class BetaVolumeMeshingDefaults(Flow360BaseModel):
+    ##::    Default boundary layer settings
+    boundary_layer_growth_rate: float = pd.Field(
+        1.2,
+        description="Default growth rate for volume prism layers.",
+        ge=1,
+    )
+    # pylint: disable=no-member
+    boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="Default first layer thickness for volumetric anisotropic layers."
+        " This can be overridden with :class:`~flow360.BoundaryLayer`.",
+    )  # Truly optional if all BL faces already have first_layer_thickness
+
+    gap_treatment_strength: Optional[float] = pd.Field(
+        default=0,
+        ge=0,
+        le=1,
+        description="Narrow gap treatment strength used when two surfaces are in close proximity."
+        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
+        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
+        " However the impact on regions without close proximity is negligible.",
+    )
+
+    number_of_boundary_layers: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="Default number of volumetric anisotropic layers."
+        " The volume mesher will automatically calculate the required"
+        " no. of layers to grow the boundary layer elements to isotropic size if not specified."
+        " This is only supported by the beta mesher and can not be overridden per face.",
+    )
+    
+class SnappySurfaceMeshingDefaults(Flow360BaseModel):
     min_spacing: LengthType.Positive = pd.Field()
     max_spacing: LengthType.Positive = pd.Field()
-    # TODO: validator to ensure max > min
     gap_resolution: LengthType.Positive = pd.Field()
+
+    @pd.model_validator(mode="after")
+    def _check_spacing_order(self) -> Self:
+        if self.min_spacing and self.max_spacing:
+            if self.min_spacing > self.max_spacing:
+                raise ValueError("Minimum spacing must be lower than maximum spacing.")
+        return self
+    
 class SnappyQualityMetrics(Flow360BaseModel):
     # TODO: create doctrings with cursor and OF docs, convert to underscore case
     max_non_ortho: Optional[AngleType.Positive] = pd.Field(default=85 * u.deg)

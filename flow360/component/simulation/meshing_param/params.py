@@ -33,8 +33,9 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappyQualityMetrics, 
     SnappySnapControls, 
     SnappyCastellatedMeshControls,
-    SnappySurfaceDefaults,
-    SnappySmoothControls
+    SnappySurfaceMeshingDefaults,
+    SnappySmoothControls,
+    BetaVolumeMeshingDefaults
     )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.primitives import Box, MeshZone
@@ -257,7 +258,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
         "SnappySurfaceMeshingParams", frozen=True
     )
-    defaults: SnappySurfaceDefaults = pd.Field()
+    defaults: SnappySurfaceMeshingDefaults = pd.Field()
     quality_metrics: SnappyQualityMetrics = pd.Field(SnappyQualityMetrics())
     snap_controls: SnappySnapControls = pd.Field(SnappySnapControls())
     castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(SnappyCastellatedMeshControls())
@@ -272,26 +273,15 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     type: Literal["BetaVolumeMeshingParams"] = pd.Field(
         "BetaVolumeMeshingParams", frozen=True
     )
+    defaults: BetaVolumeMeshingDefaults = pd.Field(
+        BetaVolumeMeshingDefaults()
+    )
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
         + "and first layer thickness will be adjusted to generate `r`-times"
         + " finer mesh where r is the refinement_factor value.",
     )
-    ##::    Default boundary layer settings
-    boundary_layer_growth_rate: float = ContextField(
-        1.2,
-        description="Default growth rate for volume prism layers.",
-        ge=1,
-        context=VOLUME_MESH,
-    )
-    # pylint: disable=no-member
-    boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = ConditionalField(
-        None,
-        description="Default first layer thickness for volumetric anisotropic layers."
-        " This can be overridden with :class:`~flow360.BoundaryLayer`.",
-        context=VOLUME_MESH,
-    )  # Truly optional if all BL faces already have first_layer_thickness
 
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
         default=None, description="Creation of new volume zones."
@@ -302,15 +292,13 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         description="Additional fine-tunning for refinements on top of the global settings",
     )
 
-    gap_treatment_strength: Optional[float] = ContextField(
-        default=0,
-        ge=0,
-        le=1,
-        description="Narrow gap treatment strength used when two surfaces are in close proximity."
-        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
-        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        " However the impact on regions without close proximity is negligible.",
-        context=VOLUME_MESH,
+    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
+        1e-6,
+        description="Tolerance used for detecting planar faces in the input surface mesh"
+        " that need to be remeshed, such as symmetry planes."
+        " This tolerance is non-dimensional, and represents a distance"
+        " relative to the largest dimension of the bounding box of the input surface mesh."
+        " This is only supported by the beta mesher and can not be overridden per face.",
     )
     
     @pd.field_validator("volume_zones", mode="after")

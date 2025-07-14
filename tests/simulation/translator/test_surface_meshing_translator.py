@@ -27,7 +27,7 @@ from flow360.component.simulation.meshing_param.params import (
     ModularMeshingWorkflow
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    SnappySurfaceDefaults,
+    SnappySurfaceMeshingDefaults,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySnapControls,
@@ -523,7 +523,7 @@ def snappy_all_defaults():
     test_geometry = TempGeometry("tester.stl")
     with SI_unit_system:
         surf_meshing_params = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceDefaults(
+            defaults=SnappySurfaceMeshingDefaults(
                 min_spacing=3 * u.mm,
                 max_spacing=4 * u.mm,
                 gap_resolution= 1 * u.mm
@@ -545,7 +545,7 @@ def snappy_basic_refinements():
     test_geometry = TempGeometry("tester.stl")
     with SI_unit_system:
         surf_meshing_params = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceDefaults(
+            defaults=SnappySurfaceMeshingDefaults(
                 min_spacing=3*u.mm,
                 max_spacing=4*u.mm,
                 gap_resolution=1*u.mm
@@ -606,7 +606,7 @@ def snappy_settings():
     test_geometry = TempGeometry("tester.stl")
     with SI_unit_system:
         surf_meshing_params = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceDefaults(
+            defaults=SnappySurfaceMeshingDefaults(
                 min_spacing=3 * u.mm,
                 max_spacing=4 * u.mm,
                 gap_resolution= 1 * u.mm
