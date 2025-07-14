@@ -595,7 +595,7 @@ class GhostSphere(_SurfaceEntityBase):
     center: Optional[List] = pd.Field(None, alias="center")
     max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
 
-    def exists(self) -> bool:
+    def exists(self, _) -> bool:
         """Ghost farfield always exists."""
         return True
 
