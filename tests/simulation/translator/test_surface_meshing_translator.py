@@ -607,6 +607,50 @@ def snappy_basic_refinements():
     return param
 
 @pytest.fixture()
+def snappy_refinements_no_regions():
+    test_geometry = TempGeometry("rotor.csm")
+    with SI_unit_system:
+        surf_meshing_params = SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=3*u.mm,
+                max_spacing=4*u.mm,
+                gap_resolution=1*u.mm
+            ),
+            refinements=[
+                SnappyBodyRefinement(
+                    gap_resolution=2*u.mm,
+                    min_spacing=5*u.mm,
+                    max_spacing=10*u.mm,
+                    bodies=[SnappyBody(body_name="body01_face001")]
+                ),
+                SnappyBodyRefinement(
+                    gap_resolution=0.5*u.mm,
+                    min_spacing=1*u.mm,
+                    max_spacing=2*u.mm,
+                    bodies=[SnappyBody(body_name="body01_face002")],
+                    proximity_spacing=0.2*u.mm
+                ),
+                SnappySurfaceEdgeRefinement(
+                    spacing=4*u.mm,
+                    min_elem=3,
+                    included_angle=120*u.deg,
+                    bodies=[SnappyBody(body_name="body01_face003")]
+                ),
+            ],
+            smooth_controls=SnappySmoothControls()
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info()
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params
+            )
+        )
+    return param
+
+@pytest.fixture()
 def snappy_settings():
     test_geometry = TempGeometry("tester.stl")
     with SI_unit_system:
@@ -851,4 +895,11 @@ def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_p
         snappy_settings_off_position,
         get_snappy_geometry.mesh_unit,
         "snappy_settings_off_pos.json"
+    )
+
+def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_regions):
+    _translate_and_compare(
+        snappy_refinements_no_regions,
+        get_snappy_geometry.mesh_unit,
+        "snappy_no_regions.json"
     )

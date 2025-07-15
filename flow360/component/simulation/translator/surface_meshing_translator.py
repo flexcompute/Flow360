@@ -95,7 +95,7 @@ def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, tr
         if body["bodyName"] in applicable_bodies or (body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None):
             body["edges"] = edges
         if body["bodyName"] in applicable_regions:
-            for region in body["regions"]:
+            for region in body.get("regions", []):
                 if region["patchName"] in applicable_regions[body["bodyName"]]:
                     region["edges"] = edges
             
@@ -103,7 +103,7 @@ def apply_SnappyRegionRefinement(refinement:SnappyRegionRefinement, translated):
     applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.entities.stored_entities if isinstance(entity, Surface)}
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_regions:
-            for region in body["regions"]:
+            for region in body.get("regions", []):
                 if region["patchName"] in applicable_regions[body["bodyName"]]:
                     if refinement.proximity_spacing is not None:
                         region["gapSpacingReduction"] = refinement.proximity_spacing.value.item()
