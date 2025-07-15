@@ -91,6 +91,7 @@ class ReferenceGeometry(Flow360BaseModel):
     area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
         None, description="The reference area of the geometry."
     )
+    private_attribute_area_settings: Optional[dict] = pd.Field(None)
 
 
 class Transformation(Flow360BaseModel):
