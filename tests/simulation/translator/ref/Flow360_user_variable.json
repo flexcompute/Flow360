@@ -53,23 +53,6 @@
         "outputFields": [],
         "outputFormat": "paraview"
     },
-    "monitorOutput": {
-        "monitors": {
-            "MassFluxIntegral": {
-                "animationFrequency": 1,
-                "animationFrequencyOffset": 0,
-                "computeTimeAverages": false,
-                "outputFields": [
-                    "MassFluxProjected_integral"
-                ],
-                "surfaces": [
-                    "VOLUME/LEFT"
-                ],
-                "type": "surfaceIntegral"
-            }
-        },
-        "outputFields": []
-    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,
@@ -92,21 +75,36 @@
     "outputRescale": {
         "velocityScale": 20.0
     },
+    "surfaceIntegralOutput": {
+        "monitors": {
+            "MassFluxIntegral": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ],
+                "surfaces": [
+                    "VOLUME/LEFT"
+                ],
+                "type": "surfaceIntegral"
+            }
+        },
+        "outputFields": []
+    },
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
             "fluid/body": {
                 "outputFields": [
+                    "cos_deg_res",
                     "exp_res",
                     "sin_float_res",
-                    "cos_deg_res",
                     "tan_rad_res"
                 ]
             }
@@ -176,20 +174,20 @@
             "name": "uuu"
         },
         {
-            "name": "const_value",
-            "expression": "const_value = ((200.0 * 1.0) / 200.0);"
+            "expression": "const_value = ((200.0 * 1.0) / 200.0);",
+            "name": "const_value"
         },
         {
-            "name": "const_value_dimensionless",
-            "expression": "const_value_dimensionless = 1.123;"
+            "expression": "const_value_dimensionless = 1.123;",
+            "name": "const_value_dimensionless"
         },
         {
-            "name": "const_array",
-            "expression": "const_array[0] = ((200.0 * 1.0) / 200.0); const_array[1] = ((400.0 * 1.0) / 200.0); const_array[2] = ((600.0 * 1.0) / 200.0);"
+            "expression": "const_array[0] = ((200.0 * 1.0) / 200.0); const_array[1] = ((400.0 * 1.0) / 200.0); const_array[2] = ((600.0 * 1.0) / 200.0);",
+            "name": "const_array"
         },
         {
-            "name": "const_array_dimensionless",
-            "expression": "const_array_dimensionless[0] = (1.0 * 1.0); const_array_dimensionless[1] = (2.0 * 1.0); const_array_dimensionless[2] = (3.0 * 1.0);"
+            "expression": "const_array_dimensionless[0] = (1.0 * 1.0); const_array_dimensionless[1] = (2.0 * 1.0); const_array_dimensionless[2] = (3.0 * 1.0);",
+            "name": "const_array_dimensionless"
         },
         {
             "expression": "double ___temperature;___temperature =  primitiveVars[4] / (primitiveVars[0] * (1.0 / 1.4));my_temperature = (((___temperature + (-10 * 0.003663003663003663)) * 1.8) * 273.0);",
@@ -302,30 +300,29 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "Mach_SI",
-            "velocity_SI",
-            "uuu",
-            "const_value",
-            "const_value_dimensionless",
+            "abs_res",
+            "acos_res",
+            "add_res",
+            "asin_res",
+            "atan_res",
             "const_array",
             "const_array_dimensionless",
-            "my_temperature",
+            "const_value",
+            "const_value_dimensionless",
             "cross_res",
             "dot_res",
-            "add_res",
-            "magnitude_res",
-            "subtract_res",
-            "sqrt_res",
             "log_res",
-            "power_res",
-            "abs_res",
-            "asin_res",
-            "acos_res",
-            "atan_res",
+            "magnitude_res",
+            "max_res",
             "min_res",
-            "max_res"
+            "my_temperature",
+            "power_res",
+            "sqrt_res",
+            "subtract_res",
+            "uuu",
+            "velocity_SI"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1

@@ -91,7 +91,6 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
-    update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
@@ -124,12 +123,8 @@ def init_non_average_output(
     base: dict,
     obj_list,
     class_type: Union[SliceOutput, IsosurfaceOutput, VolumeOutput, SurfaceOutput],
-    has_average_capability: bool,
 ):
     """Initialize the common output attribute for non-average output."""
-    if has_average_capability:
-        base["computeTimeAverages"] = False
-
     base["animationFrequency"] = get_global_setting_from_first_instance(
         obj_list,
         class_type,
@@ -149,7 +144,6 @@ def init_average_output(
     class_type: Union[TimeAverageVolumeOutput, TimeAverageSurfaceOutput],
 ):
     """Initialize the common output attribute for average output."""
-    base["computeTimeAverages"] = True
     base["animationFrequencyTimeAverage"] = get_global_setting_from_first_instance(
         obj_list,
         class_type,
@@ -168,7 +162,7 @@ def init_average_output(
     return base
 
 
-def init_output_base(obj_list, class_type: Type, has_average_capability: bool, is_average: bool):
+def init_output_base(obj_list, class_type: Type, is_average: bool):
     """Initialize the common output attribute."""
 
     base = {"outputFields": []}
@@ -189,14 +183,13 @@ def init_output_base(obj_list, class_type: Type, has_average_capability: bool, i
             base,
             obj_list,
             class_type,
-            has_average_capability,
         )
     return base
 
 
 def add_unused_output_settings_for_comparison(output_dict: dict):
     """
-    Add unused output settings for easier debugging/comparsions.
+    Add unused output settings for easier debugging/comparisons.
     """
     for freq_key in ["animationFrequencyTimeAverage", "animationFrequency"]:
         if freq_key not in output_dict:
@@ -270,7 +263,7 @@ def translate_output_fields(
             output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
-    return {"outputFields": output_fields}
+    return {"outputFields": sorted(output_fields)}
 
 
 def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
@@ -289,11 +282,9 @@ def monitor_translator(
 ):
     """Monitor translator"""
     monitor_group = translate_output_fields(output_model)
-    monitor_group["computeTimeAverages"] = False
     monitor_group["animationFrequency"] = 1
     monitor_group["animationFrequencyOffset"] = 0
     if isinstance(output_model, (TimeAverageProbeOutput, TimeAverageSurfaceProbeOutput)):
-        monitor_group["computeTimeAverages"] = True
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
         monitor_group["startAverageIntegrationStep"] = output_model.start_step
@@ -396,28 +387,23 @@ def translate_volume_output(
     volume_output = init_output_base(
         output_params,
         volume_output_class,
-        has_average_capability=True,
         is_average=volume_output_class is TimeAverageVolumeOutput,
     )
     # Get outputFields
     output_fields = []
-
-    output_fields = append_component_to_output_fields(
-        get_global_setting_from_first_instance(
-            output_params, volume_output_class, "output_fields"
-        ).model_dump()["items"]
-    )
-
-    for output_field in get_global_setting_from_first_instance(
+    fields = get_global_setting_from_first_instance(
         output_params, volume_output_class, "output_fields"
-    ).items:
+    )
+    output_fields = append_component_to_output_fields(fields.model_dump()["items"])
+
+    for output_field in fields.items:
         if isinstance(output_field, UserVariable):
             output_fields.append(output_field.name)
     # Filter out the UserVariable Dicts
     output_fields = [item for item in output_fields if isinstance(item, str)]
     volume_output.update(
         {
-            "outputFields": output_fields,
+            "outputFields": sorted(output_fields),
         }
     )
     return volume_output
@@ -430,12 +416,11 @@ def translate_surface_output(
 ):
     """Translate surface output settings."""
 
-    assert "boundaries" in translated  # , "Boundaries must be translated before surface output"
+    assert "boundaries" in translated  #  "Boundaries must be translated before surface output"
 
     surface_output = init_output_base(
         output_params,
         surface_output_class,
-        has_average_capability=True,
         is_average=surface_output_class is TimeAverageSurfaceOutput,
     )
     surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
@@ -461,7 +446,6 @@ def translate_slice_output(
     translated_output = init_output_base(
         output_params,
         output_class,
-        has_average_capability=True,
         is_average=output_class is TimeAverageSliceOutput,
     )
     translated_output["slices"] = translate_setting_and_apply_to_all_entities(
@@ -476,42 +460,19 @@ def translate_slice_output(
 
 def translate_isosurface_output(
     input_params: SimulationParams,
+    output_class: Union[IsosurfaceOutput, TimeAverageIsosurfaceOutput],
     output_params: list,
     injection_function,
 ):
     """Translate slice or isosurface output settings."""
     translated_output = init_output_base(
         output_params,
-        IsosurfaceOutput,
-        has_average_capability=False,
-        is_average=False,
+        output_class,
+        is_average=output_class is TimeAverageIsosurfaceOutput,
     )
     translated_output["isoSurfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
-        IsosurfaceOutput,
-        translation_func=translate_output_fields,
-        to_list=False,
-        entity_injection_func=injection_function,
-        entity_injection_input_params=input_params,
-    )
-    return translated_output
-
-
-def translate_time_average_isosurface_output(
-    input_params: SimulationParams,
-    output_params: list,
-    injection_function,
-):
-    """Translate time average isosurface output settings."""
-    translated_output = init_output_base(
-        output_params,
-        TimeAverageIsosurfaceOutput,
-        has_average_capability=True,
-        is_average=True,
-    )
-    translated_output["isoSurfaces"] = translate_setting_and_apply_to_all_entities(
-        output_params,
-        TimeAverageIsosurfaceOutput,
+        output_class,
         translation_func=translate_output_fields,
         to_list=False,
         entity_injection_func=injection_function,
@@ -529,7 +490,6 @@ def translate_surface_slice_output(
     surface_slice_output = init_output_base(
         output_params,
         output_class,
-        has_average_capability=False,
         is_average=False,
     )
     surface_slice_output["slices"] = translate_setting_and_apply_to_all_entities(
@@ -560,19 +520,6 @@ def translate_monitor_output(
         use_instance_name_as_key=True,
     )
     return translated_output
-
-
-def merge_monitor_output(probe_output: dict, integral_output: dict):
-    """Merge probe and surface integral output."""
-    if probe_output == {}:
-        return integral_output
-    if integral_output == {}:
-        return probe_output
-
-    for integral_output_name, integral_output_value in integral_output["monitors"].items():
-        assert integral_output_name not in probe_output["monitors"]
-        probe_output["monitors"][integral_output_name] = integral_output_value
-    return probe_output
 
 
 def translate_acoustic_output(output_params: list):
@@ -776,66 +723,63 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     if outputs is None:
         return translated
-    ##:: Step1: Get translated["volumeOutput"]
-    volume_output = {}
-    volume_output_average = {}
-    if has_instance_in_list(outputs, VolumeOutput):
-        volume_output = translate_volume_output(outputs, VolumeOutput)
-    if has_instance_in_list(outputs, TimeAverageVolumeOutput):
-        volume_output_average = translate_volume_output(outputs, TimeAverageVolumeOutput)
-    # Merge
-    volume_output.update(**volume_output_average)
-    if volume_output:
-        translated["volumeOutput"] = add_unused_output_settings_for_comparison(volume_output)
+    ##:: Step1: Get translated["volumeOutput"/"timeAverageVolumeOutput"]
+    volume_output_configs = [
+        (VolumeOutput, "volumeOutput"),
+        (TimeAverageVolumeOutput, "timeAverageVolumeOutput"),
+    ]
+
+    for output_class, output_key in volume_output_configs:
+        if has_instance_in_list(outputs, output_class):
+            volume_output = translate_volume_output(outputs, output_class)
+            if volume_output:
+                translated[output_key] = add_unused_output_settings_for_comparison(volume_output)
 
     ##:: Step2: Get translated["surfaceOutput"]
-    surface_output = {}
-    surface_output_average = {}
-    if has_instance_in_list(outputs, SurfaceOutput):
-        surface_output = translate_surface_output(outputs, SurfaceOutput, translated)
-    if has_instance_in_list(outputs, TimeAverageSurfaceOutput):
-        surface_output_average = translate_surface_output(
-            outputs, TimeAverageSurfaceOutput, translated
-        )
-    # Merge
-    update_dict_recursively(surface_output, surface_output_average)
-    if surface_output:
-        translated["surfaceOutput"] = add_unused_output_settings_for_comparison(surface_output)
+    surface_output_configs = [
+        (SurfaceOutput, "surfaceOutput"),
+        (TimeAverageSurfaceOutput, "timeAverageSurfaceOutput"),
+    ]
+    for output_class, output_key in surface_output_configs:
+        if has_instance_in_list(outputs, output_class):
+            surface_output = translate_surface_output(outputs, output_class, translated)
+            if surface_output:
+                translated[output_key] = add_unused_output_settings_for_comparison(surface_output)
 
     ##:: Step3: Get translated["sliceOutput"]
-    slice_output = {}
-    slice_output_average = {}
-    if has_instance_in_list(outputs, SliceOutput):
-        slice_output = translate_slice_output(outputs, SliceOutput, inject_slice_info)
-    if has_instance_in_list(outputs, TimeAverageSliceOutput):
-        slice_output_average = translate_slice_output(
-            outputs, TimeAverageSliceOutput, inject_slice_info
-        )
-    # Merge
-    update_dict_recursively(slice_output, slice_output_average)
-    if slice_output:
-        translated["sliceOutput"] = add_unused_output_settings_for_comparison(slice_output)
+    slice_output_configs = [
+        (SliceOutput, "sliceOutput"),
+        (TimeAverageSliceOutput, "timeAverageSliceOutput"),
+    ]
+    for output_class, output_key in slice_output_configs:
+        if has_instance_in_list(outputs, output_class):
+            slice_output = translate_slice_output(outputs, output_class, inject_slice_info)
+            if slice_output:
+                translated[output_key] = add_unused_output_settings_for_comparison(slice_output)
 
     ##:: Step4: Get translated["isoSurfaceOutput"]
-    if has_instance_in_list(outputs, IsosurfaceOutput):
-        translated["isoSurfaceOutput"] = translate_isosurface_output(
-            input_params, outputs, inject_isosurface_info
-        )
-    if has_instance_in_list(outputs, TimeAverageIsosurfaceOutput):
-        translated["timeAverageIsoSurfaceOutput"] = translate_time_average_isosurface_output(
-            input_params, outputs, inject_isosurface_info
-        )
+    iso_surface_output_configs = [
+        (IsosurfaceOutput, "isoSurfaceOutput"),
+        (TimeAverageIsosurfaceOutput, "timeAverageIsoSurfaceOutput"),
+    ]
+    for output_class, output_key in iso_surface_output_configs:
+        if has_instance_in_list(outputs, output_class):
+            translated[output_key] = translate_isosurface_output(
+                input_params, output_class, outputs, inject_isosurface_info
+            )
 
     ##:: Step5: Get translated["monitorOutput"]
-    probe_output = {}
-    probe_output_average = {}
+    probe_output_configs = [
+        (ProbeOutput, "monitorOutput"),
+        (TimeAverageProbeOutput, "timeAverageMonitorOutput"),
+    ]
+    for output_class, output_key in probe_output_configs:
+        if has_instance_in_list(outputs, output_class):
+            translated[output_key] = translate_monitor_output(
+                outputs, output_class, inject_probe_info
+            )
+
     integral_output = {}
-    if has_instance_in_list(outputs, ProbeOutput):
-        probe_output = translate_monitor_output(outputs, ProbeOutput, inject_probe_info)
-    if has_instance_in_list(outputs, TimeAverageProbeOutput):
-        probe_output_average = translate_monitor_output(
-            outputs, TimeAverageProbeOutput, inject_probe_info
-        )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         for output in outputs:
             if not isinstance(output, SurfaceIntegralOutput):
@@ -867,35 +811,27 @@ def translate_output(input_params: SimulationParams, translated: dict):
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
-    # Merge
-    if probe_output or probe_output_average:
-        probe_output = merge_monitor_output(probe_output, probe_output_average)
-    if probe_output or integral_output:
-        translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
+
+    if integral_output:
+        translated["surfaceIntegralOutput"] = integral_output
 
     ##:: Step5.1: Get translated["surfaceMonitorOutput"]
-    surface_monitor_output = {}
-    surface_monitor_output_average = {}
-    if has_instance_in_list(outputs, SurfaceProbeOutput):
-        surface_monitor_output = translate_monitor_output(
-            outputs,
-            SurfaceProbeOutput,
-            inject_surface_probe_info,
-            surface_probe_setting_translation_func,
-        )
-    if has_instance_in_list(outputs, TimeAverageSurfaceProbeOutput):
-        surface_monitor_output_average = translate_monitor_output(
-            outputs,
-            TimeAverageSurfaceProbeOutput,
-            inject_surface_probe_info,
-            surface_probe_setting_translation_func,
-        )
-    if surface_monitor_output or surface_monitor_output_average:
-        translated["surfaceMonitorOutput"] = merge_monitor_output(
-            surface_monitor_output, surface_monitor_output_average
-        )
+    surface_monitor_output_configs = [
+        (SurfaceProbeOutput, "surfaceMonitorOutput"),
+        (TimeAverageSurfaceProbeOutput, "timeAverageSurfaceMonitorOutput"),
+    ]
+    for output_class, output_key in surface_monitor_output_configs:
+        if has_instance_in_list(outputs, output_class):
+            surface_monitor_output = translate_monitor_output(
+                outputs,
+                output_class,
+                inject_surface_probe_info,
+                surface_probe_setting_translation_func,
+            )
+            if surface_monitor_output:
+                translated[output_key] = surface_monitor_output
 
-    ##:: Step5.2: Get translated["surfaceMonitorOutput"]
+    ##:: Step6: Get translated["surfaceSliceOutput"]
     surface_slice_output = {}
     if has_instance_in_list(outputs, SurfaceSliceOutput):
         surface_slice_output = translate_surface_slice_output(outputs, SurfaceSliceOutput)
