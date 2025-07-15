@@ -667,6 +667,72 @@ def snappy_settings():
         )
     return param
 
+
+@pytest.fixture()
+def snappy_settings_off_position():
+    test_geometry = TempGeometry("tester.stl")
+    with SI_unit_system:
+        surf_meshing_params = SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=3 * u.mm,
+                max_spacing=4 * u.mm,
+                gap_resolution= 1 * u.mm
+            ),
+            quality_metrics=SnappyQualityMetrics(
+                max_non_ortho=None,
+                max_boundary_skewness=None,
+                max_internal_skewness=None,
+                max_concave=None,
+                min_vol=None,
+                min_tet_quality=None,
+                min_area=None,
+                min_twist=None,
+                min_determinant=None,
+                min_vol_ratio=None,
+                min_face_weight=None,
+                min_triangle_twist=None,
+                n_smooth_scale=None,
+                error_reduction=None,
+                min_vol_collapse_ratio=None
+            ),
+            snap_controls=SnappySnapControls(
+                n_smooth_patch=5,
+                tolerance=4,
+                n_solve_iter=20,
+                n_relax_iter=2,
+                n_feature_snap_iter=10,
+                multi_region_feature_snap=False,
+                strict_region_snap=True
+            ),
+            castellated_mesh_controls=SnappyCastellatedMeshControls(
+                resolve_feature_angle=10 *u.deg,
+                n_cells_between_levels=3,
+                min_refinement_cells=50
+            ),
+            bounding_box=Box(name="enclosure", center=(0, 0, 0) * u.m, size=(0.4, 0.8, 0.6) * u.m),
+            smooth_controls=SnappySmoothControls(
+                lambda_factor=None,
+                mu_factor=None,
+                iterations=None,
+                included_angle=None
+            ),
+            cad_is_fluid=True,
+            zones=[
+                MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 
+                MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003]*u.m)
+            ]
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info()
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+            )
+        )
+    return param
+
 def deep_sort_lists(obj):
     """
     Recursively sort all lists in a JSON-like object to ensure consistent ordering.
@@ -771,4 +837,11 @@ def test_snappy_settings(get_snappy_geometry, snappy_settings):
         snappy_settings,
         get_snappy_geometry.mesh_unit,
         "snappy_settings.json"
+    )
+
+def test_snappy_settings_off_position(get_snappy_geometry, snappy_settings_off_position):
+    _translate_and_compare(
+        snappy_settings_off_position,
+        get_snappy_geometry.mesh_unit,
+        "snappy_settings_off_pos.json"
     )

@@ -1,0 +1,124 @@
+{
+    "geometry": {
+        "bodies": [
+            {
+                "bodyName": "body0",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    },
+                    {
+                        "patchName": "patch1"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body1",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    },
+                    {
+                        "patchName": "patch1"
+                    },
+                    {
+                        "patchName": "patch2"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body2",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body3",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            }
+        ]
+    },
+    "mesherSettings": {
+        "snappyHexMesh": {
+            "castellatedMeshControls": {
+                "resolveFeatureAngle": 10,
+                "nCellsBetweenLevels": 3,
+                "minRefinementCells": 50
+            },
+            "snapControls": {
+                "nSmoothPatch": 5,
+                "tolerance": 4,
+                "nSolveIter": 20,
+                "nRelaxIter": 2,
+                "nFeatureSnapIter": 10,
+                "multiRegionFeatureSnap": false,
+                "strictRegionSnap": true
+            }
+    },
+    "meshQuality": {
+            "maxNonOrtho": 180,
+            "maxBoundarySkewness": -1,
+            "maxInternalSkewness": -1,
+            "maxConcave": 180,
+            "minVol": -1e30,
+            "minTetQuality": -1e30,
+            "minArea": -1,
+            "minTwist": -2,
+            "minDeterminant": -1e5,
+            "minVolRatio": 0,
+            "minFaceWeight": 0,
+            "minTriangleTwist": -1,
+            "nSmoothScale": 0,
+            "errorReduction": 0,
+            "minVolCollapseRatio": 0
+        }
+    },
+    "boundingBox": {
+        "min": {
+            "x": -200,
+            "y": -400,
+            "z": -300
+        },
+        "max": {
+            "x": 200,
+            "y": 400,
+            "z": 300
+        }
+    },
+    "smoothingControls": {
+        "lambda": 0,
+        "mu": 0,
+        "iter": 0,
+        "includedAngle": false
+    },
+    "locationInMesh": {
+        "fluid": [0, 0, 0],
+        "solid": [1, 2, 3]
+    }
+}
