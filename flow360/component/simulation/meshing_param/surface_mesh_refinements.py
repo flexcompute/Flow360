@@ -52,8 +52,8 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
     included_angle: AngleType.Positive = pd.Field(150 * u.deg)
-    bodies: List[SnappyBody] = pd.Field([])
-    regions: EntityList[Surface] = pd.Field([])
+    bodies: Optional[List[SnappyBody]] = pd.Field([])
+    regions: Optional[EntityList[Surface]] = pd.Field([])
 
     @pd.model_validator(mode="after")
     def _check_spacing_format(self) -> Self:

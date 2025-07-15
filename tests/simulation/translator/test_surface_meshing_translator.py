@@ -775,6 +775,8 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str):
         ref_dict = json.load(fh)
 
     ref_dict, translated = deep_sort_lists(ref_dict), deep_sort_lists(translated)
+    # check if everything is seriazable
+    json.dumps(translated)
     assert compare_values(ref_dict, translated)
 
 

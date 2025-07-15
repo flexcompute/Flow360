@@ -227,14 +227,14 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         if bounding_box is not None:
             translated["boundingBox"] = {
                 "min": {
-                    "x": bounding_box.center[0] - (bounding_box.size[0] / 2),
-                    "y": bounding_box.center[1] - (bounding_box.size[1] / 2),
-                    "z": bounding_box.center[2] - (bounding_box.size[2] / 2)
+                    "x": bounding_box.center[0].value.item() - (bounding_box.size[0].value.item() / 2),
+                    "y": bounding_box.center[1].value.item() - (bounding_box.size[1].value.item() / 2),
+                    "z": bounding_box.center[2].value.item() - (bounding_box.size[2].value.item() / 2)
                 },
                 "max": {
-                    "x": bounding_box.center[0] + (bounding_box.size[0] / 2),
-                    "y": bounding_box.center[1] + (bounding_box.size[1] / 2),
-                    "z": bounding_box.center[2] + (bounding_box.size[2] / 2)
+                    "x": bounding_box.center[0].value.item() + (bounding_box.size[0].value.item() / 2),
+                    "y": bounding_box.center[1].value.item() + (bounding_box.size[1].value.item() / 2),
+                    "z": bounding_box.center[2].value.item() + (bounding_box.size[2].value.item() / 2)
                 }
             }
         # points in mesh
@@ -242,7 +242,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         zones = surface_meshing_params.zones
 
         if zones is not None:
-            translated["locationInMesh"] = {zone.name: list(zone.point_in_mesh) for zone in zones}
+            translated["locationInMesh"] = {zone.name: [point.value.item() for point in zone.point_in_mesh] for zone in zones}
 
 
     elif isinstance(input_params.meshing, MeshingParams):
