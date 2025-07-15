@@ -89,8 +89,8 @@ def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, tr
     else:
         edges["edgeSpacing"] = refinement.spacing.value.item()
 
-    applicable_bodies = [entity.body_name for entity in refinement.bodies]
-    applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.regions.stored_entities }
+    applicable_bodies = [entity.body_name for entity in refinement.bodies] if refinement.bodies is not None else []
+    applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.regions.stored_entities} if refinement.regions is not None else {}
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies or (body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None):
             body["edges"] = edges
