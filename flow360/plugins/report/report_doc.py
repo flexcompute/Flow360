@@ -103,6 +103,9 @@ class ReportDoc:
         doc.preamble.append(
             NoEscape(r"\captionsetup[subfigure]{labelformat=empty, justification=centering}")
         )
+        doc.preamble.append(
+            NoEscape(r"\usetikzlibrary{calc}")
+        )
 
         if self.use_xelatex:
             doc.preamble.append(NoEscape(font_definition))

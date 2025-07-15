@@ -30,6 +30,7 @@ from flow360.plugins.report.report_items import (
     Settings,
     Summary,
     Table,
+    Image,
 )
 from flow360.plugins.report.utils import (
     Average,
@@ -135,7 +136,7 @@ class ReportDraft:
 
 
 ReportItemTypes = Annotated[
-    Union[Summary, Inputs, Table, NonlinearResiduals, Chart2D, Chart3D],
+    Union[Summary, Inputs, Table, NonlinearResiduals, Chart2D, Chart3D, Image],
     pd.Field(discriminator="type_name"),
 ]
 

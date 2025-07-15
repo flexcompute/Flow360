@@ -404,20 +404,65 @@ class Table(ReportItem):
 
 class Image(ReportItem):
 
-    image: str = Field(
+    image_path: str = Field(
         description="Name of the image."
     )
+    caption: Optional[str] = Field(
+        "", description="Caption to be shown for image."
+    )
+    center_caption: bool = Field(
+        False, description="When true, caption will be centered."
+    )
+    image_size: float = Field(
+        0.7, description="Relative size of the figure as a fraction of text width."
+    )
+    position: Optional[Tuple[int, int]] = Field(None, description="X and Y position of the image in points.")
     type_name: Literal["Image"] = Field("Image", frozen=True)
+    _requirements: List[str] = []
 
 
-    def _add_figure(self, doc: Document, file_name, caption, dpi=None):
+    def _downsample_png(self, img: str, relative_width=1, dpi=None):
+        if dpi is not None and img.lower().endswith(".png"):
+            downsampled_img = os.path.splitext(img)[0] + f"_dpi{dpi}.png"
+            downsample_image_to_relative_width(
+                img, downsampled_img, relative_width=relative_width, dpi=dpi
+            )
+            img = downsampled_img
+        return img
 
-        file_name = self._downsample_png(file_name, dpi=dpi)
 
-        fig = Figure(position="!ht")
-        fig.add_image(file_name, width=NoEscape(rf"{self.fig_size}\textwidth"))
-        fig.add_caption(caption)
-        doc.append(fig)
+    def _add_figure(self, doc: Document, dpi=None):
+
+        file_name = self._downsample_png(self.image_path, dpi=dpi)
+        file_path = os.path.abspath(file_name)
+
+        if self.position is not None:
+            x_pt, y_pt = self.position
+
+            # Design 1
+            image_latex = (
+                r"\begin{tikzpicture}[remember picture, overlay]" + "\n"
+                +rf"\node[anchor=south west] at ($(current page.south west)+({str(x_pt)}pt,{str(y_pt)}pt)$) {{" + "\n"
+                +rf"\includegraphics[width={str(self.image_size)}\textwidth]{{{file_path}}}" + "\n"
+                +r"};" + "\n"
+                +r"\end{tikzpicture}"
+            )
+            doc.append(NoEscape(image_latex))
+
+            # Design 2
+            # doc.append(NoEscape(r"\begin{tikzpicture}[remember picture, overlay]"))
+            # doc.append(NoEscape(rf"\node[anchor=south west] at ($(current page.south west)+({str(x_pt)}pt,{str(y_pt)}pt)$) {{"))
+            # doc.append(NoEscape(rf"\includegraphics[width={str(self.image_size)}\textwidth]{{{file_path}}}"))
+            # doc.append(NoEscape(r"};"))
+            # doc.append(NoEscape(r"\end{tikzpicture}"))
+        else:
+            fig = Figure(position="!ht")
+            fig.add_image(file_path, width=NoEscape(rf"{self.image_size}\textwidth"))
+            if self.center_caption:
+                fig.append(NoEscape(r"\captionsetup{justification=centering}"))
+            fig.add_caption(self.caption)
+            doc.append(fig)
+
 
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
@@ -428,9 +473,9 @@ class Image(ReportItem):
             dpi = settings.dpi
         else:
             dpi = None
-        
+
         self._add_figure(
-            context.doc, self.image, self.caption, dpi=dpi
+            context.doc, dpi=dpi
         )
 
         context.doc.append(NoEscape(r"\FloatBarrier"))
