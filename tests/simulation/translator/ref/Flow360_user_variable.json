@@ -53,6 +53,23 @@
         "outputFields": [],
         "outputFormat": "paraview"
     },
+    "monitorOutput": {
+        "monitors": {
+            "MassFluxIntegral": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": false,
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ],
+                "surfaces": [
+                    "VOLUME/LEFT"
+                ],
+                "type": "surfaceIntegral"
+            }
+        },
+        "outputFields": []
+    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,
@@ -74,22 +91,6 @@
     },
     "outputRescale": {
         "velocityScale": 20.0
-    },
-    "surfaceIntegralOutput": {
-        "monitors": {
-            "MassFluxIntegral": {
-                "animationFrequency": 1,
-                "animationFrequencyOffset": 0,
-                "outputFields": [
-                    "MassFluxProjected_integral"
-                ],
-                "surfaces": [
-                    "VOLUME/LEFT"
-                ],
-                "type": "surfaceIntegral"
-            }
-        },
-        "outputFields": []
     },
     "surfaceOutput": {
         "animationFrequency": -1,

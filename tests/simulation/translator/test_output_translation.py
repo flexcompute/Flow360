@@ -710,45 +710,41 @@ def probe_output_config(vel_in_km_per_hr):
             ),
         ],
         {
-            "monitorOutput": {
-                "monitors": {
-                    "prb 10": {
-                        "animationFrequency": 1,
-                        "animationFrequencyOffset": 0,
-                        "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                        "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                        "numberOfPoints": [1, 1],
-                        "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
-                        "type": "lineProbe",
-                    },
-                    "prb 12": {
-                        "animationFrequency": 1,
-                        "animationFrequencyOffset": 0,
-                        "start": [[10e-2, 10.02e-2, 10.03e-2]],
-                        "end": [[10e-2, 10.02e-2, 10.03e-2]],
-                        "numberOfPoints": [1],
-                        "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
-                        "type": "lineProbe",
-                    },
+            "outputFields": [],
+            "monitors": {
+                "prb 10": {
+                    "start": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
+                    "end": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
+                    "numberOfPoints": [1, 1],
+                    "type": "lineProbe",
+                    "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": False,
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
                 },
-                "outputFields": [],
-            },
-            "timeAverageMonitorOutput": {
-                "monitors": {
-                    "prb average": {
-                        "animationFrequency": 1,
-                        "animationFrequencyOffset": 0,
-                        "animationFrequencyTimeAverage": 10,
-                        "animationFrequencyTimeAverageOffset": 0,
-                        "startAverageIntegrationStep": -1,
-                        "start": [[10e-2, 10.02e-2, 10.03e-2]],
-                        "end": [[10e-2, 10.02e-2, 10.03e-2]],
-                        "numberOfPoints": [1],
-                        "outputFields": ["Cp", "T", "primitiveVars", "velocity_in_km_per_hr"],
-                        "type": "lineProbe",
-                    },
+                "prb 12": {
+                    "start": [[0.1, 0.1002, 0.1003]],
+                    "end": [[0.1, 0.1002, 0.1003]],
+                    "numberOfPoints": [1],
+                    "type": "lineProbe",
+                    "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": False,
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
                 },
-                "outputFields": [],
+                "prb average": {
+                    "start": [[0.1, 0.1002, 0.1003]],
+                    "end": [[0.1, 0.1002, 0.1003]],
+                    "numberOfPoints": [1],
+                    "type": "lineProbe",
+                    "outputFields": ["Cp", "T", "primitiveVars", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": True,
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "animationFrequencyTimeAverage": 10,
+                    "animationFrequencyTimeAverageOffset": 0,
+                    "startAverageIntegrationStep": -1,
+                },
             },
         },
     )
@@ -808,36 +804,39 @@ def probe_output_with_point_array(vel_in_km_per_hr):
             ),
         ],
         {
+            "outputFields": [],
             "monitors": {
                 "prb line": {
                     "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
                     "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
                     "numberOfPoints": [5, 7],
+                    "type": "lineProbe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
-                    "type": "lineProbe",
                 },
                 "prb point": {
-                    "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                    "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
+                    "start": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
+                    "end": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
                     "numberOfPoints": [1, 1],
+                    "type": "lineProbe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
-                    "type": "lineProbe",
                 },
                 "prb mix": {
-                    "start": [[0.1, 0.2, 0.3], [1e-2, 1.02e-2, 0.0003]],
-                    "end": [[1.1, 1.2, 1.3], [1e-2, 1.02e-2, 0.0003]],
+                    "start": [[0.1, 0.2, 0.3], [0.01, 0.0102, 0.0003]],
+                    "end": [[1.1, 1.2, 1.3], [0.01, 0.0102, 0.0003]],
                     "numberOfPoints": [5, 1],
+                    "type": "lineProbe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
-                    "type": "lineProbe",
                 },
             },
-            "outputFields": [],
         },
     )
 
@@ -868,6 +867,7 @@ def surface_integral_output_config(vel_in_km_per_hr):
                 "prb 110": {
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["My_field_1", "velocity_in_km_per_hr_integral"],
                     "surfaces": ["zoneName/surface1", "surface2"],
                     "type": "surfaceIntegral",
@@ -875,6 +875,7 @@ def surface_integral_output_config(vel_in_km_per_hr):
                 "prb 122": {
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
+                    "computeTimeAverages": False,
                     "outputFields": ["My_field_2", "velocity_in_km_per_hr_integral"],
                     "surfaces": ["surface21", "surface22"],
                     "type": "surfaceIntegral",
@@ -937,53 +938,49 @@ def test_surface_probe_output(vel_in_km_per_hr):
             ),
         ],
         {
-            "timeAverageSurfaceMonitorOutput": {
-                "outputFields": [],
-                "monitors": {
-                    "SP-2": {
-                        "start": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03], [3.0, 1.02, 0.03]],
-                        "end": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03], [3.0, 1.02, 0.03]],
-                        "numberOfPoints": [1, 1, 1],
-                        "type": "lineProbe",
-                        "outputFields": ["Mach", "primitiveVars", "velocity_in_km_per_hr", "yPlus"],
-                        "animationFrequency": 1,
-                        "animationFrequencyOffset": 0,
-                        "animationFrequencyTimeAverage": 1,
-                        "animationFrequencyTimeAverageOffset": 0,
-                        "startAverageIntegrationStep": -1,
-                        "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
-                    }
+            "outputFields": [],
+            "monitors": {
+                "SP-1": {
+                    "start": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03]],
+                    "end": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03]],
+                    "numberOfPoints": [1, 1],
+                    "type": "lineProbe",
+                    "outputFields": ["Cf", "Cp", "velocity_in_km_per_hr"],
+                    "computeTimeAverages": False,
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
                 },
-            },
-            "surfaceMonitorOutput": {
-                "outputFields": [],
-                "monitors": {
-                    "SP-1": {
-                        "start": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03]],
-                        "end": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03]],
-                        "numberOfPoints": [1, 1],
-                        "type": "lineProbe",
-                        "outputFields": ["Cf", "Cp", "velocity_in_km_per_hr"],
-                        "animationFrequency": 1,
-                        "animationFrequencyOffset": 0,
-                        "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
-                    },
-                    "SP-3": {
-                        "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
-                        "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
-                        "numberOfPoints": [5, 7],
-                        "type": "lineProbe",
-                        "outputFields": [
-                            "Mach",
-                            "my_own_field",
-                            "primitiveVars",
-                            "velocity_in_km_per_hr",
-                            "yPlus",
-                        ],
-                        "animationFrequency": 1,
-                        "animationFrequencyOffset": 0,
-                        "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
-                    },
+                "SP-3": {
+                    "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
+                    "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
+                    "numberOfPoints": [5, 7],
+                    "type": "lineProbe",
+                    "outputFields": [
+                        "Mach",
+                        "my_own_field",
+                        "primitiveVars",
+                        "velocity_in_km_per_hr",
+                        "yPlus",
+                    ],
+                    "computeTimeAverages": False,
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
+                },
+                "SP-2": {
+                    "start": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03], [3.0, 1.02, 0.03]],
+                    "end": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03], [3.0, 1.02, 0.03]],
+                    "numberOfPoints": [1, 1, 1],
+                    "type": "lineProbe",
+                    "outputFields": ["Mach", "primitiveVars", "velocity_in_km_per_hr", "yPlus"],
+                    "computeTimeAverages": True,
+                    "animationFrequency": 1,
+                    "animationFrequencyOffset": 0,
+                    "animationFrequencyTimeAverage": 1,
+                    "animationFrequencyTimeAverageOffset": 0,
+                    "startAverageIntegrationStep": -1,
+                    "surfacePatches": ["zoneB/surface1", "zoneB/surface2"],
                 },
             },
         },
@@ -1000,12 +997,7 @@ def test_surface_probe_output(vel_in_km_per_hr):
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(param_with_ref[1]["surfaceMonitorOutput"].items()) == sorted(
-        translated["surfaceMonitorOutput"].items()
-    )
-    assert sorted(param_with_ref[1]["timeAverageSurfaceMonitorOutput"].items()) == sorted(
-        translated["timeAverageSurfaceMonitorOutput"].items()
-    )
+    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceMonitorOutput"].items())
 
 
 def test_monitor_output(
@@ -1024,12 +1016,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_config[1]["monitorOutput"].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
-    assert sorted(probe_output_config[1]["timeAverageMonitorOutput"].items()) == sorted(
-        translated["timeAverageMonitorOutput"].items()
-    )
+    assert sorted(probe_output_config[1].items()) == sorted(translated["monitorOutput"].items())
 
     ##:: monitorOutput with line probes
     with SI_unit_system:
@@ -1056,7 +1043,7 @@ def test_monitor_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     assert sorted(surface_integral_output_config[1].items()) == sorted(
-        translated["surfaceIntegralOutput"].items()
+        translated["monitorOutput"].items()
     )
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
@@ -1075,73 +1062,60 @@ def test_monitor_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     ref = {
-        "monitorOutput": {
-            "monitors": {
-                "prb 10": {
-                    "animationFrequency": 1,
-                    "animationFrequencyOffset": 0,
-                    "start": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                    "end": [[1e-2, 1.02e-2, 0.0003], [0.0001, 0.02, 0.03]],
-                    "numberOfPoints": [1, 1],
-                    "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
-                    "type": "lineProbe",
-                },
-                "prb 12": {
-                    "animationFrequency": 1,
-                    "animationFrequencyOffset": 0,
-                    "start": [[10e-2, 10.02e-2, 10.03e-2]],
-                    "end": [[10e-2, 10.02e-2, 10.03e-2]],
-                    "numberOfPoints": [1],
-                    "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
-                    "type": "lineProbe",
-                },
+        "outputFields": [],
+        "monitors": {
+            "prb 10": {
+                "start": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
+                "end": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
+                "numberOfPoints": [1, 1],
+                "type": "lineProbe",
+                "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                "computeTimeAverages": False,
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
             },
-            "outputFields": [],
-        },
-        "timeAverageMonitorOutput": {
-            "monitors": {
-                "prb average": {
-                    "animationFrequency": 1,
-                    "animationFrequencyOffset": 0,
-                    "animationFrequencyTimeAverage": 10,
-                    "animationFrequencyTimeAverageOffset": 0,
-                    "startAverageIntegrationStep": -1,
-                    "start": [[10e-2, 10.02e-2, 10.03e-2]],
-                    "end": [[10e-2, 10.02e-2, 10.03e-2]],
-                    "numberOfPoints": [1],
-                    "outputFields": ["Cp", "T", "primitiveVars", "velocity_in_km_per_hr"],
-                    "type": "lineProbe",
-                },
+            "prb 12": {
+                "start": [[0.1, 0.1002, 0.1003]],
+                "end": [[0.1, 0.1002, 0.1003]],
+                "numberOfPoints": [1],
+                "type": "lineProbe",
+                "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
+                "computeTimeAverages": False,
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
             },
-            "outputFields": [],
-        },
-        "surfaceIntegralOutput": {
-            "monitors": {
-                "prb 122": {
-                    "animationFrequency": 1,
-                    "animationFrequencyOffset": 0,
-                    "outputFields": ["My_field_2", "velocity_in_km_per_hr_integral"],
-                    "surfaces": ["surface21", "surface22"],
-                    "type": "surfaceIntegral",
-                },
-                "prb 110": {
-                    "animationFrequency": 1,
-                    "animationFrequencyOffset": 0,
-                    "outputFields": ["My_field_1", "velocity_in_km_per_hr_integral"],
-                    "surfaces": ["zoneName/surface1", "surface2"],
-                    "type": "surfaceIntegral",
-                },
+            "prb average": {
+                "start": [[0.1, 0.1002, 0.1003]],
+                "end": [[0.1, 0.1002, 0.1003]],
+                "numberOfPoints": [1],
+                "type": "lineProbe",
+                "outputFields": ["Cp", "T", "primitiveVars", "velocity_in_km_per_hr"],
+                "computeTimeAverages": True,
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "animationFrequencyTimeAverage": 10,
+                "animationFrequencyTimeAverageOffset": 0,
+                "startAverageIntegrationStep": -1,
             },
-            "outputFields": [],
+            "prb 110": {
+                "surfaces": ["zoneName/surface1", "surface2"],
+                "type": "surfaceIntegral",
+                "outputFields": ["My_field_1", "velocity_in_km_per_hr_integral"],
+                "computeTimeAverages": False,
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+            },
+            "prb 122": {
+                "surfaces": ["surface21", "surface22"],
+                "type": "surfaceIntegral",
+                "outputFields": ["My_field_2", "velocity_in_km_per_hr_integral"],
+                "computeTimeAverages": False,
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+            },
         },
     }
-    assert sorted(ref["monitorOutput"].items()) == sorted(translated["monitorOutput"].items())
-    assert sorted(ref["surfaceIntegralOutput"].items()) == sorted(
-        translated["surfaceIntegralOutput"].items()
-    )
-    assert sorted(ref["timeAverageMonitorOutput"].items()) == sorted(
-        translated["timeAverageMonitorOutput"].items()
-    )
+    assert sorted(ref.items()) == sorted(translated["monitorOutput"].items())
 
 
 @pytest.fixture()

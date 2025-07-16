@@ -266,7 +266,7 @@ def translate_output_fields(
     return {"outputFields": sorted(output_fields)}
 
 
-def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
+def surface_probe_setting_translation_func(entity: Union[SurfaceProbeOutput, SurfaceSliceOutput]):
     """Translate non-entities part of SurfaceProbeOutput"""
     dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
@@ -277,14 +277,22 @@ def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
 
 def monitor_translator(
     output_model: Union[
-        ProbeOutput, TimeAverageProbeOutput, SurfaceProbeOutput, TimeAverageSurfaceProbeOutput
+        ProbeOutput,
+        TimeAverageProbeOutput,
+        SurfaceProbeOutput,
+        TimeAverageSurfaceProbeOutput,
+        SurfaceSliceOutput,
     ],
 ):
     """Monitor translator"""
     monitor_group = translate_output_fields(output_model)
+    # Monitor output setting is fine grained to each monitor group. So no need to have different root level keys.
+    if not isinstance(output_model, SurfaceSliceOutput):
+        monitor_group["computeTimeAverages"] = False
     monitor_group["animationFrequency"] = 1
     monitor_group["animationFrequencyOffset"] = 0
     if isinstance(output_model, (TimeAverageProbeOutput, TimeAverageSurfaceProbeOutput)):
+        monitor_group["computeTimeAverages"] = True
         monitor_group["animationFrequencyTimeAverage"] = output_model.frequency
         monitor_group["animationFrequencyTimeAverageOffset"] = output_model.frequency_offset
         monitor_group["startAverageIntegrationStep"] = output_model.start_step
@@ -520,6 +528,19 @@ def translate_monitor_output(
         use_instance_name_as_key=True,
     )
     return translated_output
+
+
+def merge_monitor_output(probe_output: dict, integral_output: dict):
+    """Merge probe and surface integral output."""
+    if probe_output == {}:
+        return integral_output
+    if integral_output == {}:
+        return probe_output
+
+    for integral_output_name, integral_output_value in integral_output["monitors"].items():
+        assert integral_output_name not in probe_output["monitors"]
+        probe_output["monitors"][integral_output_name] = integral_output_value
+    return probe_output
 
 
 def translate_acoustic_output(output_params: list):
@@ -769,17 +790,15 @@ def translate_output(input_params: SimulationParams, translated: dict):
             )
 
     ##:: Step5: Get translated["monitorOutput"]
-    probe_output_configs = [
-        (ProbeOutput, "monitorOutput"),
-        (TimeAverageProbeOutput, "timeAverageMonitorOutput"),
-    ]
-    for output_class, output_key in probe_output_configs:
-        if has_instance_in_list(outputs, output_class):
-            translated[output_key] = translate_monitor_output(
-                outputs, output_class, inject_probe_info
-            )
-
+    probe_output = {}
+    probe_output_average = {}
     integral_output = {}
+    if has_instance_in_list(outputs, ProbeOutput):
+        probe_output = translate_monitor_output(outputs, ProbeOutput, inject_probe_info)
+    if has_instance_in_list(outputs, TimeAverageProbeOutput):
+        probe_output_average = translate_monitor_output(
+            outputs, TimeAverageProbeOutput, inject_probe_info
+        )
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
         for output in outputs:
             if not isinstance(output, SurfaceIntegralOutput):
@@ -811,25 +830,33 @@ def translate_output(input_params: SimulationParams, translated: dict):
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
-
-    if integral_output:
-        translated["surfaceIntegralOutput"] = integral_output
+    # Merge
+    if probe_output or probe_output_average:
+        probe_output = merge_monitor_output(probe_output, probe_output_average)
+    if probe_output or integral_output:
+        translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
 
     ##:: Step5.1: Get translated["surfaceMonitorOutput"]
-    surface_monitor_output_configs = [
-        (SurfaceProbeOutput, "surfaceMonitorOutput"),
-        (TimeAverageSurfaceProbeOutput, "timeAverageSurfaceMonitorOutput"),
-    ]
-    for output_class, output_key in surface_monitor_output_configs:
-        if has_instance_in_list(outputs, output_class):
-            surface_monitor_output = translate_monitor_output(
-                outputs,
-                output_class,
-                inject_surface_probe_info,
-                surface_probe_setting_translation_func,
-            )
-            if surface_monitor_output:
-                translated[output_key] = surface_monitor_output
+    surface_monitor_output = {}
+    surface_monitor_output_average = {}
+    if has_instance_in_list(outputs, SurfaceProbeOutput):
+        surface_monitor_output = translate_monitor_output(
+            outputs,
+            SurfaceProbeOutput,
+            inject_surface_probe_info,
+            surface_probe_setting_translation_func,
+        )
+    if has_instance_in_list(outputs, TimeAverageSurfaceProbeOutput):
+        surface_monitor_output_average = translate_monitor_output(
+            outputs,
+            TimeAverageSurfaceProbeOutput,
+            inject_surface_probe_info,
+            surface_probe_setting_translation_func,
+        )
+    if surface_monitor_output or surface_monitor_output_average:
+        translated["surfaceMonitorOutput"] = merge_monitor_output(
+            surface_monitor_output, surface_monitor_output_average
+        )
 
     ##:: Step6: Get translated["surfaceSliceOutput"]
     surface_slice_output = {}
