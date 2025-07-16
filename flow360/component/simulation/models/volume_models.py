@@ -52,6 +52,11 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
+from flow360.component.simulation.outputs.outputs import (
+    ProbeOutput,
+    SurfaceIntegralOutput,
+    SurfaceProbeOutput,
+)
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -63,7 +68,11 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
-from flow360.component.simulation.user_code.core.types import ValueOrExpression
+from flow360.component.simulation.user_code.core.types import (
+    UnytQuantity,
+    UserVariable,
+    ValueOrExpression,
+)
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -74,6 +83,45 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+
+CriterionOutputTypes = Annotated[
+    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    pd.Field(discriminator="output_type"),
+]
+
+
+class MovingStatistic(Flow360BaseModel):
+    moving_window: Union[pd.PositiveInt, pd.confloat(ge=0, le=1)] = pd.Field(
+        0.1,
+        description="The last number of steps or the last fraction of pseudo/time steps' results to be monitored.",
+    )
+    method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
+        "mean", description="The type of moving statistics used to monitor the output."
+    )
+    initial_skipping_steps: pd.NonNegativeInt = pd.Field(
+        0, description="The number of steps to skip before computing the moving statistics."
+    )
+    type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
+
+
+class Criterion(Flow360BaseModel):
+    name: Optional[str] = pd.Field("Criterion", description="Name of this criterion.")
+    tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
+        description="The tolerance threshold of this criterion."
+    )
+    monitor_output: CriterionOutputTypes = pd.Field(description="The output to be monitored.")
+    monitor_field: Union[UserVariable, str] = pd.Field(description="The field to be monitored.")
+    moving_statistic: MovingStatistic = pd.Field(
+        MovingStatistic(), description="The moving statistics used to monitor the output"
+    )
+    type_name: Literal["Criterion"] = pd.Field("Criterion", frozen=True)
+
+    # TODO: Pending Validation
+    # 1. For probe output, only allow one single point
+    # 2. For every output type, only allow one output field, and the output field should be a scalar
+    # 3. For steady simulation, the moving window has to be a factor of 10 (Since results are output every 10 steps/ at the end of simulation.)
+    # 4. Add validation to ensure the monitored field exists in the selected output.
+    # 5. Ensure the monitor_field and tolerance have the same dimensions.
 
 
 class AngleExpression(SingleAttributeModel):
@@ -305,6 +353,10 @@ class Fluid(PDEModelBase):
             discriminator="type_name",
             description="The initial condition of the fluid solver.",
         )
+    )
+
+    stopping_criterion: Optional[List[Criterion]] = pd.Field(
+        None, description="The stopping criterion setting of the Fluid solver."
     )
 
     # pylint: disable=fixme
