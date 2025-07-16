@@ -20,6 +20,8 @@ from flow360.component.simulation.meshing_param.surface_mesh_refinements import 
     SnappySurfaceEdgeRefinement
 )
 from copy import deepcopy
+
+import numpy as np
 # pylint: disable=invalid-name
 def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
     """
@@ -211,9 +213,12 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             translated["smoothingControls"] = {
                 "lambda": smoothing_settings.lambda_factor if smoothing_settings.lambda_factor is not None else 0,
                 "mu": smoothing_settings.mu_factor if smoothing_settings.mu_factor is not None else 0,
-                "iter": smoothing_settings.iterations if smoothing_settings.iterations is not None else 0,
-                "includedAngle": smoothing_settings.included_angle.to("degree").value.item() if smoothing_settings.included_angle is not None else False
+                "iter": smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
             }
+            if smoothing_settings.included_angle is None or np.isclose(smoothing_settings.included_angle.to("degree").value.item(), 0):
+                translated["smoothingControls"]["includedAngle"] = False
+            else:
+                translated["smoothingControls"]["includedAngle"] = smoothing_settings.included_angle.to("degree").value.item()
 
             if smoothing_settings.min_elem is not None:
                 translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem

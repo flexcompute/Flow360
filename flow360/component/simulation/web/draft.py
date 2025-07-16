@@ -120,7 +120,7 @@ class Draft(Flow360Resource):
 
         self.post(
             json={
-                "data": params.model_dump_json(),
+                "data": params.model_dump_json(exclude_none=True),
                 "type": "simulation",
                 "version": "",
             },
