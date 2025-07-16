@@ -195,24 +195,110 @@ class SnappySurfaceMeshingDefaults(Flow360BaseModel):
     
 class SnappyQualityMetrics(Flow360BaseModel):
     # TODO: create doctrings with cursor and OF docs, convert to underscore case
-    max_non_ortho: Optional[AngleType.Positive] = pd.Field(default=85 * u.deg)
-    max_boundary_skewness: Optional[AngleType.Positive] = pd.Field(20 * u.deg)
-    max_internal_skewness: Optional[AngleType.Positive] = pd.Field(50 * u.deg)
-    max_concave: Optional[AngleType.Positive] = pd.Field(50 * u.deg)
-    min_vol: Optional[float] = pd.Field(None)
-    min_tet_quality: Optional[float] = pd.Field(None)
-    min_area: Optional[AreaType.Positive] = pd.Field(None)
-    min_twist: Optional[float] = pd.Field(None)
-    min_determinant: Optional[float] = pd.Field(None)
-    min_vol_ratio: Optional[float] = pd.Field(0)
-    min_face_weight: Optional[float] = pd.Field(0)
-    min_triangle_twist: Optional[float] = pd.Field(None)
-    n_smooth_scale: Optional[pd.NonNegativeInt] = pd.Field(4)
-    error_reduction: Optional[float] = pd.Field(0.75)
+    max_non_ortho: Optional[AngleType.Positive] = pd.Field(
+        default=85*u.deg,
+        gt=0*u.deg,
+        le=180*u.deg
+    )
+    max_boundary_skewness: Optional[AngleType.Positive] = pd.Field(
+        default=20 * u.deg
+    )
+    max_internal_skewness: Optional[AngleType.Positive] = pd.Field(
+        default=50 * u.deg
+    )
+    max_concave: Optional[AngleType.Positive] = pd.Field(
+        default=50 * u.deg,
+        gt=0*u.deg,
+        le=180*u.deg
+    )
+    min_vol: Optional[float] = pd.Field(
+        default=None
+    )
+    min_tet_quality: Optional[float] = pd.Field(
+        default=None
+    )
+    min_area: Optional[AreaType.Positive] = pd.Field(
+        default=None
+    )
+    min_twist: Optional[float] = pd.Field(
+        default=None
+    )
+    min_determinant: Optional[float] = pd.Field(
+        default=None
+    )
+    min_vol_ratio: Optional[float] = pd.Field(
+        default=0
+    )
+    min_face_weight: Optional[float] = pd.Field(
+        default=0
+    )
+    min_triangle_twist: Optional[float] = pd.Field(
+        default=None
+    )
+    n_smooth_scale: Optional[pd.NonNegativeInt] = pd.Field(
+        default=4,
+        ge=0
+    )
+    error_reduction: Optional[float] = pd.Field(
+        default=0.75,
+        ge=0,
+        le=1
+    )
     min_vol_collapse_ratio: Optional[float] = pd.Field(0)
 
+    @pd.field_validator(
+            "max_non_ortho", 
+            "max_concave",
+            mode="after"
+        )
+    @classmethod
+    def disable_angle_metrics_w_defaults(cls, value):
+        if value is None:
+            return 180 * u.deg
+        else: return value
+    
+    @pd.field_validator(
+        "max_boundary_skewness", 
+        "max_internal_skewness",
+        mode="after"
+    )
+    @classmethod
+    def disable_skewness_metric(cls, value):
+        if (value <= 0*u.deg and value != -1*u.deg):
+            raise ValueError(f"Maximum skewness must be positive (your value: {value}). To disable enter None or -1*u.deg.")
+        if value is None:
+            return -1 * u.deg
+        else: return value
+
+    @pd.field_validator(
+        "min_vol", 
+        "min_tet_quality",
+        "min_determinant",
+        mode="after"
+    )
+    @classmethod
+    def disable_by_low_value(cls, value):
+        if value is None:
+            return -1e-30
+        else: return value
+
+    @pd.field_validator(
+        "n_smooth_scale", 
+        "error_reduction",
+        mode="after"
+    )
+    @classmethod
+    def disable_by_zero(cls, value):
+        if value is None:
+            return 0
+        else: return value
+
 class SnappyCastellatedMeshControls(Flow360BaseModel):
-    resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(25 * u.deg)
+    resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(
+        default=25 * u.deg,
+        gt=0*u.deg,
+        le=180*u.deg
+    )
     n_cells_between_levels: Optional[pd.NonNegativeInt] =  pd.Field(1)
     min_refinement_cells: Optional[pd.NonNegativeInt] = pd.Field(10)
 
@@ -232,4 +318,4 @@ class SnappySmoothControls(Flow360BaseModel):
     iterations:Optional[pd.NonNegativeInt] = pd.Field(5)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
-    included_angle: Optional[AngleType.Positive] = pd.Field(150 * u.deg)
+    included_angle: Optional[AngleType.NonNegative] = pd.Field(150 * u.deg)
