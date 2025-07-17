@@ -875,9 +875,12 @@ def test_udf_generator():
     result = user_variable_to_udf(
         solution.mut.in_units(new_name="mut_in_km", new_unit="kg/km/s"), input_params=params
     )
-    # velocity scale = 100 m/s, length scale = 10m, density scale = 1000 kg/m**3
-    # mut_scale = Rho*L*V -> 1000*10*100 * kg/m/s == 1000*10*100*1000 * kg/km/s
-    assert result.expression == "mut_in_km = (mut * 1000000000.0);"
+    # velocity scale = 5 m/s, length scale = 10m, density scale = 1000 kg/m**3
+    # mut_scale = Rho*L*V -> 1000*10*5 * kg/m/s == 1000*10*5*1000 * kg/km/s
+    assert (
+        result.expression
+        == "double ___mut; ___mut = mut * velocityScale;mut_in_km = (___mut * 50000000.0);"
+    )
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
@@ -895,7 +898,7 @@ def test_udf_generator():
     result = user_variable_to_udf(vel_sq, input_params=params)
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_sq[0] = (pow(___velocity[0], 2) * 10000.0); vel_sq[1] = (pow(___velocity[1], 2) * 10000.0); vel_sq[2] = (pow(___velocity[2], 2) * 10000.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_sq[0] = (pow(___velocity[0], 2) * 25.0); vel_sq[1] = (pow(___velocity[1], 2) * 25.0); vel_sq[2] = (pow(___velocity[2], 2) * 25.0);"
     )
 
     # Test __neg__ on SolverVariable:
@@ -903,7 +906,7 @@ def test_udf_generator():
     result = user_variable_to_udf(neg_vel, input_params=params)
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;neg_vel[0] = (-___velocity[0] * 100.0); neg_vel[1] = (-___velocity[1] * 100.0); neg_vel[2] = (-___velocity[2] * 100.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;neg_vel[0] = (-___velocity[0] * 5.0); neg_vel[1] = (-___velocity[1] * 5.0); neg_vel[2] = (-___velocity[2] * 5.0);"
     )
 
     # Test __pos__ on SolverVariable:
@@ -911,7 +914,7 @@ def test_udf_generator():
     result = user_variable_to_udf(pos_vel, input_params=params)
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 100.0); pos_vel[1] = (+___velocity[1] * 100.0); pos_vel[2] = (+___velocity[2] * 100.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 5.0); pos_vel[1] = (+___velocity[1] * 5.0); pos_vel[2] = (+___velocity[2] * 5.0);"
     )
 
 

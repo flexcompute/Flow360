@@ -35,6 +35,7 @@ udf_prepending_code = {
     + "primitiveVars[2] * primitiveVars[2] + "
     + "primitiveVars[3] * primitiveVars[3]) / "
     + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);",
+    "solution.mut": "double ___mut; ___mut = mut * velocityScale;",
     "solution.mut_ratio": "double ___mut_ratio; ___mut_ratio = mut / mu;",
     "solution.nu_hat": "double ___nu_hat;"
     + "___nu_hat = solutionTurbulence * velocityScale * SpalartAllmaras_solutionRescale_0;",
@@ -46,10 +47,15 @@ udf_prepending_code = {
     "___amplification_factor = solutionTransition[0] * AmplificationFactorTransport_solutionRescale_0;",
     "solution.turbulence_intermittency": "double ___turbulence_intermittency;"
     + "___turbulence_intermittency = solutionTransition[1] * AmplificationFactorTransport_solutionRescale_1;",
+    "solution.density": "double ___density;"
+    + "___density = usingLiquidAsMaterial ? 1.0 : primitiveVars[0];",
     "solution.velocity": "double ___velocity[3];"
     + "___velocity[0] = primitiveVars[1] * velocityScale;"
     + "___velocity[1] = primitiveVars[2] * velocityScale;"
     + "___velocity[2] = primitiveVars[3] * velocityScale;",
+    "solution.pressure": "double ___pressure;"
+    + "___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * "
+    "(velocityScale * velocityScale) : primitiveVars[4];",
     "solution.qcriterion": "double ___qcriterion;"
     + "double ___ux = gradPrimitive[1][0];"
     + "double ___uy = gradPrimitive[1][1];"

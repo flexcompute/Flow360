@@ -632,7 +632,16 @@ def user_variable_to_udf(
         coefficient = 1
         offset = 0
     else:
-        flow360_unit_system = input_params.flow360_unit_system
+        if isinstance(input_params.operating_condition, LiquidOperatingCondition):
+            flow360_unit_system = u.UnitSystem(
+                name="flow360_liquid",
+                length_unit=input_params.base_length,
+                mass_unit=input_params.base_mass,
+                time_unit=input_params.base_time / LIQUID_IMAGINARY_FREESTREAM_MACH,
+                temperature_unit=input_params.base_temperature,
+            )
+        else:
+            flow360_unit_system = input_params.flow360_unit_system
         # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
         flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
         flow360_unit = flow360_unit_system[requested_unit.dimensions]
