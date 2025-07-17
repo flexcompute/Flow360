@@ -90,7 +90,7 @@
             "minTetQuality": -1e+30,
             "minArea": -1,
             "minTwist": -2,
-            "minDeterminant": -1e5,
+            "minDeterminant": -1e+30,
             "minVolRatio": 0,
             "minFaceWeight": 0,
             "minTriangleTwist": -1,

@@ -268,6 +268,25 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     cad_is_fluid: bool = pd.Field(False)
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([]) 
 
+    @pd.model_validator(mode="after")
+    def _ensure_mesh_zone_provided(self):
+        if (self.cad_is_fluid or self.bounding_box) and self.zones is None:
+            raise ValueError("Mesh zones must be specified when cad is fluid or bounding box is provided by user.")
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_body_refinements_w_defaults(self):
+        # set body refinements
+        for refinement in self.refinements:
+            if isinstance(refinement, SnappyBodyRefinement):
+                if refinement.min_spacing is None and refinement.max_spacing is None:
+                    continue
+                if refinement.min_spacing is None and self.defaults.min_spacing.to("m") > refinement.max_spacing.to("m"):
+                    raise ValueError("Default minimum spacing is higher that refinement maximum spacing and minimum spacing is not provided.")
+                if refinement.max_spacing is None and self.defaults.max_spacing.to("m") < refinement.min_spacing.to("m"):
+                    raise ValueError("Default maximum spacing is lower that refinement minimum spacing and maximum spacing is not provided.")
+        return self
+
 
 class BetaVolumeMeshingParams(Flow360BaseModel):
     type: Literal["BetaVolumeMeshingParams"] = pd.Field(

@@ -196,20 +196,16 @@ class SnappySurfaceMeshingDefaults(Flow360BaseModel):
 class SnappyQualityMetrics(Flow360BaseModel):
     # TODO: create doctrings with cursor and OF docs, convert to underscore case
     max_non_ortho: Optional[AngleType.Positive] = pd.Field(
-        default=85*u.deg,
-        gt=0*u.deg,
-        le=180*u.deg
+        default=85*u.deg
     )
-    max_boundary_skewness: Optional[AngleType.Positive] = pd.Field(
-        default=20 * u.deg
+    max_boundary_skewness: Optional[AngleType] = pd.Field(
+        default=20*u.deg
     )
-    max_internal_skewness: Optional[AngleType.Positive] = pd.Field(
-        default=50 * u.deg
+    max_internal_skewness: Optional[AngleType] = pd.Field(
+        default=50*u.deg
     )
     max_concave: Optional[AngleType.Positive] = pd.Field(
-        default=50 * u.deg,
-        gt=0*u.deg,
-        le=180*u.deg
+        default=50*u.deg
     )
     min_vol: Optional[float] = pd.Field(
         default=None
@@ -254,7 +250,9 @@ class SnappyQualityMetrics(Flow360BaseModel):
     @classmethod
     def disable_angle_metrics_w_defaults(cls, value):
         if value is None:
-            return 180 * u.deg
+            return 180*u.deg
+        if value > 180*u.deg:
+            raise ValueError("Value must be less that 180 degrees.")
         else: return value
     
     @pd.field_validator(
@@ -264,10 +262,10 @@ class SnappyQualityMetrics(Flow360BaseModel):
     )
     @classmethod
     def disable_skewness_metric(cls, value):
-        if (value <= 0*u.deg and value != -1*u.deg):
-            raise ValueError(f"Maximum skewness must be positive (your value: {value}). To disable enter None or -1*u.deg.")
         if value is None:
-            return -1 * u.deg
+            return -1*u.deg
+        if (value.to("degree") <= 0*u.deg and value.to("degree") != -1*u.deg):
+            raise ValueError(f"Maximum skewness must be positive (your value: {value}). To disable enter None or -1*u.deg.")
         else: return value
 
     @pd.field_validator(
@@ -279,7 +277,7 @@ class SnappyQualityMetrics(Flow360BaseModel):
     @classmethod
     def disable_by_low_value(cls, value):
         if value is None:
-            return -1e-30
+            return -1e30
         else: return value
 
     @pd.field_validator(
@@ -295,12 +293,21 @@ class SnappyQualityMetrics(Flow360BaseModel):
 
 class SnappyCastellatedMeshControls(Flow360BaseModel):
     resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(
-        default=25 * u.deg,
-        gt=0*u.deg,
-        le=180*u.deg
+        default=25 * u.deg
     )
     n_cells_between_levels: Optional[pd.NonNegativeInt] =  pd.Field(1)
     min_refinement_cells: Optional[pd.NonNegativeInt] = pd.Field(10)
+    @pd.field_validator(
+        "resolve_feature_angle", 
+        mode="after"
+    )
+    @classmethod
+    def angle_limits(cls, value):
+        if value is None:
+            return value
+        if value > 180* u.deg:
+            raise ValueError("resolve_feature_angle must be between 0 and 180 degrees.")
+        return value
 
 class SnappySnapControls(Flow360BaseModel):
     n_smooth_patch: pd.NonNegativeInt = pd.Field(3)

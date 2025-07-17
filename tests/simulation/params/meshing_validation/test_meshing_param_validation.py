@@ -4,7 +4,11 @@ import pytest
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams, 
     BetaVolumeMeshingParams, 
-    ModularMeshingWorkflow
+    ModularMeshingWorkflow,
+    SnappySurfaceMeshingParams
+)
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    SnappySurfaceMeshingDefaults
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -12,9 +16,13 @@ from flow360.component.simulation.meshing_param.volume_params import (
     RotationCylinder,
     UniformRefinement,
 )
-from flow360.component.simulation.primitives import Cylinder, Surface
+from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+    SnappyBodyRefinement
+)
+from flow360 import u
+from flow360.component.simulation.primitives import Cylinder, Surface, MeshZone, Box, SnappyBody
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.unit_system import CGS_unit_system
+from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 
 
 def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
@@ -378,4 +386,80 @@ def test_reuse_of_same_cylinder():
                     ],)
                 )
             )
+
+def test_require_mesh_zones():
+    with SI_unit_system:
+        surface_meshing=SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=1*u.mm,
+                max_spacing=5*u.mm,
+                gap_resolution=0.001*u.mm
+            ),
+            cad_is_fluid=False
+        )
+
+    with SI_unit_system:
+        surface_meshing=SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=1*u.mm,
+                max_spacing=5*u.mm,
+                gap_resolution=0.01*u.mm
+            ),
+            cad_is_fluid=True,
+            zones=[MeshZone(name="fluid", point_in_mesh=(0, 0, 0)*u.mm)]
+        )
+
+    with pytest.raises(ValueError):
+        with SI_unit_system:
+            surface_meshing=SnappySurfaceMeshingParams(
+                defaults=SnappySurfaceMeshingDefaults(
+                    min_spacing=1*u.mm,
+                    max_spacing=5*u.mm,
+                    gap_resolution=0.0001*u.mm
+                ),
+                bounding_box=Box(center=(0, 0, 0)*u.mm, size=(1, 1, 1)*u.mm, name="box")
+            )
+
+    with pytest.raises(ValueError):
+        with SI_unit_system:
+            surface_meshing=SnappySurfaceMeshingParams(
+                defaults=SnappySurfaceMeshingDefaults(
+                    min_spacing=1*u.mm,
+                    max_spacing=5*u.mm,
+                    gap_resolution=0.01*u.mm
+                ),
+                cad_is_fluid=True
+            )
+
+def test_bad_refinements():
+    with pytest.raises(ValueError):
+        surface_meshing=SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=1*u.mm,
+                max_spacing=5*u.mm,
+                gap_resolution=0.01*u.mm
+            ),
+            refinements=[
+                SnappyBodyRefinement(
+                    min_spacing=6*u.mm,
+                    bodies=[SnappyBody(body_name="bbb")]
+                )
+            ]
+        )
+
+    with pytest.raises(ValueError):
+        surface_meshing=SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=1*u.mm,
+                max_spacing=5*u.mm,
+                gap_resolution=0.01*u.mm
+            ),
+            refinements=[
+                SnappyBodyRefinement(
+                    max_spacing=0.5*u.mm,
+                    bodies=[SnappyBody(body_name="bbb")]
+                )
+            ]
+        )
+
 

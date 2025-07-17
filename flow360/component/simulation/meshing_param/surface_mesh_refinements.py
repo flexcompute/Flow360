@@ -35,13 +35,15 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
         "SnappyBodyRefinement", frozen=True
     )
     gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
-    entities: List[SnappyBody] = pd.Field([], alias="bodies")
+    entities: List[SnappyBody] = pd.Field(alias="bodies")
 
 class SnappyRegionRefinement(SnappyEntityRefinement):
+    min_spacing: LengthType.Positive = pd.Field()
+    max_spacing: LengthType.Positive = pd.Field()
     refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field(
         "SnappySurfaceRefinement", frozen=True
     )
-    entities: EntityList[Surface] = pd.Field([], alias="regions")
+    entities: EntityList[Surface] = pd.Field(alias="regions")
 
 class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
@@ -60,4 +62,10 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
         if isinstance(self.spacing, List):
             if not self.distances or len(self.distances) != len(self.spacing):
                 raise ValueError(f"When using a distance spacing specification both spacing ({self.spacing}) and distances ({self.distances}) fields must be Lists and the same length.")
+        return self
+    
+    @pd.model_validator(mode="after")
+    def _check_entity_lists(self) -> Self:
+        if self.bodies is None and self.regions is None:
+            raise ValueError("At least one body or region must be specified.")
         return self

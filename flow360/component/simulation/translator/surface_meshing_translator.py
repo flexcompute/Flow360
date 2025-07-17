@@ -110,15 +110,10 @@ def apply_SnappyRegionRefinement(refinement:SnappyRegionRefinement, translated):
                     if refinement.proximity_spacing is not None:
                         region["gapSpacingReduction"] = refinement.proximity_spacing.value.item()
 
-                    if refinement.min_spacing is not None or refinement.max_spacing is not None:
-                        region["spacing"] = {
-                            "min": body["spacing"]["min"],
-                            "max": body["spacing"]["max"]
-                        }
-                        if refinement.min_spacing is not None:
-                            region["spacing"]["min"] = refinement.min_spacing.value.item()
-                        if refinement.max_spacing is not None:
-                            region["spacing"]["max"] = refinement.max_spacing.value.item()
+                    region["spacing"] = {
+                        "min": refinement.min_spacing.value.item(),
+                        "max": refinement.max_spacing.value.item()
+                    }
 
 @preprocess_input
 # pylint: disable=unused-argument
