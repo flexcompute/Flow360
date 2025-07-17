@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from unyt import Unit, unit_symbols, unyt_array
+from unyt import Unit, unit_symbols
 
 from flow360.component.simulation.blueprint.core import EvaluationContext
 from flow360.component.simulation.blueprint.core.resolver import CallableResolver
@@ -10,16 +10,34 @@ from flow360.component.simulation.blueprint.core.resolver import CallableResolve
 
 def _unit_list():
     """Import a list of available unit symbols from the unyt module"""
-
-    symbols = set()
-
-    for _, value in unit_symbols.__dict__.items():
-        if isinstance(value, (unyt_array, Unit)):
-            if str(value) == "u.degF" or str(value) == "u.degC":
+    unyt_symbol_dict = {}
+    """Import Unit objects from a module into a namespace"""
+    for key, value in unit_symbols.__dict__.items():
+        if isinstance(value, Unit):
+            dimension_str = str(value.dimensions)
+            u_expr_str = str(value.expr)
+            if (
+                dimension_str.count("logarithmic")
+                or dimension_str.count("luminous")
+                or dimension_str.count("current")
+                or (dimension_str == "1" and u_expr_str != "dimensionless")
+            ):
                 continue
-            symbols.add(str(value))
-
-    return list(symbols)
+            if u_expr_str.count("delta_degC") or u_expr_str.count("delta_degF"):
+                # Note: Disable the delta temperature units.
+                continue
+            if u_expr_str not in unyt_symbol_dict:
+                unyt_symbol_dict[u_expr_str] = {
+                    "aliases": [key],
+                    "dimensions": str(value.dimensions),
+                    "SI_equivalent": str((1 * value).in_mks()),
+                }
+            else:
+                unyt_symbol_dict[str(value.expr)]["aliases"].append(key)
+    allowed_unyt_symbols = []
+    for value in unyt_symbol_dict.values():
+        allowed_unyt_symbols += value["aliases"]
+    return allowed_unyt_symbols
 
 
 def _import_units(_) -> Any:

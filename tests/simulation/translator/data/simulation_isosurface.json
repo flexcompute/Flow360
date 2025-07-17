@@ -1104,7 +1104,7 @@
                 "name": "cos_deg_res",
                 "value": {
                     "type_name": "expression",
-                    "expression": "math.cos(solution.CfVec[1] * 3.141592653589793 * u.degree)"
+                    "expression": "math.cos(solution.CfVec[1] * 3.141592653589793 * u.deg)"
                 },
                 "postProcessing": false
             },
