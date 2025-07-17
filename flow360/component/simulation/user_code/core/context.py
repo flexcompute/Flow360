@@ -11,7 +11,6 @@ from flow360.component.simulation.blueprint.core.resolver import CallableResolve
 def _unit_list():
     """Import a list of available unit symbols from the unyt module"""
     unyt_symbol_dict = {}
-    """Import Unit objects from a module into a namespace"""
     for key, value in unit_symbols.__dict__.items():
         if isinstance(value, Unit):
             dimension_str = str(value.dimensions)
