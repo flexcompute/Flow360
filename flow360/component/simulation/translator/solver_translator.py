@@ -5,7 +5,10 @@ from typing import Type, Union
 
 import unyt as u
 
-from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
+from flow360.component.simulation.conversion import (
+    LIQUID_IMAGINARY_FREESTREAM_MACH,
+    compute_udf_dimensionalization_factor,
+)
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
@@ -603,17 +606,6 @@ def user_variable_to_udf(
     else:
         expression = variable.value
 
-    def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
-        y2 = (2.0 * target_unit).in_units(source_unit).value
-        y1 = (1.0 * target_unit).in_units(source_unit).value
-        x2 = 2.0
-        x1 = 1.0
-
-        coefficient = (y2 - y1) / (x2 - x1)
-        offset = y1 / coefficient - x1
-
-        return coefficient, offset
-
     def _prepare_prepending_code(expression: Expression):
         prepending_code = []
         for name in sorted(expression.solver_variable_names()):
@@ -632,12 +624,10 @@ def user_variable_to_udf(
         coefficient = 1
         offset = 0
     else:
-        flow360_unit_system = input_params.flow360_unit_system
-        # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
-        flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
-        flow360_unit = flow360_unit_system[requested_unit.dimensions]
-        coefficient, offset = _compute_coefficient_and_offset(
-            source_unit=requested_unit, target_unit=flow360_unit
+        coefficient, offset = compute_udf_dimensionalization_factor(
+            params=input_params,
+            requested_unit=requested_unit,
+            using_liquid_op=isinstance(input_params.operating_condition, LiquidOperatingCondition),
         )
 
     expression_length = expression.length

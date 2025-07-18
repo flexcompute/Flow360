@@ -84,7 +84,7 @@ Mach = SolverVariable(
 mut = SolverVariable(
     name="solution.mut",
     value=float("NaN") * u.kg / u.m / u.s,
-    solver_name="mut",
+    solver_name="___mut",
     variable_type="Volume",
 )  # Turbulent viscosity
 mut_ratio = SolverVariable(
@@ -128,7 +128,7 @@ turbulence_intermittency = SolverVariable(
 density = SolverVariable(
     name="solution.density",
     value=float("NaN") * u.kg / u.m**3,
-    solver_name="primitiveVars[0]",
+    solver_name="___density",
     variable_type="Volume",
 )
 velocity = SolverVariable(
@@ -140,7 +140,7 @@ velocity = SolverVariable(
 pressure = SolverVariable(
     name="solution.pressure",
     value=float("NaN") * u.Pa,
-    solver_name="primitiveVars[4]",
+    solver_name="___pressure",
     variable_type="Volume",
 )
 
