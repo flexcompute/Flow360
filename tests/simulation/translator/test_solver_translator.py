@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
