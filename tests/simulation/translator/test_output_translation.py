@@ -1134,13 +1134,9 @@ def test_dimensioned_output_fields_translation():
         ]
     }
 
-    solver_user_defined_fields = {}
-    solver_user_defined_fields["userDefinedFields"] = solver_json["userDefinedFields"]
-
-    assert compare_values(
-        sorted(solver_user_defined_fields["userDefinedFields"], key=lambda d: d["name"]),
-        sorted(ref["userDefinedFields"], key=lambda d: d["name"]),
-    )
+    translated_udfs = sorted(solver_json["userDefinedFields"], key=lambda x: x["name"])
+    ref_udfs = sorted(ref["userDefinedFields"], key=lambda x: x["name"])
+    assert compare_values(translated_udfs, ref_udfs)
 
 
 @pytest.fixture()
