@@ -258,19 +258,21 @@ _FIELD_TYPE_INFO = {
 
 # Predefined UDF expressions
 PREDEFINED_UDF_EXPRESSIONS = {
-    "velocity": "velocity[0] = primitiveVars[1];"
-    + "velocity[1] = primitiveVars[2];"
-    + "velocity[2] = primitiveVars[3];",
+    "velocity": "velocity[0] = primitiveVars[1] * velocityScale;"
+    + "velocity[1] = primitiveVars[2] * velocityScale;"
+    + "velocity[2] = primitiveVars[3] * velocityScale;",
     "velocity_magnitude": "double velocity[3];"
     + "velocity[0] = primitiveVars[1];"
     + "velocity[1] = primitiveVars[2];"
     + "velocity[2] = primitiveVars[3];"
-    + "velocity_magnitude = magnitude(velocity);",
-    "velocity_x": "velocity_x = primitiveVars[1];",
-    "velocity_y": "velocity_y = primitiveVars[2];",
-    "velocity_z": "velocity_z = primitiveVars[3];",
-    "pressure": "pressure = primitiveVars[4];",
-    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = magnitude(wallShearStress);",
+    + "velocity_magnitude = magnitude(velocity) * velocityScale;",
+    "velocity_x": "velocity_x = primitiveVars[1] * velocityScale;",
+    "velocity_y": "velocity_y = primitiveVars[2] * velocityScale;",
+    "velocity_z": "velocity_z = primitiveVars[3] * velocityScale;",
+    "pressure": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? "
+    + "(primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
+    "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = "
+    + "magnitude(wallShearStress) * (velocityScale * velocityScale);",
 }
 
 
@@ -330,6 +332,7 @@ def generate_predefined_udf(field_name, params):
 
     if unit is None:
         return base_expr
+    base_expr = base_expr.replace("velocityScale", "1.0")
 
     conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
 
