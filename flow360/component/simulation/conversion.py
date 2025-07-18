@@ -157,11 +157,11 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
             if params.operating_condition.velocity_magnitude.value != 0:
                 return (
                     params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
-                )
+                ).to("m/s")
             return (
                 params.operating_condition.reference_velocity_magnitude
                 / LIQUID_IMAGINARY_FREESTREAM_MACH
-            )
+            ).to("m/s")
         require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
         return base_velocity
@@ -180,7 +180,7 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
 
     def get_base_density():
         if params.operating_condition.type_name == "LiquidOperatingCondition":
-            return params.operating_condition.material.density
+            return params.operating_condition.material.density.to("kg/m**3")
         require(["operating_condition", "thermal_state", "density"], required_by, params)
         base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
 

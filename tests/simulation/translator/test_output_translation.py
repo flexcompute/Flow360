@@ -33,12 +33,10 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.services import simulation_to_case_json
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.translator.solver_translator import (
-    get_solver_json,
-    translate_output,
-)
+from flow360.component.simulation.translator.solver_translator import translate_output
 from flow360.component.simulation.unit_system import SI_unit_system
 
 
@@ -1063,7 +1061,6 @@ def test_dimensioned_output_fields_translation():
             ],
         )
 
-    # solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
     solver_json, _ = simulation_to_case_json(param, mesh_unit=1.0 * u.m)
     expected_fields_v = [
         "velocity",
@@ -1089,78 +1086,50 @@ def test_dimensioned_output_fields_translation():
 
     ref = {
         "userDefinedFields": [
-            {"name": "pressure", "expression": "pressure = primitiveVars[4];"},
+            {"name": "my_field", "expression": "1+1"},
             {
-                "name": "velocity_m_per_s",
-                "expression": "double velocity[3];"
-                "velocity[0] = primitiveVars[1];"
-                "velocity[1] = primitiveVars[2];"
-                "velocity[2] = primitiveVars[3];"
-                "velocity_m_per_s[0] = velocity[0] * 340.29400580821283;"
-                "velocity_m_per_s[1] = velocity[1] * 340.29400580821283;"
-                "velocity_m_per_s[2] = velocity[2] * 340.29400580821283;",
-            },
-            {
-                "name": "wall_shear_stress_magnitude",
-                "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress);",
-            },
-            {
-                "name": "velocity_magnitude",
-                "expression": "double velocity[3]"
-                "velocity[0] = primitiveVars[1]"
-                "velocity[1] = primitiveVars[2]"
-                "velocity[2] = primitiveVars[3]"
-                "velocity_magnitude = magnitude(velocity)",
-            },
-            {
-                "name": "velocity",
-                "expression": "velocity[0] = primitiveVars[1]"
-                "velocity[1] = primitiveVars[2]"
-                "velocity[2] = primitiveVars[3]",
-            },
-            {
-                "name": "wall_shear_stress_magnitude_pa",
-                "expression": "double wall_shear_stress_magnitude"
-                "wall_shear_stress_magnitude = magnitude(wallShearStress)"
-                "wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.012726525",
-            },
-            {
-                "name": "velocity_y_m_per_s",
-                "expression": "double velocity_y"
-                "velocity_y = primitiveVars[2]"
-                "velocity_y_m_per_s = velocity_y * 340.29400580821283",
-            },
-            {
-                "name": "velocity_x_m_per_s",
-                "expression": "double velocity_x"
-                "velocity_x = primitiveVars[1]"
-                "velocity_x_m_per_s = velocity_x * 340.29400580821283",
-            },
-            {
-                "name": "velocity_magnitude_m_per_s",
-                "expression": "double velocity_magnitude"
-                "double velocity[3]"
-                "velocity[0] = primitiveVars[1]"
-                "velocity[1] = primitiveVars[2]"
-                "velocity[2] = primitiveVars[3]"
-                "velocity_magnitude = magnitude(velocity)"
-                "velocity_magnitude_m_per_s = velocity_magnitude * 340.29400580821283",
+                "name": "pressure",
+                "expression": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
             },
             {
                 "name": "pressure_pa",
-                "expression": "double pressure"
-                "pressure = primitiveVars[4]"
-                "pressure_pa = pressure * 141855.012726525",
+                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (1.0 * 1.0) : primitiveVars[4];pressure_pa = pressure * 141855.012726525;",
+            },
+            {
+                "name": "velocity",
+                "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;",
+            },
+            {
+                "name": "velocity_m_per_s",
+                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * 1.0;velocity[1] = primitiveVars[2] * 1.0;velocity[2] = primitiveVars[3] * 1.0;velocity_m_per_s[0] = velocity[0] * 340.29400580821283;velocity_m_per_s[1] = velocity[1] * 340.29400580821283;velocity_m_per_s[2] = velocity[2] * 340.29400580821283;",
+            },
+            {
+                "name": "velocity_magnitude",
+                "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;",
+            },
+            {
+                "name": "velocity_magnitude_m_per_s",
+                "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * 1.0;velocity_magnitude_m_per_s = velocity_magnitude * 340.29400580821283;",
+            },
+            {
+                "name": "velocity_x_m_per_s",
+                "expression": "double velocity_x;velocity_x = primitiveVars[1] * 1.0;velocity_x_m_per_s = velocity_x * 340.29400580821283;",
+            },
+            {
+                "name": "velocity_y_m_per_s",
+                "expression": "double velocity_y;velocity_y = primitiveVars[2] * 1.0;velocity_y_m_per_s = velocity_y * 340.29400580821283;",
             },
             {
                 "name": "velocity_z_m_per_s",
-                "expression": "double velocity_z"
-                "velocity_z = primitiveVars[3]"
-                "velocity_z_m_per_s = velocity_z * 340.29400580821283",
+                "expression": "double velocity_z;velocity_z = primitiveVars[3] * 1.0;velocity_z_m_per_s = velocity_z * 340.29400580821283;",
             },
             {
-                "name": "my_field",
-                "expression": "1+1",
+                "name": "wall_shear_stress_magnitude",
+                "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);",
+            },
+            {
+                "name": "wall_shear_stress_magnitude_pa",
+                "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (1.0 * 1.0);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.012726525;",
             },
         ]
     }
@@ -1168,8 +1137,10 @@ def test_dimensioned_output_fields_translation():
     solver_user_defined_fields = {}
     solver_user_defined_fields["userDefinedFields"] = solver_json["userDefinedFields"]
 
-    print(solver_user_defined_fields["userDefinedFields"])
-    assert compare_values(solver_user_defined_fields, ref)
+    assert compare_values(
+        sorted(solver_user_defined_fields["userDefinedFields"], key=lambda d: d["name"]),
+        sorted(ref["userDefinedFields"], key=lambda d: d["name"]),
+    )
 
 
 @pytest.fixture()
