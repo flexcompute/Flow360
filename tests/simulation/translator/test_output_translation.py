@@ -3,6 +3,7 @@ import json
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
@@ -94,7 +95,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         param = SimulationParams(outputs=[volume_output_config[0]])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
+    assert compare_values(volume_output_config[1], translated["volumeOutput"])
 
     ##:: timeAverageVolumeOutput only
     with SI_unit_system:
@@ -104,7 +105,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(avg_volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
+    assert compare_values(avg_volume_output_config[1], translated["volumeOutput"])
 
     ##:: timeAverageVolumeOutput and volumeOutput
     with SI_unit_system:
@@ -126,7 +127,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
             "startAverageIntegrationStep": 1,
         }
     }
-    assert sorted(ref["volumeOutput"].items()) == sorted(translated["volumeOutput"].items())
+    assert compare_values(ref["volumeOutput"], translated["volumeOutput"])
 
 
 @pytest.fixture()
@@ -191,7 +192,7 @@ def test_surface_output(
         param = SimulationParams(outputs=surface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_output_config[1].items()) == sorted(translated["surfaceOutput"].items())
+    assert compare_values(surface_output_config[1], translated["surfaceOutput"])
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
@@ -219,7 +220,7 @@ def test_surface_output(
         },
         "writeSingleFile": False,
     }
-    assert sorted(ref.items()) == sorted(translated["surfaceOutput"].items())
+    assert compare_values(ref, translated["surfaceOutput"])
 
 
 @pytest.fixture()
@@ -308,7 +309,7 @@ def test_slice_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(sliceoutput_config[1].items()) == sorted(translated["sliceOutput"].items())
+    assert compare_values(sliceoutput_config[1], translated["sliceOutput"])
 
 
 @pytest.fixture()
@@ -392,9 +393,7 @@ def test_isosurface_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(isosurface_output_config[1].items()) == sorted(
-        translated["isoSurfaceOutput"].items()
-    )
+    assert compare_values(isosurface_output_config[1], translated["isoSurfaceOutput"])
 
 
 @pytest.fixture()
@@ -727,7 +726,7 @@ def test_surface_probe_output():
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceMonitorOutput"].items())
+    assert compare_values(param_with_ref[1], translated["surfaceMonitorOutput"])
 
 
 def test_monitor_output(
@@ -746,7 +745,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_config[1].items()) == sorted(translated["monitorOutput"].items())
+    assert compare_values(probe_output_config[1], translated["monitorOutput"])
 
     ##:: monitorOutput with line probes
     with SI_unit_system:
@@ -755,9 +754,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_with_point_array[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert compare_values(probe_output_with_point_array[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral
     with SI_unit_system:
@@ -772,9 +769,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_integral_output_config[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert compare_values(surface_integral_output_config[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
@@ -845,7 +840,7 @@ def test_monitor_output(
         },
         "outputFields": [],
     }
-    assert sorted(ref.items()) == sorted(translated["monitorOutput"].items())
+    assert compare_values(ref, translated["monitorOutput"])
 
 
 @pytest.fixture()
@@ -908,9 +903,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_config[1].items()) == sorted(
-        translated["aeroacousticOutput"].items()
-    )
+    assert compare_values(aeroacoustic_output_config[1], translated["aeroacousticOutput"])
 
     with SI_unit_system:
         param = SimulationParams(
@@ -922,9 +915,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
-        translated["aeroacousticOutput"].items()
-    )
+    assert compare_values(aeroacoustic_output_permeable_config[1], translated["aeroacousticOutput"])
 
 
 def test_surface_slice_output():
@@ -1024,7 +1015,7 @@ def test_surface_slice_output():
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
     print(json.dumps(translated, indent=4))
-    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
+    assert compare_values(param_with_ref[1], translated["surfaceSliceOutput"])
 
 
 def test_dimensioned_output_fields_translation():
@@ -1072,7 +1063,8 @@ def test_dimensioned_output_fields_translation():
             ],
         )
 
-    solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
+    # solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
+    solver_json, _ = simulation_to_case_json(param, mesh_unit=1.0 * u.m)
     expected_fields_v = [
         "velocity",
         "velocity_m_per_s",
@@ -1175,7 +1167,9 @@ def test_dimensioned_output_fields_translation():
 
     solver_user_defined_fields = {}
     solver_user_defined_fields["userDefinedFields"] = solver_json["userDefinedFields"]
-    assert sorted(solver_user_defined_fields) == sorted(ref)
+
+    print(solver_user_defined_fields["userDefinedFields"])
+    assert compare_values(solver_user_defined_fields, ref)
 
 
 @pytest.fixture()
@@ -1237,6 +1231,4 @@ def test_streamline_output(streamline_output_config):
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(streamline_output_config[1].items()) == sorted(
-        translated["streamlineOutput"].items()
-    )
+    assert compare_values(streamline_output_config[1], translated["streamlineOutput"])
