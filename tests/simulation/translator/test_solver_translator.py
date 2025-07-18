@@ -1058,3 +1058,62 @@ class TestHashingRobustness:
 
         # All test cases should produce the same hash as the reference
         assert hash_value == udf_reference_hash
+
+    @pytest.fixture
+    def udd_reference_hash(self):
+        """Create a reference hash from the first entity order configuration."""
+        with SI_unit_system:
+            param = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=10),
+                models=[
+                    Inflow(
+                        entities=[Surface(name="fluid/in1"), Surface(name="fluid/in2")],
+                        spec=MassFlowRate(value=110),
+                        total_temperature=288.15 * u.K,
+                    ),
+                    Outflow(
+                        entities=[Surface(name="fluid/out1"), Surface(name="fluid/out2")],
+                        spec=MassFlowRate(value=120),
+                    ),
+                ],
+            )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        return SimulationParams._calculate_hash(translated)
+
+    @pytest.mark.parametrize(
+        "entity_order",
+        [
+            # Test case 1: Original order (reference case)
+            {
+                "inflow_entities": [Surface(name="fluid/in1"), Surface(name="fluid/in2")],
+                "outflow_entities": [Surface(name="fluid/out1"), Surface(name="fluid/out2")],
+            },
+            # Test case 2: Reversed order
+            {
+                "inflow_entities": [Surface(name="fluid/in2"), Surface(name="fluid/in1")],
+                "outflow_entities": [Surface(name="fluid/out1"), Surface(name="fluid/out2")],
+            },
+        ],
+    )
+    def test_different_UDD_ordering_by_inflow_outflow(self, entity_order, udd_reference_hash):
+        """Test that different entity orders in inflow/outflow boundaries produce the same hash."""
+        with SI_unit_system:
+            param = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=10),
+                models=[
+                    Inflow(
+                        entities=entity_order["inflow_entities"],
+                        spec=MassFlowRate(value=110),
+                        total_temperature=288.15 * u.K,
+                    ),
+                    Outflow(
+                        entities=entity_order["outflow_entities"],
+                        spec=MassFlowRate(value=120),
+                    ),
+                ],
+            )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        hash_value = SimulationParams._calculate_hash(translated)
+
+        # All test cases should produce the same hash as the reference
+        assert hash_value == udd_reference_hash
