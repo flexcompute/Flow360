@@ -43,32 +43,32 @@
         "isoSurfaces": {
             "iso_surf_Cp": {
                 "outputFields": [
-                    "pressure_psi",
-                    "iso_field_Cp"
+                    "iso_field_Cp",
+                    "pressure_psi"
                 ],
                 "surfaceField": "iso_field_Cp",
                 "surfaceFieldMagnitude": 0.5
             },
             "iso_surf_math_pressure": {
                 "outputFields": [
-                    "pressure_psf",
-                    "iso_field_math_pressure"
+                    "iso_field_math_pressure",
+                    "pressure_psf"
                 ],
                 "surfaceField": "iso_field_math_pressure",
                 "surfaceFieldMagnitude": 62.656302699450386
             },
             "iso_surf_pressure": {
                 "outputFields": [
-                    "pressure_psi",
-                    "iso_field_pressure"
+                    "iso_field_pressure",
+                    "pressure_psi"
                 ],
                 "surfaceField": "iso_field_pressure",
                 "surfaceFieldMagnitude": 2125.0
             },
             "iso_surf_random_units": {
                 "outputFields": [
-                    "velocity_km_per_hr",
-                    "iso_field_random_units"
+                    "iso_field_random_units",
+                    "velocity_km_per_hr"
                 ],
                 "surfaceField": "iso_field_random_units",
                 "surfaceFieldMagnitude": 0.003280839895013123
@@ -161,32 +161,32 @@
     },
     "userDefinedFields": [
         {
-            "expression": "pressure_psf = (primitiveVars[4] * 2962.7035389425037);",
-            "name": "pressure_psf"
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);iso_field_Cp = (___Cp * 1.0);",
+            "name": "iso_field_Cp"
         },
         {
             "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_math_pressure = ((((0.5 * ___Cp) * primitiveVars[0]) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 2962.7035389425037);",
             "name": "iso_field_math_pressure"
         },
         {
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_km_per_hr = (___velocity[0] * 1225.0584209095646);",
-            "name": "velocity_km_per_hr"
+            "expression": "iso_field_pressure = (primitiveVars[4] * 2962.7035389425037);",
+            "name": "iso_field_pressure"
         },
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_random_units = (((___velocity[0] * 2) * 0.3702794857142857) * 3015.1552904307623);",
             "name": "iso_field_random_units"
         },
         {
+            "expression": "pressure_psf = (primitiveVars[4] * 2962.7035389425037);",
+            "name": "pressure_psf"
+        },
+        {
             "expression": "pressure_psi = (primitiveVars[4] * 20.574330131545164);",
             "name": "pressure_psi"
         },
         {
-            "expression": "iso_field_pressure = (primitiveVars[4] * 2962.7035389425037);",
-            "name": "iso_field_pressure"
-        },
-        {
-            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);iso_field_Cp = (___Cp * 1.0);",
-            "name": "iso_field_Cp"
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_km_per_hr = (___velocity[0] * 1225.0584209095646);",
+            "name": "velocity_km_per_hr"
         }
     ],
     "usingLiquidAsMaterial": false
