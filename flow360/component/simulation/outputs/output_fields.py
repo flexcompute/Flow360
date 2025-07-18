@@ -24,6 +24,12 @@ Examples:
 
 from typing import List, Literal, get_args, get_origin
 
+from flow360.component.simulation.conversion import (
+    compute_udf_dimensionalization_factor,
+)
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
+)
 from flow360.component.simulation.unit_system import u
 
 # Coefficient of pressure
@@ -355,7 +361,12 @@ def generate_predefined_udf(field_name, params):
     if unit is None:
         return base_expr
 
-    conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
+    coefficient, _ = compute_udf_dimensionalization_factor(
+        params=params,
+        requested_unit=unit,
+        using_liquid_op=isinstance(params.operating_condition, LiquidOperatingCondition),
+    )
+    conversion_factor = 1 / coefficient
 
     field_info = _FIELD_TYPE_INFO.get(base_field, {"type": FIELD_TYPE_SCALAR})
     field_type = field_info["type"]
