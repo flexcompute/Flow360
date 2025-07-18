@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -121,7 +122,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
 )
-from flow360.component.simulation.framework.param_utils import AssetCache
+
 assertions = unittest.TestCase("__init__")
 
 import flow360.component.simulation.user_code.core.context as context
@@ -221,7 +222,6 @@ def translate_and_compare(
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     if debug:
-        print(">>> translated = ", translated)
         print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
     assert compare_values(
@@ -936,41 +936,72 @@ def test_isosurface_iso_value_in_unit_system():
         == "Value error, The isosurface field is invalid and therefore unit inference is not possible."
     )
 
+
 class TestHashingRobustness:
-    def test_diff_boundary_order(self):
+    @pytest.fixture
+    def reference_hash(self):
+        """Create a reference hash from the first boundary order configuration."""
         with SI_unit_system:
-            param_single_wall = SimulationParams(
+            param = SimulationParams(
                 operating_condition=AerospaceCondition(velocity_magnitude=10),
                 models=[
                     Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
                     Freestream(entities=Surface(name="fluid/farfield")),
-                ]
+                ],
             )
-        translated = get_solver_json(param_single_wall, mesh_unit=1*u.m)
-        hash_1 = SimulationParams._calculate_hash(translated)
-        print(f"1 ({SimulationParams._calculate_hash(translated)}):", translated["boundaries"])
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        return SimulationParams._calculate_hash(translated)
 
+    @pytest.mark.parametrize(
+        "boundary_order",
+        [
+            # Test case 1: Single Wall with multiple surfaces (reference case)
+            [
+                Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+            # Test case 2: Multiple Wall models with single surfaces each
+            [
+                Wall(entities=[Surface(name="fluid/wall2")]),
+                Wall(entities=[Surface(name="fluid/wall1")]),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+            # Test case 3: Different order of Wall models
+            [
+                Wall(entities=[Surface(name="fluid/wall1")]),
+                Wall(entities=[Surface(name="fluid/wall2")]),
+                Freestream(entities=Surface(name="fluid/farfield")),
+            ],
+            # Test case 4: Freestream first, then Walls
+            [
+                Freestream(entities=Surface(name="fluid/farfield")),
+                Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+            ],
+        ],
+    )
+    def test_diff_boundary_order(self, boundary_order, reference_hash):
+        """Test that different boundary condition orders produce the same hash."""
         with SI_unit_system:
-            param_single_wall = SimulationParams(
+            param = SimulationParams(
                 operating_condition=AerospaceCondition(velocity_magnitude=10),
-                models=[
-                    Wall(entities=[ Surface(name="fluid/wall2")]),
-                    Wall(entities=[Surface(name="fluid/wall1")]),
-                    Freestream(entities=Surface(name="fluid/farfield")),
-                ]
+                models=boundary_order,
             )
-        translated = get_solver_json(param_single_wall, mesh_unit=1*u.m)
-        hash_2 = SimulationParams._calculate_hash(translated)
-        assert hash_1 == hash_2
-    
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        hash_value = SimulationParams._calculate_hash(translated)
 
-    def test_different_UDF_order(self):
+        # All test cases should produce the same hash as the reference
+        assert hash_value == reference_hash
+
+    @pytest.fixture
+    def udf_reference_hash(self):
+        """Create a reference hash from the first UDF order configuration."""
         from flow360.component.simulation.services import clear_context
-        clear_context()
-        var_1 = UserVariable(name="uuu", value=solution.velocity[0]+123*u.km/u.s)
-        var_2 = UserVariable(name="vvv", value=solution.velocity[1]=234*u.mm/u.week)
 
-        param_single_wall = SimulationParams(
+        clear_context()
+        var_1 = UserVariable(name="uuu", value=solution.velocity[0] + 123 * u.km / u.s)
+        var_2 = UserVariable(name="vvv", value=solution.velocity[1] - 234 * u.mm / u.week)
+        with SI_unit_system:
+            param = SimulationParams(
                 operating_condition=AerospaceCondition(velocity_magnitude=10),
                 models=[
                     Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
@@ -980,10 +1011,50 @@ class TestHashingRobustness:
                     SurfaceOutput(
                         name="surface_output",
                         entities=Surface(name="fluid/wall1"),
-                        output_fields=[
-                            var_1,
-                            var_2,
-                        ]
+                        output_fields=[var_1, var_2],
                     )
-                ]
+                ],
             )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        return SimulationParams._calculate_hash(translated)
+
+    @pytest.mark.parametrize(
+        "udf_order",
+        [
+            # Test case 1: var_1, var_2 (reference order)
+            ["var_1", "var_2"],
+            # Test case 2: var_2, var_1 (reversed order)
+            ["var_2", "var_1"],
+        ],
+    )
+    def test_different_UDF_order(self, udf_order, udf_reference_hash):
+        """Test that different UDF field orders produce the same hash."""
+        from flow360.component.simulation.services import clear_context
+
+        clear_context()
+        var_1 = UserVariable(name="uuu", value=solution.velocity[0] + 123 * u.km / u.s)
+        var_2 = UserVariable(name="vvv", value=solution.velocity[1] - 234 * u.mm / u.week)
+
+        # Create output fields based on the order parameter
+        output_fields = [var_1 if field == "var_1" else var_2 for field in udf_order]
+
+        with SI_unit_system:
+            param = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=10),
+                models=[
+                    Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+                    Freestream(entities=Surface(name="fluid/farfield")),
+                ],
+                outputs=[
+                    SurfaceOutput(
+                        name="surface_output",
+                        entities=Surface(name="fluid/wall1"),
+                        output_fields=output_fields,
+                    )
+                ],
+            )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        hash_value = SimulationParams._calculate_hash(translated)
+
+        # All test cases should produce the same hash as the reference
+        assert hash_value == udf_reference_hash
