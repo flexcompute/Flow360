@@ -221,7 +221,7 @@ def translate_and_compare(
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     if debug:
-        print(">>> translated = ", translated)
+        print(">>> translated = ", sorted(translated))
         print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
     assert compare_values(
