@@ -121,7 +121,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
 )
-
+from flow360.component.simulation.framework.param_utils import AssetCache
 assertions = unittest.TestCase("__init__")
 
 import flow360.component.simulation.user_code.core.context as context
@@ -935,3 +935,55 @@ def test_isosurface_iso_value_in_unit_system():
         errors[1]["msg"]
         == "Value error, The isosurface field is invalid and therefore unit inference is not possible."
     )
+
+class TestHashingRobustness:
+    def test_diff_boundary_order(self):
+        with SI_unit_system:
+            param_single_wall = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=10),
+                models=[
+                    Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+                    Freestream(entities=Surface(name="fluid/farfield")),
+                ]
+            )
+        translated = get_solver_json(param_single_wall, mesh_unit=1*u.m)
+        hash_1 = SimulationParams._calculate_hash(translated)
+        print(f"1 ({SimulationParams._calculate_hash(translated)}):", translated["boundaries"])
+
+        with SI_unit_system:
+            param_single_wall = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=10),
+                models=[
+                    Wall(entities=[ Surface(name="fluid/wall2")]),
+                    Wall(entities=[Surface(name="fluid/wall1")]),
+                    Freestream(entities=Surface(name="fluid/farfield")),
+                ]
+            )
+        translated = get_solver_json(param_single_wall, mesh_unit=1*u.m)
+        hash_2 = SimulationParams._calculate_hash(translated)
+        assert hash_1 == hash_2
+    
+
+    def test_different_UDF_order(self):
+        from flow360.component.simulation.services import clear_context
+        clear_context()
+        var_1 = UserVariable(name="uuu", value=solution.velocity[0]+123*u.km/u.s)
+        var_2 = UserVariable(name="vvv", value=solution.velocity[1]=234*u.mm/u.week)
+
+        param_single_wall = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=10),
+                models=[
+                    Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+                    Freestream(entities=Surface(name="fluid/farfield")),
+                ],
+                outputs=[
+                    SurfaceOutput(
+                        name="surface_output",
+                        entities=Surface(name="fluid/wall1"),
+                        output_fields=[
+                            var_1,
+                            var_2,
+                        ]
+                    )
+                ]
+            )
