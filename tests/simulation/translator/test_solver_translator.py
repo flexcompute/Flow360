@@ -1117,3 +1117,40 @@ class TestHashingRobustness:
 
         # All test cases should produce the same hash as the reference
         assert hash_value == udd_reference_hash
+
+    def test_different_dimensional_scaling(self):
+        with SI_unit_system:
+            param = SimulationParams(
+                operating_condition=AerospaceCondition(
+                    velocity_magnitude=10,
+                    thermal_state=ThermalState(
+                        density=1 * u.kg / u.m**3,
+                        temperature=288.15 * u.K,
+                    ),
+                ),
+                models=[
+                    Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+                    Freestream(entities=Surface(name="fluid/farfield")),
+                ],
+            )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        hash_value_1 = SimulationParams._calculate_hash(translated)
+
+        with SI_unit_system:
+            param = SimulationParams(
+                operating_condition=AerospaceCondition(
+                    velocity_magnitude=10,
+                    thermal_state=ThermalState(
+                        density=2 * u.kg / u.m**3,
+                        temperature=288.15 * u.K,
+                    ),
+                ),
+                models=[
+                    Wall(entities=[Surface(name="fluid/wall1"), Surface(name="fluid/wall2")]),
+                    Freestream(entities=Surface(name="fluid/farfield")),
+                ],
+            )
+        translated = get_solver_json(param, mesh_unit=1 * u.m)
+        hash_value_2 = SimulationParams._calculate_hash(translated)
+
+        assert hash_value_1 != hash_value_2

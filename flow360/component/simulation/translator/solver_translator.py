@@ -1680,7 +1680,7 @@ def get_solver_json(
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
         translated["userDefinedDynamics"].sort(key=lambda udd: udd["dynamicsName"])
-    
+
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
     )
