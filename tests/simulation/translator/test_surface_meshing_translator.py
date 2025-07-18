@@ -14,12 +14,13 @@ from flow360.component.simulation.meshing_param.edge_params import (
     ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.primitives import Edge, Surface
+from flow360.component.simulation.primitives import Edge, Surface, Transformation
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -32,6 +33,7 @@ from flow360.component.simulation.unit_system import (
 from tests.simulation.conftest import AssetBase
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.operating_condition.operating_condition import AerospaceCondition
 
 
 class TempGeometry(AssetBase):
@@ -493,8 +495,10 @@ def test_gai_surface_mesher_refinements():
             )
         ),
     )
-    geometry.group_faces_by_tag("groupName")
-    geometry.group_edges_by_tag("edgeName")
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
     with open(
         os.path.join(
             os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
@@ -502,32 +506,41 @@ def test_gai_surface_mesher_refinements():
         "r",
     ) as fh:
         asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+
     with SI_unit_system:
-        meshing_params = MeshingParams(
-            defaults=MeshingDefaults(
-                surface_max_edge_length=1.0,
-                curvature_resolution_angle=15 * u.deg,
-                geometry_accuracy=1e-1 * u.m,
-            ),
-            refinements=[
-                SurfaceRefinement(
-                    max_edge_length=1.0,
-                    entities=[geometry["Inner_Wing"], geometry["Inner_Wing_mirrored"]],
-                ),
-                SurfaceRefinement(
-                    max_edge_length=0.7,
-                    entities=[geometry["Outer_Wing"], geometry["Outer_Wing_mirrored"]],
-                ),
-                SurfaceRefinement(
-                    max_edge_length=0.5,
-                    entities=[geometry["Stab"], geometry["Stab_mirrored"], geometry["Fin"]],
-                ),
-            ],
+        # Rotate around z-axis for 90 deg, and scale in 3 axes
+        transformation = Transformation(
+            origin=[0, 0, 0] * u.m,
+            axis_of_rotation=(0, 0, 1),
+            angle_of_rotation=90 * u.deg,
+            scale=(4.0, 3.0, 2.0),
+            translation=[0, 0, 0] * u.m,
         )
+        geometry["cube-holes.egads"].transformation = transformation
+        geometry["cylinder.stl"].transformation = transformation
+        farfield = AutomatedFarfield()
         params = SimulationParams(
-            meshing=meshing_params,
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,  # GAI setting
+                    surface_max_edge_length=0.2,
+                    boundary_layer_first_layer_thickness=0.01,
+                ),
+                volume_zones=[farfield],
+                refinements=[
+                    SurfaceRefinement(
+                        name="renamed_surface",
+                        max_edge_length=0.1,
+                        faces=[geometry["*"]],
+                    ),
+                ],
+            ),
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=10 * u.m / u.s,
+            ),
             private_attribute_asset_cache=asset_cache,
         )
+
     _translate_and_compare(
         params,
         1 * u.m,

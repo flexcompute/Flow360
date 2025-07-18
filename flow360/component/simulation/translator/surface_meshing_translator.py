@@ -172,11 +172,11 @@ GAI_SETTING_WHITELIST = {
 def _traverse_and_filter(data, whitelist):
     """
     Recursively traverse data and whitelist to extract matching values.
-    
+
     Args:
         data: The data to traverse
         whitelist: The whitelist structure defining what to extract
-        
+
     Returns:
         Filtered data matching the whitelist structure
     """
@@ -221,5 +221,6 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
         return legacy_mesher_json(input_params, mesh_units)
     else:
+        input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
         # Just do a filtering of the input_params's JSON
         return filter_simulation_json(input_params)
