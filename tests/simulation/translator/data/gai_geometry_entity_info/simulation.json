@@ -121,7 +121,7 @@
             "units": "m"
         },
         "use_inhouse_mesher": false,
-        "use_geometry_AI": false,
+        "use_geometry_AI": true,
         "project_entity_info": {
             "draft_entities": [],
             "ghost_entities": [

@@ -59,7 +59,7 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
     }
 
 
-def legacy_mesher_json(input_params: SimulationParams, mesh_units):
+def legacy_mesher_json(input_params: SimulationParams):
     """
     Get JSON for surface meshing.
 
@@ -194,8 +194,7 @@ def _traverse_and_filter(data, whitelist):
                     # Recursively traverse
                     result[key] = _traverse_and_filter(data[key], value)
         return result
-    else:
-        return data
+    return data
 
 
 def filter_simulation_json(input_params: SimulationParams):
@@ -219,8 +218,9 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     Get JSON for surface meshing.
     """
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
-        return legacy_mesher_json(input_params, mesh_units)
-    else:
-        input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
-        # Just do a filtering of the input_params's JSON
-        return filter_simulation_json(input_params)
+        return legacy_mesher_json(input_params)
+
+    # === GAI mode ===
+    input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    # Just do a filtering of the input_params's JSON
+    return filter_simulation_json(input_params)

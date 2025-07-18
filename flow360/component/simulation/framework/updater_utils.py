@@ -37,8 +37,14 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
 def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     """Check two values are same or not"""
+    # Handle numerical comparisons first (including int vs float)
     if isinstance(value1, Number) and isinstance(value2, Number):
         return np.isclose(value1, value2, rtol, atol)
+
+    # Handle type mismatches for non-numerical types
+    if type(value1) != type(value2):
+        return False
+
     if isinstance(value1, dict) and isinstance(value2, dict):
         return compare_dicts(value1, value2, atol, rtol, ignore_keys)
     if isinstance(value1, list) and isinstance(value2, list):
@@ -51,7 +57,14 @@ def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if len(list1) != len(list2):
         return False
 
-    if list1 and not any(isinstance(item, dict) for item in list1):
+    # Only sort if the lists contain simple comparable types (not dicts, lists, etc.)
+    def is_simple_type(item):
+        return isinstance(item, (str, int, float, bool)) or (
+            isinstance(item, Number) and not isinstance(item, (dict, list))
+        )
+
+    if list1 and all(is_simple_type(item) for item in list1):
+        print(f"list1 {list1}, list2 {list2}")
         list1, list2 = sorted(list1), sorted(list2)
 
     for item1, item2 in zip(list1, list2):

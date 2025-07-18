@@ -4,6 +4,8 @@ import os
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
@@ -14,11 +16,14 @@ from flow360.component.simulation.meshing_param.edge_params import (
     ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+)
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
 )
 from flow360.component.simulation.primitives import Edge, Surface, Transformation
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -31,9 +36,6 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
 )
 from tests.simulation.conftest import AssetBase
-from flow360.component.geometry import Geometry, GeometryMeta
-from flow360.component.resource_base import local_metadata_builder
-from flow360.component.simulation.operating_condition.operating_condition import AerospaceCondition
 
 
 class TempGeometry(AssetBase):
