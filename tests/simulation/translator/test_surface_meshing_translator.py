@@ -30,6 +30,8 @@ from flow360.component.simulation.unit_system import (
     imperial_unit_system,
 )
 from tests.simulation.conftest import AssetBase
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
 
 
 class TempGeometry(AssetBase):
@@ -473,4 +475,61 @@ def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
         rotor_surface_mesh,
         get_rotor_geometry.mesh_unit,
         "rotor.json",
+    )
+
+
+def test_gai_surface_mesher_refinements():
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="aaa",
+                cloud_path_prefix="aaa",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("groupName")
+    geometry.group_edges_by_tag("edgeName")
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+    with SI_unit_system:
+        meshing_params = MeshingParams(
+            defaults=MeshingDefaults(
+                surface_max_edge_length=1.0,
+                curvature_resolution_angle=15 * u.deg,
+                geometry_accuracy=1e-1 * u.m,
+            ),
+            refinements=[
+                SurfaceRefinement(
+                    max_edge_length=1.0,
+                    entities=[geometry["Inner_Wing"], geometry["Inner_Wing_mirrored"]],
+                ),
+                SurfaceRefinement(
+                    max_edge_length=0.7,
+                    entities=[geometry["Outer_Wing"], geometry["Outer_Wing_mirrored"]],
+                ),
+                SurfaceRefinement(
+                    max_edge_length=0.5,
+                    entities=[geometry["Stab"], geometry["Stab_mirrored"], geometry["Fin"]],
+                ),
+            ],
+        )
+        params = SimulationParams(
+            meshing=meshing_params,
+            private_attribute_asset_cache=asset_cache,
+        )
+    _translate_and_compare(
+        params,
+        1 * u.m,
+        "gai_surface_mesher.json",
     )
