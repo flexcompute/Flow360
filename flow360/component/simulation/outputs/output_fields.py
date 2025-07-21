@@ -366,7 +366,7 @@ def generate_predefined_udf(field_name, params):
         requested_unit=unit,
         using_liquid_op=isinstance(params.operating_condition, LiquidOperatingCondition),
     )
-    conversion_factor = 1 / coefficient
+    conversion_factor = 1.0 / coefficient
 
     field_info = _FIELD_TYPE_INFO.get(base_field, {"type": FIELD_TYPE_SCALAR})
     field_type = field_info["type"]
