@@ -332,6 +332,8 @@ def generate_predefined_udf(field_name, params):
 
     if unit is None:
         return base_expr
+    # The velocityScale is only used to output the correct nondimensional value when liquid operating condition is used.
+    # For dimensioned output, we set it as 1.0 so the conversion is consistent with the nondimensionalization.
     base_expr = base_expr.replace("velocityScale", "1.0")
 
     conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
