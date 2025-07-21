@@ -6,6 +6,7 @@ import os
 from typing import Annotated, Callable, List, Optional, Set, Union
 
 import pydantic as pd
+import shutil
 
 # this plugin is optional, thus pylatex is not required: TODO add handling of installation of pylatex
 # pylint: disable=import-error
@@ -39,6 +40,7 @@ from flow360.plugins.report.utils import (
     get_requirements_from_data_path,
 )
 from flow360.plugins.report.uvf_shutter import ShutterBatchService
+from flow360.log import log
 
 
 class Report(Flow360Resource):
@@ -148,6 +150,7 @@ class ReportTemplate(Flow360BaseModel):
     """
 
     title: Optional[str] = pd.Field(None, description="Title of report, shown on the first page.")
+    logo: Optional[str] = pd.Field(None, description="Path to custom logo image file to display on the front page.")
     items: List[ReportItemTypes] = pd.Field(
         description="A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart."
     )
@@ -284,7 +287,19 @@ class ReportTemplate(Flow360BaseModel):
         None
         """
         os.makedirs(data_storage, exist_ok=True)
-        report_doc = ReportDoc(title=self.title, landscape=landscape)
+
+        # Copy logo file to data_storage directory if provided
+        local_logo_path = None
+        if self.logo is not None:
+            if os.path.isfile(self.logo):
+
+                logo_filename = os.path.basename(self.logo)
+                local_logo_path = os.path.join(data_storage, logo_filename)
+                shutil.copy2(self.logo, local_logo_path)
+            else:
+                log.warning(f"Logo file not found: {self.logo}")
+
+        report_doc = ReportDoc(title=self.title, landscape=landscape, logo=local_logo_path)
 
         context = ReportContext(
             cases=cases,

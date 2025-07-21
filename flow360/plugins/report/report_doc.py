@@ -32,7 +32,7 @@ class ReportDoc:
     ReportDoc
     """
 
-    def __init__(self, title, landscape=True) -> None:
+    def __init__(self, title, landscape=True, logo=None) -> None:
         self.compiler, self.compiler_args = detect_latex_compiler()
 
         self.use_xelatex = self.compiler == "xelatex"
@@ -46,9 +46,9 @@ class ReportDoc:
 
         self._doc = Document(document_options=["10pt"])
         self._define_preamble(self._doc, landscape)
-        self._create_custom_page_style(self._doc)
+        self._create_custom_page_style(self._doc, logo)
         self._title_page_style(self._doc)
-        self._make_title(self._doc, title)
+        self._make_title(self._doc, title, logo)
         self.doc.change_document_style("customstyle")
 
     @property
@@ -147,7 +147,7 @@ class ReportDoc:
         )
         doc.preamble.append(NoEscape(background_latex))
 
-    def _create_custom_page_style(self, doc) -> PageStyle:
+    def _create_custom_page_style(self, doc, logo) -> PageStyle:
         page_style = PageStyle("customstyle")
         padding = r"\vspace{10pt}"
 
@@ -178,6 +178,14 @@ class ReportDoc:
                             ).replace("\\", "/"),
                         )
                     )
+                    if logo is not None and os.path.isfile(logo):
+                        logo1.append(NoEscape(r"\hspace{10pt}"))
+                        logo1.append(
+                            StandAloneGraphic(
+                                image_options="height=18pt",
+                                filename=os.path.basename(logo),
+                            )
+                        )
 
                 with footer_content.create(
                     MiniPage(width=NoEscape(r"0.33\textwidth"), align="r")
@@ -202,10 +210,26 @@ class ReportDoc:
                 )
         doc.preamble.append(page_style)
 
-    def _make_title(self, doc, title: str = None):
+    def _make_title(self, doc, title: str = None, logo: str = None):
         # pylint: disable=invalid-name
         NewLine = NoEscape(r"\\")  # pylatex NewLine() is causing problems with centering
         doc.append(NoEscape(r"\thispagestyle{titlestyle}"))
+
+        # Add custom logo using absolute positioning if provided
+        if logo is not None and os.path.isfile(logo):
+            # Logo for title page only (centered below date)
+            title_logo_latex = (
+                r"""
+            \AddToShipoutPictureFG*{
+                \put(\LenToUnit{0.5\paperwidth},\LenToUnit{0.25\paperheight}){
+                    \makebox(0,0)[c]{\includegraphics[height=90pt]{"""
+                + os.path.basename(logo)
+                + r"""}}
+                }
+            }
+            """
+            )
+            doc.append(NoEscape(title_logo_latex))
 
         doc.append(NoEscape(r"\vspace*{\fill}"))
 
