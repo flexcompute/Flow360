@@ -97,12 +97,12 @@
             "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);Mach_SI = (___Mach * 1.0);"
         },
         {
-            "name": "velocity_SI",
-            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_SI[0] = (___velocity[0] * 340.2940058082124); velocity_SI[1] = (___velocity[1] * 340.2940058082124); velocity_SI[2] = (___velocity[2] * 340.2940058082124);"
-        },
-        {
             "name": "uuu",
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;uuu[0] = (___velocity[0] * 340.2940058082124); uuu[1] = (___velocity[1] * 340.2940058082124); uuu[2] = (___velocity[2] * 340.2940058082124);"
+        },
+        {
+            "name": "velocity_SI",
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_SI[0] = (___velocity[0] * 340.2940058082124); velocity_SI[1] = (___velocity[1] * 340.2940058082124); velocity_SI[2] = (___velocity[2] * 340.2940058082124);"
         }
     ],
     "usingLiquidAsMaterial": false,
