@@ -10,6 +10,7 @@ from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 import numpy as np
 import pydantic as pd
 from pydantic import PositiveFloat
+from pydantic_core import PydanticKnownError
 from scipy.linalg import eig
 from typing_extensions import Self
 
@@ -23,6 +24,9 @@ from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.types import Axis
 
 
@@ -107,7 +111,7 @@ class Transformation(Flow360BaseModel):
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
     angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
-    scale: Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat] = pd.Field((1, 1, 1))
+    scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 
     translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
@@ -591,6 +595,10 @@ class GhostSphere(_SurfaceEntityBase):
     center: Optional[List] = pd.Field(None, alias="center")
     max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
 
+    def exists(self, _) -> bool:
+        """Ghost farfield always exists."""
+        return True
+
 
 # pylint: disable=missing-class-docstring
 @final
@@ -602,6 +610,67 @@ class GhostCircularPlane(_SurfaceEntityBase):
     center: Optional[List] = pd.Field(None, alias="center")
     max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
     normal_axis: Optional[List] = pd.Field(None, alias="normalAxis")
+
+    def _get_existence_dependency(self, validation_info):
+        y_max = validation_info.global_bounding_box[1][1]
+        y_min = validation_info.global_bounding_box[0][1]
+
+        largest_dimension = -np.inf
+        for dim in range(3):
+            dimension = (
+                validation_info.global_bounding_box[1][dim]
+                - validation_info.global_bounding_box[0][dim]
+            )
+            largest_dimension = max(largest_dimension, dimension)
+
+        tolerance = largest_dimension * validation_info.planar_face_tolerance
+        return y_min, y_max, tolerance, largest_dimension
+
+    def exists(self, validation_info) -> bool:
+        """Mesher logic for symmetric plane existence."""
+
+        if (
+            validation_info is None
+            or not validation_info.is_beta_mesher
+            or self.name != "symmetric"
+        ):
+            # Non-beta mesher mode, then symmetric plane existence is handled upstream.
+            return True
+
+        if validation_info.global_bounding_box is None:
+            # This likely means the user try to use in-house mesher on old cloud resources.
+            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out.
+            return True
+
+        y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
+
+        if abs(y_max) > tolerance and abs(y_min) > tolerance:
+            return False
+        return True
+
+    @pd.model_validator(mode="after")
+    def check_symmetric_boundary_existence(self):
+        """Check according to the criteria if the symmetric plane exists."""
+        validation_info = get_validation_info()
+        if not self.exists(validation_info):
+            y_min, y_max, tolerance, largest_dimension = self._get_existence_dependency(
+                validation_info
+            )
+            error_msg = (
+                f"`symmetric` boundary not usable: model spans y=[{y_min:.2e}, {y_max:.2e}], "
+                + f"but tolerance from y=0 is {validation_info.planar_face_tolerance:.2e} x "
+                + f"{largest_dimension:.2e} = {tolerance:.2e}."
+            )
+
+            raise PydanticKnownError(
+                "value_error",
+                {
+                    "error": error_msg,
+                    "optional_in_entity_info": True,
+                },
+            )
+
+        return self
 
 
 class SurfacePair(Flow360BaseModel):

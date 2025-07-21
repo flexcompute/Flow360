@@ -965,11 +965,12 @@ def test_project_variables_deserialization():
     with pytest.raises(NameError):
         context.default_context.get("ccc")
 
-    params, _, _ = validate_model(
+    params, errors, _ = validate_model(
         params_as_dict=data,
         root_item_type=None,
         validated_by=ValidationCalledBy.LOCAL,
     )
+    assert errors is None, errors
     assert params
     assert (
         params.outputs[0].output_fields.items[0].value.expression
