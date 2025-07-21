@@ -7,6 +7,7 @@ from typing import Union
 from rich.console import Console
 from typing_extensions import Literal
 
+from .file_path import flow360_dir
 from .version import __version__ as version
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
