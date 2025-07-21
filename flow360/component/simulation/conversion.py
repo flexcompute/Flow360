@@ -149,9 +149,26 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
         return base_temperature
 
     def get_base_velocity():
+<<<<<<< HEAD
         if params.operating_condition.type_name != "LiquidOperatingCondition":
             require(["operating_condition", "thermal_state", "temperature"], required_by, params)
         base_velocity = params.base_velocity.v.item()
+=======
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            # Provides an imaginary "speed of sound"
+            # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
+            # To ensure incompressible range.
+            if params.operating_condition.velocity_magnitude.value != 0:
+                return (
+                    params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+                ).to("m/s")
+            return (
+                params.operating_condition.reference_velocity_magnitude
+                / LIQUID_IMAGINARY_FREESTREAM_MACH
+            ).to("m/s")
+        require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
         return base_velocity
 
     def get_base_time():
@@ -169,9 +186,17 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
         return base_angular_velocity
 
     def get_base_density():
+<<<<<<< HEAD
         if params.operating_condition.type_name != "LiquidOperatingCondition":
             require(["operating_condition", "thermal_state", "density"], required_by, params)
         base_density = params.base_density.v.item()
+=======
+        if params.operating_condition.type_name == "LiquidOperatingCondition":
+            return params.operating_condition.material.density.to("kg/m**3")
+        require(["operating_condition", "thermal_state", "density"], required_by, params)
+        base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
+
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
         return base_density
 
     def get_base_viscosity():

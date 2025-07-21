@@ -4,7 +4,10 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.updater_utils import compare_values
+<<<<<<< HEAD
 from flow360.component.simulation.models.material import Water
+=======
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     LiquidOperatingCondition,
@@ -36,12 +39,10 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.services import simulation_to_case_json
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
-from flow360.component.simulation.translator.solver_translator import (
-    get_solver_json,
-    translate_output,
-)
+from flow360.component.simulation.translator.solver_translator import translate_output
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.variables import solution
 
@@ -135,7 +136,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         param = SimulationParams(outputs=[volume_output_config[0]])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
+    assert compare_values(volume_output_config[1], translated["volumeOutput"])
 
     ##:: timeAverageVolumeOutput only
     with SI_unit_system:
@@ -145,7 +146,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(avg_volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
+    assert compare_values(avg_volume_output_config[1], translated["volumeOutput"])
 
     ##:: timeAverageVolumeOutput and volumeOutput
     with SI_unit_system:
@@ -259,7 +260,7 @@ def test_surface_output(
         param = SimulationParams(outputs=surface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_output_config[1].items()) == sorted(translated["surfaceOutput"].items())
+    assert compare_values(surface_output_config[1], translated["surfaceOutput"])
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
@@ -305,7 +306,7 @@ def test_surface_output(
         },
         "writeSingleFile": False,
     }
-    assert sorted(ref.items()) == sorted(translated["surfaceOutput"].items())
+    assert compare_values(ref, translated["surfaceOutput"])
 
 
 @pytest.fixture()
@@ -414,7 +415,7 @@ def test_slice_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(sliceoutput_config[1].items()) == sorted(translated["sliceOutput"].items())
+    assert compare_values(sliceoutput_config[1], translated["sliceOutput"])
 
 
 @pytest.fixture()
@@ -612,9 +613,7 @@ def test_isosurface_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(isosurface_output_config[1].items()) == sorted(
-        translated["isoSurfaceOutput"].items()
-    )
+    assert compare_values(isosurface_output_config[1], translated["isoSurfaceOutput"])
 
 
 def test_time_average_isosurface_output(
@@ -974,7 +973,7 @@ def test_surface_probe_output(vel_in_km_per_hr):
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceMonitorOutput"].items())
+    assert compare_values(param_with_ref[1], translated["surfaceMonitorOutput"])
 
 
 def test_monitor_output(
@@ -993,7 +992,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_config[1].items()) == sorted(translated["monitorOutput"].items())
+    assert compare_values(probe_output_config[1], translated["monitorOutput"])
 
     ##:: monitorOutput with line probes
     with SI_unit_system:
@@ -1002,9 +1001,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_with_point_array[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert compare_values(probe_output_with_point_array[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral
     with SI_unit_system:
@@ -1019,9 +1016,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_integral_output_config[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert compare_values(surface_integral_output_config[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
@@ -1092,7 +1087,7 @@ def test_monitor_output(
         },
         "outputFields": [],
     }
-    assert sorted(ref.items()) == sorted(translated["monitorOutput"].items())
+    assert compare_values(ref, translated["monitorOutput"])
 
 
 @pytest.fixture()
@@ -1155,9 +1150,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_config[1].items()) == sorted(
-        translated["aeroacousticOutput"].items()
-    )
+    assert compare_values(aeroacoustic_output_config[1], translated["aeroacousticOutput"])
 
     with SI_unit_system:
         param = SimulationParams(
@@ -1169,9 +1162,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
-        translated["aeroacousticOutput"].items()
-    )
+    assert compare_values(aeroacoustic_output_permeable_config[1], translated["aeroacousticOutput"])
 
 
 def test_surface_slice_output(vel_in_km_per_hr):
@@ -1270,7 +1261,12 @@ def test_surface_slice_output(vel_in_km_per_hr):
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+<<<<<<< HEAD
     assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
+=======
+    print(json.dumps(translated, indent=4))
+    assert compare_values(param_with_ref[1], translated["surfaceSliceOutput"])
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
 
 
 def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
@@ -1329,7 +1325,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             ],
         )
 
-    solver_json = get_solver_json(param, mesh_unit=1.0 * u.m)
+    solver_json, _ = simulation_to_case_json(param, mesh_unit=1.0 * u.m)
     expected_fields_v = [
         "velocity",
         "velocity_m_per_s",
@@ -1362,19 +1358,28 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "pressure_pa",
+<<<<<<< HEAD
                 "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 999999999.9999999;",
+=======
+                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (1.0 * 1.0) : primitiveVars[4];pressure_pa = pressure * 141855.012726525;",
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
             },
             {
                 "name": "velocity",
                 "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;",
             },
             {
+<<<<<<< HEAD
                 "name": "velocity_in_km_per_hr",
                 "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (___velocity[0] * 3600.0); velocity_in_km_per_hr[1] = (___velocity[1] * 3600.0); velocity_in_km_per_hr[2] = (___velocity[2] * 3600.0);",
             },
             {
                 "name": "velocity_m_per_s",
                 "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 1000.0;velocity_m_per_s[1] = velocity[1] * 1000.0;velocity_m_per_s[2] = velocity[2] * 1000.0;",
+=======
+                "name": "velocity_m_per_s",
+                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * 1.0;velocity[1] = primitiveVars[2] * 1.0;velocity[2] = primitiveVars[3] * 1.0;velocity_m_per_s[0] = velocity[0] * 340.29400580821283;velocity_m_per_s[1] = velocity[1] * 340.29400580821283;velocity_m_per_s[2] = velocity[2] * 340.29400580821283;",
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
             },
             {
                 "name": "velocity_magnitude",
@@ -1382,6 +1387,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "velocity_magnitude_m_per_s",
+<<<<<<< HEAD
                 "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;velocity_magnitude_m_per_s = velocity_magnitude * 1000.0;",
             },
             {
@@ -1401,12 +1407,33 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
                 "expression": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
             },
             {
+=======
+                "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * 1.0;velocity_magnitude_m_per_s = velocity_magnitude * 340.29400580821283;",
+            },
+            {
+                "name": "velocity_x_m_per_s",
+                "expression": "double velocity_x;velocity_x = primitiveVars[1] * 1.0;velocity_x_m_per_s = velocity_x * 340.29400580821283;",
+            },
+            {
+                "name": "velocity_y_m_per_s",
+                "expression": "double velocity_y;velocity_y = primitiveVars[2] * 1.0;velocity_y_m_per_s = velocity_y * 340.29400580821283;",
+            },
+            {
+                "name": "velocity_z_m_per_s",
+                "expression": "double velocity_z;velocity_z = primitiveVars[3] * 1.0;velocity_z_m_per_s = velocity_z * 340.29400580821283;",
+            },
+            {
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
                 "name": "wall_shear_stress_magnitude",
                 "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);",
             },
             {
                 "name": "wall_shear_stress_magnitude_pa",
+<<<<<<< HEAD
                 "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 999999999.9999999;",
+=======
+                "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (1.0 * 1.0);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.012726525;",
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
             },
         ]
     }
@@ -1475,6 +1502,4 @@ def test_streamline_output(streamline_output_config):
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(streamline_output_config[1].items()) == sorted(
-        translated["streamlineOutput"].items()
-    )
+    assert compare_values(streamline_output_config[1], translated["streamlineOutput"])

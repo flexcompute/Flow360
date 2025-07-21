@@ -292,9 +292,12 @@ PREDEFINED_UDF_EXPRESSIONS = {
     + "(primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
     "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = "
     + "magnitude(wallShearStress) * (velocityScale * velocityScale);",
+<<<<<<< HEAD
     "vorticity_x": "vorticity_x = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;",
     "vorticity_y": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
     "vorticity_z": "vorticity_z = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;",
+=======
+>>>>>>> a412a36f ([25.5][FXC-1886] Fix incorrect dimensional output when liquid op is used (#1268))
 }
 
 
@@ -354,6 +357,10 @@ def generate_predefined_udf(field_name, params):
 
     if unit is None:
         return base_expr
+    # The velocityScale is only required to output the correct nondimensional value when
+    # liquid operating condition is used. For dimensioned output, we set it as 1.0 so the
+    # conversion is consistent with the nondimensionalization when liquid is not used.
+    base_expr = base_expr.replace("velocityScale", "1.0")
 
     conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
 
