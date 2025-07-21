@@ -308,7 +308,7 @@ def _apply_vector_conversion(
     *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
 ):
     """Apply conversion for vector fields"""
-    factor = 1 / conversion_factor
+    factor = 1.0 / conversion_factor
     return (
         f"double {base_field}[3];"
         f"{base_udf_expression}"
@@ -322,7 +322,7 @@ def _apply_scalar_conversion(
     *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
 ):
     """Apply conversion for scalar fields"""
-    factor = 1 / conversion_factor
+    factor = 1.0 / conversion_factor
     return (
         f"double {base_field};" f"{base_udf_expression}" f"{field_name} = {base_field} * {factor};"
     )
