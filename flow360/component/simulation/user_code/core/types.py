@@ -1205,6 +1205,8 @@ class ValueOrExpression(Expression, Generic[T]):
                         return unyt_array(value.value, value.units, dtype=np.float64)
                     return value.value
                 if value.type_name == "expression":
+                    if value.expression is None:
+                        raise ValueError("No expression found in the input")
                     return expr_type(expression=value.expression, output_units=value.output_units)
 
             @deprecation_reminder("25.8.0")

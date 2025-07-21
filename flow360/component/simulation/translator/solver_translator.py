@@ -899,6 +899,20 @@ def translate_output(input_params: SimulationParams, translated: dict):
     if has_instance_in_list(outputs, StreamlineOutput):
         translated["streamlineOutput"] = translate_streamline_output(outputs)
 
+    ##:: Step8: Sort all "output_fields" everywhere
+    # Recursively sort all "outputFields" lists in the translated dict
+    def _sort_output_fields_in_dict(d):
+        if isinstance(d, dict):
+            for k, v in d.items():
+                if k == "outputFields" and isinstance(v, list):
+                    v.sort()
+                else:
+                    _sort_output_fields_in_dict(v)
+        elif isinstance(d, list):
+            for item in d:
+                _sort_output_fields_in_dict(item)
+
+    _sort_output_fields_in_dict(translated)
     return translated
 
 
@@ -1628,6 +1642,8 @@ def get_solver_json(
         udf_dict["expression"] = udf.expression
         translated["userDefinedFields"].append(udf_dict)
 
+    translated["userDefinedFields"].sort(key=lambda udf: udf["name"])
+
     ##:: Step 11: Get user defined dynamics
     input_params.user_defined_dynamics = mass_flow_default_udd(
         input_params.models, input_params.user_defined_dynamics
@@ -1639,7 +1655,7 @@ def get_solver_json(
             udd_dict = dump_dict(udd)
             udd_dict_translated = {}
             udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
-            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", [])
+            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", []).sort()
             udd_dict_translated["outputVars"] = udd_dict.pop("outputVars", [])
             udd_dict_translated["stateVarsInitialValue"] = udd_dict.pop("stateVarsInitialValue", [])
             udd_dict_translated["updateLaw"] = udd_dict.pop("updateLaw", [])
@@ -1648,9 +1664,12 @@ def get_solver_json(
                 udd_dict_translated["inputBoundaryPatches"] = []
                 for surface in udd.input_boundary_patches.stored_entities:
                     udd_dict_translated["inputBoundaryPatches"].append(_get_key_name(surface))
+                udd_dict_translated["inputBoundaryPatches"].sort()
             if udd.output_target is not None:
                 udd_dict_translated["outputTargetName"] = udd.output_target.full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
+
+        translated["userDefinedDynamics"].sort(key=lambda udd: udd["dynamicsName"])
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
