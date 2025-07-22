@@ -173,8 +173,6 @@ SliceFieldNames = VolumeFieldNames
 # Spalart-Almaras variable
 # Vorticity magnitude
 IsoSurfaceFieldNames = Literal[
-    "p",
-    "rho",
     "Mach",
     "qcriterion",
     "s",
