@@ -595,7 +595,7 @@ def test_sqrt_with_expressions(scaling_provider):
     # Test with solution variables
     result = math.sqrt(solution.Cp * math.sqrt(solution.mut))
     assert str(result) == "math.sqrt(solution.Cp * math.sqrt(solution.mut))"
-    assert result.to_solver_code(scaling_provider) == "sqrt((___Cp * sqrt(mut)))"
+    assert result.to_solver_code(scaling_provider) == "sqrt((___Cp * sqrt(___mut)))"
 
 
 # ---------------------------#
