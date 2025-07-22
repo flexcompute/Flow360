@@ -1655,7 +1655,8 @@ def get_solver_json(
             udd_dict = dump_dict(udd)
             udd_dict_translated = {}
             udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
-            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", []).sort()
+            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", [])
+            udd_dict_translated["inputVars"].sort()
             udd_dict_translated["outputVars"] = udd_dict.pop("outputVars", [])
             udd_dict_translated["stateVarsInitialValue"] = udd_dict.pop("stateVarsInitialValue", [])
             udd_dict_translated["updateLaw"] = udd_dict.pop("updateLaw", [])
