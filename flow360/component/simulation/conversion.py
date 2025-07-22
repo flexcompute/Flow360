@@ -362,6 +362,19 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
     return flow360_conversion_unit_system.conversion_system
 
 
+def get_flow360_unit_system_liquid(params) -> u.UnitSystem:
+    """
+    Returns the flow360 unit system when liquid operating condition is used
+    """
+    return u.UnitSystem(
+        name="flow360_liquid",
+        length_unit=params.base_length,
+        mass_unit=params.base_mass,
+        time_unit=params.base_time / LIQUID_IMAGINARY_FREESTREAM_MACH,
+        temperature_unit=params.base_temperature,
+    )
+
+
 def compute_udf_dimensionalization_factor(params, requested_unit, using_liquid_op):
     """
 
@@ -381,15 +394,6 @@ def compute_udf_dimensionalization_factor(params, requested_unit, using_liquid_o
 
     """
 
-    def _get_flow360_unit_system_liquid(params) -> u.UnitSystem:
-        return u.UnitSystem(
-            name="flow360_liquid",
-            length_unit=params.base_length,
-            mass_unit=params.base_mass,
-            time_unit=params.base_time / LIQUID_IMAGINARY_FREESTREAM_MACH,
-            temperature_unit=params.base_temperature,
-        )
-
     def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
         y2 = (2.0 * target_unit).in_units(source_unit).value
         y1 = (1.0 * target_unit).in_units(source_unit).value
@@ -404,7 +408,7 @@ def compute_udf_dimensionalization_factor(params, requested_unit, using_liquid_o
     flow360_unit_system = (
         params.flow360_unit_system
         if not using_liquid_op
-        else _get_flow360_unit_system_liquid(params=params)
+        else get_flow360_unit_system_liquid(params=params)
     )
     # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
     flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
