@@ -1035,7 +1035,7 @@ def test_unique_dimensions():
         ("temperature", "'temperature' is a reserved solver side variable name."),
         ("area", "'area' is a reserved solver side variable name."),
         ("velocity", "'velocity' is a reserved (legacy) output field name."),
-        ("rho", "'rho' is a reserved (legacy) output field name."),
+        ("mut", "'mut' is a reserved (legacy) output field name."),
         ("pressure", "'pressure' is a reserved (legacy) output field name."),
     ],
 )
