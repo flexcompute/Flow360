@@ -129,11 +129,11 @@ class Draft(Flow360Resource):
                 for idx, model in enumerate(params_dict["models"]):
                     if model.get("type") != "Inflow":
                         continue
-                    if model.get("velocity_direction") is None:
+                    if "velocity_direction" in model.keys():
                         params_dict["models"][idx].pop("velocity_direction")
             return params_dict
 
-        params_dict = params.model_dump()
+        params_dict = params.model_dump(exclude_none=True)
         if params_dict.get("models"):
             # Remove hybrid_model:None to avoid triggering front end display activated toggle.
             for idx, model in enumerate(params_dict["models"]):
