@@ -5,15 +5,17 @@ import pytest
 
 from flow360 import SI_unit_system, u
 from flow360.component.simulation.outputs.output_entities import Isosurface
+from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.user_code.core.types import Expression, UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
-from flow360.component.simulation.services import clear_context
+
 
 @pytest.fixture(autouse=True)
 def reset_context():
     """Clear user variables from the context."""
     clear_context()
+
 
 def test_isosurface_field_preprocess_expression_and_solver_variable():
     """
