@@ -493,7 +493,7 @@ def test_updater_to_25_6_2():
 
     def _update_to_25_6_2(pre_update_param_as_dict):
         params_new = updater(
-            version_from=f"25.5.3",
+            version_from=f"25.5.1",
             version_to=f"25.6.2",
             params_as_dict=pre_update_param_as_dict,
         )
