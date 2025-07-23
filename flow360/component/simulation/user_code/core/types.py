@@ -337,16 +337,26 @@ class Variable(Flow360BaseModel):
             ).validate_python(values.pop("value"))
             # Check overwriting, skip for solver variables:
             if values["name"] in default_context.user_variable_names:
-                diff = new_value != default_context.get(values["name"])
-
-                if isinstance(diff, np.ndarray):
-                    diff = diff.any()
-
-                if isinstance(diff, list):
-                    # Might not end up here but just in case
-                    diff = any(diff)
+                default_context_value = VariableContextInfo.convert_number_to_expression(
+                    default_context.get(values["name"])
+                )
+                default_context_value.expression = default_context_value.expression.replace(" ", "")
+                new_value = VariableContextInfo.convert_number_to_expression(new_value)
+                new_value.expression = new_value.expression.replace(" ", "")
+                diff = new_value.expression != default_context_value.expression
 
                 if diff:
+                    print(
+                        "hahahhahaha",
+                        values["name"],
+                        new_value,
+                        type(new_value),
+                        default_context.get(values["name"]),
+                        type(default_context.get(values["name"])),
+                        default_context_value,
+                        type(default_context_value),
+                        diff,
+                    )
                     raise ValueError(
                         f"Redeclaring user variable '{values['name']}' with new value: {new_value}. "
                         f"Previous value: {default_context.get(values['name'])}"
