@@ -10,6 +10,7 @@ from typing import Union
 import numpy as np
 import unyt as u
 
+from flow360.component.simulation.framework.base_model import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
@@ -118,7 +119,7 @@ def convert_tuples_to_lists(input_dict):
     return input_dict
 
 
-def remove_units_in_dict(input_dict):
+def remove_units_in_dict(input_dict, skip_keys: list[str] = []):
     """Remove units from a dimensioned value."""
 
     def _is_unyt_or_unyt_like_obj(value):
@@ -134,6 +135,9 @@ def remove_units_in_dict(input_dict):
                 )
             return new_dict
         for key, value in input_dict.items():
+            if key in skip_keys or key in [snake_to_camel(item) for item in skip_keys]:
+                new_dict[key] = value
+                continue
             if isinstance(value, dict) and _is_unyt_or_unyt_like_obj(value):
                 if value["units"].startswith("flow360_") is False:
                     raise ValueError(
@@ -141,10 +145,10 @@ def remove_units_in_dict(input_dict):
                     )
                 new_dict[key] = value["value"]
             else:
-                new_dict[key] = remove_units_in_dict(value)
+                new_dict[key] = remove_units_in_dict(value, skip_keys=skip_keys)
         return new_dict
     if isinstance(input_dict, list):
-        return [remove_units_in_dict(item) for item in input_dict]
+        return [remove_units_in_dict(item, skip_keys=skip_keys) for item in input_dict]
     return input_dict
 
 
