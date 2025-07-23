@@ -335,27 +335,32 @@ class Variable(Flow360BaseModel):
             new_value = pd.TypeAdapter(
                 ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
             ).validate_python(values.pop("value"))
-            # Check overwriting, skip for solver variables:
+
+            # Check redeclaration, skip for solver variables:
             if values["name"] in default_context.user_variable_names:
-                diff = new_value != default_context.get(values["name"])
+                registered_expression = VariableContextInfo.convert_number_to_expression(
+                    default_context.get(values["name"])
+                )
+                registered_expression_stripped = registered_expression.expression.replace(" ", "")
 
-                if isinstance(diff, np.ndarray):
-                    diff = diff.any()
+                if isinstance(new_value, Expression):
+                    new_value_stripped = new_value.expression.replace(" ", "")
+                else:
+                    new_value_stripped = VariableContextInfo.convert_number_to_expression(
+                        new_value
+                    ).expression.replace(" ", "")
 
-                if isinstance(diff, list):
-                    # Might not end up here but just in case
-                    diff = any(diff)
-
-                if diff:
+                if new_value_stripped != registered_expression_stripped:
                     raise ValueError(
                         f"Redeclaring user variable '{values['name']}' with new value: {new_value}. "
                         f"Previous value: {default_context.get(values['name'])}"
                     )
-            # Call the setter
-            default_context.set(
-                values["name"],
-                new_value,
-            )
+            else:
+                # No conflict, call the setter
+                default_context.set(
+                    values["name"],
+                    new_value,
+                )
 
         if "description" in values:
             if not isinstance(values["description"], str):
