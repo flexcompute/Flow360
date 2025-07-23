@@ -335,37 +335,32 @@ class Variable(Flow360BaseModel):
             new_value = pd.TypeAdapter(
                 ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
             ).validate_python(values.pop("value"))
-            # Check overwriting, skip for solver variables:
+
+            # Check redeclaration, skip for solver variables:
             if values["name"] in default_context.user_variable_names:
-                default_context_value = VariableContextInfo.convert_number_to_expression(
+                registered_expression = VariableContextInfo.convert_number_to_expression(
                     default_context.get(values["name"])
                 )
-                default_context_value.expression = default_context_value.expression.replace(" ", "")
-                new_value = VariableContextInfo.convert_number_to_expression(new_value)
-                new_value.expression = new_value.expression.replace(" ", "")
-                diff = new_value.expression != default_context_value.expression
+                registered_expression_stripped = registered_expression.expression.replace(" ", "")
 
-                if diff:
-                    print(
-                        "hahahhahaha",
-                        values["name"],
-                        new_value,
-                        type(new_value),
-                        default_context.get(values["name"]),
-                        type(default_context.get(values["name"])),
-                        default_context_value,
-                        type(default_context_value),
-                        diff,
-                    )
+                if isinstance(new_value, Expression):
+                    new_value_stripped = new_value.expression.replace(" ", "")
+                else:
+                    new_value_stripped = VariableContextInfo.convert_number_to_expression(
+                        new_value
+                    ).expression.replace(" ", "")
+
+                if new_value_stripped != registered_expression_stripped:
                     raise ValueError(
                         f"Redeclaring user variable '{values['name']}' with new value: {new_value}. "
                         f"Previous value: {default_context.get(values['name'])}"
                     )
-            # Call the setter
-            default_context.set(
-                values["name"],
-                new_value,
-            )
+            else:
+                # No conflict, call the setter
+                default_context.set(
+                    values["name"],
+                    new_value,
+                )
 
         if "description" in values:
             if not isinstance(values["description"], str):
