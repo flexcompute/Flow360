@@ -371,13 +371,18 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
         )
         if variable_dict is None:
             continue
-        value_or_expression = {
-            key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
-        }
+
+        value_or_expression = dict(variable_dict["value"].items())
+
         try:
             UserVariable(
                 name=variable_dict["name"],
                 value=value_or_expression,
+                **(
+                    {"description": variable_dict["description"]}
+                    if "description" in variable_dict
+                    else {}
+                ),
             )
         except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
