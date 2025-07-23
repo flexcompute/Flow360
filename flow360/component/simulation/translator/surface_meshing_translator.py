@@ -90,16 +90,19 @@ def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, tr
         edges["edgeSpacing"] = [[dist.value.item(), spac.value.item()] for (dist, spac) in zip(refinement.distances, refinement.spacing)]
     else:
         edges["edgeSpacing"] = refinement.spacing.value.item()
-
+    edgeFiles = set()
     applicable_bodies = [entity.body_name for entity in refinement.bodies] if refinement.bodies is not None else []
     applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.regions.stored_entities} if refinement.regions is not None else {}
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies or (body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None):
             body["edges"] = edges
+            edgeFiles.add(f"{body['bodyName']}.eMesh")
         if body["bodyName"] in applicable_regions:
             for region in body.get("regions", []):
                 if region["patchName"] in applicable_regions[body["bodyName"]]:
                     region["edges"] = edges
+                    edgeFiles.add(f"{body['bodyName']}--{region['patchName']}.eMesh")
+    return edgeFiles
             
 def apply_SnappyRegionRefinement(refinement:SnappyRegionRefinement, translated):
     applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.entities.stored_entities if isinstance(entity, Surface)}
@@ -152,13 +155,13 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             }
         } 
         translated["geometry"] = {"bodies": [{"bodyName": name, **deepcopy(common_defaults), "regions": [{"patchName": region} for region in regions]} for (name, regions) in bodies.items()]}
-
+        edgeFiles = set()
         # apply refinements
         for refinement in surface_meshing_params.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
                 apply_SnappyBodyRefinement(refinement, translated)
             if isinstance(refinement, SnappySurfaceEdgeRefinement):
-                apply_SnappySurfaceEdgeRefinement(refinement, translated, surface_meshing_params.defaults)
+                edgeFiles.update(apply_SnappySurfaceEdgeRefinement(refinement, translated, surface_meshing_params.defaults))
             if isinstance(refinement, SnappyRegionRefinement):
                 apply_SnappyRegionRefinement(refinement, translated)
 
@@ -211,9 +214,11 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                 "iter": smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
             }
             if smoothing_settings.included_angle is None or np.isclose(smoothing_settings.included_angle.to("degree").value.item(), 0):
-                translated["smoothingControls"]["includedAngle"] = False
+                translated["smoothingControls"]["includedAngle"] = None
             else:
                 translated["smoothingControls"]["includedAngle"] = smoothing_settings.included_angle.to("degree").value.item()
+                if edgeFiles:
+                    translated["smoothingControls"]["edgeFiles"] = list(edgeFiles)
 
             if smoothing_settings.min_elem is not None:
                 translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem
