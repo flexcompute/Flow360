@@ -798,7 +798,7 @@ def test_auto_alias():
 
 def test_variable_space_init():
     # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
-    with open("data/simulation.json", "r+") as fh:
+    with open("data/simulation.json", "r") as fh:
         data = json.load(fh)
 
     params, errors, _ = validate_model(
@@ -950,14 +950,14 @@ def test_project_variables_serialization():
 
     params = save_user_variables(params)
 
-    with open("ref/simulation_with_project_variables.json", "r+") as fh:
+    with open("ref/simulation_with_project_variables.json", "r") as fh:
         ref_data = fh.read()
 
     assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
 
 
 def test_project_variables_deserialization():
-    with open("ref/simulation_with_project_variables.json", "r+") as fh:
+    with open("ref/simulation_with_project_variables.json", "r") as fh:
         data = json.load(fh)
 
     # Assert no variables registered yet
@@ -1068,7 +1068,7 @@ def test_whitelisted_callables():
 
 
 def test_deserialization_with_wrong_syntax():
-    with open("data/simulation_with_wrong_expr_syntax.json", "r+") as fh:
+    with open("data/simulation_with_wrong_expr_syntax.json", "r") as fh:
         data = json.load(fh)
 
     _, errors, _ = validate_model(
@@ -1893,3 +1893,22 @@ def test_expression_validators_edge_cases():
         match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
     ):
         Expression.disable_confusing_operators(sanitized)
+
+
+def test_correct_expression_error_location():
+
+    with open("data/simulation.json", "r") as fh:
+        data = json.load(fh)
+    data["private_attribute_asset_cache"]["variable_context"][1]["value"][
+        "expression"
+    ] = "math.sqrt(z) + 12*u.m"
+
+    _, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("private_attribute_asset_cache", "variable_context", 1)
+    assert (
+        "operator for unyt_arrays with units 'dimensionless' (dimensions '1') and 'm' (dimensions '(length)') is not well defined."
+        in errors[0]["msg"]
+    )
