@@ -88,7 +88,6 @@ from flow360.component.simulation.models.volume_models import (
     ForcePerArea,
     FromUserDefinedDynamics,
     HeatEquationInitialCondition,
-    MovingStatistic,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
@@ -113,6 +112,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     IsosurfaceOutput,
+    MovingStatistic,
     Observer,
     ProbeOutput,
     SliceOutput,
