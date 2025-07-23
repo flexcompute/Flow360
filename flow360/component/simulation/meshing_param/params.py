@@ -270,8 +270,8 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def _ensure_mesh_zone_provided(self):
-        if (self.cad_is_fluid or self.bounding_box) and self.zones is None:
-            raise ValueError("Mesh zones must be specified when cad is fluid or bounding box is provided by user.")
+        if self.cad_is_fluid and self.zones is None:
+            raise ValueError("Mesh zones must be specified when cad is fluid.")
         return self
 
     @pd.model_validator(mode="after")

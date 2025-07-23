@@ -415,17 +415,6 @@ def test_require_mesh_zones():
                 defaults=SnappySurfaceMeshingDefaults(
                     min_spacing=1*u.mm,
                     max_spacing=5*u.mm,
-                    gap_resolution=0.0001*u.mm
-                ),
-                bounding_box=Box(center=(0, 0, 0)*u.mm, size=(1, 1, 1)*u.mm, name="box")
-            )
-
-    with pytest.raises(ValueError):
-        with SI_unit_system:
-            surface_meshing=SnappySurfaceMeshingParams(
-                defaults=SnappySurfaceMeshingDefaults(
-                    min_spacing=1*u.mm,
-                    max_spacing=5*u.mm,
                     gap_resolution=0.01*u.mm
                 ),
                 cad_is_fluid=True
