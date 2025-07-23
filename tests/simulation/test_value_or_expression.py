@@ -612,3 +612,60 @@ def test_param_with_number_expression_in_and_out():
     )
 
     assert new_params.time_stepping.step_size.evaluate() == 41 * u.s
+
+
+def test_variable_context_self_consistent():
+    const_int = UserVariable(name="const_int", value=1)
+    const_int_dimensioned = UserVariable(name="const_int_dimensioned", value=1 * u.m)
+    const_float = UserVariable(name="const_float", value=1.0 * u.m)
+    const_float_dimensioned = UserVariable(name="const_float_dimensioned", value=1.0 * u.m)
+    const_int_array = UserVariable(name="const_int_array", value=[1, 2, 3])
+    const_int_array_dimensioned = UserVariable(
+        name="const_int_array_dimensioned", value=[1, 2, 3] * u.m
+    )
+    const_float_array = UserVariable(name="const_float_array", value=[1.0, 2.0, 3.0])
+    const_float_array_dimensioned = UserVariable(
+        name="const_float_array_dimensioned", value=[1.0, 2.0, 3.0] * u.m
+    )
+
+    vm = volume_mesh()
+
+    with SI_unit_system:
+        params = SimulationParams(
+            models=[
+                Fluid(turbulence_model_solver=SpalartAllmaras()),
+                Wall(name="wall", entities=vm["*"]),
+            ],
+            outputs=[
+                VolumeOutput(
+                    name="output",
+                    output_fields=[
+                        const_int,
+                        const_int_dimensioned,
+                        const_float,
+                        const_float_dimensioned,
+                        const_int_array,
+                        const_int_array_dimensioned,
+                        const_float_array,
+                        const_float_array_dimensioned,
+                    ],
+                ),
+            ],
+            private_attribute_asset_cache=asset_cache(),
+        )
+
+    # ----  Mimicking submission ----
+    # 1. pre-upload_processing (set_up_params_for_uploading)
+    # After this all the user variables are converted to expressions.
+    params_populated = save_user_variables(params)
+
+    # 2. validate
+    # If the previous conversion to expressions caused issue (incorrectly recognized as redeclaration) we should catch it here.
+    params, errors, _ = validate_model(
+        params_as_dict=params_populated.model_dump(mode="json", exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+
+    assert errors is None

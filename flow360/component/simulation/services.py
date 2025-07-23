@@ -337,7 +337,7 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False):
+def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False) -> dict:
     """Load all user variables from private attributes when a simulation params object is initialized"""
     if "private_attribute_asset_cache" not in param_as_dict.keys():
         return param_as_dict
@@ -364,7 +364,11 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
     dependency_graph.load_from_list(variable_list)
     sorted_variables = dependency_graph.topology_sort()
 
-    for idx, variable_name in enumerate(sorted_variables):
+    pre_sort_name_to_index = {
+        var["name"]: idx for idx, var in enumerate(asset_cache["variable_context"])
+    }
+
+    for variable_name in sorted_variables:
         variable_dict = next(
             (var for var in asset_cache["variable_context"] if var["name"] == variable_name),
             None,
@@ -397,7 +401,11 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
                 line_errors=[
                     ErrorDetails(
                         type=error_detail["type"],
-                        loc=("private_attribute_asset_cache", "variable_context", idx),
+                        loc=(
+                            "private_attribute_asset_cache",
+                            "variable_context",
+                            pre_sort_name_to_index[variable_name],
+                        ),
                         msg=error_detail["msg"],
                         ctx=error_detail["ctx"],
                     ),

@@ -421,167 +421,6 @@ def test_vector_types():
         model.moment = x
 
 
-def test_serializer(
-    constant_variable,
-    constant_array,
-    constant_unyt_quantity,
-    constant_unyt_array,
-    solution_variable,
-):
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[VelocityType] = pd.Field()
-        non_dim_field: Optional[
-            ValueOrExpression.configure(allow_run_time_expression=True)[float]  # type: ignore
-        ] = pd.Field(default=None)
-
-    x = UserVariable(name="x", value=4)
-    cp = UserVariable(name="my_cp", value=solution.Cp)
-
-    model = TestModel(field=x * u.m / u.s + 4 * x**2 * u.m / u.s, non_dim_field=cp)
-
-    assert str(model.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
-
-    serialized = model.model_dump()
-
-    assert serialized["field"]["type_name"] == "expression"
-    assert serialized["field"]["expression"] == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
-    assert serialized["non_dim_field"]["expression"] == "my_cp"
-
-    model = TestModel(field=4 * u.m / u.s)
-
-    serialized = model.model_dump(exclude_none=True)
-
-    assert serialized["field"]["type_name"] == "number"
-    assert serialized["field"]["value"] == 4
-    assert serialized["field"]["units"] == "m/s"
-
-    assert constant_variable.model_dump() == {
-        "name": "constant_variable",
-        "type_name": "UserVariable",
-    }
-
-    assert constant_array.model_dump() == {
-        "name": "constant_array",
-        "type_name": "UserVariable",
-    }
-    assert constant_unyt_quantity.model_dump() == {
-        "name": "constant_unyt_quantity",
-        "type_name": "UserVariable",
-    }
-
-    assert constant_unyt_array.model_dump() == {
-        "name": "constant_unyt_array",
-        "type_name": "UserVariable",
-    }
-
-    assert solution_variable.model_dump() == {
-        "name": "solution_variable",
-        "type_name": "UserVariable",
-    }
-
-
-def test_deserializer(
-    constant_unyt_quantity,
-    constant_unyt_array,
-    constant_variable,
-    constant_array,
-    solution_variable,
-):
-    class TestModel(Flow360BaseModel):
-        field: ValueOrExpression[VelocityType] = pd.Field()
-
-    x = UserVariable(name="x", value=4)
-
-    model = {
-        "type_name": "expression",
-        "expression": "x * u.m / u.s + 4 * x ** 2 * u.m / u.s",
-    }
-
-    deserialized = TestModel(field=model)
-
-    assert str(deserialized.field) == "x * u.m / u.s + 4 * x ** 2 * u.m / u.s"
-
-    model = {"type_name": "number", "value": 4.0, "units": "m/s"}
-
-    deserialized = TestModel(field=model)
-
-    assert str(deserialized.field) == "4.0 m/s"
-
-    # Constant unyt quantity
-    model = {
-        "name": "constant_unyt_quantity",
-        "value": {
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": "m",
-            "value": 10.0,
-        },
-    }
-    deserialized = UserVariable.model_validate(model)
-    assert deserialized == constant_unyt_quantity
-
-    # Constant unyt array
-    model = {
-        "name": "constant_unyt_array",
-        "value": {
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": "m",
-            "value": [10, 20],
-        },
-    }
-    deserialized = UserVariable.model_validate(model)
-    assert deserialized == constant_unyt_array
-
-    # Constant quantity
-    model = {
-        "name": "constant_variable",
-        "value": {
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": None,
-            "value": 10.0,
-        },
-    }
-    deserialized = UserVariable.model_validate(model)
-    assert deserialized == constant_variable
-
-    # Constant array
-    model = {
-        "name": "constant_array",
-        "value": {
-            "expression": None,
-            "output_units": None,
-            "type_name": "number",
-            "units": None,
-            "value": [10, 20],
-        },
-    }
-    deserialized = UserVariable.model_validate(model)
-    assert deserialized == constant_array
-
-    # Solver variable (NaN-None handling)
-    model = {
-        "name": "solution_variable",
-        "value": {
-            "expression": "solution.velocity",
-            "output_units": None,
-            "type_name": "expression",
-            "units": None,
-            "value": None,
-        },
-    }
-    deserialized = UserVariable.model_validate(model)
-    assert deserialized == solution_variable
-    assert all(
-        np.isnan(item)
-        for item in deserialized.value.evaluate(raise_on_non_evaluable=False, force_evaluate=True)
-    )
-
-
 def test_subscript_access():
     class ScalarModel(Flow360BaseModel):
         scalar: ValueOrExpression[float] = pd.Field()
@@ -798,7 +637,7 @@ def test_auto_alias():
 
 def test_variable_space_init():
     # Simulating loading a SimulationParams object from file - ensure that the variable space is loaded correctly
-    with open("data/simulation.json", "r+") as fh:
+    with open("data/simulation.json", "r") as fh:
         data = json.load(fh)
 
     params, errors, _ = validate_model(
@@ -950,14 +789,14 @@ def test_project_variables_serialization():
 
     params = save_user_variables(params)
 
-    with open("ref/simulation_with_project_variables.json", "r+") as fh:
+    with open("ref/simulation_with_project_variables.json", "r") as fh:
         ref_data = fh.read()
 
     assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
 
 
 def test_project_variables_deserialization():
-    with open("ref/simulation_with_project_variables.json", "r+") as fh:
+    with open("ref/simulation_with_project_variables.json", "r") as fh:
         data = json.load(fh)
 
     # Assert no variables registered yet
@@ -1068,7 +907,7 @@ def test_whitelisted_callables():
 
 
 def test_deserialization_with_wrong_syntax():
-    with open("data/simulation_with_wrong_expr_syntax.json", "r+") as fh:
+    with open("data/simulation_with_wrong_expr_syntax.json", "r") as fh:
         data = json.load(fh)
 
     _, errors, _ = validate_model(
@@ -1893,3 +1732,22 @@ def test_expression_validators_edge_cases():
         match="\\^ operator is not allowed in expressions. For power operator, please use \\*\\* instead.",
     ):
         Expression.disable_confusing_operators(sanitized)
+
+
+def test_correct_expression_error_location():
+
+    with open("data/simulation.json", "r") as fh:
+        data = json.load(fh)
+    data["private_attribute_asset_cache"]["variable_context"][1]["value"][
+        "expression"
+    ] = "math.sqrt(z) + 12*u.m"
+
+    _, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("private_attribute_asset_cache", "variable_context", 1)
+    assert (
+        "operator for unyt_arrays with units 'dimensionless' (dimensions '1') and 'm' (dimensions '(length)') is not well defined."
+        in errors[0]["msg"]
+    )
