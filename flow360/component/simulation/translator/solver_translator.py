@@ -1337,7 +1337,7 @@ def get_solver_json(
         geometry = inline_expressions_in_dict(
             dump_dict(input_params.reference_geometry), input_params
         )
-        geometry = remove_units_in_dict(geometry)
+        geometry = remove_units_in_dict(geometry, skip_keys=["private_attribute_area_settings"])
         translated["geometry"] = {}
         if input_params.reference_geometry.area is not None:
             translated["geometry"]["refArea"] = geometry["area"]

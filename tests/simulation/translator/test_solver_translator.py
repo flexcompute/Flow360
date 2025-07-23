@@ -1114,3 +1114,31 @@ class TestHashingRobustness:
 
         # All test cases should produce the same hash as the reference
         assert hash_value == udd_reference_hash
+
+
+def test_auto_ref_area_settings():
+    """
+    [Frontend] Test that the auto reference area settings are translated correctly.
+    """
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_with_auto_area.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+
+    params, _, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
+    translated = get_solver_json(params, mesh_unit=1 * u.m)
+
+    assert compare_values(
+        {
+            "refArea": 0.0040039062500000005,
+            "momentCenter": [0.0, 0.0, 0.0],
+            "momentLength": [0.01, 0.01, 0.010001],
+        },
+        translated["geometry"],
+    )
