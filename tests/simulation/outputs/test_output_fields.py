@@ -41,9 +41,9 @@ def test_generate_field_udf_with_unit(simulation_params):
         "velocity[0] = primitiveVars[1] * velocityScale;"
         "velocity[1] = primitiveVars[2] * velocityScale;"
         "velocity[2] = primitiveVars[3] * velocityScale;"
-        "velocity_m_per_s[0] = velocity[0] * 340.29400580821283;"
-        "velocity_m_per_s[1] = velocity[1] * 340.29400580821283;"
-        "velocity_m_per_s[2] = velocity[2] * 340.29400580821283;"
+        "velocity_m_per_s[0] = velocity[0] * 340.2940058082124;"
+        "velocity_m_per_s[1] = velocity[1] * 340.2940058082124;"
+        "velocity_m_per_s[2] = velocity[2] * 340.2940058082124;"
     )
 
     assert result == expected
@@ -56,7 +56,7 @@ def test_generate_field_udf_velocity_components(simulation_params):
     expected = (
         "double velocity_x;"
         "velocity_x = primitiveVars[1] * velocityScale;"
-        "velocity_x_m_per_s = velocity_x * 340.29400580821283;"
+        "velocity_x_m_per_s = velocity_x * 340.2940058082124;"
     )
     assert result == expected
 
@@ -64,7 +64,7 @@ def test_generate_field_udf_velocity_components(simulation_params):
     expected = (
         "double velocity_y;"
         "velocity_y = primitiveVars[2] * velocityScale;"
-        "velocity_y_m_per_s = velocity_y * 340.29400580821283;"
+        "velocity_y_m_per_s = velocity_y * 340.2940058082124;"
     )
     assert result == expected
 
@@ -72,7 +72,7 @@ def test_generate_field_udf_velocity_components(simulation_params):
     expected = (
         "double velocity_z;"
         "velocity_z = primitiveVars[3] * velocityScale;"
-        "velocity_z_m_per_s = velocity_z * 340.29400580821283;"
+        "velocity_z_m_per_s = velocity_z * 340.2940058082124;"
     )
     assert result == expected
 
@@ -102,7 +102,7 @@ def test_generate_field_udf_velocity_magnitude(simulation_params):
         "velocity[1] = primitiveVars[2];"
         "velocity[2] = primitiveVars[3];"
         "velocity_magnitude = magnitude(velocity) * velocityScale;"
-        "velocity_magnitude_m_per_s = velocity_magnitude * 340.29400580821283;"
+        "velocity_magnitude_m_per_s = velocity_magnitude * 340.2940058082124;"
     )
     assert result == expected
 
@@ -122,7 +122,7 @@ def test_generate_field_udf_pressure(simulation_params):
     expected = (
         "double pressure;double gamma = 1.4;"
         "pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];"
-        "pressure_pa = pressure * 141855.012726525;"
+        "pressure_pa = pressure * 141855.01272652458;"
     )
     assert result == expected
 
@@ -142,7 +142,7 @@ def test_generate_field_udf_wall_shear_stress(simulation_params):
     expected = (
         "double wall_shear_stress_magnitude;"
         "wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);"
-        "wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.012726525;"
+        "wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 141855.01272652458;"
     )
     assert result == expected
 

@@ -19,15 +19,30 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
-from pydantic import Field
+from pydantic import Field, TypeAdapter
 
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import BoundingBoxType
 
 SURFACE_MESH = "SurfaceMesh"
 VOLUME_MESH = "VolumeMesh"
 CASE = "Case"
 # when running validation with ALL, it will report errors happing in all scenarios in one validation pass
 ALL = "All"
+
+
+def get_value_with_path(param_as_dict: dict, path: list[str]):
+    """
+    Get the value from the dictionary with the given path.
+    Return None if the path is not found.
+    """
+
+    value = param_as_dict
+    for key in path:
+        value = value.get(key, None)
+        if value is None:
+            return None
+    return value
 
 
 class TimeSteppingType(Enum):
@@ -115,6 +130,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "feature_usage",
         "referenced_expressions",
         "project_length_unit",
+        "global_bounding_box",
+        "planar_face_tolerance",
+        "validated_ghost_entities",
     ]
 
     @classmethod
@@ -188,7 +206,27 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         except KeyError:
             return None
 
-    def __init__(self, param_as_dict: dict, referenced_expressions: list):
+    @classmethod
+    def _get_global_bounding_box(cls, param_as_dict: dict):
+        global_bounding_box = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "global_bounding_box"],
+        )
+        if global_bounding_box:
+            # pylint: disable=no-member
+            return TypeAdapter(BoundingBoxType).validate_python(global_bounding_box)
+        return None
+
+    @classmethod
+    def _get_planar_face_tolerance(cls, param_as_dict: dict):
+        planar_face_tolerance = get_value_with_path(
+            param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
+        )
+        return planar_face_tolerance
+
+    def __init__(
+        self, param_as_dict: dict, referenced_expressions: list, validated_ghost_entities: list
+    ):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
@@ -201,6 +239,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.feature_usage = self._get_feature_usage_info(param_as_dict=param_as_dict)
         self.referenced_expressions = referenced_expressions
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
+        self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
+        self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
+        self.validated_ghost_entities = validated_ghost_entities
 
 
 class ValidationContext:

@@ -17,11 +17,13 @@ from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
     SurfaceOutput,
+    TimeAverageSurfaceOutput,
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.unit_system import imperial_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
@@ -174,3 +176,54 @@ def test_surface_user_variables_in_output_fields():
                     )
                 ],
             )
+
+
+def test_duplicate_surface_usage():
+    my_var = UserVariable(name="my_var", value=solution.node_forces_per_unit_area[1])
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The same surface `fluid/body` is used in multiple `SurfaceOutput`s. "
+            "Please specify all settings for the same surface in one output."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceOutput(entities=Surface(name="fluid/body"), output_fields=[my_var]),
+                    SurfaceOutput(
+                        entities=Surface(name="fluid/body"), output_fields=[solution.CfVec]
+                    ),
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
+            "Please specify all settings for the same surface in one output."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    TimeAverageSurfaceOutput(
+                        entities=Surface(name="fluid/body"), output_fields=[my_var]
+                    ),
+                    TimeAverageSurfaceOutput(
+                        entities=Surface(name="fluid/body"), output_fields=[solution.CfVec]
+                    ),
+                ],
+                time_stepping=Unsteady(steps=10, step_size=1e-3),
+            )
+
+    with imperial_unit_system:
+        SimulationParams(
+            outputs=[
+                SurfaceOutput(entities=Surface(name="fluid/body"), output_fields=[solution.CfVec]),
+                TimeAverageSurfaceOutput(
+                    entities=Surface(name="fluid/body"), output_fields=[solution.CfVec]
+                ),
+            ],
+            time_stepping=Unsteady(steps=10, step_size=1e-3),
+        )

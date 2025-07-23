@@ -1,8 +1,6 @@
 import flow360 as fl
 from flow360.examples import OM6wing
 
-fl.Env.dev.active()
-
 # choose shared account interactively
 fl.Accounts.choose_shared_account()
 

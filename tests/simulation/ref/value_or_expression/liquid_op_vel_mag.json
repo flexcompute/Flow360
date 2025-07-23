@@ -93,7 +93,8 @@
     "userDefinedFields": [
         {
             "name": "velocity_magnitude",
-            "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;"
+            "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;",
+            "from_user_variables": false
         }
     ],
     "usingLiquidAsMaterial": true,

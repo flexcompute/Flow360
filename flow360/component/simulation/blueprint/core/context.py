@@ -68,6 +68,7 @@ class EvaluationContext:
     __slots__ = (
         "_values",
         "_data_models",
+        "_metadata",  # Contains description of the variable
         "_resolver",
         "_aliases",
         "_dependency_graph",
@@ -87,6 +88,7 @@ class EvaluationContext:
         """
         self._values = initial_values or {}
         self._data_models = {}
+        self._metadata = {}
         self._resolver = resolver
         self._aliases: dict[str, str] = {}
         self._dependency_graph = DependencyGraph()
@@ -185,6 +187,7 @@ class EvaluationContext:
 
         self._dependency_graph.remove_variable(name=name)
         self._values.pop(name)
+        self._metadata.pop(name, None)
         log.info(f"Removed '{name}' from values.")
 
     def get_data_model(self, name: str) -> Optional[pd.BaseModel]:
@@ -262,6 +265,24 @@ class EvaluationContext:
             of the current variable values.
         """
         return deepcopy(self)
+
+    def set_metadata(self, name: str, key: str, value: Any) -> None:
+        """
+        Set the metadata for a variable.
+        """
+        if name not in self._metadata:
+            self._metadata[name] = {}
+
+        self._metadata[name][key] = value
+
+    def get_metadata(self, name: str, key: str) -> Any:
+        """
+        Get the metadata for a variable.
+
+        Returns:
+            Any: The metadata value if it exists, otherwise None.
+        """
+        return self._metadata.get(name, {}).get(key, None)
 
     @property
     def user_variable_names(self):

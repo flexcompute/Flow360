@@ -91,6 +91,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
+    _check_duplicate_surface_usage,
     _check_hybrid_model_to_use_zonal_enforcement,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
@@ -425,6 +426,12 @@ class SimulationParams(_ParamModelBase):
     def check_duplicate_isosurface_names(cls, outputs):
         """Check if we have isosurfaces with a duplicate name"""
         return _check_duplicate_isosurface_names(outputs)
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_duplicate_surface_usage(cls, outputs):
+        """Disallow the same boundary/surface being used in multiple outputs"""
+        return _check_duplicate_surface_usage(outputs)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod

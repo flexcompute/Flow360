@@ -176,7 +176,7 @@ def _to_25_4_1(params_as_dict):
     return params_as_dict
 
 
-def _to_25_6_1(params_as_dict):
+def _to_25_6_2(params_as_dict):
     # Known: There can not be velocity_direction both under Inflow AND TotalPressure
 
     # Move the velocity_direction under TotalPressure to the Inflow level.
@@ -189,23 +189,19 @@ def _to_25_6_1(params_as_dict):
             if velocity_direction:
                 model["velocity_direction"] = velocity_direction
 
-    if not params_as_dict.get("operating_condition"):
+    if "operating_condition" not in params_as_dict.keys():
+        return params_as_dict
+    if "private_attribute_input_cache" not in params_as_dict["operating_condition"].keys():
         return params_as_dict
     if (
-        not params_as_dict["operating_condition"].get("private_attribute_constructor")
-        == "from_mach_reynolds"
-    ):
-        return params_as_dict
-    if (
-        not params_as_dict["operating_condition"]
-        .get("private_attribute_input_cache", {})
-        .get("reynolds")
+        "reynolds"
+        not in params_as_dict["operating_condition"]["private_attribute_input_cache"].keys()
     ):
         return params_as_dict
     reynolds_mesh_unit = params_as_dict["operating_condition"]["private_attribute_input_cache"].pop(
         "reynolds", None
     )
-    if reynolds_mesh_unit:
+    if reynolds_mesh_unit is not None:
         params_as_dict["operating_condition"]["private_attribute_input_cache"][
             "reynolds_mesh_unit"
         ] = reynolds_mesh_unit
@@ -220,7 +216,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.2.1"), _to_25_2_1),
     (Flow360Version("25.2.3"), _to_25_2_3),
     (Flow360Version("25.4.1"), _to_25_4_1),
-    (Flow360Version("25.6.1"), _to_25_6_1),
+    (Flow360Version("25.6.2"), _to_25_6_2),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

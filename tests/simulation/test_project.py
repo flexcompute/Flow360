@@ -87,6 +87,7 @@ def test_get_asset_with_id(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_run(mock_response, capsys):
+    capsys.readouterr()
     project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
     parent_case = project.get_case("case-69b8c249")
     case = project.case  # case-84d4604e-f
