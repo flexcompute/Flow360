@@ -119,8 +119,10 @@ def convert_tuples_to_lists(input_dict):
     return input_dict
 
 
-def remove_units_in_dict(input_dict, skip_keys: list[str] = []):
+def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
     """Remove units from a dimensioned value."""
+    if skip_keys is None:
+        skip_keys = []
 
     def _is_unyt_or_unyt_like_obj(value):
         return "value" in value.keys() and "units" in value.keys()
