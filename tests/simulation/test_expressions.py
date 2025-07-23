@@ -919,12 +919,12 @@ def test_udf_generator():
 
 
 def test_project_variables_serialization():
-    ccc = UserVariable(name="ccc", value=12 * u.m / u.s)
+    ccc = UserVariable(name="ccc", value=12 * u.m / u.s, description="ccc description")
     aaa = UserVariable(
         name="aaa", value=[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]
     )
     bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_units(
-        new_unit="km/ms"
+        new_unit="km/ms",
     )
 
     with SI_unit_system:
@@ -979,6 +979,7 @@ def test_project_variables_deserialization():
         params.outputs[0].output_fields.items[0].value.expression
         == "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]"
     )
+    assert context.default_context.get_metadata("ccc", "description") == "ccc description"
 
     assert params.outputs[0].output_fields.items[0].value.output_units == "km/ms"
 

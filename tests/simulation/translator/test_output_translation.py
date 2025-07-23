@@ -1343,18 +1343,21 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
 
     ref = {
         "userDefinedFields": [
-            {"name": "my_field", "expression": "1+1"},
+            {"name": "my_field", "expression": "1+1", "from_user_variables": False},
             {
                 "name": "pressure",
                 "expression": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
+                "from_user_variables": False,
             },
             {
                 "name": "pressure_pa",
                 "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 2500000.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity",
                 "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_in_km_per_hr",
@@ -1363,44 +1366,54 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             {
                 "name": "velocity_m_per_s",
                 "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 50.0;velocity_m_per_s[1] = velocity[1] * 50.0;velocity_m_per_s[2] = velocity[2] * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_magnitude",
                 "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_magnitude_m_per_s",
                 "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;velocity_magnitude_m_per_s = velocity_magnitude * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_x_m_per_s",
                 "expression": "double velocity_x;velocity_x = primitiveVars[1] * velocityScale;velocity_x_m_per_s = velocity_x * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_y_m_per_s",
                 "expression": "double velocity_y;velocity_y = primitiveVars[2] * velocityScale;velocity_y_m_per_s = velocity_y * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_z_m_per_s",
                 "expression": "double velocity_z;velocity_z = primitiveVars[3] * velocityScale;velocity_z_m_per_s = velocity_z * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "vorticity_y",
                 "expression": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
+                "from_user_variables": False,
             },
             {
                 "name": "wall_shear_stress_magnitude",
                 "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);",
+                "from_user_variables": False,
             },
             {
                 "name": "wall_shear_stress_magnitude_pa",
                 "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 2500000.0;",
+                "from_user_variables": False,
             },
         ]
     }
-
+    print(json.dumps(solver_json["userDefinedFields"], indent=2))
     translated_udfs = sorted(solver_json["userDefinedFields"], key=lambda x: x["name"])
     ref_udfs = sorted(ref["userDefinedFields"], key=lambda x: x["name"])
+    print(">>>", translated_udfs)
     assert compare_values(translated_udfs, ref_udfs)
 
 

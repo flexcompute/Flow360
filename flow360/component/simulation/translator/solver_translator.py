@@ -725,7 +725,7 @@ def process_output_fields_for_udf(input_params: SimulationParams):
                         continue
                     udf_from_user_variable = user_variable_to_udf(isosurface.field, input_params)
                     user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
-    return generated_udfs + list(user_variable_udfs.values())
+    return generated_udfs, list(user_variable_udfs.values())
 
 
 def translate_streamline_output(output_params: list):
@@ -1632,14 +1632,19 @@ def get_solver_json(
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
-    # Add auto-generated UDFs for dimensioned fields
-    generated_udfs = process_output_fields_for_udf(input_params)
+    # Add auto-generated UDFs for dimensioned fields + user variable UDFs
+    generated_udfs, user_variable_udfs = process_output_fields_for_udf(input_params)
 
     # Add user-specified UDFs and auto-generated UDFs for dimensioned fields
-    for udf in [*input_params.user_defined_fields, *generated_udfs]:
+    legacy_udf_count = len(input_params.user_defined_fields) + len(generated_udfs)
+    for udf_count, udf in enumerate(
+        [*input_params.user_defined_fields, *generated_udfs, *user_variable_udfs]
+    ):
         udf_dict = {}
         udf_dict["name"] = udf.name
         udf_dict["expression"] = udf.expression
+        if udf_count < legacy_udf_count:
+            udf_dict["from_user_variables"] = False
         translated["userDefinedFields"].append(udf_dict)
 
     translated["userDefinedFields"].sort(key=lambda udf: udf["name"])
@@ -1655,7 +1660,8 @@ def get_solver_json(
             udd_dict = dump_dict(udd)
             udd_dict_translated = {}
             udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
-            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", []).sort()
+            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", [])
+            udd_dict_translated["inputVars"].sort()
             udd_dict_translated["outputVars"] = udd_dict.pop("outputVars", [])
             udd_dict_translated["stateVarsInitialValue"] = udd_dict.pop("stateVarsInitialValue", [])
             udd_dict_translated["updateLaw"] = udd_dict.pop("updateLaw", [])
