@@ -4,13 +4,25 @@
 import json
 import os
 from enum import Enum
-from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
+from typing import (
+    Annotated,
+    Any,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import pydantic as pd
 from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
+from flow360.component.simulation.entity_info import GhostSurfaceTypes
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -72,6 +84,7 @@ from flow360.component.simulation.validation.validation_context import (
     ALL,
     ParamsValidationInfo,
     ValidationContext,
+    get_value_with_path,
 )
 from flow360.exceptions import (
     Flow360RuntimeError,
@@ -324,7 +337,7 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = False):
+def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False):
     """Load all user variables from private attributes when a simulation params object is initialized"""
     if "private_attribute_asset_cache" not in param_as_dict.keys():
         return param_as_dict
@@ -334,7 +347,7 @@ def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = Fals
     if not isinstance(asset_cache["variable_context"], Iterable):
         return param_as_dict
 
-    if is_clear_context:
+    if use_clear_context:
         clear_context()
 
     # ==== Build dependency graph and sort variables ====
@@ -358,13 +371,18 @@ def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = Fals
         )
         if variable_dict is None:
             continue
-        value_or_expression = {
-            key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
-        }
+
+        value_or_expression = dict(variable_dict["value"].items())
+
         try:
             UserVariable(
                 name=variable_dict["name"],
                 value=value_or_expression,
+                **(
+                    {"description": variable_dict["description"]}
+                    if "description" in variable_dict
+                    else {}
+                ),
             )
         except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
@@ -389,7 +407,42 @@ def initialize_variable_space(param_as_dict: dict, is_clear_context: bool = Fals
     return param_as_dict
 
 
-def validate_model(
+def validate_ghost_entities(params_as_dict: dict) -> Tuple[dict, dict]:
+    """
+    Validate the ghost entities in the params dict.
+    - Purpose:
+
+        Isolate the ghost entities from context (ValidationContext + ParamsValidationInfo) validation.
+        Otherwise the ghost entities dict can be invalidated by the context validation which does not make sense.
+        Since the ghost entities holds truth/description of the cloud resource
+        it should always be valid regardless how it is used/referenced in the main part of SimulationParams.
+
+    - Return:
+        - params_as_dict: The params dict with the ghost entities removed.
+        - ghost_entities: The ghost entities validated.
+
+    - Note:
+        - Ghost surface should not rely on MultiConstructor model since it is completely internally managed.
+    """
+    ghost_entities_list = get_value_with_path(
+        params_as_dict,
+        [
+            "private_attribute_asset_cache",
+            "project_entity_info",
+            "ghost_entities",
+        ],
+    )
+    if not ghost_entities_list:
+        return params_as_dict, []
+
+    params_as_dict["private_attribute_asset_cache"]["project_entity_info"].pop("ghost_entities")
+    GhostEntityList = Annotated[List[GhostSurfaceTypes], pd.Field()]
+    ghost_entities = pd.TypeAdapter(GhostEntityList).validate_python(ghost_entities_list)
+
+    return params_as_dict, ghost_entities
+
+
+def validate_model(  # pylint: disable=too-many-locals
     *,
     params_as_dict,
     validated_by: ValidationCalledBy,
@@ -440,20 +493,34 @@ def validate_model(
             params_as_dict
         )
 
-        is_clear_context = validated_by == ValidationCalledBy.SERVICE
-        initialize_variable_space(updated_param_as_dict, is_clear_context)
+        use_clear_context = validated_by == ValidationCalledBy.SERVICE
+        initialize_variable_space(updated_param_as_dict, use_clear_context)
+
+        params_without_ghost_entities, ghost_entities = validate_ghost_entities(
+            updated_param_as_dict
+        )
 
         referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
         )
 
         additional_info = ParamsValidationInfo(
-            param_as_dict=updated_param_as_dict, referenced_expressions=referenced_expressions
+            param_as_dict=updated_param_as_dict,
+            referenced_expressions=referenced_expressions,
+            validated_ghost_entities=ghost_entities,
         )
+
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             # Multi-constructor model support
-            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
-            validated_param = SimulationParams(file_content=updated_param_as_dict)
+            params_without_ghost_entities = parse_model_dict(
+                params_without_ghost_entities, globals()
+            )
+            validated_param = SimulationParams(file_content=params_without_ghost_entities)
+            # pylint: disable=no-member
+            if validated_param.private_attribute_asset_cache.project_entity_info is not None:
+                validated_param.private_attribute_asset_cache.project_entity_info.ghost_entities = (
+                    ghost_entities
+                )
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught

@@ -3,6 +3,8 @@
 from contextlib import contextmanager
 from typing import Annotated, Union, get_args, get_origin
 
+import pydantic as pd
+
 
 @contextmanager
 def model_attribute_unlock(model, attr: str):
@@ -57,3 +59,9 @@ def is_instance_of_type_in_union(obj, typ) -> bool:
 
     # Otherwise, do a normal isinstance check.
     return isinstance(obj, typ)
+
+
+BoundingBoxType = Annotated[
+    list[Annotated[list[float], pd.Field(min_length=3, max_length=3)]],
+    pd.Field(min_length=2, max_length=2, description="[[xmin, ymin, zmin], [xmax, ymax, zmax]]"),
+]

@@ -56,11 +56,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
-    postProcessing: bool = pd.Field()
-
-    # pylint: disable=fixme
-    # TODO: This should be removed once front end figure out what to store here.
-    model_config = pd.ConfigDict(extra="allow")
+    description: Optional[str] = pd.Field(None)
 
     @pd.field_validator("value", mode="after")
     @classmethod
@@ -318,7 +314,7 @@ class Variable(Flow360BaseModel):
     def value(self, value):
         """
         Set the value of the variable in the global context.
-        In parallel to `set_value` this supports syntax like `my_user_var.value = 10.0`.
+        In parallel to `deserialize` this supports syntax like `my_user_var.value = 10.0`.
         """
         new_value = pd.TypeAdapter(
             ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
@@ -328,9 +324,9 @@ class Variable(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def set_value(cls, values):
+    def deserialize(cls, values):
         """
-        Supporting syntax like `a = fl.Variable(name="a", value=1)`.
+        Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
         if "name" not in values:
             raise ValueError("`name` is required for variable declaration.")
@@ -360,6 +356,13 @@ class Variable(Flow360BaseModel):
                 values["name"],
                 new_value,
             )
+
+        if "description" in values:
+            if not isinstance(values["description"], str):
+                raise ValueError(
+                    f"Description must be a string but got {type(values['description'])}."
+                )
+            default_context.set_metadata(values["name"], "description", values.pop("description"))
 
         return values
 
@@ -1205,6 +1208,8 @@ class ValueOrExpression(Expression, Generic[T]):
                         return unyt_array(value.value, value.units, dtype=np.float64)
                     return value.value
                 if value.type_name == "expression":
+                    if value.expression is None:
+                        raise ValueError("No expression found in the input")
                     return expr_type(expression=value.expression, output_units=value.output_units)
 
             @deprecation_reminder("25.8.0")
@@ -1311,16 +1316,19 @@ def save_user_variables(params):
     Save user variables to the project variables.
     Declared here since I do not want to import default_context everywhere.
     """
-    # Get all output variables which will be tagged with postProcessing=True:
-    post_processing_variables = get_post_processing_variables(params)
-
-    params.private_attribute_asset_cache.variable_context = [
-        VariableContextInfo(
-            name=name, value=value, postProcessing=name in post_processing_variables
+    # pylint:disable=protected-access
+    for name, value in default_context._values.items():
+        if "." in name:
+            continue
+        if params.private_attribute_asset_cache.variable_context is None:
+            params.private_attribute_asset_cache.variable_context = []
+        params.private_attribute_asset_cache.variable_context.append(
+            VariableContextInfo(
+                name=name,
+                value=value,
+                description=default_context.get_metadata(name, "description"),
+            )
         )
-        for name, value in default_context._values.items()  # pylint: disable=protected-access
-        if "." not in name  # Skipping scoped variables (non-user variables)
-    ]
     return params
 
 

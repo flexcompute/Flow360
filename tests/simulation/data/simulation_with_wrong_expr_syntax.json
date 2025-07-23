@@ -1,5 +1,5 @@
 {
-	"version": "25.6.1b1",
+	"version": "25.6.2b1",
 	"unit_system": {
 		"name": "SI"
 	},
@@ -1428,7 +1428,6 @@
 					"expression": "10 + alphaAngle",
 					"output_units": "SI_unit_system"
 				},
-				"postProcessing": true,
 				"description": "test b"
 			}
 		]

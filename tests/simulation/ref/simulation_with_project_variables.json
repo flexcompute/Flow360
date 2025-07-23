@@ -1,5 +1,5 @@
 {
-    "version": "25.6.1b1",
+    "version": "25.6.2b1",
     "unit_system": {
         "name": "SI"
     },
@@ -246,15 +246,14 @@
                     "type_name": "expression",
                     "expression": "12 * u.m / u.s"
                 },
-                "postProcessing": false
+                "description": "ccc description"
             },
             {
                 "name": "aaa",
                 "value": {
                     "type_name": "expression",
                     "expression": "[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]"
-                },
-                "postProcessing": false
+                }
             },
             {
                 "name": "bbb",
@@ -262,8 +261,7 @@
                     "type_name": "expression",
                     "expression": "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]",
                     "output_units": "km/ms"
-                },
-                "postProcessing": true
+                }
             }
         ]
     }

@@ -24,7 +24,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     Surface,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
 from flow360.log import log
 
@@ -129,6 +129,8 @@ class GeometryEntityInfo(EntityInfoModel):
     body_group_tag: Optional[str] = pd.Field(None, frozen=True)
     face_group_tag: Optional[str] = pd.Field(None, frozen=True)
     edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
+
+    global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
     def group_in_registry(
         self,
@@ -531,7 +533,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
 
     type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
     boundaries: list[Surface] = pd.Field([])
-    ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
+    global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:

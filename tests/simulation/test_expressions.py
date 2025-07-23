@@ -875,9 +875,12 @@ def test_udf_generator():
     result = user_variable_to_udf(
         solution.mut.in_units(new_name="mut_in_km", new_unit="kg/km/s"), input_params=params
     )
-    # velocity scale = 100 m/s, length scale = 10m, density scale = 1000 kg/m**3
-    # mut_scale = Rho*L*V -> 1000*10*100 * kg/m/s == 1000*10*100*1000 * kg/km/s
-    assert result.expression == "mut_in_km = (mut * 1000000000.0);"
+    # velocity scale = 5 m/s, length scale = 10m, density scale = 1000 kg/m**3
+    # mut_scale = Rho*L*V -> 1000*10*5 * kg/m/s == 1000*10*5*1000 * kg/km/s
+    assert (
+        result.expression
+        == "double ___mut; ___mut = mut * velocityScale;mut_in_km = (___mut * 50000000.0);"
+    )
 
     vel_cross_vec = UserVariable(
         name="vel_cross_vec", value=math.cross(solution.velocity, [1, 2, 3] * u.cm)
@@ -895,7 +898,7 @@ def test_udf_generator():
     result = user_variable_to_udf(vel_sq, input_params=params)
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_sq[0] = (pow(___velocity[0], 2) * 10000.0); vel_sq[1] = (pow(___velocity[1], 2) * 10000.0); vel_sq[2] = (pow(___velocity[2], 2) * 10000.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;vel_sq[0] = (pow(___velocity[0], 2) * 25.0); vel_sq[1] = (pow(___velocity[1], 2) * 25.0); vel_sq[2] = (pow(___velocity[2], 2) * 25.0);"
     )
 
     # Test __neg__ on SolverVariable:
@@ -903,7 +906,7 @@ def test_udf_generator():
     result = user_variable_to_udf(neg_vel, input_params=params)
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;neg_vel[0] = (-___velocity[0] * 100.0); neg_vel[1] = (-___velocity[1] * 100.0); neg_vel[2] = (-___velocity[2] * 100.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;neg_vel[0] = (-___velocity[0] * 5.0); neg_vel[1] = (-___velocity[1] * 5.0); neg_vel[2] = (-___velocity[2] * 5.0);"
     )
 
     # Test __pos__ on SolverVariable:
@@ -911,17 +914,17 @@ def test_udf_generator():
     result = user_variable_to_udf(pos_vel, input_params=params)
     assert (
         result.expression
-        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 100.0); pos_vel[1] = (+___velocity[1] * 100.0); pos_vel[2] = (+___velocity[2] * 100.0);"
+        == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 5.0); pos_vel[1] = (+___velocity[1] * 5.0); pos_vel[2] = (+___velocity[2] * 5.0);"
     )
 
 
 def test_project_variables_serialization():
-    ccc = UserVariable(name="ccc", value=12 * u.m / u.s)
+    ccc = UserVariable(name="ccc", value=12 * u.m / u.s, description="ccc description")
     aaa = UserVariable(
         name="aaa", value=[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]
     )
     bbb = UserVariable(name="bbb", value=[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]).in_units(
-        new_unit="km/ms"
+        new_unit="km/ms",
     )
 
     with SI_unit_system:
@@ -965,16 +968,18 @@ def test_project_variables_deserialization():
     with pytest.raises(NameError):
         context.default_context.get("ccc")
 
-    params, _, _ = validate_model(
+    params, errors, _ = validate_model(
         params_as_dict=data,
         root_item_type=None,
         validated_by=ValidationCalledBy.LOCAL,
     )
+    assert errors is None, errors
     assert params
     assert (
         params.outputs[0].output_fields.items[0].value.expression
         == "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]"
     )
+    assert context.default_context.get_metadata("ccc", "description") == "ccc description"
 
     assert params.outputs[0].output_fields.items[0].value.output_units == "km/ms"
 
@@ -1031,7 +1036,7 @@ def test_unique_dimensions():
         ("temperature", "'temperature' is a reserved solver side variable name."),
         ("area", "'area' is a reserved solver side variable name."),
         ("velocity", "'velocity' is a reserved (legacy) output field name."),
-        ("rho", "'rho' is a reserved (legacy) output field name."),
+        ("mut", "'mut' is a reserved (legacy) output field name."),
         ("pressure", "'pressure' is a reserved (legacy) output field name."),
     ],
 )
