@@ -767,7 +767,8 @@ def process_output_fields_for_udf(input_params: SimulationParams):
 
 def translate_streamline_output(output_params: list):
     """Translate streamline output settings."""
-    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": [],
+                         "animationFrequency" : -1, "animationFrequencyOffset" : 0}
     for output in output_params:
         if isinstance(output, StreamlineOutput):
             for entity in output.entities.stored_entities:
