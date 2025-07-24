@@ -79,5 +79,9 @@
         "edgeFiles": [
             "body01_face003.eMesh"
         ]
-    }
+    },
+    "locationInMesh": {
+        "fluid": [0, 0, 0]
+    },
+    "cadIsFluid": true
 }

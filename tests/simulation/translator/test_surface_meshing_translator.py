@@ -637,7 +637,11 @@ def snappy_refinements_no_regions():
                     bodies=[SnappyBody(body_name="body01_face003")]
                 ),
             ],
-            smooth_controls=SnappySmoothControls()
+            smooth_controls=SnappySmoothControls(),
+            cad_is_fluid=True,
+            zones=[
+                MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m)
+            ],
         )
 
         param = SimulationParams(
@@ -703,7 +707,7 @@ def snappy_settings():
             zones=[
                 MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 
                 MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003]*u.m)
-            ]
+            ],
         )
 
         param = SimulationParams(
@@ -765,7 +769,6 @@ def snappy_settings_off_position():
                 iterations=None,
                 included_angle=None
             ),
-            cad_is_fluid=True,
             zones=[
                 MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 
                 MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003]*u.m)
