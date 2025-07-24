@@ -7,7 +7,7 @@ case_ids = project.get_case_ids()
 total_fc_cost = 0
 for case in case_ids:
     case = fl.Case.from_cloud(case_id=case)
-    print(f"    {case.name}: cost = {case.info.computeCost}")
+    print(f"{case.name}: cost = {case.info.computeCost}")
     total_fc_cost += case.info.computeCost
 
 print(f"Total flex credits used for project {project_id}: {total_fc_cost}")
