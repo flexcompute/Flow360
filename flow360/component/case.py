@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from typing import Any, Iterator, List, Optional, Union
 
 import pydantic as pd
@@ -454,7 +453,9 @@ class Case(CaseBase, Flow360Resource):
             params_as_dict = self._parse_json_from_cloud("simulation.json")
         except CloudFileNotFoundError as err:
             raise Flow360ValueError(
-                "Simulation params not found for this case. It is likely it was created with old interface"
+                "Simulation params not found."
+                " Cases created with old interface are not supported in this Python client version."
+                " Original error: " + str(err)
             ) from err
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
@@ -467,7 +468,7 @@ class Case(CaseBase, Flow360Resource):
 
         if errors is not None:
             raise Flow360ValidationError(
-                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}"
             )
 
         return param
@@ -478,22 +479,8 @@ class Case(CaseBase, Flow360Resource):
         returns case params
         """
         if self._params is None:
-            try:
-                self._params = self.get_simulation_params()
-                return self._params
-            except Flow360ValueError:
-                pass
-
-            self._raw_params = json.loads(self.get(method="runtimeParams")["content"])
-            try:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".json", delete=False
-                ) as temp_file:
-                    json.dump(self._raw_params, temp_file)
-
-                self._params = Flow360Params(temp_file.name)
-            except pd_v1.ValidationError as err:
-                raise Flow360ValidationError(error_messages.params_fetching_error(err)) from err
+            self._params = self.get_simulation_params()
+            return self._params
 
         return self._params
 
