@@ -192,6 +192,38 @@ def test_downloading(mock_id, mock_response, s3_download_override):
         assert results.bet_forces.values["Disk0_Force_x"][0] == -1397.09615312895
 
 
+@pytest.mark.usefixtures("s3_download_override")
+def test_downloader(mock_id, mock_response):
+    print(mock_id)
+    case = fl.Case(id=mock_id)
+    results = case.results
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results.download(all=True, destination=temp_dir)
+        files = os.listdir(temp_dir)
+        assert len(files) == 14
+        results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
+        assert results.total_forces.values["CL"][0] == 0.400770406499246
+
+    case = deepcopy(fl.Case(id=mock_id))
+    results = case.results
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results.download(all=True, total_forces=False, destination=temp_dir)
+        files = os.listdir(temp_dir)
+        assert len(files) == 13
+
+    case = deepcopy(fl.Case(id=mock_id))
+    results = case.results
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        results.download(total_forces=True, destination=temp_dir)
+        files = os.listdir(temp_dir)
+        assert len(files) == 1
+        results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
+        assert results.total_forces.values["CL"][0] == 0.400770406499246
+
+
 def test_include_filter_with_suffixes():
     headers = [
         "boundary_a_A",
