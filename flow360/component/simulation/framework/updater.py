@@ -7,6 +7,7 @@ TODO: remove duplication code with FLow360Params updater.
 # pylint: disable=R0801
 
 
+import copy
 import re
 from typing import Any
 
@@ -217,41 +218,59 @@ def _to_25_6_2(params_as_dict):
         return params_as_dict
 
     # Process each output type separately
-    import json
-
+    # pylint: disable=too-many-nested-blocks
     for output_type in ["SurfaceOutput", "TimeAverageSurfaceOutput"]:
         entity_map = {}
         # entity_name -> {"creates_new" : bool, "output_settings":dict, "entity":entity_dict}
-        for index, output in enumerate(params_as_dict["outputs"]):
+        for output in params_as_dict["outputs"]:
             if output.get("output_type") != output_type:
                 continue
             for entity in output["entities"]["stored_entities"]:
                 name = entity["name"]
                 if name in entity_map:
                     entity_map[name]["creates_new"] = True
-                    params_as_dict["outputs"][index]["entities"]["stored_entities"].remove(entity)
-                    entity_map[entity["name"]]["output_settings"]["output_fields"]["items"] = list(
-                        set(
-                            entity_map[entity["name"]]["output_settings"]["output_fields"]["items"]
-                            + output["output_fields"]["items"]
+                    entity_map[entity["name"]]["output_settings"]["output_fields"]["items"] = (
+                        sorted(
+                            list(
+                                set(
+                                    entity_map[entity["name"]]["output_settings"]["output_fields"][
+                                        "items"
+                                    ]
+                                    + output["output_fields"]["items"]
+                                )
+                            )
                         )
                     )
                 else:
                     entity_map[entity["name"]] = {}
                     entity_map[entity["name"]]["creates_new"] = False
-                    entity_map[entity["name"]]["output_settings"] = {
-                        key: value for key, value in output.items() if key != "entities"
-                    }
+                    entity_map[entity["name"]]["output_settings"] = copy.deepcopy(
+                        {key: value for key, value in output.items() if key != "entities"}
+                    )
                     entity_map[entity["name"]]["entity"] = entity
 
         for entity_info in entity_map.values():
             if entity_info["creates_new"]:
+                for index, output in enumerate(params_as_dict["outputs"]):
+                    if output.get("output_type") != output_type:
+                        continue
+                    for entity in output["entities"]["stored_entities"]:
+                        if entity["name"] == entity_info["entity"]["name"]:
+                            params_as_dict["outputs"][index]["entities"]["stored_entities"].remove(
+                                entity
+                            )
                 params_as_dict["outputs"].append(
                     {
                         **entity_info["output_settings"],
                         "entities": {"stored_entities": [entity_info["entity"]]},
                     }
                 )
+    # remove empty outputs
+    params_as_dict["outputs"] = [
+        output
+        for output in params_as_dict["outputs"]
+        if "entities" not in output or output["entities"]["stored_entities"]
+    ]
 
     return params_as_dict
 

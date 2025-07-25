@@ -540,6 +540,18 @@
                         "private_attribute_tag_key": null
                     },
                     {
+                        "name": "middle/middle_bottom",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_bottom",
+                        "private_attribute_id": "middle/middle_bottom",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
                         "name": "static/static_top",
                         "private_attribute_color": null,
                         "private_attribute_entity_type_name": "Surface",
@@ -624,6 +636,59 @@
             "output_fields": {
                 "items": [
                     "primitiveVars"
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": false
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "middle/middle_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_top",
+                        "private_attribute_id": "middle/middle_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "static/static_top",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_top",
+                        "private_attribute_id": "static/static_top",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    },
+                    {
+                        "name": "inner/cylinder",
+                        "private_attribute_color": null,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/cylinder",
+                        "private_attribute_id": "inner/cylinder",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": null
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {
+                "items": [
+                    "Cf"
                 ]
             },
             "output_format": "paraview",
