@@ -52,6 +52,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
+from flow360.component.simulation.outputs.outputs import MonitorOutputType
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -63,7 +64,10 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
-from flow360.component.simulation.user_code.core.types import ValueOrExpression
+from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
+    ValueOrExpression,
+)
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -74,6 +78,55 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+
+
+class Criterion(Flow360BaseModel):
+    """
+
+    :class:`Criterion` class for :py:attr:`Fluid.stopping_criterion` settings.
+
+    Example
+    -------
+
+    Define a stopping criterion on a :class:`ProbeOutput` with a tolerance of 0.01.
+    The ProbeOutput monitors the moving deviation of Helicity in a moving window of 10 steps,
+    at the location of (0, 0, 0,005) * fl.u.m.
+
+    >>> monitored_variable = fl.UserVariable(
+    ...     name="Helicity_user",
+    ...     value=fl.math.dot(fl.solution.velocity, fl.solution.vorticity),
+    ... )
+    >>> fl.Criterion(
+    ...     name="Criterion_1",
+    ...     monitor_output=fl.ProbeOutput(
+    ...         name="Helicity_probe",
+    ...         output_fields=[
+    ...             monitored_variable,
+    ...         ],
+    ...         probe_points=fl.Point(name="Point1", location=(0, 0, 0.005) * fl.u.m),
+    ...         moving_statistic = fl.MovingStatistic(method = "deviation", moving_window = 10)
+    ...     ),
+    ...     monitor_field=monitored_variable,
+    ...     tolerance=0.01,
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field("Criterion", description="Name of this criterion.")
+    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
+    monitor_field: Union[UserVariable, str] = pd.Field(description="The field to be monitored.")
+    tolerance: float = pd.Field(description="The tolerance threshold of this criterion.")
+    criterion_change_window: Optional[int] = pd.Field(None, description="")
+    type_name: Literal["Criterion"] = pd.Field("Criterion", frozen=True)
+
+    # TODO: Pending Validation
+    # 1. For probe output, only allow one single point
+    # 2. For every output type, only allow one output field, and the output field should be a scalar
+    # 3. For steady simulation, the moving window has to be a factor of 10
+    #     (Since results are output every 10 steps/ at the end of simulation.)
+    # 4. Add validation to ensure the monitored field exists in the selected output.
+    # 5. Ensure the monitor_field and tolerance have the same dimensions.
 
 
 class AngleExpression(SingleAttributeModel):
@@ -305,6 +358,10 @@ class Fluid(PDEModelBase):
             discriminator="type_name",
             description="The initial condition of the fluid solver.",
         )
+    )
+
+    stopping_criterion: Optional[List[Criterion]] = pd.Field(
+        None, description="The stopping criterion setting of the Fluid solver."
     )
 
     # pylint: disable=fixme
