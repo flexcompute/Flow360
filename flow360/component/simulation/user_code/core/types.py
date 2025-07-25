@@ -362,12 +362,13 @@ class Variable(Flow360BaseModel):
                     new_value,
                 )
 
-        if "description" in values:
+        if "description" in values and values["description"] is not None:
             if not isinstance(values["description"], str):
                 raise ValueError(
                     f"Description must be a string but got {type(values['description'])}."
                 )
-            default_context.set_metadata(values["name"], "description", values.pop("description"))
+            default_context.set_metadata(values["name"], "description", values["description"])
+        values.pop("description", None)
 
         return values
 
