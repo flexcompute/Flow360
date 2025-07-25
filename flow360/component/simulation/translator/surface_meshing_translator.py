@@ -243,11 +243,13 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                 }
             }
         # points in mesh
-
         zones = surface_meshing_params.zones
-
         if zones is not None:
             translated["locationInMesh"] = {zone.name: [point.value.item() for point in zone.point_in_mesh] for zone in zones}
+        
+        # cad is fluid
+        if surface_meshing_params.cad_is_fluid:
+            translated["cadIsFluid"] = True
 
 
     elif isinstance(input_params.meshing, MeshingParams):
