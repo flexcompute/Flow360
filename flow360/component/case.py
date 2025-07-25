@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from typing import Any, Iterator, List, Optional, Union
 
 import pydantic as pd
@@ -454,8 +453,9 @@ class Case(CaseBase, Flow360Resource):
             params_as_dict = self._parse_json_from_cloud("simulation.json")
         except CloudFileNotFoundError as err:
             raise Flow360ValueError(
-                "Simulation params not found. Cases created with old interface are not supported in this Python client version. Original error: "
-                + str(err)
+                "Simulation params not found."
+                " Cases created with old interface are not supported in this Python client version."
+                " Original error: " + str(err)
             ) from err
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
