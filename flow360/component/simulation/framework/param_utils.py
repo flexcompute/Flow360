@@ -169,7 +169,7 @@ def _update_entity_full_name(
             field._update_entity_info_with_metadata(volume_mesh_meta_data)
 
         if isinstance(field, EntityList):
-            for entity in field.stored_entities:
+            for entity in field.stored_entities if field.stored_entities else []:
                 if isinstance(entity, target_entity_type):
                     # pylint: disable=protected-access
                     entity._update_entity_info_with_metadata(volume_mesh_meta_data)
