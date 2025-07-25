@@ -779,7 +779,6 @@ def test_incomplete_BC_volume_mesh():
             info=ParamsValidationInfo(
                 param_as_dict={},
                 referenced_expressions=[],
-                validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
             ),
         ):
             with SI_unit_system:
@@ -828,7 +827,6 @@ def test_incomplete_BC_surface_mesh():
         info=ParamsValidationInfo(
             param_as_dict={},
             referenced_expressions=[],
-            validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
         ),
     ):
         # i_will_be_deleted won't trigger "no bc assigned" error
@@ -863,7 +861,6 @@ def test_incomplete_BC_surface_mesh():
             info=ParamsValidationInfo(
                 param_as_dict={},
                 referenced_expressions=[],
-                validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
             ),
         ):
             with SI_unit_system:
@@ -895,7 +892,6 @@ def test_incomplete_BC_surface_mesh():
             info=ParamsValidationInfo(
                 param_as_dict={},
                 referenced_expressions=[],
-                validated_ghost_entities=asset_cache.project_entity_info.ghost_entities,
             ),
         ):
             with SI_unit_system:

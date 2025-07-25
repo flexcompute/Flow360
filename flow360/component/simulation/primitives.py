@@ -10,7 +10,6 @@ from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 import numpy as np
 import pydantic as pd
 from pydantic import PositiveFloat
-from pydantic_core import PydanticKnownError
 from scipy.linalg import eig
 from typing_extensions import Self
 
@@ -24,9 +23,6 @@ from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
-)
 from flow360.component.types import Axis
 
 
@@ -648,30 +644,6 @@ class GhostCircularPlane(_SurfaceEntityBase):
         if abs(y_max) > tolerance and abs(y_min) > tolerance:
             return False
         return True
-
-    @pd.model_validator(mode="after")
-    def check_symmetric_boundary_existence(self):
-        """Check according to the criteria if the symmetric plane exists."""
-        validation_info = get_validation_info()
-        if not self.exists(validation_info):
-            y_min, y_max, tolerance, largest_dimension = self._get_existence_dependency(
-                validation_info
-            )
-            error_msg = (
-                f"`symmetric` boundary not usable: model spans y=[{y_min:.2e}, {y_max:.2e}], "
-                + f"but tolerance from y=0 is {validation_info.planar_face_tolerance:.2e} x "
-                + f"{largest_dimension:.2e} = {tolerance:.2e}."
-            )
-
-            raise PydanticKnownError(
-                "value_error",
-                {
-                    "error": error_msg,
-                    "optional_in_entity_info": True,
-                },
-            )
-
-        return self
 
 
 class SurfacePair(Flow360BaseModel):
