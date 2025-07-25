@@ -454,7 +454,8 @@ class Case(CaseBase, Flow360Resource):
             params_as_dict = self._parse_json_from_cloud("simulation.json")
         except CloudFileNotFoundError as err:
             raise Flow360ValueError(
-                "Simulation params not found for this case. It is likely it was created with old interface"
+                "Simulation params not found for this case. It is likely it was created with old interface."
+                f" Original error: {str(err)}"
             ) from err
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
