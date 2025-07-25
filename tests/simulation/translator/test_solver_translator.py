@@ -228,7 +228,10 @@ def translate_and_compare(
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
     translate_and_compare(
-        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing.json",
+        debug=True,
     )
 
 

@@ -334,13 +334,13 @@ def _check_complete_boundary_condition_and_unknown_surface(
         if automated_farfield_method == "auto":
             asset_boundary_entities += [
                 item
-                for item in validation_info.validated_ghost_entities
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
             ]
         elif automated_farfield_method == "quasi-3d":
             asset_boundary_entities += [
                 item
-                for item in validation_info.validated_ghost_entities
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name != "symmetric"
             ]
 

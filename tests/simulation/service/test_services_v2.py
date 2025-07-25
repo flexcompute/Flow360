@@ -14,6 +14,7 @@ from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
     VOLUME_MESH,
+    get_validation_info,
 )
 from tests.utils import compare_dict_to_ref
 
@@ -1114,6 +1115,11 @@ def test_generate_process_json():
     assert res1 is not None
     assert res2 is not None
     assert res3 is not None
+
+
+def test_default_validation_contest():
+    "Ensure that the default validation context is None which is the escaper for many validators"
+    assert get_validation_info() is None
 
 
 def test_validation_level_intersection():
