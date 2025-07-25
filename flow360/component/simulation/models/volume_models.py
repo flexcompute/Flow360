@@ -123,7 +123,8 @@ class Criterion(Flow360BaseModel):
     # TODO: Pending Validation
     # 1. For probe output, only allow one single point
     # 2. For every output type, only allow one output field, and the output field should be a scalar
-    # 3. For steady simulation, the moving window has to be a factor of 10 (Since results are output every 10 steps/ at the end of simulation.)
+    # 3. For steady simulation, the moving window has to be a factor of 10
+    #     (Since results are output every 10 steps/ at the end of simulation.)
     # 4. Add validation to ensure the monitored field exists in the selected output.
     # 5. Ensure the monitor_field and tolerance have the same dimensions.
 
