@@ -176,19 +176,8 @@ def _to_25_4_1(params_as_dict):
     return params_as_dict
 
 
-def _to_25_6_2(params_as_dict):
-    # Known: There can not be velocity_direction both under Inflow AND TotalPressure
-
-    # Move the velocity_direction under TotalPressure to the Inflow level.
-    for model in params_as_dict.get("models", []):
-        if model.get("type") != "Inflow" or model.get("velocity_direction", None):
-            continue
-
-        if model.get("spec") and model["spec"].get("type_name") == "TotalPressure":
-            velocity_direction = model["spec"].pop("velocity_direction", None)
-            if velocity_direction:
-                model["velocity_direction"] = velocity_direction
-
+def _fix_reynolds_mesh_unit(params_as_dict):
+    # Handling of the reynolds_mesh_unit rename
     if "operating_condition" not in params_as_dict.keys():
         return params_as_dict
     if "private_attribute_input_cache" not in params_as_dict["operating_condition"].keys():
@@ -205,6 +194,65 @@ def _to_25_6_2(params_as_dict):
         params_as_dict["operating_condition"]["private_attribute_input_cache"][
             "reynolds_mesh_unit"
         ] = reynolds_mesh_unit
+    return params_as_dict
+
+
+def _to_25_6_2(params_as_dict):
+    # Known: There can not be velocity_direction both under Inflow AND TotalPressure
+
+    # Move the velocity_direction under TotalPressure to the Inflow level.
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Inflow" or model.get("velocity_direction", None):
+            continue
+
+        if model.get("spec") and model["spec"].get("type_name") == "TotalPressure":
+            velocity_direction = model["spec"].pop("velocity_direction", None)
+            if velocity_direction:
+                model["velocity_direction"] = velocity_direction
+
+    params_as_dict = _fix_reynolds_mesh_unit(params_as_dict)
+
+    # Handling the disable of same entity being in multiple outputs
+    if params_as_dict.get("outputs") is None:
+        return params_as_dict
+
+    # Process each output type separately
+    import json
+
+    for output_type in ["SurfaceOutput", "TimeAverageSurfaceOutput"]:
+        entity_map = {}
+        # entity_name -> {"creates_new" : bool, "output_settings":dict, "entity":entity_dict}
+        for index, output in enumerate(params_as_dict["outputs"]):
+            if output.get("output_type") != output_type:
+                continue
+            for entity in output["entities"]["stored_entities"]:
+                name = entity["name"]
+                if name in entity_map:
+                    entity_map[name]["creates_new"] = True
+                    params_as_dict["outputs"][index]["entities"]["stored_entities"].remove(entity)
+                    entity_map[entity["name"]]["output_settings"]["output_fields"]["items"] = list(
+                        set(
+                            entity_map[entity["name"]]["output_settings"]["output_fields"]["items"]
+                            + output["output_fields"]["items"]
+                        )
+                    )
+                else:
+                    entity_map[entity["name"]] = {}
+                    entity_map[entity["name"]]["creates_new"] = False
+                    entity_map[entity["name"]]["output_settings"] = {
+                        key: value for key, value in output.items() if key != "entities"
+                    }
+                    entity_map[entity["name"]]["entity"] = entity
+
+        for entity_info in entity_map.values():
+            if entity_info["creates_new"]:
+                params_as_dict["outputs"].append(
+                    {
+                        **entity_info["output_settings"],
+                        "entities": {"stored_entities": [entity_info["entity"]]},
+                    }
+                )
+
     return params_as_dict
 
 
