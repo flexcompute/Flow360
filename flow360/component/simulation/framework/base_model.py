@@ -481,7 +481,7 @@ class Flow360BaseModel(pd.BaseModel):
         -------
         >>> params._to_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        json_string = self.model_dump_json(**kwargs)
+        json_string = self.model_dump_json(exclude_none=True, **kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"] is True:
             model_dict["hash"] = self._calculate_hash(model_dict)
@@ -522,7 +522,7 @@ class Flow360BaseModel(pd.BaseModel):
         -------
         >>> params._to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        json_string = self.model_dump_json(**kwargs)
+        json_string = self.model_dump_json(exclude_none=True, **kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"]:
             model_dict["hash"] = self._calculate_hash(model_dict)
