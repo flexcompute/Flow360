@@ -166,13 +166,6 @@
         "lambda": 0.7,
         "mu": 0.71,
         "iter": 5,
-        "includedAngle": 150,
-        "edgeFiles": [
-            "body1.eMesh", 
-            "body0--patch0.eMesh",
-            "body3.eMesh",
-            "body0--patch1.eMesh",
-            "body1--patch1.eMesh"
-        ]
+        "includedAngle": 150
     }
 }

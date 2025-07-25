@@ -75,10 +75,7 @@
         "lambda": 0.7,
         "mu": 0.71,
         "iter": 5,
-        "includedAngle": 150,
-        "edgeFiles": [
-            "body01_face003.eMesh"
-        ]
+        "includedAngle": 150
     },
     "locationInMesh": {
         "fluid": [0, 0, 0]
