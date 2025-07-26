@@ -42,11 +42,22 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
+    check_symmetric_boundary_existence_for_inhouse,
 )
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+
+
+class EntityListAllowingGhost(EntityList):  # Define EntityList to include validators
+    """Entity list with customized validators"""
+
+    @pd.field_validator("stored_entities", mode="after")
+    @classmethod
+    def ghost_entity_validator(cls, value):
+        """Run all validators"""
+        return check_symmetric_boundary_existence_for_inhouse(value)
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -62,6 +73,8 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
     @classmethod
     def ensure_surface_existence(cls, value):
         """Ensure all boundaries will be present after mesher"""
+        # pylint: disable=fixme
+        # TODO: This should have been moved to EntityListAllowingGhost?
         return check_deleted_surface_in_entity_list(value)
 
 
@@ -438,9 +451,11 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityList[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = pd.Field(
-        alias="surfaces",
-        description="List of boundaries with the `Freestream` boundary condition imposed.",
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = (
+        pd.Field(
+            alias="surfaces",
+            description="List of boundaries with the `Freestream` boundary condition imposed.",
+        )
     )
 
     @pd.field_validator("velocity", mode="after")
@@ -591,7 +606,7 @@ class SlipWall(BoundaryBase):
         "Slip wall", description="Name of the `SlipWall` boundary condition."
     )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
     )
@@ -622,7 +637,7 @@ class SymmetryPlane(BoundaryBase):
         "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )

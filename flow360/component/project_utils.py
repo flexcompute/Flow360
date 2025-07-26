@@ -108,10 +108,9 @@ class ProjectRecords(pd.BaseModel):
         return output_str
 
 
-def show_projects_with_keyword_filter(search_keyword: str):
-    """Show all projects with a keyword filter"""
+def get_project_records(search_keyword: str) -> tuple[ProjectRecords, int]:
+    """Get all projects with a keyword filter"""
     # pylint: disable=invalid-name
-    MAX_DISPLAYABLE_ITEM_COUNT = 200
     MAX_SEARCHABLE_ITEM_COUNT = 1000
     _api = RestApi(ProjectInterface.endpoint, id=None)
     resp = _api.get(
@@ -125,14 +124,24 @@ def show_projects_with_keyword_filter(search_keyword: str):
     )
 
     all_projects = ProjectRecords.model_validate({"records": resp["records"]})
+    num_of_projects = resp["total"]
+
+    return all_projects, num_of_projects
+
+
+def show_projects_with_keyword_filter(search_keyword: str):
+    """Show all projects with a keyword filter"""
+    # pylint: disable=invalid-name
+    MAX_DISPLAYABLE_ITEM_COUNT = 200
+    all_projects, num_of_projects = get_project_records(search_keyword)
     log.info("%s", str(all_projects))
 
-    if resp["total"] > MAX_DISPLAYABLE_ITEM_COUNT:
+    if num_of_projects > MAX_DISPLAYABLE_ITEM_COUNT:
         log.warning(
-            f"Total number of projects matching the keyword on the cloud is {resp['total']}, "
+            f"Total number of projects matching the keyword on the cloud is {num_of_projects}, "
             f"but only the latest {MAX_DISPLAYABLE_ITEM_COUNT} will be displayed. "
         )
-    log.info("Total number of matching projects on the cloud: %d", resp["total"])
+    log.info("Total number of matching projects on the cloud: %d", num_of_projects)
 
 
 def _replace_ghost_surfaces(params: SimulationParams):
