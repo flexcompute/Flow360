@@ -249,14 +249,18 @@ class ValidationCalledBy(Enum):
 
     def get_forward_compatibility_error_message(self, version_from: str, version_to: str):
         """
-        Return error message string indicating that the forward compatability is not guaranteed.
+        Return error message string indicating that the forward compatibility is not guaranteed.
         """
         error_suffix = " Errors may occur since forward compatibility is limited."
         if self == ValidationCalledBy.LOCAL:
             return {
                 "type": (f"{version_from} > {version_to}"),
                 "loc": [],
-                "msg": "The cloud `SimulationParam` is too new for your local Python client."
+                "msg": "The cloud `SimulationParam` (version: "
+                + version_from
+                + ") is too new for your local Python client (version: "
+                + version_to
+                + ")."
                 + error_suffix,
                 "ctx": {},
             }
@@ -264,7 +268,12 @@ class ValidationCalledBy(Enum):
             return {
                 "type": (f"{version_from} > {version_to}"),
                 "loc": [],
-                "msg": "Your `SimulationParams` is too new for the solver." + error_suffix,
+                "msg": "Your `SimulationParams` (version: "
+                + version_from
+                + ") is too new for the solver (version: "
+                + version_to
+                + ")."
+                + error_suffix,
                 "ctx": {},
             }
         if self == ValidationCalledBy.PIPELINE:
@@ -274,7 +283,11 @@ class ValidationCalledBy(Enum):
                 # pylint:disable = protected-access
                 "type": (f"{version_from} > {version_to}"),
                 "loc": [],
-                "msg": "[Internal] Your `SimulationParams` is too new for the solver."
+                "msg": "[Internal] Your `SimulationParams` (version: "
+                + version_from
+                + ") is too new for the solver (version: "
+                + version_to
+                + ")."
                 + error_suffix,
                 "ctx": {},
             }

@@ -22,7 +22,6 @@ from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError
 from flow360.log import log
@@ -211,7 +210,7 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
 
 
 def _set_up_default_geometry_accuracy(
-    root_asset: AssetBase,
+    root_asset,
     params: SimulationParams,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
 ):
@@ -246,7 +245,7 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
 
 
 def set_up_params_for_uploading(
-    root_asset: AssetBase,
+    root_asset,
     length_unit: LengthType,
     params: SimulationParams,
     use_beta_mesher: bool,
