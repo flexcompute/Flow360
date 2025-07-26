@@ -78,6 +78,25 @@ def apply_SnappyBodyRefinement(refinement:SnappyBodyRefinement, translated):
             if refinement.max_spacing is not None:
                 body["spacing"]["max"] = refinement.max_spacing.value.item()
 
+def get_applicable_regions_dict(refinement_regions):
+    applicable_regions = {}
+    if refinement_regions:
+        for entity in refinement_regions.stored_entities:
+            split = entity.name.split("::")
+            body = split[0]
+            if len(split) == 2:
+                region = split[1]
+            else:
+                applicable_regions[body] = None
+                continue
+            
+            if body in applicable_regions:
+                applicable_regions[body].append(region)
+            else:
+                applicable_regions[body] = [region]
+
+    return applicable_regions
+
 def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, translated, defaults):
     edges = {"includedAngle": refinement.included_angle.to("degree").value.item()}
     if refinement.min_elem is not None:
@@ -91,7 +110,7 @@ def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, tr
     else:
         edges["edgeSpacing"] = refinement.spacing.value.item()
     applicable_bodies = [entity.body_name for entity in refinement.bodies] if refinement.bodies is not None else []
-    applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.regions.stored_entities} if refinement.regions is not None else {}
+    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.regions)
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies or (body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None):
             body["edges"] = edges
@@ -101,7 +120,7 @@ def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, tr
                     region["edges"] = edges
             
 def apply_SnappyRegionRefinement(refinement:SnappyRegionRefinement, translated):
-    applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.entities.stored_entities if isinstance(entity, Surface)}
+    applicable_regions = applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.entities)
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_regions:
             for region in body.get("regions", []):

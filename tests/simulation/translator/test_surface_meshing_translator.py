@@ -607,6 +607,50 @@ def snappy_basic_refinements():
     return param
 
 @pytest.fixture()
+def snappy_refinements_multiple_regions():
+    test_geometry = TempGeometry("tester.stl")
+    with SI_unit_system:
+        surf_meshing_params = SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=3*u.mm,
+                max_spacing=4*u.mm,
+                gap_resolution=1*u.mm
+            ),
+            refinements=[
+                SnappyRegionRefinement(
+                    min_spacing=20*u.mm,
+                    max_spacing=40*u.mm,
+                    proximity_spacing=3*u.mm,
+                    regions=[
+                        test_geometry["body1::patch0"],
+                        test_geometry["body1::patch1"],
+                        test_geometry["body1::patch2"],
+                    ]
+                ),
+                SnappySurfaceEdgeRefinement(
+                    spacing=4*u.mm,
+                    min_elem=3,
+                    included_angle=120*u.deg,
+                    regions=[
+                        test_geometry["body0::patch0"],
+                        test_geometry["body0::patch1"]
+                    ]
+                ),
+            ],
+            smooth_controls=SnappySmoothControls()
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info()
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params
+            )
+        )
+    return param
+
+@pytest.fixture()
 def snappy_refinements_no_regions():
     test_geometry = TempGeometry("rotor.csm")
     with SI_unit_system:
@@ -884,6 +928,13 @@ def test_snappy_basic(get_snappy_geometry, snappy_basic_refinements):
         snappy_basic_refinements,
         get_snappy_geometry.mesh_unit,
         "snappy_basic_refinements.json"
+    )
+
+def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multiple_regions):
+    _translate_and_compare(
+        snappy_refinements_multiple_regions,
+        get_snappy_geometry.mesh_unit,
+        "snappy_refinements_multiple_regions.json"
     )
 
 def test_snappy_settings(get_snappy_geometry, snappy_settings):

@@ -1,0 +1,133 @@
+{
+    "geometry": {
+        "bodies": [
+            {
+                "bodyName": "body0",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0",
+                        "edges":{
+                            "edgeSpacing": 4,
+                            "minElem": 3,
+                            "includedAngle": 120
+                        }
+                    },
+                    {
+                        "patchName": "patch1",
+                        "edges":{
+                            "edgeSpacing": 4,
+                            "minElem": 3,
+                            "includedAngle": 120
+                        }
+                    }
+                ]
+            },
+            {
+                "bodyName": "body1",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0",
+                        "gapSpacingReduction": 3,
+                        "spacing": {
+                            "min": 20,
+                            "max": 40
+                        }
+                    },
+                    {
+                        "patchName": "patch1",
+                        "gapSpacingReduction": 3,
+                        "spacing": {
+                            "min": 20,
+                            "max": 40
+                        }
+                    },
+                    {
+                        "patchName": "patch2",
+                        "gapSpacingReduction": 3,
+                        "spacing": {
+                            "min": 20,
+                            "max": 40
+                        }
+                    }
+                ]
+            },
+            {
+                "bodyName": "body2",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            },
+            {
+                "bodyName": "body3",
+                "gap": 1,
+                "spacing": {
+                    "min": 3,
+                    "max": 4
+                },
+                "regions": [
+                    {
+                        "patchName": "patch0"
+                    }
+                ]
+            }
+        ]
+    },
+    "mesherSettings": {
+        "snappyHexMesh": {
+            "castellatedMeshControls": {
+                "resolveFeatureAngle": 25,
+                "nCellsBetweenLevels": 1,
+                "minRefinementCells": 10
+            },
+            "snapControls": {
+                "nSmoothPatch": 3,
+                "tolerance": 2,
+                "nSolveIter": 30,
+                "nRelaxIter": 5,
+                "nFeatureSnapIter": 15,
+                "multiRegionFeatureSnap": true,
+                "strictRegionSnap": false
+            }
+        },
+    "meshQuality": {
+            "maxNonOrtho": 85,
+            "maxBoundarySkewness": 20,
+            "maxInternalSkewness": 50,
+            "maxConcave": 50,
+            "minVol": -1e+30,
+            "minTetQuality": -1e+30,
+            "minArea": -1,
+            "minTwist": -2,
+            "minDeterminant": -1e+30,
+            "minVolRatio": 0,
+            "minFaceWeight": 0,
+            "minTriangleTwist": -1,
+            "nSmoothScale": 4,
+            "errorReduction": 0.75,
+            "minVolCollapseRatio": 0
+        }
+    },
+    "smoothingControls": {
+        "lambda": 0.7,
+        "mu": 0.71,
+        "iter": 5,
+        "includedAngle": 150
+    }
+}
