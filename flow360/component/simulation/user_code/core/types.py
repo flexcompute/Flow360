@@ -521,7 +521,7 @@ class UserVariable(Variable):
 
     @pd.field_validator("name", mode="after")
     @classmethod
-    @deprecation_reminder("25.7.0")
+    @deprecation_reminder("25.8.0")
     def check_value_is_not_legacy_variable(cls, v):
         """Check that the value is not a legacy variable"""
         # pylint:disable=import-outside-toplevel

@@ -16,6 +16,7 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     get_validation_info,
 )
+from flow360.version import __version__
 from tests.utils import compare_dict_to_ref
 
 
@@ -1156,7 +1157,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": "99.99.99 > 25.6.2b2",
+        "type": f"99.99.99 > {__version__}",
         "loc": [],
         "msg": "The cloud `SimulationParam` is too new for your local Python client. "
         "Errors may occur since forward compatibility is limited.",
@@ -1170,7 +1171,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": "99.99.99 > 25.6.2b2",
+        "type": f"99.99.99 > {__version__}",
         "loc": [],
         "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
         "ctx": {},
