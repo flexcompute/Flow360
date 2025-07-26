@@ -318,27 +318,3 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     return params, errors
-
-
-def formatting_validation_errors(errors):
-    """
-    Format the validation errors to a human readable string.
-
-    Example:
-    --------
-    Input: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'),
-            'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']},
-            'url': 'https://errors.pydantic.dev/2.7/v/missing'}]
-
-    Output: (1) Message: Field required | Location: meshing -> defaults -> boundary_layer_first_layer
-    _thickness | Relevant for: ['VolumeMesh']
-    """
-    error_msg = ""
-    for idx, error in enumerate(errors):
-        error_msg += f"\n\t({idx+1}) Message: {error['msg']}"
-        if error.get("loc") != ():
-            location = " -> ".join([str(loc) for loc in error["loc"]])
-            error_msg += f" | Location: {location}"
-        if error.get("ctx") and error["ctx"].get("relevant_for"):
-            error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
-    return error_msg

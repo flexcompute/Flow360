@@ -1158,11 +1158,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-<<<<<<< HEAD
-        "type": "99.99.99 > 25.6.2b2",
-=======
         "type": f"99.99.99 > {__version__}",
->>>>>>> 8d0cbbdd (Added version command and better project loading error (#1295))
         "loc": [],
         "msg": f"The cloud `SimulationParam` (version: 99.99.99) is too new for your local Python client (version: {__version__}). "
         "Errors may occur since forward compatibility is limited.",
@@ -1176,11 +1172,7 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-<<<<<<< HEAD
-        "type": "99.99.99 > 25.6.2b2",
-=======
         "type": f"99.99.99 > {__version__}",
->>>>>>> 8d0cbbdd (Added version command and better project loading error (#1295))
         "loc": [],
         "msg": f"[Internal] Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited.",
         "ctx": {},

@@ -14,7 +14,6 @@ from requests.exceptions import HTTPError
 from flow360.cloud.flow360_requests import LengthUnitType
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
-from flow360.component.project_utils import formatting_validation_errors
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
@@ -29,6 +28,7 @@ from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
+    formatting_validation_errors,
     remove_properties_by_name,
     validate_type,
 )
