@@ -30,7 +30,8 @@
                 "edges":{
                     "edgeSpacing": 4,
                     "minElem": 3,
-                    "includedAngle": 120
+                    "includedAngle": 120,
+                    "retainOnSmoothing": true
                 },
                 "regions": []
             }

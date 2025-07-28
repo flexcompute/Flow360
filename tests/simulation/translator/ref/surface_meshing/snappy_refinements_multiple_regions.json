@@ -14,7 +14,8 @@
                         "edges":{
                             "edgeSpacing": 4,
                             "minElem": 3,
-                            "includedAngle": 120
+                            "includedAngle": 120,
+                            "retainOnSmoothing": false
                         }
                     },
                     {
@@ -22,7 +23,8 @@
                         "edges":{
                             "edgeSpacing": 4,
                             "minElem": 3,
-                            "includedAngle": 120
+                            "includedAngle": 120,
+                            "retainOnSmoothing": false
                         }
                     }
                 ]

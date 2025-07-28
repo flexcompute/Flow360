@@ -19,7 +19,8 @@
                         "edges":{
                             "edgeSpacing": 4,
                             "minElem": 3,
-                            "includedAngle": 120
+                            "includedAngle": 120,
+                            "retainOnSmoothing": true
                         }
                     },
                     {
@@ -36,7 +37,8 @@
                                 ]
                             ],
                             "minLen": 6,
-                            "includedAngle": 150
+                            "includedAngle": 150,
+                            "retainOnSmoothing": false
                         }
                     }
                 ]
@@ -51,7 +53,8 @@
                 "edges":{
                         "edgeSpacing": 4,
                         "minElem": 3,
-                        "includedAngle": 120
+                        "includedAngle": 120,
+                        "retainOnSmoothing": true
                     },
                 "regions": [
                     {
@@ -76,7 +79,8 @@
                                 ]
                             ],
                             "minLen": 6,
-                            "includedAngle": 150
+                            "includedAngle": 150,
+                            "retainOnSmoothing": false
                         }
                     },
                     {
@@ -117,7 +121,8 @@
                         ]
                     ],
                     "minLen": 6,
-                    "includedAngle": 150
+                    "includedAngle": 150,
+                    "retainOnSmoothing": false
                 },
                 "regions": [
                     {

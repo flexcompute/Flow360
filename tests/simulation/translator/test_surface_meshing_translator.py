@@ -590,7 +590,8 @@ def snappy_basic_refinements():
                     distances=[1*u.mm, 3*u.mm],
                     min_len=6*u.mm,
                     regions=[test_geometry["*patch1"]],
-                    bodies=[SnappyBody(body_name="body3")]
+                    bodies=[SnappyBody(body_name="body3")],
+                    retain_on_smoothing=False
                 )
             ],
             smooth_controls=SnappySmoothControls()
@@ -634,7 +635,8 @@ def snappy_refinements_multiple_regions():
                     regions=[
                         test_geometry["body0::patch0"],
                         test_geometry["body0::patch1"]
-                    ]
+                    ],
+                    retain_on_smoothing=False
                 ),
             ],
             smooth_controls=SnappySmoothControls()
