@@ -600,7 +600,19 @@ def test_updater_to_25_6_2():
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_sub_components": [],
                         "private_attribute_tag_key": None,
-                    }
+                    },
+                    {
+                        "name": "static/static_bottom",
+                        "private_attribute_color": None,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_bottom",
+                        "private_attribute_id": "static/static_bottom",
+                        "private_attribute_is_interface": False,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": None,
+                    },
                 ]
             },
             "frequency": -1,

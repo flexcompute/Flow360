@@ -225,6 +225,15 @@ def _to_25_6_2(params_as_dict):
         for output in params_as_dict["outputs"]:
             if output.get("output_type") != output_type:
                 continue
+            entity_names = set()
+            entity_deduplicated = []
+            for entity in output["entities"]["stored_entities"]:
+                if entity["name"] in entity_names:
+                    continue
+                entity_names.add(entity["name"])
+                entity_deduplicated.append(entity)
+            output["entities"]["stored_entities"] = entity_deduplicated
+
             for entity in output["entities"]["stored_entities"]:
                 name = entity["name"]
                 if name in entity_map:
