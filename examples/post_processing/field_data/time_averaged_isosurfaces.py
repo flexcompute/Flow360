@@ -87,7 +87,7 @@ with fl.SI_unit_system:
                 ],
                 start_step=420,
                 output_fields=["velocity_magnitude"],
-                output_format='both'
+                output_format="both",
             ),
         ],
     )
