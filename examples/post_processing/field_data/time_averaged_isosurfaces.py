@@ -1,11 +1,13 @@
+import os
+import tarfile
+import tempfile
+
 import flow360 as fl
 from flow360.examples import IsolatedPropeller
-from flow360.user_config import UserConfig
-UserConfig.set_profile("demo")
 
 IsolatedPropeller.get_files()
 
-project = fl.Project.from_geometry(IsolatedPropeller.geometry, name="time-average-isosurfaces")
+project = fl.Project.from_geometry(IsolatedPropeller.geometry, name="Time-averaged isosurfaces")
 
 geometry = project.geometry
 geometry.group_edges_by_tag("edgeId")
@@ -80,16 +82,46 @@ with fl.SI_unit_system:
                 slices=[slice],
             ),
             fl.TimeAverageIsosurfaceOutput(
-                isosurfaces=[fl.Isosurface(
-                        name='q_criterion_avg',
-                        field='qcriterion',
-                        iso_value=0.0004128
-                    )],
+                isosurfaces=[
+                    fl.Isosurface(name="q_criterion_avg", field="qcriterion", iso_value=0.0004128)
+                ],
                 start_step=420,
-                output_fields=['velocity_magnitude']
-            )
+                output_fields=["velocity_magnitude"],
+                output_format='both'
+            ),
         ],
     )
 
+# Run case
+case = project.run_case(params, name="Time-averaged isosurfaces")
 
-project.run_case(params, name="Isolated propeller case")
+# wait until the case finishes execution
+case.wait()
+
+results = case.results
+
+with tempfile.TemporaryDirectory() as temp_dir:
+    # download slice and isosurfaces output files as tar.gz archives
+    results.slices.download(os.path.join(temp_dir, "slices.tar.gz"), overwrite=True)
+    results.isosurfaces.download(os.path.join(temp_dir, "isosurfaces.tar.gz"), overwrite=True)
+
+    # slices.tar.gz, isosurfaces.tar.gz
+    print(os.listdir(temp_dir))
+
+    # extract slices file
+    file = tarfile.open(os.path.join(temp_dir, "slices.tar.gz"))
+    file.extractall(os.path.join(temp_dir, "slices"))
+    file.close()
+
+    # contains plots for all slices in the specified format (tecplot)
+    # slice_x1.szplt, slice_y1.szplt
+    print(os.listdir(os.path.join(temp_dir, "slices")))
+
+    # extract isosurfaces file
+    file = tarfile.open(os.path.join(temp_dir, "isosurfaces.tar.gz"))
+    file.extractall(os.path.join(temp_dir, "isosurfaces"))
+    file.close()
+
+    # contains isosurfaces plots in the specified format (tecplot)
+    # volume.szplt
+    print(os.listdir(os.path.join(temp_dir, "isosurfaces")))
