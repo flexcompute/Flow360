@@ -100,30 +100,18 @@ case.wait()
 
 results = case.results
 
-# Download results in temp file which can be opened in paraview/tecplot
-output_dir = "path/to/folder"
+# Download results which can be opened in paraview/tecplot
 
 # download slice and isosurfaces output files as tar.gz archives
-results.slices.download(os.path.join(output_dir, "slices.tar.gz"), overwrite=True)
-results.isosurfaces.download(os.path.join(output_dir, "isosurfaces.tar.gz"), overwrite=True)
-
-# slices.tar.gz, isosurfaces.tar.gz
-print(os.listdir(output_dir))
+results.slices.download("slices.tar.gz", overwrite=True)
+results.isosurfaces.download("isosurfaces.tar.gz", overwrite=True)
 
 # extract slices file
-file = tarfile.open(os.path.join(output_dir, "slices.tar.gz"))
-file.extractall(os.path.join(output_dir, "slices"))
+file = tarfile.open("slices.tar.gz")
+file.extractall("slices")
 file.close()
-
-# contains plots for all slices in the specified format (tecplot)
-# slice_x1.szplt, slice_y1.szplt
-print(os.listdir(os.path.join(output_dir, "slices")))
 
 # extract isosurfaces file
-file = tarfile.open(os.path.join(output_dir, "isosurfaces.tar.gz"))
-file.extractall(os.path.join(output_dir, "isosurfaces"))
+file = tarfile.open("isosurfaces.tar.gz")
+file.extractall("isosurfaces")
 file.close()
-
-# contains isosurfaces plots in the specified format (tecplot)
-# volume.szplt
-print(os.listdir(os.path.join(output_dir, "isosurfaces")))
