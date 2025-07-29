@@ -101,28 +101,29 @@ case.wait()
 results = case.results
 
 # Download results in temp file which can be opened in paraview/tecplot
-with tempfile.TemporaryDirectory() as temp_dir:
-    # download slice and isosurfaces output files as tar.gz archives
-    results.slices.download(os.path.join(temp_dir, "slices.tar.gz"), overwrite=True)
-    results.isosurfaces.download(os.path.join(temp_dir, "isosurfaces.tar.gz"), overwrite=True)
+output_dir = 'path/to/folder'
 
-    # slices.tar.gz, isosurfaces.tar.gz
-    print(os.listdir(temp_dir))
+# download slice and isosurfaces output files as tar.gz archives
+results.slices.download(os.path.join(output_dir, "slices.tar.gz"), overwrite=True)
+results.isosurfaces.download(os.path.join(output_dir, "isosurfaces.tar.gz"), overwrite=True)
 
-    # extract slices file
-    file = tarfile.open(os.path.join(temp_dir, "slices.tar.gz"))
-    file.extractall(os.path.join(temp_dir, "slices"))
-    file.close()
+# slices.tar.gz, isosurfaces.tar.gz
+print(os.listdir(output_dir))
 
-    # contains plots for all slices in the specified format (tecplot)
-    # slice_x1.szplt, slice_y1.szplt
-    print(os.listdir(os.path.join(temp_dir, "slices")))
+# extract slices file
+file = tarfile.open(os.path.join(output_dir, "slices.tar.gz"))
+file.extractall(os.path.join(output_dir, "slices"))
+file.close()
 
-    # extract isosurfaces file
-    file = tarfile.open(os.path.join(temp_dir, "isosurfaces.tar.gz"))
-    file.extractall(os.path.join(temp_dir, "isosurfaces"))
-    file.close()
+# contains plots for all slices in the specified format (tecplot)
+# slice_x1.szplt, slice_y1.szplt
+print(os.listdir(os.path.join(output_dir, "slices")))
 
-    # contains isosurfaces plots in the specified format (tecplot)
-    # volume.szplt
-    print(os.listdir(os.path.join(temp_dir, "isosurfaces")))
+# extract isosurfaces file
+file = tarfile.open(os.path.join(output_dir, "isosurfaces.tar.gz"))
+file.extractall(os.path.join(output_dir, "isosurfaces"))
+file.close()
+
+# contains isosurfaces plots in the specified format (tecplot)
+# volume.szplt
+print(os.listdir(os.path.join(output_dir, "isosurfaces")))
