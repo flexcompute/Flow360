@@ -100,6 +100,7 @@ case.wait()
 
 results = case.results
 
+# Download results in temp file which can be opened in paraview/tecplot
 with tempfile.TemporaryDirectory() as temp_dir:
     # download slice and isosurfaces output files as tar.gz archives
     results.slices.download(os.path.join(temp_dir, "slices.tar.gz"), overwrite=True)
