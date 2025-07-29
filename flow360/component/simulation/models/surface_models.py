@@ -140,7 +140,7 @@ class TotalPressure(Flow360BaseModel):
     )
 
     @pd.model_validator(mode="after")
-    @deprecation_reminder(version="25.5.4")
+    @deprecation_reminder(version="25.5.5")
     def check_deprecate_velocity_direction(self):
         """Check if duplicate velocity_direction set up exists."""
         # pylint: disable=unsupported-membership-test
@@ -581,7 +581,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     )
 
     @pd.model_validator(mode="after")
-    @deprecation_reminder(version="25.5.4")
+    @deprecation_reminder(version="25.5.5")
     def check_duplicate_velocity_direction_setup(self):
         """Check if duplicate velocity_direction set up exists."""
 
