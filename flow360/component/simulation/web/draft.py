@@ -119,7 +119,7 @@ class Draft(Flow360Resource):
     def update_simulation_params(self, params):
         """update the SimulationParams of the draft"""
 
-        @deprecation_reminder(version="25.5.4")
+        @deprecation_reminder(version="25.5.5")
         def remove_none_inflow_velocity_direction_for_forward_compatibility(params_dict):
             """
             If None `velocity_direction` is found in root level of `Inflow` then
