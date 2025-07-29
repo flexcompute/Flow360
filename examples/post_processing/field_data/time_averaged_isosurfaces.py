@@ -11,7 +11,6 @@ geometry = project.geometry
 geometry.group_edges_by_tag("edgeId")
 geometry.group_faces_by_tag("faceName")
 
-
 with fl.SI_unit_system:
     rotating_cylinder = fl.Cylinder(
         name="Rotating zone", center=[0, 0, 0], axis=[1, 0, 0], outer_radius=2, height=0.8
@@ -90,13 +89,8 @@ with fl.SI_unit_system:
         ],
     )
 
-# Run case
 case = project.run_case(params, name="Time-averaged isosurfaces")
-
-# wait until the case finishes execution
 case.wait()
-
-# Download results which can be opened in paraview/tecplot
 results = case.results
 
 # download slice and isosurfaces output files as tar.gz archives
