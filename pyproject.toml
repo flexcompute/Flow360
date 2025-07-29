@@ -1,7 +1,12 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "v25.6.2b4"
 description = ""
+=======
+version = "v25.5.5"
+description = "Flow360 Python Client"
+>>>>>>> 73ad176f ([25.5] feat(): load the storage region from the backend response (#1301))
 authors = ["Flexcompute <support@flexcompute.com>"]
 
 [tool.poetry.dependencies]
