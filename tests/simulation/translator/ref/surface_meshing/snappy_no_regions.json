@@ -30,7 +30,8 @@
                 "edges":{
                     "edgeSpacing": 4,
                     "minElem": 3,
-                    "includedAngle": 120
+                    "includedAngle": 120,
+                    "retainOnSmoothing": true
                 },
                 "regions": []
             }
@@ -76,5 +77,9 @@
         "mu": 0.71,
         "iter": 5,
         "includedAngle": 150
-    }
+    },
+    "locationInMesh": {
+        "fluid": [0, 0, 0]
+    },
+    "cadIsFluid": true
 }

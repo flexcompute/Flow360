@@ -115,7 +115,7 @@
         "lambda": 0,
         "mu": 0,
         "iter": 0,
-        "includedAngle": false
+        "includedAngle": null
     },
     "locationInMesh": {
         "fluid": [0, 0, 0],

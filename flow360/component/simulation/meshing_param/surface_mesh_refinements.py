@@ -56,6 +56,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     included_angle: AngleType.Positive = pd.Field(150 * u.deg)
     bodies: Optional[List[SnappyBody]] = pd.Field(None)
     regions: Optional[EntityList[Surface]] = pd.Field(None)
+    retain_on_smoothing: Optional[bool] = pd.Field(True)
 
     @pd.model_validator(mode="after")
     def _check_spacing_format(self) -> Self:

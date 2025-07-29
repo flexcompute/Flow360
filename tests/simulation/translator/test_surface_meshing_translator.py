@@ -590,8 +590,54 @@ def snappy_basic_refinements():
                     distances=[1*u.mm, 3*u.mm],
                     min_len=6*u.mm,
                     regions=[test_geometry["*patch1"]],
-                    bodies=[SnappyBody(body_name="body3")]
+                    bodies=[SnappyBody(body_name="body3")],
+                    retain_on_smoothing=False
                 )
+            ],
+            smooth_controls=SnappySmoothControls()
+        )
+
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info()
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params
+            )
+        )
+    return param
+
+@pytest.fixture()
+def snappy_refinements_multiple_regions():
+    test_geometry = TempGeometry("tester.stl")
+    with SI_unit_system:
+        surf_meshing_params = SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=3*u.mm,
+                max_spacing=4*u.mm,
+                gap_resolution=1*u.mm
+            ),
+            refinements=[
+                SnappyRegionRefinement(
+                    min_spacing=20*u.mm,
+                    max_spacing=40*u.mm,
+                    proximity_spacing=3*u.mm,
+                    regions=[
+                        test_geometry["body1::patch0"],
+                        test_geometry["body1::patch1"],
+                        test_geometry["body1::patch2"],
+                    ]
+                ),
+                SnappySurfaceEdgeRefinement(
+                    spacing=4*u.mm,
+                    min_elem=3,
+                    included_angle=120*u.deg,
+                    regions=[
+                        test_geometry["body0::patch0"],
+                        test_geometry["body0::patch1"]
+                    ],
+                    retain_on_smoothing=False
+                ),
             ],
             smooth_controls=SnappySmoothControls()
         )
@@ -637,7 +683,11 @@ def snappy_refinements_no_regions():
                     bodies=[SnappyBody(body_name="body01_face003")]
                 ),
             ],
-            smooth_controls=SnappySmoothControls()
+            smooth_controls=SnappySmoothControls(),
+            cad_is_fluid=True,
+            zones=[
+                MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m)
+            ],
         )
 
         param = SimulationParams(
@@ -703,7 +753,7 @@ def snappy_settings():
             zones=[
                 MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 
                 MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003]*u.m)
-            ]
+            ],
         )
 
         param = SimulationParams(
@@ -765,7 +815,6 @@ def snappy_settings_off_position():
                 iterations=None,
                 included_angle=None
             ),
-            cad_is_fluid=True,
             zones=[
                 MeshZone(name="fluid", point_in_mesh=[0, 0, 0]*u.m), 
                 MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003]*u.m)
@@ -881,6 +930,13 @@ def test_snappy_basic(get_snappy_geometry, snappy_basic_refinements):
         snappy_basic_refinements,
         get_snappy_geometry.mesh_unit,
         "snappy_basic_refinements.json"
+    )
+
+def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multiple_regions):
+    _translate_and_compare(
+        snappy_refinements_multiple_regions,
+        get_snappy_geometry.mesh_unit,
+        "snappy_refinements_multiple_regions.json"
     )
 
 def test_snappy_settings(get_snappy_geometry, snappy_settings):

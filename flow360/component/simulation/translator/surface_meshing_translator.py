@@ -78,21 +78,41 @@ def apply_SnappyBodyRefinement(refinement:SnappyBodyRefinement, translated):
             if refinement.max_spacing is not None:
                 body["spacing"]["max"] = refinement.max_spacing.value.item()
 
+def get_applicable_regions_dict(refinement_regions):
+    applicable_regions = {}
+    if refinement_regions:
+        for entity in refinement_regions.stored_entities:
+            split = entity.name.split("::")
+            body = split[0]
+            if len(split) == 2:
+                region = split[1]
+            else:
+                applicable_regions[body] = None
+                continue
+            
+            if body in applicable_regions:
+                applicable_regions[body].append(region)
+            else:
+                applicable_regions[body] = [region]
+
+    return applicable_regions
+
 def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, translated, defaults):
     edges = {"includedAngle": refinement.included_angle.to("degree").value.item()}
     if refinement.min_elem is not None:
         edges["minElem"] = refinement.min_elem
     if refinement.min_len is not None:
         edges["minLen"] = refinement.min_len.value.item()
+    if refinement.retain_on_smoothing is not None:
+        edges["retainOnSmoothing"] = refinement.retain_on_smoothing
     if refinement.spacing is None:
         edges["edgeSpacing"] = defaults.min_spacing.value.item()
     elif isinstance(refinement.spacing, List):
         edges["edgeSpacing"] = [[dist.value.item(), spac.value.item()] for (dist, spac) in zip(refinement.distances, refinement.spacing)]
     else:
         edges["edgeSpacing"] = refinement.spacing.value.item()
-
     applicable_bodies = [entity.body_name for entity in refinement.bodies] if refinement.bodies is not None else []
-    applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.regions.stored_entities} if refinement.regions is not None else {}
+    applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.regions)
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies or (body["bodyName"] in applicable_regions and applicable_regions[body["bodyName"]] is None):
             body["edges"] = edges
@@ -102,7 +122,7 @@ def apply_SnappySurfaceEdgeRefinement(refinement:SnappySurfaceEdgeRefinement, tr
                     region["edges"] = edges
             
 def apply_SnappyRegionRefinement(refinement:SnappyRegionRefinement, translated):
-    applicable_regions = {entity.name.split("::")[0]: entity.name.split("::")[1] if len(entity.name.split("::")) == 2 else None for entity in refinement.entities.stored_entities if isinstance(entity, Surface)}
+    applicable_regions = applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.entities)
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_regions:
             for region in body.get("regions", []):
@@ -152,7 +172,6 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             }
         } 
         translated["geometry"] = {"bodies": [{"bodyName": name, **deepcopy(common_defaults), "regions": [{"patchName": region} for region in regions]} for (name, regions) in bodies.items()]}
-
         # apply refinements
         for refinement in surface_meshing_params.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
@@ -211,7 +230,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                 "iter": smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
             }
             if smoothing_settings.included_angle is None or np.isclose(smoothing_settings.included_angle.to("degree").value.item(), 0):
-                translated["smoothingControls"]["includedAngle"] = False
+                translated["smoothingControls"]["includedAngle"] = None
             else:
                 translated["smoothingControls"]["includedAngle"] = smoothing_settings.included_angle.to("degree").value.item()
 
@@ -238,11 +257,13 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
                 }
             }
         # points in mesh
-
         zones = surface_meshing_params.zones
-
         if zones is not None:
             translated["locationInMesh"] = {zone.name: [point.value.item() for point in zone.point_in_mesh] for zone in zones}
+        
+        # cad is fluid
+        if surface_meshing_params.cad_is_fluid:
+            translated["cadIsFluid"] = True
 
 
     elif isinstance(input_params.meshing, MeshingParams):

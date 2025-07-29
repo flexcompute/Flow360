@@ -31,6 +31,11 @@ from flow360.component.simulation.validation.validation_context import (
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow
+)
+
 
 def _check_consistency_wall_function_and_surface_output(v):
     models = v.models
@@ -319,7 +324,12 @@ def _check_complete_boundary_condition_and_unknown_surface(
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
 
     # Filter out the ones that will be deleted by mesher
-    automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
+    automated_farfield_method = None
+    if isinstance(params.meshing, MeshingParams):
+        automated_farfield_method = params.meshing.automated_farfield_method
+    if isinstance(params.meshing, ModularMeshingWorkflow):
+        if params.meshing.volume_meshing:
+            automated_farfield_method = params.meshing.volume_meshing.automated_farfield_method
 
     if automated_farfield_method:
         # pylint:disable=protected-access
