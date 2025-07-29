@@ -8,9 +8,11 @@ import urllib
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 import boto3
 from boto3.s3.transfer import TransferConfig
+from botocore.config import Config
 
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
@@ -110,6 +112,8 @@ class _UserCredential(BaseModel):
     expiration: datetime
     secret_access_key: str = Field(alias="secretAccessKey")
     session_token: str = Field(alias="sessionToken")
+    endpoint: Optional[str] = Field(alias="endpoint", default=None)
+    storage_provider: Optional[str] = Field(alias="storageProvider", default=None)
 
 
 class _S3STSToken(BaseModel):
@@ -138,13 +142,28 @@ class _S3STSToken(BaseModel):
         Get s3 client.
         :return:
         """
+        customize_boto3_config = None
+        if (
+            self.user_credential.storage_provider is not None
+            and self.user_credential.storage_provider == "OSS"
+        ):
+            # OSS does not support aws integrity check
+            customize_boto3_config = Config(
+                request_checksum_calculation="when_required",
+                response_checksum_validation="when_required",
+                s3={"addressing_style": "virtual"},
+            )
         # pylint: disable=no-member
         kwargs = {
             "region_name": Env.current.aws_region,
             "aws_access_key_id": self.user_credential.access_key_id,
             "aws_secret_access_key": self.user_credential.secret_access_key,
             "aws_session_token": self.user_credential.session_token,
+            "config": customize_boto3_config,
         }
+
+        if self.user_credential.endpoint is not None:
+            kwargs["endpoint_url"] = self.user_credential.endpoint
 
         if Env.current.s3_endpoint_url is not None:
             kwargs["endpoint_url"] = Env.current.s3_endpoint_url
