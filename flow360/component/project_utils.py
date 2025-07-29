@@ -23,7 +23,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError
 from flow360.log import log
@@ -221,7 +220,7 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
 
 
 def _set_up_default_geometry_accuracy(
-    root_asset: AssetBase,
+    root_asset,
     params: SimulationParams,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
 ):
@@ -256,7 +255,7 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
 
 
 def set_up_params_for_uploading(
-    root_asset: AssetBase,
+    root_asset,
     length_unit: LengthType,
     params: SimulationParams,
     use_beta_mesher: bool,
@@ -319,27 +318,3 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     return params, errors
-
-
-def formatting_validation_errors(errors):
-    """
-    Format the validation errors to a human readable string.
-
-    Example:
-    --------
-    Input: [{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'),
-            'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']},
-            'url': 'https://errors.pydantic.dev/2.7/v/missing'}]
-
-    Output: (1) Message: Field required | Location: meshing -> defaults -> boundary_layer_first_layer
-    _thickness | Relevant for: ['VolumeMesh']
-    """
-    error_msg = ""
-    for idx, error in enumerate(errors):
-        error_msg += f"\n\t({idx+1}) Message: {error['msg']}"
-        if error.get("loc") != ():
-            location = " -> ".join([str(loc) for loc in error["loc"]])
-            error_msg += f" | Location: {location}"
-        if error.get("ctx") and error["ctx"].get("relevant_for"):
-            error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
-    return error_msg

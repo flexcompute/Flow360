@@ -1146,6 +1146,8 @@ def test_validation_level_intersection():
 
 def test_forward_compatibility_error():
 
+    from flow360.version import __version__
+
     # Mock a future simulation.json
     with open("data/updater_should_pass.json", "r") as fp:
         future_dict = json.load(fp)
@@ -1159,7 +1161,7 @@ def test_forward_compatibility_error():
     assert errors[0] == {
         "type": f"99.99.99 > {__version__}",
         "loc": [],
-        "msg": "The cloud `SimulationParam` is too new for your local Python client. "
+        "msg": f"The cloud `SimulationParam` (version: 99.99.99) is too new for your local Python client (version: {__version__}). "
         "Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
@@ -1173,14 +1175,14 @@ def test_forward_compatibility_error():
     assert errors[0] == {
         "type": f"99.99.99 > {__version__}",
         "loc": [],
-        "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
+        "msg": f"[Internal] Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited."
+            f"Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited."
         ),
     ):
         _, _, _ = services.generate_process_json(
