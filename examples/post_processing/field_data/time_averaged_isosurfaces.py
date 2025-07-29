@@ -1,7 +1,4 @@
-import os
 import tarfile
-import tempfile
-
 import flow360 as fl
 from flow360.examples import IsolatedPropeller
 
@@ -98,9 +95,8 @@ case = project.run_case(params, name="Time-averaged isosurfaces")
 # wait until the case finishes execution
 case.wait()
 
-results = case.results
-
 # Download results which can be opened in paraview/tecplot
+results = case.results
 
 # download slice and isosurfaces output files as tar.gz archives
 results.slices.download("slices.tar.gz", overwrite=True)
