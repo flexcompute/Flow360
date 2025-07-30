@@ -1250,6 +1250,7 @@ class Project(pd.BaseModel):
         use_geometry_AI: bool,
         raise_on_error: bool,
         tags: List[str],
+        draft_only: bool = False,
         **kwargs,
     ):
         """
@@ -1348,6 +1349,10 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
+
+        if draft_only:
+            log.info(f"Draft submitted: {draft.web_url}")
+            return draft
 
         try:
             destination_id = draft.run_up_to_target_asset(
@@ -1525,6 +1530,7 @@ class Project(pd.BaseModel):
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         tags: List[str] = None,
+        draft_only: bool = False,
         **kwargs,
     ):
         """
@@ -1554,7 +1560,7 @@ class Project(pd.BaseModel):
             A list of tags to add to the case.
         """
         self._check_initialized()
-        case = self._run(
+        case_or_draft = self._run(
             params=params,
             target=Case,
             draft_name=name,
@@ -1566,8 +1572,14 @@ class Project(pd.BaseModel):
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             tags=tags,
+            draft_only=draft_only,
             **kwargs,
         )
+
+        if draft_only:
+            draft = case_or_draft
+            return draft
+        case = case_or_draft
         report_template = get_default_report_summary_template()
         report_template.create_in_cloud(
             name=f"{name}-summary",
