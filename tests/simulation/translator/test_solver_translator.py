@@ -32,6 +32,7 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
+    Criterion,
     Fluid,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
@@ -41,10 +42,12 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.output_entities import Slice
+from flow360.component.simulation.outputs.output_entities import Point, Slice
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
+    MovingStatistic,
+    ProbeOutput,
     SliceOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
@@ -315,6 +318,36 @@ def test_om6wing_with_specified_turbulence_model_coefficient(get_om6Wing_tutoria
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_SST_with_modified_C_sigma_omega1.json",
+    )
+
+
+def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    monitored_variable = UserVariable(
+        name="Helicity",
+        value=math.dot(solution.velocity, solution.vorticity),
+    )
+    probe_output = ProbeOutput(
+        name="point_legacy1",
+        output_fields=[
+            monitored_variable,
+        ],
+        probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+        moving_statistic=MovingStatistic(),
+    )
+    criterion = Criterion(
+        name="Criterion_Helicity",
+        tolerance=18.66,
+        monitor_output=probe_output,
+        monitor_field=monitored_variable,
+    )
+    params.models[0].stopping_criterion = [criterion]
+    params.outputs.append(probe_output)
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
+        debug=True,
     )
 
 

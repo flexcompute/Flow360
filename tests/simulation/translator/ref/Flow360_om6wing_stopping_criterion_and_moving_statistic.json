@@ -1,28 +1,23 @@
 {
     "boundaries": {
         "1": {
-            "type": "NoSlipWall",
             "heatFlux": 0.0,
-            "roughnessHeight": 0.0
+            "roughnessHeight": 0.0,
+            "type": "NoSlipWall"
         },
         "2": {
             "type": "SlipWall"
         },
         "3": {
-            "type": "Freestream",
-            "velocity": [
-                0.0029386353651012958,
-                0.029386353651012956,
-                0.0
-            ]
+            "type": "Freestream"
         }
     },
     "freestream": {
-        "Mach": 0.84,
-        "muRef": 5.326121165140212e-08,
+        "Mach": 0.8399999999999999,
         "Temperature": 288.15,
         "alphaAngle": 3.06,
-        "betaAngle": 0.0
+        "betaAngle": 0.0,
+        "muRef": 5.3261211651402146e-08
     },
     "geometry": {
         "momentCenter": [
@@ -36,6 +31,45 @@
             0.801672958512342
         ],
         "refArea": 1.1529999999999987
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "monitorOutput": {
+        "monitors": {
+            "point_legacy1": {
+                "animationFrequency": 1,
+                "animationFrequencyOffset": 0,
+                "computeTimeAverages": false,
+                "end": [
+                    [
+                        -0.033058692145427476,
+                        0.7024941059684825,
+                        0.0
+                    ]
+                ],
+                "numberOfPoints": [
+                    1
+                ],
+                "outputFields": [
+                    "Helicity"
+                ],
+                "start": [
+                    [
+                        -0.033058692145427476,
+                        0.7024941059684825,
+                        0.0
+                    ]
+                ],
+                "type": "lineProbe"
+            }
+        },
+        "outputFields": []
     },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
@@ -55,27 +89,33 @@
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
     },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": true,
+        "shouldProcessMonitorOutput": true
+    },
     "sliceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
-        "outputFormat": "tecplot",
         "outputFields": [],
-        "startAverageIntegrationStep": -1,
+        "outputFormat": "tecplot",
         "slices": {
             "sliceName_1": {
                 "outputFields": [
-                    "primitiveVars",
-                    "vorticity",
-                    "vorticityMagnitude",
-                    "T",
-                    "s",
                     "Cp",
+                    "Mach",
+                    "T",
                     "mut",
                     "mutRatio",
-                    "Mach"
+                    "primitiveVars",
+                    "s",
+                    "vorticity",
+                    "vorticityMagnitude"
                 ],
                 "sliceNormal": [
                     0.0,
@@ -88,7 +128,8 @@
                     0.0
                 ]
             }
-        }
+        },
+        "startAverageIntegrationStep": -1
     },
     "surfaceOutput": {
         "animationFrequency": -1,
@@ -100,7 +141,7 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "3": {
+            "1": {
                 "outputFields": [
                     "Cp"
                 ]
@@ -110,7 +151,7 @@
                     "Cp"
                 ]
             },
-            "1": {
+            "3": {
                 "outputFields": [
                     "Cp"
                 ]
@@ -143,16 +184,16 @@
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
-            "C_d": 8.0,
             "C_cb1": 0.1355,
             "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
             "C_sigma": 0.6666666666666666,
-            "C_v1": 7.1,
-            "C_vonKarman": 0.41,
-            "C_w2": 0.3,
             "C_t3": 1.2,
             "C_t4": 0.5,
-            "C_min_rd": 10.0
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -162,6 +203,13 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
+    "userDefinedFields": [
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;double ___vorticity[3];___vorticity[0] = (gradPrimitive[3][1] - gradPrimitive[2][2]) * velocityScale;___vorticity[1] = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;___vorticity[2] = (gradPrimitive[2][0] - gradPrimitive[1][1]) * velocityScale;Helicity = ((((___velocity[0] * ___vorticity[0]) + (___velocity[1] * ___vorticity[1])) + (___velocity[2] * ___vorticity[2])) * 143690.29704553966);",
+            "name": "Helicity"
+        }
+    ],
+    "usingLiquidAsMaterial": false,
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
@@ -169,29 +217,12 @@
         "animationFrequencyTimeAverageOffset": 0,
         "computeTimeAverages": false,
         "outputFields": [
+            "Mach",
             "primitiveVars",
             "residualNavierStokes",
-            "residualTurbulence",
-            "Mach"
+            "residualTurbulence"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
-    },
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
-    "userDefinedFields":[],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "shouldCheckStopCriterion": false,
-        "shouldProcessMonitorOutput": false
     }
 }

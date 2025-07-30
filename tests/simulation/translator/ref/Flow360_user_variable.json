@@ -330,5 +330,9 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "shouldProcessMonitorOutput": false
     }
 }

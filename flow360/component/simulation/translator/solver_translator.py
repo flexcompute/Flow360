@@ -1,7 +1,7 @@
 """Flow360 solver setting parameter translator."""
 
 # pylint: disable=too-many-lines
-from typing import Type, Union
+from typing import Type, Union, get_args
 
 import unyt as u
 
@@ -60,6 +60,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    MonitorOutputType,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -1318,6 +1319,19 @@ def update_controls_modeling_constants(controls, translated):
             control["modelConstants"] = control.pop("modelingConstants")
 
 
+def check_moving_statistic_existence(params: SimulationParams):
+    """Check if moving statistic exists in the monitor outputs"""
+    if not params.outputs:
+        return False
+    for output in params.outputs:
+        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+            continue
+        if output.moving_statistic is None:
+            continue
+        return True
+    return False
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -1405,6 +1419,7 @@ def get_solver_json(
     dump_dict(input_params.time_stepping)
 
     ##:: Step 6: Get solver settings and initial condition
+    translated["runControl"] = {}
     for model in input_params.models:
         if isinstance(model, Fluid):
             if isinstance(op, LiquidOperatingCondition):
@@ -1487,6 +1502,7 @@ def get_solver_json(
                                 "axes": [list(axes[0]), list(axes[1])],
                             }
                         )
+            translated["runControl"]["shouldCheckStopCriterion"] = bool(model.stopping_criterion)
 
             translated["initialCondition"] = get_navier_stokes_initial_condition(
                 model.initial_condition
@@ -1629,6 +1645,9 @@ def get_solver_json(
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
+    translated["runControl"]["shouldProcessMonitorOutput"] = check_moving_statistic_existence(
+        input_params
+    )
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
