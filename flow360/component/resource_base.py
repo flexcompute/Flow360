@@ -293,7 +293,7 @@ class Flow360Resource(RestApi):
             "This is abstract method. Needs to be implemented by specialised class."
         )
 
-    def get_info(self, force=False) -> AssetMetaBaseModel:
+    def get_info(self, force=False):
         """
         returns metadata info for resource
         """
