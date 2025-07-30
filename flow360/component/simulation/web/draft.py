@@ -19,11 +19,14 @@ from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import Flow360Resource, ResourceDraft
 from flow360.component.utils import formatting_validation_errors, validate_type
+from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
 
 
 class DraftMetaModel(BaseModel):
+    """Draft metadata deserializer"""
+
     type: Literal["Draft"] = "Draft"
     name: str
     id: str
@@ -203,6 +206,5 @@ class Draft(Flow360Resource):
     @property
     def web_url(self) -> str:
         """Get the web URL of the draft"""
-        from flow360.environment import Env
 
         return Env.current.web_url + f"/workbench/{self.project_id}?id={self.id}&type=Draft"
