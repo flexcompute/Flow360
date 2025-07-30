@@ -13,7 +13,7 @@ from packaging.version import InvalidVersion, Version
 from flow360.cli import dict_utils
 from flow360.component.project_utils import show_projects_with_keyword_filter
 from flow360.environment import Env
-from flow360.version import __version__, __solver_version__
+from flow360.version import __solver_version__, __version__
 
 home = expanduser("~")
 # pylint: disable=invalid-name
