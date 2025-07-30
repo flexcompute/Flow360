@@ -16,6 +16,7 @@ from flow360.component.simulation.validation.validation_context import (
     VOLUME_MESH,
     get_validation_info,
 )
+from flow360.version import __version__
 from tests.utils import compare_dict_to_ref
 
 
