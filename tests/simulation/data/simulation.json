@@ -1384,24 +1384,21 @@
 				"value": {
 					"type_name": "number",
 					"value": 1
-				},
-				"postProcessing": false
+				}
 			},
 			{
 				"name": "y",
 				"value": {
 					"type_name": "expression",
 					"expression": "math.sqrt(z)"
-				},
-				"postProcessing": false
+				}
 			},
 			{
 				"name": "z",
 				"value": {
 					"type_name": "expression",
 					"expression": "math.log(x+12)"
-				},
-				"postProcessing": false
+				}
 			}
 		]
 	}

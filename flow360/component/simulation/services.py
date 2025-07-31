@@ -4,25 +4,13 @@
 import json
 import os
 from enum import Enum
-from typing import (
-    Annotated,
-    Any,
-    Collection,
-    Dict,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Collection, Dict, Iterable, Literal, Optional, Tuple, Union
 
 import pydantic as pd
 from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
-from flow360.component.simulation.entity_info import GhostSurfaceTypes
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
@@ -289,14 +277,18 @@ class ValidationCalledBy(Enum):
 
     def get_forward_compatibility_error_message(self, version_from: str, version_to: str):
         """
-        Return error message string indicating that the forward compatability is not guaranteed.
+        Return error message string indicating that the forward compatibility is not guaranteed.
         """
         error_suffix = " Errors may occur since forward compatibility is limited."
         if self == ValidationCalledBy.LOCAL:
             return {
                 "type": (f"{version_from} > {version_to}"),
                 "loc": [],
-                "msg": "The cloud `SimulationParam` is too new for your local Python client."
+                "msg": "The cloud `SimulationParam` (version: "
+                + version_from
+                + ") is too new for your local Python client (version: "
+                + version_to
+                + ")."
                 + error_suffix,
                 "ctx": {},
             }
@@ -304,7 +296,12 @@ class ValidationCalledBy(Enum):
             return {
                 "type": (f"{version_from} > {version_to}"),
                 "loc": [],
-                "msg": "Your `SimulationParams` is too new for the solver." + error_suffix,
+                "msg": "Your `SimulationParams` (version: "
+                + version_from
+                + ") is too new for the solver (version: "
+                + version_to
+                + ")."
+                + error_suffix,
                 "ctx": {},
             }
         if self == ValidationCalledBy.PIPELINE:
@@ -314,7 +311,11 @@ class ValidationCalledBy(Enum):
                 # pylint:disable = protected-access
                 "type": (f"{version_from} > {version_to}"),
                 "loc": [],
-                "msg": "[Internal] Your `SimulationParams` is too new for the solver."
+                "msg": "[Internal] Your `SimulationParams` (version: "
+                + version_from
+                + ") is too new for the solver (version: "
+                + version_to
+                + ")."
                 + error_suffix,
                 "ctx": {},
             }
@@ -337,7 +338,7 @@ def _insert_forward_compatibility_notice(
     return validation_errors
 
 
-def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False):
+def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = False) -> dict:
     """Load all user variables from private attributes when a simulation params object is initialized"""
     if "private_attribute_asset_cache" not in param_as_dict.keys():
         return param_as_dict
@@ -364,20 +365,29 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
     dependency_graph.load_from_list(variable_list)
     sorted_variables = dependency_graph.topology_sort()
 
-    for idx, variable_name in enumerate(sorted_variables):
+    pre_sort_name_to_index = {
+        var["name"]: idx for idx, var in enumerate(asset_cache["variable_context"])
+    }
+
+    for variable_name in sorted_variables:
         variable_dict = next(
             (var for var in asset_cache["variable_context"] if var["name"] == variable_name),
             None,
         )
         if variable_dict is None:
             continue
-        value_or_expression = {
-            key: value for key, value in variable_dict["value"].items() if key != "postProcessing"
-        }
+
+        value_or_expression = dict(variable_dict["value"].items())
+
         try:
             UserVariable(
                 name=variable_dict["name"],
                 value=value_or_expression,
+                **(
+                    {"description": variable_dict["description"]}
+                    if "description" in variable_dict
+                    else {}
+                ),
             )
         except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
@@ -392,7 +402,11 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
                 line_errors=[
                     ErrorDetails(
                         type=error_detail["type"],
-                        loc=("private_attribute_asset_cache", "variable_context", idx),
+                        loc=(
+                            "private_attribute_asset_cache",
+                            "variable_context",
+                            pre_sort_name_to_index[variable_name],
+                        ),
                         msg=error_detail["msg"],
                         ctx=error_detail["ctx"],
                     ),
@@ -400,41 +414,6 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
             )
 
     return param_as_dict
-
-
-def validate_ghost_entities(params_as_dict: dict) -> Tuple[dict, dict]:
-    """
-    Validate the ghost entities in the params dict.
-    - Purpose:
-
-        Isolate the ghost entities from context (ValidationContext + ParamsValidationInfo) validation.
-        Otherwise the ghost entities dict can be invalidated by the context validation which does not make sense.
-        Since the ghost entities holds truth/description of the cloud resource
-        it should always be valid regardless how it is used/referenced in the main part of SimulationParams.
-
-    - Return:
-        - params_as_dict: The params dict with the ghost entities removed.
-        - ghost_entities: The ghost entities validated.
-
-    - Note:
-        - Ghost surface should not rely on MultiConstructor model since it is completely internally managed.
-    """
-    ghost_entities_list = get_value_with_path(
-        params_as_dict,
-        [
-            "private_attribute_asset_cache",
-            "project_entity_info",
-            "ghost_entities",
-        ],
-    )
-    if not ghost_entities_list:
-        return params_as_dict, []
-
-    params_as_dict["private_attribute_asset_cache"]["project_entity_info"].pop("ghost_entities")
-    GhostEntityList = Annotated[List[GhostSurfaceTypes], pd.Field()]
-    ghost_entities = pd.TypeAdapter(GhostEntityList).validate_python(ghost_entities_list)
-
-    return params_as_dict, ghost_entities
 
 
 def validate_model(  # pylint: disable=too-many-locals
@@ -491,10 +470,6 @@ def validate_model(  # pylint: disable=too-many-locals
         use_clear_context = validated_by == ValidationCalledBy.SERVICE
         initialize_variable_space(updated_param_as_dict, use_clear_context)
 
-        params_without_ghost_entities, ghost_entities = validate_ghost_entities(
-            updated_param_as_dict
-        )
-
         referenced_expressions = get_referenced_expressions_and_user_variables(
             updated_param_as_dict
         )
@@ -502,20 +477,12 @@ def validate_model(  # pylint: disable=too-many-locals
         additional_info = ParamsValidationInfo(
             param_as_dict=updated_param_as_dict,
             referenced_expressions=referenced_expressions,
-            validated_ghost_entities=ghost_entities,
         )
 
         with ValidationContext(levels=validation_levels_to_use, info=additional_info):
             # Multi-constructor model support
-            params_without_ghost_entities = parse_model_dict(
-                params_without_ghost_entities, globals()
-            )
-            validated_param = SimulationParams(file_content=params_without_ghost_entities)
-            # pylint: disable=no-member
-            if validated_param.private_attribute_asset_cache.project_entity_info is not None:
-                validated_param.private_attribute_asset_cache.project_entity_info.ghost_entities = (
-                    ghost_entities
-                )
+            updated_param_as_dict = parse_model_dict(updated_param_as_dict, globals())
+            validated_param = SimulationParams(file_content=updated_param_as_dict)
     except pd.ValidationError as err:
         validation_errors = err.errors()
     except Exception as err:  # pylint: disable=broad-exception-caught

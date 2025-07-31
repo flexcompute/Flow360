@@ -53,17 +53,6 @@ def _check_same_length(left: VectorInputType, right: VectorInputType, operation_
         )
 
 
-def _compare_operation_dimensions(value: Union[ScalarInputType, VectorInputType], ref_dimensions):
-    """
-    For certain scalar/vector arithmetic operations,
-    we need to check that the scalar/vector has the specify dimensions.
-    """
-    value_dimensions = get_input_value_dimensions(value=value)
-    if value_dimensions:
-        return value_dimensions == ref_dimensions
-    return False
-
-
 def _check_same_dimensions(
     value1: Union[ScalarInputType, VectorInputType],
     value2: Union[ScalarInputType, VectorInputType],
