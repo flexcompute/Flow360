@@ -204,6 +204,11 @@ def test_symmetric_existence():
     errors = _run_validation(params)
     assert len(errors) == 1
     assert (
-        "`symmetric` boundary not usable: model spans y=[-4.08e-05, 1.16e+03], "
-        "but tolerance from y=0 is 1.00e-100 x 2.53e+03 = 2.53e-97." in errors[0]["msg"]
+        "`symmetric` boundary will not be generated: model spans: [-4.1e-05, 1.2e+03], tolerance = 1e-100 x 2.5e+03 = 2.5e-97."
+        in errors[0]["msg"]
     )
+
+    # Invalid Symmetric but did not use it
+    params.models.pop()
+    errors = _run_validation(params)
+    assert errors is None

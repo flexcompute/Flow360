@@ -487,13 +487,13 @@ def test_updater_to_25_4_1():
     assert params_new["meshing"]["defaults"]["geometry_accuracy"]["units"] == "m"
 
 
-def test_updater_to_25_6_1():
+def test_updater_to_25_6_2():
     with open("../data/simulation/simulation_pre_25_6_0.json", "r") as fp:
         params = json.load(fp)
 
-    def _update_to_25_6_1(pre_update_param_as_dict):
+    def _update_to_25_6_2(pre_update_param_as_dict, version_from):
         params_new = updater(
-            version_from=f"25.5.1",
+            version_from=version_from,
             version_to=f"25.6.2",
             params_as_dict=pre_update_param_as_dict,
         )
@@ -508,21 +508,22 @@ def test_updater_to_25_6_1():
         assert params_new
 
     pre_update_param_as_dict = copy.deepcopy(params)
-    params_new = _update_to_25_6_1(pre_update_param_as_dict)
+    params_new = _update_to_25_6_2(pre_update_param_as_dict, version_from="25.5.1")
     assert params_new["models"][2]["velocity_direction"] == [0, -1, 0]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
+    assert params_new["outputs"] == pre_update_param_as_dict["outputs"]
 
     pre_update_param_as_dict = copy.deepcopy(params)
     pre_update_param_as_dict["models"][2]["spec"]["velocity_direction"] = None
-    params_new = _update_to_25_6_1(pre_update_param_as_dict)
+    params_new = _update_to_25_6_2(pre_update_param_as_dict, version_from="25.5.1")
     assert "velocity_direction" not in params_new["models"][2]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
 
     pre_update_param_as_dict = copy.deepcopy(params)
     pre_update_param_as_dict["models"][2]["spec"].pop("velocity_direction")
-    params_new = _update_to_25_6_1(pre_update_param_as_dict)
+    params_new = _update_to_25_6_2(pre_update_param_as_dict, version_from="25.5.1")
     assert "velocity_direction" not in params_new["models"][2]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
@@ -530,13 +531,13 @@ def test_updater_to_25_6_1():
     pre_update_param_as_dict = copy.deepcopy(params)
     pre_update_param_as_dict["models"][2]["spec"].pop("velocity_direction")
     pre_update_param_as_dict["models"][2]["velocity_direction"] = [0, -1, 0]
-    params_new = _update_to_25_6_1(pre_update_param_as_dict)
+    params_new = _update_to_25_6_2(pre_update_param_as_dict, version_from="25.5.1")
     assert params_new["models"][2]["velocity_direction"] == [0, -1, 0]
     assert "velocity_direction" not in params_new["models"][2]["spec"]
     _ensure_validity(params_new)
 
     pre_update_param_as_dict = copy.deepcopy(params)
-    params_new = _update_to_25_6_1(pre_update_param_as_dict)
+    params_new = _update_to_25_6_2(pre_update_param_as_dict, version_from="25.5.1")
     reynolds = params["operating_condition"]["private_attribute_input_cache"]["reynolds"]
     assert "reynolds" not in params_new["operating_condition"]["private_attribute_input_cache"]
     assert (
@@ -547,6 +548,157 @@ def test_updater_to_25_6_1():
         == reynolds
     )
     _ensure_validity(params_new)
+
+    # Ensure the updater can handle reynolds with None value correctly
+    pre_update_param_as_dict = copy.deepcopy(params)
+    pre_update_param_as_dict["operating_condition"]["private_attribute_input_cache"][
+        "reynolds"
+    ] = None
+    params_new = _update_to_25_6_2(pre_update_param_as_dict, version_from="25.5.1")
+    assert (
+        "reynolds_mesh_unit"
+        not in params_new["operating_condition"]["private_attribute_input_cache"].keys()
+    )
+
+    with open("../data/simulation/simulation_pre_25_6_0-2.json", "r") as fp:
+        params = json.load(fp)
+    params_new = _update_to_25_6_2(params, version_from="25.5.0")
+    _ensure_validity(params_new)
+
+    assert len(params_new["outputs"]) == 5
+    assert params_new["outputs"] == [
+        {
+            "frequency": 16,
+            "frequency_offset": 0,
+            "name": "Volume output",
+            "output_fields": {
+                "items": [
+                    "vorticity",
+                    "primitiveVars",
+                    "residualNavierStokes",
+                    "Mach",
+                    "qcriterion",
+                    "T",
+                    "Cp",
+                    "mut",
+                ]
+            },
+            "output_format": "paraview",
+            "output_type": "VolumeOutput",
+        },
+        {
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "middle/middle_bottom",
+                        "private_attribute_color": None,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_bottom",
+                        "private_attribute_id": "middle/middle_bottom",
+                        "private_attribute_is_interface": False,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": None,
+                    },
+                    {
+                        "name": "static/static_bottom",
+                        "private_attribute_color": None,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_bottom",
+                        "private_attribute_id": "static/static_bottom",
+                        "private_attribute_is_interface": False,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": None,
+                    },
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {"items": ["Cp"]},
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": False,
+        },
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {"items": ["Cf", "Cp", "primitiveVars"]},
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": False,
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "middle/middle_top",
+                        "private_attribute_color": None,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "middle/middle_top",
+                        "private_attribute_id": "middle/middle_top",
+                        "private_attribute_is_interface": False,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": None,
+                    }
+                ]
+            },
+        },
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {"items": ["Cf", "Cp", "primitiveVars"]},
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": False,
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "static/static_top",
+                        "private_attribute_color": None,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "static/static_top",
+                        "private_attribute_id": "static/static_top",
+                        "private_attribute_is_interface": False,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": None,
+                    }
+                ]
+            },
+        },
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "name": "Surface output",
+            "output_fields": {"items": ["Cf", "Cp", "primitiveVars"]},
+            "output_format": "paraview",
+            "output_type": "SurfaceOutput",
+            "write_single_file": False,
+            "entities": {
+                "stored_entities": [
+                    {
+                        "name": "inner/cylinder",
+                        "private_attribute_color": None,
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_full_name": "inner/cylinder",
+                        "private_attribute_id": "inner/cylinder",
+                        "private_attribute_is_interface": False,
+                        "private_attribute_potential_issues": [],
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_sub_components": [],
+                        "private_attribute_tag_key": None,
+                    }
+                ]
+            },
+        },
+    ]
 
 
 def test_deserialization_with_updater():

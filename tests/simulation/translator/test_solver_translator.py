@@ -223,14 +223,15 @@ def translate_and_compare(
     if debug:
         print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
-    assert compare_values(
-        ref_dict, translated, atol=atol, rtol=rtol, ignore_keys="userDefinedDynamics"
-    )
+    assert compare_values(ref_dict, translated, atol=atol, rtol=rtol)
 
 
 def test_om6wing_tutorial(get_om6Wing_tutorial_param):
     translate_and_compare(
-        get_om6Wing_tutorial_param, mesh_unit=0.8059 * u.m, ref_json_file="Flow360_om6Wing.json"
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing.json",
+        debug=True,
     )
 
 
@@ -1116,3 +1117,31 @@ class TestHashingRobustness:
 
         # All test cases should produce the same hash as the reference
         assert hash_value == udd_reference_hash
+
+
+def test_auto_ref_area_settings():
+    """
+    [Frontend] Test that the auto reference area settings are translated correctly.
+    """
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_with_auto_area.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+
+    params, _, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
+    translated = get_solver_json(params, mesh_unit=1 * u.m)
+
+    assert compare_values(
+        {
+            "refArea": 0.0040039062500000005,
+            "momentCenter": [0.0, 0.0, 0.0],
+            "momentLength": [0.01, 0.01, 0.010001],
+        },
+        translated["geometry"],
+    )

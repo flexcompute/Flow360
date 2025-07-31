@@ -165,11 +165,11 @@
             "name": "iso_field_Cp"
         },
         {
-            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_math_pressure = ((((0.5 * ___Cp) * primitiveVars[0]) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 2962.7035389425037);",
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___density;___density = usingLiquidAsMaterial ? 1.0 : primitiveVars[0];double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_math_pressure = ((((0.5 * ___Cp) * ___density) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 2962.7035389425037);",
             "name": "iso_field_math_pressure"
         },
         {
-            "expression": "iso_field_pressure = (primitiveVars[4] * 2962.7035389425037);",
+            "expression": "double ___pressure;___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * (velocityScale * velocityScale) : primitiveVars[4];iso_field_pressure = (___pressure * 2962.7035389425037);",
             "name": "iso_field_pressure"
         },
         {
@@ -177,11 +177,11 @@
             "name": "iso_field_random_units"
         },
         {
-            "expression": "pressure_psf = (primitiveVars[4] * 2962.7035389425037);",
+            "expression": "double ___pressure;___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * (velocityScale * velocityScale) : primitiveVars[4];pressure_psf = (___pressure * 2962.7035389425037);",
             "name": "pressure_psf"
         },
         {
-            "expression": "pressure_psi = (primitiveVars[4] * 20.574330131545164);",
+            "expression": "double ___pressure;___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * (velocityScale * velocityScale) : primitiveVars[4];pressure_psi = (___pressure * 20.574330131545164);",
             "name": "pressure_psi"
         },
         {

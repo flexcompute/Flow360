@@ -2,7 +2,7 @@
 validation for SimulationParams
 """
 
-from typing import get_args
+from typing import Type, Union, get_args
 
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -19,6 +19,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageOutputTypes,
+    TimeAverageSurfaceOutput,
     VolumeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
@@ -333,13 +334,13 @@ def _check_complete_boundary_condition_and_unknown_surface(
         if automated_farfield_method == "auto":
             asset_boundary_entities += [
                 item
-                for item in validation_info.validated_ghost_entities
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
             ]
         elif automated_farfield_method == "quasi-3d":
             asset_boundary_entities += [
                 item
-                for item in validation_info.validated_ghost_entities
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name != "symmetric"
             ]
 
@@ -505,4 +506,29 @@ def _check_duplicate_isosurface_names(outputs):
                         f"`{entity.name}` already exists, please rename the isosurface."
                     )
                 isosurface_time_avg_names.append(entity.name)
+    return outputs
+
+
+def _check_duplicate_surface_usage(outputs):
+    if outputs is None:
+        return outputs
+
+    def _check_surface_usage(
+        outputs, output_type: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]]
+    ):
+        surface_names = set()
+        for output in outputs:
+            if not is_exact_instance(output, output_type):
+                continue
+            for entity in output.entities.stored_entities:
+                if entity.name in surface_names:
+                    raise ValueError(
+                        f"The same surface `{entity.name}` is used in multiple `{output_type.__name__}`s."
+                        " Please specify all settings for the same surface in one output."
+                    )
+                surface_names.add(entity.name)
+
+    _check_surface_usage(outputs, SurfaceOutput)
+    _check_surface_usage(outputs, TimeAverageSurfaceOutput)
+
     return outputs

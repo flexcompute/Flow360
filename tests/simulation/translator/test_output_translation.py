@@ -130,7 +130,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         param = SimulationParams(outputs=[volume_output_config[0]])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(volume_output_config[1].items()) == sorted(translated["volumeOutput"].items())
+    assert compare_values(volume_output_config[1], translated["volumeOutput"])
 
     ##:: timeAverageVolumeOutput only
     with SI_unit_system:
@@ -140,9 +140,7 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(avg_volume_output_config[1].items()) == sorted(
-        translated["timeAverageVolumeOutput"].items()
-    )
+    assert compare_values(avg_volume_output_config[1], translated["timeAverageVolumeOutput"])
 
     ##:: timeAverageVolumeOutput and volumeOutput
     with SI_unit_system:
@@ -274,7 +272,7 @@ def test_surface_output(
         param = SimulationParams(outputs=surface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_output_config[1].items()) == sorted(translated["surfaceOutput"].items())
+    assert compare_values(surface_output_config[1], translated["surfaceOutput"])
 
     ##:: timeAverageSurfaceOutput and surfaceOutput
     with SI_unit_system:
@@ -340,10 +338,8 @@ def test_surface_output(
             "writeSingleFile": False,
         },
     }
-    assert sorted(ref["surfaceOutput"].items()) == sorted(translated["surfaceOutput"].items())
-    assert sorted(ref["timeAverageSurfaceOutput"].items()) == sorted(
-        translated["timeAverageSurfaceOutput"].items()
-    )
+    assert compare_values(ref["surfaceOutput"], translated["surfaceOutput"])
+    assert compare_values(ref["timeAverageSurfaceOutput"], translated["timeAverageSurfaceOutput"])
 
 
 @pytest.fixture()
@@ -451,7 +447,7 @@ def test_slice_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    assert sorted(slice_output_config[1].items()) == sorted(translated["sliceOutput"].items())
+    assert compare_values(slice_output_config[1], translated["sliceOutput"])
 
 
 @pytest.fixture()
@@ -647,10 +643,7 @@ def test_isosurface_output(
         param = SimulationParams(outputs=isosurface_output_config[0])
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-
-    assert sorted(isosurface_output_config[1].items()) == sorted(
-        translated["isoSurfaceOutput"].items()
-    )
+    assert compare_values(isosurface_output_config[1], translated["isoSurfaceOutput"])
 
 
 def test_time_average_isosurface_output(
@@ -663,9 +656,8 @@ def test_time_average_isosurface_output(
         )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-
-    assert sorted(time_average_isosurface_output_config[1].items()) == sorted(
-        translated["timeAverageIsoSurfaceOutput"].items()
+    assert compare_values(
+        time_average_isosurface_output_config[1], translated["timeAverageIsoSurfaceOutput"]
     )
 
 
@@ -997,7 +989,7 @@ def test_surface_probe_output(vel_in_km_per_hr):
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceMonitorOutput"].items())
+    assert compare_values(param_with_ref[1], translated["surfaceMonitorOutput"])
 
 
 def test_monitor_output(
@@ -1016,7 +1008,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_config[1].items()) == sorted(translated["monitorOutput"].items())
+    assert compare_values(probe_output_config[1], translated["monitorOutput"])
 
     ##:: monitorOutput with line probes
     with SI_unit_system:
@@ -1025,9 +1017,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(probe_output_with_point_array[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert compare_values(probe_output_with_point_array[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral
     with SI_unit_system:
@@ -1042,9 +1032,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(surface_integral_output_config[1].items()) == sorted(
-        translated["monitorOutput"].items()
-    )
+    assert compare_values(surface_integral_output_config[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
     with SI_unit_system:
@@ -1115,7 +1103,7 @@ def test_monitor_output(
             },
         },
     }
-    assert sorted(ref.items()) == sorted(translated["monitorOutput"].items())
+    assert compare_values(ref, translated["monitorOutput"])
 
 
 @pytest.fixture()
@@ -1178,9 +1166,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_config[1].items()) == sorted(
-        translated["aeroacousticOutput"].items()
-    )
+    assert compare_values(aeroacoustic_output_config[1], translated["aeroacousticOutput"])
 
     with SI_unit_system:
         param = SimulationParams(
@@ -1192,9 +1178,7 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
 
-    assert sorted(aeroacoustic_output_permeable_config[1].items()) == sorted(
-        translated["aeroacousticOutput"].items()
-    )
+    assert compare_values(aeroacoustic_output_permeable_config[1], translated["aeroacousticOutput"])
 
 
 def test_surface_slice_output(vel_in_km_per_hr):
@@ -1288,7 +1272,7 @@ def test_surface_slice_output(vel_in_km_per_hr):
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
-    assert sorted(param_with_ref[1].items()) == sorted(translated["surfaceSliceOutput"].items())
+    assert compare_values(param_with_ref[1], translated["surfaceSliceOutput"])
 
 
 def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
@@ -1373,64 +1357,77 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
 
     ref = {
         "userDefinedFields": [
-            {"name": "my_field", "expression": "1+1"},
+            {"name": "my_field", "expression": "1+1", "from_user_variables": False},
             {
                 "name": "pressure",
                 "expression": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
+                "from_user_variables": False,
             },
             {
                 "name": "pressure_pa",
-                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 999999999.9999999;",
+                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 2500000.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity",
                 "expression": "velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_in_km_per_hr",
-                "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (___velocity[0] * 3600.0); velocity_in_km_per_hr[1] = (___velocity[1] * 3600.0); velocity_in_km_per_hr[2] = (___velocity[2] * 3600.0);",
+                "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (___velocity[0] * 180.0); velocity_in_km_per_hr[1] = (___velocity[1] * 180.0); velocity_in_km_per_hr[2] = (___velocity[2] * 180.0);",
             },
             {
                 "name": "velocity_m_per_s",
-                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 1000.0;velocity_m_per_s[1] = velocity[1] * 1000.0;velocity_m_per_s[2] = velocity[2] * 1000.0;",
+                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 50.0;velocity_m_per_s[1] = velocity[1] * 50.0;velocity_m_per_s[2] = velocity[2] * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_magnitude",
                 "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_magnitude_m_per_s",
-                "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;velocity_magnitude_m_per_s = velocity_magnitude * 1000.0;",
+                "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;velocity_magnitude_m_per_s = velocity_magnitude * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_x_m_per_s",
-                "expression": "double velocity_x;velocity_x = primitiveVars[1] * velocityScale;velocity_x_m_per_s = velocity_x * 1000.0;",
+                "expression": "double velocity_x;velocity_x = primitiveVars[1] * velocityScale;velocity_x_m_per_s = velocity_x * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_y_m_per_s",
-                "expression": "double velocity_y;velocity_y = primitiveVars[2] * velocityScale;velocity_y_m_per_s = velocity_y * 1000.0;",
+                "expression": "double velocity_y;velocity_y = primitiveVars[2] * velocityScale;velocity_y_m_per_s = velocity_y * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "velocity_z_m_per_s",
-                "expression": "double velocity_z;velocity_z = primitiveVars[3] * velocityScale;velocity_z_m_per_s = velocity_z * 1000.0;",
+                "expression": "double velocity_z;velocity_z = primitiveVars[3] * velocityScale;velocity_z_m_per_s = velocity_z * 50.0;",
+                "from_user_variables": False,
             },
             {
                 "name": "vorticity_y",
                 "expression": "vorticity_y = (gradPrimitive[1][2] - gradPrimitive[3][0]) * velocityScale;",
+                "from_user_variables": False,
             },
             {
                 "name": "wall_shear_stress_magnitude",
                 "expression": "wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);",
+                "from_user_variables": False,
             },
             {
                 "name": "wall_shear_stress_magnitude_pa",
-                "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 999999999.9999999;",
+                "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 2500000.0;",
+                "from_user_variables": False,
             },
         ]
     }
-
+    print(json.dumps(solver_json["userDefinedFields"], indent=2))
     translated_udfs = sorted(solver_json["userDefinedFields"], key=lambda x: x["name"])
     ref_udfs = sorted(ref["userDefinedFields"], key=lambda x: x["name"])
+    print(">>>", translated_udfs)
     assert compare_values(translated_udfs, ref_udfs)
 
 
@@ -1492,7 +1489,4 @@ def test_streamline_output(streamline_output_config):
     translated = {"boundaries": {}}
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
-
-    assert sorted(streamline_output_config[1].items()) == sorted(
-        translated["streamlineOutput"].items()
-    )
+    assert compare_values(streamline_output_config[1], translated["streamlineOutput"])

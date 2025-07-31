@@ -335,12 +335,10 @@ def toggle_rotation(rotate: bool):
 # Set default logging output
 set_logging_console()
 
-
 log_dir = flow360_dir + "logs"
 try:
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
 except OSError as err:
     log.warning(f"Could not setup file logging: {err}")

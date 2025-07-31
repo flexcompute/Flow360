@@ -56,11 +56,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
-    postProcessing: bool = pd.Field()
-
-    # pylint: disable=fixme
-    # TODO: This should be removed once front end figure out what to store here.
-    model_config = pd.ConfigDict(extra="allow")
+    description: Optional[str] = pd.Field(None)
 
     @pd.field_validator("value", mode="after")
     @classmethod
@@ -318,7 +314,7 @@ class Variable(Flow360BaseModel):
     def value(self, value):
         """
         Set the value of the variable in the global context.
-        In parallel to `set_value` this supports syntax like `my_user_var.value = 10.0`.
+        In parallel to `deserialize` this supports syntax like `my_user_var.value = 10.0`.
         """
         new_value = pd.TypeAdapter(
             ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
@@ -328,9 +324,9 @@ class Variable(Flow360BaseModel):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def set_value(cls, values):
+    def deserialize(cls, values):
         """
-        Supporting syntax like `a = fl.Variable(name="a", value=1)`.
+        Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
         if "name" not in values:
             raise ValueError("`name` is required for variable declaration.")
@@ -339,27 +335,40 @@ class Variable(Flow360BaseModel):
             new_value = pd.TypeAdapter(
                 ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]
             ).validate_python(values.pop("value"))
-            # Check overwriting, skip for solver variables:
+
+            # Check redeclaration, skip for solver variables:
             if values["name"] in default_context.user_variable_names:
-                diff = new_value != default_context.get(values["name"])
+                registered_expression = VariableContextInfo.convert_number_to_expression(
+                    default_context.get(values["name"])
+                )
+                registered_expression_stripped = registered_expression.expression.replace(" ", "")
 
-                if isinstance(diff, np.ndarray):
-                    diff = diff.any()
+                if isinstance(new_value, Expression):
+                    new_value_stripped = new_value.expression.replace(" ", "")
+                else:
+                    new_value_stripped = VariableContextInfo.convert_number_to_expression(
+                        new_value
+                    ).expression.replace(" ", "")
 
-                if isinstance(diff, list):
-                    # Might not end up here but just in case
-                    diff = any(diff)
-
-                if diff:
+                if new_value_stripped != registered_expression_stripped:
                     raise ValueError(
                         f"Redeclaring user variable '{values['name']}' with new value: {new_value}. "
                         f"Previous value: {default_context.get(values['name'])}"
                     )
-            # Call the setter
-            default_context.set(
-                values["name"],
-                new_value,
-            )
+            else:
+                # No conflict, call the setter
+                default_context.set(
+                    values["name"],
+                    new_value,
+                )
+
+        if "description" in values and values["description"] is not None:
+            if not isinstance(values["description"], str):
+                raise ValueError(
+                    f"Description must be a string but got {type(values['description'])}."
+                )
+            default_context.set_metadata(values["name"], "description", values["description"])
+        values.pop("description", None)
 
         return values
 
@@ -512,7 +521,7 @@ class UserVariable(Variable):
 
     @pd.field_validator("name", mode="after")
     @classmethod
-    @deprecation_reminder("25.7.0")
+    @deprecation_reminder("25.8.0")
     def check_value_is_not_legacy_variable(cls, v):
         """Check that the value is not a legacy variable"""
         # pylint:disable=import-outside-toplevel
@@ -1313,16 +1322,19 @@ def save_user_variables(params):
     Save user variables to the project variables.
     Declared here since I do not want to import default_context everywhere.
     """
-    # Get all output variables which will be tagged with postProcessing=True:
-    post_processing_variables = get_post_processing_variables(params)
-
-    params.private_attribute_asset_cache.variable_context = [
-        VariableContextInfo(
-            name=name, value=value, postProcessing=name in post_processing_variables
+    # pylint:disable=protected-access
+    for name, value in default_context._values.items():
+        if "." in name:
+            continue
+        if params.private_attribute_asset_cache.variable_context is None:
+            params.private_attribute_asset_cache.variable_context = []
+        params.private_attribute_asset_cache.variable_context.append(
+            VariableContextInfo(
+                name=name,
+                value=value,
+                description=default_context.get_metadata(name, "description"),
+            )
         )
-        for name, value in default_context._values.items()  # pylint: disable=protected-access
-        if "." not in name  # Skipping scoped variables (non-user variables)
-    ]
     return params
 
 

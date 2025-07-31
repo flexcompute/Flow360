@@ -5,7 +5,10 @@ from typing import Type, Union
 
 import unyt as u
 
-from flow360.component.simulation.conversion import LIQUID_IMAGINARY_FREESTREAM_MACH
+from flow360.component.simulation.conversion import (
+    LIQUID_IMAGINARY_FREESTREAM_MACH,
+    compute_udf_dimensionalization_factor,
+)
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
@@ -571,17 +574,6 @@ def user_variable_to_udf(
     else:
         expression = variable.value
 
-    def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
-        y2 = (2.0 * target_unit).in_units(source_unit).value
-        y1 = (1.0 * target_unit).in_units(source_unit).value
-        x2 = 2.0
-        x1 = 1.0
-
-        coefficient = (y2 - y1) / (x2 - x1)
-        offset = y1 / coefficient - x1
-
-        return coefficient, offset
-
     def _prepare_prepending_code(expression: Expression):
         prepending_code = []
         for name in sorted(expression.solver_variable_names()):
@@ -600,12 +592,10 @@ def user_variable_to_udf(
         coefficient = 1
         offset = 0
     else:
-        flow360_unit_system = input_params.flow360_unit_system
-        # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
-        flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
-        flow360_unit = flow360_unit_system[requested_unit.dimensions]
-        coefficient, offset = _compute_coefficient_and_offset(
-            source_unit=requested_unit, target_unit=flow360_unit
+        coefficient, offset = compute_udf_dimensionalization_factor(
+            params=input_params,
+            requested_unit=requested_unit,
+            using_liquid_op=isinstance(input_params.operating_condition, LiquidOperatingCondition),
         )
 
     expression_length = expression.length
@@ -703,7 +693,7 @@ def process_output_fields_for_udf(input_params: SimulationParams):
                         continue
                     udf_from_user_variable = user_variable_to_udf(isosurface.field, input_params)
                     user_variable_udfs[udf_from_user_variable.name] = udf_from_user_variable
-    return generated_udfs + list(user_variable_udfs.values())
+    return generated_udfs, list(user_variable_udfs.values())
 
 
 def translate_streamline_output(output_params: list):
@@ -1310,7 +1300,7 @@ def get_solver_json(
         geometry = inline_expressions_in_dict(
             dump_dict(input_params.reference_geometry), input_params
         )
-        geometry = remove_units_in_dict(geometry)
+        geometry = remove_units_in_dict(geometry, skip_keys=["private_attribute_area_settings"])
         translated["geometry"] = {}
         if input_params.reference_geometry.area is not None:
             translated["geometry"]["refArea"] = geometry["area"]
@@ -1605,14 +1595,19 @@ def get_solver_json(
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
-    # Add auto-generated UDFs for dimensioned fields
-    generated_udfs = process_output_fields_for_udf(input_params)
+    # Add auto-generated UDFs for dimensioned fields + user variable UDFs
+    generated_udfs, user_variable_udfs = process_output_fields_for_udf(input_params)
 
     # Add user-specified UDFs and auto-generated UDFs for dimensioned fields
-    for udf in [*input_params.user_defined_fields, *generated_udfs]:
+    legacy_udf_count = len(input_params.user_defined_fields) + len(generated_udfs)
+    for udf_count, udf in enumerate(
+        [*input_params.user_defined_fields, *generated_udfs, *user_variable_udfs]
+    ):
         udf_dict = {}
         udf_dict["name"] = udf.name
         udf_dict["expression"] = udf.expression
+        if udf_count < legacy_udf_count:
+            udf_dict["from_user_variables"] = False
         translated["userDefinedFields"].append(udf_dict)
 
     translated["userDefinedFields"].sort(key=lambda udf: udf["name"])
@@ -1628,7 +1623,8 @@ def get_solver_json(
             udd_dict = dump_dict(udd)
             udd_dict_translated = {}
             udd_dict_translated["dynamicsName"] = udd_dict.pop("name")
-            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", []).sort()
+            udd_dict_translated["inputVars"] = udd_dict.pop("inputVars", [])
+            udd_dict_translated["inputVars"].sort()
             udd_dict_translated["outputVars"] = udd_dict.pop("outputVars", [])
             udd_dict_translated["stateVarsInitialValue"] = udd_dict.pop("stateVarsInitialValue", [])
             udd_dict_translated["updateLaw"] = udd_dict.pop("updateLaw", [])

@@ -132,7 +132,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "project_length_unit",
         "global_bounding_box",
         "planar_face_tolerance",
-        "validated_ghost_entities",
     ]
 
     @classmethod
@@ -224,9 +223,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         return planar_face_tolerance
 
-    def __init__(
-        self, param_as_dict: dict, referenced_expressions: list, validated_ghost_entities: list
-    ):
+    def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
@@ -241,7 +238,6 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
-        self.validated_ghost_entities = validated_ghost_entities
 
 
 class ValidationContext:

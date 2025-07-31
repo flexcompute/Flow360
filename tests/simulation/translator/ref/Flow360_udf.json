@@ -84,7 +84,8 @@
     "userDefinedFields": [
         {
             "name": "CpT",
-            "expression": "C-p*T"
+            "expression": "C-p*T",
+            "from_user_variables": false
         }
     ],
     "usingLiquidAsMaterial": false,

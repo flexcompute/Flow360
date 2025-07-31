@@ -110,6 +110,7 @@ class _UserCredential(BaseModel):
     expiration: datetime
     secret_access_key: str = Field(alias="secretAccessKey")
     session_token: str = Field(alias="sessionToken")
+    region: str
 
 
 class _S3STSToken(BaseModel):
@@ -140,7 +141,7 @@ class _S3STSToken(BaseModel):
         """
         # pylint: disable=no-member
         kwargs = {
-            "region_name": Env.current.aws_region,
+            "region_name": self.user_credential.region,
             "aws_access_key_id": self.user_credential.access_key_id,
             "aws_secret_access_key": self.user_credential.secret_access_key,
             "aws_session_token": self.user_credential.session_token,
