@@ -292,7 +292,7 @@ PREDEFINED_UDF_EXPRESSIONS = {
     "velocity_x": "velocity_x = primitiveVars[1] * velocityScale;",
     "velocity_y": "velocity_y = primitiveVars[2] * velocityScale;",
     "velocity_z": "velocity_z = primitiveVars[3] * velocityScale;",
-    "pressure": "double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? "
+    "pressure_": "double gamma = 1.4;pressure_ = (usingLiquidAsMaterial) ? "
     + "(primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];",
     "wall_shear_stress_magnitude": "wall_shear_stress_magnitude = "
     + "magnitude(wallShearStress) * (velocityScale * velocityScale);",
