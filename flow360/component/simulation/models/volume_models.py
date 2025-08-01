@@ -59,6 +59,7 @@ from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     MonitorOutputType,
     ProbeOutput,
+    SurfaceIntegralOutput,
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
@@ -158,7 +159,7 @@ class Criterion(Flow360BaseModel):
     @pd.field_validator("monitor_field", mode="after")
     @classmethod
     def _check_monitor_field_is_scalar(cls, v):
-        if get_input_value_length(v.value) != 0:
+        if isinstance(v, UserVariable) and get_input_value_length(v.value) != 0:
             raise ValueError("The stopping criterion can only be defined on a scalar field.")
         return v
 
@@ -203,9 +204,12 @@ class Criterion(Flow360BaseModel):
     def _check_tolerance_and_monitor_field_match_dimensions(cls, v, info: pd.ValidationInfo):
         """Ensure the tolerance has the same dimensions as the monitor field."""
         monitor_field = info.data.get("monitor_field", None)
+        monitor_output = info.data.get("monitor_output", None)
         if not isinstance(monitor_field, UserVariable):
             return v
         field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            field_dimensions = field_dimensions * u.dimensions.length**2
         tolerance_dimensions = get_input_value_dimensions(value=v)
         if tolerance_dimensions != field_dimensions:
             raise ValueError("The dimensions of monitor field and tolerance do not match.")
