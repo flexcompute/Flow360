@@ -92,6 +92,10 @@
                 5.0,
                 0
             ],
+            "comments": {
+                "I should be removed": true,
+                "I should be removed too": true
+            },
             "rotationDirectionRule": "rightHand",
             "omega": 0.1417322834645669,
             "numberOfBlades": 3,
@@ -505,7 +509,11 @@
             "chords": [
                 {
                     "radius": 0.0,
-                    "chord": 0.0
+                    "chord": 0.0,
+                    "comments": {
+                        "I should be removed": true,
+                        "I should be removed too": true
+                    }
                 },
                 {
                     "radius": 0.3429,
