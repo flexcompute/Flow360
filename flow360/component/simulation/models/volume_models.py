@@ -96,7 +96,7 @@ class Criterion(Flow360BaseModel):
     ...     name="Helicity_user",
     ...     value=fl.math.dot(fl.solution.velocity, fl.solution.vorticity),
     ... )
-    >>> fl.Criterion(
+    >>> criterion = fl.Criterion(
     ...     name="Criterion_1",
     ...     monitor_output=fl.ProbeOutput(
     ...         name="Helicity_probe",
@@ -114,12 +114,35 @@ class Criterion(Flow360BaseModel):
     """
 
     name: Optional[str] = pd.Field("Criterion", description="Name of this criterion.")
-    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
     monitor_field: Union[UserVariable, str] = pd.Field(description="The field to be monitored.")
-    tolerance: float = pd.Field(description="The tolerance threshold of this criterion.")
-    criterion_change_window: Optional[int] = pd.Field(None, description="")
+    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
+    tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
+        description="The tolerance threshold of this criterion."
+    )
+    criterion_change_window: Optional[int] = pd.Field(
+        None,
+        description="The number of data points used to check if the deviation of "
+        "monitored field is below tolerance. "
+        "If not set, the criterion will directly compare the latest value with tolerance.",
+        ge=2,
+    )
     type_name: Literal["Criterion"] = pd.Field("Criterion", frozen=True)
 
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_criterion = exclude + ["tolerance"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_criterion,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
     # TODO: Pending Validation
     # 1. For probe output, only allow one single point
     # 2. For every output type, only allow one output field, and the output field should be a scalar
