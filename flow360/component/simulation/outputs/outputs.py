@@ -49,6 +49,7 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    TimeSteppingType,
     get_validation_info,
     get_validation_levels,
 )
@@ -148,6 +149,20 @@ class MovingStatistic(Flow360BaseModel):
         "For steady simulation, the moving_window should be a multiple of 10.",
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
+
+    @pd.field_validator("moving_window", "initial_skipping_steps", mode="after")
+    @classmethod
+    def _check_monitor_field_is_scalar(cls, value):
+        validation_info = get_validation_info()
+        if (
+            validation_info
+            and validation_info.time_stepping == TimeSteppingType.STEADY
+            and value % 10 != 0
+        ):
+            raise ValueError(
+                "For steady simulation, the number of steps should be a multiple of 10."
+            )
+        return value
 
 
 class _OutputBase(Flow360BaseModel):

@@ -337,7 +337,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
     )
     criterion = Criterion(
         name="Criterion_Helicity",
-        tolerance=18.66,
+        tolerance=18.66 * u.m / u.s**2,
         monitor_output=probe_output,
         monitor_field=monitored_variable,
     )

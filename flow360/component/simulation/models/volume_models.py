@@ -9,7 +9,10 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 import pydantic as pd
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import (
     StringExpression,
@@ -52,7 +55,12 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
-from flow360.component.simulation.outputs.outputs import MonitorOutputType
+from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.outputs import (
+    MonitorOutputType,
+    ProbeOutput,
+    SurfaceProbeOutput,
+)
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -65,8 +73,11 @@ from flow360.component.simulation.unit_system import (
     u,
 )
 from flow360.component.simulation.user_code.core.types import (
+    UnytQuantity,
     UserVariable,
     ValueOrExpression,
+    get_input_value_dimensions,
+    get_input_value_length,
 )
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
@@ -143,6 +154,63 @@ class Criterion(Flow360BaseModel):
             required_by=required_by,
             registry_lookup=registry_lookup,
         )
+
+    @pd.field_validator("monitor_field", mode="after")
+    @classmethod
+    def _check_monitor_field_is_scalar(cls, v):
+        if get_input_value_length(v.value) != 0:
+            raise ValueError("The stopping criterion can only be defined on a scalar field.")
+        return v
+
+    @pd.field_validator("monitor_output", mode="after")
+    @classmethod
+    def _check_single_point_in_probe_output(cls, v):
+        if not isinstance(v, (ProbeOutput, SurfaceProbeOutput)):
+            return v
+        if len(v.entities.stored_entities) == 1 and isinstance(
+            v.entities.stored_entities[0], Point
+        ):
+            return v
+        raise ValueError(
+            "For stopping criterion steup, only one single `Point` entity is allowed "
+            "in `ProbeOutput`/`SurfaceProbeOutput`."
+        )
+
+    @pd.field_validator("monitor_output", mode="after")
+    @classmethod
+    def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
+        """Ensure the monitor field exist in the monitor output."""
+        monitor_field = info.data.get("monitor_field", None)
+        if monitor_field not in v.output_fields.items:
+            raise ValueError("The monitor field does not exist in the monitor output.")
+        return v
+
+    @pd.field_validator("tolerance", mode="after")
+    @classmethod
+    def check_tolerance_value_for_string_monitor_field(cls, v, info: pd.ValidationInfo):
+        """Ensure the tolerance is float when string field is used."""
+
+        monitor_field = info.data.get("monitor_field", None)
+        if isinstance(monitor_field, str) and not isinstance(v, float):
+            raise ValueError(
+                f"The monitor field ({monitor_field}) specified by string "
+                "can only be used with a nondimensional tolerance."
+            )
+        return v
+
+    @pd.field_validator("tolerance", mode="after")
+    @classmethod
+    def _check_tolerance_and_monitor_field_match_dimensions(cls, v, info: pd.ValidationInfo):
+        """Ensure the tolerance has the same dimensions as the monitor field."""
+        monitor_field = info.data.get("monitor_field", None)
+        if not isinstance(monitor_field, UserVariable):
+            return v
+        field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        tolerance_dimensions = get_input_value_dimensions(value=v)
+        if tolerance_dimensions != field_dimensions:
+            raise ValueError("The dimensions of monitor field and tolerance do not match.")
+        return v
+
     # TODO: Pending Validation
     # 1. For probe output, only allow one single point
     # 2. For every output type, only allow one output field, and the output field should be a scalar

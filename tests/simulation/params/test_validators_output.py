@@ -15,6 +15,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    MovingStatistic,
     ProbeOutput,
     SurfaceOutput,
     TimeAverageSurfaceOutput,
@@ -23,7 +24,7 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import imperial_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
@@ -227,3 +228,55 @@ def test_duplicate_surface_usage():
             ],
             time_stepping=Unsteady(steps=10, step_size=1e-3),
         )
+
+
+# def test_moving_statistic():
+#     with pytest.raises(
+#         ValueError,
+#         match=re.escape(
+#             "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
+#             "Please specify all settings for the same surface in one output."
+#         ),
+#     ):
+#         with imperial_unit_system:
+#             SimulationParams(
+#                 outputs=[
+#                     ProbeOutput(
+#                         name="point_legacy1",
+#                         output_fields=[
+#                             UserVariable(
+#                                 name="Helicity_MONITOR",
+#                                 value=math.dot(solution.velocity, solution.vorticity),
+#                             ),
+#                         ],
+#                         probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+#                         moving_statistic=MovingStatistic(moving_window=25),
+#                     )
+#                 ],
+#                 time_stepping=Steady(max_steps=1000),
+#             )
+
+#     with pytest.raises(
+#         ValueError,
+#         match=re.escape(
+#             "The same surface `fluid/body` is used in multiple `TimeAverageSurfaceOutput`s. "
+#             "Please specify all settings for the same surface in one output."
+#         ),
+#     ):
+#         with imperial_unit_system:
+#             SimulationParams(
+#                 outputs=[
+#                     ProbeOutput(
+#                         name="point_legacy1",
+#                         output_fields=[
+#                             UserVariable(
+#                                 name="Helicity_MONITOR",
+#                                 value=math.dot(solution.velocity, solution.vorticity),
+#                             ),
+#                         ],
+#                         probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+#                         moving_statistic=MovingStatistic(initial_skipping_steps=25),
+#                     )
+#                 ],
+#                 time_stepping=Steady(max_steps=1000),
+#             )
