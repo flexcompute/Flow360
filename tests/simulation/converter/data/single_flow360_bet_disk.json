@@ -4855,5 +4855,9 @@
             ]
         }
     ],
-    "tipGap": 0.02
+    "tipGap": 0.02,
+    "comments": {
+        "I should be removed": true,
+        "I should be removed too": true
+    }
 }
