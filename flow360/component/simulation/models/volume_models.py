@@ -9,7 +9,10 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 import pydantic as pd
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import (
     StringExpression,
@@ -51,6 +54,13 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
+from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.outputs import (
+    MonitorOutputType,
+    ProbeOutput,
+    SurfaceIntegralOutput,
+    SurfaceProbeOutput,
+)
 from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -62,7 +72,13 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
-from flow360.component.simulation.user_code.core.types import ValueOrExpression
+from flow360.component.simulation.user_code.core.types import (
+    UnytQuantity,
+    UserVariable,
+    ValueOrExpression,
+    get_input_value_dimensions,
+    get_input_value_length,
+)
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -73,6 +89,138 @@ from flow360.component.simulation.validation.validation_utils import (
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+
+
+class Criterion(Flow360BaseModel):
+    """
+
+    :class:`Criterion` class for :py:attr:`Fluid.stopping_criterion` settings.
+
+    Example
+    -------
+
+    Define a stopping criterion on a :class:`ProbeOutput` with a tolerance of 0.01.
+    The ProbeOutput monitors the moving deviation of Helicity in a moving window of 10 steps,
+    at the location of (0, 0, 0,005) * fl.u.m.
+
+    >>> monitored_variable = fl.UserVariable(
+    ...     name="Helicity_user",
+    ...     value=fl.math.dot(fl.solution.velocity, fl.solution.vorticity),
+    ... )
+    >>> criterion = fl.Criterion(
+    ...     name="Criterion_1",
+    ...     monitor_output=fl.ProbeOutput(
+    ...         name="Helicity_probe",
+    ...         output_fields=[
+    ...             monitored_variable,
+    ...         ],
+    ...         probe_points=fl.Point(name="Point1", location=(0, 0, 0.005) * fl.u.m),
+    ...         moving_statistic = fl.MovingStatistic(method = "deviation", moving_window = 10)
+    ...     ),
+    ...     monitor_field=monitored_variable,
+    ...     tolerance=0.01,
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field("Criterion", description="Name of this criterion.")
+    monitor_field: Union[UserVariable, str] = pd.Field(description="The field to be monitored.")
+    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
+    tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
+        description="The tolerance threshold of this criterion."
+    )
+    criterion_change_window: Optional[int] = pd.Field(
+        None,
+        description="The number of data points used to check if the deviation of "
+        "monitored field is below tolerance. "
+        "If not set, the criterion will directly compare the latest value with tolerance.",
+        ge=2,
+    )
+    type_name: Literal["Criterion"] = pd.Field("Criterion", frozen=True)
+
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_criterion = exclude + ["tolerance"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_criterion,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
+
+    @pd.field_validator("monitor_field", mode="after")
+    @classmethod
+    def _check_monitor_field_is_scalar(cls, v):
+        if isinstance(v, UserVariable) and get_input_value_length(v.value) != 0:
+            raise ValueError("The stopping criterion can only be defined on a scalar field.")
+        return v
+
+    @pd.field_validator("monitor_output", mode="after")
+    @classmethod
+    def _check_single_point_in_probe_output(cls, v):
+        if not isinstance(v, (ProbeOutput, SurfaceProbeOutput)):
+            return v
+        if len(v.entities.stored_entities) == 1 and isinstance(
+            v.entities.stored_entities[0], Point
+        ):
+            return v
+        raise ValueError(
+            "For stopping criterion steup, only one single `Point` entity is allowed "
+            "in `ProbeOutput`/`SurfaceProbeOutput`."
+        )
+
+    @pd.field_validator("monitor_output", mode="after")
+    @classmethod
+    def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
+        """Ensure the monitor field exist in the monitor output."""
+        monitor_field = info.data.get("monitor_field", None)
+        if monitor_field not in v.output_fields.items:
+            raise ValueError("The monitor field does not exist in the monitor output.")
+        return v
+
+    @pd.field_validator("tolerance", mode="after")
+    @classmethod
+    def check_tolerance_value_for_string_monitor_field(cls, v, info: pd.ValidationInfo):
+        """Ensure the tolerance is float when string field is used."""
+
+        monitor_field = info.data.get("monitor_field", None)
+        if isinstance(monitor_field, str) and not isinstance(v, float):
+            raise ValueError(
+                f"The monitor field ({monitor_field}) specified by string "
+                "can only be used with a nondimensional tolerance."
+            )
+        return v
+
+    @pd.field_validator("tolerance", mode="after")
+    @classmethod
+    def _check_tolerance_and_monitor_field_match_dimensions(cls, v, info: pd.ValidationInfo):
+        """Ensure the tolerance has the same dimensions as the monitor field."""
+        monitor_field = info.data.get("monitor_field", None)
+        monitor_output = info.data.get("monitor_output", None)
+        if not isinstance(monitor_field, UserVariable):
+            return v
+        field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            field_dimensions = field_dimensions * u.dimensions.length**2
+        tolerance_dimensions = get_input_value_dimensions(value=v)
+        if tolerance_dimensions != field_dimensions:
+            raise ValueError("The dimensions of monitor field and tolerance do not match.")
+        return v
+
+    # TODO: Pending Validation
+    # 1. For probe output, only allow one single point
+    # 2. For every output type, only allow one output field, and the output field should be a scalar
+    # 3. For steady simulation, the moving window has to be a factor of 10
+    #     (Since results are output every 10 steps/ at the end of simulation.)
+    # 4. Add validation to ensure the monitored field exists in the selected output.
+    # 5. Ensure the monitor_field and tolerance have the same dimensions.
 
 
 class AngleExpression(SingleAttributeModel):
@@ -304,6 +452,10 @@ class Fluid(PDEModelBase):
             discriminator="type_name",
             description="The initial condition of the fluid solver.",
         )
+    )
+
+    stopping_criterion: Optional[List[Criterion]] = pd.Field(
+        None, description="The stopping criterion setting of the Fluid solver."
     )
 
     # pylint: disable=fixme
