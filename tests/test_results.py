@@ -613,3 +613,5 @@ def test_surface_forces_result(mock_id, mock_response):
         match=r"Face group 'boundary2' contains faces belonging to multiple body groups: \['body00001', 'body00002'\]. The mapping between body and face groups cannot be created.",
     ):
         surface_forces.by_body_group(params=params)
+
+    # For force distribution

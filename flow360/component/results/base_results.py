@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import time
 import uuid
+from collections import defaultdict
 from itertools import chain, product
 from typing import Callable, Dict, List, Optional
 
@@ -19,8 +20,11 @@ from flow360.cloud.s3_utils import (
     CloudFileNotFoundError,
     get_local_filename_and_create_folders,
 )
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.v1.flow360_params import Flow360Params
+from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
 # pylint: disable=consider-using-with
@@ -574,7 +578,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
     @property
     def entities(self):
         """
-        Returns list of entities (boundary names) available for this result
+        Returns list of entity names available for this result
         """
         if self._entities is None:
             pattern = re.compile(rf"(.*)_({'|'.join(self._variables)})$")
@@ -638,3 +642,65 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 regex_pattern = rf"^(?!total).*{variable}$"
                 df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
         self.update(df)
+
+    def _create_surface_forces_group(
+        self, entity_groups: Dict[str, List[str]]
+    ) -> PerEntityResultCSVModel:
+        """
+        Create new CSV model for the given entity groups.
+        """
+        raw_values = {}
+        for x_column in self._x_columns:
+            raw_values[x_column] = np.array(self.raw_values[x_column])
+        for name, entities in entity_groups.items():
+            self.filter(include=entities)
+            for variable in self._variables:
+                if f"{name}_{variable}" not in raw_values:
+                    raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
+                    continue
+                raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
+
+        raw_values = {key: val.tolist() for key, val in raw_values.items()}
+        entity_groups = {key: sorted(val) for key, val in entity_groups.items()}
+
+        return self.from_dict(data=raw_values, group=entity_groups)
+
+    def by_boundary_condition(self, params: SimulationParams) -> PerEntityResultCSVModel:
+        """
+        Group entities by boundary condition's name and create a
+        SurfaceForcesGroupResultCSVModel.
+        Forces from different boundaries but with the same type and name will be summed together.
+        """
+
+        entity_groups = defaultdict(list)
+        for model in params.models:
+            if not isinstance(model, BoundaryBase):
+                continue
+            boundary_name = model.name if model.name is not None else model.type
+            entity_groups[boundary_name].extend(
+                [entity.name for entity in model.entities.stored_entities]
+            )
+        return self._create_surface_forces_group(entity_groups=entity_groups)
+
+    def by_body_group(self, params: SimulationParams) -> PerEntityResultCSVModel:
+        """
+        Group entities by body group's name and create a
+        SurfaceForcesGroupResultCSVModel
+        """
+        if not isinstance(
+            params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+        ):
+            raise Flow360ValueError(
+                "Group surface forces by body group is only supported for case starting from geometry."
+            )
+        entity_info = params.private_attribute_asset_cache.project_entity_info
+        if (
+            not hasattr(entity_info, "body_attribute_names")
+            or "groupByBodyId" not in entity_info.face_attribute_names
+        ):
+            raise Flow360ValueError(
+                "The geometry in this case does not contain the necessary body group information, "
+                "please upgrade the project to the latest version and re-run the case."
+            )
+        entity_groups = entity_info.get_body_group_to_face_group_name_map()
+        return self._create_surface_forces_group(entity_groups=entity_groups)
