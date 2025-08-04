@@ -4,7 +4,7 @@
 import os
 import re
 from abc import ABCMeta
-from typing import Annotated, Dict, List, Literal, Optional, Union
+from typing import Annotated, Dict, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
@@ -126,7 +126,9 @@ class Criterion(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Criterion", description="Name of this criterion.")
     monitor_field: Union[UserVariable, str] = pd.Field(description="The field to be monitored.")
-    monitor_output: MonitorOutputType = pd.Field(description="The output to be monitored.")
+    monitor_output: Union[MonitorOutputType, str] = pd.Field(
+        description="The output to be monitored."
+    )
     tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="The tolerance threshold of this criterion."
     )
@@ -155,6 +157,13 @@ class Criterion(Flow360BaseModel):
             registry_lookup=registry_lookup,
         )
 
+    @pd.field_serializer("monitor_output")
+    def serialize_monitor_output(self, v):
+        """Serialize only the output_id of the related object."""
+        if isinstance(v, get_args(get_args(MonitorOutputType)[0])):
+            return v.output_id
+        return v
+
     @pd.field_validator("monitor_field", mode="after")
     @classmethod
     def _check_monitor_field_is_scalar(cls, v):
@@ -180,6 +189,8 @@ class Criterion(Flow360BaseModel):
     @classmethod
     def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
         """Ensure the monitor field exist in the monitor output."""
+        if isinstance(v, str):
+            return v
         monitor_field = info.data.get("monitor_field", None)
         if monitor_field not in v.output_fields.items:
             raise ValueError("The monitor field does not exist in the monitor output.")
@@ -213,14 +224,6 @@ class Criterion(Flow360BaseModel):
         if tolerance_dimensions != field_dimensions:
             raise ValueError("The dimensions of monitor field and tolerance do not match.")
         return v
-
-    # TODO: Pending Validation
-    # 1. For probe output, only allow one single point
-    # 2. For every output type, only allow one output field, and the output field should be a scalar
-    # 3. For steady simulation, the moving window has to be a factor of 10
-    #     (Since results are output every 10 steps/ at the end of simulation.)
-    # 4. Add validation to ensure the monitored field exists in the selected output.
-    # 5. Ensure the monitor_field and tolerance have the same dimensions.
 
 
 class AngleExpression(SingleAttributeModel):

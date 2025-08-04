@@ -14,7 +14,7 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
     RegistryLookup,
 )
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
@@ -167,6 +167,7 @@ class MovingStatistic(Flow360BaseModel):
 
 class _OutputBase(Flow360BaseModel):
     output_fields: UniqueItemList[str] = pd.Field()
+    output_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("output_fields", mode="after")
     @classmethod
