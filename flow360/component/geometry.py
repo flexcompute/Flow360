@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import threading
 from enum import Enum
-from typing import Any, List, Literal, Union
+from typing import Any, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -25,6 +25,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.primitives import Edge, GeometryBodyGroup, Surface
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import model_attribute_unlock
@@ -91,12 +92,14 @@ class GeometryDraft(ResourceDraft):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         self._file_names = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
+        self.folder = folder
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -186,9 +189,7 @@ class GeometryDraft(ResourceDraft):
                 )
                 for file_path in self.file_names + mapbc_files
             ],
-            # pylint: disable=fixme
-            # TODO: remove hardcoding
-            parent_folder_id="ROOT.FLOW360",
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
         )
@@ -296,9 +297,12 @@ class Geometry(AssetBase):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ) -> GeometryDraft:
         # For type hint only but proper fix is to fully abstract the Draft class too.
-        return super().from_file(file_names, project_name, solver_version, length_unit, tags)
+        return super().from_file(
+            file_names, project_name, solver_version, length_unit, tags, folder=folder
+        )
 
     def show_available_groupings(self, verbose_mode: bool = False):
         """Display all the possible groupings for faces and edges"""
