@@ -57,8 +57,9 @@ class EntityRegistry(Flow360BaseModel):
             known_frozen_hashes (set[str])
         """
         if (
-            entity.entity_bucket not in self.internal_registry
-        ):  # pylint: disable=unsupported-membership-test
+            entity.entity_bucket
+            not in self.internal_registry  # pylint: disable=unsupported-membership-test
+        ):
             # pylint: disable=unsupported-assignment-operation
             self.internal_registry[entity.entity_bucket] = []
 
