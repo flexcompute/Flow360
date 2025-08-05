@@ -233,6 +233,7 @@ class DraftRunRequest(Flow360RequestsV2):
                 )
         return self
 
+
 class MoveToFolderRequestV2(Flow360RequestsV2):
     """v2 request implementation for moving folder"""
 

@@ -9,7 +9,6 @@ from typing import List, Optional, Union
 import pydantic.v1 as pd
 
 from ...cloud.flow360_requests import (
-    MoveFolderItem,
     MoveToFolderRequestV2,
     NewFolderRequest,
 )
@@ -18,7 +17,11 @@ from ...exceptions import Flow360ValueError
 from ...log import log
 from ..interfaces import FolderInterface, FolderInterfaceV2
 from ..resource_base import AssetMetaBaseModel, Flow360Resource, ResourceDraft
-from ..utils import shared_account_confirm_proceed, storage_size_formatter, validate_type
+from ..utils import (
+    shared_account_confirm_proceed,
+    storage_size_formatter,
+    validate_type,
+)
 
 ROOT_FOLDER = "ROOT.FLOW360"
 
@@ -127,9 +130,7 @@ class Folder(Flow360Resource):
         The `folder` parameter should be an instance of the `Folder` class with a valid ID.
         """
         RestApi(FolderInterfaceV2.endpoint).patch(
-            MoveToFolderRequestV2(
-                parent_folder_id=folder.id
-            ).dict(),
+            MoveToFolderRequestV2(parent_folder_id=folder.id).dict(),
             method=f"{self.id}",
         )
         return self

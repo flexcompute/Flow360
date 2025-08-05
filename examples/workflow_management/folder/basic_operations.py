@@ -1,6 +1,8 @@
 import flow360 as fl
 
-folder = fl.Folder.create("basic-folder-operations-test", tags=["operations-test", "example"]).submit()
+folder = fl.Folder.create(
+    "basic-folder-operations-test", tags=["operations-test", "example"]
+).submit()
 print(f"Created folder: {folder.id}")
 
 info = folder.get_info()
