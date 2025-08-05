@@ -130,6 +130,31 @@
                     }
                 ]
             }
+        ],
+        "refinementVolumes": [
+            {
+                "type": "box",
+                "min": {"x": -10, "y": 15, "z": 40},
+                "max": {"x": 10, "y": 45, "z": 80},
+                "name": "box0",
+                "spacing": 2
+            },
+            {
+                "type": "cylinder",
+                "point1": {"x": 10, "y": 20, "z": 0},
+                "point2": {"x": 10, "y": 20, "z": 60},
+                "radius": 20,
+                "name": "cyl0",
+                "spacing": 2
+            },
+            {
+                "type": "cylinder",
+                "point1": {"x": 21.5634892, "y": -0.0137314, "z": 49.1242323},
+                "point2": {"x": -1.5634892, "y": 40.0137314, "z": 10.8757677},
+                "radius": 34,
+                "name": "cyl1",
+                "spacing": 8
+            }
         ]
     },
     "mesherSettings": {

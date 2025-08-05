@@ -5,7 +5,7 @@ from typing import List
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
-from flow360.component.simulation.primitives import Surface, SnappyBody
+from flow360.component.simulation.primitives import Surface, Box, Cylinder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     preprocess_input,
@@ -19,6 +19,7 @@ from flow360.component.simulation.meshing_param.surface_mesh_refinements import 
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement
 )
+from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from copy import deepcopy
 
 import numpy as np
@@ -135,6 +136,49 @@ def apply_SnappyRegionRefinement(refinement:SnappyRegionRefinement, translated):
                         "max": refinement.max_spacing.value.item()
                     }
 
+def apply_UniformRefinement_w_snappy(refinement:UniformRefinement, translated):
+    if "refinementVolumes" not in translated["geometry"]:
+        translated["geometry"]["refinementVolumes"] = []
+
+    for volume in refinement.entities.stored_entities:
+        volume_body = {
+            "spacing": refinement.spacing.value.item(),
+            "name": volume.name
+        }
+        if isinstance(volume, Box):
+            volume_body["type"] = "box"
+            volume_body["min"] = {
+                "x": volume.center[0].value.item() - 0.5*volume.size[0].value.item(),
+                "y": volume.center[1].value.item() - 0.5*volume.size[1].value.item(),
+                "z": volume.center[2].value.item() - 0.5*volume.size[2].value.item(),
+            }
+            volume_body["max"] = {
+                "x": volume.center[0].value.item() + 0.5*volume.size[0].value.item(),
+                "y": volume.center[1].value.item() + 0.5*volume.size[1].value.item(),
+                "z": volume.center[2].value.item() + 0.5*volume.size[2].value.item(),
+            }
+        elif isinstance(volume, Cylinder):
+            volume_body["type"] = "cylinder"
+            volume_body["radius"] = volume.outer_radius.value.item()
+            volume_body["point1"] = {
+                "x": volume.center[0].value.item() - 0.5*volume.axis[0]*volume.height.value.item(),
+                "y": volume.center[1].value.item() - 0.5*volume.axis[1]*volume.height.value.item(),
+                "z": volume.center[2].value.item() - 0.5*volume.axis[2]*volume.height.value.item()
+            }
+
+            volume_body["point2"] = {
+                "x": volume.center[0].value.item() + 0.5*volume.axis[0]*volume.height.value.item(),
+                "y": volume.center[1].value.item() + 0.5*volume.axis[1]*volume.height.value.item(),
+                "z": volume.center[2].value.item() + 0.5*volume.axis[2]*volume.height.value.item()
+            }
+
+        else:
+            raise Flow360TranslationError(f"Volume of type {type(volume)} cannot be used with Snappy.")
+        
+        translated["geometry"]["refinementVolumes"].append(volume_body)
+
+
+
 @preprocess_input
 # pylint: disable=unused-argument
 def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
@@ -176,10 +220,14 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         for refinement in surface_meshing_params.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
                 apply_SnappyBodyRefinement(refinement, translated)
-            if isinstance(refinement, SnappySurfaceEdgeRefinement):
+            elif isinstance(refinement, SnappySurfaceEdgeRefinement):
                 apply_SnappySurfaceEdgeRefinement(refinement, translated, surface_meshing_params.defaults)
-            if isinstance(refinement, SnappyRegionRefinement):
+            elif isinstance(refinement, SnappyRegionRefinement):
                 apply_SnappyRegionRefinement(refinement, translated)
+            elif isinstance(refinement, UniformRefinement):
+                apply_UniformRefinement_w_snappy(refinement, translated)
+            else:
+                raise Flow360TranslationError(f"Refinement of type {type(refinement)} cannot be used with Snappy.")
 
         # apply settings
         castellated_mesh_controls = surface_meshing_params.castellated_mesh_controls
