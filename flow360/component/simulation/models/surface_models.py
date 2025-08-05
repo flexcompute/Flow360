@@ -144,6 +144,26 @@ class TotalPressure(Flow360BaseModel):
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field(description="The total pressure value.")
+<<<<<<< HEAD
+=======
+    velocity_direction: Optional[Axis] = pd.Field(
+        None,
+        description="Direction of the incoming flow. Must be a unit vector pointing "
+        + "into the volume. If unspecified, the direction will be normal to the surface.",
+    )
+
+    @pd.model_validator(mode="after")
+    @deprecation_reminder(version="25.5.6")
+    def check_deprecate_velocity_direction(self):
+        """Check if duplicate velocity_direction set up exists."""
+        # pylint: disable=unsupported-membership-test
+        if "velocity_direction" in self.model_fields_set:
+            log.warning(
+                "Specifying `velocity_direction` in `TotalPressure` will be deprecated in the "
+                + "next (25.5.2) Python client release. Please specify it directly under `Inflow`."
+            )
+        return self
+>>>>>>> a2099add (Bump to 25.5.6 for release (#1326))
 
 
 class Pressure(SingleAttributeModel):
@@ -577,6 +597,25 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
         + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
 
+<<<<<<< HEAD
+=======
+    @pd.model_validator(mode="after")
+    @deprecation_reminder(version="25.5.6")
+    def check_duplicate_velocity_direction_setup(self):
+        """Check if duplicate velocity_direction set up exists."""
+
+        if (
+            self.velocity_direction
+            and isinstance(self.spec, TotalPressure)
+            and self.spec.velocity_direction
+        ):
+            raise ValueError(
+                "Duplicate `velocity_direction` setup found in `TotalPressure` and `Inflow`, "
+                "please set `velocity_direction` in `Inflow`."
+            )
+        return self
+
+>>>>>>> a2099add (Bump to 25.5.6 for release (#1326))
 
 class SlipWall(BoundaryBase):
     """:class:`SlipWall` class defines the :code:`SlipWall` boundary condition.
