@@ -46,10 +46,10 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     name: str = pd.Field(frozen=True)
 
-    _dirty: bool = pd.PrivateAttr(
-        True, description="Whether the entity is dirty and needs to be re-hashed"
-    )
-    _hash_cache: str = pd.PrivateAttr(None, description="Cached hash of the entity")
+    # Whether the entity is dirty and needs to be re-hashed
+    _dirty: bool = pd.PrivateAttr(True)
+    # Cached hash of the entity
+    _hash_cache: str = pd.PrivateAttr(None)
 
     def __init__(self, **data):
         """
@@ -118,16 +118,14 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     def _recompute_hash(self):
         new_hash = hashlib.sha256(self.model_dump_json().encode("utf-8")).hexdigest()
-        # object.__setattr__(self, "_hash_cache", new_hash)
-        # object.__setattr__(self, "_dirty", False)
+        # Can further speed up 10% by using `object.__setattr__`
         self._hash_cache = new_hash
         self._dirty = False
         return new_hash
 
     def _get_hash(self):
         """hash generator to identify if two entities are the same"""
-        # dirty = object.__getattribute__(self, "_dirty")
-        # cache = object.__getattribute__(self, "_hash_cache")
+        # Can further speed up 10% by using `object.__getattribute__`
         dirty = self._dirty
         cache = self._hash_cache
         if dirty or cache is None:
@@ -142,10 +140,9 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         """
 
         super().__setattr__(name, value)
-        # if not name.startswith("_") and not object.__getattribute__(self, "_dirty"):
         if not name.startswith("_") and not self._dirty:
             # Not using self to avoid invoking
-            # object.__setattr__(self, "_dirty", True)
+            # Can further speed up 10% by using `object.__setattr__`
             self._dirty = True
 
     @property
