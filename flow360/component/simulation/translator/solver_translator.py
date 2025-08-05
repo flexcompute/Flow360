@@ -1332,6 +1332,16 @@ def check_moving_statistic_existence(params: SimulationParams):
     return False
 
 
+def check_stopping_criterion_existence(params: SimulationParams):
+    """Check if stopping criterion exists in the Fluid model"""
+    if not params.models:
+        return False
+    for model in params.models:
+        if isinstance(model, Fluid):
+            return bool(model.stopping_criterion)
+    return False
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -1647,7 +1657,7 @@ def get_solver_json(
     translated = translate_output(input_params, translated)
     translated["runControl"]["shouldProcessMonitorOutput"] = check_moving_statistic_existence(
         input_params
-    )
+    ) or check_stopping_criterion_existence(input_params)
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
