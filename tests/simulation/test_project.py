@@ -5,6 +5,7 @@ import pytest
 
 import flow360 as fl
 from flow360 import log
+from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.exceptions import Flow360ValueError
 
 log.set_logging_level("DEBUG")
@@ -44,6 +45,31 @@ def test_from_cloud(mock_id, mock_response):
     error_msg = "No Case is available in this project."
     with pytest.raises(Flow360ValueError, match=error_msg):
         project.get_case(asset_id=current_case_id)
+
+
+def test_root_asset_entity_change_reflection(mock_id, mock_response):
+    project = fl.Project.from_cloud(project_id="prj-41d2333b-85fd-4bed-ae13-15dcb6da519e")
+    geo = project.geometry
+    geo["wing"].private_attribute_color = "red"
+
+    with fl.SI_unit_system:
+        params = fl.SimulationParams(
+            outputs=[fl.SurfaceOutput(surfaces=geo["*"], output_fields=["Cp"])],
+        )
+    params = set_up_params_for_uploading(
+        params=params,
+        root_asset=project._root_asset,
+        length_unit=project.length_unit,
+        use_beta_mesher=False,
+        use_geometry_AI=False,
+    )
+
+    assert (
+        params.private_attribute_asset_cache.project_entity_info.grouped_faces[0][
+            0
+        ].private_attribute_color
+        == "red"
+    )
 
 
 def test_get_asset_with_id(mock_id, mock_response):

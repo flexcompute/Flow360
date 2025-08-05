@@ -250,7 +250,7 @@ def set_up_params_for_uploading(
     params: SimulationParams,
     use_beta_mesher: bool,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
-):
+) -> SimulationParams:
     """
     Set up params before submitting the draft.
     """
