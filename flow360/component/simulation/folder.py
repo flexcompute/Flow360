@@ -2,6 +2,8 @@
 Folder component
 """
 
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
 from typing import List, Optional, Union
