@@ -43,6 +43,32 @@ class EntityRegistry(Flow360BaseModel):
 
     internal_registry: Dict[str, list[Any]] = pd.Field({})
 
+    def fast_register(self, entity: EntityBase, known_frozen_hashes: set[str]) -> set[str]:
+        """
+        Registers an entity in the registry under its type. Suitable for registering a large number of entities.
+
+        Parameters:
+            entity (EntityBase): The entity instance to register.
+            known_frozen_hashes (Optional[set[str]]): A set of hashes of frozen entities.
+                This is used to speed up checking if the has is already in the registry by avoiding O(N^2) complexity.
+                This can be provided when registering a large number of entities.
+
+        Returns:
+            known_frozen_hashes (set[str])
+        """
+        if entity.entity_bucket not in self.internal_registry:
+            # pylint: disable=unsupported-assignment-operation
+            self.internal_registry[entity.entity_bucket] = []
+
+        # pylint: disable=protected-access
+        if entity._get_hash() in known_frozen_hashes:
+            return known_frozen_hashes
+        known_frozen_hashes.add(entity._get_hash())
+
+        # pylint: disable=unsubscriptable-object
+        self.internal_registry[entity.entity_bucket].append(entity)
+        return known_frozen_hashes
+
     def register(self, entity: EntityBase):
         """
         Registers an entity in the registry under its type.
