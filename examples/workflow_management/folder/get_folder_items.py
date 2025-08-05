@@ -1,7 +1,8 @@
 import flow360 as fl
 
-your_folder_id = ""
-folder = fl.Folder(your_folder_id)
+folder = fl.Folder.create("folder-items-test").submit()
+
+# Insert or move items into folder here
 
 items = folder.get_items()
 
