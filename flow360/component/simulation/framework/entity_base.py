@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import uuid
 from abc import ABCMeta
 from collections import defaultdict
@@ -44,6 +45,11 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     )
 
     name: str = pd.Field(frozen=True)
+
+    _dirty: bool = pd.PrivateAttr(
+        True, description="Whether the entity is dirty and needs to be re-hashed"
+    )
+    _hash_cache: str = pd.PrivateAttr(None, description="Cached hash of the entity")
 
     def __init__(self, **data):
         """
@@ -110,9 +116,37 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     def __str__(self) -> str:
         return "\n".join([f"        {attr}: {value}" for attr, value in self.__dict__.items()])
 
+    def _recompute_hash(self):
+        new_hash = hashlib.sha256(self.model_dump_json().encode("utf-8")).hexdigest()
+        # object.__setattr__(self, "_hash_cache", new_hash)
+        # object.__setattr__(self, "_dirty", False)
+        self._hash_cache = new_hash
+        self._dirty = False
+        return new_hash
+
     def _get_hash(self):
         """hash generator to identify if two entities are the same"""
-        return hash(self.model_dump_json(exclude="private_attribute_id"))
+        # dirty = object.__getattribute__(self, "_dirty")
+        # cache = object.__getattribute__(self, "_hash_cache")
+        dirty = self._dirty
+        cache = self._hash_cache
+        if dirty or cache is None:
+            return self._recompute_hash()
+        return cache
+
+    def __setattr__(self, name, value):
+        """
+        [Large model performance]
+        Wrapping the __setattr__ to mark the entity as dirty when the attribute is not private
+        This enables caching the hash of the entity to avoid re-calculating the hash when the entity is not changed.
+        """
+
+        super().__setattr__(name, value)
+        # if not name.startswith("_") and not object.__getattribute__(self, "_dirty"):
+        if not name.startswith("_") and not self._dirty:
+            # Not using self to avoid invoking
+            # object.__setattr__(self, "_dirty", True)
+            self._dirty = True
 
     @property
     def id(self) -> str:
@@ -338,8 +372,8 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     # pylint: disable=arguments-differ
     def preprocess(self, **kwargs):
         """
-        Expand and overwrite self.stored_entities in preparation for submissin/serialization.
-        Should only be called as late as possible to incoperate all possible changes.
+        Expand and overwrite self.stored_entities in preparation for submission/serialization.
+        Should only be called as late as possible to incorporate all possible changes.
         """
         # WARNING: this is very expensive all for long lists as it is quadratic
         self.stored_entities = self._get_expanded_entities(create_hard_copy=False)

@@ -144,12 +144,14 @@ class TempVolumeMesh(AssetBase):
             raise ValueError("Invalid file name")
 
     def _populate_registry(self):
+        known_frozen_hashes = set()
         for zone_name, zone_meta in self._get_meta_data()["zones"].items():
             all_my_boundaries = [item for item in zone_meta["boundaryNames"]]
-            self.internal_registry.register(
+            known_frozen_hashes = self.internal_registry.fast_register(
                 GenericVolume(
                     name=zone_name, private_attribute_zone_boundary_names=all_my_boundaries
-                )
+                ),
+                known_frozen_hashes,
             )
         # get interfaces
         interfaces = set()
@@ -164,10 +166,11 @@ class TempVolumeMesh(AssetBase):
                 interfaces.add(surface_name)
 
         for surface_name in self._get_meta_data()["surfaces"]:
-            self.internal_registry.register(
+            known_frozen_hashes = self.internal_registry.fast_register(
                 Surface(
                     name=surface_name, private_attribute_is_interface=surface_name in interfaces
-                )
+                ),
+                known_frozen_hashes,
             )
 
     def __init__(self, file_name: str):
