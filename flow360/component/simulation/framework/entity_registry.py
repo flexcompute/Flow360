@@ -69,7 +69,7 @@ class EntityRegistry(Flow360BaseModel):
         self.internal_registry[entity.entity_bucket].append(entity)
         return known_frozen_hashes
 
-    def register(self, entity: EntityBase, _known_frozen_hashes: Optional[set[str]] = None):
+    def register(self, entity: EntityBase):
         """
         Registers an entity in the registry under its type.
 
