@@ -7,7 +7,8 @@ from flow360.component.simulation.models.solver_numerics import (
     NavierStokesSolver,
     NoneSolver,
 )
-from flow360.component.simulation.models.surface_models import ( Inflow,
+from flow360.component.simulation.models.surface_models import (
+    Inflow,
     Outflow,
     Pressure,
     SlipWall,
@@ -66,7 +67,12 @@ def _create_porous_media_param(slip_wall_list, inflow, outflow, porous_interface
                     spec=TotalPressure(value=1.028281 * default_thermal_state.pressure),
                 ),
                 Outflow(entities=[outflow], spec=Pressure(default_thermal_state.pressure)),
-                PorousJump(entity_pairs=[porous_interface],darcy_coefficient = 1e6,forchheimer_coefficient=10.0,thickness=0.1),
+                PorousJump(
+                    entity_pairs=[porous_interface],
+                    darcy_coefficient=1e6,
+                    forchheimer_coefficient=10.0,
+                    thickness=0.1,
+                ),
             ],
             time_stepping=Steady(CFL=RampCFL(initial=1, final=100, ramp_steps=100), max_steps=2000),
             outputs=[
@@ -100,6 +106,7 @@ def _create_porous_media_param(slip_wall_list, inflow, outflow, porous_interface
         )
     return param
 
+
 @pytest.fixture()
 def create_porous_jump_zone_param():
     slipWall1, slipWall2, slipWall3 = (
@@ -109,7 +116,10 @@ def create_porous_jump_zone_param():
     )
     inflow = Surface(name="blk-3/inflow")
     outflow = Surface(name="blk-1/outflow")
-    porous_interface = (Surface(name="blk-1/Interface_blk-2"),Surface(name="blk-2/Interface_blk-1"))
+    porous_interface = (
+        Surface(name="blk-1/Interface_blk-2"),
+        Surface(name="blk-2/Interface_blk-1"),
+    )
     return _create_porous_media_param(
         slip_wall_list=[slipWall1, slipWall2, slipWall3],
         inflow=inflow,

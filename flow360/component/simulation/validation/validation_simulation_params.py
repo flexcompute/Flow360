@@ -359,7 +359,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
             continue
-        if isinstance(model,PorousJump):
+        if isinstance(model, PorousJump):
             continue
 
         entities = []

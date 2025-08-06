@@ -123,7 +123,7 @@ from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
 )
 
 from tests.simulation.translator.utils.porousJump_params_generator import (
-    create_porous_jump_zone_param
+    create_porous_jump_zone_param,
 )
 
 assertions = unittest.TestCase("__init__")
@@ -240,8 +240,12 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
 
 
 def test_porous_jump(create_porous_jump_zone_param):
-    translate_and_compare(create_porous_jump_zone_param,mesh_unit = 1* u.m, ref_json_file="Flow360_porous_jump.json",debug=True)
-
+    translate_and_compare(
+        create_porous_jump_zone_param,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_porous_jump.json",
+        debug=True,
+    )
 
 
 def test_om6wing_temperature(get_om6Wing_tutorial_param):

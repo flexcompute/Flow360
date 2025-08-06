@@ -715,7 +715,7 @@ class PorousJump(Flow360BaseModel):
       ... )
     ====
     """
-    
+
     name: Optional[str] = pd.Field(
         "PorousJump", description="Name of the `PorousJump` boundary condition."
     )
@@ -723,7 +723,7 @@ class PorousJump(Flow360BaseModel):
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
         alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
     )
-    darcy_coefficient: InverseAreaType= pd.Field(
+    darcy_coefficient: InverseAreaType = pd.Field(
         description="Darcy coefficient of the porous media model which determines the scaling of the "
         + "viscous loss term. The value defines the coefficient for the axis normal "
         + "to the surface."
@@ -737,7 +737,6 @@ class PorousJump(Flow360BaseModel):
         + "the scaling of the inertial loss term."
     )
 
-
     @pd.field_validator("entity_pairs", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value):
@@ -745,6 +744,7 @@ class PorousJump(Flow360BaseModel):
         for surface_pair in value.items:
             check_deleted_surface_pair(surface_pair)
         return value
+
 
 SurfaceModelTypes = Union[
     Wall,
