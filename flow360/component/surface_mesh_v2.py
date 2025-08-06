@@ -11,7 +11,11 @@ from typing import Any, List, Optional
 
 import pydantic as pd
 
-from flow360.cloud.flow360_requests import LengthUnitType, NewSurfaceMeshRequestV2
+from flow360.cloud.flow360_requests import (
+    LengthUnitType,
+    NewSurfaceMeshRequestV2,
+    RenameAssetRequestV2,
+)
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import SurfaceMeshInterfaceV2
@@ -315,6 +319,25 @@ class SurfaceMeshV2(AssetBase):
     def get_default_settings(self, simulation_dict: dict):
         """Get the default surface mesh settings from the simulation dict"""
         return super().get_default_settings(simulation_dict)
+
+    def rename(self, new_name: str):
+        """
+        Rename the current surface mesh.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the surface mesh.
+
+        Returns
+        -------
+        self
+            Returns the modified surface mesh after it has been renamed.
+        """
+        RestApi(SurfaceMeshInterfaceV2.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
+        return self
 
     @property
     def boundary_names(self) -> List[str]:

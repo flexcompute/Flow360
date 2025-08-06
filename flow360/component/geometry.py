@@ -15,6 +15,7 @@ from flow360.cloud.flow360_requests import (
     GeometryFileMeta,
     LengthUnitType,
     NewGeometryRequest,
+    RenameAssetRequestV2,
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
@@ -344,6 +345,25 @@ class Geometry(AssetBase):
         return super()._from_local_storage(
             asset_id=geometry_id, local_storage_path=local_storage_path, meta_data=meta_data
         )
+
+    def rename(self, new_name: str):
+        """
+        Rename the current (uploaded) geometry.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the geometry.
+
+        Returns
+        -------
+        self
+            Returns the modified geometry after it has been renamed.
+        """
+        RestApi(GeometryInterface.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
+        return self
 
     def _show_available_entity_groups(
         self,

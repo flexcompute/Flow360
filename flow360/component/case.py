@@ -14,7 +14,11 @@ import pydantic as pd
 import pydantic.v1 as pd_v1
 
 from .. import error_messages
-from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
+from ..cloud.flow360_requests import (
+    MoveCaseItem,
+    MoveToFolderRequest,
+    RenameAssetRequestV2,
+)
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
@@ -665,6 +669,25 @@ class Case(CaseBase, Flow360Resource):
         RestApi(FolderInterface.endpoint).put(
             MoveToFolderRequest(dest_folder_id=folder.id, items=[MoveCaseItem(id=self.id)]).dict(),
             method="move",
+        )
+        return self
+
+    def rename(self, new_name: str):
+        """
+        Rename the current case.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the case.
+
+        Returns
+        -------
+        self
+            Returns the modified case after it has been renamed.
+        """
+        RestApi(CaseInterfaceV2.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
         return self
 

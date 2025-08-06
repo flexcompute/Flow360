@@ -25,6 +25,7 @@ from flow360.cloud.flow360_requests import (
     CopyExampleVolumeMeshRequest,
     LengthUnitType,
     NewVolumeMeshRequestV2,
+    RenameAssetRequestV2,
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
@@ -1178,6 +1179,25 @@ class VolumeMeshV2(AssetBase):
     def get_default_settings(self, simulation_dict: dict):
         """Get the default volume mesh settings from the simulation dict"""
         return super().get_default_settings(simulation_dict)
+
+    def rename(self, new_name: str):
+        """
+        Rename the current volume mesh.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the volume mesh.
+
+        Returns
+        -------
+        self
+            Returns the modified volume mesh after it has been renamed.
+        """
+        RestApi(VolumeMeshInterfaceV2.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
+        return self
 
     @cached_property
     def stats(self) -> VolumeMeshStats:

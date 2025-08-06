@@ -14,7 +14,7 @@ import typing_extensions
 from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
-from flow360.cloud.flow360_requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
@@ -1210,6 +1210,25 @@ class Project(pd.BaseModel):
     def refresh_project_tree(self):
         """Refresh the local project tree by fetching the latest project tree from cloud."""
         return self._get_tree_from_cloud()
+
+    def rename(self, new_name: str):
+        """
+        Rename the current project.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the project.
+
+        Returns
+        -------
+        self
+            Returns the modified project after it has been renamed.
+        """
+        RestApi(ProjectInterface.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
+        return self
 
     def print_project_tree(self, line_width: int = 30, is_horizontal: bool = True):
         """Print the project tree to the terminal.
