@@ -35,6 +35,8 @@ from flow360.component.simulation.unit_system import (
     LengthType,
     MassFlowRateType,
     PressureType,
+    InverseAreaType,
+    InverseLengthType,
 )
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
@@ -693,6 +695,57 @@ class Periodic(Flow360BaseModel):
         return value
 
 
+class PorousJump(Flow360BaseModel):
+    """
+    :class:`PorousJump` defines the Porous Jump boundary condition.
+
+    Example
+    -------
+
+    - Define a porous jump condition:
+
+      >>> fl.PorousJump(
+      ...     surface_pairs=[
+      ...         (volume_mesh["VOLUME/BOTTOM"], volume_mesh["VOLUME/TOP"]),
+      ...         (volume_mesh["VOLUME/RIGHT"], volume_mesh["VOLUME/LEFT"]),
+      ...     ],
+      ...    darcy_coefficient = 1e6 / fl.u.m **2,
+      ...    forchheimer_coefficient = 1 / fl.u.m,
+      ...    thickness = 1 / fl.u.m,
+      ... )
+    ====
+    """
+    
+    name: Optional[str] = pd.Field(
+        "PorousJump", description="Name of the `PorousJump` boundary condition."
+    )
+    type: Literal["PorousJump"] = pd.Field("PorousJump", frozen=True)
+    entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
+        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
+    )
+    darcy_coefficient: InverseAreaType= pd.Field(
+        description="Darcy coefficient of the porous media model which determines the scaling of the "
+        + "viscous loss term. The value defines the coefficient for the axis normal "
+        + "to the surface."
+    )
+    forchheimer_coefficient: InverseLengthType = pd.Field(
+        description="Forchheimer coefficient of the porous media model which determines "
+        + "the scaling of the inertial loss term."
+    )
+    thickness: LengthType = pd.Field(
+        description="thickness of the thin porous media on the surface"
+        + "the scaling of the inertial loss term."
+    )
+
+
+    @pd.field_validator("entity_pairs", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        for surface_pair in value.items:
+            check_deleted_surface_pair(surface_pair)
+        return value
+
 SurfaceModelTypes = Union[
     Wall,
     SlipWall,
@@ -701,4 +754,5 @@ SurfaceModelTypes = Union[
     Inflow,
     Periodic,
     SymmetryPlane,
+    PorousJump,
 ]

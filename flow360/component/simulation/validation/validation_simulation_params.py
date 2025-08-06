@@ -10,6 +10,7 @@ from flow360.component.simulation.models.surface_models import (
     Outflow,
     SurfaceModelTypes,
     Wall,
+    PorousJump,
 )
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (
@@ -357,6 +358,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
+            continue
+        if isinstance(model,PorousJump):
             continue
 
         entities = []
