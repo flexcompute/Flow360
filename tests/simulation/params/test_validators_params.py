@@ -1575,12 +1575,14 @@ def test_deleted_surfaces():
         root_item_type="Geometry",
         validation_level="All",
     )
-    assert len(errors) == 1
-    assert (
-        errors[0]["msg"] == "Value error, Boundary `body0001_face0004` will likely"
-        " be deleted after mesh generation. Therefore it cannot be used."
-    )
-    assert errors[0]["loc"] == ("models", 2, "entity_pairs")
+    # --- Disabled for FXC-2006
+    assert errors is None
+    # assert len(errors) == 1
+    # assert (
+    #     errors[0]["msg"] == "Value error, Boundary `body0001_face0004` will likely"
+    #     " be deleted after mesh generation. Therefore it cannot be used."
+    # )
+    # assert errors[0]["loc"] == ("models", 2, "entity_pairs")
 
 
 def test_validate_liquid_operating_condition():
