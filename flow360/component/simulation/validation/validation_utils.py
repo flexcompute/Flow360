@@ -120,8 +120,10 @@ def check_deleted_surface_pair(value):
 def check_symmetric_boundary_existence_for_inhouse(stored_entities):
     """Check according to the criteria if the symmetric plane exists."""
     validation_info = get_validation_info()
-    if validation_info is None or validation_info.is_beta_mesher is False:
+
+    if validation_info is None:
         return stored_entities
+
     for item in stored_entities:
         if item.private_attribute_entity_type_name != "GhostCircularPlane":
             continue
