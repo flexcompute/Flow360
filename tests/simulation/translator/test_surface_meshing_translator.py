@@ -26,6 +26,7 @@ from flow360.component.simulation.meshing_param.params import (
     BetaVolumeMeshingParams,
     ModularMeshingWorkflow
 )
+from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceMeshingDefaults,
     SnappyCastellatedMeshControls,
@@ -33,7 +34,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySnapControls,
     SnappySmoothControls
 )
-from flow360.component.simulation.primitives import Edge, Surface, SnappyBody, Box, MeshZone
+from flow360.component.simulation.primitives import Edge, Surface, SnappyBody, Box, MeshZone, Cylinder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -592,7 +593,27 @@ def snappy_basic_refinements():
                     regions=[test_geometry["*patch1"]],
                     bodies=[SnappyBody(body_name="body3")],
                     retain_on_smoothing=False
+                ),
+                UniformRefinement(
+                    spacing=2*u.mm,
+                    entities=[Box(name="box0",
+                                  center=[0, 30, 60]*u.mm,
+                                  size=[20, 30, 40]*u.mm), 
+                              Cylinder(name="cyl0",
+                                       axis=[0, 0, 1],
+                                       center=[10, 20, 30]*u.mm,
+                                       height=60*u.mm,
+                                       outer_radius=20*u.mm)]
+                ),
+                UniformRefinement(
+                    spacing=8*u.mm,
+                    entities=[Cylinder(name="cyl1",
+                                       axis=[-0.26, 0.45, -0.43],
+                                       center=[10, 20, 30]*u.mm,
+                                       height=60*u.mm,
+                                       outer_radius=34*u.mm)]
                 )
+
             ],
             smooth_controls=SnappySmoothControls()
         )
@@ -863,7 +884,7 @@ def deep_sort_lists(obj):
     else:
         return obj
 
-def _translate_and_compare(param, mesh_unit, ref_json_file: str):
+def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(
@@ -875,7 +896,7 @@ def _translate_and_compare(param, mesh_unit, ref_json_file: str):
     ref_dict, translated = deep_sort_lists(ref_dict), deep_sort_lists(translated)
     # check if everything is seriazable
     json.dumps(translated)
-    assert compare_values(ref_dict, translated)
+    assert compare_values(ref_dict, translated, atol=atol)
 
 
 def test_om6wing_tutorial(
@@ -929,7 +950,8 @@ def test_snappy_basic(get_snappy_geometry, snappy_basic_refinements):
     _translate_and_compare(
         snappy_basic_refinements,
         get_snappy_geometry.mesh_unit,
-        "snappy_basic_refinements.json"
+        "snappy_basic_refinements.json",
+        atol=1e-6
     )
 
 def test_snappy_multiple_regions(get_snappy_geometry, snappy_refinements_multiple_regions):

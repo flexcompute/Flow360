@@ -38,7 +38,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     BetaVolumeMeshingDefaults
     )
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.primitives import Box, MeshZone
+from flow360.component.simulation.primitives import Box, MeshZone, Cylinder
 
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -78,6 +78,7 @@ SnappySurfaceRefinementTypes = Annotated[
         SnappyBodyRefinement,
         SnappySurfaceEdgeRefinement,
         SnappyRegionRefinement,
+        UniformRefinement
     ], 
     pd.Field(discriminator="refinement_type")
 ]
@@ -248,11 +249,6 @@ class MeshingParams(Flow360BaseModel):
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
         return None
-    
-class PWSurfaceMeshingParams(Flow360BaseModel):
-    type: Literal["PWSurfaceMeshingParams"] = pd.Field(
-        "PWSurfaceMeshingParams", frozen=True
-    )
 
 class SnappySurfaceMeshingParams(Flow360BaseModel):
     type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
@@ -286,6 +282,19 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                 if refinement.max_spacing is None and self.defaults.max_spacing.to("m") < refinement.min_spacing.to("m"):
                     raise ValueError("Default maximum spacing is lower that refinement minimum spacing and maximum spacing is not provided.")
         return self
+    
+    @pd.model_validator(mode="after")
+    def _check_uniform_refinement_entities(self):
+        for refinement in self.refinements:
+            if isinstance(refinement, UniformRefinement):
+                for entity in refinement.entities.stored_entities:
+                    if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0*u.deg:
+                        raise ValueError("UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0).")
+                    if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0*u.m:
+                        raise ValueError("UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0).")
+                    
+        return self
+
 
 
 class BetaVolumeMeshingParams(Flow360BaseModel):
@@ -409,7 +418,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         return None
     
 
-SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams, PWSurfaceMeshingParams], pd.Field(discriminator="type")]
+SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
 VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
 
 
