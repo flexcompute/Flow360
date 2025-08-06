@@ -514,6 +514,8 @@ class Surface(_SurfaceEntityBase):
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
     )
+    # pylint: disable=fixme
+    # TODO: This should be deprecated since it is not very useful or easy to use.
     private_attribute_potential_issues: List[_SurfaceIssueEnums] = pd.Field(
         [],
         description="Issues (not necessarily problems) found on this `Surface` after inspection by "
