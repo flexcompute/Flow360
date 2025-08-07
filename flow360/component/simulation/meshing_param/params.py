@@ -144,23 +144,6 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
         return value
 
-    @pd.field_validator("planar_face_tolerance", mode="after")
-    @classmethod
-    def invalid_planar_face_tolerance(cls, value):
-        """Ensure planar face tolerance is not specified"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint:disable = unsubscriptable-object
-        if (
-            value != cls.model_fields["planar_face_tolerance"].default
-            and not validation_info.is_beta_mesher
-        ):
-            raise ValueError("Planar face tolerance is only supported by the beta mesher.")
-        return value
-
     @pd.field_validator("geometry_accuracy", mode="after")
     @classmethod
     def invalid_geometry_accuracy(cls, value):

@@ -1845,10 +1845,7 @@ def test_beta_mesher_only_features():
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 1
-    assert errors[0]["msg"] == (
-        "Value error, Planar face tolerance is only supported by the beta mesher."
-    )
+    assert errors is None
 
 
 def test_geometry_AI_only_features():
