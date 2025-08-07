@@ -1250,7 +1250,7 @@ class Project(pd.BaseModel):
         use_geometry_AI: bool,
         raise_on_error: bool,
         tags: List[str],
-        draft_only: bool = False,
+        draft_only: bool,
         **kwargs,
     ):
         """
@@ -1278,11 +1278,13 @@ class Project(pd.BaseModel):
             Option to raise if submission error occurs (default is False)
         tags: List[str], optional
             A list of tags to add to the target asset.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not run the simulation.
 
         Returns
         -------
         AssetOrResource
-            The destination asset
+            The destination asset or the draft if `draft_only` is True.
 
         Raises
         ------
@@ -1351,7 +1353,12 @@ class Project(pd.BaseModel):
         draft.update_simulation_params(params)
 
         if draft_only:
-            log.info(f"Draft submitted: {draft.web_url}")
+            # pylint: disable=import-outside-toplevel
+            import click
+
+            log.info("Draft submitted, copy the link to browser to view the draft:")
+            # Not using log.info to avoid the link being wrapped and thus not clickable.
+            click.secho(draft.web_url, fg="blue", underline=True)
             return draft
 
         try:
@@ -1403,6 +1410,7 @@ class Project(pd.BaseModel):
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         tags: List[str] = None,
+        draft_only: bool = False,
         **kwargs,
     ):
         """
@@ -1426,11 +1434,18 @@ class Project(pd.BaseModel):
             Option to raise if submission error occurs (default is False)
         tags: List[str], optional
             A list of tags to add to the generated surface mesh.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not generate the surface mesh.
 
         Raises
         ------
         Flow360ValueError
             If the root item type is not Geometry.
+
+        Returns
+        -------
+        SurfaceMeshV2 | Draft
+            The surface mesh asset or the draft if `draft_only` is True.
         """
         self._check_initialized()
         if self.metadata.root_item_type is not RootType.GEOMETRY:
@@ -1449,6 +1464,7 @@ class Project(pd.BaseModel):
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             tags=tags,
+            draft_only=draft_only,
             **kwargs,
         )
         return surface_mesh
@@ -1464,6 +1480,7 @@ class Project(pd.BaseModel):
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
         raise_on_error: bool = False,
         tags: List[str] = None,
+        draft_only: bool = False,
         **kwargs,
     ):
         """
@@ -1487,11 +1504,18 @@ class Project(pd.BaseModel):
             Option to raise if submission error occurs (default is False)
         tags: List[str], optional
             A list of tags to add to the generated volume mesh.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not generate the volume mesh.
 
         Raises
         ------
         Flow360ValueError
             If the root item type is not Geometry.
+
+        Returns
+        -------
+        VolumeMeshV2 | Draft
+            The volume mesh asset or the draft if `draft_only` is True.
         """
         self._check_initialized()
         if (
@@ -1501,7 +1525,7 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Volume mesher can only be run by projects with a geometry or surface mesh root asset"
             )
-        volume_mesh = self._run(
+        volume_mesh_or_draft = self._run(
             params=params,
             target=VolumeMeshV2,
             draft_name=name,
@@ -1513,8 +1537,13 @@ class Project(pd.BaseModel):
             use_geometry_AI=use_geometry_AI,
             raise_on_error=raise_on_error,
             tags=tags,
+            draft_only=draft_only,
             **kwargs,
         )
+        if draft_only:
+            draft = volume_mesh_or_draft
+            return draft
+        volume_mesh = volume_mesh_or_draft
         return volume_mesh
 
     @pd.validate_call(config={"arbitrary_types_allowed": True})
@@ -1558,6 +1587,13 @@ class Project(pd.BaseModel):
             Option to raise if submission error occurs (default is False)
         tags: List[str], optional
             A list of tags to add to the case.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not run the case.
+
+        Returns
+        -------
+        Case | Draft
+            The case asset or the draft if `draft_only` is True.
         """
         self._check_initialized()
         case_or_draft = self._run(
