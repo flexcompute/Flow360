@@ -614,4 +614,10 @@ def test_surface_forces_result(mock_id, mock_response):
     ):
         surface_forces.by_body_group(params=params)
 
-    # For force distribution
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distribution_grouping(mock_id, mock_response):
+    case = fl.Case(id="case-63fd6b73-cbd5-445c-aec6-e62eca4467e6")
+    params = case.params
+    entity_info = params.private_attribute_asset_cache.project_entity_info
+    surface_forces = case.results.surface_forces
+    surface_forces_by_boundary = surface_forces.by_boundary_condition(params=params)
