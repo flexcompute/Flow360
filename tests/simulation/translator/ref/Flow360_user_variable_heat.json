@@ -125,5 +125,9 @@
             "thermalConductivity": 0.0014027733287811195,
             "volumetricHeatSource": "0"
         }
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "shouldProcessMonitorOutput": false
     }
 }
