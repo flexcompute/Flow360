@@ -25,6 +25,7 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
+    get_project_records,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
     validate_params_with_context,
@@ -47,7 +48,7 @@ from flow360.component.utils import (
     wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import Flow360FileError, Flow360NotImplementedError, Flow360ValueError, Flow360WebError
 from flow360.log import log
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
@@ -86,6 +87,8 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
         The project ID.
     name : str
         The name of the project.
+    tags : List[str]
+        List of tags associated with the project.
     root_item_id : str
         ID of the root item in the project.
     root_item_type : RootType
@@ -95,6 +98,7 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
     user_id: str = pd.Field(alias="userId")
     id: str = pd.Field()
     name: str = pd.Field()
+    tags: List[str] = pd.Field(default_factory=list)
     root_item_id: str = pd.Field(alias="rootItemId")
     root_item_type: RootType = pd.Field(alias="rootItemType")
 
@@ -403,6 +407,18 @@ class Project(pd.BaseModel):
         return self.metadata.id
 
     @property
+    def tags(self) -> List[str]:
+        """
+        Returns the tags of the project.
+
+        Returns
+        -------
+        List[str]
+            List of the project's tags.
+        """
+        return self.metadata.tags
+
+    @property
     def length_unit(self) -> LengthType.Positive:
         """
         Returns the length unit of the project.
@@ -613,18 +629,55 @@ class Project(pd.BaseModel):
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="VolumeMesh")
 
-    def get_case_ids(self):
+    def get_case_ids(self, tags: Optional[List[str]] = None) -> List[str]:
         """
-        Returns the available IDs of cases in the project
+        Returns the available IDs of cases in the project, optionally filtered by tags.
+
+        Parameters
+        ----------
+        tags : List[str], optional
+            List of tags to filter cases by. If None or empty tags list, returns all case IDs.
 
         Returns
         -------
         Iterable[str]
-            An iterable of asset IDs.
+            An iterable of case IDs. If tags are provided, filters to return only
+            case IDs that have at least one matching tag.
         """
         # pylint: disable=protected-access
-        return self.project_tree._get_asset_ids_by_type(asset_type="Case")
+        all_case_ids = self.project_tree._get_asset_ids_by_type(asset_type="Case")
 
+        if not tags:
+            return all_case_ids
+
+        # Filter cases by tags
+        filtered_case_ids = []
+        for case_id in all_case_ids:
+            case = self.get_case(asset_id=case_id)
+            if set(tags) & set(case.info_v2.tags):
+                filtered_case_ids.append(case_id)
+        
+        return filtered_case_ids
+
+    @classmethod
+    def get_project_ids(cls, tags: Optional[List[str]] = None) -> List[str]:
+        """
+        Returns the available IDs of projects, optionally filtered by tags.
+
+        Parameters
+        ----------
+        tags : List[str], optional
+            List of tags to filter projects by. If None, returns all project IDs.
+
+        Returns
+        -------
+        List[str]
+            A list of project IDs. If tags are provided, filters to return only
+            project IDs that have at least one matching tag.
+        """
+        project_records, _ = get_project_records('', tags=tags)
+        return [record.project_id for record in project_records.records]
+        
     # pylint: disable=too-many-arguments
     @classmethod
     def _create_project_from_files(

@@ -182,8 +182,9 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     """
 
     id: str = pd.Field(alias="caseId")
-    case_mesh_id: str = pd.Field(alias="caseMeshId")
+    # case_mesh_id: str = pd.Field(alias="caseMeshId")
     status: Flow360Status = pd.Field()
+    # case_tags: List[str] = pd.Field(alias="caseTags") 
 
     def to_case(self) -> Case:
         """
@@ -545,6 +546,13 @@ class Case(CaseBase, Flow360Resource):
         returns metadata info for case
         """
         return super().info
+
+    @property
+    def info_v2(self) -> CaseMetaV2:
+        """
+        returns metadata v2 info for case
+        """
+        return self._web_api_v2.info
 
     @property
     def project_id(self) -> Optional[str]:
