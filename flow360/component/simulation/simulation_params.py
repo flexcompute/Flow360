@@ -37,6 +37,7 @@ from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
     Fluid,
+    Solid,
     VolumeModelTypes,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -72,6 +73,10 @@ from flow360.component.simulation.unit_system import (
     unit_system_manager,
     unyt_quantity,
 )
+from flow360.component.simulation.user_code.core.types import (
+    batch_get_user_variable_units,
+    get_post_processing_variables,
+)
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -89,6 +94,7 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
     _check_duplicate_isosurface_names,
+    _check_duplicate_surface_usage,
     _check_hybrid_model_to_use_zonal_enforcement,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
@@ -103,6 +109,7 @@ from flow360.error_messages import (
     use_unit_system_for_simulation_msg,
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
+from flow360.log import log
 from flow360.version import __version__
 
 from .validation.validation_context import (
@@ -215,6 +222,7 @@ class _ParamModelBase(Flow360BaseModel):
         """
         # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
+
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
@@ -384,7 +392,7 @@ class SimulationParams(_ParamModelBase):
     @pd.field_validator("models", mode="after")
     @classmethod
     def apply_default_fluid_settings(cls, v):
-        """apply default Fluid() settings if not found in models"""
+        """Apply default Fluid() settings if not found in mode`ls"""
         if v is None:
             v = []
         assert isinstance(v, list)
@@ -422,6 +430,12 @@ class SimulationParams(_ParamModelBase):
     def check_duplicate_isosurface_names(cls, outputs):
         """Check if we have isosurfaces with a duplicate name"""
         return _check_duplicate_isosurface_names(outputs)
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_duplicate_surface_usage(cls, outputs):
+        """Disallow the same boundary/surface being used in multiple outputs"""
+        return _check_duplicate_surface_usage(outputs)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
@@ -577,9 +591,11 @@ class SimulationParams(_ParamModelBase):
             # Provides an imaginary "speed of sound"
             # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
             # To ensure incompressible range.
-            if self.operating_condition.velocity_magnitude.value != 0:
+            # pylint: disable=protected-access
+            if self.operating_condition._evaluated_velocity_magnitude.value != 0:
                 return (
-                    self.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
+                    self.operating_condition._evaluated_velocity_magnitude
+                    / LIQUID_IMAGINARY_FREESTREAM_MACH
                 ).to("m/s")
             return (
                 self.operating_condition.reference_velocity_magnitude
@@ -648,6 +664,15 @@ class SimulationParams(_ParamModelBase):
         """
         return isinstance(self.time_stepping, Steady)
 
+    def has_solid(self):
+        """
+        returns True when SimulationParams has Solid model
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, Solid) for item in self.models)
+
     def has_actuator_disks(self):
         """
         returns True when SimulationParams has ActuatorDisk disk
@@ -710,3 +735,53 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams has user defined dynamics
         """
         return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0
+
+    def display_output_units(self) -> None:
+        """
+        Display all the output units for UserVariables used in `outputs`.
+        """
+        if not self.outputs:
+            return
+
+        post_processing_variables = get_post_processing_variables(self)
+
+        # Sort for consistent behavior
+        post_processing_variables = sorted(post_processing_variables)
+        name_units_pair = batch_get_user_variable_units(post_processing_variables, self)
+
+        if not name_units_pair:
+            return
+
+        # Calculate column widths dynamically
+        name_column_width = max(len("Variable Name"), max(len(name) for name in name_units_pair))
+        unit_column_width = max(
+            len("Unit"), max(len(str(unit)) for unit in name_units_pair.values())
+        )
+
+        # Ensure minimum column widths
+        name_column_width = max(name_column_width, 15)
+        unit_column_width = max(unit_column_width, 10)
+
+        # Create the table header
+        header = f"{'Variable Name':<{name_column_width}} | {'Unit':<{unit_column_width}}"
+        separator = "-" * len(header)
+
+        # Print the table
+        log.info("")
+        log.info("Units of output `UserVariables`:")
+        log.info(separator)
+        log.info(header)
+        log.info(separator)
+
+        # Print each row
+        for name, unit in name_units_pair.items():
+            log.info(f"{name:<{name_column_width}} | {str(unit):<{unit_column_width}}")
+
+        log.info(separator)
+        log.info("")
+
+    def pre_submit_summary(self):
+        """
+        Display a summary of the simulation params before submission.
+        """
+        self.display_output_units()

@@ -21,6 +21,7 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.types import Axis
 
@@ -87,9 +88,10 @@ class ReferenceGeometry(Flow360BaseModel):
     moment_length: Optional[Union[LengthType.Positive, LengthType.PositiveVector]] = pd.Field(
         None, description="The x, y, z component-wise moment reference lengths."
     )
-    area: Optional[AreaType.Positive] = pd.Field(
+    area: Optional[ValueOrExpression[AreaType.Positive]] = pd.Field(
         None, description="The reference area of the geometry."
     )
+    private_attribute_area_settings: Optional[dict] = pd.Field(None)
 
 
 class Transformation(Flow360BaseModel):
@@ -106,7 +108,7 @@ class Transformation(Flow360BaseModel):
     axis_of_rotation: Axis = pd.Field((1, 0, 0))
     angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
 
-    scale: Tuple[pd.PositiveFloat, pd.PositiveFloat, pd.PositiveFloat] = pd.Field((1, 1, 1))
+    scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
 
     translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
 
@@ -529,11 +531,6 @@ class Surface(_SurfaceEntityBase):
     # TODO: With the amount of private_attribute prefixes we have
     # TODO: here maybe it makes more sense to lump them together to save space?
 
-    private_attribute_color: Optional[str] = pd.Field(
-        None, description="Front end storage for the color selected for this `Surface` entity."
-    )
-
-    # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
     def _will_be_deleted_by_mesher(self, farfield_method: Literal["auto", "quasi-3d"]) -> bool:
@@ -590,6 +587,10 @@ class GhostSphere(_SurfaceEntityBase):
     center: Optional[List] = pd.Field(None, alias="center")
     max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
 
+    def exists(self, _) -> bool:
+        """Ghost farfield always exists."""
+        return True
+
 
 # pylint: disable=missing-class-docstring
 @final
@@ -601,6 +602,43 @@ class GhostCircularPlane(_SurfaceEntityBase):
     center: Optional[List] = pd.Field(None, alias="center")
     max_radius: Optional[PositiveFloat] = pd.Field(None, alias="maxRadius")
     normal_axis: Optional[List] = pd.Field(None, alias="normalAxis")
+
+    def _get_existence_dependency(self, validation_info):
+        y_max = validation_info.global_bounding_box[1][1]
+        y_min = validation_info.global_bounding_box[0][1]
+
+        largest_dimension = -np.inf
+        for dim in range(3):
+            dimension = (
+                validation_info.global_bounding_box[1][dim]
+                - validation_info.global_bounding_box[0][dim]
+            )
+            largest_dimension = max(largest_dimension, dimension)
+
+        tolerance = largest_dimension * validation_info.planar_face_tolerance
+        return y_min, y_max, tolerance, largest_dimension
+
+    def exists(self, validation_info) -> bool:
+        """Mesher logic for symmetric plane existence."""
+
+        if (
+            validation_info is None
+            or not validation_info.is_beta_mesher
+            or self.name != "symmetric"
+        ):
+            # Non-beta mesher mode, then symmetric plane existence is handled upstream.
+            return True
+
+        if validation_info.global_bounding_box is None:
+            # This likely means the user try to use in-house mesher on old cloud resources.
+            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out.
+            return True
+
+        y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
+
+        if abs(y_max) > tolerance and abs(y_min) > tolerance:
+            return False
+        return True
 
 
 class SurfacePair(Flow360BaseModel):

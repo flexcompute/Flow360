@@ -83,6 +83,9 @@ from flow360.component.simulation.services import ValidationCalledBy, validate_m
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -90,6 +93,7 @@ from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
     VOLUME_MESH,
+    ParamsValidationInfo,
     ValidationContext,
 )
 
@@ -770,7 +774,13 @@ def test_incomplete_BC_volume_mesh():
             r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
-        with ValidationContext(ALL):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+            ),
+        ):
             with SI_unit_system:
                 SimulationParams(
                     meshing=MeshingParams(
@@ -812,7 +822,13 @@ def test_incomplete_BC_surface_mesh():
         ),
     )
 
-    with ValidationContext(ALL):
+    with ValidationContext(
+        ALL,
+        info=ParamsValidationInfo(
+            param_as_dict={},
+            referenced_expressions=[],
+        ),
+    ):
         # i_will_be_deleted won't trigger "no bc assigned" error
         with SI_unit_system:
             SimulationParams(
@@ -840,7 +856,13 @@ def test_incomplete_BC_surface_mesh():
             r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
         ),
     ):
-        with ValidationContext(ALL):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+            ),
+        ):
             with SI_unit_system:
                 SimulationParams(
                     meshing=MeshingParams(
@@ -865,7 +887,13 @@ def test_incomplete_BC_surface_mesh():
             r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
         ),
     ):
-        with ValidationContext(ALL):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+            ),
+        ):
             with SI_unit_system:
                 SimulationParams(
                     meshing=MeshingParams(
@@ -1152,7 +1180,7 @@ def test_output_fields_with_user_defined_fields():
                 ],
             )
 
-    msg = "`SurfaceIntegralOutput` can only be used with `UserDefinedField`."
+    msg = "The legacy string output fields in `SurfaceIntegralOutput` must be used with `UserDefinedField`."
     with pytest.raises(ValueError, match=re.escape(msg)):
         with SI_unit_system:
             _ = SimulationParams(
@@ -1164,6 +1192,24 @@ def test_output_fields_with_user_defined_fields():
                     )
                 ]
             )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            outputs=[
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegral",
+                    output_fields=[
+                        UserVariable(
+                            name="MassFluxProjected",
+                            value=-1
+                            * solution.density
+                            * math.dot(solution.velocity, solution.node_area_vector),
+                        )
+                    ],
+                    surfaces=[surface_1],
+                )
+            ]
+        )
 
     msg = (
         "In `outputs`[1] IsosurfaceOutput:, Cpp is not a valid iso field name. Allowed fields are "

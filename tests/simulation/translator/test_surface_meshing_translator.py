@@ -916,7 +916,6 @@ def test_om6wing_tutorial(
 
 def test_om6wing_tutorial_aspect_ratio(get_om6wing_geometry, om6wing_tutorial_aspect_ratio):
     params = om6wing_tutorial_aspect_ratio
-    print(params.model_dump_json(indent=4))
     _translate_and_compare(
         om6wing_tutorial_aspect_ratio,
         get_om6wing_geometry.mesh_unit,

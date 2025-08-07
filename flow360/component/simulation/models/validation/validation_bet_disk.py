@@ -4,11 +4,6 @@ validation BETDisk
 
 from pydantic import ValidationInfo
 
-from flow360.component.simulation.validation.validation_context import (
-    TimeSteppingType,
-    get_validation_info,
-)
-
 
 def _check_bet_disk_initial_blade_direction_and_blade_line_chord(bet_disk):
     if bet_disk.blade_line_chord > 0 and bet_disk.initial_blade_direction is None:
@@ -54,18 +49,6 @@ def _check_bet_disk_duplicate_twists(value, info: ValidationInfo):
     has_duplicate, duplicated_radius = _check_has_duplicate_in_one_radial_list(value)
     if has_duplicate:
         raise ValueError(f"it has duplicated radius at {duplicated_radius} in twists.")
-    return value
-
-
-def _check_bet_disk_initial_blade_direction(value, info: ValidationInfo):
-    validation_info = get_validation_info()
-    if validation_info is None:
-        return value
-
-    if validation_info.time_stepping == TimeSteppingType.UNSTEADY and value is None:
-        raise ValueError(
-            "The initial_blade_direction must be specified if performing an unsteady BET Line simulation."
-        )
     return value
 
 

@@ -25,7 +25,6 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
-    formatting_validation_errors,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
     validate_params_with_context,
@@ -41,6 +40,7 @@ from flow360.component.utils import (
     GeometryFiles,
     SurfaceMeshFile,
     VolumeMeshFile,
+    formatting_validation_errors,
     get_short_asset_id,
     parse_datetime,
     wrapstring,
@@ -472,9 +472,11 @@ class Project(pd.BaseModel):
         return SurfaceMeshV2.from_cloud(id=asset_id)
 
     @property
-    def surface_mesh(self):
+    def surface_mesh(self) -> SurfaceMeshV2:
         """
         Returns the last used surface mesh asset of the project.
+
+        If the project is initialized from surface mesh, the surface mesh asset is the root asset.
 
         Raises
         ------
@@ -486,6 +488,12 @@ class Project(pd.BaseModel):
         SurfaceMeshV2
             The surface mesh asset.
         """
+        if self.metadata.root_item_type is RootType.SURFACE_MESH:
+            return self._root_asset
+        log.warning(
+            f"Accessing surface mesh from a project initialized from {self.metadata.root_item_type.name}. "
+            "Please use the root asset for assigning entities to SimulationParams."
+        )
         return self.get_surface_mesh()
 
     def get_volume_mesh(self, asset_id: str = None) -> VolumeMeshV2:
@@ -515,7 +523,7 @@ class Project(pd.BaseModel):
         return VolumeMeshV2.from_cloud(id=asset_id)
 
     @property
-    def volume_mesh(self):
+    def volume_mesh(self) -> VolumeMeshV2:
         """
         Returns the last used volume mesh asset of the project.
 
@@ -529,6 +537,12 @@ class Project(pd.BaseModel):
         VolumeMeshV2
             The volume mesh asset.
         """
+        if self.metadata.root_item_type is RootType.VOLUME_MESH:
+            return self._root_asset
+        log.warning(
+            f"Accessing volume mesh from a project initialized from {self.metadata.root_item_type.name}. "
+            "Please use the root asset for assigning entities to SimulationParams."
+        )
         return self.get_volume_mesh()
 
     def get_case(self, asset_id: str = None) -> Case:
@@ -1330,6 +1344,8 @@ class Project(pd.BaseModel):
             interpolation_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
             tags=all_tags,
         ).submit()
+
+        params.pre_submit_summary()
 
         draft.update_simulation_params(params)
 

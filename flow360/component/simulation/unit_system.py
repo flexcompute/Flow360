@@ -55,11 +55,14 @@ class UnitSystemManager:
     :class: Class to manage global unit system context and switch currently used unit systems
     """
 
+    __slots__ = ("_current", "_suspended")
+
     def __init__(self):
         """
         Initialize the UnitSystemManager.
         """
         self._current = None
+        self._suspended = None
 
     @property
     def current(self) -> UnitSystem:
@@ -77,6 +80,19 @@ class UnitSystemManager:
         :return:
         """
         self._current = unit_system
+
+    def suspend(self):
+        """
+        Suspend the current UnitSystem.
+        """
+        self._suspended = self._current
+        self._current = None
+
+    def resume(self):
+        """
+        Resume the current UnitSystem.
+        """
+        self._current = self._suspended
 
 
 unit_system_manager = UnitSystemManager()
@@ -131,7 +147,7 @@ def _check_if_input_has_delta_unit(quant):
 # pylint: disable=no-member
 def _has_dimensions(quant, dim, expect_delta_unit: bool):
     """
-    Checks the argument has the right dimensionality.
+    Checks the argument has the right dimensions.
     """
 
     try:
@@ -178,6 +194,24 @@ def _is_unit_validator(value):
         except u.exceptions.UnitParseError as err:
             raise TypeError(str(err)) from err
     return value
+
+
+def _list_of_unyt_quantity_to_unyt_array(value):
+    """
+    Convert list of unyt_quantity (may come from `Expression`) to unyt_array
+    Only handles situation where all components share exact same unit.
+    We cab relax this to cover more expression results in the future when we decide how to convert.
+    """
+
+    if not isinstance(value, list):
+        return value
+    if not all(isinstance(item, unyt_quantity) for item in value):
+        return value
+    units = {item.units for item in value}
+    if not len(units) == 1:
+        return value
+    shared_unit = units.pop()
+    return [item.value for item in value] * shared_unit
 
 
 # pylint: disable=too-many-return-statements
@@ -491,10 +525,11 @@ class _DimensionedType(metaclass=ABCMeta):
 
                 return schema
 
-            def validate(vec_cls, value, *args, **kwargs):
+            def validate(vec_cls, value, info, *args, **kwargs):
                 """additional validator for value"""
                 try:
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _list_of_unyt_quantity_to_unyt_array(value)
                     value = _is_unit_validator(value)
 
                     is_collection = _check_if_input_is_nested_collection(value=value, nest_level=1)
@@ -524,7 +559,12 @@ class _DimensionedType(metaclass=ABCMeta):
                         value, vec_cls.type.dim, vec_cls.type.expect_delta_unit
                     )
 
-                    if kwargs.get("allow_inf_nan", False) is False:
+                    allow_inf_nan = kwargs.get("allow_inf_nan", False)
+
+                    if info.context and "allow_inf_nan" in info.context:
+                        allow_inf_nan = info.context.get("allow_inf_nan", False)
+
+                    if allow_inf_nan is False:
                         value = _nan_inf_vector_validator(value)
 
                     value = _has_dimensions_validator(
@@ -539,9 +579,10 @@ class _DimensionedType(metaclass=ABCMeta):
                     raise pd.ValidationError.from_exception_data("validation error", [details])
 
             def __get_pydantic_core_schema__(vec_cls, *args, **kwargs) -> pd.CoreSchema:
-                return core_schema.no_info_plain_validator_function(
-                    lambda *val_args: validate(vec_cls, *val_args)
-                )
+                def validate_with_info(value, info):
+                    return validate(vec_cls, value, info, *args, **kwargs)
+
+                return core_schema.with_info_plain_validator_function(validate_with_info)
 
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type
@@ -1596,7 +1637,16 @@ class UnitSystem(pd.BaseModel):
 
     def __getitem__(self, item):
         """to support [] access"""
-        return getattr(self, item)
+        try:
+            return getattr(self, item)
+        except TypeError:
+            # Allowing usage like [(mass)/(time)]
+            for attr_name, attr in vars(self).items():
+                if not isinstance(attr, unyt_quantity):
+                    continue
+                if attr.units.dimensions == item:
+                    return getattr(self, attr_name)
+        raise AttributeError(f"'{item}' is not a valid attribute of {self.__class__.__name__}. ")
 
     def system_repr(self):
         """(mass, length, time, temperature) string representation of the system"""

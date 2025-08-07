@@ -113,6 +113,32 @@ def check_deleted_surface_pair(value):
     return value
 
 
+def check_symmetric_boundary_existence_for_inhouse(stored_entities):
+    """Check according to the criteria if the symmetric plane exists."""
+    validation_info = get_validation_info()
+    if validation_info is None or validation_info.is_beta_mesher is False:
+        return stored_entities
+    for item in stored_entities:
+        if item.private_attribute_entity_type_name != "GhostCircularPlane":
+            continue
+
+        if not item.exists(validation_info):
+            # pylint: disable=protected-access
+            y_min, y_max, tolerance, largest_dimension = item._get_existence_dependency(
+                validation_info
+            )
+            error_msg = (
+                "`symmetric` boundary will not be generated: "
+                + f"model spans: [{y_min:.2g}, {y_max:.2g}], "
+                + f"tolerance = {validation_info.planar_face_tolerance:.2g} x {largest_dimension:.2g}"
+                + f" = {tolerance:.2g}."
+            )
+
+            raise ValueError(error_msg)
+
+    return stored_entities
+
+
 class EntityUsageMap:  # pylint:disable=too-few-public-methods
     """
     A customized dict to store the entity name and its usage.

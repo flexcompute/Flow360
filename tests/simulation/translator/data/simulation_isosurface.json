@@ -1,0 +1,1155 @@
+{
+    "version": "25.6.3",
+    "unit_system": {
+        "name": "Imperial"
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                450,
+                0,
+                0
+            ],
+            "units": "mm"
+        },
+        "moment_length": {
+            "value": [
+                72,
+                1200,
+                1200
+            ],
+            "units": "mm"
+        },
+        "area": {
+            "type_name": "number",
+            "value": 16286.016316209487,
+            "units": "mm**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "from_mach",
+        "private_attribute_input_cache": {
+            "mach": 0.05,
+            "alpha": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {},
+                "temperature": {
+                    "value": 288.15,
+                    "units": "K"
+                },
+                "density": {
+                    "value": 1.225,
+                    "units": "kg/m**3"
+                },
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {
+                            "value": 1.667440628460243e-05,
+                            "units": "kg/(m*s)"
+                        },
+                        "reference_temperature": {
+                            "value": 288.15,
+                            "units": "K"
+                        },
+                        "effective_temperature": {
+                            "value": 110.4,
+                            "units": "K"
+                        }
+                    }
+                }
+            }
+        },
+        "alpha": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "velocity_magnitude": {
+            "type_name": "number",
+            "value": 17.01470029041064,
+            "units": "m/s"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "density": {
+                "value": 1.225,
+                "units": "kg/m**3"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.667440628460243e-05,
+                        "units": "kg/(m*s)"
+                    },
+                    "reference_temperature": {
+                        "value": 288.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        }
+    },
+    "models": [
+        {
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 35
+                },
+                "CFL_multiplier": 1.0,
+                "kappa_MUSCL": 0.33,
+                "numerical_dissipation_factor": 1.0,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": true,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 25
+                },
+                "CFL_multiplier": 2.0,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10.0
+                },
+                "update_jacobian_frequency": 2,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false
+            },
+            "transition_model_solver": {
+                "absolute_tolerance": 1e-07,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "type_name": "AmplificationFactorTransport",
+                "CFL_multiplier": 2.0,
+                "N_crit": 8.15,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "reconstruction_gradient_limiter": 1.0
+            }
+        },
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fluid/body",
+                        "name": "fluid/body",
+                        "private_attribute_full_name": "fluid/body",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": [],
+                        "private_attribute_potential_issues": []
+                    }
+                ]
+            },
+            "name": "Wall",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": -48272.4105246842,
+                    "units": "kg/s**3"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "m"
+            }
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fluid/farfield",
+                        "name": "fluid/farfield",
+                        "private_attribute_full_name": "fluid/farfield",
+                        "private_attribute_is_interface": false,
+                        "private_attribute_sub_components": [],
+                        "private_attribute_potential_issues": []
+                    }
+                ]
+            },
+            "name": "Freestream"
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Unsteady",
+        "max_pseudo_steps": 20,
+        "steps": 2,
+        "step_size": {
+            "type_name": "expression",
+            "expression": "my_time_stepping_var"
+        },
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 1000000.0,
+            "max_relative_change": 50.0,
+            "convergence_limiting_factor": 1.0
+        },
+        "order_of_accuracy": 2
+    },
+    "user_defined_fields": [],
+    "outputs": [
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "pressure_psf",
+                        "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "iso_field_math_pressure",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "iso_surf1_out_pressure_psf",
+            "entities": {
+                "items": [
+                    {
+                        "name": "iso_surf_math_pressure",
+                        "field": {
+                            "name": "iso_field_math_pressure",
+                            "type_name": "UserVariable"
+                        },
+                        "iso_value": {
+                            "type_name": "number",
+                            "value": 3000.0,
+                            "units": "Pa"
+                        }
+                    }
+                ]
+            },
+            "output_type": "IsosurfaceOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "velocity_km_per_hr",
+                        "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "iso_field_random_units",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "iso_surf2_out_velocity_km_h",
+            "entities": {
+                "items": [
+                    {
+                        "name": "iso_surf_random_units",
+                        "field": {
+                            "name": "iso_field_random_units",
+                            "type_name": "UserVariable"
+                        },
+                        "iso_value": {
+                            "type_name": "number",
+                            "value": 45.359237,
+                            "units": "CGS_unit_system"
+                        }
+                    }
+                ]
+            },
+            "output_type": "IsosurfaceOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "pressure_psi",
+                        "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "iso_field_pressure",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "iso_surf3_out_pressure_psi",
+            "entities": {
+                "items": [
+                    {
+                        "name": "iso_surf_pressure",
+                        "field": {
+                            "name": "iso_field_pressure",
+                            "type_name": "UserVariable"
+                        },
+                        "iso_value": {
+                            "type_name": "number",
+                            "value": 2125.0,
+                            "units": "Imperial_unit_system"
+                        }
+                    }
+                ]
+            },
+            "output_type": "IsosurfaceOutput"
+        },
+        {
+            "output_fields": {
+                "items": [
+                    {
+                        "name": "pressure_psi",
+                        "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "iso_field_Cp",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "iso_surf3_out_Cp",
+            "entities": {
+                "items": [
+                    {
+                        "name": "iso_surf_Cp",
+                        "field": {
+                            "name": "iso_field_Cp",
+                            "type_name": "UserVariable"
+                        },
+                        "iso_value": {
+                            "type_name": "number",
+                            "value": 0.5,
+                            "units":"SI_unit_system"
+                        }
+                    }
+                ]
+            },
+            "output_type": "IsosurfaceOutput"
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1.0,
+            "units": "mm"
+        },
+        "project_entity_info": {
+            "draft_entities": [
+                {
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_entity_type_name": "Cylinder",
+                    "private_attribute_id": "c957bc34-e4fe-48ad-acf3-684c92c8c973",
+                    "name": "my_actuator_disk",
+                    "private_attribute_zone_boundary_names": {
+                        "items": []
+                    },
+                    "axis": [
+                        -1.0,
+                        0.0,
+                        0.0
+                    ],
+                    "center": {
+                        "value": [
+                            0.0,
+                            0.0,
+                            0.0
+                        ],
+                        "units": "ft"
+                    },
+                    "height": {
+                        "value": 30.0,
+                        "units": "mm"
+                    },
+                    "inner_radius": {
+                        "value": 0.0,
+                        "units": "m"
+                    },
+                    "outer_radius": {
+                        "value": 5.0,
+                        "units": "mm"
+                    }
+                }
+            ],
+            "ghost_entities": [],
+            "type_name": "VolumeMeshEntityInfo",
+            "zones": [
+                {
+                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
+                    "private_attribute_entity_type_name": "GenericVolume",
+                    "private_attribute_id": "fluid",
+                    "name": "fluid",
+                    "private_attribute_zone_boundary_names": {
+                        "items": [
+                            "fluid/body",
+                            "fluid/farfield"
+                        ]
+                    },
+                    "private_attribute_full_name": "fluid"
+                }
+            ],
+            "boundaries": [
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "fluid/body",
+                    "name": "fluid/body",
+                    "private_attribute_full_name": "fluid/body",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_sub_components": [],
+                    "private_attribute_potential_issues": []
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "Surface",
+                    "private_attribute_id": "fluid/farfield",
+                    "name": "fluid/farfield",
+                    "private_attribute_full_name": "fluid/farfield",
+                    "private_attribute_is_interface": false,
+                    "private_attribute_sub_components": [],
+                    "private_attribute_potential_issues": []
+                }
+            ]
+        },
+        "use_inhouse_mesher": false,
+        "use_geometry_AI": false,
+        "variable_context": [
+            {
+                "name": "density_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.density"
+                }
+            },
+            {
+                "name": "velocity_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity"
+                }
+            },
+            {
+                "name": "pressure_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure"
+                }
+            },
+            {
+                "name": "grad_density_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_density"
+                }
+            },
+            {
+                "name": "grad_u_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_u"
+                }
+            },
+            {
+                "name": "grad_v_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_v"
+                }
+            },
+            {
+                "name": "grad_w_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_w"
+                }
+            },
+            {
+                "name": "grad_pressure_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_pressure"
+                }
+            },
+            {
+                "name": "mut_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.mut"
+                }
+            },
+            {
+                "name": "qcriterion_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.qcriterion"
+                }
+            },
+            {
+                "name": "entropy_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.entropy"
+                }
+            },
+            {
+                "name": "vorticity_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.vorticity"
+                }
+            },
+            {
+                "name": "Cp_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cp"
+                }
+            },
+            {
+                "name": "Cpt_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cpt"
+                }
+            },
+            {
+                "name": "Mach_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Mach"
+                }
+            },
+            {
+                "name": "mut_ratio_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.mut_ratio"
+                }
+            },
+            {
+                "name": "wall_distance_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.wall_distance"
+                }
+            },
+            {
+                "name": "coordinate_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.coordinate"
+                }
+            },
+            {
+                "name": "temperature_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.temperature"
+                }
+            },
+            {
+                "name": "Cf_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cf"
+                }
+            },
+            {
+                "name": "CfVec_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.CfVec"
+                }
+            },
+            {
+                "name": "heat_flux_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.heat_flux"
+                }
+            },
+            {
+                "name": "node_area_vector_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.node_area_vector"
+                }
+            },
+            {
+                "name": "node_forces_per_unit_area_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.node_forces_per_unit_area"
+                }
+            },
+            {
+                "name": "y_plus_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.y_plus"
+                }
+            },
+            {
+                "name": "heat_transfer_coefficient_static_temperature_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.heat_transfer_coefficient_static_temperature"
+                }
+            },
+            {
+                "name": "heat_transfer_coefficient_total_temperature_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.heat_transfer_coefficient_total_temperature"
+                }
+            },
+            {
+                "name": "wall_shear_stress_magnitude_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.wall_shear_stress_magnitude"
+                }
+            },
+            {
+                "name": "amplification_factor_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.amplification_factor"
+                }
+            },
+            {
+                "name": "turbulence_intermittency_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.turbulence_intermittency"
+                }
+            },
+            {
+                "name": "nu_hat_with_unit",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.nu_hat"
+                }
+            },
+            {
+                "name": "density_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.density"
+                }
+            },
+            {
+                "name": "velocity_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity"
+                }
+            },
+            {
+                "name": "pressure_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure"
+                }
+            },
+            {
+                "name": "grad_density_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_density"
+                }
+            },
+            {
+                "name": "grad_u_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_u"
+                }
+            },
+            {
+                "name": "grad_v_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_v"
+                }
+            },
+            {
+                "name": "grad_w_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_w"
+                }
+            },
+            {
+                "name": "grad_pressure_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.grad_pressure"
+                }
+            },
+            {
+                "name": "mut_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.mut"
+                }
+            },
+            {
+                "name": "qcriterion_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.qcriterion"
+                }
+            },
+            {
+                "name": "entropy_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.entropy"
+                }
+            },
+            {
+                "name": "vorticity_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.vorticity"
+                }
+            },
+            {
+                "name": "Cp_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cp"
+                }
+            },
+            {
+                "name": "Cpt_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cpt"
+                }
+            },
+            {
+                "name": "Mach_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Mach"
+                }
+            },
+            {
+                "name": "mut_ratio_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.mut_ratio"
+                }
+            },
+            {
+                "name": "wall_distance_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.wall_distance"
+                }
+            },
+            {
+                "name": "coordinate_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.coordinate"
+                }
+            },
+            {
+                "name": "temperature_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.temperature"
+                }
+            },
+            {
+                "name": "amplification_factor_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.amplification_factor"
+                }
+            },
+            {
+                "name": "turbulence_intermittency_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.turbulence_intermittency"
+                }
+            },
+            {
+                "name": "nu_hat_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.nu_hat"
+                }
+            },
+            {
+                "name": "Cf_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cf"
+                }
+            },
+            {
+                "name": "CfVec_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.CfVec"
+                }
+            },
+            {
+                "name": "heat_flux_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.heat_flux"
+                }
+            },
+            {
+                "name": "node_area_vector_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.node_area_vector"
+                }
+            },
+            {
+                "name": "node_forces_per_unit_area_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.node_forces_per_unit_area"
+                }
+            },
+            {
+                "name": "y_plus_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.y_plus"
+                }
+            },
+            {
+                "name": "heat_transfer_coefficient_static_temperature_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.heat_transfer_coefficient_static_temperature"
+                }
+            },
+            {
+                "name": "heat_transfer_coefficient_total_temperature_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.heat_transfer_coefficient_total_temperature"
+                }
+            },
+            {
+                "name": "wall_shear_stress_magnitude_Imperial",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.wall_shear_stress_magnitude"
+                }
+            },
+            {
+                "name": "some_dependent_variable_a",
+                "value": {
+                    "type_name": "number",
+                    "value": [
+                        1.0,
+                        2.0,
+                        3.0
+                    ],
+                    "units": "m/s"
+                }
+            },
+            {
+                "name": "cross_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "[some_dependent_variable_a[1] * solution.velocity[2] - some_dependent_variable_a[2] * solution.velocity[1], some_dependent_variable_a[2] * solution.velocity[0] - some_dependent_variable_a[0] * solution.velocity[2], some_dependent_variable_a[0] * solution.velocity[1] - some_dependent_variable_a[1] * solution.velocity[0]]"
+                }
+            },
+            {
+                "name": "dot_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "some_dependent_variable_a[0] * solution.velocity[0] + some_dependent_variable_a[1] * solution.velocity[1] + some_dependent_variable_a[2] * solution.velocity[2]"
+                }
+            },
+            {
+                "name": "magnitude_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.magnitude(solution.velocity)"
+                }
+            },
+            {
+                "name": "add_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "[some_dependent_variable_a[0] + solution.velocity[0], some_dependent_variable_a[1] + solution.velocity[1], some_dependent_variable_a[2] + solution.velocity[2]]"
+                }
+            },
+            {
+                "name": "subtract_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "[some_dependent_variable_a[0] - solution.velocity[0], some_dependent_variable_a[1] - solution.velocity[1], some_dependent_variable_a[2] - solution.velocity[2]]"
+                }
+            },
+            {
+                "name": "sqrt_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.sqrt(solution.velocity[2])"
+                }
+            },
+            {
+                "name": "power_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity[1] ** 1.5"
+                }
+            },
+            {
+                "name": "log_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.log(solution.Mach)"
+                }
+            },
+            {
+                "name": "exp_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.exp(solution.CfVec[0])"
+                }
+            },
+            {
+                "name": "abs_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.abs(solution.velocity[0]) * 3.141592653589793"
+                }
+            },
+            {
+                "name": "sin_float_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.sin(solution.CfVec[0] * 3.141592653589793)"
+                }
+            },
+            {
+                "name": "cos_deg_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.cos(solution.CfVec[1] * 3.141592653589793 * u.deg)"
+                }
+            },
+            {
+                "name": "tan_rad_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.tan(solution.CfVec[2] * 3.141592653589793 * u.rad)"
+                }
+            },
+            {
+                "name": "asin_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.asin(solution.mut_ratio)"
+                }
+            },
+            {
+                "name": "acos_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.acos(solution.Cp)"
+                }
+            },
+            {
+                "name": "atan_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.atan(solution.Cpt)"
+                }
+            },
+            {
+                "name": "min_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.min(solution.vorticity[2], solution.vorticity[1])"
+                }
+            },
+            {
+                "name": "max_res",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.max(solution.vorticity[0], solution.vorticity[1])"
+                }
+            },
+            {
+                "name": "my_temperature",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "(solution.temperature + -10 * u.K) * 1.8"
+                }
+            },
+            {
+                "name": "uuu",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity",
+                    "output_units": "km/ms"
+                }
+            },
+            {
+                "name": "iso_field_math_pressure",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2"
+                }
+            },
+            {
+                "name": "pressure_psf",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure",
+                    "output_units": "psf"
+                }
+            },
+            {
+                "name": "iso_field_random_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity[0] * 2 * u.lb"
+                }
+            },
+            {
+                "name": "velocity_km_per_hr",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity[0]",
+                    "output_units": "km/hr"
+                }
+            },
+            {
+                "name": "iso_field_pressure",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure"
+                }
+            },
+            {
+                "name": "pressure_psi",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure",
+                    "output_units": "psi"
+                }
+            },
+            {
+                "name": "iso_field_Cp",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.Cp"
+                }
+            },
+            {
+                "name": "my_time_stepping_var",
+                "value": {
+                    "type_name": "number",
+                    "value": 0.5,
+                    "units": "s"
+                }
+            }
+        ]
+    }
+}

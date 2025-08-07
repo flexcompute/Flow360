@@ -9,7 +9,6 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -165,6 +164,14 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
+    get_user_variable,
+    remove_user_variable,
+    show_user_variables,
+)
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -203,7 +210,6 @@ __all__ = [
     "HeightBasedRefinement",
     "ReferenceGeometry",
     "Cylinder",
-    "GeometryEntityInfo",
     "AerospaceCondition",
     "ThermalState",
     "LiquidOperatingCondition",
@@ -296,6 +302,9 @@ __all__ = [
     "StreamlineOutput",
     "Transformation",
     "WallRotation",
+    "UserVariable",
+    "math",
+    "solution",
     "report",
     "ModularMeshingWorkflow",
     "SnappySurfaceMeshingDefaults",
@@ -311,4 +320,7 @@ __all__ = [
     "SnappySurfaceMeshingParams",
     "BetaVolumeMeshingParams",
     "BetaVolumeMeshingDefaults"
+    "get_user_variable",
+    "show_user_variables",
+    "remove_user_variable",
 ]

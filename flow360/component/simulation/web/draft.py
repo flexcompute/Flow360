@@ -14,13 +14,12 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
-from flow360.component.project_utils import formatting_validation_errors
 from flow360.component.resource_base import (
     AssetMetaBaseModel,
     Flow360Resource,
     ResourceDraft,
 )
-from flow360.component.utils import validate_type
+from flow360.component.utils import formatting_validation_errors, validate_type
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
 

@@ -1,0 +1,193 @@
+{
+    "boundaries": {
+        "fluid/body": {
+            "heatFlux": -0.001,
+            "roughnessHeight": 0.0,
+            "type": "NoSlipWall"
+        },
+        "fluid/farfield": {
+            "type": "Freestream"
+        }
+    },
+    "freestream": {
+        "Mach": 0.049999999999999996,
+        "Temperature": 288.15,
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "muRef": 4e-08
+    },
+    "geometry": {
+        "momentCenter": [
+            0.45,
+            0.0,
+            0.0
+        ],
+        "momentLength": [
+            0.07200000000000001,
+            1.2,
+            1.2
+        ],
+        "refArea": 0.016286016316209486
+    },
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "isoSurfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "isoSurfaces": {
+            "iso_surf_Cp": {
+                "outputFields": [
+                    "iso_field_Cp",
+                    "pressure_psi"
+                ],
+                "surfaceField": "iso_field_Cp",
+                "surfaceFieldMagnitude": 0.5
+            },
+            "iso_surf_math_pressure": {
+                "outputFields": [
+                    "iso_field_math_pressure",
+                    "pressure_psf"
+                ],
+                "surfaceField": "iso_field_math_pressure",
+                "surfaceFieldMagnitude": 62.656302699450386
+            },
+            "iso_surf_pressure": {
+                "outputFields": [
+                    "iso_field_pressure",
+                    "pressure_psi"
+                ],
+                "surfaceField": "iso_field_pressure",
+                "surfaceFieldMagnitude": 2125.0
+            },
+            "iso_surf_random_units": {
+                "outputFields": [
+                    "iso_field_random_units",
+                    "velocity_km_per_hr"
+                ],
+                "surfaceField": "iso_field_random_units",
+                "surfaceFieldMagnitude": 0.003280839895013123
+            }
+        },
+        "outputFields": [],
+        "outputFormat": "paraview"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": 0.33,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 35
+        },
+        "lowMachPreconditioner": true,
+        "lowMachPreconditionerThreshold": 0.049999999999999996,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "timeStepping": {
+        "CFL": {
+            "convergenceLimitingFactor": 1.0,
+            "max": 1000000.0,
+            "maxRelativeChange": 50.0,
+            "min": 0.1,
+            "type": "adaptive"
+        },
+        "maxPseudoSteps": 20,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 2,
+        "timeStepSize": 170.14700290410642
+    },
+    "transitionModelSolver": {
+        "CFLMultiplier": 2.0,
+        "Ncrit": 8.15,
+        "absoluteTolerance": 1e-07,
+        "equationEvalFrequency": 4,
+        "linearSolver": {
+            "maxIterations": 20
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "AmplificationFactorTransport",
+        "orderOfAccuracy": 2,
+        "reconstructionGradientLimiter": 1.0,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "turbulenceModelSolver": {
+        "CFLMultiplier": 2.0,
+        "DDES": false,
+        "ZDES": false,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "gridSizeForLES": "maxEdgeLength",
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_d": 8.0,
+            "C_min_rd": 10.0,
+            "C_sigma": 0.6666666666666666,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3
+        },
+        "modelType": "SpalartAllmaras",
+        "orderOfAccuracy": 2,
+        "quadraticConstitutiveRelation": false,
+        "reconstructionGradientLimiter": 0.5,
+        "relativeTolerance": 0.0,
+        "rotationCorrection": false,
+        "updateJacobianFrequency": 2
+    },
+    "userDefinedFields": [
+        {
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);iso_field_Cp = (___Cp * 1.0);",
+            "name": "iso_field_Cp"
+        },
+        {
+            "expression": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);double ___density;___density = usingLiquidAsMaterial ? 1.0 : primitiveVars[0];double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_math_pressure = ((((0.5 * ___Cp) * ___density) * pow(pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5), 2)) * 2962.7035389425037);",
+            "name": "iso_field_math_pressure"
+        },
+        {
+            "expression": "double ___pressure;___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * (velocityScale * velocityScale) : primitiveVars[4];iso_field_pressure = (___pressure * 2962.7035389425037);",
+            "name": "iso_field_pressure"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_random_units = (((___velocity[0] * 2) * 0.3702794857142857) * 3015.1552904307623);",
+            "name": "iso_field_random_units"
+        },
+        {
+            "expression": "double ___pressure;___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * (velocityScale * velocityScale) : primitiveVars[4];pressure_psf = (___pressure * 2962.7035389425037);",
+            "name": "pressure_psf"
+        },
+        {
+            "expression": "double ___pressure;___pressure = usingLiquidAsMaterial ? (primitiveVars[4] - 1.4 / 1.0) * (velocityScale * velocityScale) : primitiveVars[4];pressure_psi = (___pressure * 20.574330131545164);",
+            "name": "pressure_psi"
+        },
+        {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_km_per_hr = (___velocity[0] * 1225.0584209095646);",
+            "name": "velocity_km_per_hr"
+        }
+    ],
+    "usingLiquidAsMaterial": false
+}

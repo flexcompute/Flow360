@@ -24,6 +24,12 @@ Examples:
 
 from typing import List, Literal, get_args, get_origin
 
+from flow360.component.simulation.conversion import (
+    compute_udf_dimensionalization_factor,
+)
+from flow360.component.simulation.operating_condition.operating_condition import (
+    LiquidOperatingCondition,
+)
 from flow360.component.simulation.unit_system import u
 
 # Coefficient of pressure
@@ -167,8 +173,6 @@ SliceFieldNames = VolumeFieldNames
 # Spalart-Almaras variable
 # Vorticity magnitude
 IsoSurfaceFieldNames = Literal[
-    "p",
-    "rho",
     "Mach",
     "qcriterion",
     "s",
@@ -302,7 +306,7 @@ def _apply_vector_conversion(
     *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
 ):
     """Apply conversion for vector fields"""
-    factor = 1 / conversion_factor
+    factor = 1.0 / conversion_factor
     return (
         f"double {base_field}[3];"
         f"{base_udf_expression}"
@@ -316,7 +320,7 @@ def _apply_scalar_conversion(
     *, base_udf_expression: str, base_field: str, field_name: str, conversion_factor: float
 ):
     """Apply conversion for scalar fields"""
-    factor = 1 / conversion_factor
+    factor = 1.0 / conversion_factor
     return (
         f"double {base_field};" f"{base_udf_expression}" f"{field_name} = {base_field} * {factor};"
     )
@@ -355,7 +359,12 @@ def generate_predefined_udf(field_name, params):
     if unit is None:
         return base_expr
 
-    conversion_factor = params.convert_unit(1.0 * unit, "flow360").v
+    coefficient, _ = compute_udf_dimensionalization_factor(
+        params=params,
+        requested_unit=unit,
+        using_liquid_op=isinstance(params.operating_condition, LiquidOperatingCondition),
+    )
+    conversion_factor = 1.0 / coefficient
 
     field_info = _FIELD_TYPE_INFO.get(base_field, {"type": FIELD_TYPE_SCALAR})
     field_type = field_info["type"]
@@ -388,20 +397,6 @@ def get_field_values(field_type) -> List[str]:
     values = []
     _get_field_values(field_type, values)
     return values
-
-
-def _distribute_shared_output_fields(solver_values: dict, item_names: str):
-    if "output_fields" not in solver_values or solver_values["output_fields"] is None:
-        return
-    shared_fields = solver_values.pop("output_fields")
-    if solver_values[item_names] is not None:
-        for name in solver_values[item_names].names():
-            item = solver_values[item_names][name]
-            for field in shared_fields:
-                if item.output_fields is None:
-                    item.output_fields = []
-                if field not in item.output_fields:
-                    item.output_fields.append(field)
 
 
 def append_component_to_output_fields(output_fields: List[str]) -> List[str]:
