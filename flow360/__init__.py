@@ -125,6 +125,9 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
+    ImportedSurfaceOutput,
+    TimeAverageImportedSurfaceOutput,
+    ImportedSurfaceIntegralOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -133,6 +136,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ReferenceGeometry,
     Transformation,
+    ImportedSurface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -228,6 +232,9 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "ImportedSurfaceOutput",
+    "TimeAverageImportedSurfaceOutput",
+    "ImportedSurfaceIntegralOutput",
     "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
@@ -283,6 +290,7 @@ __all__ = [
     "PointArray2D",
     "StreamlineOutput",
     "Transformation",
+    "ImportedSurface",
     "WallRotation",
     "UserVariable",
     "math",
