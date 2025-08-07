@@ -623,17 +623,16 @@ class GhostCircularPlane(_SurfaceEntityBase):
     def exists(self, validation_info) -> bool:
         """Mesher logic for symmetric plane existence."""
 
-        if (
-            validation_info is None
-            or not validation_info.is_beta_mesher
-            or self.name != "symmetric"
-        ):
-            # Non-beta mesher mode, then symmetric plane existence is handled upstream.
+        if self.name != "symmetric":
+            # Quasi-3D mode, no need to check existence.
             return True
 
+        if validation_info is None:
+            raise ValueError("Validation info is required for GhostCircularPlane existence check.")
+
         if validation_info.global_bounding_box is None:
-            # This likely means the user try to use in-house mesher on old cloud resources.
-            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out.
+            # This likely means the user try to use mesher on old cloud resources.
+            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
 
         y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
