@@ -20,6 +20,7 @@ from flow360.component.simulation.models.surface_models import (
     MassFlowRate,
     Outflow,
     Periodic,
+    PorousJump,
     Pressure,
     SlaterPorousBleed,
     SlipWall,
@@ -1245,6 +1246,11 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
         boundary = _append_turbulence_quantities_to_dict(model, model_dict, boundary)
     elif isinstance(model, SymmetryPlane):
         boundary["type"] = "SymmetryPlane"
+    elif isinstance(model, PorousJump):
+        boundary["type"] = "PorousJump"
+        boundary["DarcyCoefficient"] = model_dict["darcyCoefficient"]
+        boundary["ForchheimerCoefficient"] = model_dict["forchheimerCoefficient"]
+        boundary["porousJumpThickness"] = model_dict["thickness"]
 
     return boundary
 
@@ -1616,6 +1622,7 @@ def get_solver_json(
             Inflow,
             Periodic,
             SymmetryPlane,
+            PorousJump,
         ),
         boundary_spec_translator,
         to_list=False,
