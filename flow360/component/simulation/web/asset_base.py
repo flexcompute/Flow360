@@ -91,11 +91,6 @@ class AssetBase(metaclass=ABCMeta):
         ----------
         new_name : str
             The new name for the asset.
-
-        Returns
-        -------
-        self
-            Returns the modified asset after it has been renamed.
         """
         RestApi(self._interface_class.endpoint).patch(
             RenameAssetRequestV2(name=new_name).dict(), method=self.id

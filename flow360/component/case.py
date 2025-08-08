@@ -680,11 +680,6 @@ class Case(CaseBase, Flow360Resource):
         ----------
         new_name : str
             The new name for the case.
-
-        Returns
-        -------
-        self
-            Returns the modified case after it has been renamed.
         """
         RestApi(CaseInterfaceV2.endpoint).patch(
             RenameAssetRequestV2(name=new_name).dict(), method=self.id

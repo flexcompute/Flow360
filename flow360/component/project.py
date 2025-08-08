@@ -1219,16 +1219,10 @@ class Project(pd.BaseModel):
         ----------
         new_name : str
             The new name for the project.
-
-        Returns
-        -------
-        self
-            Returns the modified project after it has been renamed.
         """
         RestApi(ProjectInterface.endpoint).patch(
             RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
-        return self
 
     def print_project_tree(self, line_width: int = 30, is_horizontal: bool = True):
         """Print the project tree to the terminal.

@@ -145,16 +145,10 @@ class Folder(Flow360Resource):
         ----------
         new_name : str
             The new name for the folder.
-
-        Returns
-        -------
-        self
-            Returns the modified folder after it has been renamed.
         """
         RestApi(FolderInterfaceV2.endpoint).patch(
             RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
-        return self
 
     @classmethod
     def _interface(cls):
