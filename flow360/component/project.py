@@ -30,6 +30,7 @@ from flow360.component.project_utils import (
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -635,6 +636,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from a file.
@@ -653,6 +655,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create the project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -670,14 +674,16 @@ class Project(pd.BaseModel):
         files._check_files_existence()
 
         if isinstance(files, GeometryFiles):
-            draft = Geometry.from_file(files.file_names, name, solver_version, length_unit, tags)
+            draft = Geometry.from_file(
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
+            )
         elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
-                files.file_names, name, solver_version, length_unit, tags
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
             )
         elif isinstance(files, VolumeMeshFile):
             draft = VolumeMeshV2.from_file(
-                files.file_names, name, solver_version, length_unit, tags
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
             )
         else:
             raise Flow360FileError(
@@ -718,7 +724,11 @@ class Project(pd.BaseModel):
         return project
 
     @classmethod
-    @pd.validate_call
+    @pd.validate_call(
+        config={
+            "arbitrary_types_allowed": True
+        }  # Folder (v2: component/simulation/folder.py) does not have validate() defined
+    )
     def from_geometry(
         cls,
         files: Union[str, list[str]],
@@ -728,6 +738,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from local geometry files.
@@ -746,6 +757,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -781,10 +794,11 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            folder=folder,
         )
 
     @classmethod
-    @pd.validate_call
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
     def from_surface_mesh(
         cls,
         file: str,
@@ -794,6 +808,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from a local surface mesh file.
@@ -813,6 +828,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -849,10 +866,11 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            folder=folder,
         )
 
     @classmethod
-    @pd.validate_call
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
     def from_volume_mesh(
         cls,
         file: str,
@@ -862,6 +880,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from a local volume mesh file.
@@ -881,6 +900,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -917,6 +938,7 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            folder=folder,
         )
 
     @classmethod
