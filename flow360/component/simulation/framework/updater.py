@@ -24,6 +24,8 @@ from flow360.component.simulation.framework.updater_utils import (
 from flow360.log import log
 from flow360.version import __version__
 
+DEFAULT_PLANAR_FACE_TOLERANCE = 1e-6
+
 
 def _to_24_11_1(params_as_dict):
     # Check and remove the 'meshing' node if conditions are met
@@ -284,6 +286,17 @@ def _to_25_6_2(params_as_dict):
     return params_as_dict
 
 
+def _to_25_6_4(params_as_dict):
+    if params_as_dict.get("meshing") is None:
+        return params_as_dict
+    if "defaults" not in params_as_dict["meshing"]:
+        return params_as_dict
+    meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+    if meshing_defaults.get("planar_face_tolerance") is None:
+        meshing_defaults["planar_face_tolerance"] = DEFAULT_PLANAR_FACE_TOLERANCE
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -293,6 +306,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.2.3"), _to_25_2_3),
     (Flow360Version("25.4.1"), _to_25_4_1),
     (Flow360Version("25.6.2"), _to_25_6_2),
+    (Flow360Version("25.6.4"), _to_25_6_4),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
