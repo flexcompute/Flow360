@@ -182,7 +182,6 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     """
 
     id: str = pd.Field(alias="caseId")
-    case_mesh_id: str = pd.Field(alias="caseMeshId")
     status: Flow360Status = pd.Field()
 
     def to_case(self) -> Case:
@@ -547,6 +546,13 @@ class Case(CaseBase, Flow360Resource):
         return super().info
 
     @property
+    def info_v2(self) -> CaseMetaV2:
+        """
+        returns metadata v2 info for case
+        """
+        return self._web_api_v2.info
+
+    @property
     def project_id(self) -> Optional[str]:
         """Returns the project id of the case if case was run with V2 interface."""
         if isinstance(self.info, CaseMeta):
@@ -554,6 +560,13 @@ class Case(CaseBase, Flow360Resource):
         if isinstance(self.info, CaseMetaV2):
             return self.info.project_id
         raise ValueError("Case info is not of type CaseMeta or CaseMetaV2")
+
+    @property
+    def tags(self) -> List[str]:
+        """
+        get case tags
+        """
+        return self._web_api_v2.info.tags
 
     @property
     def volume_mesh(self) -> "VolumeMeshV2":
