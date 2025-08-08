@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 from pydantic import ValidationError
 from requests.exceptions import HTTPError
 
-from flow360.cloud.flow360_requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
@@ -82,6 +82,19 @@ class AssetBase(metaclass=ABCMeta):
         get solver version
         """
         return self.info.solver_version
+
+    def rename(self, new_name: str):
+        """
+        Rename the current asset.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the asset.
+        """
+        RestApi(self._interface_class.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
 
     @classmethod
     # pylint: disable=protected-access

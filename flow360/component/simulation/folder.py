@@ -10,7 +10,11 @@ from typing import List, Optional, Union
 
 import pydantic as pd
 
-from ...cloud.flow360_requests import MoveToFolderRequestV2, NewFolderRequest
+from ...cloud.flow360_requests import (
+    MoveToFolderRequestV2,
+    NewFolderRequest,
+    RenameAssetRequestV2,
+)
 from ...cloud.rest_api import RestApi
 from ...exceptions import Flow360ValueError
 from ...log import log
@@ -132,6 +136,19 @@ class Folder(Flow360Resource):
             method=f"{self.id}",
         )
         return self
+
+    def rename(self, new_name: str):
+        """
+        Rename the current folder.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the folder.
+        """
+        RestApi(FolderInterfaceV2.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
 
     @classmethod
     def _interface(cls):
