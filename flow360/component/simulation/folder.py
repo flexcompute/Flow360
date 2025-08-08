@@ -24,6 +24,7 @@ from ..utils import (
 
 ROOT_FOLDER = "ROOT.FLOW360"
 
+
 class FolderMeta(AssetMetaBaseModel, extra="allow"):
     """
     FolderMeta component
