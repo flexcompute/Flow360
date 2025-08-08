@@ -28,6 +28,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+from flow360.component.simulation.folder import Folder
 from flow360.component.utils import VolumeMeshFile
 from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
 from flow360.component.v1.meshing.params import VolumeMeshingParams
@@ -926,12 +927,14 @@ class VolumeMeshDraftV2(ResourceDraft):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         self.file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
+        self.folder = folder
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -1011,6 +1014,7 @@ class VolumeMeshDraftV2(ResourceDraft):
             solver_version=self.solver_version,
             tags=self.tags,
             file_name=original_file_with_compression,
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             format=mesh_format.value,
             description=description,
@@ -1137,6 +1141,7 @@ class VolumeMeshV2(AssetBase):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ) -> VolumeMeshDraftV2:
         """
         Parameters
@@ -1151,6 +1156,8 @@ class VolumeMeshV2(AssetBase):
             Length unit to use for the project ("m", "mm", "cm", "inch", "ft")
         tags: List[str]
             List of string tags to be added to the project upon creation
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -1164,6 +1171,7 @@ class VolumeMeshV2(AssetBase):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            folder=folder,
         )
 
     # pylint: disable=useless-parent-delegation

@@ -14,7 +14,7 @@ import typing_extensions
 from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
-from flow360.cloud.flow360_requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
@@ -25,11 +25,13 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
+    get_project_records,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -85,6 +87,8 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
         The project ID.
     name : str
         The name of the project.
+    tags : List[str]
+        List of tags associated with the project.
     root_item_id : str
         ID of the root item in the project.
     root_item_type : RootType
@@ -94,6 +98,7 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
     user_id: str = pd.Field(alias="userId")
     id: str = pd.Field()
     name: str = pd.Field()
+    tags: List[str] = pd.Field(default_factory=list)
     root_item_id: str = pd.Field(alias="rootItemId")
     root_item_type: RootType = pd.Field(alias="rootItemType")
 
@@ -402,6 +407,18 @@ class Project(pd.BaseModel):
         return self.metadata.id
 
     @property
+    def tags(self) -> List[str]:
+        """
+        Returns the tags of the project.
+
+        Returns
+        -------
+        List[str]
+            List of the project's tags.
+        """
+        return self.metadata.tags
+
+    @property
     def length_unit(self) -> LengthType.Positive:
         """
         Returns the length unit of the project.
@@ -612,17 +629,54 @@ class Project(pd.BaseModel):
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="VolumeMesh")
 
-    def get_case_ids(self):
+    def get_case_ids(self, tags: Optional[List[str]] = None) -> List[str]:
         """
-        Returns the available IDs of cases in the project
+        Returns the available IDs of cases in the project, optionally filtered by tags.
+
+        Parameters
+        ----------
+        tags : List[str], optional
+            List of tags to filter cases by. If None or empty tags list, returns all case IDs.
 
         Returns
         -------
         Iterable[str]
-            An iterable of asset IDs.
+            An iterable of case IDs. If tags are provided, filters to return only
+            case IDs that have at least one matching tag.
         """
         # pylint: disable=protected-access
-        return self.project_tree._get_asset_ids_by_type(asset_type="Case")
+        all_case_ids = self.project_tree._get_asset_ids_by_type(asset_type="Case")
+
+        if not tags:
+            return all_case_ids
+
+        # Filter cases by tags
+        filtered_case_ids = []
+        for case_id in all_case_ids:
+            case = self.get_case(asset_id=case_id)
+            if set(tags) & set(case.info_v2.tags):
+                filtered_case_ids.append(case_id)
+
+        return filtered_case_ids
+
+    @classmethod
+    def get_project_ids(cls, tags: Optional[List[str]] = None) -> List[str]:
+        """
+        Returns the available IDs of projects, optionally filtered by tags.
+
+        Parameters
+        ----------
+        tags : List[str], optional
+            List of tags to filter projects by. If None, returns all project IDs.
+
+        Returns
+        -------
+        List[str]
+            A list of project IDs. If tags are provided, filters to return only
+            project IDs that have at least one matching tag.
+        """
+        project_records, _ = get_project_records("", tags=tags)
+        return [record.project_id for record in project_records.records]
 
     # pylint: disable=too-many-arguments
     @classmethod
@@ -635,6 +689,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from a file.
@@ -653,6 +708,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create the project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -670,14 +727,16 @@ class Project(pd.BaseModel):
         files._check_files_existence()
 
         if isinstance(files, GeometryFiles):
-            draft = Geometry.from_file(files.file_names, name, solver_version, length_unit, tags)
+            draft = Geometry.from_file(
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
+            )
         elif isinstance(files, SurfaceMeshFile):
             draft = SurfaceMeshV2.from_file(
-                files.file_names, name, solver_version, length_unit, tags
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
             )
         elif isinstance(files, VolumeMeshFile):
             draft = VolumeMeshV2.from_file(
-                files.file_names, name, solver_version, length_unit, tags
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
             )
         else:
             raise Flow360FileError(
@@ -718,7 +777,11 @@ class Project(pd.BaseModel):
         return project
 
     @classmethod
-    @pd.validate_call
+    @pd.validate_call(
+        config={
+            "arbitrary_types_allowed": True
+        }  # Folder (v2: component/simulation/folder.py) does not have validate() defined
+    )
     def from_geometry(
         cls,
         files: Union[str, list[str]],
@@ -728,6 +791,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from local geometry files.
@@ -746,6 +810,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -781,10 +847,11 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            folder=folder,
         )
 
     @classmethod
-    @pd.validate_call
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
     def from_surface_mesh(
         cls,
         file: str,
@@ -794,6 +861,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from a local surface mesh file.
@@ -813,6 +881,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -849,10 +919,11 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            folder=folder,
         )
 
     @classmethod
-    @pd.validate_call
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
     def from_volume_mesh(
         cls,
         file: str,
@@ -862,6 +933,7 @@ class Project(pd.BaseModel):
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
         run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
         Initializes a project from a local volume mesh file.
@@ -881,6 +953,8 @@ class Project(pd.BaseModel):
             Tags to assign to the project (default is None).
         run_async : bool, optional
             Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -917,6 +991,7 @@ class Project(pd.BaseModel):
             length_unit=length_unit,
             tags=tags,
             run_async=run_async,
+            folder=folder,
         )
 
     @classmethod
@@ -1188,6 +1263,19 @@ class Project(pd.BaseModel):
     def refresh_project_tree(self):
         """Refresh the local project tree by fetching the latest project tree from cloud."""
         return self._get_tree_from_cloud()
+
+    def rename(self, new_name: str):
+        """
+        Rename the current project.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the project.
+        """
+        RestApi(ProjectInterface.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
 
     def print_project_tree(self, line_width: int = 30, is_horizontal: bool = True):
         """Print the project tree to the terminal.
