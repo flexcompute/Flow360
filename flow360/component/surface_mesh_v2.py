@@ -21,6 +21,7 @@ from flow360.component.resource_base import (
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.utils import (
     MeshNameParser,
@@ -90,12 +91,14 @@ class SurfaceMeshDraftV2(ResourceDraft):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         self._file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
+        self.folder = folder
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -157,9 +160,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
             solver_version=self.solver_version,
             tags=self.tags,
             file_name=self._file_name,
-            # pylint: disable=fixme
-            # TODO: remove hardcoding
-            parent_folder_id="ROOT.FLOW360",
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
         )
@@ -277,6 +278,7 @@ class SurfaceMeshV2(AssetBase):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ) -> SurfaceMeshDraftV2:
         """
         Parameters
@@ -291,6 +293,8 @@ class SurfaceMeshV2(AssetBase):
             Length unit to use for the project ("m", "mm", "cm", "inch", "ft")
         tags: List[str]
             List of string tags to be added to the project upon creation
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -304,6 +308,7 @@ class SurfaceMeshV2(AssetBase):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            folder=folder,
         )
 
     # pylint: disable=useless-parent-delegation

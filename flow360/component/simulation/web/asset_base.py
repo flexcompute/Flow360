@@ -24,6 +24,7 @@ from flow360.component.simulation.entity_info import (
     EntityInfoModel,
     parse_entity_info_model,
 )
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
@@ -255,12 +256,14 @@ class AssetBase(metaclass=ABCMeta):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         """
         Create asset draft from files
         :param file_names:
         :param project_name:
         :param tags:
+        :param folder: Folder object where the asset will be created (optional; defaults to root if unspecified)
         :return:
         """
         # pylint: disable=not-callable
@@ -270,6 +273,7 @@ class AssetBase(metaclass=ABCMeta):
             solver_version=solver_version,
             tags=tags,
             length_unit=length_unit,
+            folder=folder,
         )
 
     @classmethod
