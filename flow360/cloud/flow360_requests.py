@@ -238,5 +238,5 @@ class MoveToFolderRequestV2(Flow360RequestsV2):
     """v2 request implementation for moving folder"""
 
     name: Optional[str] = pd_v2.Field(default=None, description="folder to move name")
-    tags: Optional[List[str]] = pd_v2.Field(default=[], description="folder tags")
+    tags: List[str] = pd_v2.Field(default=[], description="folder tags")
     parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")

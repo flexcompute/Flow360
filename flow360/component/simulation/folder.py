@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Union
 
-import pydantic.v1 as pd
+import pydantic as pd
 
 from ...cloud.flow360_requests import MoveToFolderRequestV2, NewFolderRequest
 from ...cloud.rest_api import RestApi
@@ -24,9 +24,7 @@ from ..utils import (
 
 ROOT_FOLDER = "ROOT.FLOW360"
 
-
-# pylint: disable=E0213
-class FolderMeta(AssetMetaBaseModel, extra=pd.Extra.allow):
+class FolderMeta(AssetMetaBaseModel, extra="allow"):
     """
     FolderMeta component
     """
@@ -335,36 +333,3 @@ class Folder(Flow360Resource):
         folder = cls(id=folder_id)
         tree = folder.get_folder_tree()
         folder._print_storage(tree, 0, n_display)
-
-
-# FOLDER LIST uses different endpoint, requires separate implementation
-
-# class FolderList(Flow360ResourceListBase):
-#     """
-#     FolderList List component
-#     """
-
-#     def __init__(
-#         self,
-#         from_cloud: bool = True,
-#         include_deleted: bool = False,
-#         limit=100,
-#     ):
-#         super().__init__(
-#             ancestor_id=None,
-#             from_cloud=from_cloud,
-#             include_deleted=include_deleted,
-#             limit=limit,
-#             resourceClass=Folder,
-#         )
-
-#     # pylint: disable=useless-parent-delegation
-#     def __getitem__(self, index) -> Folder:
-#         """
-#         returns Folder item of the list
-#         """
-#         return super().__getitem__(index)
-
-#     # pylint: disable=useless-parent-delegation
-#     def __iter__(self) -> Iterator[Folder]:
-#         return super().__iter__()
