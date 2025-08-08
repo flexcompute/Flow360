@@ -77,6 +77,13 @@ class AssetBase(metaclass=ABCMeta):
         return self.info.project_id
 
     @property
+    def tags(self) -> List[str]:
+        """
+        get asset tags
+        """
+        return self.info.tags
+
+    @property
     def solver_version(self):
         """
         get solver version
