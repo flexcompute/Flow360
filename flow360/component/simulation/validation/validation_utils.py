@@ -117,7 +117,7 @@ def check_deleted_surface_pair(value):
     return value
 
 
-def check_symmetric_boundary_existence_for_inhouse(stored_entities):
+def check_symmetric_boundary_existence(stored_entities):
     """Check according to the criteria if the symmetric plane exists."""
     validation_info = get_validation_info()
 
