@@ -11,11 +11,7 @@ from typing import Any, List, Optional
 
 import pydantic as pd
 
-from flow360.cloud.flow360_requests import (
-    LengthUnitType,
-    NewSurfaceMeshRequestV2,
-    RenameAssetRequestV2,
-)
+from flow360.cloud.flow360_requests import LengthUnitType, NewSurfaceMeshRequestV2
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import SurfaceMeshInterfaceV2

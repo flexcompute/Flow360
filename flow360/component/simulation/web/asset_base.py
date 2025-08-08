@@ -100,7 +100,6 @@ class AssetBase(metaclass=ABCMeta):
         RestApi(self._interface_class.endpoint).patch(
             RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
-        return self
 
     @classmethod
     # pylint: disable=protected-access

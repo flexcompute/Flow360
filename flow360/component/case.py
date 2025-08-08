@@ -689,7 +689,6 @@ class Case(CaseBase, Flow360Resource):
         RestApi(CaseInterfaceV2.endpoint).patch(
             RenameAssetRequestV2(name=new_name).dict(), method=self.id
         )
-        return self
 
     @classmethod
     def _interface(cls):
