@@ -714,11 +714,11 @@ def test_deserialization_with_updater():
 
 
 def test_updater_to_25_6_4():
-    with open("../data/simulation/simulation_pre_25_6_2.json", "r") as fp:
+    with open("../data/simulation/simulation_pre_25_4_1.json", "r") as fp:
         params_as_dict = json.load(fp)
 
     params_new = updater(
-        version_from="25.6.2",
+        version_from="25.4.0b1",
         version_to=f"25.6.4",
         params_as_dict=params_as_dict,
     )
