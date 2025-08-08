@@ -232,3 +232,11 @@ class DraftRunRequest(Flow360RequestsV2):
                     f"cannot be later than 'up_to' ({self.up_to})."
                 )
         return self
+
+
+class MoveToFolderRequestV2(Flow360RequestsV2):
+    """v2 request implementation for moving folder"""
+
+    name: Optional[str] = pd_v2.Field(default=None, description="folder to move name")
+    tags: List[str] = pd_v2.Field(default=[], description="folder tags")
+    parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")
