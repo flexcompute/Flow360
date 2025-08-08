@@ -320,25 +320,6 @@ class SurfaceMeshV2(AssetBase):
         """Get the default surface mesh settings from the simulation dict"""
         return super().get_default_settings(simulation_dict)
 
-    def rename(self, new_name: str):
-        """
-        Rename the current surface mesh.
-
-        Parameters
-        ----------
-        new_name : str
-            The new name for the surface mesh.
-
-        Returns
-        -------
-        self
-            Returns the modified surface mesh after it has been renamed.
-        """
-        RestApi(SurfaceMeshInterfaceV2.endpoint).patch(
-            RenameAssetRequestV2(name=new_name).dict(), method=self.id
-        )
-        return self
-
     @property
     def boundary_names(self) -> List[str]:
         """

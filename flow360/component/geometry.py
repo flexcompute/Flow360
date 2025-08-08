@@ -346,25 +346,6 @@ class Geometry(AssetBase):
             asset_id=geometry_id, local_storage_path=local_storage_path, meta_data=meta_data
         )
 
-    def rename(self, new_name: str):
-        """
-        Rename the current (uploaded) geometry.
-
-        Parameters
-        ----------
-        new_name : str
-            The new name for the geometry.
-
-        Returns
-        -------
-        self
-            Returns the modified geometry after it has been renamed.
-        """
-        RestApi(GeometryInterface.endpoint).patch(
-            RenameAssetRequestV2(name=new_name).dict(), method=self.id
-        )
-        return self
-
     def _show_available_entity_groups(
         self,
         entity_type_name: Literal["faces", "edges", "bodies"],

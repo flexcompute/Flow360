@@ -1180,25 +1180,6 @@ class VolumeMeshV2(AssetBase):
         """Get the default volume mesh settings from the simulation dict"""
         return super().get_default_settings(simulation_dict)
 
-    def rename(self, new_name: str):
-        """
-        Rename the current volume mesh.
-
-        Parameters
-        ----------
-        new_name : str
-            The new name for the volume mesh.
-
-        Returns
-        -------
-        self
-            Returns the modified volume mesh after it has been renamed.
-        """
-        RestApi(VolumeMeshInterfaceV2.endpoint).patch(
-            RenameAssetRequestV2(name=new_name).dict(), method=self.id
-        )
-        return self
-
     @cached_property
     def stats(self) -> VolumeMeshStats:
         """
