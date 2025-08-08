@@ -48,7 +48,7 @@ from flow360.component.utils import (
     wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360NotImplementedError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
@@ -656,7 +656,7 @@ class Project(pd.BaseModel):
             case = self.get_case(asset_id=case_id)
             if set(tags) & set(case.info_v2.tags):
                 filtered_case_ids.append(case_id)
-        
+
         return filtered_case_ids
 
     @classmethod
@@ -675,9 +675,9 @@ class Project(pd.BaseModel):
             A list of project IDs. If tags are provided, filters to return only
             project IDs that have at least one matching tag.
         """
-        project_records, _ = get_project_records('', tags=tags)
+        project_records, _ = get_project_records("", tags=tags)
         return [record.project_id for record in project_records.records]
-        
+
     # pylint: disable=too-many-arguments
     @classmethod
     def _create_project_from_files(

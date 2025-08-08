@@ -184,7 +184,7 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     id: str = pd.Field(alias="caseId")
     # case_mesh_id: str = pd.Field(alias="caseMeshId")
     status: Flow360Status = pd.Field()
-    # case_tags: List[str] = pd.Field(alias="caseTags") 
+    # case_tags: List[str] = pd.Field(alias="caseTags")
 
     def to_case(self) -> Case:
         """
