@@ -306,10 +306,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.2.3"), _to_25_2_3),
     (Flow360Version("25.4.1"), _to_25_4_1),
     (Flow360Version("25.6.2"), _to_25_6_2),
-<<<<<<< HEAD
-=======
     (Flow360Version("25.6.4"), _to_25_6_4),
->>>>>>> 25706cea (fix(): `planar_face_tolerance` might be missing and causing validation to fail (#1344))
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
