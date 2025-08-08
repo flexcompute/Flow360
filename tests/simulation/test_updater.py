@@ -723,3 +723,9 @@ def test_updater_to_25_6_4():
         params_as_dict=params_as_dict,
     )
     assert params_new["meshing"]["defaults"]["planar_face_tolerance"] == 1e-6
+    params_new, _, _ = validate_model(
+        params_as_dict=params_new,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
+    assert params_new
