@@ -42,7 +42,7 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
-    check_symmetric_boundary_existence_for_inhouse,
+    check_symmetric_boundary_existence,
 )
 
 # pylint: disable=fixme
@@ -57,7 +57,7 @@ class EntityListAllowingGhost(EntityList):  # Define EntityList to include valid
     @classmethod
     def ghost_entity_validator(cls, value):
         """Run all validators"""
-        return check_symmetric_boundary_existence_for_inhouse(value)
+        return check_symmetric_boundary_existence(value)
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):

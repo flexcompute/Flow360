@@ -7,6 +7,7 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -105,7 +106,7 @@ class MeshingDefaults(Flow360BaseModel):
     )
 
     planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
-        1e-6,
+        DEFAULT_PLANAR_FACE_TOLERANCE,
         description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
