@@ -4,6 +4,7 @@ http.get(path)
 """
 
 import os
+import sys
 from functools import wraps
 
 import requests
@@ -22,15 +23,11 @@ from .security import api_key
 
 def get_user_agent():
     """Get the user agent the current environment."""
-<<<<<<< HEAD
-    return os.environ.get("FLOW360_AGENT", f"Python-Client/{__version__}")
-=======
     return os.environ.get(
         "FLOW360_AGENT",
         f"Python-Client/{__version__}/"
         f"Python-Version/{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
     )
->>>>>>> 0923a55a (Added Python version for user agent (#1350))
 
 
 def api_key_auth(request):
