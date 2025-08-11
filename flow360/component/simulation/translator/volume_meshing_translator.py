@@ -217,7 +217,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         if isinstance(zone, AutomatedFarfield):
             translated["farfield"] = {
                 "type": zone.method,
-                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance,
+                "planarFaceTolerance": planar_tolerance,
             }
             break
 
