@@ -1408,10 +1408,10 @@ class Project(pd.BaseModel):
 
         if errors is not None:
             log.error(
-                f"Validation error found in the simulation params: {formatting_validation_errors(errors=errors)}"
+                f"Validation error found during local validation: {formatting_validation_errors(errors=errors)}"
             )
             if raise_on_error:
-                raise ValueError("Submission terminated due to validation error.")
+                raise ValueError("Submission terminated due to local validation error.")
             return None
 
         source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
