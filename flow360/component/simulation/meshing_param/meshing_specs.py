@@ -195,7 +195,66 @@ class SnappySurfaceMeshingDefaults(Flow360BaseModel):
 
 
 class SnappyQualityMetrics(Flow360BaseModel):
-    # TODO: create doctrings with cursor and OF docs, convert to underscore case
+    """
+    Mesh quality control parameters for snappyHexMesh meshing process.
+
+    Parameters
+    ----------
+    max_non_ortho : Optional[AngleType.Positive], default: 85°
+        Maximum face non-orthogonality angle: the angle made by the vector between
+        the two adjacent cell centres across the common face and the face normal.
+        Set to None to disable this metric.
+
+    max_boundary_skewness : Optional[AngleType], default: 20°
+        Maximum boundary skewness. Set to None or -1° to disable this metric.
+
+    max_internal_skewness : Optional[AngleType], default: 50°
+        Maximum internal face skewness. Set to None or -1° to disable this metric.
+
+    max_concave : Optional[AngleType.Positive], default: 50°
+        Maximum cell concavity. Set to None to disable this metric.
+
+    min_vol : Optional[float], default: None
+        Minimum cell pyramid volume [m³].
+        Set to None to disable this metric (uses -1e30 internally).
+
+    min_tet_quality : Optional[float], default: None
+        Minimum tetrahedron quality.
+        Set to None to disable this metric (uses -1e30 internally).
+
+    min_area : Optional[AreaType.Positive], default: None
+        Minimum face area. Set to None to disable.
+
+    min_twist : Optional[float], default: None
+        Minimum twist. Controls the twist quality of faces.
+        Set to None to disable this metric.
+
+    min_determinant : Optional[float], default: None
+        Minimum cell determinant. Set to None to disable this metric (uses -1e30 internally).
+
+    min_vol_ratio : float, default: 0
+        Minimum volume ratio between adjacent cells.
+
+    min_face_weight : float, default: 0
+        Minimum face interpolation weight. Controls the quality of face interpolation.
+
+    min_triangle_twist : Optional[float], default: None
+        Minimum triangle twist. Set to None to disable this metric.
+
+    n_smooth_scale : Optional[pd.NonNegativeInt], default: 4
+        Number of smoothing iterations. Used in combination with error_reduction.
+
+    error_reduction : Optional[float], default: 0.75
+        Error reduction factor. Used in combination with n_smooth_scale.
+        Must be between 0 and 1.
+
+    min_vol_collapse_ratio : float, default: 0
+        Minimum volume collapse ratio. If > 0: preserves single cells with all points
+        on the surface if the resulting volume after snapping is larger than
+        min_vol_collapse_ratio times the old volume (i.e., not collapsed to flat cell).
+        If < 0: always deletes such cells.
+    """
+
     max_non_ortho: Optional[AngleType.Positive] = pd.Field(default=85 * u.deg)
     max_boundary_skewness: Optional[AngleType] = pd.Field(default=20 * u.deg)
     max_internal_skewness: Optional[AngleType] = pd.Field(default=50 * u.deg)
