@@ -117,8 +117,8 @@ def create_porous_jump_zone_param():
     inflow = Surface(name="blk-3/inflow")
     outflow = Surface(name="blk-1/outflow")
     porous_interface = (
-        Surface(name="blk-1/Interface_blk-2"),
-        Surface(name="blk-2/Interface_blk-1"),
+        Surface(name="blk-1/Interface_blk-2",private_attribute_is_interface = True),
+        Surface(name="blk-2/Interface_blk-1",private_attribute_is_interface = True),
     )
     return _create_porous_media_param(
         slip_wall_list=[slipWall1, slipWall2, slipWall3],
