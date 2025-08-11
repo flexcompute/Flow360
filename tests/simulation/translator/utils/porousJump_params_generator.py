@@ -10,10 +10,10 @@ from flow360.component.simulation.models.solver_numerics import (
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
+    PorousJump,
     Pressure,
     SlipWall,
     TotalPressure,
-    PorousJump,
 )
 from flow360.component.simulation.models.volume_models import Fluid, PorousMedium
 from flow360.component.simulation.operating_condition.operating_condition import (

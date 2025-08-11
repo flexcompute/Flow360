@@ -87,6 +87,9 @@ from tests.simulation.translator.utils.om6WingWallModel_params_generator import 
 from tests.simulation.translator.utils.plateASI_param_generator import (
     create_plateASI_param,
 )
+from tests.simulation.translator.utils.porousJump_params_generator import (
+    create_porous_jump_zone_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
@@ -120,10 +123,6 @@ from tests.simulation.translator.utils.xv15BETDiskNestedRotation_param_generator
 from tests.simulation.translator.utils.XV15HoverMRF_param_generator import (
     create_XV15HoverMRF_param,
     rotation_cylinder,
-)
-
-from tests.simulation.translator.utils.porousJump_params_generator import (
-    create_porous_jump_zone_param,
 )
 
 assertions = unittest.TestCase("__init__")

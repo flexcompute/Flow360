@@ -8,9 +8,9 @@ from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
+    PorousJump,
     SurfaceModelTypes,
     Wall,
-    PorousJump,
 )
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (

@@ -32,11 +32,11 @@ from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
     AngularVelocityType,
     HeatFluxType,
+    InverseAreaType,
+    InverseLengthType,
     LengthType,
     MassFlowRateType,
     PressureType,
-    InverseAreaType,
-    InverseLengthType,
 )
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
@@ -706,12 +706,12 @@ class PorousJump(Flow360BaseModel):
 
       >>> fl.PorousJump(
       ...     surface_pairs=[
-      ...         (volume_mesh["VOLUME/BOTTOM"], volume_mesh["VOLUME/TOP"]),
-      ...         (volume_mesh["VOLUME/RIGHT"], volume_mesh["VOLUME/LEFT"]),
+      ...         (volume_mesh["blk-1/Interface-blk-2"], volume_mesh["blk-2/Interface-blk-1"]),
+      ...         (volume_mesh["blk-1/Interface-blk-3"], volume_mesh["blk-3/Interface-blk-1"]),
       ...     ],
       ...    darcy_coefficient = 1e6 / fl.u.m **2,
       ...    forchheimer_coefficient = 1 / fl.u.m,
-      ...    thickness = 1 / fl.u.m,
+      ...    thickness = 1 * fl.u.m,
       ... )
     ====
     """
@@ -733,16 +733,19 @@ class PorousJump(Flow360BaseModel):
         + "the scaling of the inertial loss term."
     )
     thickness: LengthType = pd.Field(
-        description="thickness of the thin porous media on the surface"
-        + "the scaling of the inertial loss term."
+        description="Thickness of the thin porous media on the surface"
     )
 
     @pd.field_validator("entity_pairs", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value):
-        """Ensure all boundaries will be present after mesher"""
+        """Ensure all boundaries will be present after mesher and all entities are surfaces"""
         for surface_pair in value.items:
             check_deleted_surface_pair(surface_pair)
+            for surface in surface_pair.pair:
+                if not surface.private_attribute_is_interface:
+                    raise ValueError(f"Boundary `{surface.name}` is not an interface")
+
         return value
 
 
