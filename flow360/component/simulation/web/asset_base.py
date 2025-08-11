@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 from pydantic import ValidationError
 from requests.exceptions import HTTPError
 
-from flow360.cloud.flow360_requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
@@ -24,6 +24,7 @@ from flow360.component.simulation.entity_info import (
     EntityInfoModel,
     parse_entity_info_model,
 )
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
@@ -76,11 +77,31 @@ class AssetBase(metaclass=ABCMeta):
         return self.info.project_id
 
     @property
+    def tags(self) -> List[str]:
+        """
+        get asset tags
+        """
+        return self.info.tags
+
+    @property
     def solver_version(self):
         """
         get solver version
         """
         return self.info.solver_version
+
+    def rename(self, new_name: str):
+        """
+        Rename the current asset.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the asset.
+        """
+        RestApi(self._interface_class.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
 
     @classmethod
     # pylint: disable=protected-access
@@ -255,12 +276,14 @@ class AssetBase(metaclass=ABCMeta):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         """
         Create asset draft from files
         :param file_names:
         :param project_name:
         :param tags:
+        :param folder: Folder object where the asset will be created (optional; defaults to root if unspecified)
         :return:
         """
         # pylint: disable=not-callable
@@ -270,6 +293,7 @@ class AssetBase(metaclass=ABCMeta):
             solver_version=solver_version,
             tags=tags,
             length_unit=length_unit,
+            folder=folder,
         )
 
     @classmethod

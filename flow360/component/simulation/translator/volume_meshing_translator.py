@@ -23,7 +23,7 @@ from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
 
-def unifrom_refinement_translator(obj: UniformRefinement):
+def uniform_refinement_translator(obj: UniformRefinement):
     """
     Translate UniformRefinement.
 
@@ -94,7 +94,7 @@ def rotation_cylinder_translator(obj: RotationCylinder, rotor_disk_names: list):
     return setting
 
 
-def refinement_entitity_injector(entity_obj):
+def refinement_entity_injector(entity_obj):
     """Injector for UniformRefinement entity [box & cylinder]."""
     if isinstance(entity_obj, Cylinder):
         return {
@@ -188,7 +188,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             break
 
         if isinstance(zone, AutomatedFarfield):
-            translated["farfield"] = {"type": zone.method}
+            translated["farfield"] = {
+                "type": zone.method,
+                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance,
+            }
             break
 
     if "farfield" not in translated:
@@ -231,9 +234,9 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
         meshing_params.refinements,
         UniformRefinement,
-        unifrom_refinement_translator,
+        uniform_refinement_translator,
         to_list=True,
-        entity_injection_func=refinement_entitity_injector,
+        entity_injection_func=refinement_entity_injector,
     )
     rotor_disk_refinement = translate_setting_and_apply_to_all_entities(
         meshing_params.refinements,

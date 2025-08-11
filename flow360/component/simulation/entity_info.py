@@ -142,8 +142,9 @@ class GeometryEntityInfo(EntityInfoModel):
         Group items with given attribute_name.
         """
         entity_list = self._get_list_of_entities(attribute_name, entity_type_name)
+        known_frozen_hashes = set()
         for item in entity_list:
-            registry.register(item)
+            known_frozen_hashes = registry.fast_register(item, known_frozen_hashes)
         return registry
 
     def _get_list_of_entities(
@@ -516,14 +517,16 @@ class VolumeMeshEntityInfo(EntityInfoModel):
             internal_registry = EntityRegistry()
 
             # Populate boundaries
+            known_frozen_hashes = set()
             # pylint: disable=not-an-iterable
             for boundary in self.boundaries:
-                internal_registry.register(boundary)
+                known_frozen_hashes = internal_registry.fast_register(boundary, known_frozen_hashes)
 
             # Populate zones
             # pylint: disable=not-an-iterable
+            known_frozen_hashes = set()
             for zone in self.zones:
-                internal_registry.register(zone)
+                known_frozen_hashes = internal_registry.fast_register(zone, known_frozen_hashes)
 
         return internal_registry
 
@@ -552,10 +555,11 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         if internal_registry is None:
             # Initialize the local registry
             internal_registry = EntityRegistry()
+            known_frozen_hashes = set()
             # Populate boundaries
             # pylint: disable=not-an-iterable
             for boundary in self.boundaries:
-                internal_registry.register(boundary)
+                known_frozen_hashes = internal_registry.fast_register(boundary, known_frozen_hashes)
             return internal_registry
         return internal_registry
 

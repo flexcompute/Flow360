@@ -514,6 +514,8 @@ class Surface(_SurfaceEntityBase):
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
     )
+    # pylint: disable=fixme
+    # TODO: This should be deprecated since it is not very useful or easy to use.
     private_attribute_potential_issues: List[_SurfaceIssueEnums] = pd.Field(
         [],
         description="Issues (not necessarily problems) found on this `Surface` after inspection by "
@@ -531,11 +533,6 @@ class Surface(_SurfaceEntityBase):
     # TODO: With the amount of private_attribute prefixes we have
     # TODO: here maybe it makes more sense to lump them together to save space?
 
-    private_attribute_color: Optional[str] = pd.Field(
-        None, description="Front end storage for the color selected for this `Surface` entity."
-    )
-
-    # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
     def _will_be_deleted_by_mesher(self, farfield_method: Literal["auto", "quasi-3d"]) -> bool:
@@ -637,17 +634,16 @@ class GhostCircularPlane(_SurfaceEntityBase):
     def exists(self, validation_info) -> bool:
         """Mesher logic for symmetric plane existence."""
 
-        if (
-            validation_info is None
-            or not validation_info.is_beta_mesher
-            or self.name != "symmetric"
-        ):
-            # Non-beta mesher mode, then symmetric plane existence is handled upstream.
+        if self.name != "symmetric":
+            # Quasi-3D mode, no need to check existence.
             return True
 
+        if validation_info is None:
+            raise ValueError("Validation info is required for GhostCircularPlane existence check.")
+
         if validation_info.global_bounding_box is None:
-            # This likely means the user try to use in-house mesher on old cloud resources.
-            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out.
+            # This likely means the user try to use mesher on old cloud resources.
+            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
 
         y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
