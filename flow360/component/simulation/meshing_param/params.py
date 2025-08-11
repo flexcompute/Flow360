@@ -1,6 +1,6 @@
 """Meshing related parameters for volume and surface mesher."""
 
-from typing import Annotated, List, Optional, Union, Literal
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -13,13 +13,20 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
     SurfaceRefinement,
 )
-
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
+    MeshingDefaults,
+    SnappyCastellatedMeshControls,
+    SnappyQualityMetrics,
+    SnappySmoothControls,
+    SnappySnapControls,
+    SnappySurfaceMeshingDefaults,
+)
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
+    SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
-    SnappyRegionRefinement
 )
-
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -27,19 +34,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-
-from flow360.component.simulation.meshing_param.meshing_specs import (
-    MeshingDefaults,
-    SnappyQualityMetrics, 
-    SnappySnapControls, 
-    SnappyCastellatedMeshControls,
-    SnappySurfaceMeshingDefaults,
-    SnappySmoothControls,
-    BetaVolumeMeshingDefaults
-    )
+from flow360.component.simulation.primitives import Box, Cylinder, MeshZone
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.primitives import Box, MeshZone, Cylinder
-
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -69,30 +65,26 @@ SurfaceRefinementTypes = Annotated[
     Union[
         SurfaceEdgeRefinement,
         SurfaceRefinement,
-    ], 
-    pd.Field(discriminator="refinement_type")
+    ],
+    pd.Field(discriminator="refinement_type"),
 ]
 
 SnappySurfaceRefinementTypes = Annotated[
     Union[
-        SnappyBodyRefinement,
-        SnappySurfaceEdgeRefinement,
-        SnappyRegionRefinement,
-        UniformRefinement
-    ], 
-    pd.Field(discriminator="refinement_type")
+        SnappyBodyRefinement, SnappySurfaceEdgeRefinement, SnappyRegionRefinement, UniformRefinement
+    ],
+    pd.Field(discriminator="refinement_type"),
 ]
 
 VolumeRefinementTypes = Annotated[
     Union[
-        UniformRefinement, 
+        UniformRefinement,
         AxisymmetricRefinement,
         BoundaryLayer,
         PassiveSpacing,
-    ], 
-    pd.Field(discriminator="refinement_type")
+    ],
+    pd.Field(discriminator="refinement_type"),
 ]
-
 
 
 class MeshingParams(Flow360BaseModel):
@@ -126,9 +118,8 @@ class MeshingParams(Flow360BaseModel):
 
     ====
     """
-    type: Literal["MeshingParams"] = pd.Field(
-        "MeshingParams", frozen=True
-    )
+
+    type: Literal["MeshingParams"] = pd.Field("MeshingParams", frozen=True)
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -250,6 +241,7 @@ class MeshingParams(Flow360BaseModel):
                     return zone.method
         return None
 
+
 class SnappySurfaceMeshingParams(Flow360BaseModel):
     type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
         "SnappySurfaceMeshingParams", frozen=True
@@ -257,12 +249,14 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     defaults: SnappySurfaceMeshingDefaults = pd.Field()
     quality_metrics: SnappyQualityMetrics = pd.Field(SnappyQualityMetrics())
     snap_controls: SnappySnapControls = pd.Field(SnappySnapControls())
-    castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(SnappyCastellatedMeshControls())
+    castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(
+        SnappyCastellatedMeshControls()
+    )
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
     bounding_box: Optional[Box] = pd.Field(None)
     zones: Optional[List[MeshZone]] = pd.Field(None)
     cad_is_fluid: bool = pd.Field(False)
-    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([]) 
+    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
 
     @pd.model_validator(mode="after")
     def _ensure_mesh_zone_provided(self):
@@ -277,33 +271,40 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
             if isinstance(refinement, SnappyBodyRefinement):
                 if refinement.min_spacing is None and refinement.max_spacing is None:
                     continue
-                if refinement.min_spacing is None and self.defaults.min_spacing.to("m") > refinement.max_spacing.to("m"):
-                    raise ValueError("Default minimum spacing is higher that refinement maximum spacing and minimum spacing is not provided.")
-                if refinement.max_spacing is None and self.defaults.max_spacing.to("m") < refinement.min_spacing.to("m"):
-                    raise ValueError("Default maximum spacing is lower that refinement minimum spacing and maximum spacing is not provided.")
+                if refinement.min_spacing is None and self.defaults.min_spacing.to(
+                    "m"
+                ) > refinement.max_spacing.to("m"):
+                    raise ValueError(
+                        "Default minimum spacing is higher that refinement maximum spacing and minimum spacing is not provided."
+                    )
+                if refinement.max_spacing is None and self.defaults.max_spacing.to(
+                    "m"
+                ) < refinement.min_spacing.to("m"):
+                    raise ValueError(
+                        "Default maximum spacing is lower that refinement minimum spacing and maximum spacing is not provided."
+                    )
         return self
-    
+
     @pd.model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
                 for entity in refinement.entities.stored_entities:
-                    if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0*u.deg:
-                        raise ValueError("UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0).")
-                    if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0*u.m:
-                        raise ValueError("UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0).")
-                    
+                    if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0 * u.deg:
+                        raise ValueError(
+                            "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
+                        )
+                    if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
+                        raise ValueError(
+                            "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
+                        )
+
         return self
 
 
-
 class BetaVolumeMeshingParams(Flow360BaseModel):
-    type: Literal["BetaVolumeMeshingParams"] = pd.Field(
-        "BetaVolumeMeshingParams", frozen=True
-    )
-    defaults: BetaVolumeMeshingDefaults = pd.Field(
-        BetaVolumeMeshingDefaults()
-    )
+    type: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
+    defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -328,7 +329,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         " relative to the largest dimension of the bounding box of the input surface mesh."
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
-    
+
     @pd.field_validator("volume_zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfied(cls, v):
@@ -346,7 +347,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
 
         return v
-    
+
     @pd.model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
         """
@@ -416,21 +417,15 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
         return None
-    
+
 
 SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
 VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
 
 
 class ModularMeshingWorkflow(Flow360BaseModel):
-    type: Literal["ModularMeshingWorkflow"] = pd.Field(
-        "ModularMeshingWorkflow", frozen=True
-    )
+    type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
     surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
-        default=None,
-        context=SURFACE_MESH
+        default=None, context=SURFACE_MESH
     )
-    volume_meshing: Optional[VolumeMeshingParams] = ContextField(
-        default=None,
-        context=VOLUME_MESH
-    )
+    volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)

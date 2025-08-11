@@ -4,6 +4,11 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
+from flow360.component.simulation.meshing_param.params import (
+    BetaVolumeMeshingParams,
+    MeshingParams,
+    ModularMeshingWorkflow,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -21,7 +26,7 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
-from flow360.component.simulation.meshing_param.params import BetaVolumeMeshingParams, MeshingParams, ModularMeshingWorkflow
+
 
 def unifrom_refinement_translator(obj: UniformRefinement):
     """
@@ -148,7 +153,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     """
     volume_zones = None
-    refinements = None 
+    refinements = None
     refinement_factor = None
     defaults = None
     gap_treatment_strength = None
@@ -161,8 +166,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             None,
             ["meshing"],
         )
-    
-    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(input_params.meshing.volume_meshing, BetaVolumeMeshingParams):
+
+    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+        input_params.meshing.volume_meshing, BetaVolumeMeshingParams
+    ):
         volume_zones = input_params.meshing.volume_meshing.volume_zones
         refinements = input_params.meshing.volume_meshing.refinements
         refinement_factor = input_params.meshing.volume_meshing.refinement_factor

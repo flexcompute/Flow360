@@ -687,14 +687,17 @@ class SnappyBody(Flow360BaseModel):
     Represents a group of faces forming a body for snappyHexMesh.
     Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid keywords with a body::region naming scheme.
     """
+
     body_name: str = pd.Field()
 
 
 class MeshZone(Flow360BaseModel):
-   """
-   Represents a separate zone in the mesh, defined by a point insie it.
-   """
-   point_in_mesh: LengthType.Point 
-   name: str
+    """
+    Represents a separate zone in the mesh, defined by a point inside it.
+    """
+
+    point_in_mesh: LengthType.Point
+    name: str
+
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]

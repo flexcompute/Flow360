@@ -26,7 +26,7 @@ from flow360.component.simulation.framework.updater import updater
 from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
-    ModularMeshingWorkflow
+    ModularMeshingWorkflow,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -544,7 +544,10 @@ class SimulationParams(_ParamModelBase):
             volume_zones = None
             if isinstance(self.meshing, MeshingParams):
                 volume_zones = self.meshing.volume_zones
-            if isinstance(self.meshing, ModularMeshingWorkflow) and self.meshing.volume_meshing is not None:
+            if (
+                isinstance(self.meshing, ModularMeshingWorkflow)
+                and self.meshing.volume_meshing is not None
+            ):
                 volume_zones = self.meshing.volume_meshing.volume_zones
             if volume_zones is not None:
                 for volume in volume_zones:

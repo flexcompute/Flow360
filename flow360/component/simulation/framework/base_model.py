@@ -325,7 +325,6 @@ class Flow360BaseModel(pd.BaseModel):
         return value
 
     @pd.field_validator("*", mode="wrap")
-    
     @classmethod
     def populate_ctx_to_error_messages(cls, values, handler, info) -> Any:
         """

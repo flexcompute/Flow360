@@ -4,6 +4,10 @@ validation for SimulationParams
 
 from typing import Type, Union, get_args
 
+from flow360.component.simulation.meshing_param.params import (
+    MeshingParams,
+    ModularMeshingWorkflow,
+)
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
@@ -31,11 +35,6 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_levels,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
-
-from flow360.component.simulation.meshing_param.params import (
-    MeshingParams,
-    ModularMeshingWorkflow
-)
 
 
 def _check_consistency_wall_function_and_surface_output(v):
