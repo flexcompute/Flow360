@@ -1363,7 +1363,7 @@ class Project(pd.BaseModel):
         use_geometry_AI : bool, optional
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
-            Option to raise if submission error occurs (default is False)
+            Option to raise if submission error occurs
         tags: List[str], optional
             A list of tags to add to the target asset.
         draft_only: bool, optional
@@ -1496,7 +1496,7 @@ class Project(pd.BaseModel):
         solver_version: str = None,
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
-        raise_on_error: bool = False,
+        raise_on_error: bool = True,
         tags: List[str] = None,
         draft_only: bool = False,
         **kwargs,
@@ -1519,7 +1519,7 @@ class Project(pd.BaseModel):
         use_geometry_AI : bool, optional
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
-            Option to raise if submission error occurs (default is False)
+            Option to raise if submission error occurs (default is True)
         tags: List[str], optional
             A list of tags to add to the generated surface mesh.
         draft_only: bool, optional
@@ -1566,7 +1566,7 @@ class Project(pd.BaseModel):
         solver_version: str = None,
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
-        raise_on_error: bool = False,
+        raise_on_error: bool = True,
         tags: List[str] = None,
         draft_only: bool = False,
         **kwargs,
@@ -1589,7 +1589,7 @@ class Project(pd.BaseModel):
         use_geometry_AI : bool, optional
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
-            Option to raise if submission error occurs (default is False)
+            Option to raise if submission error occurs (default is True)
         tags: List[str], optional
             A list of tags to add to the generated volume mesh.
         draft_only: bool, optional
@@ -1645,7 +1645,7 @@ class Project(pd.BaseModel):
         solver_version: str = None,
         use_beta_mesher: bool = None,
         use_geometry_AI: bool = False,  # pylint: disable=invalid-name
-        raise_on_error: bool = False,
+        raise_on_error: bool = True,
         tags: List[str] = None,
         draft_only: bool = False,
         **kwargs,
@@ -1672,7 +1672,7 @@ class Project(pd.BaseModel):
         use_geometry_AI : bool, optional
             Whether to use the Geometry AI (default is False).
         raise_on_error: bool, optional
-            Option to raise if submission error occurs (default is False)
+            Option to raise if submission error occurs (default is True)
         tags: List[str], optional
             A list of tags to add to the case.
         draft_only: bool, optional
