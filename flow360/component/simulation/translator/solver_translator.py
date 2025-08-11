@@ -817,6 +817,7 @@ def process_user_variables_for_integral(
     outputs,
     class_type: Union[SurfaceIntegralOutput, ImportedSurfaceIntegralOutput],
 ):
+    """Multiply UserVariable by area for surface integrals."""
     for output in outputs:
         if not isinstance(output, class_type):
             continue
