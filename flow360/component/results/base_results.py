@@ -559,6 +559,15 @@ class PerEntityResultCSVModel(ResultCSVModel):
     _x_columns: List[str] = []
     _filter_when_zero = []
     _entities: List[str] = None
+    _entity_groups: dict = pd.PrivateAttr()
+
+    @classmethod
+    # pylint: disable=arguments-differ
+    def from_dict(cls, data: dict, group: dict):
+        obj = super().from_dict(data)
+        # pylint: disable=protected-access
+        obj._entity_groups = group
+        return obj
 
     @property
     def values(self):
@@ -643,9 +652,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
         self.update(df)
 
-    def _create_surface_forces_group(
-        self, entity_groups: Dict[str, List[str]]
-    ) -> PerEntityResultCSVModel:
+    def _create_forces_group(self, entity_groups: Dict[str, List[str]]) -> PerEntityResultCSVModel:
         """
         Create new CSV model for the given entity groups.
         """
@@ -680,7 +687,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
             entity_groups[boundary_name].extend(
                 [entity.name for entity in model.entities.stored_entities]
             )
-        return self._create_surface_forces_group(entity_groups=entity_groups)
+        return self._create_forces_group(entity_groups=entity_groups)
 
     def by_body_group(self, params: SimulationParams) -> PerEntityResultCSVModel:
         """
@@ -703,4 +710,4 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 "please upgrade the project to the latest version and re-run the case."
             )
         entity_groups = entity_info.get_body_group_to_face_group_name_map()
-        return self._create_surface_forces_group(entity_groups=entity_groups)
+        return self._create_forces_group(entity_groups=entity_groups)
