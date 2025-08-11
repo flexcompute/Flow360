@@ -25,7 +25,8 @@ def get_user_agent():
     """Get the user agent the current environment."""
     return os.environ.get(
         "FLOW360_AGENT",
-        f"Python-Client/{__version__}/Python-Version/{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        f"Python-Client/{__version__}/"
+        f"Python-Version/{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
     )
 
 
