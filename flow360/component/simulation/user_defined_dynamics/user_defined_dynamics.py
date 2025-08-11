@@ -8,9 +8,6 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
-from flow360.component.simulation.validation.validation_context import (
-    get_validation_info,
-)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -115,17 +112,19 @@ class UserDefinedDynamic(Flow360BaseModel):
     @classmethod
     def ensure_output_surface_existence(cls, value):
         """Ensure that the output target surface is not a deleted surface"""
-        validation_info = get_validation_info()
-        if validation_info is None or validation_info.auto_farfield_method is None:
-            # validation not necessary now.
-            return value
 
-        # - Check if the surfaces are deleted.
-        # pylint: disable=protected-access
-        if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
-            validation_info.auto_farfield_method
-        ):
-            raise ValueError(
-                f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
-            )
+        # --- Disabled for FXC-2006
+        # validation_info = get_validation_info()
+        # if validation_info is None or validation_info.auto_farfield_method is None:
+        #     # validation not necessary now.
+        #     return value
+
+        # # - Check if the surfaces are deleted.
+        # # pylint: disable=protected-access
+        # if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
+        #     validation_info.auto_farfield_method
+        # ):
+        #     raise ValueError(
+        #         f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+        #     )
         return value

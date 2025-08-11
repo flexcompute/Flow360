@@ -75,12 +75,12 @@ class MeshingDefaults(Flow360BaseModel):
     )
 
     planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
-        1e-6,
-        description="Tolerance used for detecting planar faces in the input surface mesh"
+        DEFAULT_PLANAR_FACE_TOLERANCE,
+        description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
-        " relative to the largest dimension of the bounding box of the input surface mesh."
-        " This is only supported by the beta mesher and can not be overridden per face.",
+        " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
+        " This can not be overridden per face.",
     )
 
     ##::    Default surface layer settings
@@ -112,23 +112,6 @@ class MeshingDefaults(Flow360BaseModel):
 
         if value is not None and not validation_info.is_beta_mesher:
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
-        return value
-
-    @pd.field_validator("planar_face_tolerance", mode="after")
-    @classmethod
-    def invalid_planar_face_tolerance(cls, value):
-        """Ensure planar face tolerance is not specified"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint:disable = unsubscriptable-object
-        if (
-            value != cls.model_fields["planar_face_tolerance"].default
-            and not validation_info.is_beta_mesher
-        ):
-            raise ValueError("Planar face tolerance is only supported by the beta mesher.")
         return value
 
     @pd.field_validator("geometry_accuracy", mode="after")

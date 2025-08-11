@@ -347,7 +347,7 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
 
     ref_dict = {
         "refinementFactor": 1.45,
-        "farfield": {"type": "auto"},
+        "farfield": {"type": "auto", "planarFaceTolerance": 1e-6},
         "volume": {
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
