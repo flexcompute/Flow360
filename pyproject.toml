@@ -1,6 +1,10 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "v25.7.1b1"
+=======
+version = "v25.6.5"
+>>>>>>> 651ac16a (Bump to 25.6.5 and also add default value application to planar tolerance (#1348))
 description = ""
 authors = ["Flexcompute <support@flexcompute.com>"]
 

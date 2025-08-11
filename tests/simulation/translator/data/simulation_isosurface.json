@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
     "version": "25.6.2",
+=======
+    "version": "25.6.5",
+>>>>>>> 651ac16a (Bump to 25.6.5 and also add default value application to planar tolerance (#1348))
     "unit_system": {
         "name": "Imperial"
     },

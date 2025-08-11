@@ -729,3 +729,21 @@ def test_updater_to_25_6_4():
         root_item_type="Geometry",
     )
     assert params_new
+
+
+def test_updater_to_25_6_5():
+    with open("../data/simulation/simulation_pre_25_4_1.json", "r") as fp:
+        params_as_dict = json.load(fp)
+
+    params_new = updater(
+        version_from="25.4.0b1",
+        version_to=f"25.6.5",
+        params_as_dict=params_as_dict,
+    )
+    assert params_new["meshing"]["defaults"]["planar_face_tolerance"] == 1e-6
+    params_new, _, _ = validate_model(
+        params_as_dict=params_new,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+    )
+    assert params_new
