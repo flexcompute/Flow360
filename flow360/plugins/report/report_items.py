@@ -56,13 +56,13 @@ from flow360.plugins.report.utils import (
     Grouper,
     OperationTypes,
     Tabulary,
-    _requirements_mapping,
     data_from_path,
     downsample_image_to_relative_width,
     generate_colorbar_from_image,
     get_requirements_from_data_path,
     path_variable_name,
     split_path,
+    RequirementItem
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
@@ -170,7 +170,7 @@ class Inputs(ReportItem):
     """
 
     type_name: Literal["Inputs"] = Field("Inputs", frozen=True)
-    _requirements: List[str] = [_requirements_mapping["params"]]
+    _requirements: List[RequirementItem] = [RequirementItem.from_data_key(data_key="params")]
 
     # pylint: disable=too-many-arguments
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
@@ -1449,7 +1449,6 @@ class Chart2D(BaseChart2D):
         None,
         description='Background type for the chart; set to "geometry" or None. Defaults to ``None``.',
     )
-    _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
     @pd.model_validator(mode="after")
@@ -1677,7 +1676,7 @@ class NonlinearResiduals(BaseChart2D):
         "nonlinear_residuals/pseudo_step", frozen=True
     )
     y_log: Literal[True] = Field(True, frozen=True)
-    _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
+    _requirements: List[RequirementItem] = [RequirementItem.from_data_key(data_key="nonlinear_residuals")]
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
 
     def get_requirements(self):

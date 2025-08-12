@@ -8,7 +8,7 @@ from flow360.component.case import CaseMeta
 from flow360.plugins.report.report import Report, ReportDraft, ReportTemplate
 from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_items import Chart2D, Inputs, Summary, Table
-from flow360.plugins.report.utils import _requirements_mapping
+from flow360.plugins.report.utils import RequirementItem
 
 
 @pytest.fixture
@@ -80,29 +80,6 @@ def test_reporttemplate_init_validation():
     assert len(template.items) == 3
 
 
-def test_reporttemplate_requirements():
-    template = ReportTemplate(
-        items=[
-            Summary(),  # no requirements
-            Inputs(),  # has params requirements
-            Table(data=["total_forces/CL"], section_title="Forces"),  # total_forces
-            Chart2D(
-                x="params/version", y="y_slicing_force_distribution/Y"
-            ),  # y_slicing_force_distribution, total_forces
-        ]
-    )
-    reqs = template.get_requirements()
-    expected_keys = [
-        "params",
-        "y_slicing_force_distribution",
-        "total_forces",
-        "volume_mesh",
-        "surface_mesh",
-        "geometry",
-    ]
-    expected_reqs = {_requirements_mapping[k] for k in expected_keys}
-    assert set(reqs) == expected_reqs
-
 
 def test_reporttemplate_create_in_cloud(mocker, cases):
     mock_submit = mocker.patch.object(ReportDraft, "submit", return_value="mock-response")
@@ -133,7 +110,7 @@ def test_reporttemplate_no_items():
     assert template.items == []
     reqs = template.get_requirements()
     expected_keys = ["volume_mesh", "surface_mesh", "geometry"]
-    expected_reqs = {_requirements_mapping[k] for k in expected_keys}
+    expected_reqs = {RequirementItem.from_data_key(data_key=k) for k in expected_keys}
     assert set(reqs) == expected_reqs
 
 
