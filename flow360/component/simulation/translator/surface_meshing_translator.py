@@ -1,4 +1,4 @@
-"""Surface meshing parameter translator."""
+# """Surface meshing parameter translator."""
 
 from typing import List
 
@@ -50,13 +50,16 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
     Translate SurfaceRefinement to faces.
 
     """
-    return {
+    refinement = {
         "maxEdgeLength": (
             obj.max_edge_length.value.item()
             if obj.max_edge_length is not None
             else global_max_edge_length.value.item()
         ),
     }
+    if obj.geometry_accuracy is not None:
+        refinement["geometry_accuracy"] = obj.geometry_accuracy
+    return refinement
 
 
 @preprocess_input

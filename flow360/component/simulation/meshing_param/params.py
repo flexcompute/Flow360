@@ -1,4 +1,4 @@
-"""Meshing related parameters for volume and surface mesher."""
+# """Meshing related parameters for volume and surface mesher."""
 
 from typing import Annotated, List, Optional, Union
 
@@ -70,7 +70,8 @@ class MeshingDefaults(Flow360BaseModel):
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-        "This parameter is only valid when using geometry AI.",
+        "This parameter is only valid when using geometry AI."
+        "It can be overriden with class: ~flow360.SurfaceRefinement.",
     )
 
     ##::   Default surface edge settings
@@ -121,6 +122,14 @@ class MeshingDefaults(Flow360BaseModel):
         " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
         context=SURFACE_MESH,
     )
+
+    surface_max_aspect_ratio: pd.PositiveFloat = ConditionalField(
+        10.0,
+        description="Maximum aspect ratio for surface cells for the GAI surface mesher."
+        " This cannot be overriden per face",
+        context=SURFACE_MESH,
+    )
+
     curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
         description=(
@@ -209,6 +218,12 @@ class MeshingParams(Flow360BaseModel):
         " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
         " However the impact on regions without close proximity is negligible.",
         context=VOLUME_MESH,
+    )
+
+    surface_max_adaptation_iterations: pd.NonNegativeInt = ConditionalField(
+        50,
+        description="Maximum adaptation iterations for the GAI surface mesher.",
+        context=SURFACE_MESH,
     )
 
     defaults: MeshingDefaults = pd.Field(
