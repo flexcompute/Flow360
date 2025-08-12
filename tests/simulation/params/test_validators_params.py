@@ -967,7 +967,7 @@ def test_porousJump_entities_pairs():
     surface_2 = Surface(name="Surface-2", private_attribute_is_interface=True)
     surface_3 = Surface(name="Surface-3", private_attribute_is_interface=True)
     volume_1 = GenericVolume(name="Volume-1")
-    error_message = "Boundary `Surface-2` is not an interface"
+
     with pytest.raises(ValueError):
         porousJump = PorousJump(
             entity_pairs=[(surface_1)],
