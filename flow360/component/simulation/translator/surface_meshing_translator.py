@@ -1,4 +1,4 @@
-# """Surface meshing parameter translator."""
+"""Surface meshing parameter translator."""
 
 from typing import List
 

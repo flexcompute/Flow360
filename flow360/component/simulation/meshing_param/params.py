@@ -1,4 +1,4 @@
-# """Meshing related parameters for volume and surface mesher."""
+"""Meshing related parameters for volume and surface mesher."""
 
 from typing import Annotated, List, Optional, Union
 
@@ -130,6 +130,12 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
+    surface_max_adaptation_iterations: pd.NonNegativeInt = ConditionalField(
+        50,
+        description="Maximum adaptation iterations for the GAI surface mesher.",
+        context=SURFACE_MESH,
+    )
+
     curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
         description=(
@@ -209,6 +215,7 @@ class MeshingParams(Flow360BaseModel):
         + "and first layer thickness will be adjusted to generate `r`-times"
         + " finer mesh where r is the refinement_factor value.",
     )
+
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
@@ -218,12 +225,6 @@ class MeshingParams(Flow360BaseModel):
         " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
         " However the impact on regions without close proximity is negligible.",
         context=VOLUME_MESH,
-    )
-
-    surface_max_adaptation_iterations: pd.NonNegativeInt = ConditionalField(
-        50,
-        description="Maximum adaptation iterations for the GAI surface mesher.",
-        context=SURFACE_MESH,
     )
 
     defaults: MeshingDefaults = pd.Field(

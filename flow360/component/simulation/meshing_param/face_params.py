@@ -48,6 +48,7 @@ class SurfaceRefinement(Flow360BaseModel):
         """Ensure all boundaries will be present after mesher"""
         return check_deleted_surface_in_entity_list(value)
 
+
 class PassiveSpacing(Flow360BaseModel):
     """
     Passively control the mesh spacing either through adjecent `Surface`'s meshing
