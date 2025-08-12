@@ -314,6 +314,10 @@ def _check_complete_boundary_condition_and_unknown_surface(
 ):  # pylint:disable=too-many-branches
     ## Step 1: Get all boundaries patches from asset cache
 
+    return params
+
+    # --- Disabled for FXC-2006
+    # pylint: disable=unreachable
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
