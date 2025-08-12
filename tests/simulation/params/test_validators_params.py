@@ -968,22 +968,22 @@ def test_porousJump_entities_pairs():
     surface_3 = Surface(name="Surface-3", private_attribute_is_interface=True)
     volume_1 = GenericVolume(name="Volume-1")
 
-    error_message = "1 validation error for PorousJump" 
-    with pytest.raises(ValueError,match=re.escape(error_message)):
+    error_message = "1 validation error for PorousJump"
+    with pytest.raises(ValueError, match=re.escape(error_message)):
         porousJump = PorousJump(
             entity_pairs=[(surface_1)],
             darcy_coefficient=1e6 / (u.m * u.m),
             forchheimer_coefficient=1e3 / u.m,
             thickness=0.01 * u.m,
         )
-    with pytest.raises(ValueError,match=re.escape(error_message)):
+    with pytest.raises(ValueError, match=re.escape(error_message)):
         porousJump = PorousJump(
             entity_pairs=[(surface_1, surface_2, surface_2)],
             darcy_coefficient=1e6 / (u.m * u.m),
             forchheimer_coefficient=1e3 / u.m,
             thickness=0.01 * u.m,
         )
-    with pytest.raises(ValueError,match=re.escape(error_message)):
+    with pytest.raises(ValueError, match=re.escape(error_message)):
         porousJump = PorousJump(
             entity_pairs=[(surface_1, volume_1)],
             darcy_coefficient=1e6 / (u.m * u.m),
