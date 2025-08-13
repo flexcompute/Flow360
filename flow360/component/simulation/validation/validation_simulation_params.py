@@ -8,6 +8,7 @@ from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
+    PorousJump,
     SurfaceModelTypes,
     Wall,
 )
@@ -361,6 +362,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
+            continue
+        if isinstance(model, PorousJump):
             continue
 
         entities = []
