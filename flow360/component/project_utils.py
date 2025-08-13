@@ -107,7 +107,9 @@ class ProjectRecords(pd.BaseModel):
         return output_str
 
 
-def get_project_records(search_keyword: str) -> tuple[ProjectRecords, int]:
+def get_project_records(
+    search_keyword: str, tags: Optional[List[str]] = None
+) -> tuple[ProjectRecords, int]:
     """Get all projects with a keyword filter"""
     # pylint: disable=invalid-name
     MAX_SEARCHABLE_ITEM_COUNT = 1000
@@ -117,6 +119,7 @@ def get_project_records(search_keyword: str) -> tuple[ProjectRecords, int]:
             "page": "0",
             "size": MAX_SEARCHABLE_ITEM_COUNT,
             "filterKeywords": search_keyword,
+            "filterTags": tags,
             "sortFields": ["createdAt"],
             "sortDirections": ["asc"],
         }
@@ -260,7 +263,7 @@ def set_up_params_for_uploading(
     params: SimulationParams,
     use_beta_mesher: bool,
     use_geometry_AI: bool,  # pylint: disable=invalid-name
-):
+) -> SimulationParams:
     """
     Set up params before submitting the draft.
     """

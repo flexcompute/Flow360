@@ -132,15 +132,16 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
     Returns:
         None
     """
+    known_frozen_hashes = set()
     for field in model.__dict__.values():
         if isinstance(field, EntityBase):
-            registry.register(field)
+            known_frozen_hashes = registry.fast_register(field, known_frozen_hashes)
 
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
             expanded_entities = field._get_expanded_entities(create_hard_copy=False)
             for entity in expanded_entities if expanded_entities else []:
-                registry.register(entity)
+                known_frozen_hashes = registry.fast_register(entity, known_frozen_hashes)
 
         elif isinstance(field, (list, tuple)):
             for item in field:

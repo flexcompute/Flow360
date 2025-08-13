@@ -13,7 +13,7 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # To push branches and commit changes
+      contents: write       # To push branches and commit changes
       pull-requests: write # To create the pull request
 
     env:
@@ -114,20 +114,21 @@ jobs:
       - name: Create and Process Hotfix Branches
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           # Read branch pairs and process each one
           IFS=' ' read -r -a PAIRS <<< "${{ steps.define_branches.outputs.branch_pairs }}"
-          
+
           for pair in "${PAIRS[@]}"; do
             IFS=':' read -r base_branch new_branch <<< "$pair"
-            
+
             echo "Processing hotfix for branch: $base_branch"
-            
+
             # Create and switch to new branch
             git checkout "$base_branch"
             git pull origin "$base_branch"
             git checkout -b "$new_branch"
-            
+
             # Attempt cherry-pick
             if ! git cherry-pick ${{ steps.get_commit.outputs.sha }} --empty=keep; then
               echo "Cherry-pick encountered conflicts for $base_branch, attempting to resolve..."
@@ -139,7 +140,7 @@ jobs:
                   continue # Skip PR creation if no changes after resolution
               fi
               git cherry-pick --continue
-              
+
               if [ $? -eq 0 ]; then
                 echo "Successfully resolved conflicts for $base_branch"
                 had_conflicts="true"
@@ -166,7 +167,7 @@ jobs:
             # Push branch
             if git push origin "$new_branch"; then
               echo "Successfully pushed branch $new_branch"
-              
+
               # Create PR
               PR_NUMBER="${{ github.event.pull_request.number }}"
               PR_URL="${{ github.event.pull_request.html_url }}"
@@ -174,10 +175,10 @@ jobs:
 
               # Adjust PR title based on the target branch
               if [[ "$base_branch" == "main" ]]; then
-                PR_TITLE="[Hotfix Main]: ${{ github.event.pull_request.title }}"
+                HOTFIX_PR_TITLE="[Hotfix Main]: $PR_TITLE"
               else
                 base_branch_name=${base_branch#"release-candidate/"}
-                PR_TITLE="[Hotfix $base_branch_name]: ${{ github.event.pull_request.title }}"
+                HOTFIX_PR_TITLE="[Hotfix $base_branch_name]: $PR_TITLE"
               fi
 
               PR_BODY="Hotfix of PR #${PR_NUMBER} (${PR_URL}) to the \`${base_branch}\` branch.
@@ -189,9 +190,10 @@ jobs:
 
           ### ⚠️ **Note:** This PR had conflicts with the base branch and was resolved automatically. Please review the changes carefully."
               fi
-              
+
+              # Create PR using gh cli
               gh pr create \
-                --title "$PR_TITLE" \
+                --title "$HOTFIX_PR_TITLE" \
                 --body "$PR_BODY" \
                 --head "$new_branch" \
                 --base "$base_branch" \
