@@ -76,6 +76,16 @@ class GeometryRefinement(Flow360BaseModel):
         """Ensure all boundaries will be present after mesher"""
         return check_deleted_surface_in_entity_list(value)
 
+    @pd.model_validator(mode="after")
+    def ensure_geometry_AI(self):
+        """Ensure all boundaries will be present after mesher"""
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+        if not validation_info.use_geometry_AI:
+            raise ValueError("GeometryRefinement is only supported by geometry AI.")
+        return self
+
 
 class PassiveSpacing(Flow360BaseModel):
     """
