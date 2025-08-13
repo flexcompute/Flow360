@@ -11,6 +11,7 @@ from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_T
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -35,6 +36,7 @@ RefinementTypes = Annotated[
     Union[
         SurfaceEdgeRefinement,
         SurfaceRefinement,
+        GeometryRefinement,
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
@@ -71,7 +73,7 @@ class MeshingDefaults(Flow360BaseModel):
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
         "This parameter is only valid when using geometry AI."
-        "It can be overriden with class: ~flow360.SurfaceRefinement.",
+        "It can be overriden with class: ~flow360.GeometryRefinement.",
     )
 
     ##::   Default surface edge settings
