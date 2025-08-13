@@ -2,9 +2,23 @@ import os
 import re
 
 import pytest
+
 from flow360.plugins.report.report import ReportTemplate
-from flow360.plugins.report.report_items import Chart2D, Inputs, Summary, Table, NonlinearResiduals
-from flow360.plugins.report.utils import DataItem, Delta, Average, RequirementItem, get_root_path
+from flow360.plugins.report.report_items import (
+    Chart2D,
+    Inputs,
+    NonlinearResiduals,
+    Summary,
+    Table,
+)
+from flow360.plugins.report.utils import (
+    Average,
+    DataItem,
+    Delta,
+    RequirementItem,
+    get_root_path,
+)
+
 
 @pytest.fixture
 def here():
@@ -51,36 +65,21 @@ def test_reporttemplate_requirements():
             NonlinearResiduals(),
             Chart2D(
                 x="results/monitors/massFluxExhaust/pseudo_step",
-                y="results/monitors/massFluxExhaust/MassFlux",   
+                y="results/monitors/massFluxExhaust/MassFlux",
             ),
             Chart2D(
                 x="results/user_defined_dynamics/alpha-controller/pseudo_step",
-                y="results/user_defined_dynamics/alpha-controller/alpha",   
+                y="results/user_defined_dynamics/alpha-controller/alpha",
             ),
-            Chart2D(
-                x="bet_forces/pseudo_step",
-                y="bet_forces/Disk0_Force_y"
-            ),
-            Chart2D(
-                x="bet_forces/pseudo_step",
-                y="bet_forces/Disk0_Force_y"
-            ),
+            Chart2D(x="bet_forces/pseudo_step", y="bet_forces/Disk0_Force_y"),
+            Chart2D(x="bet_forces/pseudo_step", y="bet_forces/Disk0_Force_y"),
             Chart2D(
                 x="bet_forces_radial_distribution/Disk0_All_Radius",
-                y="bet_forces_radial_distribution/Disk0_Blade0_All_TorqueCoeff"
+                y="bet_forces_radial_distribution/Disk0_Blade0_All_TorqueCoeff",
             ),
-            Chart2D(
-                x="actuator_disks/physical_step",
-                y="actuator_disks/Disk0_Power"
-            ),
-            Chart2D(
-                x="aeroacoustics/physical_step",
-                y="aeroacoustics/var1"
-            ),
-            Chart2D(
-                x="surface_heat_transfer/physical_step",
-                y="surface_heat_transfer/var1"
-            ),
+            Chart2D(x="actuator_disks/physical_step", y="actuator_disks/Disk0_Power"),
+            Chart2D(x="aeroacoustics/physical_step", y="aeroacoustics/var1"),
+            Chart2D(x="surface_heat_transfer/physical_step", y="surface_heat_transfer/var1"),
         ]
     )
     reqs = template_advanced.get_requirements()
@@ -94,11 +93,13 @@ def test_reporttemplate_requirements():
         "results/total_acoustics_v3.csv",
         "results/surface_heat_transfer_v2.csv",
         "results/monitor_massFluxExhaust_v2.csv",
-        "results/udd_alpha-controller_v2.csv"
+        "results/udd_alpha-controller_v2.csv",
     ]
-    expected_reqs = {RequirementItem(filename=fp, resource_type="case") for fp in expected_filepaths}
+    expected_reqs = {
+        RequirementItem(filename=fp, resource_type="case") for fp in expected_filepaths
+    }
     expected_reqs.add(RequirementItem(filename="simulation.json", resource_type="surface_mesh"))
-    expected_reqs.add(RequirementItem(filename="simulation.json", resource_type="geometry"))    
+    expected_reqs.add(RequirementItem(filename="simulation.json", resource_type="geometry"))
     expected_reqs.add(RequirementItem(filename="simulation.json", resource_type="volume_mesh"))
 
     assert set(reqs) == expected_reqs

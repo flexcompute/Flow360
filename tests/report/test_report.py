@@ -80,7 +80,6 @@ def test_reporttemplate_init_validation():
     assert len(template.items) == 3
 
 
-
 def test_reporttemplate_create_in_cloud(mocker, cases):
     mock_submit = mocker.patch.object(ReportDraft, "submit", return_value="mock-response")
     template = ReportTemplate(title="Cloud Report", items=[Summary(), Inputs()])

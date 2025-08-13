@@ -55,6 +55,7 @@ from flow360.plugins.report.utils import (
     Delta,
     Grouper,
     OperationTypes,
+    RequirementItem,
     Tabulary,
     data_from_path,
     downsample_image_to_relative_width,
@@ -62,7 +63,6 @@ from flow360.plugins.report.utils import (
     get_requirements_from_data_path,
     path_variable_name,
     split_path,
-    RequirementItem
 )
 from flow360.plugins.report.uvf_shutter import (
     ActionPayload,
@@ -1676,7 +1676,9 @@ class NonlinearResiduals(BaseChart2D):
         "nonlinear_residuals/pseudo_step", frozen=True
     )
     y_log: Literal[True] = Field(True, frozen=True)
-    _requirements: List[RequirementItem] = [RequirementItem.from_data_key(data_key="nonlinear_residuals")]
+    _requirements: List[RequirementItem] = [
+        RequirementItem.from_data_key(data_key="nonlinear_residuals")
+    ]
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
 
     def get_requirements(self):
