@@ -27,102 +27,81 @@
 		}
 	},
 	"operating_condition": {
-		"type_name": "AerospaceCondition",
-		"private_attribute_constructor": "from_mach",
-		"private_attribute_input_cache": {
-			"mach": 0.1,
-			"alpha": {
-				"value": 0,
-				"units": "degree"
-			},
-			"beta": {
-				"value": 0,
-				"units": "degree"
-			},
-			"thermal_state": {
-				"type_name": "ThermalState",
-				"private_attribute_constructor": "default",
-				"private_attribute_input_cache": {
-					"altitude": null,
-					"temperature_offset": null
-				},
-				"temperature": {
-					"value": 288.15,
-					"units": "K"
-				},
-				"density": {
-					"value": 0.000026290466412792303,
-					"units": "Pa*s**2/m**2"
-				},
-				"material": {
-					"type": "air",
-					"name": "air",
-					"dynamic_viscosity": {
-						"reference_viscosity": {
-							"value": 0.00001716,
-							"units": "Pa*s"
-						},
-						"reference_temperature": {
-							"value": 273.15,
-							"units": "K"
-						},
-						"effective_temperature": {
-							"value": 110.4,
-							"units": "K"
-						}
-					}
-				}
-			},
-			"reference_mach": null
-		},
-		"alpha": {
-			"value": 0,
-			"units": "degree"
-		},
-		"beta": {
-			"value": 0,
-			"units": "degree"
-		},
-		"velocity_magnitude": {
-			"value": 34.02940058082128,
-			"units": "m/s"
-		},
-		"thermal_state": {
-			"type_name": "ThermalState",
-			"private_attribute_constructor": "default",
-			"private_attribute_input_cache": {
-				"altitude": null,
-				"temperature_offset": null
-			},
-			"temperature": {
-				"value": 288.15,
-				"units": "K"
-			},
-			"density": {
-				"value": 0.000026290466412792303,
-				"units": "Pa*s**2/m**2"
-			},
-			"material": {
-				"type": "air",
-				"name": "air",
-				"dynamic_viscosity": {
-					"reference_viscosity": {
-						"value": 0.00001716,
-						"units": "Pa*s"
-					},
-					"reference_temperature": {
-						"value": 273.15,
-						"units": "K"
-					},
-					"effective_temperature": {
-						"value": 110.4,
-						"units": "K"
-					}
-				}
-			}
-		},
-		"reference_velocity_magnitude": null
-	},
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "from_mach_reynolds",
+        "private_attribute_input_cache": {
+            "mach": 0.85,
+            "reynolds": 1000000.0,
+            "project_length_unit": {
+                "value": 1.0,
+                "units": "mm"
+            },
+            "alpha": {
+                "value": 2.0,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "thermal_state": null,
+            "reference_mach": 0.85
+        },
+        "alpha": {
+            "value": 2.0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "velocity_magnitude": {
+            "value": 289.2499049369809,
+            "units": "m/s"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {
+                "altitude": null,
+                "temperature_offset": null
+            },
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "density": {
+                "value": 0.061859920971276,
+                "units": "Pa*s**2/(m*mm)"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        },
+        "reference_velocity_magnitude": {
+            "value": 289.2499049369809,
+            "units": "m/s"
+        }
+    },
 	"models": [
 		{
 			"material": {

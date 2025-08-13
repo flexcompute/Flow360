@@ -9,7 +9,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -23,24 +23,24 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
     MeshingDefaults,
-    SnappySurfaceMeshingDefaults,
-    SnappySnapControls,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
-    BetaVolumeMeshingDefaults
+    SnappySnapControls,
+    SnappySurfaceMeshingDefaults,
+)
+from flow360.component.simulation.meshing_param.params import (
+    BetaVolumeMeshingParams,
+    MeshingParams,
+    ModularMeshingWorkflow,
+    SnappySurfaceMeshingParams,
 )
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
     SnappyRegionRefinement,
-    SnappySurfaceEdgeRefinement
-)
-from flow360.component.simulation.meshing_param.params import (
-    MeshingParams,
-    ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
-    BetaVolumeMeshingParams
+    SnappySurfaceEdgeRefinement,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -148,10 +148,10 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
+    MeshZone,
     ReferenceGeometry,
-    Transformation,
     SnappyBody,
-    MeshZone
+    Transformation,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -165,6 +165,14 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
+    get_user_variable,
+    remove_user_variable,
+    show_user_variables,
+)
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
@@ -203,7 +211,6 @@ __all__ = [
     "HeightBasedRefinement",
     "ReferenceGeometry",
     "Cylinder",
-    "GeometryEntityInfo",
     "AerospaceCondition",
     "ThermalState",
     "LiquidOperatingCondition",
@@ -250,6 +257,7 @@ __all__ = [
     "DetachedEddySimulation",
     "KOmegaSSTModelConstants",
     "LinearSolver",
+    "Folder",
     "ForcePerArea",
     "Air",
     "Sutherland",
@@ -296,6 +304,9 @@ __all__ = [
     "StreamlineOutput",
     "Transformation",
     "WallRotation",
+    "UserVariable",
+    "math",
+    "solution",
     "report",
     "ModularMeshingWorkflow",
     "SnappySurfaceMeshingDefaults",
@@ -310,5 +321,8 @@ __all__ = [
     "MeshZone",
     "SnappySurfaceMeshingParams",
     "BetaVolumeMeshingParams",
-    "BetaVolumeMeshingDefaults"
+    "BetaVolumeMeshingDefaults",
+    "get_user_variable",
+    "show_user_variables",
+    "remove_user_variable",
 ]

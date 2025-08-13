@@ -4,14 +4,17 @@ import re
 import pytest
 from unyt import Unit
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation import services
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.unit_system import _PredefinedUnitSystem
+from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     SURFACE_MESH,
     VOLUME_MESH,
+    get_validation_info,
 )
 from tests.utils import compare_dict_to_ref
 
@@ -104,6 +107,46 @@ def test_validate_service():
     }
     params_data_from_geo["version"] = "24.11.0"
 
+    params_data_op_from_mach_reynolds = params_data_from_vm.copy()
+    params_data_op_from_mach_reynolds["private_attribute_asset_cache"]["project_length_unit"] = {
+        "value": 0.8059,
+        "units": "m",
+    }
+    params_data_op_from_mach_reynolds["operating_condition"] = {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "from_mach_reynolds",
+        "private_attribute_input_cache": {
+            "mach": 0.84,
+            "reynolds_mesh_unit": 10.0,
+            "alpha": {"value": 3.06, "units": "degree"},
+            "beta": {"value": 0.0, "units": "degree"},
+            "temperature": {"value": 288.15, "units": "K"},
+        },
+        "alpha": {"value": 3.06, "units": "degree"},
+        "beta": {"value": 0.0, "units": "degree"},
+        "velocity_magnitude": {
+            "type_name": "number",
+            "value": 285.84696487889875,
+            "units": "m/s",
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {"value": 288.15, "units": "K"},
+            "density": {"value": 7.767260032496146e-07, "units": "Pa*s**2/m**2"},
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {"value": 1.716e-05, "units": "Pa*s"},
+                    "reference_temperature": {"value": 273.15, "units": "K"},
+                    "effective_temperature": {"value": 110.4, "units": "K"},
+                },
+            },
+        },
+    }
+
     _, errors, _ = services.validate_model(
         params_as_dict=params_data_from_geo,
         validated_by=services.ValidationCalledBy.LOCAL,
@@ -114,6 +157,15 @@ def test_validate_service():
 
     _, errors, _ = services.validate_model(
         params_as_dict=params_data_from_vm,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=CASE,
+    )
+
+    assert errors is None
+
+    _, errors, _ = services.validate_model(
+        params_as_dict=params_data_op_from_mach_reynolds,
         validated_by=services.ValidationCalledBy.LOCAL,
         root_item_type="VolumeMesh",
         validation_level=CASE,
@@ -146,7 +198,7 @@ def test_validate_error():
         "reference_geometry": {
             "moment_center": {"value": [0, 0, 0], "units": "m"},
             "moment_length": {"value": 1.0, "units": "m"},
-            "area": {"value": 1.0, "units": "m**2"},
+            "area": {"value": 1.0, "units": "m**2", "type_name": "number"},
         },
         "time_stepping": {
             "type_name": "Steady",
@@ -302,6 +354,40 @@ def test_validate_errors():
         root_item_type="Geometry",
     )
     json.dumps(errors)
+
+
+def test_validate_error_from_initialize_variable_space():
+    with open("../translator/data/simulation_isosurface.json", "r") as fp:
+        param_dict = json.load(fp)
+
+    a = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    _, errors, _ = services.validate_model(
+        params_as_dict=param_dict,
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+    )
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": ["unknown"],
+            "msg": "Loading user variable 'my_time_stepping_var' from simulation.json "
+            "which is already defined in local context. Please change your local user variable definition.",
+        }
+    ]
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["msg"] == exp_err["msg"]
+
+    services.clear_context()
+    _ = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    _, errors, _ = services.validate_model(
+        params_as_dict=param_dict,
+        validated_by=services.ValidationCalledBy.SERVICE,
+        root_item_type="VolumeMesh",
+    )
+    assert errors is None
 
 
 def test_validate_error_from_multi_constructor():
@@ -899,10 +985,7 @@ def test_front_end_JSON_with_multi_constructor():
 def test_generate_process_json():
     params_data = {
         "meshing": {
-            "defaults": {
-                # "boundary_layer_first_layer_thickness": "1*m",
-                # "surface_max_edge_length": "1*m",
-            },
+            "defaults": {},
             "volume_zones": [
                 {
                     "method": "auto",
@@ -976,7 +1059,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(
@@ -1031,6 +1114,11 @@ def test_generate_process_json():
     assert res3 is not None
 
 
+def test_default_validation_contest():
+    "Ensure that the default validation context is None which is the escaper for many validators"
+    assert get_validation_info() is None
+
+
 def test_validation_level_intersection():
     def get_validation_levels_to_use(root_item_type, requested_levels):
         available_levels = services._determine_validation_level(
@@ -1054,6 +1142,8 @@ def test_validation_level_intersection():
 
 def test_forward_compatibility_error():
 
+    from flow360.version import __version__
+
     # Mock a future simulation.json
     with open("data/updater_should_pass.json", "r") as fp:
         future_dict = json.load(fp)
@@ -1065,9 +1155,9 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": "99.99.99 > 25.6.0b1",
+        "type": f"99.99.99 > {__version__}",
         "loc": [],
-        "msg": "The cloud `SimulationParam` is too new for your local Python client. "
+        "msg": f"The cloud `SimulationParam` (version: 99.99.99) is too new for your local Python client (version: {__version__}). "
         "Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
@@ -1079,16 +1169,16 @@ def test_forward_compatibility_error():
     )
 
     assert errors[0] == {
-        "type": "99.99.99 > 25.6.0b1",
+        "type": f"99.99.99 > {__version__}",
         "loc": [],
-        "msg": "[Internal] Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited.",
+        "msg": f"[Internal] Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited.",
         "ctx": {},
     }
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Your `SimulationParams` is too new for the solver. Errors may occur since forward compatibility is limited."
+            f"Your `SimulationParams` (version: 99.99.99) is too new for the solver (version: {__version__}). Errors may occur since forward compatibility is limited."
         ),
     ):
         _, _, _ = services.generate_process_json(

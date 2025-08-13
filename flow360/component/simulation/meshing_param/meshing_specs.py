@@ -1,4 +1,14 @@
 """Default settings for meshing using different meshing algorithms"""
+
+from typing import Optional
+
+import pydantic as pd
+from typing_extensions import Self
+
+import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
+from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -7,17 +17,6 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 
-from typing import Optional
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-
-import flow360.component.simulation.units as u
-
-from flow360.component.simulation.unit_system import AngleType, LengthType, AreaType
-
-from typing import Optional
-from typing_extensions import Self
-
-import pydantic as pd
 
 class MeshingDefaults(Flow360BaseModel):
     """
@@ -77,12 +76,12 @@ class MeshingDefaults(Flow360BaseModel):
     )
 
     planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
-        1e-6,
-        description="Tolerance used for detecting planar faces in the input surface mesh"
+        DEFAULT_PLANAR_FACE_TOLERANCE,
+        description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
-        " relative to the largest dimension of the bounding box of the input surface mesh."
-        " This is only supported by the beta mesher and can not be overridden per face.",
+        " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
+        " This can not be overridden per face.",
     )
 
     ##::    Default surface layer settings
@@ -116,23 +115,6 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
         return value
 
-    @pd.field_validator("planar_face_tolerance", mode="after")
-    @classmethod
-    def invalid_planar_face_tolerance(cls, value):
-        """Ensure planar face tolerance is not specified"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint:disable = unsubscriptable-object
-        if (
-            value != cls.model_fields["planar_face_tolerance"].default
-            and not validation_info.is_beta_mesher
-        ):
-            raise ValueError("Planar face tolerance is only supported by the beta mesher.")
-        return value
-
     @pd.field_validator("geometry_accuracy", mode="after")
     @classmethod
     def invalid_geometry_accuracy(cls, value):
@@ -148,7 +130,8 @@ class MeshingDefaults(Flow360BaseModel):
         if value is None and validation_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
-    
+
+
 class BetaVolumeMeshingDefaults(Flow360BaseModel):
     ##::    Default boundary layer settings
     boundary_layer_growth_rate: float = pd.Field(
@@ -180,7 +163,8 @@ class BetaVolumeMeshingDefaults(Flow360BaseModel):
         " no. of layers to grow the boundary layer elements to isotropic size if not specified."
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
-    
+
+
 class SnappySurfaceMeshingDefaults(Flow360BaseModel):
     min_spacing: LengthType.Positive = pd.Field()
     max_spacing: LengthType.Positive = pd.Field()
@@ -192,122 +176,138 @@ class SnappySurfaceMeshingDefaults(Flow360BaseModel):
             if self.min_spacing > self.max_spacing:
                 raise ValueError("Minimum spacing must be lower than maximum spacing.")
         return self
-    
+
+
 class SnappyQualityMetrics(Flow360BaseModel):
-    # TODO: create doctrings with cursor and OF docs, convert to underscore case
-    max_non_ortho: Optional[AngleType.Positive] = pd.Field(
-        default=85*u.deg
-    )
-    max_boundary_skewness: Optional[AngleType] = pd.Field(
-        default=20*u.deg
-    )
-    max_internal_skewness: Optional[AngleType] = pd.Field(
-        default=50*u.deg
-    )
-    max_concave: Optional[AngleType.Positive] = pd.Field(
-        default=50*u.deg
-    )
-    min_vol: Optional[float] = pd.Field(
-        default=None
-    )
-    min_tet_quality: Optional[float] = pd.Field(
-        default=None
-    )
-    min_area: Optional[AreaType.Positive] = pd.Field(
-        default=None
-    )
-    min_twist: Optional[float] = pd.Field(
-        default=None
-    )
-    min_determinant: Optional[float] = pd.Field(
-        default=None
-    )
-    min_vol_ratio: Optional[float] = pd.Field(
-        default=0
-    )
-    min_face_weight: Optional[float] = pd.Field(
-        default=0
-    )
-    min_triangle_twist: Optional[float] = pd.Field(
-        default=None
-    )
-    n_smooth_scale: Optional[pd.NonNegativeInt] = pd.Field(
-        default=4,
-        ge=0
-    )
-    error_reduction: Optional[float] = pd.Field(
-        default=0.75,
-        ge=0,
-        le=1
-    )
+    """
+    Mesh quality control parameters for snappyHexMesh meshing process.
+
+    Parameters
+    ----------
+    max_non_ortho : Optional[AngleType.Positive], default: 85°
+        Maximum face non-orthogonality angle: the angle made by the vector between
+        the two adjacent cell centres across the common face and the face normal.
+        Set to None to disable this metric.
+
+    max_boundary_skewness : Optional[AngleType], default: 20°
+        Maximum boundary skewness. Set to None or -1° to disable this metric.
+
+    max_internal_skewness : Optional[AngleType], default: 50°
+        Maximum internal face skewness. Set to None or -1° to disable this metric.
+
+    max_concave : Optional[AngleType.Positive], default: 50°
+        Maximum cell concavity. Set to None to disable this metric.
+
+    min_vol : Optional[float], default: None
+        Minimum cell pyramid volume [m³].
+        Set to None to disable this metric (uses -1e30 internally).
+
+    min_tet_quality : Optional[float], default: None
+        Minimum tetrahedron quality.
+        Set to None to disable this metric (uses -1e30 internally).
+
+    min_area : Optional[AreaType.Positive], default: None
+        Minimum face area. Set to None to disable.
+
+    min_twist : Optional[float], default: None
+        Minimum twist. Controls the twist quality of faces.
+        Set to None to disable this metric.
+
+    min_determinant : Optional[float], default: None
+        Minimum cell determinant. Set to None to disable this metric (uses -1e30 internally).
+
+    min_vol_ratio : float, default: 0
+        Minimum volume ratio between adjacent cells.
+
+    min_face_weight : float, default: 0
+        Minimum face interpolation weight. Controls the quality of face interpolation.
+
+    min_triangle_twist : Optional[float], default: None
+        Minimum triangle twist. Set to None to disable this metric.
+
+    n_smooth_scale : Optional[pd.NonNegativeInt], default: 4
+        Number of smoothing iterations. Used in combination with error_reduction.
+
+    error_reduction : Optional[float], default: 0.75
+        Error reduction factor. Used in combination with n_smooth_scale.
+        Must be between 0 and 1.
+
+    min_vol_collapse_ratio : float, default: 0
+        Minimum volume collapse ratio. If > 0: preserves single cells with all points
+        on the surface if the resulting volume after snapping is larger than
+        min_vol_collapse_ratio times the old volume (i.e., not collapsed to flat cell).
+        If < 0: always deletes such cells.
+    """
+
+    max_non_ortho: Optional[AngleType.Positive] = pd.Field(default=85 * u.deg)
+    max_boundary_skewness: Optional[AngleType] = pd.Field(default=20 * u.deg)
+    max_internal_skewness: Optional[AngleType] = pd.Field(default=50 * u.deg)
+    max_concave: Optional[AngleType.Positive] = pd.Field(default=50 * u.deg)
+    min_vol: Optional[float] = pd.Field(default=None)
+    min_tet_quality: Optional[float] = pd.Field(default=None)
+    min_area: Optional[AreaType.Positive] = pd.Field(default=None)
+    min_twist: Optional[float] = pd.Field(default=None)
+    min_determinant: Optional[float] = pd.Field(default=None)
+    min_vol_ratio: Optional[float] = pd.Field(default=0)
+    min_face_weight: Optional[float] = pd.Field(default=0)
+    min_triangle_twist: Optional[float] = pd.Field(default=None)
+    n_smooth_scale: Optional[pd.NonNegativeInt] = pd.Field(default=4, ge=0)
+    error_reduction: Optional[float] = pd.Field(default=0.75, ge=0, le=1)
     min_vol_collapse_ratio: Optional[float] = pd.Field(0)
 
-    @pd.field_validator(
-            "max_non_ortho", 
-            "max_concave",
-            mode="after"
-        )
+    @pd.field_validator("max_non_ortho", "max_concave", mode="after")
     @classmethod
     def disable_angle_metrics_w_defaults(cls, value):
         if value is None:
-            return 180*u.deg
-        if value > 180*u.deg:
+            return 180 * u.deg
+        if value > 180 * u.deg:
             raise ValueError("Value must be less that 180 degrees.")
-        else: return value
-    
-    @pd.field_validator(
-        "max_boundary_skewness", 
-        "max_internal_skewness",
-        mode="after"
-    )
+        else:
+            return value
+
+    @pd.field_validator("max_boundary_skewness", "max_internal_skewness", mode="after")
     @classmethod
     def disable_skewness_metric(cls, value):
         if value is None:
-            return -1*u.deg
-        if (value.to("degree") <= 0*u.deg and value.to("degree") != -1*u.deg):
-            raise ValueError(f"Maximum skewness must be positive (your value: {value}). To disable enter None or -1*u.deg.")
-        else: return value
+            return -1 * u.deg
+        if value.to("degree") <= 0 * u.deg and value.to("degree") != -1 * u.deg:
+            raise ValueError(
+                f"Maximum skewness must be positive (your value: {value}). To disable enter None or -1*u.deg."
+            )
+        else:
+            return value
 
-    @pd.field_validator(
-        "min_vol", 
-        "min_tet_quality",
-        "min_determinant",
-        mode="after"
-    )
+    @pd.field_validator("min_vol", "min_tet_quality", "min_determinant", mode="after")
     @classmethod
     def disable_by_low_value(cls, value):
         if value is None:
             return -1e30
-        else: return value
+        else:
+            return value
 
-    @pd.field_validator(
-        "n_smooth_scale", 
-        "error_reduction",
-        mode="after"
-    )
+    @pd.field_validator("n_smooth_scale", "error_reduction", mode="after")
     @classmethod
     def disable_by_zero(cls, value):
         if value is None:
             return 0
-        else: return value
+        else:
+            return value
+
 
 class SnappyCastellatedMeshControls(Flow360BaseModel):
-    resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(
-        default=25 * u.deg
-    )
-    n_cells_between_levels: Optional[pd.NonNegativeInt] =  pd.Field(1)
+    resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(default=25 * u.deg)
+    n_cells_between_levels: Optional[pd.NonNegativeInt] = pd.Field(1)
     min_refinement_cells: Optional[pd.NonNegativeInt] = pd.Field(10)
-    @pd.field_validator(
-        "resolve_feature_angle", 
-        mode="after"
-    )
+
+    @pd.field_validator("resolve_feature_angle", mode="after")
     @classmethod
     def angle_limits(cls, value):
         if value is None:
             return value
-        if value > 180* u.deg:
+        if value > 180 * u.deg:
             raise ValueError("resolve_feature_angle must be between 0 and 180 degrees.")
         return value
+
 
 class SnappySnapControls(Flow360BaseModel):
     n_smooth_patch: pd.NonNegativeInt = pd.Field(3)
@@ -322,7 +322,7 @@ class SnappySnapControls(Flow360BaseModel):
 class SnappySmoothControls(Flow360BaseModel):
     lambda_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.7)
     mu_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.71)
-    iterations:Optional[pd.NonNegativeInt] = pd.Field(5)
+    iterations: Optional[pd.NonNegativeInt] = pd.Field(5)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
     included_angle: Optional[AngleType.NonNegative] = pd.Field(150 * u.deg)

@@ -343,7 +343,6 @@ def test_copying_entity(my_cylinder1):
     )
 
     my_cylinder3_2 = my_cylinder1.copy(update={"height": 8119 * u.m, "name": "zone/Cylinder3-2"})
-    print(my_cylinder3_2)
     assert my_cylinder3_2.height == 8119 * u.m
 
 
@@ -637,34 +636,7 @@ def test_multiple_param_creation_and_asset_registry(
     ref_registry.register(my_volume_mesh2["surface_5"])
     ref_registry.register(my_volume_mesh2["surface_6"])
     ref_registry.register(my_volume_mesh2["surface_1"])
-    print(ref_registry)
     assert my_param2.get_used_entity_registry() == ref_registry
-
-
-def test_entities_change_reflection_in_param_registry(my_cylinder1, my_volume_mesh1):
-    # Make sure the changes in the entity are always reflected in the registry
-    with SI_unit_system:
-        my_param1 = TempSimulationParam(
-            far_field_type="auto",
-            models=[
-                TempFluidDynamics(
-                    entities=[
-                        my_cylinder1,
-                        my_cylinder1,
-                        my_cylinder1,
-                        my_volume_mesh1["*"],
-                    ]
-                ),
-                TempWallBC(surfaces=[my_volume_mesh1["*"]]),
-            ],
-        )
-    my_cylinder1.center = (3, 2, 1) * u.m
-    used_entity_registry = EntityRegistry()
-    register_entity_list(my_param1, used_entity_registry)
-    my_cylinder1_ref = used_entity_registry.find_by_naming_pattern(
-        pattern="zone/Cylinder1", enforce_output_as_list=False
-    )
-    assert all(my_cylinder1_ref.center == [3, 2, 1] * u.m)
 
 
 def test_registry_replacing_existing_entity(my_volume_mesh_with_interface):

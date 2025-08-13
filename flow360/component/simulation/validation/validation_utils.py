@@ -7,7 +7,6 @@ from typing import get_args
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.primitives import (
-    Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -68,25 +67,27 @@ def check_deleted_surface_in_entity_list(value):
     Check if any boundary is meant to be deleted
     value--> EntityList
     """
-    validation_info = get_validation_info()
-    if (
-        validation_info is None
-        or validation_info.auto_farfield_method is None
-        or validation_info.is_beta_mesher is True
-    ):
-        # validation not necessary now.
-        return value
+    # --- Disabled for FXC-2006
+    # validation_info = get_validation_info()
+    # if (
+    #     validation_info is None
+    #     or validation_info.auto_farfield_method is None
+    #     or validation_info.is_beta_mesher is True
+    # ):
+    #     # validation not necessary now.
+    #     return value
 
-    # - Check if the surfaces are deleted.
-    for surface in value.stored_entities:
-        if isinstance(
-            surface, Surface
-        ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            validation_info.auto_farfield_method
-        ):
-            raise ValueError(
-                f"Boundary `{surface.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
-            )
+    # # - Check if the surfaces are deleted.
+    # for surface in value.stored_entities:
+    #     if isinstance(
+    #         surface, Surface
+    #     ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+    #         validation_info.auto_farfield_method
+    #     ):
+    #         raise ValueError(
+    #             f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
+    #             "Therefore it cannot be used."
+    #         )
 
     return value
 
@@ -96,21 +97,52 @@ def check_deleted_surface_pair(value):
     Check if any boundary is meant to be deleted
     value--> SurfacePair
     """
-    validation_info = get_validation_info()
-    if validation_info is None or validation_info.auto_farfield_method is None:
-        # validation not necessary now.
-        return value
 
-    # - Check if the surfaces are deleted.
-    for surface in value.pair:
-        if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-            validation_info.auto_farfield_method
-        ):
-            raise ValueError(
-                f"Boundary `{surface.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
-            )
+    # --- Disabled for FXC-2006
+    # validation_info = get_validation_info()
+    # if validation_info is None or validation_info.auto_farfield_method is None:
+    #     # validation not necessary now.
+    #     return value
+
+    # # - Check if the surfaces are deleted.
+    # for surface in value.pair:
+    #     if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+    #         validation_info.auto_farfield_method
+    #     ):
+    #         raise ValueError(
+    #             f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
+    #             "Therefore it cannot be used."
+    #         )
 
     return value
+
+
+def check_symmetric_boundary_existence(stored_entities):
+    """Check according to the criteria if the symmetric plane exists."""
+    validation_info = get_validation_info()
+
+    if validation_info is None:
+        return stored_entities
+
+    for item in stored_entities:
+        if item.private_attribute_entity_type_name != "GhostCircularPlane":
+            continue
+
+        if not item.exists(validation_info):
+            # pylint: disable=protected-access
+            y_min, y_max, tolerance, largest_dimension = item._get_existence_dependency(
+                validation_info
+            )
+            error_msg = (
+                "`symmetric` boundary will not be generated: "
+                + f"model spans: [{y_min:.2g}, {y_max:.2g}], "
+                + f"tolerance = {validation_info.planar_face_tolerance:.2g} x {largest_dimension:.2g}"
+                + f" = {tolerance:.2g}."
+            )
+
+            raise ValueError(error_msg)
+
+    return stored_entities
 
 
 class EntityUsageMap:  # pylint:disable=too-few-public-methods

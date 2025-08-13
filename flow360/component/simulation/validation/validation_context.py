@@ -19,13 +19,30 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, List, Literal, Union
 
-from pydantic import Field
+from pydantic import Field, TypeAdapter
+
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.utils import BoundingBoxType
 
 SURFACE_MESH = "SurfaceMesh"
 VOLUME_MESH = "VolumeMesh"
 CASE = "Case"
 # when running validation with ALL, it will report errors happing in all scenarios in one validation pass
 ALL = "All"
+
+
+def get_value_with_path(param_as_dict: dict, path: list[str]):
+    """
+    Get the value from the dictionary with the given path.
+    Return None if the path is not found.
+    """
+
+    value = param_as_dict
+    for key in path:
+        value = value.get(key, None)
+        if value is None:
+            return None
+    return value
 
 
 class TimeSteppingType(Enum):
@@ -47,11 +64,47 @@ class TimeSteppingType(Enum):
     UNSET = "Unset"
 
 
+class FeatureUsageInfo:
+    """
+    Model that provides the information for each individual feature usage.
+    """
+
+    # pylint: disable=too-few-public-methods
+    __slots__ = [
+        "turbulence_model_type",
+        "transition_model_type",
+        "rotation_zone_count",
+        "bet_disk_count",
+    ]
+
+    def __init__(self, param_as_dict: dict):
+        self.turbulence_model_type = None
+        self.transition_model_type = None
+        self.rotation_zone_count = 0
+        self.bet_disk_count = 0
+
+        if "models" in param_as_dict and param_as_dict["models"]:
+            for model in param_as_dict["models"]:
+                if model["type"] == "Fluid":
+                    self.turbulence_model_type = model.get("turbulence_model_solver", {}).get(
+                        "type_name", None
+                    )
+                    self.transition_model_type = model.get("transition_model_solver", {}).get(
+                        "type_name", None
+                    )
+
+                if model["type"] == "Rotation":
+                    self.rotation_zone_count += 1
+
+                if model["type"] == "BETDisk":
+                    self.bet_disk_count += 1
+
+
 _validation_level_ctx = contextvars.ContextVar("validation_levels", default=None)
 _validation_info_ctx = contextvars.ContextVar("validation_info", default=None)
 
 
-class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
+class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-instance-attributes
     """
     Model that provides the information for each individual validator that is out of their scope.
 
@@ -74,6 +127,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         "use_geometry_AI",
         "using_liquid_as_material",
         "time_stepping",
+        "feature_usage",
+        "referenced_expressions",
+        "project_length_unit",
+        "global_bounding_box",
+        "planar_face_tolerance",
     ]
 
     @classmethod
@@ -126,7 +184,46 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
         except KeyError:
             return TimeSteppingType.UNSET
 
-    def __init__(self, param_as_dict: dict):
+    @classmethod
+    def _get_feature_usage_info(cls, param_as_dict: dict):
+        # 1. Turbulence model type
+        # 2. Transition model type
+        # 3. Usage of Rotation zone
+        # 4. Usage of BETDisk
+        return FeatureUsageInfo(param_as_dict=param_as_dict)
+
+    @classmethod
+    def _get_project_length_unit_(cls, param_as_dict: dict):
+        try:
+            project_length_unit_dict = param_as_dict["private_attribute_asset_cache"][
+                "project_length_unit"
+            ]
+            if project_length_unit_dict:
+                # pylint: disable=no-member
+                return LengthType.validate(project_length_unit_dict)
+            return None
+        except KeyError:
+            return None
+
+    @classmethod
+    def _get_global_bounding_box(cls, param_as_dict: dict):
+        global_bounding_box = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "global_bounding_box"],
+        )
+        if global_bounding_box:
+            # pylint: disable=no-member
+            return TypeAdapter(BoundingBoxType).validate_python(global_bounding_box)
+        return None
+
+    @classmethod
+    def _get_planar_face_tolerance(cls, param_as_dict: dict):
+        planar_face_tolerance = get_value_with_path(
+            param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
+        )
+        return planar_face_tolerance
+
+    def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
         self.use_geometry_AI = self._get_use_geometry_AI_(  # pylint:disable=invalid-name
@@ -136,6 +233,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods
             param_as_dict=param_as_dict
         )
         self.time_stepping = self._get_time_stepping_(param_as_dict=param_as_dict)
+        self.feature_usage = self._get_feature_usage_info(param_as_dict=param_as_dict)
+        self.referenced_expressions = referenced_expressions
+        self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
+        self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
+        self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
 
 
 class ValidationContext:

@@ -4,6 +4,11 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
+from flow360.component.simulation.meshing_param.params import (
+    BetaVolumeMeshingParams,
+    MeshingParams,
+    ModularMeshingWorkflow,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -21,9 +26,9 @@ from flow360.component.simulation.translator.utils import (
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
-from flow360.component.simulation.meshing_param.params import BetaVolumeMeshingParams, MeshingParams, ModularMeshingWorkflow
 
-def unifrom_refinement_translator(obj: UniformRefinement):
+
+def uniform_refinement_translator(obj: UniformRefinement):
     """
     Translate UniformRefinement.
 
@@ -94,7 +99,7 @@ def rotation_cylinder_translator(obj: RotationCylinder, rotor_disk_names: list):
     return setting
 
 
-def refinement_entitity_injector(entity_obj):
+def refinement_entity_injector(entity_obj):
     """Injector for UniformRefinement entity [box & cylinder]."""
     if isinstance(entity_obj, Cylinder):
         return {
@@ -148,7 +153,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     """
     volume_zones = None
-    refinements = None 
+    refinements = None
     refinement_factor = None
     defaults = None
     gap_treatment_strength = None
@@ -161,8 +166,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             None,
             ["meshing"],
         )
-    
-    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(input_params.meshing.volume_meshing, BetaVolumeMeshingParams):
+
+    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+        input_params.meshing.volume_meshing, BetaVolumeMeshingParams
+    ):
         volume_zones = input_params.meshing.volume_meshing.volume_zones
         refinements = input_params.meshing.volume_meshing.refinements
         refinement_factor = input_params.meshing.volume_meshing.refinement_factor
@@ -208,7 +215,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             break
 
         if isinstance(zone, AutomatedFarfield):
-            translated["farfield"] = {"type": zone.method}
+            translated["farfield"] = {
+                "type": zone.method,
+                "planarFaceTolerance": planar_tolerance,
+            }
             break
 
     if "farfield" not in translated:
@@ -251,9 +261,9 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
         refinements,
         UniformRefinement,
-        unifrom_refinement_translator,
+        uniform_refinement_translator,
         to_list=True,
-        entity_injection_func=refinement_entitity_injector,
+        entity_injection_func=refinement_entity_injector,
     )
     rotor_disk_refinement = translate_setting_and_apply_to_all_entities(
         refinements,

@@ -6,15 +6,14 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
+    MeshingDefaults,
+)
 from flow360.component.simulation.meshing_param.params import (
+    BetaVolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
-    BetaVolumeMeshingParams
-)
-
-from flow360.component.simulation.meshing_param.meshing_specs import (
-    MeshingDefaults,
-    BetaVolumeMeshingDefaults
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -201,6 +200,7 @@ def get_test_param():
         )
     return param
 
+
 @pytest.fixture()
 def get_test_param_modular():
     with SI_unit_system:
@@ -259,85 +259,86 @@ def get_test_param_modular():
                     ),
                     refinement_factor=1.45,
                     refinements=[
-                    UniformRefinement(
-                        entities=[
-                            base_cylinder,
-                            Box.from_principal_axes(
-                                name="MyBox",
-                                center=(0, 1, 2),
-                                size=(4, 5, 6),
-                                axes=((2, 2, 0), (-2, 2, 0)),
-                            ),
-                        ],
-                        spacing=7.5 * u.cm,
-                    ),
-                    AxisymmetricRefinement(
-                        entities=[rotor_disk_cylinder],
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                    ),
-                    PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
-                    PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
-                    BoundaryLayer(
-                        entities=[Surface(name="boundary1")],
-                        first_layer_thickness=0.5 * u.m,
-                        growth_rate=1.3,
-                    ),
-                ],
-                volume_zones=[
-                    AutomatedFarfield(),
-                    RotationCylinder(
-                        name="we_do_not_use_this_anyway",
-                        entities=inner_cylinder,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[
-                            Surface(name="hub"),
-                            Surface(name="blade1"),
-                            Surface(name="blade2"),
-                            Surface(name="blade3"),
-                        ],
-                    ),
-                    RotationCylinder(
-                        entities=mid_cylinder,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[inner_cylinder],
-                    ),
-                    RotationCylinder(
-                        entities=cylinder_2,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[rotor_disk_cylinder],
-                    ),
-                    RotationCylinder(
-                        entities=cylinder_3,
-                        spacing_axial=20 * u.cm,
-                        spacing_radial=0.2,
-                        spacing_circumferential=20 * u.cm,
-                    ),
-                    RotationCylinder(
-                        entities=cylinder_outer,
-                        spacing_axial=40 * u.cm,
-                        spacing_radial=0.4,
-                        spacing_circumferential=40 * u.cm,
-                        enclosed_entities=[
-                            mid_cylinder,
-                            rotor_disk_cylinder,
-                            cylinder_2,
-                            cylinder_3,
-                        ],
-                    ),
-                ]
+                        UniformRefinement(
+                            entities=[
+                                base_cylinder,
+                                Box.from_principal_axes(
+                                    name="MyBox",
+                                    center=(0, 1, 2),
+                                    size=(4, 5, 6),
+                                    axes=((2, 2, 0), (-2, 2, 0)),
+                                ),
+                            ],
+                            spacing=7.5 * u.cm,
+                        ),
+                        AxisymmetricRefinement(
+                            entities=[rotor_disk_cylinder],
+                            spacing_axial=20 * u.cm,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20 * u.cm,
+                        ),
+                        PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
+                        PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
+                        BoundaryLayer(
+                            entities=[Surface(name="boundary1")],
+                            first_layer_thickness=0.5 * u.m,
+                            growth_rate=1.3,
+                        ),
+                    ],
+                    volume_zones=[
+                        AutomatedFarfield(),
+                        RotationCylinder(
+                            name="we_do_not_use_this_anyway",
+                            entities=inner_cylinder,
+                            spacing_axial=20 * u.cm,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20 * u.cm,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                                Surface(name="blade1"),
+                                Surface(name="blade2"),
+                                Surface(name="blade3"),
+                            ],
+                        ),
+                        RotationCylinder(
+                            entities=mid_cylinder,
+                            spacing_axial=20 * u.cm,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20 * u.cm,
+                            enclosed_entities=[inner_cylinder],
+                        ),
+                        RotationCylinder(
+                            entities=cylinder_2,
+                            spacing_axial=20 * u.cm,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20 * u.cm,
+                            enclosed_entities=[rotor_disk_cylinder],
+                        ),
+                        RotationCylinder(
+                            entities=cylinder_3,
+                            spacing_axial=20 * u.cm,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20 * u.cm,
+                        ),
+                        RotationCylinder(
+                            entities=cylinder_outer,
+                            spacing_axial=40 * u.cm,
+                            spacing_radial=0.4,
+                            spacing_circumferential=40 * u.cm,
+                            enclosed_entities=[
+                                mid_cylinder,
+                                rotor_disk_cylinder,
+                                cylinder_2,
+                                cylinder_3,
+                            ],
+                        ),
+                    ],
                 )
             ),
-            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True)
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
         )
     return param
+
 
 def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular):
     translated_standard = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
@@ -346,7 +347,7 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
 
     ref_dict = {
         "refinementFactor": 1.45,
-        "farfield": {"type": "auto"},
+        "farfield": {"type": "auto", "planarFaceTolerance": 1e-6},
         "volume": {
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
@@ -474,10 +475,8 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         params_modular = SimulationParams(
             meshing=ModularMeshingWorkflow(
                 volume_meshing=BetaVolumeMeshingParams(
-                    defaults=BetaVolumeMeshingDefaults(
-                        boundary_layer_first_layer_thickness=100
-                    ),
-                    volume_zones=[UserDefinedFarfield()]
+                    defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=100),
+                    volume_zones=[UserDefinedFarfield()],
                 )
             )
         )

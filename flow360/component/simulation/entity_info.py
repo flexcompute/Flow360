@@ -24,7 +24,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     Surface,
 )
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
 from flow360.log import log
 
@@ -130,6 +130,8 @@ class GeometryEntityInfo(EntityInfoModel):
     face_group_tag: Optional[str] = pd.Field(None, frozen=True)
     edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
 
+    global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
+
     def group_in_registry(
         self,
         entity_type_name: Literal["face", "edge", "body"],
@@ -140,8 +142,9 @@ class GeometryEntityInfo(EntityInfoModel):
         Group items with given attribute_name.
         """
         entity_list = self._get_list_of_entities(attribute_name, entity_type_name)
+        known_frozen_hashes = set()
         for item in entity_list:
-            registry.register(item)
+            known_frozen_hashes = registry.fast_register(item, known_frozen_hashes)
         return registry
 
     def _get_list_of_entities(
@@ -387,7 +390,7 @@ class GeometryEntityInfo(EntityInfoModel):
                     body_group_tag = self.body_group_tag
 
                 internal_registry = self._group_entity_by_tag(
-                    "body", self.body_group_tag, registry=internal_registry
+                    "body", body_group_tag, registry=internal_registry
                 )
         return internal_registry
 
@@ -515,14 +518,16 @@ class VolumeMeshEntityInfo(EntityInfoModel):
             internal_registry = EntityRegistry()
 
             # Populate boundaries
+            known_frozen_hashes = set()
             # pylint: disable=not-an-iterable
             for boundary in self.boundaries:
-                internal_registry.register(boundary)
+                known_frozen_hashes = internal_registry.fast_register(boundary, known_frozen_hashes)
 
             # Populate zones
             # pylint: disable=not-an-iterable
+            known_frozen_hashes = set()
             for zone in self.zones:
-                internal_registry.register(zone)
+                known_frozen_hashes = internal_registry.fast_register(zone, known_frozen_hashes)
 
         return internal_registry
 
@@ -532,7 +537,7 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
 
     type_name: Literal["SurfaceMeshEntityInfo"] = pd.Field("SurfaceMeshEntityInfo", frozen=True)
     boundaries: list[Surface] = pd.Field([])
-    ghost_entities: List[GhostSurfaceTypes] = pd.Field([])
+    global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
 
     # pylint: disable=arguments-differ
     def get_boundaries(self) -> list:
@@ -551,10 +556,11 @@ class SurfaceMeshEntityInfo(EntityInfoModel):
         if internal_registry is None:
             # Initialize the local registry
             internal_registry = EntityRegistry()
+            known_frozen_hashes = set()
             # Populate boundaries
             # pylint: disable=not-an-iterable
             for boundary in self.boundaries:
-                internal_registry.register(boundary)
+                known_frozen_hashes = internal_registry.fast_register(boundary, known_frozen_hashes)
             return internal_registry
         return internal_registry
 

@@ -14,7 +14,11 @@ import pydantic as pd
 import pydantic.v1 as pd_v1
 
 from .. import error_messages
-from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
+from ..cloud.flow360_requests import (
+    MoveCaseItem,
+    MoveToFolderRequest,
+    RenameAssetRequestV2,
+)
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
@@ -178,7 +182,6 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     """
 
     id: str = pd.Field(alias="caseId")
-    case_mesh_id: str = pd.Field(alias="caseMeshId")
     status: Flow360Status = pd.Field()
 
     def to_case(self) -> Case:
@@ -454,7 +457,8 @@ class Case(CaseBase, Flow360Resource):
             params_as_dict = self._parse_json_from_cloud("simulation.json")
         except CloudFileNotFoundError as err:
             raise Flow360ValueError(
-                "Simulation params not found for this case. It is likely it was created with old interface"
+                "Simulation params not found for this case. It is likely it was created with old interface."
+                f" Original error: {str(err)}"
             ) from err
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
@@ -542,6 +546,13 @@ class Case(CaseBase, Flow360Resource):
         return super().info
 
     @property
+    def info_v2(self) -> CaseMetaV2:
+        """
+        returns metadata v2 info for case
+        """
+        return self._web_api_v2.info
+
+    @property
     def project_id(self) -> Optional[str]:
         """Returns the project id of the case if case was run with V2 interface."""
         if isinstance(self.info, CaseMeta):
@@ -549,6 +560,13 @@ class Case(CaseBase, Flow360Resource):
         if isinstance(self.info, CaseMetaV2):
             return self.info.project_id
         raise ValueError("Case info is not of type CaseMeta or CaseMetaV2")
+
+    @property
+    def tags(self) -> List[str]:
+        """
+        get case tags
+        """
+        return self._web_api_v2.info.tags
 
     @property
     def volume_mesh(self) -> "VolumeMeshV2":
@@ -666,6 +684,19 @@ class Case(CaseBase, Flow360Resource):
             method="move",
         )
         return self
+
+    def rename(self, new_name: str):
+        """
+        Rename the current case.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the case.
+        """
+        RestApi(CaseInterfaceV2.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
 
     @classmethod
     def _interface(cls):

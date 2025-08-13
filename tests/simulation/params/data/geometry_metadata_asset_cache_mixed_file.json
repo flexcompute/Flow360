@@ -1217,5 +1217,17 @@
     ],
     "face_group_tag": "face_ids",
     "edge_group_tag": "edge_id",
-    "body_group_tag": "bodyId"
+    "body_group_tag": "bodyId",
+    "global_bounding_box": [
+        [
+            -1,
+            -2,
+            -3
+        ],
+        [
+            0.1,
+            0.2,
+            0.3
+        ]
+    ]
 }

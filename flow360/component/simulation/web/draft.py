@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import ast
 import json
+from functools import cached_property
 from typing import Literal, Union
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from flow360.cloud.flow360_requests import (
     DraftCreateRequest,
@@ -14,15 +17,23 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
-from flow360.component.project_utils import formatting_validation_errors
-from flow360.component.resource_base import (
-    AssetMetaBaseModel,
-    Flow360Resource,
-    ResourceDraft,
-)
-from flow360.component.utils import validate_type
+from flow360.component.resource_base import Flow360Resource, ResourceDraft
+from flow360.component.utils import formatting_validation_errors, validate_type
+from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
+
+
+class DraftMetaModel(BaseModel):
+    """Draft metadata deserializer"""
+
+    type: Literal["Draft"] = "Draft"
+    name: str
+    id: str
+    project_id: str = Field(alias="projectId")
+    solver_version: str = Field(alias="solverVersion")
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class DraftDraft(ResourceDraft):
@@ -72,14 +83,14 @@ class Draft(Flow360Resource):
     def __init__(self, draft_id: IDStringType):
         super().__init__(
             interface=DraftInterface,
-            meta_class=AssetMetaBaseModel,  # We do not have dedicated meta class for Draft
+            meta_class=DraftMetaModel,  # We do not have dedicated meta class for Draft
             id=draft_id,
         )
 
     @classmethod
     # pylint: disable=protected-access
-    def _from_meta(cls, meta: AssetMetaBaseModel):
-        validate_type(meta, "meta", AssetMetaBaseModel)
+    def _from_meta(cls, meta: DraftMetaModel):
+        validate_type(meta, "meta", DraftMetaModel)
         resource = cls(draft_id=meta.id)
         return resource
 
@@ -186,3 +197,14 @@ class Draft(Flow360Resource):
                     "An unexpected error has occurred. Please contact customer support."
                 ) from None
         raise RuntimeError("Submission not successful.")
+
+    @cached_property
+    def project_id(self) -> str:
+        """Get the project ID of the draft"""
+        return self.info.project_id
+
+    @property
+    def web_url(self) -> str:
+        """Get the web URL of the draft"""
+
+        return Env.current.web_url + f"/workbench/{self.project_id}?id={self.id}&type=Draft"

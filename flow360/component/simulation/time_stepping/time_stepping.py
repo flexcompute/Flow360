@@ -6,6 +6,7 @@ import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.unit_system import TimeType
+from flow360.component.simulation.user_code.core.types import ValueOrExpression
 
 
 def _apply_default_to_none(original, default):
@@ -140,7 +141,7 @@ class Steady(Flow360BaseModel):
         Populate CFL's None fields with default
         """
         if "CFL" not in values:
-            return values  # will be handeled by default value
+            return values  # will be handled by default value
         cfl_input = values["CFL"]
         if isinstance(cfl_input, AdaptiveCFL):
             cfl_input = _apply_default_to_none(cfl_input, AdaptiveCFL.default_steady())
@@ -174,7 +175,9 @@ class Unsteady(Flow360BaseModel):
     )
     steps: pd.PositiveInt = pd.Field(description="Number of physical steps.")
     # pylint: disable=no-member
-    step_size: TimeType.Positive = pd.Field(description="Time step size in physical step marching,")
+    step_size: ValueOrExpression[TimeType.Positive] = pd.Field(
+        description="Time step size in physical step marching,"
+    )
     # pylint: disable=duplicate-code
     CFL: Union[RampCFL, AdaptiveCFL] = pd.Field(
         default=AdaptiveCFL.default_unsteady(),
@@ -189,7 +192,7 @@ class Unsteady(Flow360BaseModel):
         Populate CFL's None fields with default
         """
         if "CFL" not in values:
-            return values  # will be handeled by default value
+            return values  # will be handled by default value
         cfl_input = values["CFL"]
         if isinstance(cfl_input, AdaptiveCFL):
             cfl_input = _apply_default_to_none(cfl_input, AdaptiveCFL.default_unsteady())
