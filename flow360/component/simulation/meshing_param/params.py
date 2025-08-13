@@ -208,7 +208,9 @@ class MeshingDefaults(Flow360BaseModel):
             value != DEFAULT_SURFACE_MAX_ADAPTATION_ITERATIONS
             and not validation_info.use_geometry_AI
         ):
-            raise ValueError("Surface max aspect ratio is only supported when geometry AI is used.")
+            raise ValueError(
+                "Surface max adaptation iterations is only supported when geometry AI is used."
+            )
 
         return value
 

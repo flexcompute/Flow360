@@ -1888,6 +1888,11 @@ def test_geometry_AI_only_features():
                     surface_max_aspect_ratio=20.0,
                     surface_max_adaptation_iterations=20,
                 ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=1e-5 * u.m, entities=[Surface(name="noSlipWall")]
+                    )
+                ],
             ),
             private_attribute_asset_cache=AssetCache(
                 use_inhouse_mesher=False, use_geometry_AI=False
@@ -1899,11 +1904,20 @@ def test_geometry_AI_only_features():
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 3
+    assert len(errors) == 4
     assert (
         errors[0]["msg"]
         == "Value error, Geometry accuracy is only supported when geometry AI is used."
     )
+    assert (
+        errors[1]["msg"]
+        == "Value error, Surface max aspect ratio is only supported when geometry AI is used."
+    )
+    assert (
+        errors[2]["msg"]
+        == "Value error, Surface max adaptation iterations is only supported when geometry AI is used."
+    )
+    assert errors[3]["msg"] == "Value error, GeometryRefinement is only supported by geometry AI."
 
     with SI_unit_system:
         params = SimulationParams(
