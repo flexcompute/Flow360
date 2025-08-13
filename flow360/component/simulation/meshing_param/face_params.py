@@ -35,10 +35,9 @@ class SurfaceRefinement(Flow360BaseModel):
     refinement_type: Literal["SurfaceRefinement"] = pd.Field("SurfaceRefinement", frozen=True)
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
-    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
-        description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-    )
-
+    max_edge_length: LengthType.Positive = pd.Field(
+        description="Maximum edge length of surface cells."
+    
     @pd.field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value):
@@ -66,7 +65,7 @@ class GeometryRefinement(Flow360BaseModel):
     entities: EntityList[Surface] = pd.Field(alias="faces")
     # pylint: disable=no-member
 
-    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+    geometry_accuracy: LengthType.Positive = pd.Field(
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
     )
 

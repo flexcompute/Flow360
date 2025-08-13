@@ -73,7 +73,7 @@ class MeshingDefaults(Flow360BaseModel):
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
         "This parameter is only valid when using geometry AI."
-        "It can be overriden with class: ~flow360.GeometryRefinement.",
+        "It can be overridden with class: ~flow360.GeometryRefinement.",
     )
 
     ##::   Default surface edge settings
@@ -128,7 +128,7 @@ class MeshingDefaults(Flow360BaseModel):
     surface_max_aspect_ratio: pd.PositiveFloat = ConditionalField(
         10.0,
         description="Maximum aspect ratio for surface cells for the GAI surface mesher."
-        " This cannot be overriden per face",
+        " This cannot be overridden per face",
         context=SURFACE_MESH,
     )
 
