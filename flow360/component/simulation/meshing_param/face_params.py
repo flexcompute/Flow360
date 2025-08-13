@@ -37,7 +37,8 @@ class SurfaceRefinement(Flow360BaseModel):
     # pylint: disable=no-member
     max_edge_length: LengthType.Positive = pd.Field(
         description="Maximum edge length of surface cells."
-    
+    )
+
     @pd.field_validator("entities", mode="after")
     @classmethod
     def ensure_surface_existence(cls, value):
