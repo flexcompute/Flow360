@@ -11,7 +11,10 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param.face_params import BoundaryLayer, GeometryRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    GeometryRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,

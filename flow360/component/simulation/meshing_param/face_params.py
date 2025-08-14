@@ -77,7 +77,7 @@ class GeometryRefinement(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
     @pd.model_validator(mode="after")
-    def ensure_geometry_AI(self):
+    def ensure_geometry_ai(self):
         """Ensure all boundaries will be present after mesher"""
         validation_info = get_validation_info()
         if validation_info is None:
