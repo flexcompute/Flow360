@@ -1914,11 +1914,11 @@ def test_geometry_AI_only_features():
     )
     assert (
         errors[1]["msg"]
-        == "Value error, Surface max aspect ratio is only supported when geometry AI is used."
+        == "Value error, surface_max_aspect_ratio is only supported when geometry AI is used."
     )
     assert (
         errors[2]["msg"]
-        == "Value error, Surface max adaptation iterations is only supported when geometry AI is used."
+        == "Value error, surface_max_adaptation_iterations is only supported when geometry AI is used."
     )
     assert errors[3]["msg"] == "Value error, GeometryRefinement is only supported by geometry AI."
 

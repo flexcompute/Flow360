@@ -49,9 +49,6 @@ VolumeZonesTypes = Annotated[
     Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield], pd.Field(discriminator="type")
 ]
 
-DEFAULT_SURFACE_MAX_ASPECT_RATIO = 10.0
-DEFAULT_SURFACE_MAX_ADAPTATION_ITERATIONS = 50
-
 
 class MeshingDefaults(Flow360BaseModel):
     """
@@ -129,14 +126,14 @@ class MeshingDefaults(Flow360BaseModel):
     )
 
     surface_max_aspect_ratio: Optional[pd.PositiveFloat] = ConditionalField(
-        DEFAULT_SURFACE_MAX_ASPECT_RATIO,
+        10.0,
         description="Maximum aspect ratio for surface cells for the GAI surface mesher."
         " This cannot be overridden per face",
         context=SURFACE_MESH,
     )
 
     surface_max_adaptation_iterations: Optional[pd.NonNegativeInt] = ConditionalField(
-        DEFAULT_SURFACE_MAX_ADAPTATION_ITERATIONS,
+        50,
         description="Maximum adaptation iterations for the GAI surface mesher.",
         context=SURFACE_MESH,
     )
@@ -181,36 +178,21 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
 
-    @pd.field_validator("surface_max_aspect_ratio", mode="after")
+    @pd.field_validator(
+        "surface_max_aspect_ratio", "surface_max_adaptation_iterations", mode="after"
+    )
     @classmethod
-    def invalid_surface_max_aspect_ratio(cls, value):
+    def invalid_geometry_ai_features(cls, value, info):
         """Ensure surface max aspect ratio is not specified when GAI is not used"""
         validation_info = get_validation_info()
 
         if validation_info is None:
             return value
 
-        if value != DEFAULT_SURFACE_MAX_ASPECT_RATIO and not validation_info.use_geometry_AI:
-            raise ValueError("Surface max aspect ratio is only supported when geometry AI is used.")
-
-        return value
-
-    @pd.field_validator("surface_max_adaptation_iterations", mode="after")
-    @classmethod
-    def invalid_surface_max_adaptation_iterations(cls, value):
-        """Ensure surface max adaptation iterations is not specified when GAI is not used"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        if (
-            value != DEFAULT_SURFACE_MAX_ADAPTATION_ITERATIONS
-            and not validation_info.use_geometry_AI
-        ):
-            raise ValueError(
-                "Surface max adaptation iterations is only supported when geometry AI is used."
-            )
+        # pylint: disable=unsubscriptable-object
+        default_value = cls.model_fields[info.field_name].default
+        if value != default_value and not validation_info.use_geometry_AI:
+            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
 
         return value
 

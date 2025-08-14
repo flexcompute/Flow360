@@ -78,7 +78,7 @@ class GeometryRefinement(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def ensure_geometry_ai(self):
-        """Ensure all boundaries will be present after mesher"""
+        """Ensure feature is only activated with geometry AI enabled."""
         validation_info = get_validation_info()
         if validation_info is None:
             return self
