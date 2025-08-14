@@ -1,0 +1,87 @@
+name: Daily sync main -> develop (07:00/15:00/23:00 New York)
+
+on:
+  # Run every hour, then gate by New York local time.
+  schedule:
+    - cron: "0 * * * *"     # UTC hourly
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-main-to-develop
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate by New York time (only 07:00/15:00/23:00 ET)
+        id: gate
+        shell: bash
+        run: |
+          set -e
+          python3 - <<'PY'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import os
+          now = datetime.now(ZoneInfo("America/New_York"))
+          ok = (now.minute == 0) and (now.hour in (7, 15, 23))
+          print(f"NY now: {now.isoformat()}  -> will_run={ok}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"ok={'true' if ok else 'false'}\n")
+          PY
+
+      - name: Quit early if not target window
+        if: steps.gate.outputs.ok != 'true'
+        run: echo "Not at 07:00/15:00/23:00 New York time. Skipping."
+
+      - name: Checkout develop
+        if: steps.gate.outputs.ok == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch & reset local to remote
+        if: steps.gate.outputs.ok == 'true'
+        run: |
+          git fetch origin main develop
+          git checkout develop
+          git reset --hard origin/develop
+
+      - name: Merge main into develop
+        if: steps.gate.outputs.ok == 'true'
+        id: do_merge
+        shell: bash
+        run: |
+          set -e
+          if git merge -m "chore: scheduled sync main -> develop" origin/main; then
+            echo "conflicted=false" >> $GITHUB_OUTPUT
+          else
+            echo "conflicted=true" >> $GITHUB_OUTPUT
+            git merge --abort || true
+          fi
+
+      - name: Push to develop (direct)
+        if: steps.gate.outputs.ok == 'true' && steps.do_merge.outputs.conflicted == 'false'
+        run: git push origin HEAD:develop
+
+      - name: Open PR main -> develop (on conflict)
+        if: steps.gate.outputs.ok == 'true' && steps.do_merge.outputs.conflicted == 'true'
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "main"
+          destination_branch: "develop"
+          pr_title: "Scheduled sync: main → develop (conflicts need resolution)"
+          pr_body: "Automated sync hit merge conflicts. Please resolve to bring `develop` up to date with `main`."
+          github_token: ${{ secrets.GITHUB_TOKEN }}
