@@ -1,5 +1,4 @@
-"""webAPI interface definitions
-"""
+"""webAPI interface definitions"""
 
 from typing import Union
 
