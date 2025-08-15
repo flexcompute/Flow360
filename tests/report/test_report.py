@@ -108,7 +108,7 @@ def test_reporttemplate_no_items():
     assert template.title == "Empty"
     assert template.items == []
     reqs = template.get_requirements()
-    expected_keys = ["volume_mesh", "surface_mesh", "geometry"]
+    expected_keys = ["volume_mesh", "surface_mesh", "geometry", "params"]
     expected_reqs = {RequirementItem.from_data_key(data_key=k) for k in expected_keys}
     assert set(reqs) == expected_reqs
 
