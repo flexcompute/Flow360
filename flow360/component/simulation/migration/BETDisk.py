@@ -4,6 +4,7 @@
 
 import json
 import os
+from typing import Union
 
 from numpy import sqrt
 from pydantic import validate_call
@@ -13,6 +14,17 @@ from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.primitives import Cylinder
 from flow360.component.simulation.unit_system import AbsoluteTemperatureType, LengthType
 from flow360.log import log
+
+
+def _remove_comments(obj: Union[dict, list]) -> Union[dict, list]:
+    """
+    Recursively return a copy of `obj` with all 'comments' entries removed.
+    """
+    if isinstance(obj, dict):
+        return {key: _remove_comments(value) for key, value in obj.items() if key != "comments"}
+    if isinstance(obj, list):
+        return [_remove_comments(item) for item in obj]
+    return obj
 
 
 # pylint: disable=too-many-arguments
@@ -42,6 +54,8 @@ def _parse_flow360_bet_disk_dict(
         if len(flow360_bet_disk_dict["BETDisks"]) == 0:
             raise ValueError("Input file does not contain BETDisk setting.")
         flow360_bet_disk_dict = flow360_bet_disk_dict["BETDisks"][0]
+    # Recursively remove "comments" from the flow360_bet_disk_dict
+    flow360_bet_disk_dict = _remove_comments(flow360_bet_disk_dict)
 
     specific_heat_ratio = 1.4
     gas_constant = 287.0529 * u.m**2 / u.s**2 / u.K  # pylint: disable=no-member

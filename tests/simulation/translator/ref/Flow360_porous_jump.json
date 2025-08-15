@@ -1,0 +1,177 @@
+{
+    "boundaries": {
+        "blk-1/Interface_blk-2": {
+            "DarcyCoefficient": 1e6,
+            "ForchheimerCoefficient": 10.0,
+            "pairedPatchName": "blk-2/Interface_blk-1",
+            "porousJumpThickness": 0.1,
+            "type": "PorousJump"
+        },
+        "blk-1/outflow": {
+            "staticPressureRatio": 1.0,
+            "type": "SubsonicOutflowPressure"
+        },
+        "blk-1/slip": {
+            "type": "SlipWall"
+        },
+        "blk-2/Interface_blk-1": {
+            "DarcyCoefficient": 1e6,
+            "ForchheimerCoefficient": 10.0,
+            "porousJumpThickness": 0.1,
+            "type": "PorousJump"
+        },
+        "blk-2/slip": {
+            "type": "SlipWall"
+        },
+        "blk-3/inflow": {
+            "totalPressureRatio": 1.028281,
+            "totalTemperatureRatio": 1.008,
+            "type": "SubsonicInflow"
+        },
+        "blk-3/slip": {
+            "type": "SlipWall"
+        }
+    },
+    "freestream": {
+        "Mach": 0.19999999999999998,
+        "Temperature": -1,
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "muRef": 2.0000000000000003e-06
+    },
+    "geometry": {},
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
+    "navierStokesSolver": {
+        "CFLMultiplier": 1.0,
+        "absoluteTolerance": 1e-10,
+        "equationEvalFrequency": 1,
+        "kappaMUSCL": 0.01,
+        "limitPressureDensity": false,
+        "limitVelocity": false,
+        "linearSolver": {
+            "maxIterations": 25
+        },
+        "lowMachPreconditioner": false,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "numericalDissipationFactor": 1.0,
+        "orderOfAccuracy": 2,
+        "relativeTolerance": 0.0,
+        "updateJacobianFrequency": 4
+    },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "surfaceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1,
+        "surfaces": {
+            "blk-1/outflow": {
+                "outputFields": [
+                    "Cf",
+                    "CfVec",
+                    "Cp",
+                    "Mach",
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
+                ]
+            },
+            "blk-1/slip": {
+                "outputFields": [
+                    "Cf",
+                    "CfVec",
+                    "Cp",
+                    "Mach",
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
+                ]
+            },
+            "blk-2/slip": {
+                "outputFields": [
+                    "Cf",
+                    "CfVec",
+                    "Cp",
+                    "Mach",
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
+                ]
+            },
+            "blk-3/inflow": {
+                "outputFields": [
+                    "Cf",
+                    "CfVec",
+                    "Cp",
+                    "Mach",
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
+                ]
+            },
+            "blk-3/slip": {
+                "outputFields": [
+                    "Cf",
+                    "CfVec",
+                    "Cp",
+                    "Mach",
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
+                ]
+            }
+        },
+        "writeSingleFile": false
+    },
+    "timeStepping": {
+        "CFL": {
+            "final": 100.0,
+            "initial": 1.0,
+            "rampSteps": 100,
+            "type": "ramp"
+        },
+        "maxPseudoSteps": 2000,
+        "orderOfAccuracy": 2,
+        "physicalSteps": 1,
+        "timeStepSize": "inf"
+    },
+    "turbulenceModelSolver": {
+        "modelType": "None"
+    },
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "computeTimeAverages": false,
+        "outputFields": [
+            "Cp",
+            "T",
+            "mut",
+            "mutRatio",
+            "primitiveVars",
+            "residualNavierStokes",
+            "s",
+            "vorticity",
+            "vorticityMagnitude"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
+    }
+}

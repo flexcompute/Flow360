@@ -87,6 +87,9 @@ from tests.simulation.translator.utils.om6WingWallModel_params_generator import 
 from tests.simulation.translator.utils.plateASI_param_generator import (
     create_plateASI_param,
 )
+from tests.simulation.translator.utils.porousJump_params_generator import (
+    create_porous_jump_zone_param,
+)
 from tests.simulation.translator.utils.porousMedia_param_generator import (
     create_porous_media_box_param,
     create_porous_media_volume_zone_param,
@@ -231,6 +234,15 @@ def test_om6wing_tutorial(get_om6Wing_tutorial_param):
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6Wing.json",
+        debug=True,
+    )
+
+
+def test_porous_jump(create_porous_jump_zone_param):
+    translate_and_compare(
+        create_porous_jump_zone_param,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_porous_jump.json",
         debug=True,
     )
 
