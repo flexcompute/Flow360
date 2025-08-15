@@ -1351,7 +1351,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "pressure_pa",
-                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 2500000.0;",
+                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 10000000.0;",
                 "from_user_variables": False,
             },
             {
@@ -1361,11 +1361,11 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "velocity_in_km_per_hr",
-                "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (___velocity[0] * 180.0); velocity_in_km_per_hr[1] = (___velocity[1] * 180.0); velocity_in_km_per_hr[2] = (___velocity[2] * 180.0);",
+                "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_in_km_per_hr[0] = (___velocity[0] * 360.0); velocity_in_km_per_hr[1] = (___velocity[1] * 360.0); velocity_in_km_per_hr[2] = (___velocity[2] * 360.0);",
             },
             {
                 "name": "velocity_m_per_s",
-                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 50.0;velocity_m_per_s[1] = velocity[1] * 50.0;velocity_m_per_s[2] = velocity[2] * 50.0;",
+                "expression": "double velocity[3];velocity[0] = primitiveVars[1] * velocityScale;velocity[1] = primitiveVars[2] * velocityScale;velocity[2] = primitiveVars[3] * velocityScale;velocity_m_per_s[0] = velocity[0] * 100.0;velocity_m_per_s[1] = velocity[1] * 100.0;velocity_m_per_s[2] = velocity[2] * 100.0;",
                 "from_user_variables": False,
             },
             {
@@ -1375,22 +1375,22 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "velocity_magnitude_m_per_s",
-                "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;velocity_magnitude_m_per_s = velocity_magnitude * 50.0;",
+                "expression": "double velocity_magnitude;double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;velocity_magnitude_m_per_s = velocity_magnitude * 100.0;",
                 "from_user_variables": False,
             },
             {
                 "name": "velocity_x_m_per_s",
-                "expression": "double velocity_x;velocity_x = primitiveVars[1] * velocityScale;velocity_x_m_per_s = velocity_x * 50.0;",
+                "expression": "double velocity_x;velocity_x = primitiveVars[1] * velocityScale;velocity_x_m_per_s = velocity_x * 100.0;",
                 "from_user_variables": False,
             },
             {
                 "name": "velocity_y_m_per_s",
-                "expression": "double velocity_y;velocity_y = primitiveVars[2] * velocityScale;velocity_y_m_per_s = velocity_y * 50.0;",
+                "expression": "double velocity_y;velocity_y = primitiveVars[2] * velocityScale;velocity_y_m_per_s = velocity_y * 100.0;",
                 "from_user_variables": False,
             },
             {
                 "name": "velocity_z_m_per_s",
-                "expression": "double velocity_z;velocity_z = primitiveVars[3] * velocityScale;velocity_z_m_per_s = velocity_z * 50.0;",
+                "expression": "double velocity_z;velocity_z = primitiveVars[3] * velocityScale;velocity_z_m_per_s = velocity_z * 100.0;",
                 "from_user_variables": False,
             },
             {
@@ -1405,7 +1405,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
             {
                 "name": "wall_shear_stress_magnitude_pa",
-                "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 2500000.0;",
+                "expression": "double wall_shear_stress_magnitude;wall_shear_stress_magnitude = magnitude(wallShearStress) * (velocityScale * velocityScale);wall_shear_stress_magnitude_pa = wall_shear_stress_magnitude * 10000000.0;",
                 "from_user_variables": False,
             },
         ]
