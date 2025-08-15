@@ -1,14 +1,20 @@
-name: Daily sync main -> develop (07:00/15:00/23:00 New York)
+name: Auto Merge main -> develop (UTC 04/12/20)
 
 on:
-  # Run every hour, then gate by New York local time.
   schedule:
-    - cron: "0 * * * *"     # UTC hourly
+    - cron: "0 4 * * *"    # 04:00 UTC
+    - cron: "0 12 * * *"   # 12:00 UTC
+    - cron: "0 20 * * *"   # 20:00 UTC
   workflow_dispatch: {}
 
 permissions:
   contents: write
   pull-requests: write
+
+# Optional: flip to "1" to turn on wire-level Git logs when debugging
+env:
+  GIT_TRACE: "0"
+  GIT_CURL_VERBOSE: "0"
 
 concurrency:
   group: sync-main-to-develop
@@ -18,70 +24,146 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Gate by New York time (only 07:00/15:00/23:00 ET)
-        id: gate
-        shell: bash
+      - name: Print basic context
         run: |
-          set -e
-          python3 - <<'PY'
-          from datetime import datetime
-          from zoneinfo import ZoneInfo
-          import os
-          now = datetime.now(ZoneInfo("America/New_York"))
-          ok = (now.minute == 0) and (now.hour in (7, 15, 23))
-          print(f"NY now: {now.isoformat()}  -> will_run={ok}")
-          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-              f.write(f"ok={'true' if ok else 'false'}\n")
-          PY
-
-      - name: Quit early if not target window
-        if: steps.gate.outputs.ok != 'true'
-        run: echo "Not at 07:00/15:00/23:00 New York time. Skipping."
+          echo "Actor:  $GITHUB_ACTOR"
+          echo "Repo :  $GITHUB_REPOSITORY"
+          echo "SHA  :  $GITHUB_SHA"
+          echo "When :  $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          {
+            echo "## Scheduled sync run"
+            echo "- Actor: \`$GITHUB_ACTOR\`"
+            echo "- When (UTC): $(date -u '+%Y-%m-%d %H:%M:%S')"
+            echo "- Runner: $(uname -a)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Checkout develop
-        if: steps.gate.outputs.ok == 'true'
         uses: actions/checkout@v4
         with:
           ref: develop
           fetch-depth: 0
+          # If you use a bot PAT to bypass branch protection, switch to:
+          # token: ${{ secrets.BOT_PAT }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure Git
-        if: steps.gate.outputs.ok == 'true'
+      - name: Show remotes and branches
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote -v
+          echo
+          git fetch --prune origin
+          echo "Remote branches:"
+          git branch -r
+          echo
+          echo "HEAD            : $(git rev-parse --short HEAD)"
+          echo "origin/develop  : $(git rev-parse --short origin/develop)"
+          echo "origin/main     : $(git rev-parse --short origin/main)"
 
-      - name: Fetch & reset local to remote
-        if: steps.gate.outputs.ok == 'true'
+      - name: Ahead/behind summary (before)
+        id: ab
         run: |
-          git fetch origin main develop
+          set -euo pipefail
           git checkout develop
           git reset --hard origin/develop
+          # A = commits in main not in develop; B = commits in develop not in main
+          read A B < <(git rev-list --left-right --count origin/main...origin/develop | awk '{print $1" "$2}')
+          echo "main ahead of develop by: $A, develop ahead of main by: $B"
+          echo "ahead_main=$A"    >> "$GITHUB_OUTPUT"
+          echo "ahead_develop=$B" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Before merge"
+            echo "- main ahead of develop: **$A**"
+            echo "- develop ahead of main: **$B**"
+            echo
+            echo "<details><summary>Last 5 on main</summary>"
+            git log --oneline --decorate=no -n 5 origin/main
+            echo "</details>"
+            echo "<details><summary>Last 5 on develop</summary>"
+            git log --oneline --decorate=no -n 5 origin/develop
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Merge main into develop
-        if: steps.gate.outputs.ok == 'true'
-        id: do_merge
-        shell: bash
+      - name: Check if develop already contains main
+        id: up
         run: |
-          set -e
-          if git merge -m "chore: scheduled sync main -> develop" origin/main; then
-            echo "conflicted=false" >> $GITHUB_OUTPUT
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "up_to_date=true"  >> "$GITHUB_OUTPUT"
+            echo "Develop already contains main. No merge needed."
           else
-            echo "conflicted=true" >> $GITHUB_OUTPUT
-            git merge --abort || true
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "Develop does not contain main yet. Will merge."
           fi
 
-      - name: Push to develop (direct)
-        if: steps.gate.outputs.ok == 'true' && steps.do_merge.outputs.conflicted == 'false'
-        run: git push origin HEAD:develop
+      - name: Merge main into develop
+        if: steps.up.outputs.up_to_date == 'false'
+        id: merge
+        run: |
+          set -e
+          echo "Attempting merge origin/main -> develop..."
+          if git merge -m "chore: scheduled sync main -> develop" origin/main; then
+            echo "conflicted=false" >> "$GITHUB_OUTPUT"
+            echo "Merge done (maybe fast-forward)."
+          else
+            echo "conflicted=true" >> "$GITHUB_OUTPUT"
+            echo "::group::Conflict details"
+            git status --porcelain
+            echo
+            echo "Conflicted files:"
+            git diff --name-only --diff-filter=U || true
+            echo "::endgroup::"
+            git merge --abort || true
+          fi
+          echo "Post-merge HEAD: $(git rev-parse --short HEAD)"
 
-      - name: Open PR main -> develop (on conflict)
-        if: steps.gate.outputs.ok == 'true' && steps.do_merge.outputs.conflicted == 'true'
+      - name: Diff summary after merge
+        if: steps.up.outputs.up_to_date == 'false' && steps.merge.outputs.conflicted == 'false'
+        run: |
+          echo "Files changed (first 100):"
+          git diff --name-status ORIG_HEAD..HEAD | head -n 100 || true
+          {
+            echo "### After merge"
+            echo "- New HEAD: \`$(git rev-parse --short HEAD)\`"
+            echo "<details><summary>Files changed (first 100)</summary>"
+            git diff --name-status ORIG_HEAD..HEAD | head -n 100 || true
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push to develop (direct)
+        if: steps.up.outputs.up_to_date == 'false' && steps.merge.outputs.conflicted == 'false'
+        id: push
+        shell: bash
+        run: |
+          set +e
+          echo "Pushing to origin/develop..."
+          git push origin HEAD:develop
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          if [ $status -eq 0 ]; then
+            echo "Push OK."
+          else
+            echo "Push failed (exit $status). This may be due to branch protection; will open a PR instead."
+          fi
+
+      - name: Open PR main -> develop (on conflict OR push failure)
+        if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "main"
           destination_branch: "develop"
-          pr_title: "Scheduled sync: main → develop (conflicts need resolution)"
-          pr_body: "Automated sync hit merge conflicts. Please resolve to bring `develop` up to date with `main`."
+          pr_title: "Scheduled sync: main → develop"
+          pr_body: |
+            Automated sync needs review:
+            - Merge conflicted: ${{ steps.merge.outputs.conflicted == 'true' }}
+            - Direct push exit code: ${{ steps.push.outputs.exit_code || 'n/a' }}
+            Please resolve and merge to bring `develop` up to date with `main`.
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # If using bot PAT, switch to:
+          # github_token: ${{ secrets.BOT_PAT }}
+
+      - name: Final summary
+        run: |
+          {
+            echo "### Outcome"
+            echo "- Up to date before merge: **${{ steps.up.outputs.up_to_date || 'n/a' }}**"
+            echo "- Merge conflicted: **${{ steps.merge.outputs.conflicted || 'n/a' }}**"
+            echo "- Push exit code: **${{ steps.push.outputs.exit_code || 'n/a' }}**"
+          } >> "$GITHUB_STEP_SUMMARY"
