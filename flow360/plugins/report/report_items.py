@@ -1033,19 +1033,12 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             return True
         return False
 
-    def _unpack_data_to_multiline(self, x_data: list, y_data: list):
-        if (
+    def _is_multiline_data(self, x_data: list, y_data: list):
+        return (
             len(x_data) == 1
             and isinstance(x_data[0], list)
             and len(y_data) == 1
             and isinstance(y_data[0], list)
-        ):
-            return x_data[0], y_data[0]
-        return x_data, y_data
-
-    def _is_multiline_data(self, x_data: list, y_data: list):
-        return all(not isinstance(data, list) for data in x_data) and all(
-            not isinstance(data, list) for data in y_data
         )
 
     @abstractmethod
@@ -1277,7 +1270,7 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
 
-        x_data, y_data = self._unpack_data_to_multiline(x_data=x_data, y_data=y_data)
+        # x_data, y_data = self._unpack_data_to_multiline(x_data=x_data, y_data=y_data)
 
         legend = self._handle_legend(cases, x_data, y_data)
 
@@ -1526,8 +1519,6 @@ class Chart2D(BaseChart2D):
             return self.group_by.arrange_legend()
 
         if self._is_multiline_data(x_data, y_data):
-            x_data = [float(data) for data in x_data]
-            y_data = [float(data) for data in y_data]
             legend = None
         elif isinstance(self.y, list) and (len(self.y) > 1):
             legend = []

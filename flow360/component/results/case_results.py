@@ -14,6 +14,7 @@ from flow360.cloud.s3_utils import CloudFileNotFoundError
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
     _PSEUDO_STEP,
+    _TIME,
     PerEntityResultCSVModel,
     ResultBaseModel,
     ResultCSVModel,
@@ -355,6 +356,7 @@ class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResul
 class AeroacousticsResultCSVModel(TimeSeriesResultCSVModel):
     """AeroacousticsResultCSVModel"""
 
+    _x_columns: List[str] = [_PHYSICAL_STEP, _TIME]
     remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, frozen=True)
 
 
