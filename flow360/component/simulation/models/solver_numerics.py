@@ -2,7 +2,7 @@
 Contains basic components(solvers) that composes the `volume` type models.
 Each volume model represents a physical phenomena that require a combination of solver features to model.
 
-E.g. 
+E.g.
 NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 
 """

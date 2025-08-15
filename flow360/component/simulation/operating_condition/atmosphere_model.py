@@ -1,7 +1,7 @@
-""" U.S. STANDARD ATMOSPHERE 1976
+"""U.S. STANDARD ATMOSPHERE 1976
 # https://www.ngdc.noaa.gov/stp/space-weather/online-publications/miscellaneous/us-standard-atmosphere-1976/us-standard-atmosphere_st76-1562_noaa.pdf
  Source: design 360
- """
+"""
 
 from math import exp
 

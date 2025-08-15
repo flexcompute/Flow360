@@ -1,5 +1,4 @@
-"""Constants file
-"""
+"""Constants file"""
 
 
 # pylint: disable=invalid-name,too-few-public-methods

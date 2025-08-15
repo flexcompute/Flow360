@@ -166,6 +166,11 @@ class GeometryBodyGroup(EntityBase):
     transformation: Transformation = pd.Field(
         Transformation(), description="The transformation performed on the body group"
     )
+    mesh_exterior: bool = pd.Field(
+        True,
+        description="Option to define whether to mesh exterior or interior of body group in geometry AI."
+        "Note that this is a beta feature and the interface might change in future releases.",
+    )
 
 
 class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):

@@ -1,5 +1,4 @@
-"""meshing parameters
-"""
+"""meshing parameters"""
 
 from .params import (
     Aniso,

@@ -1,4 +1,4 @@
-""" Defines 'types' that various fields can be """
+"""Defines 'types' that various fields can be"""
 
 from typing import List, Optional, Tuple
 

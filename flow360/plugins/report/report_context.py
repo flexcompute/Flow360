@@ -1,4 +1,4 @@
-""" 
+"""
 Module for ReportContext to hold shared configurations between Report and ReportItem
 """
 
