@@ -464,20 +464,20 @@ def translate_imported_surface_output(
 ):
     """Translate imported surface output settings."""
 
-    surface_output = init_output_base(
+    imported_surface_output = init_output_base(
         output_params,
         imported_surface_output_class,
         has_average_capability=True,
         is_average=imported_surface_output_class is TimeAverageImportedSurfaceOutput,
     )
-    surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
+    imported_surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         imported_surface_output_class,
         translation_func=translate_output_fields,
         entity_injection_func=inject_imported_surface_info,
         to_list=False,
     )
-    return surface_output
+    return imported_surface_output
 
 
 def translate_surface_output(

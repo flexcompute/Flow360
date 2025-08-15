@@ -135,7 +135,6 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
-    ImportedSurface,
     ReferenceGeometry,
     Transformation,
 )
@@ -292,7 +291,6 @@ __all__ = [
     "PointArray2D",
     "StreamlineOutput",
     "Transformation",
-    "ImportedSurface",
     "WallRotation",
     "UserVariable",
     "math",

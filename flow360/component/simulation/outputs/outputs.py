@@ -1104,12 +1104,7 @@ class StreamlineOutput(Flow360BaseModel):
 
 class ImportedSurfaceOutput(_AnimationAndFileFormatSettings):
     """
-    :class:`ImportedSurfaceOutput` class for generating output on imported surfaces.
-
-    Imported surfaces are external geometry surfaces provided by the user.
-    These can be used for post-processing
-    tasks such as extracting flow variables, computing integrals, or visualizing
-    simulation results on specific custom surfaces.
+    :class:`ImportedSurfaceOutput` class for generating interpolated output on imported surfaces.
 
     Example
     -------
@@ -1123,16 +1118,6 @@ class ImportedSurfaceOutput(_AnimationAndFileFormatSettings):
     ...     ]
     ... )
 
-    Parameters
-    ----------
-    name : str, optional
-        Name of the :class:`ImportedSurfaceOutput` object.
-    entities : EntityList[ImportedSurface]
-        List of imported surfaces where output will be generated.
-    output_fields : UniqueItemList[UserVariable]
-        List of variables to output for the specified surfaces.
-    output_type : Literal["ImportedSurfaceOutput"], default="ImportedSurfaceOutput"
-        Fixed identifier for this output type.
     ====
     """
 
@@ -1169,16 +1154,6 @@ class TimeAverageImportedSurfaceOutput(ImportedSurfaceOutput):
     ...     start_step=2000
     ... )
 
-    Parameters
-    ----------
-    name : str, optional
-        Name of the :class:`TimeAverageImportedSurfaceOutput` object.
-    entities : EntityList[ImportedSurface]
-        List of imported surfaces where output will be generated.
-    output_fields : UniqueItemList[UserVariable]
-        List of variables to output for the specified surfaces.
-    output_type : Literal["TimeAverageImportedSurfaceOutput"], default="ITimeAveragemportedSurfaceOutput"
-        Fixed identifier for this output type.
     ====
     """
 
@@ -1198,16 +1173,12 @@ class ImportedSurfaceIntegralOutput(_OutputBase):
     """
     :class:`ImportedSurfaceIntegralOutput` class for computing integrals of
     user-specified variables over imported surfaces.
-
-    Imported surfaces are external geometry surfaces provided by the user.
-    This output type computes
-    surface integrals — such as mass flow — on those
-    surfaces, enabling quantitative analysis of specific geometry parts.
+    Integrals are computed for each of the individual surfaces.
 
     Example
     -------
     Define a :class:`ImportedSurfaceIntegralOutput` to compute the integrated
-    mass flow rate and total pressure across two imported cross-section planes
+    mass flow rate across an imported cross-section plane
     placed downstream of a nozzle. These planes are provided only for
     post-processing and are not part of the simulated mesh boundaries.
 
@@ -1225,16 +1196,6 @@ class ImportedSurfaceIntegralOutput(_OutputBase):
     ...     ]
     ... )
 
-    Parameters
-    ----------
-    name : str
-        Name of the :class:`ImportedSurfaceIntegralOutput` object.
-    entities : EntityList[ImportedSurface]
-        List of imported surfaces where the surface integral will be calculated.
-    output_fields : UniqueItemList[UserVariable]
-        List of variables to integrate over the specified surfaces.
-    output_type : Literal["ImportedSurfaceIntegralOutput"], default="ImportedSurfaceIntegralOutput"
-        Fixed identifier for this output type.
     ====
     """
 
