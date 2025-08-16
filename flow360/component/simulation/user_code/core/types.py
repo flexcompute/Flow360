@@ -529,7 +529,9 @@ class UserVariable(Variable):
 
         all_field_names = set(AllFieldNames.__args__)
         if v in all_field_names:
-            raise ValueError(f"'{v}' is a reserved (legacy) output field name.")
+            raise ValueError(
+                f"'{v}' is a reserved (legacy) output field name. It cannot be used in expressions."
+            )
         return v
 
     @pd.field_validator("name", mode="after")
