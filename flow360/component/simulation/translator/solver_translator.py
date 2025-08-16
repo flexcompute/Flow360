@@ -609,7 +609,7 @@ def user_variable_to_udf(
 
     def _prepare_prepending_code(expression: Expression):
         prepending_code = []
-        for name in sorted(expression.solver_variable_names()):
+        for name in sorted(expression.solver_variable_names(recursive=True)):
             if not udf_prepending_code.get(name):
                 continue
             if name == "solution.temperature" and input_params.has_solid():
@@ -633,7 +633,6 @@ def user_variable_to_udf(
 
     expression_length = expression.length
     prepending_code = _prepare_prepending_code(expression=expression)
-
     if expression_length == 0:  # Scalar output requested
         expression = expression.evaluate(raise_on_non_evaluable=False, force_evaluate=False)
         if offset != 0:
