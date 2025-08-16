@@ -134,7 +134,7 @@ class _OutputBase(Flow360BaseModel):
             ):
                 continue
             surface_solver_variable_names = output_item.value.solver_variable_names(
-                variable_type="Surface"
+                recursive=True, variable_type="Surface"
             )
             if len(surface_solver_variable_names) > 0:
                 raise ValueError(
