@@ -362,15 +362,45 @@ def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSy
     return flow360_conversion_unit_system.conversion_system
 
 
-def get_flow360_unit_system_liquid(params) -> u.UnitSystem:
+def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.UnitSystem:
     """
-    Returns the flow360 unit system when liquid operating condition is used
+    Returns the flow360 unit system when liquid operating condition is used.
+
+    Parameters
+    ----------
+    params : SimulationParams
+        The parameters needed for unit conversion.
+    to_flow360_unit : bool, optional
+        If True, return the flow360 unit system.
+
+    Returns
+    -------
+    u.UnitSystem
+        The flow360 unit system.
+
+    ##-- When to_flow360_unit is True,
+    ##-- time unit should be changed such that it takes into consideration
+    ##-- the fact that solver output already multiplied by "velocityScale"
     """
+
+    if to_flow360_unit:
+        base_velocity = params.base_velocity
+    else:
+        # For dimensionalization of Flow360 output
+        # The solver output is already re-normalized by `reference velocity` due to "velocityScale"
+        # So we need to find the `reference velocity`.
+        # `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
+        if params.operating_condition.reference_velocity_magnitude is not None:
+            base_velocity = (params.operating_condition.reference_velocity_magnitude).to("m/s")
+        else:
+            base_velocity = params.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+
+    time_unit = params.base_length / base_velocity
     return u.UnitSystem(
         name="flow360_liquid",
         length_unit=params.base_length,
         mass_unit=params.base_mass,
-        time_unit=params.base_time / LIQUID_IMAGINARY_FREESTREAM_MACH,
+        time_unit=time_unit,
         temperature_unit=params.base_temperature,
     )
 
