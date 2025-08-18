@@ -1381,14 +1381,6 @@ def get_solver_json(
                 model.navier_stokes_solver.low_mach_preconditioner_threshold = (
                     LIQUID_IMAGINARY_FREESTREAM_MACH
                 )
-                if model.navier_stokes_solver.private_attribute_dict is None:
-                    model.navier_stokes_solver.private_attribute_dict = {
-                        "typeName": "CompressibleIsentropic"
-                    }
-                else:
-                    model.navier_stokes_solver.private_attribute_dict["typeName"] = (
-                        "CompressibleIsentropic"
-                    )
             if (
                 model.navier_stokes_solver.low_mach_preconditioner
                 and model.navier_stokes_solver.low_mach_preconditioner_threshold is None
@@ -1399,6 +1391,8 @@ def get_solver_json(
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
+            if isinstance(op, LiquidOperatingCondition):
+                translated["navierStokesSolver"]["modelType"] = "CompressibleIsentropic"
             replace_dict_key(
                 translated["navierStokesSolver"],
                 "equationEvaluationFrequency",
