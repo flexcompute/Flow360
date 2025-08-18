@@ -83,7 +83,7 @@
         "lowMachPreconditioner": true,
         "lowMachPreconditionerThreshold": 0.05,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
+        "modelType": "CompressibleIsentropic",
         "numericalDissipationFactor": 1.0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
