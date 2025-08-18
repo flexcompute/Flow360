@@ -11,7 +11,10 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    GeometryRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -1883,8 +1886,16 @@ def test_geometry_AI_only_features():
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-4, geometry_accuracy=1e-5 * u.m
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-5 * u.m,
+                    surface_max_aspect_ratio=20.0,
+                    surface_max_adaptation_iterations=20,
                 ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=1e-5 * u.m, entities=[Surface(name="noSlipWall")]
+                    )
+                ],
             ),
             private_attribute_asset_cache=AssetCache(
                 use_inhouse_mesher=False, use_geometry_AI=False
@@ -1896,11 +1907,20 @@ def test_geometry_AI_only_features():
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 1
+    assert len(errors) == 4
     assert (
         errors[0]["msg"]
         == "Value error, Geometry accuracy is only supported when geometry AI is used."
     )
+    assert (
+        errors[1]["msg"]
+        == "Value error, surface_max_aspect_ratio is only supported when geometry AI is used."
+    )
+    assert (
+        errors[2]["msg"]
+        == "Value error, surface_max_adaptation_iterations is only supported when geometry AI is used."
+    )
+    assert errors[3]["msg"] == "Value error, GeometryRefinement is only supported by geometry AI."
 
     with SI_unit_system:
         params = SimulationParams(
