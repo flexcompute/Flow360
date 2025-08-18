@@ -501,7 +501,7 @@ def test_updater_to_25_6_2():
 
     def _ensure_validity(params):
         params_new, _, _ = validate_model(
-            params_as_dict=params,
+            params_as_dict=copy.deepcopy(params),
             validated_by=ValidationCalledBy.LOCAL,
             root_item_type="VolumeMesh",
         )

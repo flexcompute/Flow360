@@ -647,7 +647,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00001"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -661,7 +660,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00002"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -675,7 +673,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00003"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -689,7 +686,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00004"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -703,7 +699,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00005"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -717,7 +712,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00006"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -731,7 +725,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00007"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -745,7 +738,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00008"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -759,7 +751,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00009"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -773,7 +764,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00010"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -787,7 +777,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00011"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -801,7 +790,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00012"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -815,7 +803,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00013"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -829,7 +816,6 @@
                 "private_attribute_sub_components": [
                     "body00001_face00014"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -843,7 +829,6 @@
                 "private_attribute_sub_components": [
                     "airplane_translate_in_z_-5.stl::body"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -857,7 +842,6 @@
                 "private_attribute_sub_components": [
                     "farfield_only_sphere_volume_mesh.lb8.ugrid::farfield_1"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             },
             {
@@ -871,7 +855,6 @@
                 "private_attribute_sub_components": [
                     "farfield_only_sphere_volume_mesh.lb8.ugrid::farfield_2"
                 ],
-                "private_attribute_potential_issues": [],
                 "private_attribute_color": null
             }
         ]

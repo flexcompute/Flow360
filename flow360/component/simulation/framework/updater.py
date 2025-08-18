@@ -306,6 +306,32 @@ def _to_25_6_5(params_as_dict):
     return _add_default_planar_face_tolerance(params_as_dict)
 
 
+def _to_25_6_6(params_as_dict):
+    # Remove the "potential_issues" field from all surfaces.
+    # Recursively go through params_as_dict and remove the "private_attribute_potential_issues"
+    # field if the "private_attribute_entity_type_name" field is "Surface".
+    def _remove_potential_issues_recursive(data):
+        if isinstance(data, dict):
+            # First recursively process all nested elements
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):
+                    data[key] = _remove_potential_issues_recursive(value)
+
+            # Then check if current dict is a Surface and remove potential_issues
+            if data.get("private_attribute_entity_type_name") == "Surface":
+                data.pop("private_attribute_potential_issues", None)
+
+            return data
+        if isinstance(data, list):
+            # Process each item in the list
+            return [_remove_potential_issues_recursive(item) for item in data]
+
+        # Return primitive types as-is
+        return data
+
+    return _remove_potential_issues_recursive(params_as_dict)
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -317,6 +343,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.2"), _to_25_6_2),
     (Flow360Version("25.6.4"), _to_25_6_4),
     (Flow360Version("25.6.5"), _to_25_6_5),
+    (Flow360Version("25.6.6"), _to_25_6_6),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
