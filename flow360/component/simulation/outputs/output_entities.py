@@ -88,6 +88,7 @@ class Isosurface(_OutputItemBase):
     ...     name="Isosurface_T_1.5",
     ...     iso_value=1.5,
     ...     field="T",
+    ...     wallDistanceClipThreshold=0.005 * fl.u.m, (optional)
     ... )
 
     ====
@@ -101,6 +102,11 @@ class Isosurface(_OutputItemBase):
     # pylint: disable=fixme
     iso_value: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="Expect non-dimensional value.",
+    )
+
+    wall_distance_clip_threshold: Optional[LengthType] = pd.Field(
+            default = 0.0,
+            description = "Optional parameter to specify distance from walls that the iso surface is removed."
     )
 
     @pd.field_validator("field", mode="before")
