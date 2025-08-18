@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import Literal, Union
+from typing import Literal, Union, Optional
 
 import pydantic as pd
 import unyt as u
@@ -105,7 +105,7 @@ class Isosurface(_OutputItemBase):
     )
 
     wall_distance_clip_threshold: Optional[LengthType] = pd.Field(
-            default = 0.0,
+            default = None,
             description = "Optional parameter to specify distance from walls that the iso surface is removed."
     )
 
