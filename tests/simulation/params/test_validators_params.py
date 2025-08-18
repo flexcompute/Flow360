@@ -11,7 +11,10 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param.face_params import BoundaryLayer
+from flow360.component.simulation.meshing_param.face_params import (
+    BoundaryLayer,
+    GeometryRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -33,6 +36,7 @@ from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
     Periodic,
+    PorousJump,
     Pressure,
     SlaterPorousBleed,
     SlipWall,
@@ -930,6 +934,35 @@ def test_incomplete_BC_surface_mesh():
                 ],
                 private_attribute_asset_cache=asset_cache,
             )
+
+
+def test_porousJump_entities_is_interface():
+    surface_1_is_interface = Surface(name="Surface-1", private_attribute_is_interface=True)
+    surface_2_is_not_interface = Surface(name="Surface-2", private_attribute_is_interface=False)
+    surface_3_is_interface = Surface(name="Surface-3", private_attribute_is_interface=True)
+    error_message = "Boundary `Surface-2` is not an interface"
+    with pytest.raises(ValueError, match=re.escape(error_message)):
+        porousJump = PorousJump(
+            entity_pairs=[(surface_1_is_interface, surface_2_is_not_interface)],
+            darcy_coefficient=1e6 / (u.m * u.m),
+            forchheimer_coefficient=1e3 / u.m,
+            thickness=0.01 * u.m,
+        )
+
+    with pytest.raises(ValueError, match=re.escape(error_message)):
+        porousJump = PorousJump(
+            entity_pairs=[(surface_2_is_not_interface, surface_1_is_interface)],
+            darcy_coefficient=1e6,
+            forchheimer_coefficient=1e3,
+            thickness=0.01,
+        )
+
+    porousJump = PorousJump(
+        entity_pairs=[(surface_1_is_interface, surface_3_is_interface)],
+        darcy_coefficient=1e6 / (u.m * u.m),
+        forchheimer_coefficient=1e3 / u.m,
+        thickness=0.01 * u.m,
+    )
 
 
 def test_duplicate_entities_in_models():
@@ -1853,8 +1886,16 @@ def test_geometry_AI_only_features():
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-4, geometry_accuracy=1e-5 * u.m
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-5 * u.m,
+                    surface_max_aspect_ratio=20.0,
+                    surface_max_adaptation_iterations=20,
                 ),
+                refinements=[
+                    GeometryRefinement(
+                        geometry_accuracy=1e-5 * u.m, entities=[Surface(name="noSlipWall")]
+                    )
+                ],
             ),
             private_attribute_asset_cache=AssetCache(
                 use_inhouse_mesher=False, use_geometry_AI=False
@@ -1866,11 +1907,20 @@ def test_geometry_AI_only_features():
         root_item_type="Geometry",
         validation_level="VolumeMesh",
     )
-    assert len(errors) == 1
+    assert len(errors) == 4
     assert (
         errors[0]["msg"]
         == "Value error, Geometry accuracy is only supported when geometry AI is used."
     )
+    assert (
+        errors[1]["msg"]
+        == "Value error, surface_max_aspect_ratio is only supported when geometry AI is used."
+    )
+    assert (
+        errors[2]["msg"]
+        == "Value error, surface_max_adaptation_iterations is only supported when geometry AI is used."
+    )
+    assert errors[3]["msg"] == "Value error, GeometryRefinement is only supported by geometry AI."
 
     with SI_unit_system:
         params = SimulationParams(
