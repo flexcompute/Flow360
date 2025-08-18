@@ -1360,11 +1360,7 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             {"name": "my_field", "expression": "1+1", "from_user_variables": False},
             {
                 "name": "pressure_pa",
-<<<<<<< HEAD
-                "expression": "double pressure_;double gamma = 1.4;pressure_ = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure_ * 2500000.0;",
-=======
-                "expression": "double pressure;double gamma = 1.4;pressure = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure * 10000000.0;",
->>>>>>> e025e34c (Fix bug that dimensionalization used wrong velocity scale (#1361))
+                "expression": "double pressure_;double gamma = 1.4;pressure_ = (usingLiquidAsMaterial) ? (primitiveVars[4] - 1.0 / gamma) * (velocityScale * velocityScale) : primitiveVars[4];pressure_pa = pressure_ * 10000000.0;",
                 "from_user_variables": False,
             },
             {
