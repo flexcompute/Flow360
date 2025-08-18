@@ -1242,4 +1242,5 @@ TimeAverageOutputTypes = (
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
+    TimeAverageImportedSurfaceOutput,
 )
