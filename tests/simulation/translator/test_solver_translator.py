@@ -683,7 +683,9 @@ def test_liquid_simulation_translation():
         # Solver speed of sound = 10m/s / 0.05 = 200m/s
         # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
         # t_seconds = (0.005 s * t)
-    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=True
+    )
 
     with model_attribute_unlock(param.operating_condition, "reference_velocity_magnitude"):
         param.operating_condition.reference_velocity_magnitude = 20 * u.m / u.s
