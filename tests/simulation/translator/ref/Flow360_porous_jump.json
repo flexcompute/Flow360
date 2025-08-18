@@ -1,7 +1,7 @@
 {
     "boundaries": {
         "blk-1/Interface_blk-2": {
-            "DarcyCoefficient": 1e6,
+            "DarcyCoefficient": 1000000.0,
             "ForchheimerCoefficient": 10.0,
             "pairedPatchName": "blk-2/Interface_blk-1",
             "porousJumpThickness": 0.1,
@@ -15,7 +15,7 @@
             "type": "SlipWall"
         },
         "blk-2/Interface_blk-1": {
-            "DarcyCoefficient": 1e6,
+            "DarcyCoefficient": 1000000.0,
             "ForchheimerCoefficient": 10.0,
             "porousJumpThickness": 0.1,
             "type": "PorousJump"
@@ -74,7 +74,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
@@ -159,7 +158,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "Cp",
             "T",
