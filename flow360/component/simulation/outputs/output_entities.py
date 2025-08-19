@@ -104,6 +104,7 @@ class Isosurface(_OutputItemBase):
         description="Expect non-dimensional value.",
     )
 
+    # pylint: disable=no-member
     wall_distance_clip_threshold: Optional[LengthType.Positive] = pd.Field(
         default=None,
         description="Optional parameter to specify distance from walls that the iso surface is removed.",
