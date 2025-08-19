@@ -328,7 +328,7 @@ class Variable(Flow360BaseModel):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
-        if "name" not in values:
+        if values is None or "name" not in values:
             raise ValueError("`name` is required for variable declaration.")
 
         if "value" in values:

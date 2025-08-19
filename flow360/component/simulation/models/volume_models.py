@@ -189,7 +189,7 @@ class Criterion(Flow360BaseModel):
     @classmethod
     def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
         """Ensure the monitor field exist in the monitor output."""
-        if v is None or isinstance(v, str):
+        if isinstance(v, str):
             return v
         monitor_field = info.data.get("monitor_field", None)
         if monitor_field not in v.output_fields.items:
