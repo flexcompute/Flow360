@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import Literal, Union, Optional
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
