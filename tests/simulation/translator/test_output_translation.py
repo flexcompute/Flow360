@@ -16,6 +16,8 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
     Isosurface,
     IsosurfaceOutput,
     Observer,
@@ -27,6 +29,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageImportedSurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceOutput,
@@ -35,7 +38,7 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.primitives import ImportedSurface, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
 from flow360.component.simulation.translator.solver_translator import (
@@ -43,6 +46,7 @@ from flow360.component.simulation.translator.solver_translator import (
     translate_output,
 )
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.variables import solution
 
 
@@ -1484,4 +1488,128 @@ def test_streamline_output(streamline_output_config):
     translated = {"boundaries": {}}
     param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
-    assert compare_values(streamline_output_config[1], translated["streamlineOutput"])
+
+
+@pytest.fixture()
+def imported_surface_output_config(vel_in_km_per_hr):
+    return (
+        [
+            ImportedSurfaceOutput(
+                output_fields=[
+                    vel_in_km_per_hr,
+                ],
+                surfaces=[
+                    ImportedSurface(name="normal", file_name="rectangle_normal.cgns"),
+                    ImportedSurface(name="oblique", file_name="rectangle_oblique.cgns"),
+                ],
+            ),
+        ],
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "surfaces": {
+                "normal": {
+                    "meshFile": "rectangle_normal.cgns",
+                    "outputFields": ["velocity_in_km_per_hr"],
+                },
+                "oblique": {
+                    "meshFile": "rectangle_oblique.cgns",
+                    "outputFields": ["velocity_in_km_per_hr"],
+                },
+            },
+        },
+    )
+
+
+@pytest.fixture()
+def time_average_imported_surface_output_config(vel_in_km_per_hr):
+    return (
+        [
+            TimeAverageImportedSurfaceOutput(
+                output_fields=[
+                    vel_in_km_per_hr,
+                ],
+                surfaces=[
+                    ImportedSurface(name="normal", file_name="rectangle_normal.cgns"),
+                    ImportedSurface(name="oblique", file_name="rectangle_oblique.cgns"),
+                ],
+                frequency=4,
+                start_step=10,
+            ),
+        ],
+        {
+            "animationFrequencyTimeAverage": 4,
+            "animationFrequencyTimeAverageOffset": 0,
+            "outputFields": [],
+            "outputFormat": "paraview",
+            "startAverageIntegrationStep": 10,
+            "surfaces": {
+                "normal": {
+                    "meshFile": "rectangle_normal.cgns",
+                    "outputFields": ["velocity_in_km_per_hr"],
+                },
+                "oblique": {
+                    "meshFile": "rectangle_oblique.cgns",
+                    "outputFields": ["velocity_in_km_per_hr"],
+                },
+            },
+        },
+    )
+
+
+@pytest.fixture()
+def imported_surface_integral_output_config(vel_in_km_per_hr):
+    return (
+        [
+            ImportedSurfaceIntegralOutput(
+                name="MassFlowRateImportedSurface",
+                output_fields=[UserVariable(name="MassFluxProjected", value=vel_in_km_per_hr)],
+                surfaces=[
+                    ImportedSurface(name="normal", file_name="rectangle_normal.cgns"),
+                    ImportedSurface(name="oblique", file_name="rectangle_oblique.cgns"),
+                ],
+            ),
+        ],
+        {
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
+            "surfaces": {
+                "normal": {
+                    "meshFile": "rectangle_normal.cgns",
+                    "outputFields": ["MassFluxProjected_integral"],
+                },
+                "oblique": {
+                    "meshFile": "rectangle_oblique.cgns",
+                    "outputFields": ["MassFluxProjected_integral"],
+                },
+            },
+        },
+    )
+
+
+def test_imported_surface_output(
+    imported_surface_output_config,
+    imported_surface_integral_output_config,
+    time_average_imported_surface_output_config,
+):
+    with SI_unit_system:
+        param = SimulationParams(
+            operating_condition=AerospaceCondition(),
+            outputs=imported_surface_integral_output_config[0]
+            + imported_surface_output_config[0]
+            + time_average_imported_surface_output_config[0],
+            time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
+        )
+    translated = {"boundaries": {}}
+    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
+    translated = translate_output(param, translated)
+    assert compare_values(imported_surface_output_config[1], translated["importedSurfaceOutput"])
+    assert compare_values(
+        imported_surface_integral_output_config[1], translated["importedSurfaceIntegralOutput"]
+    )
+    assert compare_values(
+        time_average_imported_surface_output_config[1],
+        translated["timeAverageImportedSurfaceOutput"],
+    )
