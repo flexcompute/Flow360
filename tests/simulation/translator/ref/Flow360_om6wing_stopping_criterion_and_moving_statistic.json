@@ -94,7 +94,23 @@
     },
     "runControl": {
         "shouldCheckStopCriterion": true,
-        "shouldProcessMonitorOutput": true
+        "shouldProcessMonitorOutput": true,
+        "stopCriterion": [
+            {
+                "name": "Criterion_Helicity",
+                "monitorField": {
+                    "name": "Helicity",
+                    "typeName": "UserVariable"
+                },
+                "monitorOutput": "11111",
+                "tolerance": {
+                    "typeName": "number",
+                    "value": 18.66,
+                    "units": "m/s**2"
+                },
+                "typeName": "Criterion"
+            }
+        ]
     },
     "sliceOutput": {
         "animationFrequency": -1,

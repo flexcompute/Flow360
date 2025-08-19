@@ -333,6 +333,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
             monitored_variable,
         ],
         probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+        private_attribute_id="11111",
     )
     criterion = Criterion(
         name="Criterion_Helicity",
