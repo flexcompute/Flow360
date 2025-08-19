@@ -19,7 +19,10 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UserDefinedFarfield,
+)
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
@@ -77,6 +80,7 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
     GenericVolume,
     GhostSphere,
@@ -1879,6 +1883,112 @@ def test_beta_mesher_only_features():
         validation_level="VolumeMesh",
     )
     assert errors is None
+
+    # Using CustomVolume without UserDefinedFarfield
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(
+                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    AutomatedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, CustomVolume is only supported when "
+        + "beta mesher and user defined farfield are enabled."
+    )
+    assert errors[0]["loc"] == ("meshing", "volume_zones", 0, "CustomVolume")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(
+                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, CustomVolume is only supported when "
+        + "beta mesher and user defined farfield are enabled."
+    )
+    assert errors[0]["loc"] == ("meshing", "volume_zones", 0, "CustomVolume")
+
+    # Unique volume zone names
+    with pytest.raises(
+        ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."
+    ):
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                        planar_face_tolerance=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomVolume(
+                            name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                        ),
+                        CustomVolume(
+                            name="zone1", boundaries=[Surface(name="face3"), Surface(name="face4")]
+                        ),
+                        UserDefinedFarfield(),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
+
+    # Unique interface names
+    with pytest.raises(
+        ValueError, match="The boundaries of a CustomVolume must have different names."
+    ):
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                        planar_face_tolerance=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomVolume(
+                            name="zone1", boundaries=[Surface(name="face1"), Surface(name="face1")]
+                        ),
+                        UserDefinedFarfield(),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
 
 
 def test_geometry_AI_only_features():
