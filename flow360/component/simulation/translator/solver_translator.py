@@ -59,6 +59,8 @@ from flow360.component.simulation.outputs.output_fields import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
     Isosurface,
     IsosurfaceOutput,
     ProbeOutput,
@@ -69,6 +71,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageImportedSurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
@@ -78,7 +81,7 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, SurfacePair
+from flow360.component.simulation.primitives import Box, ImportedSurface, SurfacePair
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.user_expression_utils import (
@@ -253,6 +256,8 @@ def translate_output_fields(
         SurfaceProbeOutput,
         SurfaceSliceOutput,
         StreamlineOutput,
+        ImportedSurfaceOutput,
+        TimeAverageImportedSurfaceOutput,
     ],
 ):
     """Get output fields"""
@@ -392,6 +397,32 @@ def inject_surface_list_info(entity: EntityList):
     }
 
 
+def inject_imported_surface_info(entity: ImportedSurface):
+    """inject entity info"""
+    return {
+        "meshFile": entity.file_name,
+    }
+
+
+def translate_imported_surface_integral_output(
+    output_params: list,
+):
+    """Translate imported surface integral output settings."""
+    translated_output = {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+    }
+    translated_output["surfaces"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        ImportedSurfaceIntegralOutput,
+        translation_func=translate_output_fields,
+        entity_injection_func=inject_imported_surface_info,
+        to_list=False,
+    )
+
+    return translated_output
+
+
 def translate_volume_output(
     output_params: list, volume_output_class: Union[VolumeOutput, TimeAverageVolumeOutput]
 ):
@@ -419,6 +450,27 @@ def translate_volume_output(
         }
     )
     return volume_output
+
+
+def translate_imported_surface_output(
+    output_params: list,
+    imported_surface_output_class: Union[ImportedSurfaceOutput, TimeAverageImportedSurfaceOutput],
+):
+    """Translate imported surface output settings."""
+
+    imported_surface_output = init_output_base(
+        output_params,
+        imported_surface_output_class,
+        is_average=imported_surface_output_class is TimeAverageImportedSurfaceOutput,
+    )
+    imported_surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        imported_surface_output_class,
+        translation_func=translate_output_fields,
+        entity_injection_func=inject_imported_surface_info,
+        to_list=False,
+    )
+    return imported_surface_output
 
 
 def translate_surface_output(
@@ -727,6 +779,37 @@ def translate_streamline_output(output_params: list):
     return streamline_output
 
 
+def process_user_variables_for_integral(
+    outputs,
+    class_type: Union[SurfaceIntegralOutput, ImportedSurfaceIntegralOutput],
+):
+    """Multiply UserVariable by area for surface integrals."""
+    for output in outputs:
+        if not isinstance(output, class_type):
+            continue
+        output_fields_processed = []
+        for output_field in output.output_fields.items:
+            if isinstance(output_field, UserVariable):
+                expression = Expression.model_validate(output_field.value)
+                if expression.length == 0:
+                    expression_processed = expression * math.magnitude(solution.node_area_vector)
+                else:
+                    expression_processed = [
+                        expression[i] * math.magnitude(solution.node_area_vector)
+                        for i in range(expression.length)
+                    ]
+
+                output_fields_processed.append(
+                    UserVariable(
+                        name=output_field.name + "_integral",
+                        value=expression_processed,
+                    )
+                )
+            else:
+                output_fields_processed.append(output_field)
+        output.output_fields.items = output_fields_processed
+
+
 def translate_output(input_params: SimulationParams, translated: dict):
     # pylint: disable=too-many-branches,too-many-statements,too-many-locals
     """Translate output settings."""
@@ -779,7 +862,17 @@ def translate_output(input_params: SimulationParams, translated: dict):
                 input_params, output_class, outputs, inject_isosurface_info
             )
 
-    ##:: Step5: Get translated["monitorOutput"]
+    ##:: Step5: Get translated["importedSurfaceOutput"]
+    if has_instance_in_list(outputs, ImportedSurfaceOutput):
+        translated["importedSurfaceOutput"] = translate_imported_surface_output(
+            outputs, ImportedSurfaceOutput
+        )
+    if has_instance_in_list(outputs, TimeAverageImportedSurfaceOutput):
+        translated["timeAverageImportedSurfaceOutput"] = translate_imported_surface_output(
+            outputs, TimeAverageImportedSurfaceOutput
+        )
+
+    ##:: Step6: Get translated["monitorOutput"]
     probe_output = {}
     probe_output_average = {}
     integral_output = {}
@@ -789,34 +882,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
         probe_output_average = translate_monitor_output(
             outputs, TimeAverageProbeOutput, inject_probe_info
         )
+
     if has_instance_in_list(outputs, SurfaceIntegralOutput):
-        for output in outputs:
-            if not isinstance(output, SurfaceIntegralOutput):
-                continue
-            output_fields_processed = []
-            for output_field in output.output_fields.items:
-                if isinstance(output_field, UserVariable):
-                    expression = Expression.model_validate(output_field.value)
-                    if expression.length == 0:
-                        expression_processed = expression * math.magnitude(
-                            solution.node_area_vector
-                        )
-                    else:
-                        expression_processed = [
-                            expression[i] * math.magnitude(solution.node_area_vector)
-                            for i in range(expression.length)
-                        ]
-
-                    output_fields_processed.append(
-                        UserVariable(
-                            name=output_field.name + "_integral",
-                            value=expression_processed,
-                        )
-                    )
-                else:
-                    output_fields_processed.append(output_field)
-            output.output_fields.items = output_fields_processed
-
+        process_user_variables_for_integral(outputs, SurfaceIntegralOutput)
         integral_output = translate_monitor_output(
             outputs, SurfaceIntegralOutput, inject_surface_list_info
         )
@@ -826,7 +894,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
     if probe_output or integral_output:
         translated["monitorOutput"] = merge_monitor_output(probe_output, integral_output)
 
-    ##:: Step5.1: Get translated["surfaceMonitorOutput"]
+    ##:: Step6.1: Get translated["surfaceMonitorOutput"]
     surface_monitor_output = {}
     surface_monitor_output_average = {}
     if has_instance_in_list(outputs, SurfaceProbeOutput):
@@ -854,15 +922,25 @@ def translate_output(input_params: SimulationParams, translated: dict):
         surface_slice_output = translate_surface_slice_output(outputs, SurfaceSliceOutput)
         translated["surfaceSliceOutput"] = surface_slice_output
 
-    ##:: Step6: Get translated["aeroacousticOutput"]
+    ##:: Step7: Get translated["aeroacousticOutput"]
     if has_instance_in_list(outputs, AeroAcousticOutput):
         translated["aeroacousticOutput"] = translate_acoustic_output(outputs)
 
-    ##:: Step7: Get translated["streamlineOutput"]
+    ##:: Step8: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):
         translated["streamlineOutput"] = translate_streamline_output(outputs)
 
-    ##:: Step8: Sort all "output_fields" everywhere
+    ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
+    if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):
+        process_user_variables_for_integral(
+            outputs,
+            ImportedSurfaceIntegralOutput,
+        )
+        translated["importedSurfaceIntegralOutput"] = translate_imported_surface_integral_output(
+            outputs,
+        )
+
+    ##:: Step10: Sort all "output_fields" everywhere
     # Recursively sort all "outputFields" lists in the translated dict
     def _sort_output_fields_in_dict(d):
         if isinstance(d, dict):
@@ -876,6 +954,7 @@ def translate_output(input_params: SimulationParams, translated: dict):
                 _sort_output_fields_in_dict(item)
 
     _sort_output_fields_in_dict(translated)
+
     return translated
 
 

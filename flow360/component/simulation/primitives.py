@@ -574,6 +574,17 @@ class Surface(_SurfaceEntityBase):
         raise ValueError(f"Unknown auto farfield generation method: {farfield_method}.")
 
 
+@final
+class ImportedSurface(EntityBase):
+    """ImportedSurface for post-processing"""
+
+    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
+        "ImportedSurface", frozen=True
+    )
+    file_name: str
+
+
 class GhostSurface(_SurfaceEntityBase):
     """
     Represents a boundary surface that may or may not be generated therefore may or may not exist.
