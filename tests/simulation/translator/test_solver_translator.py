@@ -764,7 +764,6 @@ def test_param_with_user_variables():
     iso_field_random_units = UserVariable(
         name="iso_field_random_units", value=solution.velocity[0] * 2 * u.lb
     )
-    print("updating iso1")
     iso2 = Isosurface(
         name="iso_field_random_units", field=iso_field_random_units, iso_value=10 * u.lb * u.m / u.s
     )

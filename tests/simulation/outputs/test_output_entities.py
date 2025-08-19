@@ -86,9 +86,23 @@ def test_isosurface_wall_distance_clip():
     """
 
     # Test that an Isosurface field must have length units
+    try:
+        Isosurface(
+            name="test_iso_vorticity_component",
+            field="T",
+            iso_value=0.5,
+            wall_distance_clip_threshold=0.0 / u.s,
+        )
+    except Exception as e:
+        print(e)
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape("1 validation error for Isosurface"),
+        match=re.escape(
+            "1 validation error for Isosurface\n"
+            "wall_distance_clip_threshold\n"
+            "  Value error, arg '0.0 1/s' does not match (length) dimension."
+            " [type=value_error, input_value=None, input_type=NoneType]"
+        ),
     ):
         Isosurface(
             name="test_iso_vorticity_component",
@@ -99,7 +113,12 @@ def test_isosurface_wall_distance_clip():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape("1 validation error for Isosurface"),
+        match=re.escape(
+            "1 validation error for Isosurface\n"
+            "wall_distance_clip_threshold\n"
+            "  Value error, arg '0.0' does not match (length) dimension."
+            " [type=value_error, input_value=None, input_type=NoneType]"
+        ),
     ):
         Isosurface(
             name="test_iso_vorticity_component",
@@ -108,6 +127,21 @@ def test_isosurface_wall_distance_clip():
             wall_distance_clip_threshold=0.0,
         )
 
+    with pytest.raises(
+        pd.ValidationError,
+        match=re.escape(
+            "1 validation error for Isosurface\n"
+            "wall_distance_clip_threshold.value\n"
+            "  Input should be greater than 0"
+            " [type=greater_than, input_value=array(-0.1), input_type=ndarray]"
+        ),
+    ):
+        Isosurface(
+            name="test_iso_vorticity_component",
+            field="T",
+            iso_value=0.5,
+            wall_distance_clip_threshold=-0.1 * u.m,
+        )
     # check that wall_distance_clip_threshold defaults to None
     iso = Isosurface(
         name="test_iso_vorticity_mag",
