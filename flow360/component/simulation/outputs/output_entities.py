@@ -105,8 +105,8 @@ class Isosurface(_OutputItemBase):
     )
 
     wall_distance_clip_threshold: Optional[LengthType] = pd.Field(
-            default = None,
-            description = "Optional parameter to specify distance from walls that the iso surface is removed."
+        default=None,
+        description="Optional parameter to specify distance from walls that the iso surface is removed.",
     )
 
     @pd.field_validator("field", mode="before")

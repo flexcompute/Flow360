@@ -79,9 +79,10 @@ def test_isosurface_field_preprocess_expression_and_solver_variable():
         )
     assert isinstance(iso.field, UserVariable)
 
+
 def test_isosurface_wall_distance_clip():
     """
-    Test the preprocessing for wall_distance_clip_threshold option 
+    Test the preprocessing for wall_distance_clip_threshold option
     """
 
     # Test that an Isosurface field must have length units
@@ -90,8 +91,10 @@ def test_isosurface_wall_distance_clip():
         match=re.escape("1 validation error for Isosurface"),
     ):
         Isosurface(
-            name="test_iso_vorticity_component", field="T", iso_value=0.5,
-            wall_distance_clip_threshold = 0.0 / u.s
+            name="test_iso_vorticity_component",
+            field="T",
+            iso_value=0.5,
+            wall_distance_clip_threshold=0.0 / u.s,
         )
 
     with pytest.raises(
@@ -99,24 +102,26 @@ def test_isosurface_wall_distance_clip():
         match=re.escape("1 validation error for Isosurface"),
     ):
         Isosurface(
-            name="test_iso_vorticity_component", field="T", iso_value=0.5,
-            wall_distance_clip_threshold = 0.0 
+            name="test_iso_vorticity_component",
+            field="T",
+            iso_value=0.5,
+            wall_distance_clip_threshold=0.0,
         )
 
-    #check that wall_distance_clip_threshold defaults to None
+    # check that wall_distance_clip_threshold defaults to None
     iso = Isosurface(
         name="test_iso_vorticity_mag",
         field=UserVariable(name="vorticity_component", value=solution.vorticity[0]),
         iso_value=0.8 / u.s,
     )
-    
+
     assert iso.wall_distance_clip_threshold == None
 
     iso = Isosurface(
         name="test_iso_vorticity_mag",
         field=UserVariable(name="vorticity_component", value=solution.vorticity[0]),
         iso_value=0.8 / u.s,
-        wall_distance_clip_threshold = 0.1 *u.m
+        wall_distance_clip_threshold=0.1 * u.m,
     )
 
     assert iso.wall_distance_clip_threshold.v.item() == 0.1
