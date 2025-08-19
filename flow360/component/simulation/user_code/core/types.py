@@ -529,7 +529,9 @@ class UserVariable(Variable):
 
         all_field_names = set(AllFieldNames.__args__)
         if v in all_field_names:
-            raise ValueError(f"'{v}' is a reserved (legacy) output field name.")
+            raise ValueError(
+                f"'{v}' is a reserved (legacy) output field name. It cannot be used in expressions."
+            )
         return v
 
     @pd.field_validator("name", mode="after")
@@ -845,8 +847,9 @@ class Expression(Flow360BaseModel, Evaluable):
         validation_info = get_validation_info()
         if validation_info is None or self.expression not in validation_info.referenced_expressions:
             return self
-
-        for solver_variable_name in self.solver_variable_names():
+        # Setting recursive to False to avoid recursive error message.
+        # All user variables will be checked anyways.
+        for solver_variable_name in self.solver_variable_names(recursive=False):
             if solver_variable_name in _feature_requirement_map:
                 if not _feature_requirement_map[solver_variable_name][0](validation_info):
                     raise ValueError(
@@ -900,15 +903,65 @@ class Expression(Flow360BaseModel, Evaluable):
         return names
 
     def solver_variable_names(
-        self, variable_type: Literal["Volume", "Surface", "Scalar", "All"] = "All"
+        self,
+        recursive: bool,
+        variable_type: Literal["Volume", "Surface", "Scalar", "All"] = "All",
     ):
-        """Get list of solver variable names used in expression."""
-        expr = expr_to_model(self.expression, default_context)
-        names = expr.used_names()
-        names = [name for name in names if name in _solver_variables]
+        """Get list of solver variable names used in expression, recursively checking user variables.
+
+        Params:
+        -------
+        - variable_type: The type of variable to get the names of.
+        - recursive: Whether to recursively check user variables for solver variables.
+        """
+
+        def _get_solver_variable_names_recursive(
+            expression: Expression, visited: set[str], recursive: bool
+        ) -> set[str]:
+            """Recursively get solver variable names from expression and its user variables."""
+            solver_names = set()
+
+            # Prevent infinite recursion by tracking visited expressions
+            expr_str = str(expression)
+            if expr_str in visited:
+                return solver_names
+            visited.add(expr_str)
+
+            # Get solver variables directly from this expression
+            expr = expr_to_model(expression.expression, default_context)
+            names = expr.used_names()
+            direct_solver_names = [name for name in names if name in _solver_variables]
+            solver_names.update(direct_solver_names)
+
+            if not recursive:
+                return solver_names
+
+            # Get user variables from this expression and recursively check their values
+            user_vars = expression.user_variables()
+            for user_var in user_vars:
+                try:
+                    if isinstance(user_var.value, Expression):
+                        # Recursively check the user variable's expression
+                        recursive_solver_names = _get_solver_variable_names_recursive(
+                            user_var.value, visited, recursive
+                        )
+                        solver_names.update(recursive_solver_names)
+                except (ValueError, AttributeError):
+                    # Handle cases where user variable might not be properly defined
+                    pass
+
+            return solver_names
+
+        # Start the recursive search
+        all_solver_names = _get_solver_variable_names_recursive(self, set(), recursive)
+
+        # Filter by variable type if specified
         if variable_type != "All":
-            names = [name for name in names if _solver_variables[name] == variable_type]
-        return names
+            all_solver_names = {
+                name for name in all_solver_names if _solver_variables[name] == variable_type
+            }
+
+        return list(all_solver_names)
 
     def to_solver_code(self, params):
         """Convert to solver readable code."""
