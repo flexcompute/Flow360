@@ -907,9 +907,18 @@ def test_unique_dimensions():
         ("template", "'template' is a reserved keyword."),
         ("temperature", "'temperature' is a reserved solver side variable name."),
         ("area", "'area' is a reserved solver side variable name."),
-        ("velocity", "'velocity' is a reserved (legacy) output field name."),
-        ("mut", "'mut' is a reserved (legacy) output field name."),
-        ("pressure", "'pressure' is a reserved (legacy) output field name."),
+        (
+            "velocity",
+            "'velocity' is a reserved (legacy) output field name. It cannot be used in expressions.",
+        ),
+        (
+            "mut",
+            "'mut' is a reserved (legacy) output field name. It cannot be used in expressions.",
+        ),
+        (
+            "pressure",
+            "'pressure' is a reserved (legacy) output field name. It cannot be used in expressions.",
+        ),
     ],
 )
 def test_invalid_names_raise(bad_name, expected_msg):
