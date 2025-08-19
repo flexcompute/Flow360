@@ -96,6 +96,16 @@ class BoundingBox(list[list[float]]):
         """Return the maximum z coordinate."""
         return self[1][2]
 
+    @classmethod
+    def get_default_bounding_box(cls) -> "BoundingBox":
+        """Return the default bounding box with infinite values."""
+        return BoundingBox(
+            [
+                [float("inf"), float("inf"), float("inf")],
+                [float("-inf"), float("-inf"), float("-inf")],
+            ]
+        )
+
     # --- Pydantic v2 schema integration ---
     @classmethod
     # pylint: disable=unused-argument
@@ -135,14 +145,27 @@ class BoundingBox(list[list[float]]):
         """Return the largest dimension of the bounding box."""
         return max(self.size)
 
-    def expand(self, margin: float) -> "BoundingBox":
-        """Return a new bounding box expanded by a given margin."""
-        return BoundingBox(
-            [
-                [self.xmin - margin, self.ymin - margin, self.zmin - margin],
-                [self.xmax + margin, self.ymax + margin, self.zmax + margin],
-            ]
-        )
+    def expand(self, other: "BoundingBox") -> "BoundingBox":
+        """Return a new bounding box expanded by a given bounding box."""
+        (sx0, sy0, sz0), (sx1, sy1, sz1) = self
+        (ox0, oy0, oz0), (ox1, oy1, oz1) = other
+
+        if ox0 < sx0:
+            sx0 = ox0
+        if oy0 < sy0:
+            sy0 = oy0
+        if oz0 < sz0:
+            sz0 = oz0
+        if ox1 > sx1:
+            sx1 = ox1
+        if oy1 > sy1:
+            sy1 = oy1
+        if oz1 > sz1:
+            sz1 = oz1
+
+        self[0][0], self[0][1], self[0][2] = sx0, sy0, sz0
+        self[1][0], self[1][1], self[1][2] = sx1, sy1, sz1
+        return self
 
 
 # Annotated alias for documentation
