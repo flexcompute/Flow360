@@ -12,7 +12,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, Surface
+from flow360.component.simulation.primitives import Box, CustomVolume, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
@@ -138,6 +138,25 @@ def rotation_cylinder_entity_injector(entity: Cylinder):
         "axisOfRotation": list(entity.axis),
         "center": list(entity.center.value),
     }
+
+
+def _get_custom_volumes(volume_zones: list):
+    """Get translated custom volumes from volume zones."""
+    custom_volumes = []
+    for zone in volume_zones:
+        if isinstance(zone, CustomVolume):
+            custom_volumes.append(
+                {
+                    "name": zone.name,
+                    "patches": sorted(
+                        [surface.name for surface in zone.boundaries.stored_entities]
+                    ),
+                }
+            )
+    if custom_volumes:
+        # Sort custom volumes by name
+        custom_volumes.sort(key=lambda x: x["name"])
+    return custom_volumes
 
 
 @preprocess_input
@@ -284,5 +303,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     )
     if sliding_interfaces:
         translated["slidingInterfaces"] = sliding_interfaces
+
+    ##::  Step 6: Get custom volumes
+    custom_volumes = _get_custom_volumes(meshing_params.volume_zones)
+    if custom_volumes:
+        translated["zones"] = custom_volumes
 
     return translated
