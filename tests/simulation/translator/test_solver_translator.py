@@ -755,11 +755,13 @@ def test_param_with_user_variables():
         name="iso_field_pressure",
         value=0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2,
     )
-    iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa)
+    iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa,
+        wall_distance_clip_threshold = 0.1 * u.m)
     iso_field_random_units = UserVariable(
         name="iso_field_random_units",
-        value=solution.velocity[0] * 2 * u.lb,
+        value=solution.velocity[0] * 2 * u.lb
     )
+    print("updating iso1")
     iso2 = Isosurface(
         name="iso_field_random_units", field=iso_field_random_units, iso_value=10 * u.lb * u.m / u.s
     )
