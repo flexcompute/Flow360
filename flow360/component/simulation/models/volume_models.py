@@ -78,6 +78,8 @@ from flow360.component.simulation.user_code.core.types import (
     ValueOrExpression,
     get_input_value_dimensions,
     get_input_value_length,
+    infer_units_by_unit_system,
+    is_variable_with_unit_system_as_units,
 )
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
@@ -199,16 +201,7 @@ class Criterion(Flow360BaseModel):
     @pd.field_validator("tolerance", mode="before")
     @classmethod
     def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
-        if (
-            not isinstance(value, dict)
-            or "units" not in value
-            or value["units"]
-            not in (
-                "SI_unit_system",
-                "Imperial_unit_system",
-                "CGS_unit_system",
-            )
-        ):
+        if is_variable_with_unit_system_as_units(value):
             return value
         if info.data.get("monitor_field") is None:
             # `field` validation failed.
@@ -225,12 +218,9 @@ class Criterion(Flow360BaseModel):
         field_dimensions = get_input_value_dimensions(value=monitor_field.value)
         if isinstance(monitor_output, SurfaceIntegralOutput):
             field_dimensions = field_dimensions * u.dimensions.length**2
-        if units == "SI_unit_system":
-            value["units"] = u.unit_systems.mks_unit_system[field_dimensions]
-        if units == "Imperial_unit_system":
-            value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
-        if units == "CGS_unit_system":
-            value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
+        value = infer_units_by_unit_system(
+            value=value, value_dimensions=field_dimensions, unit_system=units
+        )
         return value
 
     @pd.field_validator("tolerance", mode="after")

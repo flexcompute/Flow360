@@ -1543,3 +1543,32 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
         _get_dependent_expressions(Expression(expression=expr), dependent_expressions)
 
     return list(used_expressions.union(dependent_expressions))
+
+
+def is_variable_with_unit_system_as_units(value: dict) -> bool:
+    """
+    [Frontend] Check if the value is a variable with a unit system as units.
+    """
+    return (
+        not isinstance(value, dict)
+        or "units" not in value
+        or value["units"]
+        not in (
+            "SI_unit_system",
+            "Imperial_unit_system",
+            "CGS_unit_system",
+        )
+    )
+
+
+def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
+    """
+    [Frontend] Infer the units based on the unit system.
+    """
+    if unit_system == "SI_unit_system":
+        value["units"] = u.unit_systems.mks_unit_system[value_dimensions]
+    if unit_system == "Imperial_unit_system":
+        value["units"] = u.unit_systems.imperial_unit_system[value_dimensions]
+    if unit_system == "CGS_unit_system":
+        value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
+    return value
