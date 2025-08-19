@@ -1390,6 +1390,8 @@ def get_solver_json(
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
+            if isinstance(op, LiquidOperatingCondition):
+                translated["navierStokesSolver"]["modelType"] = "CompressibleIsentropic"
             replace_dict_key(
                 translated["navierStokesSolver"],
                 "equationEvaluationFrequency",
