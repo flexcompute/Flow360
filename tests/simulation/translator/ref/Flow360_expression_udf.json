@@ -85,7 +85,6 @@
             "uuu"
         ],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,

@@ -7,9 +7,11 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -34,6 +36,7 @@ RefinementTypes = Annotated[
     Union[
         SurfaceEdgeRefinement,
         SurfaceRefinement,
+        GeometryRefinement,
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
@@ -69,7 +72,8 @@ class MeshingDefaults(Flow360BaseModel):
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-        "This parameter is only valid when using geometry AI.",
+        "This parameter is only valid when using geometry AI."
+        "It can be overridden with class: ~flow360.GeometryRefinement.",
     )
 
     ##::   Default surface edge settings
@@ -104,13 +108,13 @@ class MeshingDefaults(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
-        1e-6,
-        description="Tolerance used for detecting planar faces in the input surface mesh"
+    planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
+        DEFAULT_PLANAR_FACE_TOLERANCE,
+        description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
-        " relative to the largest dimension of the bounding box of the input surface mesh."
-        " This is only supported by the beta mesher and can not be overridden per face.",
+        " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
+        " This can not be overridden per face.",
     )
 
     ##::    Default surface layer settings
@@ -120,7 +124,21 @@ class MeshingDefaults(Flow360BaseModel):
         " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
         context=SURFACE_MESH,
     )
-    curvature_resolution_angle: AngleType.Positive = ContextField(
+
+    surface_max_aspect_ratio: Optional[pd.PositiveFloat] = ConditionalField(
+        10.0,
+        description="Maximum aspect ratio for surface cells for the GAI surface mesher."
+        " This cannot be overridden per face",
+        context=SURFACE_MESH,
+    )
+
+    surface_max_adaptation_iterations: Optional[pd.NonNegativeInt] = ConditionalField(
+        50,
+        description="Maximum adaptation iterations for the GAI surface mesher.",
+        context=SURFACE_MESH,
+    )
+
+    curvature_resolution_angle: Optional[AngleType.Positive] = ContextField(
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
@@ -144,23 +162,6 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Number of boundary layers is only supported by the beta mesher.")
         return value
 
-    @pd.field_validator("planar_face_tolerance", mode="after")
-    @classmethod
-    def invalid_planar_face_tolerance(cls, value):
-        """Ensure planar face tolerance is not specified"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint:disable = unsubscriptable-object
-        if (
-            value != cls.model_fields["planar_face_tolerance"].default
-            and not validation_info.is_beta_mesher
-        ):
-            raise ValueError("Planar face tolerance is only supported by the beta mesher.")
-        return value
-
     @pd.field_validator("geometry_accuracy", mode="after")
     @classmethod
     def invalid_geometry_accuracy(cls, value):
@@ -175,6 +176,24 @@ class MeshingDefaults(Flow360BaseModel):
 
         if value is None and validation_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
+        return value
+
+    @pd.field_validator(
+        "surface_max_aspect_ratio", "surface_max_adaptation_iterations", mode="after"
+    )
+    @classmethod
+    def invalid_geometry_ai_features(cls, value, info):
+        """Ensure surface max aspect ratio is not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        # pylint: disable=unsubscriptable-object
+        default_value = cls.model_fields[info.field_name].default
+        if value != default_value and not validation_info.use_geometry_AI:
+            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
+
         return value
 
 
@@ -216,6 +235,7 @@ class MeshingParams(Flow360BaseModel):
         + "and first layer thickness will be adjusted to generate `r`-times"
         + " finer mesh where r is the refinement_factor value.",
     )
+
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,

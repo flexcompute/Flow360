@@ -24,6 +24,7 @@ from flow360.component.simulation.unit_system import AngleType, AreaType, Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.types import Axis
+from flow360.exceptions import Flow360BoundaryMissingError
 
 
 def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
@@ -43,11 +44,14 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
                 return existing_boundary_name
     if surface_name == "symmetric":
         # Provides more info when the symmetric boundary is not auto generated.
-        raise ValueError(
+        raise Flow360BoundaryMissingError(
             f"Parent zone not found for boundary: {surface_name}. "
-            + "It is likely that it was never auto generated because the condition is not met."
+            "It is likely that it was never auto generated because the condition is not met."
         )
-    raise ValueError(f"Parent zone not found for surface {surface_name}.")
+    raise Flow360BoundaryMissingError(
+        f"Parent zone not found for surface {surface_name}. "
+        "It may have been deleted due to overlapping with generated symmetry plane."
+    )
 
 
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
@@ -161,6 +165,11 @@ class GeometryBodyGroup(EntityBase):
     )
     transformation: Transformation = pd.Field(
         Transformation(), description="The transformation performed on the body group"
+    )
+    mesh_exterior: bool = pd.Field(
+        True,
+        description="Option to define whether to mesh exterior or interior of body group in geometry AI."
+        "Note that this is a beta feature and the interface might change in future releases.",
     )
 
 
@@ -514,6 +523,8 @@ class Surface(_SurfaceEntityBase):
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
     )
+    # pylint: disable=fixme
+    # TODO: This should be deprecated since it is not very useful or easy to use.
     private_attribute_potential_issues: List[_SurfaceIssueEnums] = pd.Field(
         [],
         description="Issues (not necessarily problems) found on this `Surface` after inspection by "
@@ -531,11 +542,6 @@ class Surface(_SurfaceEntityBase):
     # TODO: With the amount of private_attribute prefixes we have
     # TODO: here maybe it makes more sense to lump them together to save space?
 
-    private_attribute_color: Optional[str] = pd.Field(
-        None, description="Front end storage for the color selected for this `Surface` entity."
-    )
-
-    # pylint: disable=fixme
     # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
 
     def _will_be_deleted_by_mesher(self, farfield_method: Literal["auto", "quasi-3d"]) -> bool:
@@ -566,6 +572,17 @@ class Surface(_SurfaceEntityBase):
             )
 
         raise ValueError(f"Unknown auto farfield generation method: {farfield_method}.")
+
+
+@final
+class ImportedSurface(EntityBase):
+    """ImportedSurface for post-processing"""
+
+    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
+        "ImportedSurface", frozen=True
+    )
+    file_name: str
 
 
 class GhostSurface(_SurfaceEntityBase):
@@ -626,17 +643,16 @@ class GhostCircularPlane(_SurfaceEntityBase):
     def exists(self, validation_info) -> bool:
         """Mesher logic for symmetric plane existence."""
 
-        if (
-            validation_info is None
-            or not validation_info.is_beta_mesher
-            or self.name != "symmetric"
-        ):
-            # Non-beta mesher mode, then symmetric plane existence is handled upstream.
+        if self.name != "symmetric":
+            # Quasi-3D mode, no need to check existence.
             return True
 
+        if validation_info is None:
+            raise ValueError("Validation info is required for GhostCircularPlane existence check.")
+
         if validation_info.global_bounding_box is None:
-            # This likely means the user try to use in-house mesher on old cloud resources.
-            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out.
+            # This likely means the user try to use mesher on old cloud resources.
+            # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
 
         y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)

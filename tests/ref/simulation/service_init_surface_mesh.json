@@ -10,6 +10,8 @@
             "surface_edge_growth_rate": 1.2,
             "boundary_layer_growth_rate": 1.2,
             "planar_face_tolerance": 1e-06,
+            "surface_max_adaptation_iterations": 50,
+            "surface_max_aspect_ratio": 10.0,
             "curvature_resolution_angle": {
                 "value": 12.0,
                 "units": "degree"

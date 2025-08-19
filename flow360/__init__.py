@@ -9,6 +9,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -59,6 +60,7 @@ from flow360.component.simulation.models.surface_models import (
     MassFlowRate,
     Outflow,
     Periodic,
+    PorousJump,
     Pressure,
     Rotational,
     SlaterPorousBleed,
@@ -111,6 +113,8 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
     IsosurfaceOutput,
     MovingStatistic,
     Observer,
@@ -121,6 +125,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageImportedSurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
@@ -207,6 +212,7 @@ __all__ = [
     "Outflow",
     "Inflow",
     "Periodic",
+    "PorousJump",
     "SymmetryPlane",
     "Fluid",
     "Solid",
@@ -230,6 +236,9 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "ImportedSurfaceOutput",
+    "TimeAverageImportedSurfaceOutput",
+    "ImportedSurfaceIntegralOutput",
     "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
@@ -240,6 +249,7 @@ __all__ = [
     "DetachedEddySimulation",
     "KOmegaSSTModelConstants",
     "LinearSolver",
+    "Folder",
     "ForcePerArea",
     "Air",
     "Sutherland",

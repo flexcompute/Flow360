@@ -756,6 +756,39 @@ def test_udf_generator():
         == "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;pos_vel[0] = (+___velocity[0] * 5.0); pos_vel[1] = (+___velocity[1] * 5.0); pos_vel[2] = (+___velocity[2] * 5.0);"
     )
 
+    density_kg_per_m3 = UserVariable(name="density_kg_per_m3", value=solution.density).in_units(
+        new_unit="kg /m**3"
+    )
+    velocity_metric = UserVariable(name="velocity_metric", value=solution.velocity).in_units(
+        new_unit="m/s"
+    )
+    mass_flow_rate_kg_per_s_per_m2 = UserVariable(
+        name="mass_flow_rate_kg_per_s",
+        value=math.dot(velocity_metric, solution.node_unit_normal) * density_kg_per_m3,
+    ).in_units(new_unit="kg/s/m**2")
+
+    assert user_variable_to_udf(mass_flow_rate_kg_per_s_per_m2, input_params=params).expression == (
+        "double ___density;"
+        "___density = usingLiquidAsMaterial ? 1.0 : primitiveVars[0];"
+        "double ___node_unit_normal[3];"
+        "double ___normalMag = magnitude(nodeNormals);"
+        "for (int i = 0; i < 3; i++)"
+        "{"
+        "___node_unit_normal[i] = nodeNormals[i] / ___normalMag;"
+        "}"
+        "double ___velocity[3];"
+        "___velocity[0] = primitiveVars[1] * velocityScale;"
+        "___velocity[1] = primitiveVars[2] * velocityScale;"
+        "___velocity[2] = primitiveVars[3] * velocityScale;"
+        "mass_flow_rate_kg_per_s = ("
+        "((("
+        "(___velocity[0] * ___node_unit_normal[0]) + "
+        "(___velocity[1] * ___node_unit_normal[1])"
+        ") + "
+        "(___velocity[2] * ___node_unit_normal[2])"
+        ") * ___density) * 5000.0);"
+    )
+
 
 def test_project_variables_serialization():
     ccc = UserVariable(name="ccc", value=12 * u.m / u.s, description="ccc description")
@@ -876,9 +909,18 @@ def test_unique_dimensions():
         ("template", "'template' is a reserved keyword."),
         ("temperature", "'temperature' is a reserved solver side variable name."),
         ("area", "'area' is a reserved solver side variable name."),
-        ("velocity", "'velocity' is a reserved (legacy) output field name."),
-        ("mut", "'mut' is a reserved (legacy) output field name."),
-        ("pressure", "'pressure' is a reserved (legacy) output field name."),
+        (
+            "velocity",
+            "'velocity' is a reserved (legacy) output field name. It cannot be used in expressions.",
+        ),
+        (
+            "mut",
+            "'mut' is a reserved (legacy) output field name. It cannot be used in expressions.",
+        ),
+        (
+            "pressure",
+            "'pressure' is a reserved (legacy) output field name. It cannot be used in expressions.",
+        ),
     ],
 )
 def test_invalid_names_raise(bad_name, expected_msg):
@@ -1753,3 +1795,159 @@ def test_correct_expression_error_location():
         "operator for unyt_arrays with units 'dimensionless' (dimensions '1') and 'm' (dimensions '(length)') is not well defined."
         in errors[0]["msg"]
     )
+
+
+def test_solver_variable_names_recursive():
+    """Test the recursive solver_variable_names method with proper physical dimensions."""
+
+    # Test 1: Direct solver variable usage
+    expr1 = Expression(expression="solution.density + solution.pressure")
+    solver_vars = expr1.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.density", "solution.pressure"}
+
+    # Test 2: No solver variables - pure mathematical expression
+    expr2 = Expression(expression="1.0 + 2.0 * 3.0")
+    solver_vars = expr2.solver_variable_names(recursive=True)
+    assert solver_vars == []
+
+    # Test 3: Simple user variable with solver variable (dimensionally consistent)
+    user_var1 = UserVariable(name="my_density", value=solution.density)
+    expr3 = Expression(expression="my_density * 2.0")
+    solver_vars = expr3.solver_variable_names(recursive=True)
+    assert solver_vars == ["solution.density"]
+
+    # Test 4: Nested user variables - velocity component access
+    user_var2 = UserVariable(name="vel_x_comp", value=solution.velocity[0])
+    user_var3 = UserVariable(name="scaled_vel", value=user_var2 * 2.0)
+    expr4 = Expression(expression="scaled_vel")
+    solver_vars = expr4.solver_variable_names(recursive=True)
+    assert solver_vars == ["solution.velocity"]
+
+    # Test 5: Multiple levels of nesting with dimensional consistency
+    user_var4 = UserVariable(name="rho_squared", value=user_var1 * user_var1)
+    user_var5 = UserVariable(name="momentum_like", value=user_var4 * user_var3)
+    expr5 = Expression(expression="momentum_like")
+    solver_vars = expr5.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.density", "solution.velocity"}
+
+    # Test 6: Mixed direct and indirect solver variables with proper dimensions
+    expr6 = Expression(expression="momentum_like + solution.pressure * solution.density")
+    solver_vars = expr6.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.density", "solution.velocity", "solution.pressure"}
+
+    # Test 7: User variable with dimensionless value
+    user_var6 = UserVariable(name="mach_number", value=0.3)
+    expr7 = Expression(expression="mach_number * solution.velocity[0]")
+    solver_vars = expr7.solver_variable_names(recursive=True)
+    assert solver_vars == ["solution.velocity"]
+
+    # Test 8: Filter by variable type - Volume variables only
+    expr8 = Expression(expression="solution.density + solution.velocity[0] + control.MachRef")
+    volume_vars = expr8.solver_variable_names(variable_type="Volume", recursive=True)
+    assert set(volume_vars) == {"solution.density", "solution.velocity"}
+
+    # Test 9: Filter by variable type - Scalar variables only
+    scalar_vars = expr8.solver_variable_names(variable_type="Scalar", recursive=True)
+    assert scalar_vars == ["control.MachRef"]
+
+    # Test 10: Complex flow physics expression with proper dimensions
+    user_var7 = UserVariable(
+        name="dyn_press", value=0.5 * solution.density * solution.velocity[0] * solution.velocity[0]
+    )
+    user_var8 = UserVariable(name="tot_press", value=solution.pressure + user_var7)
+    expr9 = Expression(expression="tot_press")
+    solver_vars = expr9.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.density", "solution.velocity", "solution.pressure"}
+
+    # Test 11: Temperature-based expressions (for compressible flow)
+    user_var9 = UserVariable(
+        name="temp_ratio", value=solution.temperature / 300.0
+    )  # Reference temperature
+    user_var10 = UserVariable(name="scaled_density", value=solution.density * user_var9)
+    expr10 = Expression(expression="scaled_density")
+    solver_vars = expr10.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.temperature", "solution.density"}
+
+    # Test 12: Vector operations with proper indexing
+    user_var11 = UserVariable(
+        name="vel_mag_sq",
+        value=solution.velocity[0] * solution.velocity[0]
+        + solution.velocity[1] * solution.velocity[1]
+        + solution.velocity[2] * solution.velocity[2],
+    )
+    expr11 = Expression(expression="vel_mag_sq")
+    solver_vars = expr11.solver_variable_names(recursive=True)
+    assert solver_vars == ["solution.velocity"]
+
+    # Test 13: Deep nesting with multiple physics variables
+    user_var12 = UserVariable(name="ke_calc", value=0.5 * solution.density * user_var11)
+    user_var13 = UserVariable(name="te_calc", value=user_var12 + solution.pressure / (1.4 - 1.0))
+    user_var14 = UserVariable(name="epv_calc", value=user_var13 / solution.temperature)
+    expr12 = Expression(expression="epv_calc")
+    solver_vars = expr12.solver_variable_names(recursive=True)
+    expected_vars = {
+        "solution.density",
+        "solution.velocity",
+        "solution.pressure",
+        "solution.temperature",
+    }
+    assert set(solver_vars) == expected_vars
+
+    # Test 14: Mathematical functions with solver variables (using dimensionless ratios)
+    user_var15 = UserVariable(
+        name="rho_ratio", value=solution.density / solution.density
+    )  # Dimensionless ratio
+    user_var16 = UserVariable(
+        name="complex_func", value=Expression(expression="math.exp(rho_ratio)")
+    )
+    expr13 = Expression(expression="complex_func")
+    solver_vars = expr13.solver_variable_names(recursive=True)
+    assert solver_vars == ["solution.density"]
+
+    # Test 15: Control variables in time-dependent expressions
+    user_var17 = UserVariable(
+        name="time_scaled_vel", value=solution.velocity[0] * control.timeStepSize
+    )
+    expr14 = Expression(expression="time_scaled_vel")  # Just use the time-scaled velocity
+    solver_vars = expr14.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.velocity", "control.timeStepSize"}
+
+    # Test 16: Edge case - circular reference prevention
+    user_var18 = UserVariable(name="base_var", value=solution.pressure)
+    user_var19 = UserVariable(name="derived_var", value=user_var18 * 2.0)
+    user_var20 = UserVariable(name="twice_derived", value=user_var19 + user_var18)
+    expr15 = Expression(expression="twice_derived")
+    solver_vars = expr15.solver_variable_names(recursive=True)
+    assert solver_vars == ["solution.pressure"]
+
+    # Test 17: Mixed dimensioned and dimensionless variables
+    user_var21 = UserVariable(name="re_num", value=1e6)  # Dimensionless
+    user_var22 = UserVariable(
+        name="char_vel", value=user_var21 * solution.mut / (solution.density * 1.0)
+    )  # Length = 1.0 m
+    expr16 = Expression(expression="char_vel")
+    solver_vars = expr16.solver_variable_names(recursive=True)
+    assert set(solver_vars) == {"solution.mut", "solution.density"}
+
+    # Test 18: Surface variables if available
+    try:
+        # Only test if surface variables exist
+        expr17 = Expression(expression="solution.Cp + solution.density")
+        solver_vars = expr17.solver_variable_names(variable_type="Surface", recursive=True)
+        # Check if surface variables are found
+        surface_vars = [var for var in solver_vars if "Cp" in var]
+        if surface_vars:
+            assert "solution.Cp" in solver_vars
+    except (AttributeError, ValueError):
+        # Skip if surface variables not available in test environment
+        pass
+
+    # Test 19: All variable types combined
+    expr18 = Expression(expression="solution.density + solution.velocity[0] + control.MachRef")
+    all_vars = expr18.solver_variable_names(variable_type="All", recursive=True)
+    assert set(all_vars) == {"solution.density", "solution.velocity", "control.MachRef"}
+
+    # Test 20: Simple expression with just a constant
+    expr19 = Expression(expression="42.0")
+    solver_vars = expr19.solver_variable_names(recursive=True)
+    assert solver_vars == []

@@ -160,6 +160,7 @@ class _Resource(Flow360RequestsV2):
 
 class NewReportRequest(Flow360RequestsV2):
     "New report request"
+
     name: str
     resources: List[_Resource]
     config_json: str
@@ -232,3 +233,20 @@ class DraftRunRequest(Flow360RequestsV2):
                     f"cannot be later than 'up_to' ({self.up_to})."
                 )
         return self
+
+
+class MoveToFolderRequestV2(Flow360RequestsV2):
+    """Data model for moving folder using v2 endpoint"""
+
+    name: Optional[str] = pd_v2.Field(default=None, description="folder to move name")
+    tags: List[str] = pd_v2.Field(default=[], description="folder tags")
+    parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")
+
+
+class RenameAssetRequestV2(Flow360RequestsV2):
+    """
+    Data model for renaming an asset (folder, project, surface mesh, volume mesh,
+    or case (other request fields, like folder to move to, already have implementations)
+    """
+
+    name: str = pd_v2.Field(description="case to rename")

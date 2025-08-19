@@ -989,10 +989,7 @@ def test_front_end_JSON_with_multi_constructor():
 def test_generate_process_json():
     params_data = {
         "meshing": {
-            "defaults": {
-                # "boundary_layer_first_layer_thickness": "1*m",
-                # "surface_max_edge_length": "1*m",
-            },
+            "defaults": {},
             "volume_zones": [
                 {
                     "method": "auto",
@@ -1066,7 +1063,7 @@ def test_generate_process_json():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
+            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
         ),
     ):
         res1, res2, res3 = services.generate_process_json(

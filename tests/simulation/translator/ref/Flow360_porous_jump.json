@@ -1,11 +1,24 @@
 {
     "boundaries": {
+        "blk-1/Interface_blk-2": {
+            "DarcyCoefficient": 1000000.0,
+            "ForchheimerCoefficient": 10.0,
+            "pairedPatchName": "blk-2/Interface_blk-1",
+            "porousJumpThickness": 0.1,
+            "type": "PorousJump"
+        },
         "blk-1/outflow": {
             "staticPressureRatio": 1.0,
             "type": "SubsonicOutflowPressure"
         },
         "blk-1/slip": {
             "type": "SlipWall"
+        },
+        "blk-2/Interface_blk-1": {
+            "DarcyCoefficient": 1000000.0,
+            "ForchheimerCoefficient": 10.0,
+            "porousJumpThickness": 0.1,
+            "type": "PorousJump"
         },
         "blk-2/slip": {
             "type": "SlipWall"
@@ -20,13 +33,21 @@
         }
     },
     "freestream": {
-        "Mach": 0.2,
-        "muRef": 2e-6,
+        "Mach": 0.19999999999999998,
         "Temperature": -1,
-        "alphaAngle": 0.0,
-        "betaAngle": 0.0
+        "alphaAngle": 0,
+        "betaAngle": 0,
+        "muRef": 2.0000000000000003e-06
     },
     "geometry": {},
+    "initialCondition": {
+        "p": "p",
+        "rho": "rho",
+        "type": "initialCondition",
+        "u": "u",
+        "v": "v",
+        "w": "w"
+    },
     "navierStokesSolver": {
         "CFLMultiplier": 1.0,
         "absoluteTolerance": 1e-10,
@@ -45,6 +66,9 @@
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
     },
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
@@ -56,57 +80,57 @@
         "surfaces": {
             "blk-1/outflow": {
                 "outputFields": [
-                    "Cp",
                     "Cf",
                     "CfVec",
-                    "primitiveVars",
-                    "yPlus",
+                    "Cp",
                     "Mach",
-                    "wallDistance"
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
                 ]
             },
             "blk-1/slip": {
                 "outputFields": [
-                    "Cp",
                     "Cf",
                     "CfVec",
-                    "primitiveVars",
-                    "yPlus",
+                    "Cp",
                     "Mach",
-                    "wallDistance"
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
                 ]
             },
             "blk-2/slip": {
                 "outputFields": [
-                    "Cp",
                     "Cf",
                     "CfVec",
-                    "primitiveVars",
-                    "yPlus",
+                    "Cp",
                     "Mach",
-                    "wallDistance"
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
                 ]
             },
             "blk-3/inflow": {
                 "outputFields": [
-                    "Cp",
                     "Cf",
                     "CfVec",
-                    "primitiveVars",
-                    "yPlus",
+                    "Cp",
                     "Mach",
-                    "wallDistance"
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
                 ]
             },
             "blk-3/slip": {
                 "outputFields": [
-                    "Cp",
                     "Cf",
                     "CfVec",
-                    "primitiveVars",
-                    "yPlus",
+                    "Cp",
                     "Mach",
-                    "wallDistance"
+                    "primitiveVars",
+                    "wallDistance",
+                    "yPlus"
                 ]
             }
         },
@@ -127,69 +151,25 @@
     "turbulenceModelSolver": {
         "modelType": "None"
     },
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
     "volumeOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
         "outputFields": [
-            "primitiveVars",
-            "vorticity",
-            "vorticityMagnitude",
-            "residualNavierStokes",
-            "T",
-            "s",
             "Cp",
+            "T",
             "mut",
-            "mutRatio"
+            "mutRatio",
+            "primitiveVars",
+            "residualNavierStokes",
+            "s",
+            "vorticity",
+            "vorticityMagnitude"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
-    },
-    "porousMedia": [
-        {
-            "DarcyCoefficient": [
-                1000000.0,
-                0.0,
-                0.0
-            ],
-            "ForchheimerCoefficient": [
-                1.0,
-                0.0,
-                0.0
-            ],
-            "axes": [
-                [
-                    0.0,
-                    1.0,
-                    0.0
-                ],
-                [
-                    0.0,
-                    0.0,
-                    1.0
-                ]
-            ],
-            "zoneName": "blk-2",
-            "zoneType": "mesh",
-            "volumetricHeatSource": 0.0
-        }
-    ],
-    "initialCondition": {
-        "p": "p",
-        "rho": "rho",
-        "type": "initialCondition",
-        "u": "u",
-        "v": "v",
-        "w": "w"
-    },
-    "userDefinedFields": [],
-    "usingLiquidAsMaterial": false,
-    "outputRescale": {
-        "velocityScale": 1.0
-    },
-    "runControl": {
-        "shouldCheckStopCriterion": false,
-        "shouldProcessMonitorOutput": false
     }
 }
