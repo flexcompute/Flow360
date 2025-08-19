@@ -364,6 +364,35 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
     )
 
 
+def test_stopping_criterion_tolerance_in_unit_system():
+    """
+    [Frontend] Test that an Criterion with the unit system as
+    tolerance's units can be validated and translated.
+    """
+
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_stopping_criterion.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+    params_validated, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+        validation_level="Case",
+    )
+    assert not errors, print(">>>", errors)
+    assert params_validated.models[0].stopping_criterion[0].tolerance == 18.66 * u.m / u.s**2
+
+    translate_and_compare(
+        params_validated,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
+        debug=True,
+    )
+
+
 ##::  Test with local test cases
 def test_xv15_bet_disk(
     create_steady_hover_param,

@@ -16,7 +16,6 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
-from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 
 assertions = unittest.TestCase("__init__")

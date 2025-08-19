@@ -196,6 +196,43 @@ class Criterion(Flow360BaseModel):
             raise ValueError("The monitor field does not exist in the monitor output.")
         return v
 
+    @pd.field_validator("tolerance", mode="before")
+    @classmethod
+    def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
+        if (
+            not isinstance(value, dict)
+            or "units" not in value
+            or value["units"]
+            not in (
+                "SI_unit_system",
+                "Imperial_unit_system",
+                "CGS_unit_system",
+            )
+        ):
+            return value
+        if info.data.get("monitor_field") is None:
+            # `field` validation failed.
+            raise ValueError(
+                "The monitor field is invalid and therefore unit inference is not possible."
+            )
+        if info.data.get("monitor_output") is None:
+            raise ValueError(
+                "The monitor output is invalid and therefore unit inference is not possible."
+            )
+        units = value["units"]
+        monitor_field = info.data["monitor_field"]
+        monitor_output = info.data.get("monitor_output")
+        field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            field_dimensions = field_dimensions * u.dimensions.length**2
+        if units == "SI_unit_system":
+            value["units"] = u.unit_systems.mks_unit_system[field_dimensions]
+        if units == "Imperial_unit_system":
+            value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
+        if units == "CGS_unit_system":
+            value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
+        return value
+
     @pd.field_validator("tolerance", mode="after")
     @classmethod
     def check_tolerance_value_for_string_monitor_field(cls, v, info: pd.ValidationInfo):
