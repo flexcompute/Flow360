@@ -288,7 +288,11 @@ def surface_probe_setting_translation_func(entity: SurfaceProbeOutput):
 
 def monitor_translator(
     output_model: Union[
-        ProbeOutput, TimeAverageProbeOutput, SurfaceProbeOutput, TimeAverageSurfaceProbeOutput
+        ProbeOutput,
+        TimeAverageProbeOutput,
+        SurfaceProbeOutput,
+        TimeAverageSurfaceProbeOutput,
+        SurfaceIntegralOutput,
     ],
 ):
     """Monitor translator"""

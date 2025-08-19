@@ -274,14 +274,14 @@ def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
-            monitor_output_ids.append(output.output_id)
+            monitor_output_ids.append(output.private_attribute_id)
     for criterion in stopping_criterion:
         monitor_output = criterion.monitor_output
         if isinstance(monitor_output, str):
             continue
-        if monitor_output.output_id not in monitor_output_ids:
+        if monitor_output.private_attribute_id not in monitor_output_ids:
             params.outputs.append(monitor_output)
-            monitor_output_ids.append(monitor_output.output_id)
+            monitor_output_ids.append(monitor_output.private_attribute_id)
     return params
 
 

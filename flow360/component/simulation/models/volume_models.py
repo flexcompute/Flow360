@@ -159,9 +159,9 @@ class Criterion(Flow360BaseModel):
 
     @pd.field_serializer("monitor_output")
     def serialize_monitor_output(self, v):
-        """Serialize only the output_id of the related object."""
+        """Serialize only the output's id of the related object."""
         if isinstance(v, get_args(get_args(MonitorOutputType)[0])):
-            return v.output_id
+            return v.private_attribute_id
         return v
 
     @pd.field_validator("monitor_field", mode="after")
@@ -189,7 +189,7 @@ class Criterion(Flow360BaseModel):
     @classmethod
     def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
         """Ensure the monitor field exist in the monitor output."""
-        if isinstance(v, str):
+        if v is None or isinstance(v, str):
             return v
         monitor_field = info.data.get("monitor_field", None)
         if monitor_field not in v.output_fields.items:

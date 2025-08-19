@@ -706,7 +706,7 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
-    data["outputs"][0].pop("output_id", None)
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
@@ -717,7 +717,7 @@ def test_init():
     )
     assert "meshing" not in data
     # to convert tuples to lists:
-    data["outputs"][0].pop("output_id", None)
+    data["outputs"][0].pop("private_attribute_id", None)
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
 
@@ -731,7 +731,7 @@ def test_init():
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
     assert data["models"][0]["roughness_height"]["units"] == "cm"
-    data["outputs"][0].pop("output_id", None)
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")

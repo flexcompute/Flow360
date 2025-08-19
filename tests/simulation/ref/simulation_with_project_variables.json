@@ -199,7 +199,7 @@
                     }
                 ]
             },
-            "output_id": "000",
+            "private_attribute_id": "000",
             "frequency": -1,
             "frequency_offset": 0,
             "output_format": "paraview",
@@ -215,7 +215,7 @@
                     }
                 ]
             },
-            "output_id": "222",
+            "private_attribute_id": "222",
             "name": "Probe output",
             "entities": {
                 "stored_entities": [

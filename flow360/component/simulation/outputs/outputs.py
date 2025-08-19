@@ -167,7 +167,7 @@ class MovingStatistic(Flow360BaseModel):
 
 class _OutputBase(Flow360BaseModel):
     output_fields: UniqueItemList[str] = pd.Field()
-    output_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("output_fields", mode="after")
     @classmethod
