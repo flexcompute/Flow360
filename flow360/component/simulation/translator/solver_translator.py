@@ -339,8 +339,8 @@ def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
         "surfaceFieldMagnitude": surface_magnitude,
     }
 
-    if entity.wall_dist_clip_threshold is not None:
-        returnDict["wallDistanceClipThreshold"] = entity.wall_dist_clip_threshold.v.item()
+    if entity.wall_distance_clip_threshold is not None:
+        returnDict["wallDistanceClipThreshold"] = entity.wall_distance_clip_threshold.v.item()
     return returnDict
 
 
