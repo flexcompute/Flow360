@@ -443,7 +443,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview,tecplot",
         "startAverageIntegrationStep": -1,
@@ -479,7 +478,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "betMetrics",
             "qcriterion",

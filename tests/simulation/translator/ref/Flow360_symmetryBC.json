@@ -89,7 +89,6 @@
             "gradW"
         ],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
@@ -99,7 +98,6 @@
     "surfaceOutput": {
         "outputFields": [],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "surfaces": {
