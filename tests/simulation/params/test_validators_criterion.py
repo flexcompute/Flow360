@@ -1,3 +1,4 @@
+import json
 import re
 import unittest
 
@@ -5,7 +6,7 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.volume_models import Criterion
+from flow360.component.simulation.models.volume_models import Criterion, Fluid
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
@@ -14,11 +15,19 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
+from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 
 assertions = unittest.TestCase("__init__")
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 @pytest.fixture()
@@ -122,7 +131,7 @@ def test_criterion_multi_entities_probe_validation_fails(
 ):
     """Test that multi-entity ProbeOutput is rejected."""
     message = (
-        "For stopping criterion steup, only one single `Point` entity is allowed "
+        "For stopping criterion setup, only one single `Point` entity is allowed "
         "in `ProbeOutput`/`SurfaceProbeOutput`."
     )
 
@@ -295,3 +304,51 @@ def test_criterion_default_values(scalar_user_variable_density, single_point_pro
     assert criterion.name == "Criterion"
     assert criterion.criterion_change_window is None
     assert criterion.type_name == "Criterion"
+
+
+def test_criterion_with_monitor_output_id():
+    # [Frontend] Simulating loading a Criterion object with the id of monitor_output,
+    # ensure the validation for monitor_output works
+    with open("data/simulation_stopping_criterion_webui.json", "r") as fh:
+        data = json.load(fh)
+
+    params, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
+    )
+
+    print(errors)
+
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": ("models", 0, "stopping_criterion", 0, "monitor_output"),
+            "msg": "Value error, For stopping criterion setup, only one single `Point` entity is allowed in `ProbeOutput`/`SurfaceProbeOutput`.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("models", 0, "stopping_criterion", 1, "monitor_output"),
+            "msg": "Value error, The monitor field does not exist in the monitor output.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("models", 0, "stopping_criterion", 2, "tolerance"),
+            "msg": "Value error, The dimensions of monitor field and tolerance do not match.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("models", 0, "stopping_criterion", 3, "monitor_output"),
+            "msg": "Value error, The monitor output does not exist in the outputs list.",
+            "input": "1234",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+    ]
+
+    assert len(errors) == len(expected_errors)
+    for err, exp_err in zip(errors, expected_errors):
+        assert err["loc"] == exp_err["loc"]
+        assert err["type"] == exp_err["type"]
+        assert err["ctx"]["relevant_for"] == exp_err["ctx"]["relevant_for"]
+        assert err["msg"] == exp_err["msg"]

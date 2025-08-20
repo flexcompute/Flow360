@@ -173,6 +173,22 @@ class Criterion(Flow360BaseModel):
             raise ValueError("The stopping criterion can only be defined on a scalar field.")
         return v
 
+    @pd.field_validator("monitor_output", mode="before")
+    @classmethod
+    def _preprocess_monitor_output_with_id(cls, v):
+        if not isinstance(v, str):
+            return v
+        validation_info = get_validation_info()
+        if (
+            validation_info is None
+            or validation_info.output_dict is None
+            or validation_info.output_dict.get(v) is None
+        ):
+            raise ValueError("The monitor output does not exist in the outputs list.")
+        monitor_output_dict = validation_info.output_dict[v]
+        monitor_output = pd.TypeAdapter(MonitorOutputType).validate_python(monitor_output_dict)
+        return monitor_output
+
     @pd.field_validator("monitor_output", mode="after")
     @classmethod
     def _check_single_point_in_probe_output(cls, v):
@@ -183,7 +199,7 @@ class Criterion(Flow360BaseModel):
         ):
             return v
         raise ValueError(
-            "For stopping criterion steup, only one single `Point` entity is allowed "
+            "For stopping criterion setup, only one single `Point` entity is allowed "
             "in `ProbeOutput`/`SurfaceProbeOutput`."
         )
 

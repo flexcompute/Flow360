@@ -462,6 +462,7 @@ def validate_model(  # pylint: disable=too-many-locals
 
     try:
         # pylint: disable=protected-access
+        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         # Note: Need to run updater first to accommodate possible schema change in input caches.
         updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
             params_as_dict
