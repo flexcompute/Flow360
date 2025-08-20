@@ -21,6 +21,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
     SurfaceRefinement,
+    GeometryRefinement,
 )
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
