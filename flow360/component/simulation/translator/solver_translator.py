@@ -341,10 +341,14 @@ def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     else:
         surface_field = entity.field
         surface_magnitude = entity.iso_value
-    return {
+    return_dict = {
         "surfaceField": surface_field,
         "surfaceFieldMagnitude": surface_magnitude,
     }
+
+    if entity.wall_distance_clip_threshold is not None:
+        return_dict["wallDistanceClipThreshold"] = entity.wall_distance_clip_threshold.v.item()
+    return return_dict
 
 
 def inject_probe_info(entity: EntityList):

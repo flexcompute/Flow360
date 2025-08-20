@@ -40,7 +40,8 @@
                     "ppp"
                 ],
                 "surfaceField": "iso_field_pressure",
-                "surfaceFieldMagnitude": 10.0
+                "surfaceFieldMagnitude": 10.0,
+                "wallDistanceClipThreshold": 0.1
             },
             "iso_surf_velocity_mag": {
                 "outputFields": [
