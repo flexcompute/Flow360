@@ -1,6 +1,7 @@
 """Flow360 solver setting parameter translator."""
 
 # pylint: disable=too-many-lines
+import hashlib
 from typing import Type, Union, get_args
 
 import unyt as u
@@ -1394,6 +1395,28 @@ def check_stopping_criterion_existence(params: SimulationParams):
     return False
 
 
+def calculate_monitor_semaphore_hash(params: SimulationParams):
+    """Get the hash for monitor processor's semaphore"""
+    json_string_list = []
+    if params.outputs:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            if output.moving_statistic is None:
+                continue
+            json_string_list.append(output.private_attribute_id)
+    if params.models:
+        for model in params.models:
+            if isinstance(model, Fluid) and model.stopping_criterion is not None:
+                json_string_list.extend(
+                    [criterion.model_dump_json() for criterion in model.stopping_criterion]
+                )
+    combined_string = "".join(sorted(json_string_list))
+    hasher = hashlib.sha256()
+    hasher.update(combined_string.encode("utf-8"))
+    return hasher.hexdigest()
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -1717,6 +1740,10 @@ def get_solver_json(
     translated["runControl"]["shouldProcessMonitorOutput"] = check_moving_statistic_existence(
         input_params
     ) or check_stopping_criterion_existence(input_params)
+    if translated["runControl"]["shouldProcessMonitorOutput"]:
+        translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
+            input_params
+        )
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []

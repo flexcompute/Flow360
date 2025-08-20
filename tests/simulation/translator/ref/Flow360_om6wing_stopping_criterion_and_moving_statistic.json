@@ -110,7 +110,8 @@
                 },
                 "typeName": "Criterion"
             }
-        ]
+        ],
+        "monitorProcessorHash": "0f07ee76dbfc489d02913e1feb4315b8ee8bc4e1e09109b472b2c16274ea387b"
     },
     "sliceOutput": {
         "animationFrequency": -1,
