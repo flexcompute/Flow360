@@ -1063,6 +1063,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("observers", mode="after")
     @classmethod
@@ -1163,6 +1164,7 @@ class StreamlineOutput(Flow360BaseModel):
         + "is used to define streamline originating from a parallelogram.",
     )
     output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 
 class ImportedSurfaceOutput(_AnimationAndFileFormatSettings):
