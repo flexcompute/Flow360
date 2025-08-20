@@ -86,15 +86,6 @@ def test_isosurface_wall_distance_clip():
     """
 
     # Test that an Isosurface field must have length units
-    try:
-        Isosurface(
-            name="test_iso_vorticity_component",
-            field="T",
-            iso_value=0.5,
-            wall_distance_clip_threshold=0.0 / u.s,
-        )
-    except Exception as e:
-        print(e)
     with pytest.raises(
         pd.ValidationError,
         match=re.escape(
