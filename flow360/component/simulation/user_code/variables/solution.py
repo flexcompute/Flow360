@@ -44,6 +44,12 @@ Cpt = SolverVariable(
     solver_name="___Cpt",
     variable_type="Volume",
 )
+Cpt_auto = SolverVariable(
+    name="solution.Cpt_auto",
+    value=float("NaN"),
+    solver_name="___Cpt_auto",
+    variable_type="Volume",
+)
 grad_density = SolverVariable(
     name="solution.grad_density",
     value=[float("NaN"), float("NaN"), float("NaN")] * u.kg / u.m**4,
@@ -233,7 +239,12 @@ heat_transfer_coefficient_total_temperature = SolverVariable(
     solver_name="___heat_transfer_coefficient_total_temperature",
     variable_type="Surface",
 )
-
+wall_shear_stress_magnitude = SolverVariable(
+    name="solution.wall_shear_stress_magnitude",
+    value=float("NaN") * u.Pa,
+    solver_name="___wall_shear_stress_magnitude",
+    variable_type="Surface",
+)
 
 # TODO
 # pylint:disable = fixme

@@ -729,6 +729,7 @@ def test_param_with_user_variables():
     asin_res = UserVariable(name="asin_res", value=math.asin(solution.mut_ratio))
     acos_res = UserVariable(name="acos_res", value=math.acos(solution.Cp))
     atan_res = UserVariable(name="atan_res", value=math.atan(solution.Cpt))
+    just_atan_auto = UserVariable(name="just_atan_auto", value=math.atan(solution.Cpt_auto))
     min_res = UserVariable(
         name="min_res", value=math.min(solution.vorticity[2], solution.vorticity[1])
     )
@@ -810,6 +811,7 @@ def test_param_with_user_variables():
                         atan_res,
                         min_res,
                         max_res,
+                        just_atan_auto,
                     ],
                 ),
                 IsosurfaceOutput(

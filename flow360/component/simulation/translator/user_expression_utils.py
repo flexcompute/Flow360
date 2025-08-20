@@ -4,12 +4,40 @@ import numpy as np
 
 udf_prepending_code = {
     "solution.Cp": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
-    "solution.Cpt": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + "
-    + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / "
-    + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
-    + "double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,"
-    + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
-    + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
+    # "solution.Cpt": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + "
+    # + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / "
+    # + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
+    # + "double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,"
+    # + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
+    # + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
+    "solution.Cpt": (
+        "constexpr double ___gamma = 1.4;"
+        "const double ___MachTmp ="
+        "    sqrt(primitiveVars[1] * primitiveVars[1] +"
+        "         primitiveVars[2] * primitiveVars[2] +"
+        "         primitiveVars[3] * primitiveVars[3]) /"
+        "    sqrt(___gamma * primitiveVars[4] / primitiveVars[0]);"
+        "constexpr double ___power = ___gamma / (___gamma - 1.0);"
+        "const double ___p1 ="
+        "    ___gamma * primitiveVars[4] *"
+        "    pow(1.0 + (___gamma - 1.0) / 2.0 * ___MachTmp * ___MachTmp, ___power);"
+        "const double ___p2 ="
+        "    pow(1.0 + (___gamma - 1.0) / 2.0 * MachRef * MachRef, ___power);"
+        "double ___Cpt = (___p1 - ___p2) / (0.5 * ___gamma * MachRef * MachRef);"
+    ),
+    "solution.Cpt_auto": (
+        "constexpr double __gamma = 1.4;"
+        "const double __MachTmp ="
+        "    sqrt(primitiveVars[1] * primitiveVars[1] +"
+        "         primitiveVars[2] * primitiveVars[2] +"
+        "         primitiveVars[3] * primitiveVars[3]) /"
+        "    sqrt(__gamma * primitiveVars[4] / primitiveVars[0]);"
+        "constexpr double __power = __gamma / (__gamma - 1.0);"
+        "const double __p1 ="
+        "    __gamma * primitiveVars[4] *"
+        "    pow(1.0 + (__gamma - 1.0) / 2.0 * __MachTmp * __MachTmp, __power);"
+        "double ___Cpt_auto = (__p1 - 1.) / (0.5 * ___gamma * MachRef * MachRef);"
+    ),
     "solution.grad_density": "double ___grad_density[3]; ___grad_density[0] = gradPrimitive[0][0];"
     + "___grad_density[1] = gradPrimitive[0][1];"
     + "___grad_density[2] = gradPrimitive[0][2];",
