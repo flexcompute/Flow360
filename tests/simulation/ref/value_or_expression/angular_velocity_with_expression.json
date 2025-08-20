@@ -35,7 +35,7 @@
         "lowMachPreconditionerThreshold": 0.05,
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
+        "modelType": "CompressibleIsentropic",
         "equationEvalFrequency": 1
     },
     "turbulenceModelSolver": {
