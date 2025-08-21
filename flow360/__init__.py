@@ -138,6 +138,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     ReferenceGeometry,
     Transformation,
+    CustomVolume
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -171,6 +172,7 @@ from flow360.version import __solver_version__, __version__
 __all__ = [
     "Env",
     "Case",
+    "CustomVolume",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
