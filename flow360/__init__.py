@@ -85,6 +85,7 @@ from flow360.component.simulation.models.volume_models import (
     BETDiskSectionalPolar,
     BETDiskTwist,
     C81File,
+    Criterion,
     DFDCFile,
     Fluid,
     ForcePerArea,
@@ -116,6 +117,7 @@ from flow360.component.simulation.outputs.outputs import (
     ImportedSurfaceIntegralOutput,
     ImportedSurfaceOutput,
     IsosurfaceOutput,
+    MovingStatistic,
     Observer,
     ProbeOutput,
     SliceOutput,
@@ -303,4 +305,6 @@ __all__ = [
     "get_user_variable",
     "show_user_variables",
     "remove_user_variable",
+    "Criterion",
+    "MovingStatistic",
 ]

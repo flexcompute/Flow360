@@ -132,6 +132,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "project_length_unit",
         "global_bounding_box",
         "planar_face_tolerance",
+        "output_dict",
     ]
 
     @classmethod
@@ -223,6 +224,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         return planar_face_tolerance
 
+    @classmethod
+    def _get_output_dict(cls, param_as_dict: dict):
+        if param_as_dict.get("outputs") is None:
+            return None
+        return {
+            output["private_attribute_id"]: output
+            for output in param_as_dict["outputs"]
+            if output.get("private_attribute_id") is not None
+        }
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -238,6 +249,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
+        self.output_dict = self._get_output_dict(param_as_dict=param_as_dict)
 
 
 class ValidationContext:
