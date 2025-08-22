@@ -244,6 +244,12 @@ class AssetBase(metaclass=ABCMeta):
         Create asset with the given ID.
         """
         asset_obj = cls(id)
+        populates_registry: bool = kwargs.pop("populates_registry", False)
+
+        if populates_registry is False:
+            asset_obj.internal_registry = None
+            return asset_obj
+
         entity_info_supplier_dict = None
         entity_info_param: Optional[SimulationParams] = kwargs.pop("entity_info_param", None)
         if entity_info_param:
