@@ -24,6 +24,7 @@ from flow360.component.simulation.unit_system import AngleType, AreaType, Length
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
 from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.types import Axis
+from flow360.exceptions import Flow360BoundaryMissingError
 
 
 def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
@@ -43,11 +44,14 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
                 return existing_boundary_name
     if surface_name == "symmetric":
         # Provides more info when the symmetric boundary is not auto generated.
-        raise ValueError(
+        raise Flow360BoundaryMissingError(
             f"Parent zone not found for boundary: {surface_name}. "
-            + "It is likely that it was never auto generated because the condition is not met."
+            "It is likely that it was never auto generated because the condition is not met."
         )
-    raise ValueError(f"Parent zone not found for surface {surface_name}.")
+    raise Flow360BoundaryMissingError(
+        f"Parent zone not found for surface {surface_name}. "
+        "It may have been deleted due to overlapping with generated symmetry plane."
+    )
 
 
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
@@ -161,6 +165,11 @@ class GeometryBodyGroup(EntityBase):
     )
     transformation: Transformation = pd.Field(
         Transformation(), description="The transformation performed on the body group"
+    )
+    mesh_exterior: bool = pd.Field(
+        True,
+        description="Option to define whether to mesh exterior or interior of body group in geometry AI."
+        "Note that this is a beta feature and the interface might change in future releases.",
     )
 
 
@@ -563,6 +572,17 @@ class Surface(_SurfaceEntityBase):
             )
 
         raise ValueError(f"Unknown auto farfield generation method: {farfield_method}.")
+
+
+@final
+class ImportedSurface(EntityBase):
+    """ImportedSurface for post-processing"""
+
+    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    private_attribute_entity_type_name: Literal["ImportedSurface"] = pd.Field(
+        "ImportedSurface", frozen=True
+    )
+    file_name: str
 
 
 class GhostSurface(_SurfaceEntityBase):

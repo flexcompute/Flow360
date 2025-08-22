@@ -68,6 +68,7 @@ from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
+from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
@@ -671,12 +672,29 @@ def test_liquid_simulation_translation():
                 ),
             ],
             time_stepping=Unsteady(steps=100, step_size=0.4),
+            outputs=[
+                VolumeOutput(
+                    name="output",
+                    output_fields=[solution.velocity],
+                )
+            ],
         )
         # Derivation:
         # Solver speed of sound = 10m/s / 0.05 = 200m/s
         # Flow360 time to seconds = 1m/(200m/s) = 0.005 s
         # t_seconds = (0.005 s * t)
-    translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json")
+    translate_and_compare(
+        param, mesh_unit=1 * u.m, ref_json_file="Flow360_liquid_rotation_dd.json", debug=True
+    )
+
+    with model_attribute_unlock(param.operating_condition, "reference_velocity_magnitude"):
+        param.operating_condition.reference_velocity_magnitude = 20 * u.m / u.s
+    translate_and_compare(
+        param,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_liquid_rotation_dd_with_ref_vel.json",
+        debug=True,
+    )
 
 
 def test_param_with_user_variables():
@@ -737,10 +755,14 @@ def test_param_with_user_variables():
         name="iso_field_pressure",
         value=0.5 * solution.Cp * solution.density * math.magnitude(solution.velocity) ** 2,
     )
-    iso1 = Isosurface(name="iso_pressure", field=iso_field_pressure, iso_value=10 * u.Pa)
+    iso1 = Isosurface(
+        name="iso_pressure",
+        field=iso_field_pressure,
+        iso_value=10 * u.Pa,
+        wall_distance_clip_threshold=0.1 * u.m,
+    )
     iso_field_random_units = UserVariable(
-        name="iso_field_random_units",
-        value=solution.velocity[0] * 2 * u.lb,
+        name="iso_field_random_units", value=solution.velocity[0] * 2 * u.lb
     )
     iso2 = Isosurface(
         name="iso_field_random_units", field=iso_field_random_units, iso_value=10 * u.lb * u.m / u.s

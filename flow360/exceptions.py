@@ -41,6 +41,10 @@ class Flow360ValidationError(Flow360Error):
     """Error when constructing FLow360 components."""
 
 
+class Flow360BoundaryMissingError(Flow360Error):
+    """Error when a boundary in simulation.json is not found in mesh metadata"""
+
+
 class Flow360ErrorWithLocation(Exception):
     """
     Error with metadata on where the error is in the SimulationParams.

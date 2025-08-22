@@ -807,6 +807,7 @@ class VolumeMeshStatusV2(Enum):
     COMPLETED = "completed"
     PENDING = "pending"
     GENERATING = "generating"
+    ERROR = "error"
 
     def is_final(self):
         """
@@ -817,7 +818,7 @@ class VolumeMeshStatusV2(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [VolumeMeshStatusV2.COMPLETED]:
+        if self in [VolumeMeshStatusV2.COMPLETED, VolumeMeshStatusV2.ERROR]:
             return True
         return False
 

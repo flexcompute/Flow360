@@ -40,7 +40,8 @@
                     "ppp"
                 ],
                 "surfaceField": "iso_field_pressure",
-                "surfaceFieldMagnitude": 10.0
+                "surfaceFieldMagnitude": 10.0,
+                "wallDistanceClipThreshold": 0.1
             },
             "iso_surf_velocity_mag": {
                 "outputFields": [
@@ -83,7 +84,7 @@
         "lowMachPreconditioner": true,
         "lowMachPreconditionerThreshold": 0.05,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
+        "modelType": "CompressibleIsentropic",
         "numericalDissipationFactor": 1.0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
@@ -97,7 +98,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
@@ -303,7 +303,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "Mach_SI",
             "abs_res",

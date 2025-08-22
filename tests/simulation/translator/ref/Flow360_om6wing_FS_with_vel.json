@@ -60,7 +60,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFormat": "tecplot",
         "outputFields": [],
         "startAverageIntegrationStep": -1,
@@ -95,7 +94,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
@@ -167,7 +165,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "primitiveVars",
             "residualNavierStokes",
