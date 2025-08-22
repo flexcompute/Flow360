@@ -16,7 +16,10 @@ from flow360.component.simulation.meshing_param.edge_params import (
     ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    GeometryRefinement,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
@@ -527,6 +530,8 @@ def test_gai_surface_mesher_refinements():
                     geometry_accuracy=0.05 * u.m,  # GAI setting
                     surface_max_edge_length=0.2,
                     boundary_layer_first_layer_thickness=0.01,
+                    surface_max_aspect_ratio=0.01,
+                    surface_max_adaptation_iterations=19,
                 ),
                 volume_zones=[farfield],
                 refinements=[
@@ -534,6 +539,11 @@ def test_gai_surface_mesher_refinements():
                         name="renamed_surface",
                         max_edge_length=0.1,
                         faces=[geometry["*"]],
+                    ),
+                    GeometryRefinement(
+                        name="Local_override",
+                        geometry_accuracy=0.05 * u.m,
+                        faces=[geometry["body00001_face00001"]],
                     ),
                 ],
             ),

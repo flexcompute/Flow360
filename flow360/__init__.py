@@ -170,6 +170,7 @@ from flow360.plugins import report
 from flow360.version import __solver_version__, __version__
 
 __all__ = [
+    "GeometryRefinement",
     "Env",
     "Case",
     "AngleBasedRefinement",

@@ -142,7 +142,8 @@ def _get_surface_refinements(refinement_list: list[dict]):
     return [
         item
         for item in refinement_list
-        if item["refinement_type"] in ("SurfaceRefinement", "UniformRefinement")
+        if item["refinement_type"]
+        in ("SurfaceRefinement", "UniformRefinement", "GeometryRefinement")
     ]
 
 
@@ -153,6 +154,8 @@ GAI_SETTING_WHITELIST = {
             "curvature_resolution_angle": None,
             "surface_edge_growth_rate": None,
             "geometry_accuracy": None,
+            "surface_max_aspect_ratio": None,
+            "surface_max_adaptation_iterations": None,
         },
         "refinements": _get_surface_refinements,
     },
