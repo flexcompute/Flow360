@@ -150,6 +150,8 @@ class BoundingBox(list[list[float]]):
         (sx0, sy0, sz0), (sx1, sy1, sz1) = self
         (ox0, oy0, oz0), (ox1, oy1, oz1) = other
 
+        # Disabled since if implementation is much faster than using max builtin
+        # pylint: disable=consider-using-max-builtin, consider-using-min-builtin
         if ox0 < sx0:
             sx0 = ox0
         if oy0 < sy0:
