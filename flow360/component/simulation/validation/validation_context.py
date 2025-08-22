@@ -147,6 +147,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
+                if zone["type"] == "UserDefinedFarfield":
+                    return "user-defined"
         return None
 
     @classmethod
