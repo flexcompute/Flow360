@@ -190,11 +190,10 @@ def test_symmetric_existence():
 
     # Valid Symmetric but did not use it
     errors = _run_validation(params)
-    # --- Disabled for FXC-2006
-    # assert len(errors) == 1
-    # assert (
-    #     "The following boundaries do not have a boundary condition: symmetric." in errors[0]["msg"]
-    # )
+    assert len(errors) == 1
+    assert (
+        "The following boundaries do not have a boundary condition: symmetric." in errors[0]["msg"]
+    )
 
     params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_planes]))
     errors = _run_validation(params)

@@ -7,6 +7,7 @@ from typing import get_args
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.primitives import (
+    Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -67,27 +68,26 @@ def check_deleted_surface_in_entity_list(value):
     Check if any boundary is meant to be deleted
     value--> EntityList
     """
-    # --- Disabled for FXC-2006
-    # validation_info = get_validation_info()
-    # if (
-    #     validation_info is None
-    #     or validation_info.auto_farfield_method is None
-    #     or validation_info.is_beta_mesher is True
-    # ):
-    #     # validation not necessary now.
-    #     return value
+    validation_info = get_validation_info()
+    if validation_info is None:
+        # validation not necessary now.
+        return value
 
-    # # - Check if the surfaces are deleted.
-    # for surface in value.stored_entities:
-    #     if isinstance(
-    #         surface, Surface
-    #     ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-    #         validation_info.auto_farfield_method
-    #     ):
-    #         raise ValueError(
-    #             f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
-    #             "Therefore it cannot be used."
-    #         )
+    # - Check if the surfaces are deleted.
+    for surface in value.stored_entities:
+        if isinstance(
+            surface, Surface
+        ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+            farfield_method=validation_info.auto_farfield_method,
+            global_bounding_box=validation_info.global_bounding_box,
+            planar_face_tolerance=validation_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+        ):
+            raise ValueError(
+                f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
+                "Therefore it cannot be used."
+            )
 
     return value
 
@@ -98,21 +98,24 @@ def check_deleted_surface_pair(value):
     value--> SurfacePair
     """
 
-    # --- Disabled for FXC-2006
-    # validation_info = get_validation_info()
-    # if validation_info is None or validation_info.auto_farfield_method is None:
-    #     # validation not necessary now.
-    #     return value
+    validation_info = get_validation_info()
+    if validation_info is None:
+        # validation not necessary now.
+        return value
 
-    # # - Check if the surfaces are deleted.
-    # for surface in value.pair:
-    #     if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
-    #         validation_info.auto_farfield_method
-    #     ):
-    #         raise ValueError(
-    #             f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
-    #             "Therefore it cannot be used."
-    #         )
+    # - Check if the surfaces are deleted.
+    for surface in value.pair:
+        if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+            farfield_method=validation_info.auto_farfield_method,
+            global_bounding_box=validation_info.global_bounding_box,
+            planar_face_tolerance=validation_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+        ):
+            raise ValueError(
+                f"Boundary `{surface.name}` will likely be deleted after mesh generation. "
+                "Therefore it cannot be used."
+            )
 
     return value
 
