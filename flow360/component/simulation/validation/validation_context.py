@@ -132,6 +132,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "project_length_unit",
         "global_bounding_box",
         "planar_face_tolerance",
+        "half_model_symmetry_plane_center_y",
+        "quasi_3d_symmetry_planes_center_y",
     ]
 
     @classmethod
@@ -223,6 +225,42 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         return planar_face_tolerance
 
+    @classmethod
+    def _get_half_model_symmetry_plane_center_y(cls, param_as_dict: dict):
+        ghost_entities = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "ghost_entities"],
+        )
+        if not ghost_entities:
+            return None
+        for ghost_entity in ghost_entities:
+            if not ghost_entity["private_attribute_entity_type_name"] == "GhostCircularPlane":
+                continue
+            if ghost_entity["name"] == "symmetric":
+                return ghost_entity["center"][1]
+        return None
+
+    @classmethod
+    def _get_quasi_3d_symmetry_planes_center_y(cls, param_as_dict: dict):
+        ghost_entities = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "ghost_entities"],
+        )
+        if not ghost_entities:
+            return None
+        symmetric_1_center_y = None
+        symmetric_2_center_y = None
+        for ghost_entity in ghost_entities:
+            if not ghost_entity["private_attribute_entity_type_name"] == "GhostCircularPlane":
+                continue
+            if ghost_entity["name"] == "symmetric-1":
+                symmetric_1_center_y = ghost_entity["center"][1]
+            if ghost_entity["name"] == "symmetric-2":
+                symmetric_2_center_y = ghost_entity["center"][1]
+        if symmetric_1_center_y is None or symmetric_2_center_y is None:
+            return None
+        return (symmetric_1_center_y, symmetric_2_center_y)
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -238,6 +276,12 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
+        self.half_model_symmetry_plane_center_y = self._get_half_model_symmetry_plane_center_y(
+            param_as_dict=param_as_dict
+        )
+        self.quasi_3d_symmetry_planes_center_y = self._get_quasi_3d_symmetry_planes_center_y(
+            param_as_dict=param_as_dict
+        )
 
 
 class ValidationContext:

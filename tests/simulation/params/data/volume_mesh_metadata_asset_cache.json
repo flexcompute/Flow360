@@ -33,8 +33,7 @@
             "private_attribute_full_name": "fluid/symmetric-2",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -44,8 +43,7 @@
             "private_attribute_full_name": "fluid/body0001_face0002",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -55,8 +53,7 @@
             "private_attribute_full_name": "fluid/body0001_face0004",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -66,8 +63,7 @@
             "private_attribute_full_name": "fluid/body0001_face0003",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -77,8 +73,7 @@
             "private_attribute_full_name": "fluid/body0001_face0005",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -88,8 +83,7 @@
             "private_attribute_full_name": "fluid/farfield",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -99,8 +93,7 @@
             "private_attribute_full_name": "fluid/body0001_face0001",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         },
         {
             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -110,8 +103,7 @@
             "private_attribute_full_name": "fluid/symmetric-1",
             "private_attribute_is_interface": false,
             "private_attribute_tag_key": null,
-            "private_attribute_sub_components": [],
-            "private_attribute_potential_issues": []
+            "private_attribute_sub_components": []
         }
     ]
 }

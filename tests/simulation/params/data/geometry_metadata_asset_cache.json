@@ -85,6 +85,18 @@
             "groupName",
             "faceId"
         ],
+        "global_bounding_box": [
+            [
+                -1,
+                0,
+                -1
+            ],
+            [
+                1,
+                1,
+                1
+            ]
+        ],
         "grouped_faces": [
             [
                 {
@@ -100,8 +112,7 @@
                         "body0001_face0002",
                         "body0001_face0003",
                         "body0001_face0004"
-                    ],
-                    "private_attribute_potential_issues": []
+                    ]
                 }
             ],
             [
@@ -115,8 +126,7 @@
                     "private_attribute_tag_key": "faceId",
                     "private_attribute_sub_components": [
                         "body0001_face0001"
-                    ],
-                    "private_attribute_potential_issues": []
+                    ]
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -128,8 +138,7 @@
                     "private_attribute_tag_key": "faceId",
                     "private_attribute_sub_components": [
                         "body0001_face0002"
-                    ],
-                    "private_attribute_potential_issues": []
+                    ]
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -142,10 +151,21 @@
                     "private_attribute_sub_components": [
                         "body0001_face0003"
                     ],
-                    "private_attribute_potential_issues": [
-                        "OverlapQuasi3DSymmetric",
-                        "OverlapHalfModelSymmetric"
-                    ]
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                -1,
+                                0,
+                                -0.020448515118269187
+                            ],
+                            [
+                                1,
+                                1e-10,
+                                0.020448515118269187
+                            ]
+                        ]
+                    }
                 },
                 {
                     "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -158,9 +178,21 @@
                     "private_attribute_sub_components": [
                         "body0001_face0004"
                     ],
-                    "private_attribute_potential_issues": [
-                        "OverlapQuasi3DSymmetric"
-                    ]
+                    "private_attributes": {
+                        "type_name": "SurfacePrivateAttributes",
+                        "bounding_box": [
+                            [
+                                -1,
+                                0.9999999999999,
+                                -0.020448515118269187
+                            ],
+                            [
+                                1,
+                                1.00000001,
+                                0.020448515118269187
+                            ]
+                        ]
+                    }
                 }
             ]
         ],
