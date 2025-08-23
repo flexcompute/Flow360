@@ -1146,11 +1146,12 @@ def test_auto_ref_area_settings():
     ) as fp:
         params_as_dict = json.load(fp=fp)
 
-    params, _, _ = validate_model(
+    params, err, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.LOCAL,
         root_item_type="Geometry",
     )
+    assert not err, print(">>>", err)
     translated = get_solver_json(params, mesh_unit=1 * u.m)
 
     assert compare_values(

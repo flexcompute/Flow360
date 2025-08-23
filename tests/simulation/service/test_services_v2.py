@@ -360,7 +360,7 @@ def test_validate_error_from_initialize_variable_space():
     with open("../translator/data/simulation_isosurface.json", "r") as fp:
         param_dict = json.load(fp)
 
-    a = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
     _, errors, _ = services.validate_model(
         params_as_dict=param_dict,
         validated_by=services.ValidationCalledBy.LOCAL,

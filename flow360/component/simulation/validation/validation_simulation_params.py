@@ -312,11 +312,6 @@ def _check_complete_boundary_condition_and_unknown_surface(
     params,
 ):  # pylint:disable=too-many-branches
     ## Step 1: Get all boundaries patches from asset cache
-
-    return params
-
-    # --- Disabled for FXC-2006
-    # pylint: disable=unreachable
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
@@ -333,7 +328,14 @@ def _check_complete_boundary_condition_and_unknown_surface(
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
-            if item._will_be_deleted_by_mesher(automated_farfield_method) is False
+            if item._will_be_deleted_by_mesher(
+                farfield_method=automated_farfield_method,
+                global_bounding_box=validation_info.global_bounding_box,
+                planar_face_tolerance=validation_info.planar_face_tolerance,
+                half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+                quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            )
+            is False
         ]
         if automated_farfield_method == "auto":
             asset_boundary_entities += [
