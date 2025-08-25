@@ -78,6 +78,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
+    TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -765,12 +766,20 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     return generated_udfs, list(user_variable_udfs.values())
 
 
-def translate_streamline_output(output_params: list):
+def translate_streamline_output(output_params: list, streamline_class):
     """Translate streamline output settings."""
     streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": [],
-                         "animationFrequency" : -1, "animationFrequencyOffset" : 0}
+                         "outputFields" : [],
+                         "animationFrequency" : -1, "animationFrequencyOffset" : 0,
+                         "computeTimeAverages" : False, "startAverageIntegrationStep" : -1,
+                         "animationFrequencyTimeAverage" : -1, "animationFrequencyTimeAverageOffset" : 0}
     for output in output_params:
-        if isinstance(output, StreamlineOutput):
+        if isinstance(output, streamline_class):
+            streamline_output["outputFields"].extend(output.output_fields.items);
+            if isinstance(output, TimeAverageStreamlineOutput):
+                streamline_output["computeTimeAverages"] = True
+                streamline_output["startAverageIntegrationStep"] = output.start_step
+
             for entity in output.entities.stored_entities:
                 if isinstance(entity, Point):
                     point = {"name": entity.name, "location": entity.location.value.tolist()}
@@ -946,7 +955,10 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step8: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):
-        translated["streamlineOutput"] = translate_streamline_output(outputs)
+        translated["streamlineOutput"] = translate_streamline_output(outputs, StreamlineOutput)
+
+    if has_instance_in_list(outputs, TimeAverageStreamlineOutput):
+        translated["timeAverageStreamlineOutput"] = translate_streamline_output(outputs, TimeAverageStreamlineOutput)
 
     ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
     if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):

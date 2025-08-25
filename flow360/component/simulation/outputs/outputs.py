@@ -1099,7 +1099,74 @@ class StreamlineOutput(Flow360BaseModel):
         + ":class:`~flow360.PointArray2D` "
         + "is used to define streamline originating from a parallelogram.",
     )
+    output_fields: Optional[UniqueItemList[Union[VolumeFieldNames, str]]] = pd.Field([],
+        description="List of output variables. Vector-valued fields will be colored by their magnitude."
+        " Including :ref:`universal output variables<UniversalVariablesV2>`,"
+        " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
+        " and :class:`UserDefinedField`."
+    )
     output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+
+class TimeAverageStreamlineOutput(StreamlineOutput):
+    """
+    :class:`StreamlineOutput` class for calculating time-averaged streamlines.
+    Stramtraces are computed upwind and downwind, and may originate from a single point,
+    from a line, or from points evenly distributed across a parallelogram.
+
+    Example
+    -------
+
+    Define a :class:`TimeAverageStreamlineOutput` with streaptraces originating from points,
+    lines (:class:`~flow360.PointArray`), and parallelograms (:class:`~flow360.PointArray2D`).
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+      including both starting and end points.
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+      orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
+      with 20 points along the v direction.
+
+    >>> fl.TimeAverageStreamlineOutput(
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_streamline",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...         fl.PointArray2D(
+    ...             name="Parallelogram_streamline",
+    ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
+    ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
+    ...             u_number_of_points=11,
+    ...             v_number_of_points=20
+    ...         )
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Time-average Streamline output", description="Name of the `TimeAverageStreamlineOutput`."
+    )
+
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging."
+    )
+
+    output_type: Literal["TimeAverageStreamlineOutput"] = pd.Field(
+        "TimeAverageStreamlineOutput", frozen=True
+    )
 
 
 class ImportedSurfaceOutput(_AnimationAndFileFormatSettings):
@@ -1231,6 +1298,7 @@ OutputTypes = Annotated[
         ImportedSurfaceOutput,
         TimeAverageImportedSurfaceOutput,
         ImportedSurfaceIntegralOutput,
+        TimeAverageStreamlineOutput
     ],
     pd.Field(discriminator="output_type"),
 ]
@@ -1243,4 +1311,5 @@ TimeAverageOutputTypes = (
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageImportedSurfaceOutput,
+    TimeAverageStreamlineOutput
 )
