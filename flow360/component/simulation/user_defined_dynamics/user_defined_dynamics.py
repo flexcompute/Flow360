@@ -125,6 +125,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         # TODO: And therefore no need for duplicate-code override.
         # pylint: disable=protected-access
         if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
+            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
             farfield_method=validation_info.auto_farfield_method,
             global_bounding_box=validation_info.global_bounding_box,
             planar_face_tolerance=validation_info.planar_face_tolerance,

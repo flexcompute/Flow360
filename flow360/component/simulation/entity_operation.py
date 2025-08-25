@@ -1,16 +1,33 @@
-import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.primitives import rotation_matrix_from_axis_and_angle
-from flow360.component.simulation.unit_system import AngleType, LengthType
-from flow360.component.types import Axis
+"""Operations that can be performed on entities."""
 
+from typing import Literal, Optional, Tuple
 
 import numpy as np
 import pydantic as pd
 from pydantic import PositiveFloat
 
+import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.types import Axis
 
-from typing import Literal, Tuple
+
+def rotation_matrix_from_axis_and_angle(axis, angle):
+    """get rotation matrix from axis and angle of rotation"""
+    # Compute the components of the rotation matrix using Rodrigues' formula
+    cos_theta = np.cos(angle)
+    sin_theta = np.sin(angle)
+    one_minus_cos = 1 - cos_theta
+
+    n_x, n_y, n_z = axis
+
+    # Compute the skew-symmetric cross-product matrix of axis
+    cross_n = np.array([[0, -n_z, n_y], [n_z, 0, -n_x], [-n_y, n_x, 0]])
+
+    # Compute the rotation matrix
+    rotation_matrix = np.eye(3) + sin_theta * cross_n + one_minus_cos * np.dot(cross_n, cross_n)
+
+    return rotation_matrix
 
 
 class Transformation(Flow360BaseModel):

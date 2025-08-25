@@ -3,11 +3,11 @@ import os
 
 import pytest
 
-from flow360.component.simulation.entity_operation import Transformation
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param.edge_params import (

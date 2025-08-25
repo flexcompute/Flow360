@@ -12,8 +12,11 @@ from pydantic import PositiveFloat
 from scipy.linalg import eig
 from typing_extensions import Self
 
-from flow360.component.simulation.entity_operation import Transformation
 import flow360.component.simulation.units as u
+from flow360.component.simulation.entity_operation import (
+    Transformation,
+    rotation_matrix_from_axis_and_angle,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
 from flow360.component.simulation.framework.multi_constructor_model_base import (
@@ -235,24 +238,6 @@ class GenericVolume(_VolumeEntityBase):
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
-
-
-def rotation_matrix_from_axis_and_angle(axis, angle):
-    """get rotation matrix from axis and angle of rotation"""
-    # Compute the components of the rotation matrix using Rodrigues' formula
-    cos_theta = np.cos(angle)
-    sin_theta = np.sin(angle)
-    one_minus_cos = 1 - cos_theta
-
-    n_x, n_y, n_z = axis
-
-    # Compute the skew-symmetric cross-product matrix of axis
-    cross_n = np.array([[0, -n_z, n_y], [n_z, 0, -n_x], [-n_y, n_x, 0]])
-
-    # Compute the rotation matrix
-    rotation_matrix = np.eye(3) + sin_theta * cross_n + one_minus_cos * np.dot(cross_n, cross_n)
-
-    return rotation_matrix
 
 
 class BoxCache(Flow360BaseModel):
@@ -479,8 +464,9 @@ class Surface(_SurfaceEntityBase):
         return True
 
     def _will_be_deleted_by_mesher(
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments, too-many-return-statements
         self,
+        at_least_one_body_transformed: bool,
         farfield_method: Optional[Literal["auto", "quasi-3d"]],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
@@ -491,6 +477,11 @@ class Surface(_SurfaceEntityBase):
         Check against the automated farfield method and
         determine if the current `Surface` will be deleted by the mesher.
         """
+        if at_least_one_body_transformed:
+            # If transformed then the following check will no longer be accurate
+            # since we do not know the final bounding box for each surface and global model.
+            return False
+
         if global_bounding_box is None or planar_face_tolerance is None or farfield_method is None:
             # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
             return False
