@@ -94,7 +94,7 @@ def test_full_flow360_bet_convert():
         mesh_unit=1 * u.cm,
         freestream_temperature=288.15 * u.K,
         bet_disk_name_prefix="BETDisk_",
-        index_offest=1,
+        index_offset=1,
     )
 
     assert isinstance(list_of_disks, list)

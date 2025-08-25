@@ -221,7 +221,7 @@ def read_all_v1_BETDisks(
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
     freestream_temperature: AbsoluteTemperatureType,
     bet_disk_name_prefix: str = "Disk",
-    index_offest: int = 0,
+    index_offset: int = 0,
 ) -> list[BETDisk]:
     """
     Read in Legacy V1 Flow360.json and convert its BETDisks settings to a list of :class: `BETDisk` instances
@@ -251,10 +251,42 @@ def read_all_v1_BETDisks(
     ... )
     """
 
-    bet_list = []
-
     data_dict = _load_flow360_json(file_path=file_path)
+    return translate_flow360_v1_bet_disk_dict(
+        data_dict=data_dict,
+        mesh_unit=mesh_unit,
+        freestream_temperature=freestream_temperature,
+        bet_disk_name_prefix=bet_disk_name_prefix,
+        index_offset=index_offset,
+    )
 
+
+def translate_flow360_v1_bet_disk_dict(
+    data_dict: dict,
+    mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
+    freestream_temperature: AbsoluteTemperatureType,
+    bet_disk_name_prefix: str = "Disk",
+    index_offset: int = 0,
+):
+    """
+    Read in the dictionary from Legacy V1 Flow360.json and
+    convert its BETDisks settings to a list of :class: `BETDisk` instances
+
+    Parameters
+    ----------
+    data_dict: dict
+        v1 dictionary loaded from Flow360.json file.
+    mesh_unit: LengthType.NonNegative
+        Length unit used for LengthType BETDisk parameters.
+    freestream_temperature: AbsoluteTemperatureType
+        Freestream temperature.
+    bet_disk_name_prefix: str = "Disk",
+        The prefix for the name of each BETDisk object.
+    index_offset: int = 0
+        The index offset for the name of each BETDisk object.
+
+    """
+    bet_list = []
     if "BETDisks" not in data_dict.keys():
         raise ValueError("Cannot find 'BETDisk' key in the supplied JSON file.")
 
@@ -269,7 +301,7 @@ def read_all_v1_BETDisks(
             freestream_temperature=freestream_temperature,
             bet_disk_index=bet_disk_index,
             bet_disk_name=bet_disk_name_prefix,
-            index_offset=index_offest,
+            index_offset=index_offset,
         )
         bet_list.append(BETDisk(**bet_disk_dict, entities=Cylinder(**cylinder_dict)))
         bet_disk_index += 1

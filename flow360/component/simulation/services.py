@@ -17,6 +17,9 @@ from flow360.component.simulation.framework.multi_constructor_model_base import 
 )
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.migration.BETDisk import (
+    translate_flow360_v1_bet_disk_dict,
+)
 from flow360.component.simulation.models.bet.bet_translator_interface import (
     generate_polar_file_name_list,
     translate_xfoil_c81_to_bet_dict,
@@ -52,6 +55,7 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
     AngleType,
     CGS_unit_system,
     LengthType,
@@ -948,7 +952,9 @@ def _serialize_unit_in_dict(data):
     return data
 
 
-def _validate_unit_string(unit_str: str, unit_type: Union[AngleType, LengthType]) -> bool:
+def _validate_unit_string(
+    unit_str: str, unit_type: Union[AngleType, LengthType, AbsoluteTemperatureType]
+) -> bool:
     """
     Validate the unit string from request against the specified unit type.
     """
@@ -1031,6 +1037,32 @@ def translate_xfoil_c81_bet_disk(
             file_format=file_format,
         )
         bet_dict_list.append(_serialize_unit_in_dict(bet_disk_dict))
+    except (pd.ValidationError, Flow360ValueError, ValueError) as e:
+        # Expected exceptions
+        errors.append(str(e))
+    return bet_dict_list, errors
+
+
+def translate_flow360_v1_bet_disk(
+    *, flow360params: dict, length_unit: str, freestream_temperature: str
+):
+    """
+    Run the BET Disk translator for v1 Flow360 input file.
+    Returns the dict of BETDisk.
+    """
+    errors = []
+    bet_dict_list = []
+    try:
+        mesh_unit = _validate_unit_string(length_unit, LengthType)
+        freestream_temperature = _validate_unit_string(
+            freestream_temperature, AbsoluteTemperatureType
+        )
+        bet_list = translate_flow360_v1_bet_disk_dict(
+            data_dict=flow360params,
+            mesh_unit=mesh_unit,
+            freestream_temperature=freestream_temperature,
+        )
+        bet_dict_list = [bet.model_dump(exclude_none=True, mode="json") for bet in bet_list]
     except (pd.ValidationError, Flow360ValueError, ValueError) as e:
         # Expected exceptions
         errors.append(str(e))
