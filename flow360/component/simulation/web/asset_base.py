@@ -25,7 +25,6 @@ from flow360.component.simulation.entity_info import (
     parse_entity_info_model,
 )
 from flow360.component.simulation.folder import Folder
-from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
@@ -133,6 +132,7 @@ class AssetBase(metaclass=ABCMeta):
         simulation_dict: dict,
         asset_obj: AssetBase,
     ):
+        # pylint: disable=protected-access
         simulation_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
             simulation_dict
         )
@@ -163,8 +163,7 @@ class AssetBase(metaclass=ABCMeta):
                     + __version__
                     + ") and validation error occurred. Please try updating your local Python client."
                 ) from None
-            else:
-                raise Flow360RuntimeError("Parsing cloud resource's entity info failed.") from None
+            raise Flow360RuntimeError("Parsing cloud resource's entity info failed.") from None
         return asset_obj
 
     @classmethod
