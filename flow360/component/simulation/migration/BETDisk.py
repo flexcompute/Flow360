@@ -252,7 +252,7 @@ def read_all_v1_BETDisks(
     """
 
     data_dict = _load_flow360_json(file_path=file_path)
-    return translate_flow360_v1_bet_disk_dict(
+    return _parse_all_flow360_bet_disk_dicts(
         data_dict=data_dict,
         mesh_unit=mesh_unit,
         freestream_temperature=freestream_temperature,
@@ -261,7 +261,7 @@ def read_all_v1_BETDisks(
     )
 
 
-def translate_flow360_v1_bet_disk_dict(
+def _parse_all_flow360_bet_disk_dicts(
     data_dict: dict,
     mesh_unit: LengthType.NonNegative,  # pylint: disable = no-member
     freestream_temperature: AbsoluteTemperatureType,
