@@ -291,7 +291,6 @@ def set_up_params_for_uploading(
     entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
-    print(">> params = ", params)
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)
