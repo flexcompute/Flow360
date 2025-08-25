@@ -9,6 +9,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
+from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -134,12 +135,7 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import (
-    Box,
-    Cylinder,
-    ReferenceGeometry,
-    Transformation,
-)
+from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,

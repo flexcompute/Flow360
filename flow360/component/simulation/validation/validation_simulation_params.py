@@ -325,11 +325,19 @@ def _check_complete_boundary_condition_and_unknown_surface(
     automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
 
     if automated_farfield_method:
+        if validation_info.at_least_one_body_transformed:
+            # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+            # since we do not know the final bounding box for each surface and global model.
+            return params
+
+        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+        # since we do not know the final bounding box for each surface and global model.
         # pylint:disable=protected-access
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(
+                at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
                 farfield_method=automated_farfield_method,
                 global_bounding_box=validation_info.global_bounding_box,
                 planar_face_tolerance=validation_info.planar_face_tolerance,
@@ -355,7 +363,6 @@ def _check_complete_boundary_condition_and_unknown_surface(
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
 
     asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
-
     ## Step 2: Collect all used boundaries from the models
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
         raise ValueError("No boundary conditions are defined in the `models` section.")

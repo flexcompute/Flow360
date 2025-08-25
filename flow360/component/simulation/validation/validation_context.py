@@ -134,6 +134,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "planar_face_tolerance",
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
+        "at_least_one_body_transformed",
     ]
 
     @classmethod
@@ -261,6 +262,40 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             return None
         return (symmetric_1_center_y, symmetric_2_center_y)
 
+    @classmethod
+    def _get_at_least_one_body_transformed(cls, param_as_dict: dict):  # pylint:disable=invalid-name
+        body_group_tag: str = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "body_group_tag"],
+        )
+        body_attribute_names: list[str] = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "body_attribute_names"],
+        )
+        grouped_bodies: list[dict] = get_value_with_path(
+            param_as_dict,
+            ["private_attribute_asset_cache", "project_entity_info", "grouped_bodies"],
+        )
+
+        if body_group_tag is None or not body_attribute_names or not grouped_bodies:
+            return False
+
+        grouped_body_index = body_attribute_names.index(body_group_tag)
+
+        for body_group in grouped_bodies[grouped_body_index]:
+            if "transformation" not in body_group:
+                continue
+            if body_group["transformation"]["angle_of_rotation"]["value"] != 0:
+                return True
+
+            if body_group["transformation"]["scale"] != [1, 1, 1]:
+                return True
+
+            if body_group["transformation"]["translation"]["value"] != [0, 0, 0]:
+                return True
+
+        return False
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.auto_farfield_method = self._get_auto_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -280,6 +315,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict=param_as_dict
         )
         self.quasi_3d_symmetry_planes_center_y = self._get_quasi_3d_symmetry_planes_center_y(
+            param_as_dict=param_as_dict
+        )
+        self.at_least_one_body_transformed = self._get_at_least_one_body_transformed(
             param_as_dict=param_as_dict
         )
 
