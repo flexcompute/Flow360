@@ -125,6 +125,7 @@ def cases_transient(here):
 
     return cases
 
+
 @pytest.fixture
 def monitors_case(here):
 
@@ -144,7 +145,6 @@ def monitors_case(here):
     )
     case = Case.from_local_storage(os.path.join(here, "..", "data", case_id), case_meta)
 
-
     vm = VolumeMeshV2.from_local_storage(
         mesh_id=vm_id,
         local_storage_path=os.path.join(here, "..", "data", vm_id),
@@ -159,7 +159,6 @@ def monitors_case(here):
     cache.add(vm)
 
     return case
-
 
 
 @pytest.fixture

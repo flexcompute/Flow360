@@ -710,6 +710,7 @@ def _local_download_overwrite(local_storage_path, class_name):
 
     return _local_download_file
 
+
 def _local_download_file_list_overwrite(local_storage_path):
     def _local_download_file_list():
         def _files_from_dir(directory_path):
@@ -721,9 +722,10 @@ def _local_download_file_list_overwrite(local_storage_path):
                 else:
                     file_list.extend(_files_from_dir(item_path))
             return file_list
-        return [{"fileName": file} for file in _files_from_dir(local_storage_path)]
-    return _local_download_file_list
 
+        return [{"fileName": file} for file in _files_from_dir(local_storage_path)]
+
+    return _local_download_file_list
 
 
 class LocalResourceCache:

@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 from enum import Enum
-from typing import Callable, Dict, List, Optional
 from pathlib import Path
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pydantic as pd

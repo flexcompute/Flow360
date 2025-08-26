@@ -46,10 +46,10 @@ from tests.report.report_testing_fixtures import (
     get_last_time_step_values,
     here,
     here_class,
+    monitors_case,
     residual_plot_model_SA,
     residual_plot_model_SST,
     two_var_two_cases_plot_model,
-    monitors_case
 )
 
 
@@ -1350,6 +1350,7 @@ def test_transient_heat_transfer(here, cases_transient):
 
     assert np.allclose(plot_model_time.y_data_as_np, np.array(results_by_physical_step), atol=1e-6)
 
+
 @pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
 def test_monitors(here, monitors_case):
     case_id = "case-666666666-66666666-666-6666666666666"
@@ -1375,6 +1376,7 @@ def test_monitors(here, monitors_case):
     assert plot_model_monitor.x_data == [data_monitor["pseudo_step"].to_list()]
     assert plot_model_monitor.y_data == [data_monitor[output].to_list()]
 
+
 def test_udds(here, monitors_case):
     case_id = "case-666666666-66666666-666-6666666666666"
 
@@ -1383,7 +1385,9 @@ def test_udds(here, monitors_case):
 
     # expected data
     data_udd = pd.read_csv(
-        os.path.join(here, "..", "data", case_id, "results", "udd_massInflowController_Exhaust_v2.csv"),
+        os.path.join(
+            here, "..", "data", case_id, "results", "udd_massInflowController_Exhaust_v2.csv"
+        ),
         skipinitialspace=True,
     )
 
@@ -1394,12 +1398,15 @@ def test_udds(here, monitors_case):
         fig_name="mass_flow_rate",
     )
 
-    print(monitors_case.results.user_defined_dynamics.get_udd_by_name("massInflowController_Exhaust"))
+    print(
+        monitors_case.results.user_defined_dynamics.get_udd_by_name("massInflowController_Exhaust")
+    )
 
     plot_model_monitor = chart_udd.get_data([monitors_case], context)
 
     assert plot_model_monitor.x_data == [data_udd["pseudo_step"].to_list()]
     assert plot_model_monitor.y_data == [data_udd[output].to_list()]
+
 
 def test_transient_residuals_pseudo(here, cases_transient):
     residuals_sa = ["0_cont", "1_momx", "2_momy", "3_momz", "4_energ", "5_nuHat"]
