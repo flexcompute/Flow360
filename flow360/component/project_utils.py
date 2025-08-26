@@ -267,8 +267,10 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
     # pylint: disable=protected-access
     entity_types = [
         (Surface, "face_group_tag", entity_info._get_default_grouping_tag("face")),
-        (Edge, "edge_group_tag", entity_info._get_default_grouping_tag("edge")),
     ]
+
+    if entity_info.edge_ids:
+        entity_types.append((Edge, "edge_group_tag", entity_info._get_default_grouping_tag("edge")))
 
     if entity_info.body_ids:
         entity_types.append(
