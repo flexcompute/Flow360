@@ -78,6 +78,7 @@ def check_deleted_surface_in_entity_list(value):
         if isinstance(
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
             farfield_method=validation_info.auto_farfield_method,
             global_bounding_box=validation_info.global_bounding_box,
             planar_face_tolerance=validation_info.planar_face_tolerance,
@@ -106,6 +107,7 @@ def check_deleted_surface_pair(value):
     # - Check if the surfaces are deleted.
     for surface in value.pair:
         if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
+            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
             farfield_method=validation_info.auto_farfield_method,
             global_bounding_box=validation_info.global_bounding_box,
             planar_face_tolerance=validation_info.planar_face_tolerance,
