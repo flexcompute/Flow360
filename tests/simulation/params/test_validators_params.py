@@ -7,6 +7,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
@@ -1843,6 +1844,7 @@ def test_beta_mesher_only_features():
 
 
 def test_geometry_AI_only_features():
+    # * Test GAI guardrails
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1902,6 +1904,60 @@ def test_geometry_AI_only_features():
     assert (
         errors[0]["msg"] == "Value error, Geometry accuracy is required when geometry AI is used."
     )
+
+    # * Test geometry_accuracy and planar_face_tolerance compatibility
+    with SI_unit_system:
+        params_original = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=1e-5 * u.m,
+                    planar_face_tolerance=1e-10,
+                    boundary_layer_first_layer_thickness=10,
+                    surface_max_edge_length=1e-2,
+                ),
+            ),
+            private_attribute_asset_cache=AssetCache(
+                project_length_unit=1 * u.cm,
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
+                project_entity_info=GeometryEntityInfo(
+                    global_bounding_box=[[-100, -100, -100], [100, 1e-12, 100]],
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params_original.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    # Largest dim = 200 cm
+    # with planar face tolerance = 1e-10
+    #   largest geometry accuracy = 1e-10 * 200 cm = 2e-8 cm
+    # with geometry accuracy = 1e-5m
+    #   minimum planar face tolerance = 1e-5m / 200 cm = 5e-06
+    assert errors[0]["msg"] == (
+        "Value error, geometry_accuracy too large for the planar_face_tolerance to take effect. Reduce it to at most 2e-08 cm or increase the planar_face_tolerance to at least 5e-06."
+    )
+    params_original.meshing.defaults.geometry_accuracy = 2e-08 * u.cm
+    params, _, _ = validate_model(
+        params_as_dict=params_original.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert params
+
+    params_original.meshing.defaults.geometry_accuracy = 1e-5 * u.m
+    params_original.meshing.defaults.planar_face_tolerance = 5e-06
+    params, _, _ = validate_model(
+        params_as_dict=params_original.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert params
 
 
 def test_redefined_user_defined_fields():
