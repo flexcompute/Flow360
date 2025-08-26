@@ -6,6 +6,7 @@ import re
 from collections import defaultdict
 from enum import Enum
 from typing import Callable, Dict, List, Optional
+from pathlib import Path
 
 import numpy as np
 import pydantic as pd
@@ -393,9 +394,9 @@ class MonitorsResultModel(ResultTarGZModel):
                 file["fileName"]
                 for file in self.get_download_file_list_method()  # pylint:disable=not-callable
             ]
-            for filename in file_list:
-                if filename.startswith("results/"):
-                    filename = filename.split("results/")[1]
+            for filepath in file_list:
+                if str(Path(filepath).parent) == "results":
+                    filename = Path(filepath).name
                     match = re.match(pattern, filename)
                     if match:
                         name = match.group(1)
@@ -475,9 +476,9 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                 file["fileName"]
                 for file in self.get_download_file_list_method()  # pylint:disable=not-callable
             ]
-            for filename in file_list:
-                if filename.startswith("results/"):
-                    filename = filename.split("results/")[1]
+            for filepath in file_list:
+                if str(Path(filepath).parent) == "results":
+                    filename = Path(filepath).name
                     match = re.match(pattern, filename)
                     if match:
                         name = match.group(1)

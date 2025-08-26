@@ -67,6 +67,7 @@ from .simulation import services
 from .simulation.simulation_params import SimulationParams
 from .utils import (
     _local_download_overwrite,
+    _local_download_file_list_overwrite,
     is_valid_uuid,
     shared_account_confirm_proceed,
     validate_type,
@@ -747,8 +748,10 @@ class Case(CaseBase, Flow360Resource):
             An instance of `Case` with data loaded from local storage.
         """
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
+        _local_download_file_list = _local_download_file_list_overwrite(local_storage_path)
         case = cls._from_meta(meta_data)
         case._download_file = _local_download_file
+        case.get_download_file_list = _local_download_file_list
         case._results = CaseResultsModel(case=case)
         case.results.set_local_storage(local_storage_path, keep_remote_structure=True)
         return case
@@ -912,6 +915,7 @@ class CaseResultsModel(pd.BaseModel):
         """
         # pylint: disable=no-member,assigning-non-slot
         self.monitors.get_download_file_list_method = self.case.get_download_file_list
+        self.user_defined_dynamics.get_download_file_list_method = self.case.get_download_file_list
         return self
 
     # pylint: disable=protected-access,no-member

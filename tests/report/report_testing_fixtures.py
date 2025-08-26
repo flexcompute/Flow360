@@ -125,6 +125,42 @@ def cases_transient(here):
 
     return cases
 
+@pytest.fixture
+def monitors_case(here):
+
+    case_id = "case-666666666-66666666-666-6666666666666"
+
+    vm_id = "vm-33333333-33333-3333333-333333333333"
+
+    cache = LocalResourceCache()
+
+    case_meta = CaseMeta(
+        caseId=case_id,
+        name=f"{case_id}-name",
+        status="completed",
+        userId="user-id",
+        caseMeshId=vm_id,
+        cloud_path_prefix="s3://flow360cases-v1/users/user-id",
+    )
+    case = Case.from_local_storage(os.path.join(here, "..", "data", case_id), case_meta)
+
+
+    vm = VolumeMeshV2.from_local_storage(
+        mesh_id=vm_id,
+        local_storage_path=os.path.join(here, "..", "data", vm_id),
+        meta_data=VolumeMeshMetaV2(
+            **local_metadata_builder(
+                id=vm_id,
+                name="Cylinder mesh",
+                cloud_path_prefix="s3://flow360meshes-v1/users/user-id",
+            )
+        ),
+    )
+    cache.add(vm)
+
+    return case
+
+
 
 @pytest.fixture
 def residual_plot_model_SA(here):
