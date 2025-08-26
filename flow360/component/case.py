@@ -906,16 +906,9 @@ class CaseResultsModel(pd.BaseModel):
                 value._get_params_method = lambda: self.case.params
                 value.local_storage = self.local_storage
 
-        return self
+                if hasattr(value, "get_download_file_list_method"):
+                    value.get_download_file_list_method = self.case.get_download_file_list
 
-    @pd.model_validator(mode="after")
-    def pass_get_files_function(self):
-        """
-        Pass file getters into fields of the case results
-        """
-        # pylint: disable=no-member,assigning-non-slot
-        self.monitors.get_download_file_list_method = self.case.get_download_file_list
-        self.user_defined_dynamics.get_download_file_list_method = self.case.get_download_file_list
         return self
 
     # pylint: disable=protected-access,no-member
