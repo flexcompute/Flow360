@@ -282,7 +282,7 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         if None in used_tags:
             used_tags.remove(None)
 
-        used_tags = list(used_tags)
+        used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
         if len(used_tags) == 1 and current_tag != used_tags[0]:
             if current_tag == default_grouping_tag:
@@ -294,13 +294,15 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
             else:
                 # User specified new grouping
                 raise Flow360ConfigurationError(
-                    f"Conflicting entity grouping tags found in the SimulationParams ({used_tags}) and "
+                    f"Conflicting entity ({entity_type.__name__}) grouping tags found "
+                    f"in the SimulationParams ({used_tags}) and "
                     f"the root asset ({current_tag})."
                 )
 
         if len(used_tags) > 1:
             raise Flow360ConfigurationError(
-                f"Multiple entity grouping tags found in the SimulationParams ({used_tags})."
+                f"Multiple entity ({entity_type.__name__}) grouping tags found "
+                f"in the SimulationParams ({used_tags})."
             )
 
     return entity_info
@@ -373,7 +375,11 @@ def set_up_params_for_uploading(
 
     # Check if there are any new draft entities that have been added in the params by the user
     entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+
+    # If the customer just load the param without re-specify the same set of entity grouping tags,
+    # we need to update the entity grouping tags to the ones in the SimulationParams.
     entity_info = _update_entity_grouping_tags(entity_info, params)
+
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.

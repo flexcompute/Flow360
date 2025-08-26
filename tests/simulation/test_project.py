@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 import pydantic as pd
 import pytest
@@ -208,17 +209,34 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
 
     geo.group_faces_by_tag("allInOne")
 
-    with pytest.raises(Flow360ConfigurationError, match="Conflicting entity grouping tags found"):
+    with pytest.raises(
+        Flow360ConfigurationError,
+        match=re.escape(
+            "Conflicting entity (Surface) grouping tags found in the SimulationParams "
+            "(['faceId']) and the root asset (allInOne)."
+        ),
+    ):
         new_params = set_up_params_for_uploading(
             geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
         )
 
-    with pytest.raises(Flow360ConfigurationError, match="Conflicting entity grouping tags found"):
+    with pytest.raises(
+        Flow360ConfigurationError,
+        match=re.escape(
+            "Multiple entity (Surface) grouping tags found in the SimulationParams "
+            "(['faceId', 'groupByBodyId'])."
+        ),
+    ):
         geo.group_faces_by_tag("groupByBodyId")
-        params_as_dict[""]
+        params_as_dict["outputs"][0]["entities"]["stored_entities"][0][
+            "private_attribute_tag_key"
+        ] = "groupByBodyId"
         params, _, _ = validate_model(
             params_as_dict=params_as_dict,
             validated_by=ValidationCalledBy.LOCAL,
             root_item_type="Geometry",
             validation_level=None,
+        )
+        new_params = set_up_params_for_uploading(
+            geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
         )
