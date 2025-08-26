@@ -10,15 +10,24 @@ import pydantic as pd
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
+from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    Edge,
+    GeometryBodyGroup,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -222,6 +231,83 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     return entity_info
 
 
+def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> EntityInfoModel:
+    """
+    Update the entity grouping tags in params to resolve possible conflicts
+    between the SimulationParams and the root asset.This
+    """
+
+    def _get_used_tags(model: Flow360BaseModel, target_entity_type, used_tags: set):
+        for field in model.__dict__.values():
+            # Skip the AssetCache since the asset cache is exactly what we want to update later.
+
+            if isinstance(field, AssetCache):
+                continue
+
+            if isinstance(field, target_entity_type):
+                used_tags.add(field.private_attribute_tag_key)
+
+            if isinstance(field, EntityList):
+                for entity in field.stored_entities:
+                    if isinstance(entity, target_entity_type):
+                        used_tags.add(entity.private_attribute_tag_key)
+
+            elif isinstance(field, (list, tuple)):
+                for item in field:
+                    if isinstance(item, target_entity_type):
+                        used_tags.add(item.private_attribute_tag_key)
+                    elif isinstance(item, Flow360BaseModel):
+                        _get_used_tags(item, target_entity_type, used_tags)
+
+            elif isinstance(field, Flow360BaseModel):
+                _get_used_tags(field, target_entity_type, used_tags)
+
+    if entity_info.type_name != "GeometryEntityInfo":
+        return entity_info
+    # pylint: disable=protected-access
+    entity_types = [
+        (Surface, "face_group_tag", entity_info._get_default_grouping_tag("face")),
+        (Edge, "edge_group_tag", entity_info._get_default_grouping_tag("edge")),
+    ]
+
+    if entity_info.body_ids:
+        entity_types.append(
+            (GeometryBodyGroup, "body_group_tag", entity_info._get_default_grouping_tag("body"))
+        )
+
+    for entity_type, entity_grouping_tags, default_grouping_tag in entity_types:
+        used_tags = set()
+        _get_used_tags(params, entity_type, used_tags)
+
+        if None in used_tags:
+            used_tags.remove(None)
+
+        used_tags = sorted(list(used_tags))
+        current_tag = getattr(entity_info, entity_grouping_tags)
+        if len(used_tags) == 1 and current_tag != used_tags[0]:
+            if current_tag == default_grouping_tag:
+                log.warning(
+                    f"Auto reset the grouping to the one in the SimulationParams ({used_tags[0]})."
+                )
+                with model_attribute_unlock(entity_info, entity_grouping_tags):
+                    setattr(entity_info, entity_grouping_tags, used_tags[0])
+            else:
+                # User specified new grouping
+                raise Flow360ConfigurationError(
+                    f"Conflicting entity ({entity_type.__name__}) grouping tags found "
+                    f"in the SimulationParams ({used_tags}) and "
+                    f"the root asset ({current_tag})."
+                )
+
+        if len(used_tags) > 1:
+            raise Flow360ConfigurationError(
+                f"Multiple entity ({entity_type.__name__}) grouping tags found "
+                f"in the SimulationParams ({used_tags})."
+            )
+
+    return entity_info
+
+
 def _set_up_default_geometry_accuracy(
     root_asset,
     params: SimulationParams,
@@ -289,6 +375,11 @@ def set_up_params_for_uploading(
 
     # Check if there are any new draft entities that have been added in the params by the user
     entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+
+    # If the customer just load the param without re-specify the same set of entity grouping tags,
+    # we need to update the entity grouping tags to the ones in the SimulationParams.
+    entity_info = _update_entity_grouping_tags(entity_info, params)
+
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
