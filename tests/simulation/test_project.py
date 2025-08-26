@@ -1,12 +1,17 @@
 import json
+import os
 
 import pydantic as pd
 import pytest
+import unyt as u
 
 import flow360 as fl
 from flow360 import log
+from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
-from flow360.exceptions import Flow360ValueError
+from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
+from flow360.exceptions import Flow360ConfigurationError, Flow360ValueError
 
 log.set_logging_level("DEBUG")
 
@@ -153,3 +158,67 @@ def test_run(mock_response, capsys):
     )
     with pytest.raises(ValueError, match=error_msg):
         project_vm.run_case(params=params, start_from="SurfaceMesh")
+
+
+def test_conflicting_entity_grouping_tags(mock_response, capsys):
+    with open(
+        os.path.join(os.path.dirname(__file__), "data", "simulation_by_face_id.json"), "r"
+    ) as f:
+        params_as_dict = json.load(f)
+
+    params, _, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level=None,
+    )
+
+    assert params.private_attribute_asset_cache.project_entity_info.face_group_tag == "faceId"
+    assert params.private_attribute_asset_cache.project_entity_info.edge_group_tag == "edgeId"
+    assert params.private_attribute_asset_cache.project_entity_info.body_group_tag == "groupByFile"
+
+    geo = Geometry.from_local_storage(
+        geometry_id="geo-ea3bb31e-2f85-4504-943c-7788d91c1ab0",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "geometry_grouped_by_file"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-ea3bb31e-2f85-4504-943c-7788d91c1ab0",
+                name="TEST",
+                cloud_path_prefix="/",
+                status="processed",
+            )
+        ),
+    )
+
+    assert geo.face_group_tag == "groupByBodyId"
+
+    geo.internal_registry = geo._entity_info.get_registry(geo.internal_registry)
+
+    new_params = set_up_params_for_uploading(
+        geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
+    )
+
+    assert new_params.private_attribute_asset_cache.project_entity_info.face_group_tag == "faceId"
+    assert new_params.private_attribute_asset_cache.project_entity_info.edge_group_tag == "edgeId"
+    assert (
+        new_params.private_attribute_asset_cache.project_entity_info.body_group_tag == "groupByFile"
+    )
+
+    geo.group_faces_by_tag("allInOne")
+
+    with pytest.raises(Flow360ConfigurationError, match="Conflicting entity grouping tags found"):
+        new_params = set_up_params_for_uploading(
+            geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
+        )
+
+    with pytest.raises(Flow360ConfigurationError, match="Conflicting entity grouping tags found"):
+        geo.group_faces_by_tag("groupByBodyId")
+        params_as_dict[""]
+        params, _, _ = validate_model(
+            params_as_dict=params_as_dict,
+            validated_by=ValidationCalledBy.LOCAL,
+            root_item_type="Geometry",
+            validation_level=None,
+        )
