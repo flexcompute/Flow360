@@ -1938,7 +1938,8 @@ def test_geometry_AI_only_features():
     # with geometry accuracy = 1e-5m
     #   minimum planar face tolerance = 1e-5m / 200 cm = 5e-06
     assert errors[0]["msg"] == (
-        "Value error, geometry_accuracy too large for the planar_face_tolerance to take effect. Reduce it to at most 2e-08 cm or increase the planar_face_tolerance to at least 5e-06."
+        "Value error, geometry_accuracy is too large for the planar_face_tolerance to take effect. "
+        "Reduce geometry_accuracy to at most 2e-08 cm or increase the planar_face_tolerance to at least 5e-06."
     )
     params_original.meshing.defaults.geometry_accuracy = 2e-08 * u.cm
     params, _, _ = validate_model(

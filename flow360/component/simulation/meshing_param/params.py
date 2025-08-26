@@ -207,8 +207,8 @@ class MeshingDefaults(Flow360BaseModel):
                 / validation_info.global_bounding_box.largest_dimension
             ).value
             raise ValueError(
-                f"geometry_accuracy too large for the planar_face_tolerance to take effect."
-                f" Reduce it to at most {absolute_tolerance_dimensioned} "
+                f"geometry_accuracy is too large for the planar_face_tolerance to take effect."
+                f" Reduce geometry_accuracy to at most {absolute_tolerance_dimensioned} "
                 f"or increase the planar_face_tolerance to at least {minimum_planar_face_tolerance}."
             )
 
