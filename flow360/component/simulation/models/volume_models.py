@@ -55,6 +55,7 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_sectional_radius_and_polars,
 )
 from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.output_fields import _FIELD_IS_SCALAR_MAPPING
 from flow360.component.simulation.outputs.outputs import (
     MonitorOutputType,
     ProbeOutput,
@@ -169,7 +170,9 @@ class Criterion(Flow360BaseModel):
     @pd.field_validator("monitor_field", mode="after")
     @classmethod
     def _check_monitor_field_is_scalar(cls, v):
-        if isinstance(v, UserVariable) and get_input_value_length(v.value) != 0:
+        if (isinstance(v, UserVariable) and get_input_value_length(v.value) != 0) or (
+            isinstance(v, str) and v in _FIELD_IS_SCALAR_MAPPING and not _FIELD_IS_SCALAR_MAPPING[v]
+        ):
             raise ValueError("The stopping criterion can only be defined on a scalar field.")
         return v
 

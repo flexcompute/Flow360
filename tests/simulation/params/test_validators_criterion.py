@@ -53,7 +53,12 @@ def single_point_probe_output(scalar_user_variable_density, vector_user_variable
     """A ProbeOutput with a single point."""
     return ProbeOutput(
         name="test_probe",
-        output_fields=[scalar_user_variable_density, vector_user_variable_velocity, "mut"],
+        output_fields=[
+            scalar_user_variable_density,
+            vector_user_variable_velocity,
+            "mut",
+            "VelocityRelative",
+        ],
         probe_points=[Point(name="pt1", location=(0, 0, 0) * u.m)],
     )
 
@@ -63,7 +68,12 @@ def single_point_surface_probe_output(scalar_user_variable_density, vector_user_
     """A SurfaceProbeOutput with a single point."""
     return SurfaceProbeOutput(
         name="test_surface_probe",
-        output_fields=[scalar_user_variable_density, vector_user_variable_velocity, "mut"],
+        output_fields=[
+            scalar_user_variable_density,
+            vector_user_variable_velocity,
+            "mut",
+            "VelocityRelative",
+        ],
         probe_points=[Point(name="pt1", location=(0, 0, 0) * u.m)],
         target_surfaces=[Surface(name="wall")],
     )
@@ -100,6 +110,13 @@ def test_criterion_vector_field_validation_fails(
             monitor_field=vector_user_variable_velocity,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.m / u.s,
+        )
+
+    with SI_unit_system, pytest.raises(ValueError, match=message):
+        Criterion(
+            monitor_field="VelocityRelative",
+            monitor_output=single_point_probe_output,
+            tolerance=0.01,
         )
 
 
@@ -312,12 +329,9 @@ def test_criterion_with_monitor_output_id():
     with open("data/simulation_stopping_criterion_webui.json", "r") as fh:
         data = json.load(fh)
 
-    params, errors, _ = validate_model(
+    _, errors, _ = validate_model(
         params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="Geometry"
     )
-
-    print(errors)
-
     expected_errors = [
         {
             "type": "value_error",
