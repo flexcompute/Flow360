@@ -720,60 +720,62 @@ def test_incomplete_BC_volume_mesh():
         ),
     )
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
-        ),
-    ):
-        with ValidationContext(ALL):
-            with SI_unit_system:
-                SimulationParams(
-                    meshing=MeshingParams(
-                        defaults=MeshingDefaults(
-                            boundary_layer_first_layer_thickness=1e-10,
-                            surface_max_edge_length=1e-10,
-                        )
-                    ),
-                    models=[
-                        Fluid(),
-                        Wall(entities=wall_1),
-                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                        SlipWall(entities=[i_exist]),
-                    ],
-                    private_attribute_asset_cache=asset_cache,
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 )
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
-        ),
-    ):
-        with ValidationContext(
-            ALL,
-            info=ParamsValidationInfo(
-                param_as_dict={},
-                referenced_expressions=[],
             ),
-        ):
-            with SI_unit_system:
-                SimulationParams(
-                    meshing=MeshingParams(
-                        defaults=MeshingDefaults(
-                            boundary_layer_first_layer_thickness=1e-10,
-                            surface_max_edge_length=1e-10,
-                        )
-                    ),
-                    models=[
-                        Fluid(),
-                        Wall(entities=[wall_1]),
-                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                        SlipWall(entities=[i_exist]),
-                        SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
-                    ],
-                    private_attribute_asset_cache=asset_cache,
+            models=[
+                Fluid(),
+                Wall(entities=wall_1),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: no_bc. "
+        "Please add them to a boundary condition model in the `models` section."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall_1]),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+                SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries are not known `Surface` entities "
+        "but appear in the `models` section: plz_dont_do_this."
+    )
 
 
 def test_incomplete_BC_surface_mesh():
@@ -1951,6 +1953,52 @@ def test_beta_mesher_only_features():
                 ),
                 private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
             )
+
+    # Ensure that the boudnaries of CustomVolume does not require a boundary condition
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(
+                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            models=[
+                Wall(
+                    entities=[
+                        Surface(name="face2"),
+                    ]
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                        Surface(name="face3"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: face3. "  # Face1 should not be here
+        "Please add them to a boundary condition model in the `models` section."
+    )
+    assert errors[0]["loc"] == ()
 
 
 def test_geometry_AI_only_features():

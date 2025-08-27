@@ -23,6 +23,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
+from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
@@ -311,13 +312,16 @@ def _validate_cht_has_heat_transfer(params):
 
 def _check_complete_boundary_condition_and_unknown_surface(
     params,
-):  # pylint:disable=too-many-branches
+):  # pylint:disable=too-many-branches, too-many-locals
     ## Step 1: Get all boundaries patches from asset cache
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
 
     validation_info = get_validation_info()
+
+    if not validation_info:
+        return params
 
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
 
@@ -359,6 +363,13 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 if item.name != "symmetric"
             ]
 
+    potential_zone_zone_interfaces = set()
+    if validation_info.farfield_method == "user-defined":
+        for zones in params.meshing.volume_zones:
+            if isinstance(zones, CustomVolume):
+                for boundary in zones.boundaries.stored_entities:
+                    potential_zone_zone_interfaces.add(boundary.name)
+
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
 
@@ -388,7 +399,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
             used_boundaries.add(entity.name)
 
     ## Step 3: Use set operations to find missing and unknown boundaries
-    missing_boundaries = asset_boundaries - used_boundaries
+    missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
     unknown_boundaries = used_boundaries - asset_boundaries
 
     if missing_boundaries:

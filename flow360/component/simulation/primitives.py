@@ -474,7 +474,7 @@ class Surface(_SurfaceEntityBase):
         # pylint: disable=too-many-arguments, too-many-return-statements
         self,
         at_least_one_body_transformed: bool,
-        farfield_method: Optional[Literal["auto", "quasi-3d"]],
+        farfield_method: Optional[Literal["auto", "quasi-3d", "user-defined"]],
         global_bounding_box: Optional[BoundingBoxType],
         planar_face_tolerance: Optional[float],
         half_model_symmetry_plane_center_y: Optional[float],
@@ -491,6 +491,10 @@ class Surface(_SurfaceEntityBase):
 
         if global_bounding_box is None or planar_face_tolerance is None or farfield_method is None:
             # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
+            return False
+
+        if farfield_method == "user-defined":
+            # Not applicable to user defined farfield
             return False
 
         length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
@@ -672,13 +676,8 @@ class CustomVolume(_VolumeEntityBase):
         validation_info = get_validation_info()
         if validation_info is None:
             return self
-        if (
-            validation_info.is_beta_mesher
-            and validation_info.auto_farfield_method == "user-defined"
-        ):
+        if validation_info.is_beta_mesher and validation_info.farfield_method == "user-defined":
             return self
         raise ValueError(
             "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
         )
-
-    # TODO: Mark all the boundaries as interface so they do not need a boundary condition?
