@@ -716,8 +716,8 @@ def test_init():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     assert "meshing" not in data
-    # to convert tuples to lists:
     data["outputs"][0].pop("private_attribute_id", None)
+    # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
 
