@@ -40,7 +40,8 @@ class MeshingDefaults(Flow360BaseModel):
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
         None,
         description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-        "This parameter is only valid when using geometry AI.",
+        "This parameter is only valid when using geometry AI."
+        "It can be overridden with class: ~flow360.GeometryRefinement.",
     )
 
     ##::   Default surface edge settings
@@ -75,7 +76,7 @@ class MeshingDefaults(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
+    planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
         DEFAULT_PLANAR_FACE_TOLERANCE,
         description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
@@ -105,7 +106,7 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
-    curvature_resolution_angle: AngleType.Positive = ContextField(
+    curvature_resolution_angle: Optional[AngleType.Positive] = ContextField(
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
@@ -144,7 +145,7 @@ class MeshingDefaults(Flow360BaseModel):
         if value is None and validation_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
-    
+
     @pd.field_validator(
         "surface_max_aspect_ratio", "surface_max_adaptation_iterations", mode="after"
     )
