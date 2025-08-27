@@ -190,7 +190,8 @@ class AutomatedFarfield(Flow360BaseModel):
             - +Y semi sphere if min{Y} = 0 and max{Y} > 0.
             - -Y semi sphere if min{Y} < 0 and max{Y} = 0.
         - quasi-3d: Thin disk will be generated for quasi 3D cases.
-                    Both sides of the farfield disk will be treated as “symmetric plane”.
+                    Both sides of the farfield disk will be treated as "symmetric plane"
+        Note: For quasi-3d, please do not group patches from both sides of the farfield disk into a single surface.
         """,
     )
     private_attribute_entity: GenericVolume = pd.Field(

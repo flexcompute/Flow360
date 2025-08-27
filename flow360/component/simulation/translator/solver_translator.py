@@ -1522,7 +1522,10 @@ def get_solver_json(
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
-            if isinstance(op, LiquidOperatingCondition):
+            if isinstance(op, LiquidOperatingCondition) and not (
+                model.navier_stokes_solver.private_attribute_dict is not None
+                and "typeName" in model.navier_stokes_solver.private_attribute_dict
+            ):
                 translated["navierStokesSolver"]["modelType"] = "CompressibleIsentropic"
             replace_dict_key(
                 translated["navierStokesSolver"],
