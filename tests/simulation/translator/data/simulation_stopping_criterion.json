@@ -217,8 +217,7 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "1",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     }
                 ]
             },
@@ -244,8 +243,7 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "2",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     }
                 ]
             },
@@ -259,8 +257,7 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "3",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     }
                 ]
             },
@@ -355,22 +352,19 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "1",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "2",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "3",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     }
                 ]
             },
