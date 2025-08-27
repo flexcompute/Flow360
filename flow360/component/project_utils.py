@@ -22,6 +22,7 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
     Edge,
     GeometryBodyGroup,
@@ -223,7 +224,7 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
 
     entity_registry = params.used_entity_registry
     # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice]:
+    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume]:
         draft_entities = entity_registry.find_by_type(draft_type)
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:

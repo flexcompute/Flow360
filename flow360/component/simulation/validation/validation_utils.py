@@ -79,7 +79,7 @@ def check_deleted_surface_in_entity_list(value):
             surface, Surface
         ) and surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
             at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
-            farfield_method=validation_info.auto_farfield_method,
+            farfield_method=validation_info.farfield_method,
             global_bounding_box=validation_info.global_bounding_box,
             planar_face_tolerance=validation_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
@@ -108,7 +108,7 @@ def check_deleted_surface_pair(value):
     for surface in value.pair:
         if surface._will_be_deleted_by_mesher(  # pylint:disable=protected-access
             at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
-            farfield_method=validation_info.auto_farfield_method,
+            farfield_method=validation_info.farfield_method,
             global_bounding_box=validation_info.global_bounding_box,
             planar_face_tolerance=validation_info.planar_face_tolerance,
             half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
