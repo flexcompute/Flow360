@@ -7,6 +7,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import (
+    GeometryEntityInfo,
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
@@ -83,9 +84,10 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     GenericVolume,
+    GhostCircularPlane,
     GhostSphere,
     Surface,
-    _SurfaceIssueEnums,
+    SurfacePrivateAttributes,
 )
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -590,14 +592,12 @@ def test_BC_geometry():
         root_item_type="Geometry",
         validation_level="All",
     )
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 1
-    # assert errors[0]["loc"] == ("models", 3, "entities")
-    # assert errors[0]["msg"] == (
-    #     "Value error, Boundary `symmetry11` will likely be deleted after mesh generation. "
-    #     "Therefore it cannot be used."
-    # )
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("models", 3, "entities")
+    assert errors[0]["msg"] == (
+        "Value error, Boundary `symmetry11` will likely be deleted after mesh generation. "
+        "Therefore it cannot be used."
+    )
 
     ##### Ghost entities not used #####
     with SI_unit_system:
@@ -623,13 +623,11 @@ def test_BC_geometry():
         validation_level="All",
     )
 
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 1
-    # assert errors[0]["msg"] == (
-    #     "Value error, The following boundaries do not have a boundary condition: farfield, symmetric."
-    #     " Please add them to a boundary condition model in the `models` section."
-    # )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: farfield, symmetric."
+        " Please add them to a boundary condition model in the `models` section."
+    )
 
     ##### QUASI 3D METHOD #####
     auto_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
@@ -659,19 +657,17 @@ def test_BC_geometry():
         root_item_type="Geometry",
         validation_level="All",
     )
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 2
-    # assert errors[0]["loc"] == ("models", 3, "entities")
-    # assert errors[0]["msg"] == (
-    #     "Value error, Boundary `symmetry11` will likely be deleted after mesh generation. "
-    #     "Therefore it cannot be used."
-    # )
-    # assert errors[1]["loc"] == ("models", 4, "entities")
-    # assert errors[1]["msg"] == (
-    #     "Value error, Boundary `symmetry22` will likely be deleted after mesh generation. "
-    #     "Therefore it cannot be used."
-    # )
+    assert len(errors) == 2
+    assert errors[0]["loc"] == ("models", 3, "entities")
+    assert errors[0]["msg"] == (
+        "Value error, Boundary `symmetry11` will likely be deleted after mesh generation. "
+        "Therefore it cannot be used."
+    )
+    assert errors[1]["loc"] == ("models", 4, "entities")
+    assert errors[1]["msg"] == (
+        "Value error, Boundary `symmetry22` will likely be deleted after mesh generation. "
+        "Therefore it cannot be used."
+    )
     ##### Ghost entities not used #####
     auto_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
 
@@ -696,56 +692,16 @@ def test_BC_geometry():
         root_item_type="Geometry",
         validation_level="All",
     )
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 1
-    # assert errors[0]["msg"] == (
-    #     "Value error, The following boundaries do not have a boundary condition: farfield, "
-    #     "symmetric-1, symmetric-2. Please add them to a boundary condition model in the `models` section."
-    # )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: farfield, "
+        "symmetric-1, symmetric-2. Please add them to a boundary condition model in the `models` section."
+    )
 
     # --------------------------------------------------------#
     # >>>>>>> Group sides of airfoil as SINGLE boundary <<<<<<<
-
-    with open("./data/geometry_metadata_asset_cache_quasi3D.json") as fp:
-        data = json.load(fp)
-        data["private_attribute_asset_cache"]["project_entity_info"]["face_group_tag"] = "faceName"
-        asset_cache = AssetCache(**data["private_attribute_asset_cache"])
-
-    symmetry_boundary = [item for item in asset_cache.boundaries if item.name == "symmetry"][0]
-    wall = [item for item in asset_cache.boundaries if item.name == "wall"][0]
-
-    auto_farfield = AutomatedFarfield(name="my_farfield", method="quasi-3d")
-    with SI_unit_system:
-        params = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    boundary_layer_first_layer_thickness=1e-10,
-                    surface_max_edge_length=1e-10,
-                ),
-                volume_zones=[auto_farfield],
-            ),
-            models=[
-                Fluid(),
-                Wall(entities=wall),
-                SlipWall(entities=auto_farfield.symmetry_planes),
-                SlipWall(entities=symmetry_boundary),
-                Freestream(entities=auto_farfield.farfield),
-            ],
-            private_attribute_asset_cache=asset_cache,
-        )
-    params, errors, _ = validate_model(
-        params_as_dict=params.model_dump(mode="json"),
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Geometry",
-        validation_level="All",
-    )
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 1
-    # assert errors[0]["msg"] == (
-    #     "Value error, Boundary `symmetry` will likely be deleted after mesh generation. Therefore it cannot be used."
-    # )
+    # This is a known defect of the current deletion detection logic.
+    # Documentation is updated to reflect this.
 
 
 def test_incomplete_BC_volume_mesh():
@@ -764,62 +720,60 @@ def test_incomplete_BC_volume_mesh():
         ),
     )
 
-    # --- Disabled for FXC-2006
-    # with pytest.raises(
-    #     ValueError,
-    #     match=re.escape(
-    #         r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
-    #     ),
-    # ):
-    with ValidationContext(ALL):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    )
-                ),
-                models=[
-                    Fluid(),
-                    Wall(entities=wall_1),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
-
-    # --- Disabled for FXC-2006
-    # with pytest.raises(
-    #     ValueError,
-    #     match=re.escape(
-    #         r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
-    #     ),
-    # ):
-    with ValidationContext(
-        ALL,
-        info=ParamsValidationInfo(
-            param_as_dict={},
-            referenced_expressions=[],
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
         ),
     ):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    )
-                ),
-                models=[
-                    Fluid(),
-                    Wall(entities=[wall_1]),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+        with ValidationContext(ALL):
+            with SI_unit_system:
+                SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
+                    models=[
+                        Fluid(),
+                        Wall(entities=wall_1),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
+        ),
+    ):
+        with ValidationContext(
+            ALL,
+            info=ParamsValidationInfo(
+                param_as_dict={},
+                referenced_expressions=[],
+            ),
+        ):
+            with SI_unit_system:
+                SimulationParams(
+                    meshing=MeshingParams(
+                        defaults=MeshingDefaults(
+                            boundary_layer_first_layer_thickness=1e-10,
+                            surface_max_edge_length=1e-10,
+                        )
+                    ),
+                    models=[
+                        Fluid(),
+                        Wall(entities=[wall_1]),
+                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                        SlipWall(entities=[i_exist]),
+                        SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+                    ],
+                    private_attribute_asset_cache=asset_cache,
+                )
 
 
 def test_incomplete_BC_surface_mesh():
@@ -832,7 +786,9 @@ def test_incomplete_BC_surface_mesh():
     i_will_be_deleted = Surface(
         name="sym_boundary",
         private_attribute_is_interface=False,
-        private_attribute_potential_issues=[_SurfaceIssueEnums.overlap_half_model_symmetric],
+        private_attributes=SurfacePrivateAttributes(
+            bounding_box=[[0, -1e-6, 0], [1, 1e-8, 1]],
+        ),
     )
     auto_farfield = AutomatedFarfield(name="my_farfield")
 
@@ -840,104 +796,112 @@ def test_incomplete_BC_surface_mesh():
         project_length_unit="inch",
         project_entity_info=SurfaceMeshEntityInfo(
             boundaries=[wall_1, periodic_1, periodic_2, i_exist, no_bc, i_will_be_deleted],
-            ghost_entities=[GhostSphere(name="farfield")],
+            ghost_entities=[
+                GhostSphere(name="farfield"),
+                GhostCircularPlane(name="symmetric", center=[-1, 0, 0], maxRadius=100),
+                GhostCircularPlane(name="symmetric-1", center=[-1, -100, 0], maxRadius=100),
+                GhostCircularPlane(name="symmetric-2", center=[-1, 1e-12, 0], maxRadius=100),
+            ],
+            global_bounding_box=[[-100, -100, -100], [100, 1e-12, 100]],
         ),
     )
 
-    with ValidationContext(
-        ALL,
-        info=ParamsValidationInfo(
-            param_as_dict={},
-            referenced_expressions=[],
-        ),
-    ):
-        # i_will_be_deleted won't trigger "no bc assigned" error
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    ),
-                    volume_zones=[auto_farfield],
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 ),
-                models=[
-                    Fluid(),
-                    Wall(entities=wall_1),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    SlipWall(entities=[no_bc]),
-                    Freestream(entities=auto_farfield.farfield),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall_1),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+                SlipWall(entities=[no_bc]),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
 
-    # --- Disabled for FXC-2006
-    # with pytest.raises(
-    #     ValueError,
-    #     match=re.escape(
-    #         r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
-    #     ),
-    # ):
-    with ValidationContext(
-        ALL,
-        info=ParamsValidationInfo(
-            param_as_dict={},
-            referenced_expressions=[],
-        ),
-    ):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    ),
-                    volume_zones=[auto_farfield],
-                ),
-                models=[
-                    Fluid(),
-                    Wall(entities=wall_1),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    Freestream(entities=auto_farfield.farfield),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+    # i_will_be_deleted won't trigger "no bc assigned" error but `symmetric` will.
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1, print(">>>", errors)
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: symmetric. "
+        "Please add them to a boundary condition model in the `models` section."
+    )
 
-    # --- Disabled for FXC-2006
-    # with pytest.raises(
-    #     ValueError,
-    #     match=re.escape(
-    #         r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
-    #     ),
-    # ):
-    with ValidationContext(
-        ALL,
-        info=ParamsValidationInfo(
-            param_as_dict={},
-            referenced_expressions=[],
-        ),
-    ):
-        with SI_unit_system:
-            SimulationParams(
-                meshing=MeshingParams(
-                    defaults=MeshingDefaults(
-                        boundary_layer_first_layer_thickness=1e-10,
-                        surface_max_edge_length=1e-10,
-                    ),
-                    volume_zones=[auto_farfield],
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 ),
-                models=[
-                    Fluid(),
-                    Wall(entities=[wall_1]),
-                    Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                    SlipWall(entities=[i_exist]),
-                    Freestream(entities=auto_farfield.farfield),
-                    SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
-                ],
-                private_attribute_asset_cache=asset_cache,
-            )
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=wall_1),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[auto_farfield.symmetry_planes]),
+                SlipWall(entities=[i_exist]),
+                Freestream(entities=auto_farfield.farfield),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1, print(">>>", errors)
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: no_bc. "
+        "Please add them to a boundary condition model in the `models` section."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
+                ),
+                volume_zones=[auto_farfield],
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall_1]),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+                SlipWall(entities=[auto_farfield.symmetry_planes]),
+                Freestream(entities=auto_farfield.farfield),
+                SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="All",
+    )
+    assert len(errors) == 1, print(">>>", errors)
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries are not known `Surface` entities "
+        "but appear in the `models` section: plz_dont_do_this."
+    )
 
 
 def test_porousJump_entities_is_interface():
@@ -1556,19 +1520,21 @@ def test_deleted_surfaces():
     overlap_with_single_symmetric = all_boundaries[3]
 
     with SI_unit_system:
+        farfield = AutomatedFarfield(method="auto")
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
                     boundary_layer_first_layer_thickness=1e-4, surface_max_edge_length=1e-2
                 ),
-                volume_zones=[AutomatedFarfield(method="auto")],
+                volume_zones=[farfield],
             ),
             operating_condition=AerospaceCondition(velocity_magnitude=0.2),
             models=[
                 Wall(entities=all_boundaries[0]),
                 Wall(entities=all_boundaries[1]),
                 SlipWall(entities=overlap_with_two_symmetric),
-                SlipWall(entities=overlap_with_single_symmetric),
+                SlipWall(entities=[overlap_with_single_symmetric, farfield.symmetry_planes]),
+                Freestream(entities=farfield.farfield),
             ],
             private_attribute_asset_cache=asset_cache,
         )
@@ -1579,13 +1545,11 @@ def test_deleted_surfaces():
         validation_level="All",
     )
 
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 1
-    # assert (
-    #     errors[0]["msg"] == "Value error, Boundary `body0001_face0003` will likely"
-    #     " be deleted after mesh generation. Therefore it cannot be used."
-    # )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"] == "Value error, Boundary `body0001_face0003` will likely"
+        " be deleted after mesh generation. Therefore it cannot be used."
+    )
 
     with SI_unit_system:
         params = SimulationParams(
@@ -1612,14 +1576,12 @@ def test_deleted_surfaces():
         root_item_type="Geometry",
         validation_level="All",
     )
-    # --- Disabled for FXC-2006
-    assert errors is None
-    # assert len(errors) == 1
-    # assert (
-    #     errors[0]["msg"] == "Value error, Boundary `body0001_face0004` will likely"
-    #     " be deleted after mesh generation. Therefore it cannot be used."
-    # )
-    # assert errors[0]["loc"] == ("models", 2, "entity_pairs")
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"] == "Value error, Boundary `body0001_face0004` will likely"
+        " be deleted after mesh generation. Therefore it cannot be used."
+    )
+    assert errors[0]["loc"] == ("models", 2, "entity_pairs")
 
 
 def test_validate_liquid_operating_condition():
@@ -1992,6 +1954,7 @@ def test_beta_mesher_only_features():
 
 
 def test_geometry_AI_only_features():
+    # * Test GAI guardrails
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -2051,6 +2014,61 @@ def test_geometry_AI_only_features():
     assert (
         errors[0]["msg"] == "Value error, Geometry accuracy is required when geometry AI is used."
     )
+
+    # * Test geometry_accuracy and planar_face_tolerance compatibility
+    with SI_unit_system:
+        params_original = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=1e-5 * u.m,
+                    planar_face_tolerance=1e-10,
+                    boundary_layer_first_layer_thickness=10,
+                    surface_max_edge_length=1e-2,
+                ),
+            ),
+            private_attribute_asset_cache=AssetCache(
+                project_length_unit=1 * u.cm,
+                use_inhouse_mesher=True,
+                use_geometry_AI=True,
+                project_entity_info=GeometryEntityInfo(
+                    global_bounding_box=[[-100, -100, -100], [100, 1e-12, 100]],
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params_original.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    # Largest dim = 200 cm
+    # with planar face tolerance = 1e-10
+    #   largest geometry accuracy = 1e-10 * 200 cm = 2e-8 cm
+    # with geometry accuracy = 1e-5m
+    #   minimum planar face tolerance = 1e-5m / 200 cm = 5e-06
+    assert errors[0]["msg"] == (
+        "Value error, geometry_accuracy is too large for the planar_face_tolerance to take effect. "
+        "Reduce geometry_accuracy to at most 2e-08 cm or increase the planar_face_tolerance to at least 5e-06."
+    )
+    params_original.meshing.defaults.geometry_accuracy = 2e-08 * u.cm
+    params, _, _ = validate_model(
+        params_as_dict=params_original.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert params
+
+    params_original.meshing.defaults.geometry_accuracy = 1e-5 * u.m
+    params_original.meshing.defaults.planar_face_tolerance = 5e-06
+    params, _, _ = validate_model(
+        params_as_dict=params_original.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert params
 
 
 def test_redefined_user_defined_fields():

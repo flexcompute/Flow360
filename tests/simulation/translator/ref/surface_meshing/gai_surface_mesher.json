@@ -31,8 +31,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00001"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -42,8 +41,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00002"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -53,8 +51,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00003"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -64,8 +61,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00004"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -75,8 +71,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00005"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -86,8 +81,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00006"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -97,8 +91,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00002_face00001"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -108,8 +101,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00002_face00002"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -119,8 +111,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00002_face00003"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -130,8 +121,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00002_face00004"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -141,8 +131,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00002_face00005"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -152,8 +141,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00002_face00006"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         },
                         {
                             "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -163,8 +151,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "cylinder.stl_body"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         }
                     ]
                 },
@@ -186,8 +173,7 @@
                             "private_attribute_tag_key": "faceId",
                             "private_attribute_sub_components": [
                                 "body00001_face00001"
-                            ],
-                            "private_attribute_potential_issues": []
+                            ]
                         }
                     ]
                 },
@@ -220,8 +206,7 @@
                             "body00001_face00004",
                             "body00001_face00005",
                             "body00001_face00006"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -236,8 +221,7 @@
                             "body00002_face00004",
                             "body00002_face00005",
                             "body00002_face00006"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -247,8 +231,7 @@
                         "private_attribute_tag_key": "groupByBodyId",
                         "private_attribute_sub_components": [
                             "cylinder.stl_body"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     }
                 ],
                 [
@@ -260,8 +243,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00001_face00001"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -271,8 +253,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00001_face00002"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -282,8 +263,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00001_face00003"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -293,8 +273,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00001_face00004"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -304,8 +283,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00001_face00005"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -315,8 +293,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00001_face00006"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -326,8 +303,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00002_face00001"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -337,8 +313,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00002_face00002"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -348,8 +323,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00002_face00003"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -359,8 +333,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00002_face00004"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -370,8 +343,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00002_face00005"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -381,8 +353,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "body00002_face00006"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     },
                     {
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
@@ -392,8 +363,7 @@
                         "private_attribute_tag_key": "faceId",
                         "private_attribute_sub_components": [
                             "cylinder.stl_body"
-                        ],
-                        "private_attribute_potential_issues": []
+                        ]
                     }
                 ]
             ],

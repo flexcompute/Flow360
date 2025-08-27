@@ -25,7 +25,6 @@ from flow360.component.simulation.entity_info import (
     parse_entity_info_model,
 )
 from flow360.component.simulation.folder import Folder
-from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
@@ -133,6 +132,10 @@ class AssetBase(metaclass=ABCMeta):
         simulation_dict: dict,
         asset_obj: AssetBase,
     ):
+        # pylint: disable=protected-access
+        simulation_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
+            simulation_dict
+        )
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
@@ -149,16 +152,18 @@ class AssetBase(metaclass=ABCMeta):
         try:
             asset_obj._entity_info = parse_entity_info_model(entity_info_dict)
         except ValidationError as e:
+            errors = e.errors()
+            log.error(formatting_validation_errors(errors=errors))
             cloud_version_str = SimulationParams._get_version_from_dict(model_dict=simulation_dict)
-            if Flow360Version(cloud_version_str) > Flow360Version(__version__):
+            if forward_compatibility_mode:
                 raise Flow360RuntimeError(
                     "The cloud `SimulationParam` (version: "
                     + cloud_version_str
                     + ") is too new for your local Python client (version: "
                     + __version__
-                    + ") and validation error occurred. Please update your local Python client.\nError:"
-                    + formatting_validation_errors(errors=e.errors())
+                    + ") and validation error occurred. Please try updating your local Python client."
                 ) from None
+            raise Flow360RuntimeError("Parsing cloud resource's entity info failed.") from None
         return asset_obj
 
     @classmethod
