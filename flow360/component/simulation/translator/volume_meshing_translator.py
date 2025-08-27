@@ -160,7 +160,7 @@ def _get_custom_volumes(volume_zones: list):
 
 
 @preprocess_input
-# pylint: disable=unused-argument,too-many-branches
+# pylint: disable=unused-argument,too-many-branches,too-many-statements
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.

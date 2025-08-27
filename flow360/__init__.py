@@ -136,10 +136,10 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
     ReferenceGeometry,
     Transformation,
-    CustomVolume
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
