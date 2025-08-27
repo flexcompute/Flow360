@@ -180,42 +180,6 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
 
-    @pd.field_validator("geometry_accuracy", mode="after")
-    @classmethod
-    def compatible_geometry_accuracy_and_planar_face_tolerance(cls, value):
-        """Ensure geometry accuracy and planar face tolerance are compatible"""
-        if value is None:
-            return value
-
-        validation_info = get_validation_info()
-
-        if (
-            validation_info is None
-            or validation_info.planar_face_tolerance is None
-            or validation_info.global_bounding_box is None
-            or validation_info.project_length_unit is None
-        ):
-            return value
-
-        absolute_tolerance_dimensioned = (
-            validation_info.global_bounding_box.largest_dimension
-            * validation_info.planar_face_tolerance
-            * validation_info.project_length_unit
-        )
-        if value > absolute_tolerance_dimensioned:
-            minimum_planar_face_tolerance = (
-                value
-                / validation_info.project_length_unit
-                / validation_info.global_bounding_box.largest_dimension
-            ).value
-            raise ValueError(
-                f"geometry_accuracy is too large for the planar_face_tolerance to take effect."
-                f" Reduce geometry_accuracy to at most {absolute_tolerance_dimensioned} "
-                f"or increase the planar_face_tolerance to at least {minimum_planar_face_tolerance}."
-            )
-
-        return value
-
     @pd.field_validator(
         "surface_max_aspect_ratio", "surface_max_adaptation_iterations", mode="after"
     )
