@@ -8,6 +8,7 @@ from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
     Inflow,
     Outflow,
+    PorousJump,
     SurfaceModelTypes,
     Wall,
 )
@@ -312,11 +313,6 @@ def _check_complete_boundary_condition_and_unknown_surface(
     params,
 ):  # pylint:disable=too-many-branches
     ## Step 1: Get all boundaries patches from asset cache
-
-    return params
-
-    # --- Disabled for FXC-2006
-    # pylint: disable=unreachable
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
@@ -329,11 +325,26 @@ def _check_complete_boundary_condition_and_unknown_surface(
     automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
 
     if automated_farfield_method:
+        if validation_info.at_least_one_body_transformed:
+            # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+            # since we do not know the final bounding box for each surface and global model.
+            return params
+
+        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+        # since we do not know the final bounding box for each surface and global model.
         # pylint:disable=protected-access
         asset_boundary_entities = [
             item
             for item in asset_boundary_entities
-            if item._will_be_deleted_by_mesher(automated_farfield_method) is False
+            if item._will_be_deleted_by_mesher(
+                at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
+                farfield_method=automated_farfield_method,
+                global_bounding_box=validation_info.global_bounding_box,
+                planar_face_tolerance=validation_info.planar_face_tolerance,
+                half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+                quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            )
+            is False
         ]
         if automated_farfield_method == "auto":
             asset_boundary_entities += [
@@ -352,7 +363,6 @@ def _check_complete_boundary_condition_and_unknown_surface(
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
 
     asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
-
     ## Step 2: Collect all used boundaries from the models
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
         raise ValueError("No boundary conditions are defined in the `models` section.")
@@ -361,6 +371,8 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
+            continue
+        if isinstance(model, PorousJump):
             continue
 
         entities = []

@@ -4,7 +4,10 @@ import os
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -14,10 +17,17 @@ from flow360.component.simulation.meshing_param.edge_params import (
     ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    GeometryRefinement,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
+)
+from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
 )
 from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -473,4 +483,79 @@ def test_rotor_surface_mesh(get_rotor_geometry, rotor_surface_mesh):
         rotor_surface_mesh,
         get_rotor_geometry.mesh_unit,
         "rotor.json",
+    )
+
+
+def test_gai_surface_mesher_refinements():
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="aaa",
+                cloud_path_prefix="aaa",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    with open(
+        os.path.join(
+            os.path.dirname(__file__), "data", "gai_geometry_entity_info", "simulation.json"
+        ),
+        "r",
+    ) as fh:
+        asset_cache = AssetCache.model_validate(json.load(fh).pop("private_attribute_asset_cache"))
+
+    with SI_unit_system:
+        # Rotate around z-axis for 90 deg, and scale in 3 axes
+        transformation = Transformation(
+            origin=[0, 0, 0] * u.m,
+            axis_of_rotation=(0, 0, 1),
+            angle_of_rotation=90 * u.deg,
+            scale=(4.0, 3.0, 2.0),
+            translation=[0, 0, 0] * u.m,
+        )
+        geometry["cube-holes.egads"].transformation = transformation
+        geometry["cylinder.stl"].transformation = transformation
+        farfield = AutomatedFarfield()
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    geometry_accuracy=0.05 * u.m,  # GAI setting
+                    surface_max_edge_length=0.2,
+                    boundary_layer_first_layer_thickness=0.01,
+                    surface_max_aspect_ratio=0.01,
+                    surface_max_adaptation_iterations=19,
+                ),
+                volume_zones=[farfield],
+                refinements=[
+                    SurfaceRefinement(
+                        name="renamed_surface",
+                        max_edge_length=0.1,
+                        faces=[geometry["*"]],
+                    ),
+                    GeometryRefinement(
+                        name="Local_override",
+                        geometry_accuracy=0.05 * u.m,
+                        faces=[geometry["body00001_face00001"]],
+                    ),
+                ],
+            ),
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=10 * u.m / u.s,
+            ),
+            private_attribute_asset_cache=asset_cache,
+        )
+
+    _translate_and_compare(
+        params,
+        1 * u.m,
+        "gai_surface_mesher.json",
     )

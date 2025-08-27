@@ -160,6 +160,7 @@ class _Resource(Flow360RequestsV2):
 
 class NewReportRequest(Flow360RequestsV2):
     "New report request"
+
     name: str
     resources: List[_Resource]
     config_json: str

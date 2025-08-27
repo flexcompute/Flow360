@@ -185,7 +185,7 @@ class Draft(Flow360Resource):
             return destination_id
         except Flow360WebError as err:
             # Error found when translating/running the simulation
-            log.error(">>Submission failed.<<")
+            log.error(">>Submission to cloud failed.<<")
             try:
                 detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
                 log.error(
