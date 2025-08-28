@@ -130,6 +130,24 @@ class MeshingDefaults(Flow360BaseModel):
         if value is None and validation_info.use_geometry_AI:
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
+    
+    @pd.field_validator(
+        "surface_max_aspect_ratio", "surface_max_adaptation_iterations", mode="after"
+    )
+    @classmethod
+    def invalid_geometry_ai_features(cls, value, info):
+        """Ensure surface max aspect ratio is not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        # pylint: disable=unsubscriptable-object
+        default_value = cls.model_fields[info.field_name].default
+        if value != default_value and not validation_info.use_geometry_AI:
+            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
+
+        return value
 
 
 class BetaVolumeMeshingDefaults(Flow360BaseModel):
