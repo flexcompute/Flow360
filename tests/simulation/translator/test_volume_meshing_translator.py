@@ -22,7 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, Surface
+from flow360.component.simulation.primitives import Box, CustomVolume, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
@@ -148,7 +148,11 @@ def get_test_param():
                     ),
                 ],
                 volume_zones=[
-                    AutomatedFarfield(),
+                    CustomVolume(
+                        name="custom_volume-1",
+                        boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                    ),
+                    UserDefinedFarfield(),
                     RotationCylinder(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
@@ -343,11 +347,10 @@ def get_test_param_modular():
 def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular):
     translated_standard = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
     translated_modular = get_volume_meshing_json(get_test_param_modular, get_surface_mesh.mesh_unit)
-    import json
 
     ref_dict = {
         "refinementFactor": 1.45,
-        "farfield": {"type": "auto", "planarFaceTolerance": 1e-6},
+        "farfield": {"type": "user-defined"},
         "volume": {
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
@@ -457,6 +460,12 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
                     "slidingInterface-3",
                 ],
             },
+        ],
+        "zones": [
+            {
+                "name": "custom_volume-1",
+                "patches": ["interface1", "interface2"],
+            }
         ],
     }
 

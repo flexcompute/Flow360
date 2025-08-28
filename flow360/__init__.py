@@ -9,6 +9,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
+from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -19,6 +20,7 @@ from flow360.component.simulation.meshing_param.edge_params import (
 )
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -76,6 +78,7 @@ from flow360.component.simulation.models.surface_models import (
     MassFlowRate,
     Outflow,
     Periodic,
+    PorousJump,
     Pressure,
     Rotational,
     SlaterPorousBleed,
@@ -127,6 +130,8 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
     IsosurfaceOutput,
     Observer,
     ProbeOutput,
@@ -136,6 +141,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageImportedSurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
@@ -147,11 +153,11 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
     MeshZone,
     ReferenceGeometry,
     SnappyBody,
-    Transformation,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -183,8 +189,10 @@ from flow360.plugins import report
 from flow360.version import __solver_version__, __version__
 
 __all__ = [
+    "GeometryRefinement",
     "Env",
     "Case",
+    "CustomVolume",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
@@ -224,6 +232,7 @@ __all__ = [
     "Outflow",
     "Inflow",
     "Periodic",
+    "PorousJump",
     "SymmetryPlane",
     "Fluid",
     "Solid",
@@ -247,6 +256,9 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "ImportedSurfaceOutput",
+    "TimeAverageImportedSurfaceOutput",
+    "ImportedSurfaceIntegralOutput",
     "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",

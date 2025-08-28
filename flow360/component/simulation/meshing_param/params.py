@@ -7,9 +7,11 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -34,8 +36,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, MeshZone
-from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.primitives import Box, Cylinder, MeshZone, CustomVolume
+from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
@@ -49,6 +51,7 @@ RefinementTypes = Annotated[
     Union[
         SurfaceEdgeRefinement,
         SurfaceRefinement,
+        GeometryRefinement,
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
@@ -58,7 +61,8 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield], pd.Field(discriminator="type")
+    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    pd.Field(discriminator="type"),
 ]
 
 SurfaceRefinementTypes = Annotated[
@@ -85,7 +89,6 @@ VolumeRefinementTypes = Annotated[
     ],
     pd.Field(discriminator="refinement_type"),
 ]
-
 
 class MeshingParams(Flow360BaseModel):
     """
@@ -126,6 +129,7 @@ class MeshingParams(Flow360BaseModel):
         + "and first layer thickness will be adjusted to generate `r`-times"
         + " finer mesh where r is the refinement_factor value.",
     )
+
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
@@ -168,6 +172,25 @@ class MeshingParams(Flow360BaseModel):
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+
+        return v
+
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        """Ensure there won't be duplicated volume zone names."""
+
+        if v is None:
+            return v
+        to_be_generated_volume_zone_names = set()
+        for volume_zone in v:
+            if not isinstance(volume_zone, CustomVolume):
+                continue
+            if volume_zone.name in to_be_generated_volume_zone_names:
+                raise ValueError(
+                    f"Multiple CustomVolume with the same name `{volume_zone.name}` are not allowed."
+                )
+            to_be_generated_volume_zone_names.add(volume_zone.name)
 
         return v
 

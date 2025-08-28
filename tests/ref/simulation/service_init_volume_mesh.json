@@ -1,5 +1,5 @@
 {
-    "version": "25.6.5",
+    "version": "25.7.1b1",
     "unit_system": {
         "name": "SI"
     },
@@ -250,8 +250,7 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     }
                 ]
             },

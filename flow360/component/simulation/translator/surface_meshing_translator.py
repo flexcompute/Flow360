@@ -207,7 +207,7 @@ def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
 
 @preprocess_input
 # pylint: disable=unused-argument
-def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
+def legacy_mesher_json(input_params: SimulationParams):
     """
     Get JSON for surface meshing.
 
@@ -499,3 +499,97 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             ["meshing"],
         )
     return translated
+
+
+def _get_surface_refinements(refinement_list: list[dict]):
+    """
+    Get the surface refinements from the input_params.
+    """
+    return [
+        item
+        for item in refinement_list
+        if item["refinement_type"]
+        in ("SurfaceRefinement", "UniformRefinement", "GeometryRefinement")
+    ]
+
+
+GAI_SETTING_WHITELIST = {
+    "meshing": {
+        "defaults": {
+            "surface_max_edge_length": None,
+            "curvature_resolution_angle": None,
+            "surface_edge_growth_rate": None,
+            "geometry_accuracy": None,
+            "surface_max_aspect_ratio": None,
+            "surface_max_adaptation_iterations": None,
+        },
+        "refinements": _get_surface_refinements,
+    },
+    "private_attribute_asset_cache": {
+        "project_entity_info": {
+            "face_group_tag": None,
+            "face_attribute_names": None,
+            "grouped_faces": None,
+            "body_group_tag": None,
+            "body_attribute_names": None,
+            "grouped_bodies": None,
+        }
+    },
+}
+
+
+def _traverse_and_filter(data, whitelist):
+    """
+    Recursively traverse data and whitelist to extract matching values.
+
+    Args:
+        data: The data to traverse
+        whitelist: The whitelist structure defining what to extract
+
+    Returns:
+        Filtered data matching the whitelist structure
+    """
+    if isinstance(whitelist, dict):
+        result = {}
+        for key, value in whitelist.items():
+            if key in data:
+                if value is None:
+                    # Copy as is
+                    result[key] = data[key]
+                elif callable(value):
+                    # Run the function
+                    result[key] = value(data[key])
+                else:
+                    # Recursively traverse
+                    result[key] = _traverse_and_filter(data[key], value)
+        return result
+    return data
+
+
+def filter_simulation_json(input_params: SimulationParams):
+    """
+    Filter the simulation JSON to only include the GAI surface meshing parameters.
+    """
+
+    # Get the JSON from the input_params
+    json_data = input_params.model_dump(mode="json", exclude_none=True)
+
+    # Filter the JSON to only include the GAI surface meshing parameters
+    filtered_json = _traverse_and_filter(json_data, GAI_SETTING_WHITELIST)
+
+    return filtered_json
+
+
+@preprocess_input
+# pylint: disable=unused-argument
+def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
+    """
+    Get JSON for surface meshing.
+    """
+    if not input_params.private_attribute_asset_cache.use_geometry_AI:
+        return legacy_mesher_json(input_params)
+
+    # === GAI mode ===
+    input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    # Just do a filtering of the input_params's JSON
+    return filter_simulation_json(input_params)

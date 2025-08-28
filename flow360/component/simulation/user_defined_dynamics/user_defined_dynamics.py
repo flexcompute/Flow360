@@ -9,7 +9,8 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list,
+    check_deleted_surface_in_entity_list, 
+    get_validation_info
 )
 
 
@@ -113,18 +114,23 @@ class UserDefinedDynamic(Flow360BaseModel):
     def ensure_output_surface_existence(cls, value):
         """Ensure that the output target surface is not a deleted surface"""
 
-        # --- Disabled for FXC-2006
-        # validation_info = get_validation_info()
-        # if validation_info is None or validation_info.auto_farfield_method is None:
-        #     # validation not necessary now.
-        #     return value
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
 
-        # # - Check if the surfaces are deleted.
-        # # pylint: disable=protected-access
-        # if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
-        #     validation_info.auto_farfield_method
-        # ):
-        #     raise ValueError(
-        #         f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
-        #     )
+        # pylint: disable=fixme, duplicate-code
+        # TODO: We can make this a Surface's after model validator once entity info is separated from params.
+        # TODO: And therefore no need for duplicate-code override.
+        # pylint: disable=protected-access
+        if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
+            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
+            farfield_method=validation_info.farfield_method,
+            global_bounding_box=validation_info.global_bounding_box,
+            planar_face_tolerance=validation_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+        ):
+            raise ValueError(
+                f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+            )
         return value

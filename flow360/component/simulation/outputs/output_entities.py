@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
@@ -88,6 +88,7 @@ class Isosurface(_OutputItemBase):
     ...     name="Isosurface_T_1.5",
     ...     iso_value=1.5,
     ...     field="T",
+    ...     wallDistanceClipThreshold=0.005 * fl.u.m, (optional)
     ... )
 
     ====
@@ -101,6 +102,12 @@ class Isosurface(_OutputItemBase):
     # pylint: disable=fixme
     iso_value: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="Expect non-dimensional value.",
+    )
+
+    # pylint: disable=no-member
+    wall_distance_clip_threshold: Optional[LengthType.Positive] = pd.Field(
+        default=None,
+        description="Optional parameter to remove the isosurface within a specified distance from walls.",
     )
 
     @pd.field_validator("field", mode="before")
