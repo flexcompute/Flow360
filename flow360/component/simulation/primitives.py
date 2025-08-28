@@ -34,7 +34,8 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 from flow360.component.types import Axis
-from flow360.exceptions import Flow360BoundaryMissingError
+
+BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
 
 def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
@@ -52,16 +53,9 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
                 match is not None and match.group(1) == surface_name
             ) or existing_boundary_name == surface_name:
                 return existing_boundary_name
-    if surface_name == "symmetric":
-        # Provides more info when the symmetric boundary is not auto generated.
-        raise Flow360BoundaryMissingError(
-            f"Parent zone not found for boundary: {surface_name}. "
-            "It is likely that it was never auto generated because the condition is not met."
-        )
-    raise Flow360BoundaryMissingError(
-        f"Parent zone not found for surface {surface_name}. "
-        "It may have been deleted due to overlapping with generated symmetry plane."
-    )
+
+    # Not found
+    return BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
 
 
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
