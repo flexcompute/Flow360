@@ -1,5 +1,8 @@
 """Test the integration of python client with various metadatas."""
 
+import json
+import os
+
 import pytest
 
 import flow360.component.simulation.units as u
@@ -9,14 +12,19 @@ from flow360.component.simulation.models.surface_models import (
     Freestream,
     Periodic,
     Rotational,
-    SlipWall,
     Wall,
 )
 from flow360.component.simulation.models.volume_models import AngularVelocity, Rotation
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.primitives import Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
+    Cylinder,
+    GhostCircularPlane,
+    Surface,
+)
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -145,3 +153,36 @@ def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
         "type": "RotationallyPeriodic",
         "pairedPatchName": "rotatingBlock-rotating_zone/blade5",
     }
+
+
+def test_update_zone_info_from_geometry_with_missing_symmetric():
+    mesh_meta_data = {
+        "zones": {
+            "farfield": {
+                "boundaryNames": ["farfield/body00001", "farfield/body00002", "farfield/farfield"],
+                "donorInterfaceNames": [],
+                "donorZoneNames": [],
+                "receiverInterfaceNames": [],
+            }
+        }
+    }
+    with open(
+        os.path.join(os.path.dirname(__file__), "data", "simulation_with_missing_symmetric.json"),
+        "r",
+    ) as f:
+        param_as_dict = json.load(f)
+    param, _, _ = validate_model(
+        params_as_dict=param_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="Case",
+    )
+    assert param
+
+    param._update_param_with_actual_volume_mesh_meta(mesh_meta_data)
+
+    symmetric = param.used_entity_registry.find_by_type(entity_class=GhostCircularPlane)[0]
+    assert symmetric.name == "symmetric"
+    assert symmetric.private_attribute_full_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+    translated = get_solver_json(param, mesh_unit="m")
+    assert "symmetric" not in translated["boundaries"]  # Silently removed
