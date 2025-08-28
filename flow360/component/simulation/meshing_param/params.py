@@ -107,6 +107,7 @@ class MeshingDefaults(Flow360BaseModel):
 
     planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
         DEFAULT_PLANAR_FACE_TOLERANCE,
+        strict=True,
         description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
