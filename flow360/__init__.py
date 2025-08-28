@@ -129,10 +129,10 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageStreamlineOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
-    TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
 )

@@ -75,10 +75,10 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageStreamlineOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
-    TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -768,14 +768,21 @@ def process_output_fields_for_udf(input_params: SimulationParams):
 
 def translate_streamline_output(output_params: list, streamline_class):
     """Translate streamline output settings."""
-    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": [],
-                         "outputFields" : [],
-                         "animationFrequency" : -1, "animationFrequencyOffset" : 0,
-                         "computeTimeAverages" : False, "startAverageIntegrationStep" : -1,
-                         "animationFrequencyTimeAverage" : -1, "animationFrequencyTimeAverageOffset" : 0}
+    streamline_output = {
+        "Points": [],
+        "PointArrays": [],
+        "PointArrays2D": [],
+        "outputFields": [],
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "computeTimeAverages": False,
+        "startAverageIntegrationStep": -1,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+    }
     for output in output_params:
         if isinstance(output, streamline_class):
-            streamline_output["outputFields"].extend(output.output_fields.items);
+            streamline_output["outputFields"].extend(output.output_fields.items)
             if isinstance(output, TimeAverageStreamlineOutput):
                 streamline_output["computeTimeAverages"] = True
                 streamline_output["startAverageIntegrationStep"] = output.start_step
@@ -958,7 +965,9 @@ def translate_output(input_params: SimulationParams, translated: dict):
         translated["streamlineOutput"] = translate_streamline_output(outputs, StreamlineOutput)
 
     if has_instance_in_list(outputs, TimeAverageStreamlineOutput):
-        translated["timeAverageStreamlineOutput"] = translate_streamline_output(outputs, TimeAverageStreamlineOutput)
+        translated["timeAverageStreamlineOutput"] = translate_streamline_output(
+            outputs, TimeAverageStreamlineOutput
+        )
 
     ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
     if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):

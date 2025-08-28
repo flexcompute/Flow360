@@ -1099,13 +1099,15 @@ class StreamlineOutput(Flow360BaseModel):
         + ":class:`~flow360.PointArray2D` "
         + "is used to define streamline originating from a parallelogram.",
     )
-    output_fields: Optional[UniqueItemList[Union[VolumeFieldNames, str]]] = pd.Field([],
+    output_fields: Optional[UniqueItemList[Union[VolumeFieldNames, str]]] = pd.Field(
+        [],
         description="List of output variables. Vector-valued fields will be colored by their magnitude."
         " Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
-        " and :class:`UserDefinedField`."
+        " and :class:`UserDefinedField`.",
     )
     output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+
 
 class TimeAverageStreamlineOutput(StreamlineOutput):
     """
@@ -1298,7 +1300,7 @@ OutputTypes = Annotated[
         ImportedSurfaceOutput,
         TimeAverageImportedSurfaceOutput,
         ImportedSurfaceIntegralOutput,
-        TimeAverageStreamlineOutput
+        TimeAverageStreamlineOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
@@ -1311,5 +1313,5 @@ TimeAverageOutputTypes = (
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageImportedSurfaceOutput,
-    TimeAverageStreamlineOutput
+    TimeAverageStreamlineOutput,
 )

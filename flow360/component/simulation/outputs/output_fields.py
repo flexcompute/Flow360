@@ -112,7 +112,7 @@ CommonFieldNames = Literal[
     "velocity_z_m_per_s",
     "velocity_magnitude_m_per_s",
     "pressure_pa",
-    "helicity"
+    "helicity",
 ]
 
 # Skin friction coefficient vector
@@ -191,7 +191,7 @@ IsoSurfaceFieldNames = Literal[
     "velocity_x",
     "velocity_y",
     "velocity_z",
-    "helicity"
+    "helicity",
 ]
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
