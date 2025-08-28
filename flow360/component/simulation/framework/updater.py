@@ -213,10 +213,6 @@ def _to_25_6_2(params_as_dict):
             if velocity_direction:
                 model["velocity_direction"] = velocity_direction
 
-    # new method of specifying meshing was added, as well as the method discriminator
-    if params_as_dict.get("meshing"):
-        meshing = params_as_dict.get("meshing")
-        meshing["type"] = "MeshingParams"
     params_as_dict = _fix_reynolds_mesh_unit(params_as_dict)
 
     # Handling the disable of same entity being in multiple outputs
@@ -336,6 +332,15 @@ def _to_25_6_6(params_as_dict):
     return _remove_potential_issues_recursive(params_as_dict)
 
 
+def _to_25_7_1(params_as_dict):
+    # new method of specifying meshing was added, as well as the method discriminator
+    meshing = params_as_dict.get("meshing")
+    if meshing:
+        meshing["type"] = "MeshingParams"
+
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -348,6 +353,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.4"), _to_25_6_4),
     (Flow360Version("25.6.5"), _to_25_6_5),
     (Flow360Version("25.6.6"), _to_25_6_6),
+    (Flow360Version("25.7.1"), _to_25_7_1),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

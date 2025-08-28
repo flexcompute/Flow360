@@ -290,7 +290,11 @@ def get_test_param_modular():
                         ),
                     ],
                     volume_zones=[
-                        AutomatedFarfield(),
+                        CustomVolume(
+                            name="custom_volume-1",
+                            boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                        ),
+                        UserDefinedFarfield(),
                         RotationCylinder(
                             name="we_do_not_use_this_anyway",
                             entities=inner_cylinder,

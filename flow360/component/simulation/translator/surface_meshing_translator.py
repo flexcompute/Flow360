@@ -205,8 +205,6 @@ def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
-@preprocess_input
-# pylint: disable=unused-argument
 def legacy_mesher_json(input_params: SimulationParams):
     """
     Get JSON for surface meshing.

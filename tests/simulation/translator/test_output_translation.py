@@ -169,7 +169,6 @@ def test_volume_output(volume_output_config, avg_volume_output_config):
                 "velocity_magnitude",
                 "vorticity",
                 "vorticityMagnitude",
-                "velocity_in_km_per_hr",
             ],
             "outputFormat": "paraview,tecplot",
             "startAverageIntegrationStep": -1,

@@ -91,6 +91,20 @@ class MeshingDefaults(Flow360BaseModel):
         " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
         context=SURFACE_MESH,
     )
+
+    surface_max_aspect_ratio: Optional[pd.PositiveFloat] = ConditionalField(
+        10.0,
+        description="Maximum aspect ratio for surface cells for the GAI surface mesher."
+        " This cannot be overridden per face",
+        context=SURFACE_MESH,
+    )
+
+    surface_max_adaptation_iterations: Optional[pd.NonNegativeInt] = ConditionalField(
+        50,
+        description="Maximum adaptation iterations for the GAI surface mesher.",
+        context=SURFACE_MESH,
+    )
+
     curvature_resolution_angle: AngleType.Positive = ContextField(
         12 * u.deg,
         description=(
