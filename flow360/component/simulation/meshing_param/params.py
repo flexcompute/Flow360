@@ -110,7 +110,7 @@ class MeshingDefaults(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    planar_face_tolerance: Optional[float] = pd.Field(
+    planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
         DEFAULT_PLANAR_FACE_TOLERANCE,
         strict=True,
         description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
