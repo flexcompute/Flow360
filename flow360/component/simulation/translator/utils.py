@@ -391,7 +391,10 @@ def translate_setting_and_apply_to_all_entities(
                 if not to_list:
                     # Generate a $name:{$value} dict
                     if custom_output_dict_entries:
-                        output.update(entity_injection_func(entity, **entity_injection_kwargs))
+                        setting = entity_injection_func(entity, **entity_injection_kwargs)
+                        if setting is None:
+                            continue
+                        output.update(setting)
                     else:
                         if use_instance_name_as_key is True and lump_list_of_entities is False:
                             raise NotImplementedError(
@@ -413,14 +416,17 @@ def translate_setting_and_apply_to_all_entities(
                             ]
                         for key_name in key_names:
                             if output.get(key_name) is None:
-                                output[key_name] = entity_injection_func(
-                                    entity, **entity_injection_kwargs
-                                )
+                                setting = entity_injection_func(entity, **entity_injection_kwargs)
+                                if setting is None:
+                                    continue
+                                output[key_name] = setting
                             update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
                     # Note: Surface/Boundary logic should be handeled in the entity_injection_func
                     setting = entity_injection_func(entity, **entity_injection_kwargs)
+                    if setting is None:
+                        continue
                     setting.update(translated_setting)
                     output.append(setting)
     return output
