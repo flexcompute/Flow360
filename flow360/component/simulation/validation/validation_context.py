@@ -142,7 +142,10 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         volume_zones = None
         try:
             if param_as_dict["meshing"]:
-                volume_zones = param_as_dict["meshing"]["volume_zones"]
+                if param_as_dict["meshing"]["type"] == "MeshingParams":
+                    volume_zones = param_as_dict["meshing"]["volume_zones"]
+                else:
+                    volume_zones = param_as_dict["meshing"]["volume_meshing"]["volume_zones"]
         except KeyError:
             # No farfield/meshing info.
             return None
