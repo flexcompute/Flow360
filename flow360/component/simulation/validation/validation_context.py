@@ -135,6 +135,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
         "at_least_one_body_transformed",
+        "to_be_generated_custom_volumes",
     ]
 
     @classmethod
@@ -298,6 +299,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
         return False
 
+    @classmethod
+    def _get_to_be_generated_custom_volumes(cls, param_as_dict: dict):
+        volume_zones = get_value_with_path(
+            param_as_dict,
+            ["meshing", "volume_zones"],
+        )
+        if not volume_zones:
+            return set()
+        return {zone["name"] for zone in volume_zones if zone["type"] == "CustomVolume"}
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -320,6 +331,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict=param_as_dict
         )
         self.at_least_one_body_transformed = self._get_at_least_one_body_transformed(
+            param_as_dict=param_as_dict
+        )
+        self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
             param_as_dict=param_as_dict
         )
 
