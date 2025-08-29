@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
+from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -46,7 +47,8 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield], pd.Field(discriminator="type")
+    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    pd.Field(discriminator="type"),
 ]
 
 
@@ -178,42 +180,6 @@ class MeshingDefaults(Flow360BaseModel):
             raise ValueError("Geometry accuracy is required when geometry AI is used.")
         return value
 
-    @pd.field_validator("geometry_accuracy", mode="after")
-    @classmethod
-    def compatible_geometry_accuracy_and_planar_face_tolerance(cls, value):
-        """Ensure geometry accuracy and planar face tolerance are compatible"""
-        if value is None:
-            return value
-
-        validation_info = get_validation_info()
-
-        if (
-            validation_info is None
-            or validation_info.planar_face_tolerance is None
-            or validation_info.global_bounding_box is None
-            or validation_info.project_length_unit is None
-        ):
-            return value
-
-        absolute_tolerance_dimensioned = (
-            validation_info.global_bounding_box.largest_dimension
-            * validation_info.planar_face_tolerance
-            * validation_info.project_length_unit
-        )
-        if value > absolute_tolerance_dimensioned:
-            minimum_planar_face_tolerance = (
-                value
-                / validation_info.project_length_unit
-                / validation_info.global_bounding_box.largest_dimension
-            ).value
-            raise ValueError(
-                f"geometry_accuracy is too large for the planar_face_tolerance to take effect."
-                f" Reduce geometry_accuracy to at most {absolute_tolerance_dimensioned} "
-                f"or increase the planar_face_tolerance to at least {minimum_planar_face_tolerance}."
-            )
-
-        return value
-
     @pd.field_validator(
         "surface_max_aspect_ratio", "surface_max_adaptation_iterations", mode="after"
     )
@@ -314,6 +280,25 @@ class MeshingParams(Flow360BaseModel):
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+
+        return v
+
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        """Ensure there won't be duplicated volume zone names."""
+
+        if v is None:
+            return v
+        to_be_generated_volume_zone_names = set()
+        for volume_zone in v:
+            if not isinstance(volume_zone, CustomVolume):
+                continue
+            if volume_zone.name in to_be_generated_volume_zone_names:
+                raise ValueError(
+                    f"Multiple CustomVolume with the same name `{volume_zone.name}` are not allowed."
+                )
+            to_be_generated_volume_zone_names.add(volume_zone.name)
 
         return v
 

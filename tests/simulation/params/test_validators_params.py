@@ -7,7 +7,6 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import (
-    GeometryEntityInfo,
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
@@ -20,7 +19,10 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UserDefinedFarfield,
+)
 from flow360.component.simulation.models.material import SolidMaterial, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
@@ -78,6 +80,7 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
     GenericVolume,
     GhostCircularPlane,
@@ -716,60 +719,62 @@ def test_incomplete_BC_volume_mesh():
         ),
     )
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            r"The following boundaries do not have a boundary condition: no_bc. Please add them to a boundary condition model in the `models` section."
-        ),
-    ):
-        with ValidationContext(ALL):
-            with SI_unit_system:
-                SimulationParams(
-                    meshing=MeshingParams(
-                        defaults=MeshingDefaults(
-                            boundary_layer_first_layer_thickness=1e-10,
-                            surface_max_edge_length=1e-10,
-                        )
-                    ),
-                    models=[
-                        Fluid(),
-                        Wall(entities=wall_1),
-                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                        SlipWall(entities=[i_exist]),
-                    ],
-                    private_attribute_asset_cache=asset_cache,
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 )
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            r"The following boundaries are not known `Surface` entities but appear in the `models` section: plz_dont_do_this."
-        ),
-    ):
-        with ValidationContext(
-            ALL,
-            info=ParamsValidationInfo(
-                param_as_dict={},
-                referenced_expressions=[],
             ),
-        ):
-            with SI_unit_system:
-                SimulationParams(
-                    meshing=MeshingParams(
-                        defaults=MeshingDefaults(
-                            boundary_layer_first_layer_thickness=1e-10,
-                            surface_max_edge_length=1e-10,
-                        )
-                    ),
-                    models=[
-                        Fluid(),
-                        Wall(entities=[wall_1]),
-                        Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
-                        SlipWall(entities=[i_exist]),
-                        SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
-                    ],
-                    private_attribute_asset_cache=asset_cache,
+            models=[
+                Fluid(),
+                Wall(entities=wall_1),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: no_bc. "
+        "Please add them to a boundary condition model in the `models` section."
+    )
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-10,
+                    surface_max_edge_length=1e-10,
                 )
+            ),
+            models=[
+                Fluid(),
+                Wall(entities=[wall_1]),
+                Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational()),
+                SlipWall(entities=[i_exist]),
+                SlipWall(entities=[Surface(name="plz_dont_do_this"), no_bc]),
+            ],
+            private_attribute_asset_cache=asset_cache,
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries are not known `Surface` entities "
+        "but appear in the `models` section: plz_dont_do_this."
+    )
 
 
 def test_incomplete_BC_surface_mesh():
@@ -1842,9 +1847,160 @@ def test_beta_mesher_only_features():
     )
     assert errors is None
 
+    # Using CustomVolume without UserDefinedFarfield
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(
+                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    AutomatedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, CustomVolume is only supported when "
+        + "beta mesher and user defined farfield are enabled."
+    )
+    assert errors[0]["loc"] == ("meshing", "volume_zones", 0, "CustomVolume")
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(
+                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=False),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, CustomVolume is only supported when "
+        + "beta mesher and user defined farfield are enabled."
+    )
+    assert errors[0]["loc"] == ("meshing", "volume_zones", 0, "CustomVolume")
+
+    # Unique volume zone names
+    with pytest.raises(
+        ValueError, match="Multiple CustomVolume with the same name `zone1` are not allowed."
+    ):
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                        planar_face_tolerance=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomVolume(
+                            name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                        ),
+                        CustomVolume(
+                            name="zone1", boundaries=[Surface(name="face3"), Surface(name="face4")]
+                        ),
+                        UserDefinedFarfield(),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
+
+    # Unique interface names
+    with pytest.raises(
+        ValueError, match="The boundaries of a CustomVolume must have different names."
+    ):
+        with SI_unit_system:
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=1e-4,
+                        planar_face_tolerance=1e-4,
+                    ),
+                    volume_zones=[
+                        CustomVolume(
+                            name="zone1", boundaries=[Surface(name="face1"), Surface(name="face1")]
+                        ),
+                        UserDefinedFarfield(),
+                    ],
+                ),
+                private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+            )
+
+    # Ensure that the boudnaries of CustomVolume does not require a boundary condition
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(
+                        name="zone1", boundaries=[Surface(name="face1"), Surface(name="face2")]
+                    ),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            models=[
+                Wall(
+                    entities=[
+                        Surface(name="face2"),
+                    ]
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                        Surface(name="face3"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, The following boundaries do not have a boundary condition: face3. "  # Face1 should not be here
+        "Please add them to a boundary condition model in the `models` section."
+    )
+    assert errors[0]["loc"] == ()
+
 
 def test_geometry_AI_only_features():
-    # * Test GAI guardrails
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1904,61 +2060,6 @@ def test_geometry_AI_only_features():
     assert (
         errors[0]["msg"] == "Value error, Geometry accuracy is required when geometry AI is used."
     )
-
-    # * Test geometry_accuracy and planar_face_tolerance compatibility
-    with SI_unit_system:
-        params_original = SimulationParams(
-            meshing=MeshingParams(
-                defaults=MeshingDefaults(
-                    geometry_accuracy=1e-5 * u.m,
-                    planar_face_tolerance=1e-10,
-                    boundary_layer_first_layer_thickness=10,
-                    surface_max_edge_length=1e-2,
-                ),
-            ),
-            private_attribute_asset_cache=AssetCache(
-                project_length_unit=1 * u.cm,
-                use_inhouse_mesher=True,
-                use_geometry_AI=True,
-                project_entity_info=GeometryEntityInfo(
-                    global_bounding_box=[[-100, -100, -100], [100, 1e-12, 100]],
-                ),
-            ),
-        )
-    params, errors, _ = validate_model(
-        params_as_dict=params_original.model_dump(mode="json"),
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Geometry",
-        validation_level="VolumeMesh",
-    )
-    assert len(errors) == 1
-    # Largest dim = 200 cm
-    # with planar face tolerance = 1e-10
-    #   largest geometry accuracy = 1e-10 * 200 cm = 2e-8 cm
-    # with geometry accuracy = 1e-5m
-    #   minimum planar face tolerance = 1e-5m / 200 cm = 5e-06
-    assert errors[0]["msg"] == (
-        "Value error, geometry_accuracy is too large for the planar_face_tolerance to take effect. "
-        "Reduce geometry_accuracy to at most 2e-08 cm or increase the planar_face_tolerance to at least 5e-06."
-    )
-    params_original.meshing.defaults.geometry_accuracy = 2e-08 * u.cm
-    params, _, _ = validate_model(
-        params_as_dict=params_original.model_dump(mode="json"),
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Geometry",
-        validation_level="VolumeMesh",
-    )
-    assert params
-
-    params_original.meshing.defaults.geometry_accuracy = 1e-5 * u.m
-    params_original.meshing.defaults.planar_face_tolerance = 5e-06
-    params, _, _ = validate_model(
-        params_as_dict=params_original.model_dump(mode="json"),
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Geometry",
-        validation_level="VolumeMesh",
-    )
-    assert params
 
 
 def test_redefined_user_defined_fields():

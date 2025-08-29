@@ -83,7 +83,12 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, ImportedSurface, SurfacePair
+from flow360.component.simulation.primitives import (
+    BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
+    Box,
+    ImportedSurface,
+    SurfacePair,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.user_expression_utils import (
@@ -281,7 +286,9 @@ def surface_probe_setting_translation_func(entity: Union[SurfaceProbeOutput, Sur
     """Translate non-entities part of SurfaceProbeOutput"""
     dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
-        surface.full_name for surface in entity.target_surfaces.stored_entities
+        surface.full_name
+        for surface in entity.target_surfaces.stored_entities
+        if surface.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
     ]
     return dict_with_merged_output_fields
 
@@ -399,7 +406,11 @@ def inject_surface_probe_info(entity: EntityList):
 def inject_surface_list_info(entity: EntityList):
     """inject entity info"""
     return {
-        "surfaces": [surface.full_name for surface in entity.stored_entities],
+        "surfaces": [
+            surface.full_name
+            for surface in entity.stored_entities
+            if surface.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+        ],
         "type": "surfaceIntegral",
     }
 
@@ -618,7 +629,9 @@ def translate_acoustic_output(output_params: list):
             aeroacoustic_output["patchType"] = output.patch_type
             if output.permeable_surfaces is not None:
                 aeroacoustic_output["permeableSurfaces"] = [
-                    item.full_name for item in output.permeable_surfaces.stored_entities
+                    item.full_name
+                    for item in output.permeable_surfaces.stored_entities
+                    if item.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
                 ]
             return aeroacoustic_output
     return None
@@ -1103,10 +1116,14 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
     if isinstance(entity, SurfacePair):
         key1 = _get_key_name(entity.pair[0])
         key2 = _get_key_name(entity.pair[1])
+        if BOUNDARY_FULL_NAME_WHEN_NOT_FOUND in (key1, key2):
+            return None
         output[key1] = {**translated_setting, "pairedPatchName": key2}
         output[key2] = translated_setting
     else:
         key_name = _get_key_name(entity)
+        if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+            return None
         output = {key_name: {**translated_setting}}
         if key_name in solid_zone_boundaries:
             if "temperature" in translated_setting:
@@ -1787,10 +1804,18 @@ def get_solver_json(
             if udd.input_boundary_patches is not None:
                 udd_dict_translated["inputBoundaryPatches"] = []
                 for surface in udd.input_boundary_patches.stored_entities:
-                    udd_dict_translated["inputBoundaryPatches"].append(_get_key_name(surface))
+                    full_name = _get_key_name(surface)
+                    if full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                        udd_dict_translated["inputBoundaryPatches"].append(full_name)
                 udd_dict_translated["inputBoundaryPatches"].sort()
             if udd.output_target is not None:
-                udd_dict_translated["outputTargetName"] = udd.output_target.full_name
+                full_name = udd.output_target.full_name
+                if full_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                    raise Flow360TranslationError(
+                        f"The output target {udd.output_target.name} is not found in the generated volume mesh.",
+                        input_value=udd.output_target,
+                    )
+                udd_dict_translated["outputTargetName"] = full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
         translated["userDefinedDynamics"].sort(key=lambda udd: udd["dynamicsName"])
