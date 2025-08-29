@@ -1037,7 +1037,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
 
-class StreamlineOutput(Flow360BaseModel):
+class StreamlineOutput(_OutputBase):
     """
     :class:`StreamlineOutput` class for calculating streamlines.
     Stramtraces are computed upwind and downwind, and may originate from a single point,
@@ -1080,7 +1080,8 @@ class StreamlineOutput(Flow360BaseModel):
     ...             u_number_of_points=11,
     ...             v_number_of_points=20
     ...         )
-    ...     ]
+    ...     ],
+    ...     output_fields = [fl.solution.pressure, fl.solution.velocity],
     ... )
 
     ====
@@ -1099,12 +1100,9 @@ class StreamlineOutput(Flow360BaseModel):
         + ":class:`~flow360.PointArray2D` "
         + "is used to define streamline originating from a parallelogram.",
     )
-    output_fields: Optional[UniqueItemList[Union[VolumeFieldNames, str]]] = pd.Field(
+    output_fields: Optional[UniqueItemList[UserVariable]] = pd.Field(
         [],
-        description="List of output variables. Vector-valued fields will be colored by their magnitude."
-        " Including :ref:`universal output variables<UniversalVariablesV2>`,"
-        " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
-        " and :class:`UserDefinedField`.",
+        description="List of output variables. Vector-valued fields will be colored by their magnitude.",
     )
     output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
 

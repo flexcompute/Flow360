@@ -264,6 +264,8 @@ def translate_output_fields(
         StreamlineOutput,
         ImportedSurfaceOutput,
         TimeAverageImportedSurfaceOutput,
+        StreamlineOutput,
+        TimeAverageStreamlineOutput,
     ],
 ):
     """Get output fields"""
@@ -775,17 +777,15 @@ def translate_streamline_output(output_params: list, streamline_class):
         "outputFields": [],
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
-        "computeTimeAverages": False,
-        "startAverageIntegrationStep": -1,
-        "animationFrequencyTimeAverage": -1,
-        "animationFrequencyTimeAverageOffset": 0,
     }
     for output in output_params:
         if isinstance(output, streamline_class):
-            streamline_output["outputFields"].extend(output.output_fields.items)
+            streamline_output["outputFields"] = translate_output_fields(output)["outputFields"]
+            # streamline_output["outputFields"].extend(output.output_fields.items)
             if isinstance(output, TimeAverageStreamlineOutput):
-                streamline_output["computeTimeAverages"] = True
                 streamline_output["startAverageIntegrationStep"] = output.start_step
+                streamline_output["animationFrequencyTimeAverage"] = -1
+                streamline_output["animationFrequencyTimeAverageOffset"] = 0
 
             for entity in output.entities.stored_entities:
                 if isinstance(entity, Point):
