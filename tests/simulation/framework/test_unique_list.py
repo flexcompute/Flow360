@@ -126,8 +126,9 @@ def test_unique_list():
             "'velocity_x_m_per_s', "
             "'velocity_y_m_per_s', "
             "'velocity_z_m_per_s', "
-            "'velocity_magnitude_m_per_s' "
-            "or 'pressure_pa'"
+            "'velocity_magnitude_m_per_s', "
+            "'pressure_pa' "
+            "or 'helicity'"
         ),
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["wallDistance", 1234])
