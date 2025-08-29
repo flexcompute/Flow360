@@ -6,6 +6,13 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
+from flow360.component.simulation.meshing_param.volume_params import UserDefinedFarfield
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -35,6 +42,7 @@ from flow360.component.simulation.models.volume_models import (
     Fluid,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
+    PorousMedium,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -52,6 +60,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
+    CustomVolume,
     GenericVolume,
     ReferenceGeometry,
     Surface,
@@ -1179,4 +1188,56 @@ def test_auto_ref_area_settings():
             "momentLength": [0.01, 0.01, 0.010001],
         },
         translated["geometry"],
+    )
+
+
+def test_custom_volume_translation():
+    zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
+    zone_2.axes = [(1, 0, 0), (0, 1, 0)]
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(name="zone1", boundaries=[Surface(name="face1")]),
+                    UserDefinedFarfield(),
+                    zone_2,
+                ],
+            ),
+            operating_condition=AerospaceCondition(velocity_magnitude=10),
+            models=[
+                PorousMedium(
+                    entities=[zone_2],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert not errors, print(">>>", errors)
+    translated = get_solver_json(params, mesh_unit=1 * u.m)
+    translate_and_compare(
+        params,
+        mesh_unit=1 * u.m,
+        ref_json_file="Flow360_custom_volume_translation.json",
+        debug=True,
     )
