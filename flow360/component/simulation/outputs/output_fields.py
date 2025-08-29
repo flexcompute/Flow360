@@ -69,7 +69,6 @@ from flow360.component.simulation.unit_system import u
 # Velocity Z component (dimensioned, m/s)
 # Velocity Magnitude (dimensioned, m/s)
 # Pressure (dimensioned, Pa)
-# Helicity
 CommonFieldNames = Literal[
     "Cp",
     "Cpt",
@@ -112,7 +111,6 @@ CommonFieldNames = Literal[
     "velocity_z_m_per_s",
     "velocity_magnitude_m_per_s",
     "pressure_pa",
-    "helicity",
 ]
 
 # Skin friction coefficient vector
@@ -191,7 +189,6 @@ IsoSurfaceFieldNames = Literal[
     "velocity_x",
     "velocity_y",
     "velocity_z",
-    "helicity",
 ]
 
 AllFieldNames = Literal[CommonFieldNames, SurfaceFieldNames, VolumeFieldNames, IsoSurfaceFieldNames]
