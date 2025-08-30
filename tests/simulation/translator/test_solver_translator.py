@@ -49,13 +49,20 @@ from flow360.component.simulation.operating_condition.operating_condition import
     LiquidOperatingCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.output_entities import Slice
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+    Slice,
+)
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -289,6 +296,38 @@ def test_om6wing_debug(get_om6Wing_tutorial_param):
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6Wing_debug_point.json",
+    )
+
+
+def test_om6wing_streamlines(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    with SI_unit_system:
+        streamlineOutput = StreamlineOutput(
+            entities=[
+                Point(name="point_streamline", location=(0.0, 1.0, 0.04)),
+                PointArray(
+                    name="pointarray_streamline",
+                    start=(0.0, 0.0, 0.2),
+                    end=(0.0, 1.0, 0.2),
+                    number_of_points=20,
+                ),
+                PointArray2D(
+                    name="pointarray2d_streamline",
+                    origin=(0.0, 0.0, -0.2),
+                    u_axis_vector=(0.0, 1.4, 0.0),
+                    v_axis_vector=(0.0, 0.0, 0.4),
+                    u_number_of_points=10,
+                    v_number_of_points=10,
+                ),
+            ],
+            output_fields=[solution.Cp, solution.velocity],
+        )
+    params.outputs.append(streamlineOutput)
+
+    translate_and_compare(
+        params,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_streamlines.json",
     )
 
 

@@ -865,6 +865,8 @@ def change_unit_system(
 
         # 2. Otherwise, recurse into each item in the dictionary
         for key, val in data.items():
+            if key == "project_length_unit":
+                continue
             change_unit_system(
                 data=val,
                 target_unit_system=target_unit_system,
