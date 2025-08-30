@@ -185,4 +185,7 @@ def test_update_zone_info_from_geometry_with_missing_symmetric():
     assert symmetric.name == "symmetric"
     assert symmetric.private_attribute_full_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
     translated = get_solver_json(param, mesh_unit="m")
-    assert "symmetric" not in translated["boundaries"]  # Silently removed
+    assert BOUNDARY_FULL_NAME_WHEN_NOT_FOUND not in translated["boundaries"]  # Silently removed
+    assert (
+        BOUNDARY_FULL_NAME_WHEN_NOT_FOUND not in translated["surfaceOutput"]["surfaces"]
+    )  # Silently removed
