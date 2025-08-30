@@ -197,7 +197,9 @@ class ReportTemplate(Flow360BaseModel):
         service.process_requests(context)
 
     def _get_baseline_requirements(self):
-        return get_requirements_from_data_path(["volume_mesh", "surface_mesh", "geometry"])
+        return get_requirements_from_data_path(
+            ["volume_mesh", "surface_mesh", "geometry", "params"]
+        )
 
     def get_requirements(self) -> List[RequirementItem]:
         """

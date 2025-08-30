@@ -21,7 +21,7 @@ from pylatex import (
     PageStyle,
     StandAloneGraphic,
 )
-from pylatex.utils import bold
+from pylatex.utils import bold, escape_latex
 
 from flow360.log import log
 from flow360.plugins.report.utils import detect_latex_compiler, font_definition
@@ -212,7 +212,7 @@ class ReportDoc:
             doc.append(NoEscape(r"\vspace{1cm}"))
 
             if title is not None:
-                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + title + "}")))
+                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + escape_latex(title) + "}")))
                 doc.append(NewLine)
             doc.append(NoEscape(r"\vspace{2cm}"))
 

@@ -46,6 +46,7 @@ from tests.report.report_testing_fixtures import (
     get_last_time_step_values,
     here,
     here_class,
+    monitors_case,
     residual_plot_model_SA,
     residual_plot_model_SST,
     two_var_two_cases_plot_model,
@@ -1230,6 +1231,181 @@ def test_transient_forces(here, cases_transient):
         get_last_time_step_values(data["pseudo_step"], data["time"])
     ] * len(loads)
     assert plot_model_time.y_data == loads_by_physical_step
+
+
+@pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
+def test_aeroacoustics(here, cases_transient):
+    case_id = "case-444444444-444444-4444444444-44444444"
+
+    pressures = ["observer_0_pressure", "observer_1_pressure"]
+    context = ReportContext(cases=[cases_transient[0]])
+
+    # expected data
+    data = pd.read_csv(
+        os.path.join(here, "..", "data", case_id, "results", "total_acoustics_v3.csv"),
+        skipinitialspace=True,
+    )
+
+    chart_pressures_physical = Chart2D(
+        x="aeroacoustics/physical_step",
+        y=[f"aeroacoustics/{press}" for press in pressures],
+        section_title="Pressures physical",
+        fig_name="pressures_physical",
+    )
+
+    chart_pressures_time = Chart2D(
+        x="aeroacoustics/time",
+        y=[f"aeroacoustics/{press}" for press in pressures],
+        section_title="Pressures time",
+        fig_name="pressures_time",
+    )
+
+    plot_model_physical = chart_pressures_physical.get_data([cases_transient[0]], context)
+    plot_model_time = chart_pressures_time.get_data([cases_transient[0]], context)
+
+    assert np.allclose(
+        plot_model_physical.x_data, [data["physical_step"].to_list()] * len(pressures)
+    )
+
+    assert np.allclose(plot_model_physical.y_data, [data[press].to_list() for press in pressures])
+
+    assert np.allclose(plot_model_time.x_data, [data["time"].to_list()] * len(pressures))
+
+    assert np.allclose(plot_model_time.y_data, [data[press].to_list() for press in pressures])
+
+
+@pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
+def test_transient_heat_transfer(here, cases_transient):
+    case_id = "case-444444444-444444-4444444444-44444444"
+
+    variable = "totalHeatFlux"
+
+    context = ReportContext(cases=[cases_transient[0]])
+
+    # expected data
+    data = pd.read_csv(
+        os.path.join(here, "..", "data", case_id, "results", "surface_heat_transfer_v2.csv"),
+        skipinitialspace=True,
+    )
+
+    data["cumulative_pseudo_step"] = get_cumulative_pseudo_time_step(data["pseudo_step"])
+
+    data["totalHeatFlux"] = (
+        data["zone_r1/blade1_HeatTransferRate"]
+        + data["zone_r2/blade2_HeatTransferRate"]
+        + data["zone_r3/blade3_HeatTransferRate"]
+        + data["zone_r4/blade4_HeatTransferRate"]
+        + data["zone_s/airframe_HeatTransferRate"]
+    )
+
+    data["time"] = data["physical_step"] * 0.1
+
+    results_by_physical_step = get_last_time_step_values(data["pseudo_step"], data[variable])
+
+    chart_heat_transfer_pseudo = Chart2D(
+        x="surface_heat_transfer/pseudo_step",
+        y=f"surface_heat_transfer/{variable}",
+        section_title="Heat transfer physical",
+        fig_name="heat_transfer_physical",
+    )
+
+    chart_heat_transfer_physical = Chart2D(
+        x="surface_heat_transfer/physical_step",
+        y=f"surface_heat_transfer/{variable}",
+        section_title="Heat transfer physical",
+        fig_name="heat_transfer_physical",
+    )
+
+    chart_heat_transfer_time = Chart2D(
+        x="surface_heat_transfer/time",
+        y=f"surface_heat_transfer/{variable}",
+        section_title="Heat transfer time",
+        fig_name="heat_transfer_time",
+    )
+
+    plot_model_pseudo = chart_heat_transfer_pseudo.get_data([cases_transient[0]], context)
+    plot_model_physical = chart_heat_transfer_physical.get_data([cases_transient[0]], context)
+    plot_model_time = chart_heat_transfer_time.get_data([cases_transient[0]], context)
+
+    assert np.allclose(
+        plot_model_pseudo.x_data_as_np, data["cumulative_pseudo_step"].to_list(), atol=1e-6
+    )
+    assert np.allclose(plot_model_pseudo.y_data_as_np, data[variable].to_list(), atol=1e-6)
+
+    assert np.allclose(
+        plot_model_physical.x_data_as_np,
+        np.array(get_last_time_step_values(data["pseudo_step"], data["physical_step"])),
+        atol=1e-6,
+    )
+
+    assert np.allclose(
+        plot_model_physical.y_data_as_np, np.array(results_by_physical_step), atol=1e-6
+    )
+
+    assert np.allclose(
+        plot_model_time.x_data_as_np,
+        np.array(get_last_time_step_values(data["pseudo_step"], data["time"])),
+        atol=1e-6,
+    )
+
+    assert np.allclose(plot_model_time.y_data_as_np, np.array(results_by_physical_step), atol=1e-6)
+
+
+@pytest.mark.filterwarnings("ignore:The `__fields__` attribute is deprecated")
+def test_monitors(here, monitors_case):
+    case_id = "case-666666666-66666666-666-6666666666666"
+
+    output = "MassFlux"
+    context = ReportContext(cases=[monitors_case])
+
+    # expected data
+    data_monitor = pd.read_csv(
+        os.path.join(here, "..", "data", case_id, "results", "monitor_massFluxExhaust_v2.csv"),
+        skipinitialspace=True,
+    )
+
+    chart_monitor = Chart2D(
+        x="monitors/massFluxExhaust/pseudo_step",
+        y=f"monitors/massFluxExhaust/{output}",
+        section_title="Flux",
+        fig_name="flux",
+    )
+
+    plot_model_monitor = chart_monitor.get_data([monitors_case], context)
+
+    assert plot_model_monitor.x_data == [data_monitor["pseudo_step"].to_list()]
+    assert plot_model_monitor.y_data == [data_monitor[output].to_list()]
+
+
+def test_udds(here, monitors_case):
+    case_id = "case-666666666-66666666-666-6666666666666"
+
+    output = "massFlowRate"
+    context = ReportContext(cases=[monitors_case])
+
+    # expected data
+    data_udd = pd.read_csv(
+        os.path.join(
+            here, "..", "data", case_id, "results", "udd_massInflowController_Exhaust_v2.csv"
+        ),
+        skipinitialspace=True,
+    )
+
+    chart_udd = Chart2D(
+        x="user_defined_dynamics/massInflowController_Exhaust/pseudo_step",
+        y=f"user_defined_dynamics/massInflowController_Exhaust/{output}",
+        section_title="Mass flow rate",
+        fig_name="mass_flow_rate",
+    )
+
+    print(
+        monitors_case.results.user_defined_dynamics.get_udd_by_name("massInflowController_Exhaust")
+    )
+
+    plot_model_monitor = chart_udd.get_data([monitors_case], context)
+
+    assert plot_model_monitor.x_data == [data_udd["pseudo_step"].to_list()]
+    assert plot_model_monitor.y_data == [data_udd[output].to_list()]
 
 
 def test_transient_residuals_pseudo(here, cases_transient):
