@@ -14,6 +14,7 @@ from flow360.component.simulation.framework.base_model import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
+    BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
@@ -262,7 +263,7 @@ def _get_key_name(entity: EntityBase):
     return entity.name
 
 
-# pylint: disable=too-many-branches, too-many-arguments, too-many-locals
+# pylint: disable=too-many-branches, too-many-arguments, too-many-locals, too-many-statements
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
@@ -415,6 +416,9 @@ def translate_setting_and_apply_to_all_entities(
                                 )
                             ]
                         for key_name in key_names:
+                            if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                                # Skip missing boundary
+                                continue
                             if output.get(key_name) is None:
                                 setting = entity_injection_func(entity, **entity_injection_kwargs)
                                 if setting is None:
@@ -423,7 +427,7 @@ def translate_setting_and_apply_to_all_entities(
                             update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
-                    # Note: Surface/Boundary logic should be handeled in the entity_injection_func
+                    # Note: Surface/Boundary logic should be handled in the entity_injection_func
                     setting = entity_injection_func(entity, **entity_injection_kwargs)
                     if setting is None:
                         continue
