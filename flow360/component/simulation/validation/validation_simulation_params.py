@@ -333,9 +333,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
     automated_farfield_method = None
     if isinstance(params.meshing, MeshingParams):
         automated_farfield_method = params.meshing.automated_farfield_method
+        volume_zones = params.meshing.volume_zones
     if isinstance(params.meshing, ModularMeshingWorkflow):
         if params.meshing.volume_meshing:
             automated_farfield_method = params.meshing.volume_meshing.automated_farfield_method
+            volume_zones = params.meshing.volume_meshing.volume_zones
 
     if automated_farfield_method:
         if validation_info.at_least_one_body_transformed:
@@ -374,7 +376,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
 
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":
-        for zones in params.meshing.volume_zones:
+        for zones in volume_zones:
             if isinstance(zones, CustomVolume):
                 for boundary in zones.boundaries.stored_entities:
                     potential_zone_zone_interfaces.add(boundary.name)
