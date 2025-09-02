@@ -333,6 +333,58 @@ def test_dimensioned_expressions():
     assert model_expression
 
 
+def test_variable_and_expression_overloaded_operations():
+    sol_var = solution.pressure
+    const_dimensioned_var = 11 * u.N / u.m**2
+    constant_var = 22
+    constant_user_var_dimensioned = UserVariable(
+        name="constant_user_var_dimensioned", value=const_dimensioned_var
+    )
+
+    # Test all overloaded operators for Variables and Expressions
+    # Using dimensionally consistent operations
+
+    # 1. __add__ (addition) - both Variable and Expression
+    assert (
+        (sol_var + const_dimensioned_var) + const_dimensioned_var
+    ).expression == "solution.pressure + 11 * u.N / u.m ** 2 + 11 * u.N / u.m ** 2"
+
+    # 2. __sub__ (subtraction) - both Variable and Expression
+    assert (
+        (sol_var - const_dimensioned_var) - const_dimensioned_var
+    ).expression == "solution.pressure - 11 * u.N / u.m ** 2 - 11 * u.N / u.m ** 2"
+
+    # 3. __mul__ (multiplication) - both Variable and Expression
+    assert (
+        (sol_var * const_dimensioned_var) * constant_var
+    ).expression == "solution.pressure * 11 * u.N / u.m ** 2 * 22"
+
+    # 4. __truediv__ (division) - both Variable and Expression
+    assert (
+        (sol_var / const_dimensioned_var) / const_dimensioned_var
+    ).expression == "solution.pressure / (11 * u.N / u.m ** 2) / (11 * u.N / u.m ** 2)"
+
+    # 5. __floordiv__ (floor division) - both Variable and Expression
+    assert (
+        (sol_var // const_dimensioned_var) // const_dimensioned_var
+    ).expression == "solution.pressure // (11 * u.N / u.m ** 2) // (11 * u.N / u.m ** 2)"
+
+    # 12. __rmul__ (reverse multiplication) - both Variable and Expression
+    assert (
+        sol_var * (const_dimensioned_var * sol_var)
+    ).expression == "solution.pressure * (11 * u.N / u.m ** 2 * solution.pressure)"
+
+    # 13. __rtruediv__ (reverse division) - both Variable and Expression
+    assert (
+        sol_var / (const_dimensioned_var / sol_var)
+    ).expression == "solution.pressure / (11 * u.N / u.m ** 2 / solution.pressure)"
+
+    # 14. __rfloordiv__ (reverse floor division) - both Variable and Expression
+    assert (
+        (sol_var // (constant_user_var_dimensioned // sol_var))
+    ).expression == "solution.pressure // (constant_user_var_dimensioned // solution.pressure)"
+
+
 def test_constrained_scalar_type():
     class TestModel(Flow360BaseModel):
         field: ValueOrExpression[Annotated[float, pd.Field(strict=True, ge=0)]] = pd.Field()

@@ -332,6 +332,41 @@ def _to_25_6_6(params_as_dict):
     return _remove_potential_issues_recursive(params_as_dict)
 
 
+def _to_25_7_2(params_as_dict):
+    # Add post_processing_variable flag to variable_context entries
+    # Variables that are used in outputs should have post_processing_variable=True
+    # Variables that are not used in outputs should have post_processing_variable=False
+
+    if params_as_dict.get("private_attribute_asset_cache") is None:
+        return params_as_dict
+
+    variable_context = params_as_dict["private_attribute_asset_cache"].get("variable_context")
+    if variable_context is None:
+        return params_as_dict
+
+    # Collect all user variable names used in outputs
+    used_variable_names = set()
+
+    if params_as_dict.get("outputs") is not None:
+        for output in params_as_dict["outputs"]:
+            if output.get("output_fields") and output["output_fields"].get("items"):
+                for item in output["output_fields"]["items"]:
+                    # Check if item is a user variable (has name and type_name fields)
+                    if (
+                        isinstance(item, dict)
+                        and "name" in item
+                        and item.get("type_name") == "UserVariable"
+                    ):
+                        used_variable_names.add(item["name"])
+
+    # Update variable_context entries with post_processing flag
+    for var_context in variable_context:
+        if "name" in var_context:
+            var_context["post_processing"] = var_context["name"] in used_variable_names
+
+    return params_as_dict
+
+
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
@@ -344,6 +379,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.4"), _to_25_6_4),
     (Flow360Version("25.6.5"), _to_25_6_5),
     (Flow360Version("25.6.6"), _to_25_6_6),
+    (Flow360Version("25.7.2"), _to_25_7_2),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
