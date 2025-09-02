@@ -1290,6 +1290,21 @@ def test_SI_unit_system_conversion():
     assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
 
 
+def test_unchanged_BETDisk_length_unit():
+    with open("data/simulation_bet_disk.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
+    assert dict_to_convert["unit_system"]["name"] == "CGS"
+    assert dict_to_convert["models"][4]["private_attribute_input_cache"]["length_unit"] == {
+        "value": 1,
+        "units": "m",
+    }
+    assert dict_to_convert["models"][6]["private_attribute_input_cache"]["length_unit"] == {
+        "value": 1,
+        "units": "ft",
+    }
+
+
 def test_updater_service():
     with open("data/updater_should_pass.json", "r") as fp:
         dict_to_update = json.load(fp)
