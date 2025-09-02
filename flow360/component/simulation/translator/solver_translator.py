@@ -1779,10 +1779,10 @@ def get_solver_json(
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
-    translated["runControl"]["shouldProcessMonitorOutput"] = check_moving_statistic_existence(
+    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
         input_params
     ) or check_stopping_criterion_existence(input_params)
-    if translated["runControl"]["shouldProcessMonitorOutput"]:
+    if translated["runControl"]["externalProcessMonitorOutput"]:
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
         )

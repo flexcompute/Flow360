@@ -71,7 +71,7 @@
     },
     "runControl": {
         "shouldCheckStopCriterion": false,
-        "shouldProcessMonitorOutput": false
+        "externalProcessMonitorOutput": false
     },
     "surfaceOutput": {
         "animationFrequency": -1,

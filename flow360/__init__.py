@@ -86,7 +86,6 @@ from flow360.component.simulation.models.volume_models import (
     BETDiskSectionalPolar,
     BETDiskTwist,
     C81File,
-    Criterion,
     DFDCFile,
     Fluid,
     ForcePerArea,
@@ -97,6 +96,7 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    StopCriterion,
     XFOILFile,
     XROTORFile,
 )
@@ -309,6 +309,6 @@ __all__ = [
     "get_user_variable",
     "show_user_variables",
     "remove_user_variable",
-    "Criterion",
+    "StopCriterion",
     "MovingStatistic",
 ]

@@ -94,7 +94,7 @@
     },
     "runControl": {
         "shouldCheckStopCriterion": true,
-        "shouldProcessMonitorOutput": true,
+        "externalProcessMonitorOutput": true,
         "stopCriterion": [
             {
                 "monitorField": {
@@ -108,10 +108,10 @@
                     "units": "m/s**2",
                     "value": 18.66
                 },
-                "typeName": "Criterion"
+                "typeName": "StopCriterion"
             }
         ],
-        "monitorProcessorHash": "0f07ee76dbfc489d02913e1feb4315b8ee8bc4e1e09109b472b2c16274ea387b"
+        "monitorProcessorHash": "8ef791f02ebfdac5738ea98d3328b6530b3188e3600f0fd80197247115576a9b"
     },
     "sliceOutput": {
         "animationFrequency": -1,

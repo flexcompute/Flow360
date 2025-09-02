@@ -39,11 +39,11 @@ from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
 )
 from flow360.component.simulation.models.volume_models import (
-    Criterion,
     Fluid,
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
+    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -396,7 +396,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
         private_attribute_id="11111",
     )
-    criterion = Criterion(
+    criterion = StopCriterion(
         name="Criterion_Helicity",
         tolerance=18.66 * u.m / u.s**2,
         monitor_output=probe_output,
@@ -414,7 +414,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
 
 def test_stopping_criterion_tolerance_in_unit_system():
     """
-    [Frontend] Test that an Criterion with the unit system as
+    [Frontend] Test that an StopCriterion with the unit system as
     tolerance's units can be validated and translated.
     """
 

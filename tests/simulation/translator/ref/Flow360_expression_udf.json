@@ -111,6 +111,6 @@
     },
     "runControl": {
         "shouldCheckStopCriterion": false,
-        "shouldProcessMonitorOutput": false
+        "externalProcessMonitorOutput": false
     }
 }

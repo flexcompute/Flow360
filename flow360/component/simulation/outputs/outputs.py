@@ -153,7 +153,7 @@ class MovingStatistic(Flow360BaseModel):
 
     @pd.field_validator("moving_window", "initial_skipping_steps", mode="after")
     @classmethod
-    def _check_monitor_field_is_scalar(cls, value):
+    def _check_moving_window_for_steady_simulation(cls, value):
         validation_info = get_validation_info()
         if (
             validation_info

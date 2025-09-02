@@ -100,10 +100,10 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.component.types import Axis
 
 
-class Criterion(Flow360BaseModel):
+class StopCriterion(Flow360BaseModel):
     """
 
-    :class:`Criterion` class for :py:attr:`Fluid.stopping_criterion` settings.
+    :class:`StopCriterion` class for :py:attr:`Fluid.stopping_criterion` settings.
 
     Example
     -------
@@ -116,7 +116,7 @@ class Criterion(Flow360BaseModel):
     ...     name="Helicity_user",
     ...     value=fl.math.dot(fl.solution.velocity, fl.solution.vorticity),
     ... )
-    >>> criterion = fl.Criterion(
+    >>> criterion = fl.StopCriterion(
     ...     name="Criterion_1",
     ...     monitor_output=fl.ProbeOutput(
     ...         name="Helicity_probe",
@@ -133,8 +133,11 @@ class Criterion(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field("Criterion", description="Name of this criterion.")
-    monitor_field: Union[UserVariable, str] = pd.Field(description="The field to be monitored.")
+    name: Optional[str] = pd.Field("StopCriterion", description="Name of this criterion.")
+    monitor_field: Union[UserVariable, str] = pd.Field(
+        description="The field to be monitored. This field must be "
+        "present in the `output_fields` of `monitor_output`."
+    )
     monitor_output: Union[MonitorOutputType, str] = pd.Field(
         description="The output to be monitored."
     )
@@ -148,7 +151,7 @@ class Criterion(Flow360BaseModel):
         "If not set, the criterion will directly compare the latest value with tolerance.",
         ge=2,
     )
-    type_name: Literal["Criterion"] = pd.Field("Criterion", frozen=True)
+    type_name: Literal["StopCriterion"] = pd.Field("StopCriterion", frozen=True)
 
     def preprocess(
         self,
@@ -509,8 +512,10 @@ class Fluid(PDEModelBase):
         )
     )
 
-    stopping_criterion: Optional[List[Criterion]] = pd.Field(
-        None, description="The stopping criterion setting of the Fluid solver."
+    stopping_criterion: Optional[List[StopCriterion]] = pd.Field(
+        None,
+        description="The stopping criterion setting of the Fluid solver. "
+        "All criteria must be met at the same time to stop the solver.",
     )
 
     # pylint: disable=fixme

@@ -205,7 +205,7 @@
                         "value": 18.66,
                         "units": "SI_unit_system"
                     },
-                    "type_name": "Criterion"
+                    "type_name": "StopCriterion"
                 }
             ]
         },

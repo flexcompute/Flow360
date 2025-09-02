@@ -167,24 +167,24 @@
             },
             "stopping_criterion": [
                 {
-                    "name": "Criterion 1",
-                    "type_name": "Criterion",
+                    "name": "StopCriterion 1",
+                    "type_name": "StopCriterion",
                     "criterion_change_window": 10,
                     "tolerance": 0.2,
                     "monitor_field": "Mach",
                     "monitor_output": "8b6c81a9-a409-44a1-9a85-4866f596a36d"
                 },
                 {
-                    "name": "Criterion 2",
-                    "type_name": "Criterion",
+                    "name": "StopCriterion 2",
+                    "type_name": "StopCriterion",
                     "criterion_change_window": 10,
                     "tolerance": 0.2,
                     "monitor_field": "Cp",
                     "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
                 },
                 {
-                    "name": "Criterion 3",
-                    "type_name": "Criterion",
+                    "name": "StopCriterion 3",
+                    "type_name": "StopCriterion",
                     "criterion_change_window": 10,
                     "tolerance": {
                         "type_name": "number",
@@ -198,8 +198,8 @@
                     "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
                 },
                 {
-                    "name": "Criterion 4",
-                    "type_name": "Criterion",
+                    "name": "StopCriterion 4",
+                    "type_name": "StopCriterion",
                     "criterion_change_window": 10,
                     "tolerance": {
                         "type_name": "number",
