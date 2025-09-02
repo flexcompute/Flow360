@@ -332,7 +332,7 @@ def _to_25_6_6(params_as_dict):
     return _remove_potential_issues_recursive(params_as_dict)
 
 
-def _to_25_7_1(params_as_dict):
+def _to_25_8_0(params_as_dict):
     # new method of specifying meshing was added, as well as the method discriminator
     meshing = params_as_dict.get("meshing")
     if meshing:
@@ -353,7 +353,7 @@ VERSION_MILESTONES = [
     (Flow360Version("25.6.4"), _to_25_6_4),
     (Flow360Version("25.6.5"), _to_25_6_5),
     (Flow360Version("25.6.6"), _to_25_6_6),
-    (Flow360Version("25.7.1"), _to_25_7_1),
+    (Flow360Version("25.8.0"), _to_25_8_0),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 

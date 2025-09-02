@@ -9,8 +9,8 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
 from flow360.component.simulation.validation.validation_utils import (
-    check_deleted_surface_in_entity_list, 
-    get_validation_info
+    check_deleted_surface_in_entity_list,
+    get_validation_info,
 )
 
 

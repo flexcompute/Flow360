@@ -1794,6 +1794,7 @@ def test_correct_expression_error_location():
         in errors[0]["msg"]
     )
 
+
 def test_solver_variable_names_recursive():
     """Test the recursive solver_variable_names method with proper physical dimensions."""
 

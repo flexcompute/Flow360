@@ -17,17 +17,16 @@ from flow360.component.simulation.meshing_param.edge_params import (
     ProjectAnisoSpacing,
     SurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.face_params import (
+    GeometryRefinement,
+    SurfaceRefinement,
+)
 from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
     SnappySnapControls,
     SnappySurfaceMeshingDefaults,
-)
-from flow360.component.simulation.meshing_param.face_params import (
-    GeometryRefinement,
-    SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.params import (
     BetaVolumeMeshingParams,
@@ -46,6 +45,9 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
+)
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
@@ -54,11 +56,6 @@ from flow360.component.simulation.primitives import (
     SnappyBody,
     Surface,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.operating_condition.operating_condition import (
-    AerospaceCondition,
-)
-from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -965,6 +962,7 @@ def test_snappy_no_refinements(get_snappy_geometry, snappy_refinements_no_region
     _translate_and_compare(
         snappy_refinements_no_regions, get_snappy_geometry.mesh_unit, "snappy_no_regions.json"
     )
+
 
 def test_gai_surface_mesher_refinements():
     geometry = Geometry.from_local_storage(

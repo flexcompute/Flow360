@@ -659,6 +659,8 @@ class MeshZone(Flow360BaseModel):
 
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
+
+
 @final
 class CustomVolume(_VolumeEntityBase):
     """

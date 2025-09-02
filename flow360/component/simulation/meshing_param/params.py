@@ -36,7 +36,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, MeshZone, CustomVolume
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    MeshZone,
+)
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -89,6 +94,7 @@ VolumeRefinementTypes = Annotated[
     ],
     pd.Field(discriminator="refinement_type"),
 ]
+
 
 class MeshingParams(Flow360BaseModel):
     """

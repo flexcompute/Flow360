@@ -7,9 +7,9 @@ from typing import get_args
 
 from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.primitives import (
+    Surface,
     _SurfaceEntityBase,
     _VolumeEntityBase,
-    Surface
 )
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
