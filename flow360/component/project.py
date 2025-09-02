@@ -486,7 +486,7 @@ class Project(pd.BaseModel):
         asset_id = self.project_tree.get_full_asset_id(
             query_asset=AssetShortID(asset_id=asset_id, asset_type="SurfaceMesh")
         )
-        return SurfaceMeshV2.from_cloud(id=asset_id)
+        return SurfaceMeshV2.from_cloud(id=asset_id, populates_registry=True)
 
     @property
     def surface_mesh(self) -> SurfaceMeshV2:
@@ -537,7 +537,7 @@ class Project(pd.BaseModel):
         asset_id = self.project_tree.get_full_asset_id(
             query_asset=AssetShortID(asset_id=asset_id, asset_type="VolumeMesh")
         )
-        return VolumeMeshV2.from_cloud(id=asset_id)
+        return VolumeMeshV2.from_cloud(id=asset_id, populates_registry=True)
 
     @property
     def volume_mesh(self) -> VolumeMeshV2:
@@ -1164,14 +1164,16 @@ class Project(pd.BaseModel):
         )
 
         if root_type == RootType.GEOMETRY:
-            root_asset = Geometry.from_cloud(meta.root_item_id, entity_info_param=entity_info_param)
+            root_asset = Geometry.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param, populates_registry=True
+            )
         elif root_type == RootType.SURFACE_MESH:
             root_asset = SurfaceMeshV2.from_cloud(
-                meta.root_item_id, entity_info_param=entity_info_param
+                meta.root_item_id, entity_info_param=entity_info_param, populates_registry=True
             )
         elif root_type == RootType.VOLUME_MESH:
             root_asset = VolumeMeshV2.from_cloud(
-                meta.root_item_id, entity_info_param=entity_info_param
+                meta.root_item_id, entity_info_param=entity_info_param, populates_registry=True
             )
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_info.asset_id}")
@@ -1470,7 +1472,7 @@ class Project(pd.BaseModel):
             }
         )
 
-        destination_obj = target.from_cloud(destination_id)
+        destination_obj = target.from_cloud(destination_id, populates_registry=False)
 
         log.info(f"Successfully submitted: {destination_obj.short_description()}")
 
