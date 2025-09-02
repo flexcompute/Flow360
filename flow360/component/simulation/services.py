@@ -388,6 +388,9 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
                     if "description" in variable_dict
                     else {}
                 ),
+                post_processing=variable_dict[
+                    "post_processing"
+                ],  # Should have been available after updater
             )
         except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
