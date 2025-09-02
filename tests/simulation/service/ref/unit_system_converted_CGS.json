@@ -358,6 +358,10 @@
         }
     ],
     "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1,
+            "units": "m"
+        },
         "registry": {
             "internal_registry": {
                 "VolumetricEntityType": [
@@ -532,7 +536,7 @@
         "type_name": "Steady"
     },
     "unit_system": {
-        "name": "SI"
+        "name": "CGS"
     },
     "version": "24.2.0"
 }
