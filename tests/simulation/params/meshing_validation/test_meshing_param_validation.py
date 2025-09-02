@@ -3,6 +3,7 @@ import pytest
 
 from flow360 import u
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
     SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
@@ -19,11 +20,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     UniformRefinement,
+    UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
-    MeshZone,
+    SeedpointZone,
     SnappyBody,
     Surface,
 )
@@ -211,18 +213,6 @@ def test_reuse_of_same_cylinder():
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
                     volume_meshing=BetaVolumeMeshingParams(
-                        volume_zones=[
-                            RotationCylinder(
-                                entities=[cylinder],
-                                spacing_axial=20,
-                                spacing_radial=0.2,
-                                spacing_circumferential=20,
-                                enclosed_entities=[
-                                    Surface(name="hub"),
-                                ],
-                            ),
-                            AutomatedFarfield(),
-                        ],
                         refinements=[
                             AxisymmetricRefinement(
                                 entities=[cylinder],
@@ -231,7 +221,19 @@ def test_reuse_of_same_cylinder():
                                 spacing_circumferential=0.3,
                             )
                         ],
-                    )
+                    ),
+                    zones=[
+                        RotationCylinder(
+                            entities=[cylinder],
+                            spacing_axial=20,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
                 )
             )
 
@@ -277,25 +279,25 @@ def test_reuse_of_same_cylinder():
         SimulationParams(
             meshing=ModularMeshingWorkflow(
                 volume_meshing=BetaVolumeMeshingParams(
-                    volume_zones=[
-                        RotationCylinder(
-                            entities=[cylinder],
-                            spacing_axial=20,
-                            spacing_radial=0.2,
-                            spacing_circumferential=20,
-                            enclosed_entities=[
-                                Surface(name="hub"),
-                            ],
-                        ),
-                        AutomatedFarfield(),
-                    ],
                     refinements=[
                         UniformRefinement(
                             entities=[cylinder],
                             spacing=0.1,
                         )
                     ],
-                )
+                ),
+                zones=[
+                    RotationCylinder(
+                        entities=[cylinder],
+                        spacing_axial=20,
+                        spacing_radial=0.2,
+                        spacing_circumferential=20,
+                        enclosed_entities=[
+                            Surface(name="hub"),
+                        ],
+                    ),
+                    AutomatedFarfield(),
+                ],
             )
         )
 
@@ -349,7 +351,8 @@ def test_reuse_of_same_cylinder():
                                 spacing_circumferential=0.1,
                             ),
                         ],
-                    )
+                    ),
+                    zones=[AutomatedFarfield()],
                 )
             )
 
@@ -392,36 +395,42 @@ def test_reuse_of_same_cylinder():
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             UniformRefinement(entities=[cylinder], spacing=0.2),
                         ],
-                    )
+                    ),
+                    zones=[AutomatedFarfield()],
                 )
             )
 
 
 def test_require_mesh_zones():
     with SI_unit_system:
-        surface_meshing = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceMeshingDefaults(
-                min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.001 * u.mm
+        ModularMeshingWorkflow(
+            surface_meshing=SnappySurfaceMeshingParams(
+                defaults=SnappySurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.001 * u.mm
+                ),
             ),
-            cad_is_fluid=False,
+            zones=[AutomatedFarfield()],
         )
 
     with SI_unit_system:
-        surface_meshing = SnappySurfaceMeshingParams(
-            defaults=SnappySurfaceMeshingDefaults(
-                min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+        ModularMeshingWorkflow(
+            surface_meshing=SnappySurfaceMeshingParams(
+                defaults=SnappySurfaceMeshingDefaults(
+                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+                ),
             ),
-            cad_is_fluid=True,
-            zones=[MeshZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+            zones=[UserDefinedFarfield(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
         )
 
     with pytest.raises(ValueError):
         with SI_unit_system:
-            surface_meshing = SnappySurfaceMeshingParams(
-                defaults=SnappySurfaceMeshingDefaults(
-                    min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+            ModularMeshingWorkflow(
+                surface_meshing=SnappySurfaceMeshingParams(
+                    defaults=SnappySurfaceMeshingDefaults(
+                        min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
+                    )
                 ),
-                cad_is_fluid=True,
+                zones=[UserDefinedFarfield()],
             )
 
 
@@ -443,5 +452,41 @@ def test_bad_refinements():
             ),
             refinements=[
                 SnappyBodyRefinement(max_spacing=0.5 * u.mm, bodies=[SnappyBody(body_name="bbb")])
+            ],
+        )
+
+
+def test_seedpoints_no_snappy():
+    ModularMeshingWorkflow(
+        volume_meshing=BetaVolumeMeshingParams(
+            defaults=BetaVolumeMeshingDefaults(
+                boundary_layer_growth_rate=1.2, boundary_layer_first_layer_thickness=1 * u.mm
+            )
+        ),
+        zones=[AutomatedFarfield()],
+    )
+
+    with pytest.raises(ValueError):
+        ModularMeshingWorkflow(
+            volume_meshing=BetaVolumeMeshingParams(
+                defaults=BetaVolumeMeshingDefaults(
+                    boundary_layer_growth_rate=1.2, boundary_layer_first_layer_thickness=1 * u.mm
+                )
+            ),
+            zones=[
+                SeedpointZone(name="radiator", point_in_mesh=(0, 0, 0) * u.m),
+                AutomatedFarfield(),
+            ],
+        )
+
+    with pytest.raises(ValueError):
+        ModularMeshingWorkflow(
+            volume_meshing=BetaVolumeMeshingParams(
+                defaults=BetaVolumeMeshingDefaults(
+                    boundary_layer_growth_rate=1.2, boundary_layer_first_layer_thickness=1 * u.mm
+                )
+            ),
+            zones=[
+                UserDefinedFarfield(name="fluid", point_in_mesh=(0, 0, 0) * u.m),
             ],
         )

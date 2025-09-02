@@ -8,6 +8,7 @@ from flow360.component.simulation.meshing_param.params import (
     BetaVolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
+    SnappySurfaceMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -17,7 +18,13 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, CustomVolume, Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    SeedpointZone,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
@@ -164,6 +171,26 @@ def _get_custom_volumes(volume_zones: list):
     return custom_volumes
 
 
+def _get_seedpoint_zones(volume_zones: list):
+    """
+    Get translated seedpoint volumes from volume zones.
+    To be later filled with data from snappyHexMesh.
+    """
+    seedpoint_zones = []
+    for zone in volume_zones:
+        if isinstance(zone, SeedpointZone) or isinstance(zone, UserDefinedFarfield):
+            seedpoint_zones.append(
+                {
+                    "name": zone.name,
+                    "pointInMesh": [coord.value.item() for coord in zone.point_in_mesh],
+                }
+            )
+    if seedpoint_zones:
+        # Sort custom volumes by name
+        seedpoint_zones.sort(key=lambda x: x["name"])
+    return seedpoint_zones
+
+
 @preprocess_input
 # pylint: disable=unused-argument,too-many-branches,too-many-statements
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
@@ -189,7 +216,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
         input_params.meshing.volume_meshing, BetaVolumeMeshingParams
     ):
-        volume_zones = input_params.meshing.volume_meshing.volume_zones
+        volume_zones = input_params.meshing.zones
         refinements = input_params.meshing.volume_meshing.refinements
         refinement_factor = input_params.meshing.volume_meshing.refinement_factor
         defaults = input_params.meshing.volume_meshing.defaults
@@ -335,5 +362,13 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     custom_volumes = _get_custom_volumes(volume_zones)
     if custom_volumes:
         translated["zones"] = custom_volumes
+
+    ##::  Step 7: Get custom seedpoint zones
+    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+        input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
+    ):
+        seedpoint_zones = _get_seedpoint_zones(volume_zones)
+        if seedpoint_zones:
+            translated["zones"] = seedpoint_zones
 
     return translated

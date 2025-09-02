@@ -131,5 +131,6 @@
         "mu": 0.71,
         "iter": 5,
         "includedAngle": 150
-    }
+    },
+    "cadIsFluid": false
 }

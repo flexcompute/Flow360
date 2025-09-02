@@ -649,12 +649,16 @@ class SnappyBody(Flow360BaseModel):
     body_name: str = pd.Field()
 
 
-class MeshZone(Flow360BaseModel):
+class SeedpointZone(Flow360BaseModel):
     """
     Represents a separate zone in the mesh, defined by a point inside it.
+    To be used only with snappyHexMesh.
     """
 
-    point_in_mesh: LengthType.Point
+    type: Literal["SeedpointZone"] = pd.Field("SeedpointZone", frozen=True)
+    point_in_mesh: Optional[LengthType.Point] = pd.Field(
+        None, description="Seedpoint for a main fluid zone in snappyHexMesh."
+    )
     name: str
 
 
