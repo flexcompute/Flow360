@@ -378,6 +378,15 @@ def test_om6wing_with_specified_turbulence_model_coefficient(get_om6Wing_tutoria
         ref_json_file="Flow360_om6wing_SST_with_modified_C_sigma_omega1.json",
     )
 
+def test_om6wing_with_low_reynolds_correction(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[0].turbulence_model_solver.test_low_reynolds_correction = True
+    
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing.json",
+    )
 
 ##::  Test with local test cases
 def test_xv15_bet_disk(
