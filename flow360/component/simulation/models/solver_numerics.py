@@ -426,6 +426,10 @@ class SpalartAllmaras(TurbulenceModelSolver):
         + "variables at the faces (specified in the range [0.0, 2.0]). 0.0 corresponds to "
         + "setting the gradient equal to zero, and 2.0 means no limiting.",
     )
+    low_reynolds_correction: bool = pd.Field(
+        False,
+        description="Use low Reynolds number correction for Spalart-Allmaras turbulence model"
+    )
 
 
 class NoneSolver(Flow360BaseModel):
