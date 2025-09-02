@@ -613,3 +613,22 @@ def test_surface_forces_result(mock_id, mock_response):
         match=r"Face group 'boundary2' contains faces belonging to multiple body groups: \['body00001', 'body00002'\]. The mapping between body and face groups cannot be created.",
     ):
         surface_forces.by_body_group(params=params)
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distribution_grouping(mock_id, mock_response):
+    case = fl.Case(id="case-c6f1b159-3dab-4729-b769-3ca9999b2b87")
+    params = case.params
+    entity_info = params.private_attribute_asset_cache.project_entity_info
+    x_dist = case.results.x_slicing_force_distribution
+    
+    # x_dist.filter(include=["fluid/body00002_face00003"])
+    # x_dist.as_dataframe().to_csv(path_or_buf="aaaaaa.csv")
+    # with open("aaaaaa.csv", "r") as fp:
+    #     print(fp.read())
+    
+    x_dist_by_boundary = x_dist.by_boundary_condition(params=params)
+    print("_entity_groups: ", x_dist_by_boundary._entity_groups)
+    print("_variables: ", x_dist_by_boundary._variables)
+    print("_entities: ", x_dist_by_boundary._entities)
+    for var_name in x_dist_by_boundary.raw_values.keys():
+        print("var_name: ", var_name, "len: ", len(x_dist_by_boundary.raw_values[var_name]))
