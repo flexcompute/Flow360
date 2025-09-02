@@ -56,6 +56,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
+    post_processing: bool = pd.Field()
     description: Optional[str] = pd.Field(None)
 
     @pd.field_validator("value", mode="after")
@@ -369,6 +370,12 @@ class Variable(Flow360BaseModel):
                 )
             default_context.set_metadata(values["name"], "description", values["description"])
         values.pop("description", None)
+
+        if "post_processing" in values:
+            default_context.set_metadata(
+                values["name"], "post_processing", values["post_processing"]
+            )
+        values.pop("post_processing", None)
 
         return values
 
@@ -1379,6 +1386,16 @@ def save_user_variables(params):
     for name, value in default_context._values.items():
         if "." in name:
             continue
+
+        # Get all output variables:
+        post_processing_variables = set()
+        for item in params.outputs if params.outputs else []:
+            if not "output_fields" in item.__class__.model_fields:
+                continue
+            for item in item.output_fields.items:
+                if isinstance(item, UserVariable):
+                    post_processing_variables.add(item.name)
+
         if params.private_attribute_asset_cache.variable_context is None:
             params.private_attribute_asset_cache.variable_context = []
         params.private_attribute_asset_cache.variable_context.append(
@@ -1386,6 +1403,7 @@ def save_user_variables(params):
                 name=name,
                 value=value,
                 description=default_context.get_metadata(name, "description"),
+                post_processing=name in post_processing_variables,
             )
         )
     return params
