@@ -397,13 +397,13 @@ class Variable(Flow360BaseModel):
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"{self.name} / {str_arg}")
+        return Expression(expression=f"{self.name} / ({str_arg})")
 
     @check_vector_binary_arithmetic
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"{self.name} // {str_arg}")
+        return Expression(expression=f"{self.name} // ({str_arg})")
 
     @check_vector_binary_arithmetic
     def __mod__(self, other):
@@ -1024,12 +1024,12 @@ class Expression(Flow360BaseModel, Evaluable):
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"({self.expression}) / {str_arg}")
+        return Expression(expression=f"({self.expression}) / ({str_arg})")
 
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"({self.expression}) // {str_arg}")
+        return Expression(expression=f"({self.expression}) // ({str_arg})")
 
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
