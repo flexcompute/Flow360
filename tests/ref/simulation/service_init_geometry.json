@@ -247,7 +247,8 @@
       },
       "update_jacobian_frequency": 4,
       "max_force_jac_update_physical_steps": 0,
-      "rotation_correction": false
+      "rotation_correction": false,
+      "low_reynolds_correction": false
     },
     "transition_model_solver": {
       "type_name": "None"

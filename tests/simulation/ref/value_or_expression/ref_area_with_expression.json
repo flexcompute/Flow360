@@ -54,6 +54,7 @@
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
         "rotationCorrection": false,
+        "lowReynoldsCorrection": false,
         "equationEvalFrequency": 4,
         "modelType": "SpalartAllmaras",
         "modelConstants": {
