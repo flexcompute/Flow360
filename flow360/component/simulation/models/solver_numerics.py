@@ -170,6 +170,8 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     C_v1: NonNegativeFloat = pd.Field(7.1)
     C_vonKarman: NonNegativeFloat = pd.Field(0.41)
     C_w2: float = pd.Field(0.3)
+    C_w4: float = pd.Field(0.21)
+    C_w5: float = pd.Field(1.5)
     C_t3: NonNegativeFloat = pd.Field(1.2)
     C_t4: NonNegativeFloat = pd.Field(0.5)
     C_min_rd: NonNegativeFloat = pd.Field(10.0)

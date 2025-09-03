@@ -52,7 +52,7 @@
     "turbulenceModelSolver": {
         "CFLMultiplier": 2.0,
         "DDES": false,
-        "ZDES": false,  
+        "ZDES": false,
         "absoluteTolerance": 1e-08,
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
@@ -72,7 +72,9 @@
             "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
-            "C_w2": 0.3
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,

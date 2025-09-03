@@ -1,306 +1,308 @@
 {
-  "version": "25.7.2b1",
-  "unit_system": {
-    "name": "SI"
-  },
-  "meshing": {
-    "refinement_factor": 1.0,
-    "gap_treatment_strength": 0.0,
-    "defaults": {
-      "boundary_layer_growth_rate": 1.2,
-      "curvature_resolution_angle": {
-        "units": "degree",
-        "value": 12.0
-      },
-      "surface_edge_growth_rate": 1.2,
-      "planar_face_tolerance": 1e-6,
-      "surface_max_adaptation_iterations": 50,
-      "surface_max_aspect_ratio": 10.0
+    "version": "25.7.2b1",
+    "unit_system": {
+        "name": "SI"
     },
-  "refinements": [],
-  "volume_zones": [
-    {
-      "type": "AutomatedFarfield",
-      "name": "Farfield",
-      "method": "auto"
-    }
-  ]
-},
-"reference_geometry": {
-  "moment_center": {
-    "value": [
-      0.0,
-      0.0,
-      0.0
-    ],
-    "units": "m"
-  },
-  "moment_length": {
-    "value": [
-      1.0,
-      1.0,
-      1.0
-    ],
-    "units": "m"
-  },
-  "area": {
-    "type_name":"number",
-    "value": 1.0,
-    "units": "m**2"
-  }
-},
-"operating_condition": {
-  "type_name": "AerospaceCondition",
-  "private_attribute_constructor": "default",
-  "private_attribute_input_cache": {
-    "alpha": {
-      "value": 0.0,
-      "units": "degree"
-    },
-    "beta": {
-      "value": 0.0,
-      "units": "degree"
-    },
-    "thermal_state": {
-      "type_name": "ThermalState",
-      "private_attribute_constructor": "default",
-      "private_attribute_input_cache": {},
-      "temperature": {
-        "value": 288.15,
-        "units": "K"
-      },
-      "density": {
-        "value": 1.225,
-        "units": "kg/m**3"
-      },
-      "material": {
-        "type": "air",
-        "name": "air",
-        "dynamic_viscosity": {
-          "reference_viscosity": {
-            "value": 1.716e-05,
-            "units": "Pa*s"
-          },
-          "reference_temperature": {
-            "value": 273.15,
-            "units": "K"
-          },
-          "effective_temperature": {
-            "value": 110.4,
-            "units": "K"
-          }
-        }
-      }
-    }
-  },
-  "alpha": {
-    "value": 0.0,
-    "units": "degree"
-  },
-  "beta": {
-    "value": 0.0,
-    "units": "degree"
-  },
-  "thermal_state": {
-    "type_name": "ThermalState",
-    "private_attribute_constructor": "default",
-    "private_attribute_input_cache": {},
-    "temperature": {
-      "value": 288.15,
-      "units": "K"
-    },
-    "density": {
-      "value": 1.225,
-      "units": "kg/m**3"
-    },
-    "material": {
-      "type": "air",
-      "name": "air",
-      "dynamic_viscosity": {
-        "reference_viscosity": {
-          "value": 1.716e-05,
-          "units": "Pa*s"
+    "meshing": {
+        "refinement_factor": 1.0,
+        "gap_treatment_strength": 0.0,
+        "defaults": {
+            "boundary_layer_growth_rate": 1.2,
+            "curvature_resolution_angle": {
+                "units": "degree",
+                "value": 12.0
+            },
+            "surface_edge_growth_rate": 1.2,
+            "planar_face_tolerance": 1e-06,
+            "surface_max_adaptation_iterations": 50,
+            "surface_max_aspect_ratio": 10.0
         },
-        "reference_temperature": {
-          "value": 273.15,
-          "units": "K"
-        },
-        "effective_temperature": {
-          "value": 110.4,
-          "units": "K"
-        }
-      }
-    }
-  }
-},
-"models": [
-  {
-    "type": "Wall",
-    "entities": {
-      "stored_entities": [
-        {
-          "private_attribute_registry_bucket_name": "SurfaceEntityType",
-          "private_attribute_entity_type_name": "Surface",
-          "name": "*",
-          "private_attribute_sub_components": []
-        }
-      ]
-    },
-    "name": "Wall",
-    "use_wall_function": false,
-    "heat_spec": {
-      "value":{
-        "value":0.0,
-        "units": "W/m**2"
-      },
-      "type_name": "HeatFlux"
-    },
-    "roughness_height": {
-      "value": 0.0,
-      "units": "m"
-    }
-  },
-  {
-    "type": "Freestream",
-    "entities": {
-      "stored_entities": [
-        {
-          "private_attribute_registry_bucket_name": "SurfaceEntityType",
-          "private_attribute_entity_type_name": "GhostSurface",
-          "name": "farfield"
-        }
-      ]
-    },
-    "name": "Freestream"
-  },
-  {
-    "material": {
-      "type": "air",
-      "name": "air",
-      "dynamic_viscosity": {
-        "reference_viscosity": {
-          "value": 1.716e-05,
-          "units": "Pa*s"
-        },
-        "reference_temperature": {
-          "value": 273.15,
-          "units": "K"
-        },
-        "effective_temperature": {
-          "value": 110.4,
-          "units": "K"
-        }
-      }
-    },
-    "type": "Fluid",
-    "initial_condition": {
-      "type_name": "NavierStokesInitialCondition",
-      "rho": "rho",
-      "u": "u",
-      "v": "v",
-      "w": "w",
-      "p": "p"
-    },
-    "navier_stokes_solver": {
-      "absolute_tolerance": 1e-10,
-      "relative_tolerance": 0.0,
-      "order_of_accuracy": 2,
-      "equation_evaluation_frequency": 1,
-      "linear_solver": {
-        "max_iterations": 30
-      },
-      "CFL_multiplier": 1.0,
-      "kappa_MUSCL": -1.0,
-      "numerical_dissipation_factor": 1.0,
-      "limit_velocity": false,
-      "limit_pressure_density": false,
-      "type_name": "Compressible",
-      "low_mach_preconditioner": false,
-      "update_jacobian_frequency": 4,
-      "max_force_jac_update_physical_steps": 0
-    },
-    "turbulence_model_solver": {
-      "absolute_tolerance": 1e-08,
-      "relative_tolerance": 0.0,
-      "order_of_accuracy": 2,
-      "equation_evaluation_frequency": 4,
-      "linear_solver": {
-        "max_iterations": 20
-      },
-      "CFL_multiplier": 2.0,
-      "type_name": "SpalartAllmaras",
-      "reconstruction_gradient_limiter": 0.5,
-      "quadratic_constitutive_relation": false,
-      "modeling_constants": {
-        "type_name": "SpalartAllmarasConsts",
-        "C_DES": 0.72,
-        "C_d": 8.0,
-        "C_cb1": 0.1355,
-        "C_cb2": 0.622,
-        "C_sigma": 0.6666666666666666,
-        "C_v1": 7.1,
-        "C_vonKarman": 0.41,
-        "C_w2": 0.3,
-        "C_t3": 1.2,
-        "C_t4": 0.5,
-        "C_min_rd": 10.0
-      },
-      "update_jacobian_frequency": 4,
-      "max_force_jac_update_physical_steps": 0,
-      "rotation_correction": false,
-      "low_reynolds_correction": false
-    },
-    "transition_model_solver": {
-      "type_name": "None"
-    }
-  }
-],
-"time_stepping": {
-  "type_name": "Steady",
-  "max_steps": 2000,
-  "CFL": {
-    "type": "adaptive",
-    "min": 0.1,
-    "max": 10000.0,
-    "max_relative_change": 1.0,
-    "convergence_limiting_factor": 0.25
-  }
-},
-"outputs": [
-  {
-    "frequency": -1,
-    "frequency_offset": 0,
-    "output_format": "paraview",
-    "name": "Surface output",
-    "write_single_file": false,
-    "output_fields": {
-      "items": [
-        "Cp",
-        "yPlus",
-        "Cf",
-        "CfVec"
-      ]
-    },
-    "entities": {
-        "stored_entities": [
+        "refinements": [],
+        "volume_zones": [
             {
-                "private_attribute_registry_bucket_name": "SurfaceEntityType",
-                "private_attribute_entity_type_name": "Surface",
-                "name": "*",
-                "private_attribute_sub_components": []
+                "type": "AutomatedFarfield",
+                "name": "Farfield",
+                "method": "auto"
             }
         ]
     },
-    "output_type": "SurfaceOutput"
-  }
-],
-"user_defined_fields":[],
-"private_attribute_asset_cache": {
-  "project_length_unit": {
-    "value": 1.0,
-    "units": "m"
-  },
-  "use_inhouse_mesher": false,
-  "use_geometry_AI": false
-}
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "units": "m"
+        },
+        "moment_length": {
+            "value": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "units": "m"
+        },
+        "area": {
+            "type_name": "number",
+            "value": 1.0,
+            "units": "m**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "default",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {},
+                "temperature": {
+                    "value": 288.15,
+                    "units": "K"
+                },
+                "density": {
+                    "value": 1.225,
+                    "units": "kg/m**3"
+                },
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {
+                            "value": 1.716e-05,
+                            "units": "Pa*s"
+                        },
+                        "reference_temperature": {
+                            "value": 273.15,
+                            "units": "K"
+                        },
+                        "effective_temperature": {
+                            "value": 110.4,
+                            "units": "K"
+                        }
+                    }
+                }
+            }
+        },
+        "alpha": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "density": {
+                "value": 1.225,
+                "units": "kg/m**3"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        }
+    },
+    "models": [
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "name": "Wall",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0.0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "m"
+            }
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostSurface",
+                        "name": "farfield"
+                    }
+                ]
+            },
+            "name": "Freestream"
+        },
+        {
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "type": "Fluid",
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 30
+                },
+                "CFL_multiplier": 1.0,
+                "kappa_MUSCL": -1.0,
+                "numerical_dissipation_factor": 1.0,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-08,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "CFL_multiplier": 2.0,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_w4": 0.21,
+                    "C_w5": 1.5,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10.0
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false,
+                "low_reynolds_correction": false
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 2000,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "max_relative_change": 1.0,
+            "convergence_limiting_factor": 0.25
+        }
+    },
+    "outputs": [
+        {
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "Surface output",
+            "write_single_file": false,
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "yPlus",
+                    "Cf",
+                    "CfVec"
+                ]
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "output_type": "SurfaceOutput"
+        }
+    ],
+    "user_defined_fields": [],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1.0,
+            "units": "m"
+        },
+        "use_inhouse_mesher": false,
+        "use_geometry_AI": false
+    }
 }
