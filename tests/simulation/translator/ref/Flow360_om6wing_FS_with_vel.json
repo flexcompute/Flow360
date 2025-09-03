@@ -138,6 +138,7 @@
         "linearSolver": {
             "maxIterations": 15
         },
+        "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,

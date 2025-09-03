@@ -427,7 +427,8 @@ class SpalartAllmaras(TurbulenceModelSolver):
         + "setting the gradient equal to zero, and 2.0 means no limiting.",
     )
     low_reynolds_correction: Optional[bool] = pd.Field(
-        None, description="Use low Reynolds number correction for Spalart-Allmaras turbulence model"
+        False,
+        description="Use low Reynolds number correction for Spalart-Allmaras turbulence model",
     )
 
 

@@ -45,6 +45,7 @@
         "linearSolver": {
             "maxIterations": 20
         },
+        "lowReynoldsCorrection": false,
         "CFLMultiplier": 2.0,
         "reconstructionGradientLimiter": 0.5,
         "quadraticConstitutiveRelation": false,

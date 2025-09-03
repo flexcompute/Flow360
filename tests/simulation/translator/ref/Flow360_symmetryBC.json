@@ -44,6 +44,7 @@
         "linearSolver": {
             "maxIterations": 25
         },
+        "lowReynoldsCorrection": false,
         "CFLMultiplier": 2.0,
         "DDES": false,
         "ZDES": false,
