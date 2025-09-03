@@ -330,14 +330,11 @@ def _check_complete_boundary_condition_and_unknown_surface(
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
 
     # Filter out the ones that will be deleted by mesher
-    automated_farfield_method = None
+    automated_farfield_method = params.meshing.automated_farfield_method
     if isinstance(params.meshing, MeshingParams):
-        automated_farfield_method = params.meshing.automated_farfield_method
         volume_zones = params.meshing.volume_zones
     if isinstance(params.meshing, ModularMeshingWorkflow):
-        if params.meshing.volume_meshing:
-            automated_farfield_method = params.meshing.volume_meshing.automated_farfield_method
-            volume_zones = params.meshing.volume_meshing.volume_zones
+        volume_zones = params.meshing.zones
 
     if automated_farfield_method:
         if validation_info.at_least_one_body_transformed:
