@@ -27,7 +27,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import CustomVolume
+from flow360.component.simulation.primitives import CustomVolume, SeedpointZone
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
@@ -410,7 +410,14 @@ def _check_complete_boundary_condition_and_unknown_surface(
     missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
     unknown_boundaries = used_boundaries - asset_boundaries
 
-    if missing_boundaries:
+    ## disable missing boundaries with snappy multizone
+    snappy_multizone = False
+    for zone in volume_zones:
+        if isinstance(zone, SeedpointZone):
+            snappy_multizone = True
+            break
+
+    if missing_boundaries and not snappy_multizone:
         missing_list = ", ".join(sorted(missing_boundaries))
         raise ValueError(
             f"The following boundaries do not have a boundary condition: {missing_list}. "
