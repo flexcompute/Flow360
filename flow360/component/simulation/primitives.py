@@ -649,17 +649,27 @@ class SnappyBody(Flow360BaseModel):
     body_name: str = pd.Field()
 
 
-class SeedpointZone(Flow360BaseModel):
+@final
+class SeedpointZone(_VolumeEntityBase):
     """
     Represents a separate zone in the mesh, defined by a point inside it.
     To be used only with snappyHexMesh.
     """
 
-    type: Literal["SeedpointZone"] = pd.Field("SeedpointZone", frozen=True)
-    point_in_mesh: Optional[LengthType.Point] = pd.Field(
-        None, description="Seedpoint for a main fluid zone in snappyHexMesh."
+    private_attribute_entity_type_name: Literal["SeedpointZone"] = pd.Field(
+        "SeedpointZone", frozen=True
     )
-    name: str
+    type: Literal["SeedpointZone"] = pd.Field("SeedpointZone", frozen=True)
+    point_in_mesh: LengthType.Point = pd.Field(
+        description="Seedpoint for a main fluid zone in snappyHexMesh."
+    )
+    axes: Optional[OrthogonalAxes] = pd.Field(
+        None, description="Principal axes definition when using with PorousMedium"
+    )  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    # pylint: disable=no-member
+    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]

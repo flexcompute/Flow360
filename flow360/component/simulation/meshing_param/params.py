@@ -51,6 +51,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -359,94 +360,6 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    # @pd.field_validator("volume_zones", mode="after")
-    # @classmethod
-    # def _check_volume_zones_has_farfied(cls, v):
-    #     if v is None:
-    #         # User did not put anything in volume_zones so may not want to use volume meshing
-    #         return v
-
-    #     total_farfield = sum(
-    #         isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
-    #     )
-    #     if total_farfield == 0:
-    #         raise ValueError("Farfield zone is required in `volume_zones`.")
-
-    #     if total_farfield > 1:
-    #         raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
-
-    #     return v
-
-    # @pd.model_validator(mode="after")
-    # def _check_no_reused_volume_entities(self) -> Self:
-    #     """
-    #     Meshing entities reuse check.
-    #     +------------------------+------------------------+------------------------+------------------------+
-    #     |                        | RotationCylinder       | AxisymmetricRefinement | UniformRefinement      |
-    #     +------------------------+------------------------+------------------------+------------------------+
-    #     | RotationCylinder       |          NO            |           --           |           --           |
-    #     +------------------------+------------------------+------------------------+------------------------+
-    #     | AxisymmetricRefinement |          NO            |           NO           |           --           |
-    #     +------------------------+------------------------+------------------------+------------------------+
-    #     | UniformRefinement      |          YES           |           NO           |           NO           |
-    #     +------------------------+------------------------+------------------------+------------------------+
-
-    #     """
-
-    #     usage = EntityUsageMap()
-
-    #     for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-    #         if isinstance(volume_zone, RotationCylinder):
-    #             # pylint: disable=protected-access
-    #             _ = [
-    #                 usage.add_entity_usage(item, volume_zone.type)
-    #                 for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
-    #             ]
-
-    #     for refinement in self.refinements if self.refinements is not None else []:
-    #         if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
-    #             # pylint: disable=protected-access
-    #             _ = [
-    #                 usage.add_entity_usage(item, refinement.refinement_type)
-    #                 for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
-    #             ]
-
-    #     error_msg = ""
-    #     for entity_type, entity_model_map in usage.dict_entity.items():
-    #         for entity_info in entity_model_map.values():
-    #             if len(entity_info["model_list"]) == 1 or sorted(
-    #                 entity_info["model_list"]
-    #             ) == sorted(["RotationCylinder", "UniformRefinement"]):
-    #                 # RotationCylinder and UniformRefinement are allowed to be used together
-    #                 continue
-
-    #             model_set = set(entity_info["model_list"])
-    #             if len(model_set) == 1:
-    #                 error_msg += (
-    #                     f"{entity_type} entity `{entity_info['entity_name']}` "
-    #                     + f"is used multiple times in `{model_set.pop()}`."
-    #                 )
-    #             else:
-    #                 model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
-    #                 error_msg += (
-    #                     f"Using {entity_type} entity `{entity_info['entity_name']}` "
-    #                     + f"in {model_string} at the same time is not allowed."
-    #                 )
-
-    #     if error_msg:
-    #         raise ValueError(error_msg)
-
-    #     return self
-
-    # @property
-    # def automated_farfield_method(self):
-    #     """Returns the automated farfield method used."""
-    #     if self.volume_zones:
-    #         for zone in self.volume_zones:  # pylint: disable=not-an-iterable
-    #             if isinstance(zone, AutomatedFarfield):
-    #                 return zone.method
-    #     return None
-
 
 SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
 VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
@@ -487,17 +400,13 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     raise ValueError(
                         "Volume zones with snappyHexMeshing are defined using SeedpointZones, not CustomVolumes."
                     )
-        return self
-
-    @pd.model_validator(mode="after")
-    def _check_seedpoint_zones(self) -> Self:
-        if not isinstance(self.surface_meshing, SnappySurfaceMeshingParams):
+        else:
             for zone in self.zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, SeedpointZone):
                     raise ValueError("Seedpoint zones are applicable only with snappyHexMeshing.")
                 if isinstance(zone, UserDefinedFarfield):
                     if zone.point_in_mesh is not None:
-                        raise ValueError(
+                        log.warning(
                             "Seedpoint in UserDefinedFarfield is applicable only with snappyHexMeshing."
                         )
         return self
