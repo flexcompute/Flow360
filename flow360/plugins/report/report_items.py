@@ -1623,7 +1623,7 @@ class Chart2D(BaseChart2D):
                 x_path = self.x
 
             if x_path.startswith("results/"):
-                x_path = x_path[len("results/"):]
+                x_path = x_path[len("results/") :]
 
             if x_path == "x_slicing_force_distribution/X":
                 log.warning(
