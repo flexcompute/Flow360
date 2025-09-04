@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
 	"version": "25.6.5",
+=======
+	"version": "25.6.7",
+>>>>>>> 398c92b8 ([HOTFIX RC 25.6]  Fix report validation recursion issue and bump to 25.6.7 (#1411))
 	"unit_system": {
 		"name": "SI"
 	},
