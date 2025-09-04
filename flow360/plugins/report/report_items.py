@@ -1449,8 +1449,8 @@ class Chart2D(BaseChart2D):
         include = self.include
         exclude = self.exclude
         if (include is not None) or (exclude is not None):
-            self.include = None
-            self.exclude = None
+            object.__setattr__(self, "include", None)
+            object.__setattr__(self, "exclude", None)
             self.x = self._overload_include_exclude(include, exclude, self.x)
             if isinstance(self.y, List):
                 new_value = []
