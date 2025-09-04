@@ -1617,14 +1617,22 @@ class Chart2D(BaseChart2D):
     def _get_background_chart(self, x_data):
         if self.background == "geometry":
             dimension = np.amax(x_data[0]) - np.amin(x_data[0])
-            if self.x == "x_slicing_force_distribution/X":
+            if isinstance(self.x, (DataItem, Delta)):
+                x_path = self.x.data
+            else:
+                x_path = self.x
+
+            if x_path.startswith("results/"):
+                x_path = x_path[len("results/"):]
+
+            if x_path == "x_slicing_force_distribution/X":
                 log.warning(
                     "First case is used as a background image with dimensions matched to the extent of X data"
                 )
                 camera = Camera(
                     position=(0, -1, 0), up=(0, 0, 1), dimension=dimension, dimension_dir="width"
                 )
-            elif self.x == "y_slicing_force_distribution/Y":
+            elif x_path == "y_slicing_force_distribution/Y":
                 log.warning(
                     "First case is used as a background image with dimensions matched to the extent of X data"
                 )
