@@ -40,7 +40,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    MeshZone,
+    SeedpointZone,
 )
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
@@ -51,6 +51,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -66,7 +67,7 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume, SeedpointZone],
     pd.Field(discriminator="type"),
 ]
 
@@ -283,15 +284,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     )
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
     bounding_box: Optional[Box] = pd.Field(None)
-    zones: Optional[List[MeshZone]] = pd.Field(None)
-    cad_is_fluid: bool = pd.Field(False)
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
-
-    @pd.model_validator(mode="after")
-    def _ensure_mesh_zone_provided(self):
-        if self.cad_is_fluid and self.zones is None:
-            raise ValueError("Mesh zones must be specified when cad is fluid.")
-        return self
 
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
@@ -341,10 +334,6 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         + " finer mesh where r is the refinement_factor value.",
     )
 
-    volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
-        default=None, description="Creation of new volume zones."
-    )
-
     refinements: List[VolumeRefinementTypes] = pd.Field(
         default=[],
         description="Additional fine-tunning for refinements on top of the global settings",
@@ -359,13 +348,22 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
-    @pd.field_validator("volume_zones", mode="after")
+
+SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
+VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
+
+
+class ModularMeshingWorkflow(Flow360BaseModel):
+    type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
+    surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
+        default=None, context=SURFACE_MESH
+    )
+    volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)
+    zones: List[VolumeZonesTypes]
+
+    @pd.field_validator("zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfied(cls, v):
-        if v is None:
-            # User did not put anything in volume_zones so may not want to use volume meshing
-            return v
-
         total_farfield = sum(
             isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
         )
@@ -376,6 +374,30 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
 
         return v
+
+    @pd.model_validator(mode="after")
+    def _check_snappy_zones(self) -> Self:
+        if isinstance(self.surface_meshing, SnappySurfaceMeshingParams):
+            for zone in self.zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, UserDefinedFarfield):
+                    if zone.point_in_mesh is None:
+                        raise ValueError(
+                            "When using snappy with user defined farfield, point in mesh has to be given."
+                        )
+                if isinstance(zone, CustomVolume):
+                    raise ValueError(
+                        "Volume zones with snappyHexMeshing are defined using SeedpointZones, not CustomVolumes."
+                    )
+        else:
+            for zone in self.zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, SeedpointZone):
+                    raise ValueError("Seedpoint zones are applicable only with snappyHexMeshing.")
+                if isinstance(zone, UserDefinedFarfield):
+                    if zone.point_in_mesh is not None:
+                        log.warning(
+                            "Seedpoint in UserDefinedFarfield is applicable only with snappyHexMeshing."
+                        )
+        return self
 
     @pd.model_validator(mode="after")
     def _check_no_reused_volume_entities(self) -> Self:
@@ -395,7 +417,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
 
         usage = EntityUsageMap()
 
-        for volume_zone in self.volume_zones if self.volume_zones is not None else []:
+        for volume_zone in self.zones:
             if isinstance(volume_zone, RotationCylinder):
                 # pylint: disable=protected-access
                 _ = [
@@ -403,7 +425,11 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
                     for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
                 ]
 
-        for refinement in self.refinements if self.refinements is not None else []:
+        for refinement in (
+            self.volume_meshing.refinements
+            if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)
+            else []
+        ):
             if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
                 # pylint: disable=protected-access
                 _ = [
@@ -441,20 +467,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     @property
     def automated_farfield_method(self):
         """Returns the automated farfield method used."""
-        if self.volume_zones:
-            for zone in self.volume_zones:  # pylint: disable=not-an-iterable
-                if isinstance(zone, AutomatedFarfield):
-                    return zone.method
+        for zone in self.zones:  # pylint: disable=not-an-iterable
+            if isinstance(zone, AutomatedFarfield):
+                return zone.method
         return None
-
-
-SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
-VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
-
-
-class ModularMeshingWorkflow(Flow360BaseModel):
-    type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
-    surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
-        default=None, context=SURFACE_MESH
-    )
-    volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)

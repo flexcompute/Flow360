@@ -155,8 +155,8 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    MeshZone,
     ReferenceGeometry,
+    SeedpointZone,
     SnappyBody,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -330,7 +330,7 @@ __all__ = [
     "SnappyRegionRefinement",
     "SnappySurfaceEdgeRefinement",
     "SnappyBody",
-    "MeshZone",
+    "SeedpointZone",
     "SnappySurfaceMeshingParams",
     "BetaVolumeMeshingParams",
     "BetaVolumeMeshingDefaults",

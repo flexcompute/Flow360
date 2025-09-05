@@ -45,6 +45,7 @@ class UniformRefinement(Flow360BaseModel):
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
+    project_to_surface: Optional[bool] = pd.Field(True)
 
 
 class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -233,4 +234,7 @@ class UserDefinedFarfield(Flow360BaseModel):
     """
 
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
-    name: Optional[str] = pd.Field(None)
+    name: Optional[str] = pd.Field("farfield")
+    point_in_mesh: Optional[LengthType.Point] = pd.Field(
+        None, description="Used to determine the fluid region with snappyHexMesh"
+    )

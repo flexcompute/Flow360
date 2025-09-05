@@ -18,8 +18,17 @@ from flow360.component.simulation.meshing_param.surface_mesh_refinements import 
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
 )
-from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
-from flow360.component.simulation.primitives import Box, Cylinder, Surface
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UniformRefinement,
+    UserDefinedFarfield,
+)
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    SeedpointZone,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     preprocess_input,
@@ -205,297 +214,285 @@ def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
+def snappy_mesher_json(input_params: SimulationParams):
+    translated = {}
+    surface_meshing_params = input_params.meshing.surface_meshing
+    # extract geometry information in body: {patch0, ...} format
+    bodies = {}
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+        solid = face_id.split("::")
+        if solid[0] not in bodies:
+            bodies[solid[0]] = set()
+        if len(solid) == 2:
+            bodies[solid[0]].add(solid[1])
+
+    # Fill with defaults
+    common_defaults = {
+        "gap": surface_meshing_params.defaults.gap_resolution.value.item(),
+        "spacing": {
+            "min": surface_meshing_params.defaults.min_spacing.value.item(),
+            "max": surface_meshing_params.defaults.max_spacing.value.item(),
+        },
+    }
+    translated["geometry"] = {
+        "bodies": [
+            {
+                "bodyName": name,
+                **deepcopy(common_defaults),
+                "regions": [{"patchName": region} for region in regions],
+            }
+            for (name, regions) in bodies.items()
+        ]
+    }
+    # apply refinements
+    for refinement in surface_meshing_params.refinements:
+        if isinstance(refinement, SnappyBodyRefinement):
+            apply_SnappyBodyRefinement(refinement, translated)
+        elif isinstance(refinement, SnappySurfaceEdgeRefinement):
+            apply_SnappySurfaceEdgeRefinement(
+                refinement, translated, surface_meshing_params.defaults
+            )
+        elif isinstance(refinement, SnappyRegionRefinement):
+            apply_SnappyRegionRefinement(refinement, translated)
+        elif isinstance(refinement, UniformRefinement):
+            apply_UniformRefinement_w_snappy(refinement, translated)
+        else:
+            raise Flow360TranslationError(
+                f"Refinement of type {type(refinement)} cannot be used with Snappy."
+            )
+
+    # apply projected volumetric refinements
+    if input_params.meshing.volume_meshing is not None:
+        for refinement in input_params.meshing.volume_meshing.refinements:
+            if isinstance(refinement, UniformRefinement) and refinement.project_to_surface is True:
+                apply_UniformRefinement_w_snappy(refinement, translated)
+
+    # apply settings
+    castellated_mesh_controls = surface_meshing_params.castellated_mesh_controls
+    snap_controls = surface_meshing_params.snap_controls
+    quality_settings = surface_meshing_params.quality_metrics
+    translated["mesherSettings"] = {
+        "snappyHexMesh": {
+            "castellatedMeshControls": {
+                "resolveFeatureAngle": castellated_mesh_controls.resolve_feature_angle.to(
+                    "degree"
+                ).value.item(),
+                "nCellsBetweenLevels": castellated_mesh_controls.n_cells_between_levels,
+                "minRefinementCells": castellated_mesh_controls.min_refinement_cells,
+            },
+            "snapControls": {
+                "nSmoothPatch": snap_controls.n_smooth_patch,
+                "tolerance": snap_controls.tolerance,
+                "nSolveIter": snap_controls.n_solve_iter,
+                "nRelaxIter": snap_controls.n_relax_iter,
+                "nFeatureSnapIter": snap_controls.n_feature_snap_iter,
+                "multiRegionFeatureSnap": snap_controls.multi_region_feature_snap,
+                "strictRegionSnap": snap_controls.strict_region_snap,
+            },
+        },
+        "meshQuality": {
+            "maxNonOrtho": (
+                quality_settings.max_non_ortho.to("degree").value.item()
+                if quality_settings.max_non_ortho is not None
+                else 180
+            ),
+            "maxBoundarySkewness": (
+                quality_settings.max_boundary_skewness.to("degree").value.item()
+                if quality_settings.max_boundary_skewness is not None
+                else -1
+            ),
+            "maxInternalSkewness": (
+                quality_settings.max_internal_skewness.to("degree").value.item()
+                if quality_settings.max_internal_skewness is not None
+                else -1
+            ),
+            "maxConcave": (
+                quality_settings.max_concave.to("degree").value.item()
+                if quality_settings.max_concave is not None
+                else 180
+            ),
+            "minVol": (quality_settings.min_vol if quality_settings.min_vol is not None else -1e30),
+            "minTetQuality": (
+                quality_settings.min_tet_quality
+                if quality_settings.min_tet_quality is not None
+                else -1e30
+            ),
+            "minArea": (
+                quality_settings.min_area.value.item()
+                if quality_settings.min_area is not None
+                else -1
+            ),
+            "minTwist": (
+                quality_settings.min_twist if quality_settings.min_twist is not None else -2
+            ),
+            "minDeterminant": (
+                quality_settings.min_determinant
+                if quality_settings.min_determinant is not None
+                else -1e5
+            ),
+            "minVolRatio": (
+                quality_settings.min_vol_ratio if quality_settings.min_vol_ratio is not None else 0
+            ),
+            "minFaceWeight": (
+                quality_settings.min_face_weight
+                if quality_settings.min_face_weight is not None
+                else 0
+            ),
+            "minTriangleTwist": (
+                quality_settings.min_triangle_twist
+                if quality_settings.min_triangle_twist is not None
+                else -1
+            ),
+            "nSmoothScale": (
+                quality_settings.n_smooth_scale
+                if quality_settings.n_smooth_scale is not None
+                else 0
+            ),
+            "errorReduction": (
+                quality_settings.error_reduction
+                if quality_settings.error_reduction is not None
+                else 0
+            ),
+            "minVolCollapseRatio": (
+                quality_settings.min_vol_collapse_ratio
+                if quality_settings.min_vol_collapse_ratio is not None
+                else 0
+            ),
+        },
+    }
+    # smoothing settings
+    smoothing_settings = surface_meshing_params.smooth_controls
+
+    if smoothing_settings is not None:
+        translated["smoothingControls"] = {
+            "lambda": (
+                smoothing_settings.lambda_factor
+                if smoothing_settings.lambda_factor is not None
+                else 0
+            ),
+            "mu": (smoothing_settings.mu_factor if smoothing_settings.mu_factor is not None else 0),
+            "iter": (
+                smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
+            ),
+        }
+        if smoothing_settings.included_angle is None or np.isclose(
+            smoothing_settings.included_angle.to("degree").value.item(), 0
+        ):
+            translated["smoothingControls"]["includedAngle"] = None
+        else:
+            translated["smoothingControls"]["includedAngle"] = smoothing_settings.included_angle.to(
+                "degree"
+            ).value.item()
+
+        if smoothing_settings.min_elem is not None:
+            translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem
+        if smoothing_settings.min_len is not None:
+            translated["smoothingControls"]["minLen"] = smoothing_settings.min_len.value.item()
+
+    # bounding box
+    bounding_box = surface_meshing_params.bounding_box
+
+    if bounding_box is not None:
+        translated["boundingBox"] = {
+            "min": {
+                "x": bounding_box.center[0].value.item() - (bounding_box.size[0].value.item() / 2),
+                "y": bounding_box.center[1].value.item() - (bounding_box.size[1].value.item() / 2),
+                "z": bounding_box.center[2].value.item() - (bounding_box.size[2].value.item() / 2),
+            },
+            "max": {
+                "x": bounding_box.center[0].value.item() + (bounding_box.size[0].value.item() / 2),
+                "y": bounding_box.center[1].value.item() + (bounding_box.size[1].value.item() / 2),
+                "z": bounding_box.center[2].value.item() + (bounding_box.size[2].value.item() / 2),
+            },
+        }
+
+    # cad is fluid
+    zones = input_params.meshing.zones
+    for zone in zones:
+        if isinstance(zone, AutomatedFarfield):
+            translated["cadIsFluid"] = False
+        if isinstance(zone, UserDefinedFarfield):
+            translated["cadIsFluid"] = True
+
+    if not "cadIsFluid" in translated:
+        raise Flow360TranslationError("Farfield type not specified.")
+
+    # points in mesh
+    if zones is not None and translated["cadIsFluid"]:
+        translated["locationInMesh"] = {
+            zone.name: [point.value.item() for point in zone.point_in_mesh]
+            for zone in zones
+            if isinstance(zone, (SeedpointZone, UserDefinedFarfield))
+        }
+
+    return translated
+
+
 def legacy_mesher_json(input_params: SimulationParams):
     """
     Get JSON for surface meshing.
-
     """
     translated = {}
     # pylint: disable=duplicate-code
-    if input_params.meshing is None:
+    ##:: >>  Step 1:  Get global maxEdgeLength [REQUIRED]
+    if input_params.meshing.defaults.surface_max_edge_length is None:
+        log.info("No `surface_max_edge_length` found in the defaults. Skipping translation.")
         raise Flow360TranslationError(
-            "meshing not specified.",
-            None,
-            ["meshing"],
+            "No `surface_max_edge_length` found in the defaults",
+            input_value=None,
+            location=["meshing", "refinements", "defaults"],
         )
 
-    if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-        input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
-    ):
+    default_max_edge_length = input_params.meshing.defaults.surface_max_edge_length.value.item()
 
-        surface_meshing_params = input_params.meshing.surface_meshing
-        # extract geometry information in body: {patch0, ...} format
-        bodies = {}
-        for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
-            solid = face_id.split("::")
-            if solid[0] not in bodies:
-                bodies[solid[0]] = set()
-            if len(solid) == 2:
-                bodies[solid[0]].add(solid[1])
+    ##:: >> Step 2: Get curvatureResolutionAngle [REQUIRED]
+    translated["curvatureResolutionAngle"] = (
+        input_params.meshing.defaults.curvature_resolution_angle.to("degree").value.item()
+    )
 
-        # Fill with defaults
-        common_defaults = {
-            "gap": surface_meshing_params.defaults.gap_resolution.value.item(),
-            "spacing": {
-                "min": surface_meshing_params.defaults.min_spacing.value.item(),
-                "max": surface_meshing_params.defaults.max_spacing.value.item(),
-            },
-        }
-        translated["geometry"] = {
-            "bodies": [
-                {
-                    "bodyName": name,
-                    **deepcopy(common_defaults),
-                    "regions": [{"patchName": region} for region in regions],
-                }
-                for (name, regions) in bodies.items()
-            ]
-        }
-        # apply refinements
-        for refinement in surface_meshing_params.refinements:
-            if isinstance(refinement, SnappyBodyRefinement):
-                apply_SnappyBodyRefinement(refinement, translated)
-            elif isinstance(refinement, SnappySurfaceEdgeRefinement):
-                apply_SnappySurfaceEdgeRefinement(
-                    refinement, translated, surface_meshing_params.defaults
-                )
-            elif isinstance(refinement, SnappyRegionRefinement):
-                apply_SnappyRegionRefinement(refinement, translated)
-            elif isinstance(refinement, UniformRefinement):
-                apply_UniformRefinement_w_snappy(refinement, translated)
-            else:
-                raise Flow360TranslationError(
-                    f"Refinement of type {type(refinement)} cannot be used with Snappy."
-                )
+    ##:: >> Step 3: Get growthRate [REQUIRED]
+    translated["growthRate"] = input_params.meshing.defaults.surface_edge_growth_rate
 
-        # apply settings
-        castellated_mesh_controls = surface_meshing_params.castellated_mesh_controls
-        snap_controls = surface_meshing_params.snap_controls
-        quality_settings = surface_meshing_params.quality_metrics
-        translated["mesherSettings"] = {
-            "snappyHexMesh": {
-                "castellatedMeshControls": {
-                    "resolveFeatureAngle": castellated_mesh_controls.resolve_feature_angle.to(
-                        "degree"
-                    ).value.item(),
-                    "nCellsBetweenLevels": castellated_mesh_controls.n_cells_between_levels,
-                    "minRefinementCells": castellated_mesh_controls.min_refinement_cells,
-                },
-                "snapControls": {
-                    "nSmoothPatch": snap_controls.n_smooth_patch,
-                    "tolerance": snap_controls.tolerance,
-                    "nSolveIter": snap_controls.n_solve_iter,
-                    "nRelaxIter": snap_controls.n_relax_iter,
-                    "nFeatureSnapIter": snap_controls.n_feature_snap_iter,
-                    "multiRegionFeatureSnap": snap_controls.multi_region_feature_snap,
-                    "strictRegionSnap": snap_controls.strict_region_snap,
-                },
-            },
-            "meshQuality": {
-                "maxNonOrtho": (
-                    quality_settings.max_non_ortho.to("degree").value.item()
-                    if quality_settings.max_non_ortho is not None
-                    else 180
-                ),
-                "maxBoundarySkewness": (
-                    quality_settings.max_boundary_skewness.to("degree").value.item()
-                    if quality_settings.max_boundary_skewness is not None
-                    else -1
-                ),
-                "maxInternalSkewness": (
-                    quality_settings.max_internal_skewness.to("degree").value.item()
-                    if quality_settings.max_internal_skewness is not None
-                    else -1
-                ),
-                "maxConcave": (
-                    quality_settings.max_concave.to("degree").value.item()
-                    if quality_settings.max_concave is not None
-                    else 180
-                ),
-                "minVol": (
-                    quality_settings.min_vol if quality_settings.min_vol is not None else -1e30
-                ),
-                "minTetQuality": (
-                    quality_settings.min_tet_quality
-                    if quality_settings.min_tet_quality is not None
-                    else -1e30
-                ),
-                "minArea": (
-                    quality_settings.min_area.value.item()
-                    if quality_settings.min_area is not None
-                    else -1
-                ),
-                "minTwist": (
-                    quality_settings.min_twist if quality_settings.min_twist is not None else -2
-                ),
-                "minDeterminant": (
-                    quality_settings.min_determinant
-                    if quality_settings.min_determinant is not None
-                    else -1e5
-                ),
-                "minVolRatio": (
-                    quality_settings.min_vol_ratio
-                    if quality_settings.min_vol_ratio is not None
-                    else 0
-                ),
-                "minFaceWeight": (
-                    quality_settings.min_face_weight
-                    if quality_settings.min_face_weight is not None
-                    else 0
-                ),
-                "minTriangleTwist": (
-                    quality_settings.min_triangle_twist
-                    if quality_settings.min_triangle_twist is not None
-                    else -1
-                ),
-                "nSmoothScale": (
-                    quality_settings.n_smooth_scale
-                    if quality_settings.n_smooth_scale is not None
-                    else 0
-                ),
-                "errorReduction": (
-                    quality_settings.error_reduction
-                    if quality_settings.error_reduction is not None
-                    else 0
-                ),
-                "minVolCollapseRatio": (
-                    quality_settings.min_vol_collapse_ratio
-                    if quality_settings.min_vol_collapse_ratio is not None
-                    else 0
-                ),
-            },
-        }
-        # smoothing settings
-        smoothing_settings = surface_meshing_params.smooth_controls
+    ##:: >> Step 4: Get edges [OPTIONAL]
+    edge_config = translate_setting_and_apply_to_all_entities(
+        input_params.meshing.refinements,
+        SurfaceEdgeRefinement,
+        translation_func=SurfaceEdgeRefinement_to_edges,
+        use_sub_item_as_key=True,
+    )
+    if edge_config != {}:
+        translated["edges"] = edge_config
 
-        if smoothing_settings is not None:
-            translated["smoothingControls"] = {
-                "lambda": (
-                    smoothing_settings.lambda_factor
-                    if smoothing_settings.lambda_factor is not None
-                    else 0
-                ),
-                "mu": (
-                    smoothing_settings.mu_factor if smoothing_settings.mu_factor is not None else 0
-                ),
-                "iter": (
-                    smoothing_settings.iterations
-                    if smoothing_settings.iterations is not None
-                    else 0
-                ),
-            }
-            if smoothing_settings.included_angle is None or np.isclose(
-                smoothing_settings.included_angle.to("degree").value.item(), 0
-            ):
-                translated["smoothingControls"]["includedAngle"] = None
-            else:
-                translated["smoothingControls"]["includedAngle"] = (
-                    smoothing_settings.included_angle.to("degree").value.item()
-                )
+    ##:: >> Step 5: Get faces
+    face_config = translate_setting_and_apply_to_all_entities(
+        input_params.meshing.refinements,
+        SurfaceRefinement,
+        translation_func=SurfaceRefinement_to_faces,
+        translation_func_global_max_edge_length=input_params.meshing.defaults.surface_max_edge_length,
+        use_sub_item_as_key=True,
+    )
 
-            if smoothing_settings.min_elem is not None:
-                translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem
-            if smoothing_settings.min_len is not None:
-                translated["smoothingControls"]["minLen"] = smoothing_settings.min_len.value.item()
+    ##:: >> Step 5.1: Apply default_max_edge_length to faces that are not explicitly specified
+    assert input_params.private_attribute_asset_cache.project_entity_info is not None
+    assert isinstance(
+        input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+    )
 
-        # bounding box
-        bounding_box = surface_meshing_params.bounding_box
+    for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
+        if face_id not in face_config:
+            face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
 
-        if bounding_box is not None:
-            translated["boundingBox"] = {
-                "min": {
-                    "x": bounding_box.center[0].value.item()
-                    - (bounding_box.size[0].value.item() / 2),
-                    "y": bounding_box.center[1].value.item()
-                    - (bounding_box.size[1].value.item() / 2),
-                    "z": bounding_box.center[2].value.item()
-                    - (bounding_box.size[2].value.item() / 2),
-                },
-                "max": {
-                    "x": bounding_box.center[0].value.item()
-                    + (bounding_box.size[0].value.item() / 2),
-                    "y": bounding_box.center[1].value.item()
-                    + (bounding_box.size[1].value.item() / 2),
-                    "z": bounding_box.center[2].value.item()
-                    + (bounding_box.size[2].value.item() / 2),
-                },
-            }
-        # points in mesh
-        zones = surface_meshing_params.zones
-        if zones is not None:
-            translated["locationInMesh"] = {
-                zone.name: [point.value.item() for point in zone.point_in_mesh] for zone in zones
-            }
+    translated["faces"] = face_config
 
-        # cad is fluid
-        if surface_meshing_params.cad_is_fluid:
-            translated["cadIsFluid"] = True
+    ##:: >> Step 6: Tell surface mesher how do we group boundaries.
+    translated["boundaries"] = {}
+    grouped_faces: List[Surface] = (
+        input_params.private_attribute_asset_cache.project_entity_info.get_boundaries()
+    )
+    for surface in grouped_faces:
+        for face_id in surface.private_attribute_sub_components:
+            translated["boundaries"][face_id] = {"boundaryName": surface.name}
 
-    elif isinstance(input_params.meshing, MeshingParams):
-        ##:: >>  Step 1:  Get global maxEdgeLength [REQUIRED]
-        if input_params.meshing.defaults.surface_max_edge_length is None:
-            log.info("No `surface_max_edge_length` found in the defaults. Skipping translation.")
-            raise Flow360TranslationError(
-                "No `surface_max_edge_length` found in the defaults",
-                input_value=None,
-                location=["meshing", "refinements", "defaults"],
-            )
-
-        default_max_edge_length = input_params.meshing.defaults.surface_max_edge_length.value.item()
-
-        ##:: >> Step 2: Get curvatureResolutionAngle [REQUIRED]
-        translated["curvatureResolutionAngle"] = (
-            input_params.meshing.defaults.curvature_resolution_angle.to("degree").value.item()
-        )
-
-        ##:: >> Step 3: Get growthRate [REQUIRED]
-        translated["growthRate"] = input_params.meshing.defaults.surface_edge_growth_rate
-
-        ##:: >> Step 4: Get edges [OPTIONAL]
-        edge_config = translate_setting_and_apply_to_all_entities(
-            input_params.meshing.refinements,
-            SurfaceEdgeRefinement,
-            translation_func=SurfaceEdgeRefinement_to_edges,
-            use_sub_item_as_key=True,
-        )
-        if edge_config != {}:
-            translated["edges"] = edge_config
-
-        ##:: >> Step 5: Get faces
-        face_config = translate_setting_and_apply_to_all_entities(
-            input_params.meshing.refinements,
-            SurfaceRefinement,
-            translation_func=SurfaceRefinement_to_faces,
-            translation_func_global_max_edge_length=input_params.meshing.defaults.surface_max_edge_length,
-            use_sub_item_as_key=True,
-        )
-
-        ##:: >> Step 5.1: Apply default_max_edge_length to faces that are not explicitly specified
-        assert input_params.private_attribute_asset_cache.project_entity_info is not None
-        assert isinstance(
-            input_params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
-        )
-
-        for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
-            if face_id not in face_config:
-                face_config[face_id] = {"maxEdgeLength": default_max_edge_length}
-
-        translated["faces"] = face_config
-
-        ##:: >> Step 6: Tell surface mesher how do we group boundaries.
-        translated["boundaries"] = {}
-        grouped_faces: List[Surface] = (
-            input_params.private_attribute_asset_cache.project_entity_info.get_boundaries()
-        )
-        for surface in grouped_faces:
-            for face_id in surface.private_attribute_sub_components:
-                translated["boundaries"][face_id] = {"boundaryName": surface.name}
-    else:
-        raise Flow360TranslationError(
-            f"translation for {type(input_params.meshing)} not implemented.",
-            None,
-            ["meshing"],
-        )
     return translated
 
 
@@ -584,8 +581,25 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
     """
+    if input_params.meshing is None:
+        raise Flow360TranslationError(
+            "meshing not specified.",
+            None,
+            ["meshing"],
+        )
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
-        return legacy_mesher_json(input_params)
+        if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
+            input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
+        ):
+            return snappy_mesher_json(input_params)
+        elif isinstance(input_params.meshing, MeshingParams):
+            return legacy_mesher_json(input_params)
+        else:
+            raise Flow360TranslationError(
+                f"translation for {type(input_params.meshing)} not implemented.",
+                None,
+                ["meshing"],
+            )
 
     # === GAI mode ===
     input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()

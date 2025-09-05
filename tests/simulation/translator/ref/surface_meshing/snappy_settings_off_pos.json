@@ -120,5 +120,6 @@
     "locationInMesh": {
         "fluid": [0, 0, 0],
         "solid": [1, 2, 3]
-    }
+    },
+    "cadIsFluid": true
 }

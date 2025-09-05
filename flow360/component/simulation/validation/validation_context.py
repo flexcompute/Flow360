@@ -145,7 +145,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
                 if param_as_dict["meshing"]["type"] == "MeshingParams":
                     volume_zones = param_as_dict["meshing"]["volume_zones"]
                 else:
-                    volume_zones = param_as_dict["meshing"]["volume_meshing"]["volume_zones"]
+                    volume_zones = param_as_dict["meshing"]["zones"]
         except KeyError:
             # No farfield/meshing info.
             return None
@@ -226,9 +226,15 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_planar_face_tolerance(cls, param_as_dict: dict):
-        planar_face_tolerance = get_value_with_path(
-            param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
-        )
+        if param_as_dict["meshing"]:
+            if param_as_dict["meshing"]["type"] == "MeshingParams":
+                planar_face_tolerance = get_value_with_path(
+                    param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
+                )
+            else:
+                planar_face_tolerance = get_value_with_path(
+                    param_as_dict, ["meshing", "volume_meshing", "planar_face_tolerance"]
+                )
         return planar_face_tolerance
 
     @classmethod

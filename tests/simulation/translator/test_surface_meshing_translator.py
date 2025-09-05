@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
@@ -52,7 +53,7 @@ from flow360.component.simulation.primitives import (
     Box,
     Cylinder,
     Edge,
-    MeshZone,
+    SeedpointZone,
     SnappyBody,
     Surface,
 )
@@ -540,7 +541,9 @@ def snappy_all_defaults():
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=ModularMeshingWorkflow(surface_meshing=surf_meshing_params),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
+            ),
         )
     return param
 
@@ -629,7 +632,67 @@ def snappy_basic_refinements():
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=ModularMeshingWorkflow(surface_meshing=surf_meshing_params),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
+            ),
+        )
+    return param
+
+
+@pytest.fixture()
+def snappy_coupled_refinements():
+    test_geometry = TempGeometry("tester.stl")
+    with SI_unit_system:
+        surf_meshing_params = SnappySurfaceMeshingParams(
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+            ),
+            refinements=[],
+            smooth_controls=SnappySmoothControls(),
+        )
+        vol_meshing_params = BetaVolumeMeshingParams(
+            defaults=BetaVolumeMeshingDefaults(
+                boundary_layer_first_layer_thickness=1 * u.mm, boundary_layer_growth_rate=1.2
+            ),
+            refinements=[
+                UniformRefinement(
+                    spacing=2 * u.mm,
+                    entities=[
+                        Box(name="box0", center=[0, 30, 60] * u.mm, size=[20, 30, 40] * u.mm),
+                        Cylinder(
+                            name="cyl0",
+                            axis=[0, 0, 1],
+                            center=[10, 20, 30] * u.mm,
+                            height=60 * u.mm,
+                            outer_radius=20 * u.mm,
+                        ),
+                    ],
+                    project_to_surface=True,
+                ),
+                UniformRefinement(
+                    spacing=8 * u.mm,
+                    entities=[
+                        Cylinder(
+                            name="cyl1",
+                            axis=[-0.26, 0.45, -0.43],
+                            center=[10, 20, 30] * u.mm,
+                            height=60 * u.mm,
+                            outer_radius=34 * u.mm,
+                        )
+                    ],
+                    project_to_surface=False,
+                ),
+            ],
+        )
+        param = SimulationParams(
+            private_attribute_asset_cache=AssetCache(
+                project_entity_info=test_geometry._get_entity_info()
+            ),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                volume_meshing=vol_meshing_params,
+                zones=[UserDefinedFarfield(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)],
+            ),
         )
     return param
 
@@ -668,7 +731,9 @@ def snappy_refinements_multiple_regions():
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=ModularMeshingWorkflow(surface_meshing=surf_meshing_params),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
+            ),
         )
     return param
 
@@ -703,15 +768,16 @@ def snappy_refinements_no_regions():
                 ),
             ],
             smooth_controls=SnappySmoothControls(),
-            cad_is_fluid=True,
-            zones=[MeshZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m)],
         )
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
                 project_entity_info=test_geometry._get_entity_info()
             ),
-            meshing=ModularMeshingWorkflow(surface_meshing=surf_meshing_params),
+            meshing=ModularMeshingWorkflow(
+                surface_meshing=surf_meshing_params,
+                zones=[UserDefinedFarfield(name="fluid", point_in_mesh=[0, 0, 0] * u.m)],
+            ),
         )
     return param
 
@@ -762,10 +828,6 @@ def snappy_settings():
                 min_len=30 * u.mm,
                 included_angle=120 * u.deg,
             ),
-            zones=[
-                MeshZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
-                MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
-            ],
         )
 
         param = SimulationParams(
@@ -774,6 +836,10 @@ def snappy_settings():
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
+                zones=[
+                    UserDefinedFarfield(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                    SeedpointZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
+                ],
             ),
         )
     return param
@@ -820,10 +886,6 @@ def snappy_settings_off_position():
             smooth_controls=SnappySmoothControls(
                 lambda_factor=None, mu_factor=None, iterations=None, included_angle=None
             ),
-            zones=[
-                MeshZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
-                MeshZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
-            ],
         )
 
         param = SimulationParams(
@@ -832,6 +894,10 @@ def snappy_settings_off_position():
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
+                zones=[
+                    UserDefinedFarfield(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                    SeedpointZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
+                ],
             ),
         )
     return param
@@ -936,6 +1002,15 @@ def test_snappy_basic(get_snappy_geometry, snappy_basic_refinements):
         snappy_basic_refinements,
         get_snappy_geometry.mesh_unit,
         "snappy_basic_refinements.json",
+        atol=1e-6,
+    )
+
+
+def test_snappy_coupled(get_snappy_geometry, snappy_coupled_refinements):
+    _translate_and_compare(
+        snappy_coupled_refinements,
+        get_snappy_geometry.mesh_unit,
+        "snappy_coupled_refinements.json",
         atol=1e-6,
     )
 
