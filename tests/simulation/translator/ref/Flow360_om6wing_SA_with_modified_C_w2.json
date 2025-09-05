@@ -133,6 +133,7 @@
         "linearSolver": {
             "maxIterations": 15
         },
+        "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
@@ -143,6 +144,8 @@
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 2.718,
+            "C_w4": 0.21,
+            "C_w5": 1.5,
             "C_t3": 1.2,
             "C_t4": 0.5,
             "C_min_rd": 10.0
@@ -177,7 +180,7 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[],
+    "userDefinedFields": [],
     "usingLiquidAsMaterial": false,
     "outputRescale": {
         "velocityScale": 1.0

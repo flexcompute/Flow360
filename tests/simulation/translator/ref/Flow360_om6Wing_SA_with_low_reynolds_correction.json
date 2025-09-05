@@ -1,7 +1,7 @@
 {
     "boundaries": {
         "1": {
-            "type": "WallFunction",
+            "type": "NoSlipWall",
             "heatFlux": 0.0,
             "roughnessHeight": 0.0
         },
@@ -50,6 +50,40 @@
         "relativeTolerance": 0.0,
         "updateJacobianFrequency": 4
     },
+    "sliceOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "startAverageIntegrationStep": -1,
+        "outputFormat": "tecplot",
+        "outputFields": [],
+        "slices": {
+            "sliceName_1": {
+                "outputFields": [
+                    "primitiveVars",
+                    "vorticity",
+                    "vorticityMagnitude",
+                    "T",
+                    "s",
+                    "Cp",
+                    "mut",
+                    "mutRatio",
+                    "Mach"
+                ],
+                "sliceNormal": [
+                    0.0,
+                    1.0,
+                    0.0
+                ],
+                "sliceOrigin": [
+                    0.0,
+                    0.7000000000000001,
+                    0.0
+                ]
+            }
+        }
+    },
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
@@ -59,19 +93,19 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
         "surfaces": {
-            "1": {
+            "3": {
                 "outputFields": [
-                    "nuHat"
+                    "Cp"
                 ]
             },
             "2": {
                 "outputFields": [
-                    "nuHat"
+                    "Cp"
                 ]
             },
-            "3": {
+            "1": {
                 "outputFields": [
-                    "nuHat"
+                    "Cp"
                 ]
             }
         },
@@ -99,7 +133,7 @@
         "linearSolver": {
             "maxIterations": 15
         },
-        "lowReynoldsCorrection": false,
+        "lowReynoldsCorrection": true,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,

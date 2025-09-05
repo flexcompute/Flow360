@@ -1379,6 +1379,8 @@ def rename_modeling_constants(modeling_constants):
         replace_dict_key(modeling_constants, "CV1", "C_v1")
         replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
         replace_dict_key(modeling_constants, "CW2", "C_w2")
+        replace_dict_key(modeling_constants, "CW4", "C_w4")
+        replace_dict_key(modeling_constants, "CW5", "C_w5")
         replace_dict_key(modeling_constants, "CT3", "C_t3")
         replace_dict_key(modeling_constants, "CT4", "C_t4")
         replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")

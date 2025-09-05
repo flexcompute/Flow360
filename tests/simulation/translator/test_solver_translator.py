@@ -441,6 +441,17 @@ def test_stopping_criterion_tolerance_in_unit_system():
     )
 
 
+def test_om6wing_with_low_reynolds_correction(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[0].turbulence_model_solver.low_reynolds_correction = True
+
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing_SA_with_low_reynolds_correction.json",
+    )
+
+
 ##::  Test with local test cases
 def test_xv15_bet_disk(
     create_steady_hover_param,
