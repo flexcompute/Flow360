@@ -178,7 +178,8 @@ def _get_seedpoint_zones(volume_zones: list):
     """
     seedpoint_zones = []
     for zone in volume_zones:
-        if isinstance(zone, SeedpointZone) or isinstance(zone, UserDefinedFarfield):
+        if (isinstance(zone, SeedpointZone) or 
+            (isinstance(zone, UserDefinedFarfield) and hasattr(zone, "point_in_mesh"))):
             seedpoint_zones.append(
                 {
                     "name": zone.name,
