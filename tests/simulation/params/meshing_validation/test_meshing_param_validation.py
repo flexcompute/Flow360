@@ -454,39 +454,3 @@ def test_bad_refinements():
                 SnappyBodyRefinement(max_spacing=0.5 * u.mm, bodies=[SnappyBody(body_name="bbb")])
             ],
         )
-
-
-# def test_seedpoints_no_snappy():
-#     ModularMeshingWorkflow(
-#         volume_meshing=BetaVolumeMeshingParams(
-#             defaults=BetaVolumeMeshingDefaults(
-#                 boundary_layer_growth_rate=1.2, boundary_layer_first_layer_thickness=1 * u.mm
-#             )
-#         ),
-#         zones=[AutomatedFarfield()],
-#     )
-
-#     with pytest.raises(ValueError):
-#         ModularMeshingWorkflow(
-#             volume_meshing=BetaVolumeMeshingParams(
-#                 defaults=BetaVolumeMeshingDefaults(
-#                     boundary_layer_growth_rate=1.2, boundary_layer_first_layer_thickness=1 * u.mm
-#                 )
-#             ),
-#             zones=[
-#                 SeedpointZone(name="radiator", point_in_mesh=(0, 0, 0) * u.m),
-#                 AutomatedFarfield(),
-#             ],
-#         )
-
-#     with pytest.raises(ValueError):
-#         ModularMeshingWorkflow(
-#             volume_meshing=BetaVolumeMeshingParams(
-#                 defaults=BetaVolumeMeshingDefaults(
-#                     boundary_layer_growth_rate=1.2, boundary_layer_first_layer_thickness=1 * u.mm
-#                 )
-#             ),
-#             zones=[
-#                 UserDefinedFarfield(name="fluid", point_in_mesh=(0, 0, 0) * u.m),
-#             ],
-#         )

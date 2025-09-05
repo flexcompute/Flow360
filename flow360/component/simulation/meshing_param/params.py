@@ -284,15 +284,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     )
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
     bounding_box: Optional[Box] = pd.Field(None)
-    # zones: Optional[List[MeshZone]] = pd.Field(None)
-    # cad_is_fluid: bool = pd.Field(False)
     refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
-
-    # @pd.model_validator(mode="after")
-    # def _ensure_mesh_zone_provided(self):
-    #     if self.cad_is_fluid and self.zones is None:
-    #         raise ValueError("Mesh zones must be specified when cad is fluid.")
-    #     return self
 
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
@@ -341,10 +333,6 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         + "and first layer thickness will be adjusted to generate `r`-times"
         + " finer mesh where r is the refinement_factor value.",
     )
-
-    # volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
-    #     default=None, description="Creation of new volume zones."
-    # )
 
     refinements: List[VolumeRefinementTypes] = pd.Field(
         default=[],
