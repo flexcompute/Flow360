@@ -150,5 +150,9 @@
     "usingLiquidAsMaterial": false,
     "outputRescale": {
         "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }

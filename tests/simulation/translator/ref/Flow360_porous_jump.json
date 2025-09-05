@@ -69,6 +69,10 @@
     "outputRescale": {
         "velocityScale": 1.0
     },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
+    },
     "surfaceOutput": {
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,

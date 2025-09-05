@@ -861,13 +861,15 @@ def test_project_variables_serialization():
                 VolumeOutput(
                     output_fields=[
                         bbb,
-                    ]
+                    ],
+                    private_attribute_id="000",
                 ),
                 ProbeOutput(
                     probe_points=[
                         Point(name="pt1", location=(1, 2, 3), private_attribute_id="111")
                     ],
                     output_fields=[bbb],
+                    private_attribute_id="222",
                 ),
             ],
         )
