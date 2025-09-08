@@ -226,7 +226,8 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_planar_face_tolerance(cls, param_as_dict: dict):
-        if param_as_dict["meshing"]:
+        planar_face_tolerance = None
+        if "meshing" in param_as_dict and param_as_dict["meshing"]:
             if param_as_dict["meshing"]["type"] == "MeshingParams":
                 planar_face_tolerance = get_value_with_path(
                     param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
