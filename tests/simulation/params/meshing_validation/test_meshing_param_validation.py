@@ -3,7 +3,6 @@ import pytest
 
 from flow360 import u
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    BetaVolumeMeshingDefaults,
     SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
@@ -23,9 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import (
-    Box,
     Cylinder,
-    SeedpointZone,
     SnappyBody,
     Surface,
 )

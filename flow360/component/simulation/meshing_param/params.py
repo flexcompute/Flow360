@@ -42,13 +42,10 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointZone,
 )
-from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
-    ConditionalField,
     ContextField,
-    get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 from flow360.log import log
@@ -324,7 +321,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                     if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0 * u.deg:
                         raise ValueError(
                             "UniformRefinement for snappy accepts only Boxes with axes aligned"
-                            + "with the global coordinate system (angle_of_rotation=0)."
+                            + " with the global coordinate system (angle_of_rotation=0)."
                         )
                     if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
                         raise ValueError(

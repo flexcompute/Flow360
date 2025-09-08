@@ -18,7 +18,7 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
     """
     Base refinement for snappyHexMesh.
     """
-
+    # pylint: disable=no-member
     min_spacing: Optional[LengthType.Positive] = pd.Field(None)
     max_spacing: Optional[LengthType.Positive] = pd.Field(None)
     proximity_spacing: Optional[LengthType.Positive] = pd.Field(None)
@@ -35,7 +35,8 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
         if self.min_spacing and self.proximity_spacing:
             if self.proximity_spacing > self.min_spacing:
                 log.warning(
-                    f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing ({self.min_spacing}), setting proximity spacing to minimal spacing."
+                    f"Proximity spacing ({self.proximity_spacing}) was set higher than the minimal spacing" 
+                    + f"({self.min_spacing}), setting proximity spacing to minimal spacing."
                 )
                 self.proximity_spacing = self.min_spacing
         return self
@@ -45,7 +46,7 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
     """
     Refinement for snappyHexMesh body (searchableSurfaceWithGaps).
     """
-
+    # pylint: disable=no-member
     refinement_type: Literal["SnappyBodyRefinement"] = pd.Field("SnappyBodyRefinement", frozen=True)
     gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
     entities: List[SnappyBody] = pd.Field(alias="bodies")
@@ -55,7 +56,7 @@ class SnappyRegionRefinement(SnappyEntityRefinement):
     """
     Refinement for the body region in snappyHexMesh,
     """
-
+    # pylint: disable=no-member
     min_spacing: LengthType.Positive = pd.Field()
     max_spacing: LengthType.Positive = pd.Field()
     refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field(
@@ -68,7 +69,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     """
     Edge refinement for bodies and regions in snappyHexMesh.
     """
-
+    # pylint: disable=no-member
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
@@ -86,7 +87,8 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
         if isinstance(self.spacing, List):
             if not self.distances or len(self.distances) != len(self.spacing):
                 raise ValueError(
-                    f"When using a distance spacing specification both spacing ({self.spacing}) and distances ({self.distances}) fields must be Lists and the same length."
+                    f"When using a distance spacing specification both spacing ({self.spacing}) and distances" 
+                    + f"({self.distances}) fields must be Lists and the same length."
                 )
         return self
 
