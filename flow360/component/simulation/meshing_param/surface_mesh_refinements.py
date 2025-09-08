@@ -46,6 +46,13 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
 class SnappyBodyRefinement(SnappyEntityRefinement):
     """
     Refinement for snappyHexMesh body (searchableSurfaceWithGaps).
+
+    Parameters
+    ----------
+    gap_resolution: Optional[LengthType.NonNegative], default: None
+
+    Example
+    -------
     """
 
     # pylint: disable=no-member
@@ -56,7 +63,15 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
 
 class SnappyRegionRefinement(SnappyEntityRefinement):
     """
-    Refinement for the body region in snappyHexMesh,
+    Refinement for the body region in snappyHexMesh.
+
+    Parameters
+    ----------
+    min_spacing: LengthType.Positive, default: ??
+    max_spacing: LengthType.Positive, default: ??
+
+    Example
+    -------
     """
 
     # pylint: disable=no-member
@@ -71,6 +86,21 @@ class SnappyRegionRefinement(SnappyEntityRefinement):
 class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     """
     Edge refinement for bodies and regions in snappyHexMesh.
+
+    Parameters
+    ----------
+    spacing: Optional[Union[LengthType.Positive, List[LengthType.Positive]]], default: None
+    distances: Optional[List[LengthType.Positive]], default: None
+    min_elem: Optional[pd.NonNegativeInt], default: None
+    min_len: Optional[LengthType.NonNegative], default: None
+    included_angle: AngleType.Positive, default: 150°
+    bodies: Optional[List[SnappyBody]], default: None
+    regions: Optional[EntityList[Surface]], default: None
+    retain_on_smoothing: Optional[bool], default: True
+
+    Example
+    -------
+
     """
 
     # pylint: disable=no-member

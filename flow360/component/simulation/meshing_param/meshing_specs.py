@@ -341,6 +341,26 @@ class SnappyQualityMetrics(Flow360BaseModel):
 class SnappyCastellatedMeshControls(Flow360BaseModel):
     """
     snappyHexMesh castellation controls.
+
+    Parameters
+    ----------
+    resolve_feature_angle : Optional[AngleType.Positive], default: 25°
+        This parameter controls the local curvature refinement. The higher the value,
+        the less features it captures. Applies maximum level of refinement to cells
+        that can see intersections whose angle exceeds this value.
+        Set to None to disable this metric.
+
+    n_cells_between_levels: Optional[pd.NonNegativeInt], default: 1
+        This parameter controls the transition between cell refinement levels. Number
+        of buffer layers of cells between different levels of refinement.
+        Set to None to disable this metric.
+
+    min_refinement_cells: Optional[pd.NonNegativeInt], default: 10
+        The refinement along the surfaces may spend many iterations on refinement of
+        only few cells. Whenever the number of cells to be refined is less than or equal
+        to this value, the refinement will stop. Unless the parameter is set to zero,
+        at least one refining iteration will be performed.
+        Set to None to disable this metric.
     """
 
     # pylint: disable=no-member
@@ -362,6 +382,35 @@ class SnappyCastellatedMeshControls(Flow360BaseModel):
 class SnappySnapControls(Flow360BaseModel):
     """
     snappyHexMesh snap controls.
+
+    Parameters
+    ----------
+    n_smooth_patch: pd.NonNegativeInt, default: 3
+        Number of patch smoothing iterations before finding correspondence to surface.
+
+    tolerance: pd.PositiveFloat, default: 2
+        Ratio of distance for points to be attracted by surface feature point or edge,
+        to local maximum edge length.
+
+    n_solve_iter: pd.NonNegativeInt, default: 30
+        Number of mesh displacement relaxation iterations
+
+    n_relax_iter: pd.NonNegativeInt, default: 5
+        Number of relaxation iterations during the snapping. If the mesh does not conform the geometry
+        and all the iterations are spend, user may try to increase the number of iterations.
+
+    n_feature_snap_iter: pd.NonNegativeInt, default: 15
+        Number of relaxation iterations used for snapping onto the features.
+        If not specified, feature snapping will be disabled.
+
+    multi_region_feature_snap: bool, default: True
+        When using explicitFeatureSnap and this switch is on, features between multiple
+        surfaces will be captured. This is useful for multi-region meshing where the internal
+        mesh must conform the region geometrical boundaries.
+
+    strict_region_snap: bool, default: False
+        Attract points only to the surface they originate from. This can improve snapping of
+        intersecting surfaces. 
     """
 
     # pylint: disable=no-member
@@ -377,6 +426,21 @@ class SnappySnapControls(Flow360BaseModel):
 class SnappySmoothControls(Flow360BaseModel):
     """
     snappyHexMesh smoothing controls.
+
+    Parameters
+    ----------
+    lambda_factor: Optional[pd.NonNegativeFloat], default: 0.7
+        Lambda value within [0,1]
+    
+    mu_factor: Optional[pd.NonNegativeFloat], default: 0.71
+        Mu value within [0,1]
+
+    iterations: Optional[pd.NonNegativeInt], default: 5
+        Number of smoothing iterations
+        
+    min_elem: Optional[pd.NonNegativeInt], default: None
+    min_len: Optional[LengthType.NonNegative], default: None
+    included_angle: Optional[AngleType.NonNegative], default: 150°
     """
 
     # pylint: disable=no-member
