@@ -316,7 +316,7 @@ def _validate_cht_has_heat_transfer(params):
 
 def _check_complete_boundary_condition_and_unknown_surface(
     params,
-):  # pylint:disable=too-many-branches, too-many-locals
+):  # pylint:disable=too-many-branches, too-many-locals,too-many-statements
     ## Step 1: Get all boundaries patches from asset cache
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):

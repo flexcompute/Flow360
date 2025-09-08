@@ -440,6 +440,7 @@ def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
 
 
 def check_meshing_specified(input_params: SimulationParams):
+    """Check if meshing parameters are included in SimulationParams."""
     if input_params.meshing is None:
         raise Flow360TranslationError(
             "meshing not specified.",

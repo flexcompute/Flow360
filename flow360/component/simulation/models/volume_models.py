@@ -1,7 +1,6 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
-import inspect
 import os
 import re
 from abc import ABCMeta
@@ -18,7 +17,6 @@ from flow360.component.simulation.framework.expressions import (
 )
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
-    get_class_method,
 )
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
@@ -1285,7 +1283,7 @@ class PorousMedium(Flow360BaseModel):
     entities: EntityList[GenericVolume, Box, SeedpointZone] = pd.Field(
         alias="volumes",
         description="The entity list for the `PorousMedium` model. "
-        + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or" 
+        + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
         + "by :class:`SeedpointZone` when using snappyHexMeshing."
         + "The axes of entity must be specified to serve as the the principle axes of the "
         + "porous medium material model.",

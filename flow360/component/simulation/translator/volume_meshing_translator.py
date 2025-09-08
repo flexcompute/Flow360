@@ -195,7 +195,7 @@ def _get_seedpoint_zones(volume_zones: list):
 
 
 @preprocess_input
-# pylint: disable=unused-argument,too-many-branches,too-many-statements
+# pylint: disable=unused-argument,too-many-branches,too-many-statements,too-many-locals
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.

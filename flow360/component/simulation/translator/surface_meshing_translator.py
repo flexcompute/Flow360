@@ -222,12 +222,15 @@ def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
 
         else:
             raise Flow360TranslationError(
-                f"Volume of type {type(volume)} cannot be used with Snappy."
+                f"Volume of type {type(volume)} cannot be used with Snappy.",
+                None,
+                ["meshing", "surface_meshing"],
             )
 
         translated["geometry"]["refinementVolumes"].append(volume_body)
 
 
+# pylint: disable=too-many-branches,too-many-statements
 def snappy_mesher_json(input_params: SimulationParams):
     """
     Get config JSON for snappyHexMesh surface meshing.
@@ -275,7 +278,9 @@ def snappy_mesher_json(input_params: SimulationParams):
             apply_UniformRefinement_w_snappy(refinement, translated)
         else:
             raise Flow360TranslationError(
-                f"Refinement of type {type(refinement)} cannot be used with Snappy."
+                f"Refinement of type {type(refinement)} cannot be used with Snappy.",
+                None,
+                ["meshing", "surface_meshing"],
             )
 
     # apply projected volumetric refinements
@@ -431,8 +436,10 @@ def snappy_mesher_json(input_params: SimulationParams):
         if isinstance(zone, UserDefinedFarfield):
             translated["cadIsFluid"] = True
 
-    if not "cadIsFluid" in translated:
-        raise Flow360TranslationError("Farfield type not specified.")
+    if "cadIsFluid" not in translated:
+        raise Flow360TranslationError(
+            "Farfield type not specified.", None, ["meshing", "surface_meshing"]
+        )
 
     # points in mesh
     if zones is not None and translated["cadIsFluid"]:
@@ -604,14 +611,13 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
             input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
         ):
             return snappy_mesher_json(input_params)
-        elif isinstance(input_params.meshing, MeshingParams):
+        if isinstance(input_params.meshing, MeshingParams):
             return legacy_mesher_json(input_params)
-        else:
-            raise Flow360TranslationError(
-                f"translation for {type(input_params.meshing)} not implemented.",
-                None,
-                ["meshing"],
-            )
+        raise Flow360TranslationError(
+            f"translation for {type(input_params.meshing)} not implemented.",
+            None,
+            ["meshing"],
+        )
 
     # === GAI mode ===
     input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()

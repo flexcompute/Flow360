@@ -103,7 +103,6 @@ from flow360.component.simulation.translator.utils import (
     replace_dict_key,
     translate_setting_and_apply_to_all_entities,
     translate_value_or_expression_object,
-    update_dict_recursively,
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import (
