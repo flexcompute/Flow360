@@ -31,6 +31,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
+    check_meshing_specified,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
@@ -42,7 +43,6 @@ from flow360.log import log
 def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
     """
     Translate SurfaceEdgeRefinement to edges.
-
     """
     if obj.method.type == "angle":
         return {
@@ -71,7 +71,6 @@ def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
 def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
     """
     Translate SurfaceRefinement to faces.
-
     """
     return {
         "maxEdgeLength": (
@@ -83,6 +82,9 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
 
 
 def apply_SnappyBodyRefinement(refinement: SnappyBodyRefinement, translated):
+    """
+    Translate SnappyBodyRefinement to bodies.
+    """
     applicable_bodies = [entity.body_name for entity in refinement.entities]
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies:
@@ -97,6 +99,9 @@ def apply_SnappyBodyRefinement(refinement: SnappyBodyRefinement, translated):
 
 
 def get_applicable_regions_dict(refinement_regions):
+    """
+    Get regions to apply a refinement on.
+    """
     applicable_regions = {}
     if refinement_regions:
         for entity in refinement_regions.stored_entities:
@@ -119,6 +124,9 @@ def get_applicable_regions_dict(refinement_regions):
 def apply_SnappySurfaceEdgeRefinement(
     refinement: SnappySurfaceEdgeRefinement, translated, defaults
 ):
+    """
+    Translate SnappySurfaceEdgeRefinement to bodies and regions.
+    """
     edges = {"includedAngle": refinement.included_angle.to("degree").value.item()}
     if refinement.min_elem is not None:
         edges["minElem"] = refinement.min_elem
@@ -151,6 +159,9 @@ def apply_SnappySurfaceEdgeRefinement(
 
 
 def apply_SnappyRegionRefinement(refinement: SnappyRegionRefinement, translated):
+    """
+    Translate SnappyRegionRefinement to applicable regions.
+    """
     applicable_regions = applicable_regions = get_applicable_regions_dict(
         refinement_regions=refinement.entities
     )
@@ -168,6 +179,9 @@ def apply_SnappyRegionRefinement(refinement: SnappyRegionRefinement, translated)
 
 
 def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
+    """
+    Translate UniformRefinement to defined volumetric regions.
+    """
     if "refinementVolumes" not in translated["geometry"]:
         translated["geometry"]["refinementVolumes"] = []
 
@@ -215,6 +229,9 @@ def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
 
 
 def snappy_mesher_json(input_params: SimulationParams):
+    """
+    Get config JSON for snappyHexMesh surface meshing.
+    """
     translated = {}
     surface_meshing_params = input_params.meshing.surface_meshing
     # extract geometry information in body: {patch0, ...} format
@@ -581,12 +598,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
     """
-    if input_params.meshing is None:
-        raise Flow360TranslationError(
-            "meshing not specified.",
-            None,
-            ["meshing"],
-        )
+    check_meshing_specified(input_params)
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
         if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
             input_params.meshing.surface_meshing, SnappySurfaceMeshingParams

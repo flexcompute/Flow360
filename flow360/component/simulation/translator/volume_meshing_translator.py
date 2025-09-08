@@ -27,6 +27,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
+    check_meshing_specified,
     get_global_setting_from_first_instance,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
@@ -178,8 +179,9 @@ def _get_seedpoint_zones(volume_zones: list):
     """
     seedpoint_zones = []
     for zone in volume_zones:
-        if (isinstance(zone, SeedpointZone) or 
-            (isinstance(zone, UserDefinedFarfield) and hasattr(zone, "point_in_mesh"))):
+        if isinstance(zone, SeedpointZone) or (
+            isinstance(zone, UserDefinedFarfield) and hasattr(zone, "point_in_mesh")
+        ):
             seedpoint_zones.append(
                 {
                     "name": zone.name,
@@ -207,12 +209,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     translated = {}
 
-    if input_params.meshing is None:
-        raise Flow360TranslationError(
-            "meshing not specified.",
-            None,
-            ["meshing"],
-        )
+    check_meshing_specified(input_params)
 
     if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
         input_params.meshing.volume_meshing, BetaVolumeMeshingParams

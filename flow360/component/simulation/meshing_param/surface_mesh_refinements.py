@@ -1,3 +1,5 @@
+"""Reinements for surface meshing"""
+
 from abc import ABCMeta
 from typing import List, Literal, Optional, Union
 
@@ -13,6 +15,10 @@ from flow360.log import log
 
 
 class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
+    """
+    Base refinement for snappyHexMesh.
+    """
+
     min_spacing: Optional[LengthType.Positive] = pd.Field(None)
     max_spacing: Optional[LengthType.Positive] = pd.Field(None)
     proximity_spacing: Optional[LengthType.Positive] = pd.Field(None)
@@ -36,12 +42,20 @@ class SnappyEntityRefinement(Flow360BaseModel, metaclass=ABCMeta):
 
 
 class SnappyBodyRefinement(SnappyEntityRefinement):
+    """
+    Refinement for snappyHexMesh body (searchableSurfaceWithGaps).
+    """
+
     refinement_type: Literal["SnappyBodyRefinement"] = pd.Field("SnappyBodyRefinement", frozen=True)
     gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
     entities: List[SnappyBody] = pd.Field(alias="bodies")
 
 
 class SnappyRegionRefinement(SnappyEntityRefinement):
+    """
+    Refinement for the body region in snappyHexMesh,
+    """
+
     min_spacing: LengthType.Positive = pd.Field()
     max_spacing: LengthType.Positive = pd.Field()
     refinement_type: Literal["SnappySurfaceRefinement"] = pd.Field(
@@ -51,6 +65,10 @@ class SnappyRegionRefinement(SnappyEntityRefinement):
 
 
 class SnappySurfaceEdgeRefinement(Flow360BaseModel):
+    """
+    Edge refinement for bodies and regions in snappyHexMesh.
+    """
+
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )

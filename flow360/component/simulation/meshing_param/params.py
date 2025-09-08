@@ -137,6 +137,7 @@ class MeshingParams(Flow360BaseModel):
         + " finer mesh where r is the refinement_factor value.",
     )
 
+    # pylint: disable=duplicate-code
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
@@ -273,6 +274,10 @@ class MeshingParams(Flow360BaseModel):
 
 
 class SnappySurfaceMeshingParams(Flow360BaseModel):
+    """
+    Parameters for snappyHexMesh surface meshing.
+    """
+
     type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
         "SnappySurfaceMeshingParams", frozen=True
     )
@@ -289,6 +294,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
         # set body refinements
+        # pylint: disable=no-member
         for refinement in self.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
                 if refinement.min_spacing is None and refinement.max_spacing is None:
@@ -297,24 +303,28 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                     "m"
                 ) > refinement.max_spacing.to("m"):
                     raise ValueError(
-                        "Default minimum spacing is higher that refinement maximum spacing and minimum spacing is not provided."
+                        "Default minimum spacing is higher that refinement maximum spacing"
+                        + "and minimum spacing is not provided."
                     )
                 if refinement.max_spacing is None and self.defaults.max_spacing.to(
                     "m"
                 ) < refinement.min_spacing.to("m"):
                     raise ValueError(
-                        "Default maximum spacing is lower that refinement minimum spacing and maximum spacing is not provided."
+                        "Default maximum spacing is lower that refinement minimum spacing"
+                        + "and maximum spacing is not provided."
                     )
         return self
 
     @pd.model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
+        # pylint: disable=no-member
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
                 for entity in refinement.entities.stored_entities:
                     if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0 * u.deg:
                         raise ValueError(
-                            "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
+                            "UniformRefinement for snappy accepts only Boxes with axes aligned"
+                            + "with the global coordinate system (angle_of_rotation=0)."
                         )
                     if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
                         raise ValueError(
@@ -325,6 +335,10 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
 
 
 class BetaVolumeMeshingParams(Flow360BaseModel):
+    """
+    Volume meshing parameters.
+    """
+
     type: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
     defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
@@ -340,7 +354,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     )
 
     planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
-        1e-6,
+        DEFAULT_PLANAR_FACE_TOLERANCE,
         description="Tolerance used for detecting planar faces in the input surface mesh"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
@@ -354,6 +368,10 @@ VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discrim
 
 
 class ModularMeshingWorkflow(Flow360BaseModel):
+    """
+    Structure consolidating surface and volume meshing parameters.
+    """
+
     type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
     surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
         default=None, context=SURFACE_MESH
@@ -424,7 +442,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
                 ]
-
+        # pylint: disable=no-member
         for refinement in (
             self.volume_meshing.refinements
             if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)
