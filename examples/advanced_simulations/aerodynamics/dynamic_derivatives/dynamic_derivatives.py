@@ -65,9 +65,11 @@ with fl.SI_unit_system:
         operating_condition=fl.AerospaceCondition(
             velocity_magnitude=50,
         ),
-        time_stepping=fl.Steady(
-            max_steps=10000, CFL=fl.RampCFL(initial=1, final=100, ramp_steps=1000)
-        ),
+        time_stepping=fl.Unsteady(
+            max_pseudo_steps=80,
+            steps=400,
+            step_size=0.01 * 2.0 * math.pi / 20.0 * fl.u.s,
+            CFL=fl.AdaptiveCFL()),
         outputs=[
             fl.VolumeOutput(
                 output_fields=[
@@ -85,7 +87,7 @@ with fl.SI_unit_system:
         models=[
             fl.Rotation(
                 volumes=cylinder,
-                spec=fl.AngularVelocity(0 * fl.u.rad / fl.u.s),
+                spec=fl.AngleExpression("0.0349066 * sin(0.05877271 * t)"),
             ),
             fl.Freestream(surfaces=farfield.farfield),
             fl.Wall(surfaces=geometry["wing"]),
@@ -101,27 +103,8 @@ with fl.SI_unit_system:
             ),
         ],
     )
-
-# Run steady case with a fixed sliding interface for initializing the flow field.
+# Run unsteady case with an oscillating sliding interface to collecting the data.
 project.run_case(
     params=params,
-    name="Tutorial Calculating Dynamic Derivatives using Sliding Interfaces (Steady)",
-)
-parent_case = fl.Case.from_cloud(project.case.id)
-
-# Update the parameters for the unsteady case.
-with fl.SI_unit_system:
-    params.time_stepping = fl.Unsteady(
-        max_pseudo_steps=80,
-        steps=400,
-        step_size=0.01 * 2.0 * math.pi / 20.0 * fl.u.s,
-        CFL=fl.RampCFL(initial=1, final=1e8, ramp_steps=20),
-    )
-    params.models[0].spec = fl.AngleExpression("0.0349066 * sin(0.05877271 * t)")
-
-# Run unsteady case with an oscillating sliding interface for collecting the data.
-project.run_case(
-    params=params,
-    name="Tutorial Calculating Dynamic Derivatives using Sliding Interfaces (Unsteady)",
-    fork_from=parent_case,
+    name="Tutorial Calculating Dynamic Derivatives using Sliding Interfaces",
 )
