@@ -80,6 +80,7 @@ from flow360.component.simulation.unit_system import (
     u,
 )
 from flow360.component.simulation.user_code.core.types import (
+    SolverVariable,
     UnytQuantity,
     UserVariable,
     ValueOrExpression,
@@ -87,6 +88,7 @@ from flow360.component.simulation.user_code.core.types import (
     get_input_value_length,
     infer_units_by_unit_system,
     is_variable_with_unit_system_as_units,
+    solver_variable_to_user_variable,
 )
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
@@ -279,6 +281,13 @@ class StopCriterion(Flow360BaseModel):
         if tolerance_dimensions != field_dimensions:
             raise ValueError("The dimensions of monitor field and tolerance do not match.")
         return v
+
+    @pd.field_validator("monitor_field", mode="before")
+    @classmethod
+    def _convert_solver_variable_as_user_variable(cls, value):
+        if isinstance(value, SolverVariable):
+            return solver_variable_to_user_variable(value)
+        return value
 
 
 class AngleExpression(SingleAttributeModel):
