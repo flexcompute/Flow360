@@ -1,8 +1,8 @@
-'''
+"""
 Example script for calculating dynamic derivatives using sliding interfaces in Flow360
 See documentation for more information:
  https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/DynamicDerivatives/DynamicDerivatives.html
-'''
+"""
 
 import math
 
@@ -75,7 +75,8 @@ with fl.SI_unit_system:
             max_pseudo_steps=80,
             steps=400,
             step_size=0.01 * 2.0 * math.pi / 20.0 * fl.u.s,
-            CFL=fl.AdaptiveCFL()),
+            CFL=fl.AdaptiveCFL(),
+        ),
         outputs=[
             fl.VolumeOutput(
                 output_fields=[
