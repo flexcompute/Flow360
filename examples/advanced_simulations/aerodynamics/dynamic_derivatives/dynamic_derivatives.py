@@ -1,3 +1,9 @@
+'''
+Example script for calculating dynamic derivatives using sliding interfaces in Flow360
+See documentation for more information:
+ https://docs.flexcompute.com/projects/flow360/en/latest/tutorials/DynamicDerivatives/DynamicDerivatives.html
+'''
+
 import math
 
 import flow360 as fl
