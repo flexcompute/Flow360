@@ -410,7 +410,7 @@ class SnappySnapControls(Flow360BaseModel):
 
     strict_region_snap: bool, default: False
         Attract points only to the surface they originate from. This can improve snapping of
-        intersecting surfaces. 
+        intersecting surfaces.
     """
 
     # pylint: disable=no-member
@@ -431,13 +431,13 @@ class SnappySmoothControls(Flow360BaseModel):
     ----------
     lambda_factor: Optional[pd.NonNegativeFloat], default: 0.7
         Lambda value within [0,1]
-    
+
     mu_factor: Optional[pd.NonNegativeFloat], default: 0.71
         Mu value within [0,1]
 
     iterations: Optional[pd.NonNegativeInt], default: 5
         Number of smoothing iterations
-        
+
     min_elem: Optional[pd.NonNegativeInt], default: None
     min_len: Optional[LengthType.NonNegative], default: None
     included_angle: Optional[AngleType.NonNegative], default: 150°
