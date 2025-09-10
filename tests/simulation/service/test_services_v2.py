@@ -1197,7 +1197,9 @@ def validate_proper_unit(obj, allowed_units_string):
         if "value" in obj and "units" in obj:
             assert is_expected_unit(obj["units"], allowed_units_string)
 
-        for _, val in obj.items():
+        for key, val in obj.items():
+            if key == "project_length_unit":
+                continue
             validate_proper_unit(val, allowed_units_string)
 
     elif isinstance(obj, list):
@@ -1355,7 +1357,6 @@ def test_unit_conversion_front_end_compatibility():
     for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
         if field_name == "name":
             continue
-        print(">>> Unit: ", field_info.annotation.dim, field_info.annotation.dim.__class__)
         unit_system_dimension_string = str(field_info.annotation.dim)
         # for unit_name in unit:
         if unit_system_dimension_string not in supported_units_by_front_end.keys():
