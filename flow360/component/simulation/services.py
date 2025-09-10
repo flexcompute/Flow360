@@ -873,9 +873,15 @@ def change_unit_system_recursive(
 
         # 2. Otherwise, recurse into each item in the dictionary
         for key, val in data.items():
+<<<<<<< HEAD
             if (current_key, key) in white_list_keys:
                 continue
             change_unit_system_recursive(
+=======
+            if key == "project_length_unit":
+                continue
+            change_unit_system(
+>>>>>>> e8dd72ee ([SCFD-6161] Skip converting the project length unit (#1395) (#1417))
                 data=val,
                 target_unit_system=target_unit_system,
                 current_key=key,
