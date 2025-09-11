@@ -4,7 +4,6 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from enum import Enum
 from typing import Annotated, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
@@ -14,17 +13,29 @@ from scipy.linalg import eig
 from typing_extensions import Self
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.entity_operation import (
+    Transformation,
+    rotation_matrix_from_axis_and_angle,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
+from flow360.component.simulation.framework.entity_base import (
+    EntityBase,
+    EntityList,
+    generate_uuid,
+)
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
 from flow360.component.simulation.framework.unique_list import UniqueStringList
 from flow360.component.simulation.unit_system import AngleType, AreaType, LengthType
 from flow360.component.simulation.user_code.core.types import ValueOrExpression
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.types import Axis
-from flow360.exceptions import Flow360BoundaryMissingError
+
+BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
 
 def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
@@ -42,16 +53,9 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
                 match is not None and match.group(1) == surface_name
             ) or existing_boundary_name == surface_name:
                 return existing_boundary_name
-    if surface_name == "symmetric":
-        # Provides more info when the symmetric boundary is not auto generated.
-        raise Flow360BoundaryMissingError(
-            f"Parent zone not found for boundary: {surface_name}. "
-            "It is likely that it was never auto generated because the condition is not met."
-        )
-    raise Flow360BoundaryMissingError(
-        f"Parent zone not found for surface {surface_name}. "
-        "It may have been deleted due to overlapping with generated symmetry plane."
-    )
+
+    # Not found
+    return BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
 
 
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
@@ -96,51 +100,6 @@ class ReferenceGeometry(Flow360BaseModel):
         None, description="The reference area of the geometry."
     )
     private_attribute_area_settings: Optional[dict] = pd.Field(None)
-
-
-class Transformation(Flow360BaseModel):
-    """Transformation that will be applied to a body group."""
-
-    type_name: Literal["BodyGroupTransformation"] = pd.Field("BodyGroupTransformation", frozen=True)
-
-    origin: LengthType.Point = pd.Field(  # pylint:disable=no-member
-        (0, 0, 0) * u.m,  # pylint:disable=no-member
-        description="The origin for geometry transformation in the order of scale,"
-        " rotation and translation.",
-    )
-
-    axis_of_rotation: Axis = pd.Field((1, 0, 0))
-    angle_of_rotation: AngleType = pd.Field(0 * u.deg)  # pylint:disable=no-member
-
-    scale: Tuple[PositiveFloat, PositiveFloat, PositiveFloat] = pd.Field((1, 1, 1))
-
-    translation: LengthType.Point = pd.Field((0, 0, 0) * u.m)  # pylint:disable=no-member
-
-    private_attribute_matrix: Optional[list[float]] = pd.Field(None)
-
-    def get_transformation_matrix(self) -> np.ndarray:
-        """
-        Find 3(row)x4(column) transformation matrix and store as row major.
-        Applies to vector of [x, y, z, 1] in project length unit.
-        """
-        # pylint:disable=no-member
-        error_msg = "[Internal] `{}` is dimensioned. Use get_transformation_matrix() after non-dimensionalization!"
-        assert str(self.origin.units) == "flow360_length_unit", error_msg.format("origin")
-        assert str(self.translation.units) == "flow360_length_unit", error_msg.format("translation")
-        origin_array = np.asarray(self.origin.value)
-        translation_array = np.asarray(self.translation.value)
-
-        axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
-        angle = self.angle_of_rotation.to("rad").v.item()
-
-        axis = axis / np.linalg.norm(axis)
-
-        rotation_scale_matrix = rotation_matrix_from_axis_and_angle(axis, angle) * np.array(
-            self.scale
-        )
-        final_translation = -rotation_scale_matrix @ origin_array + origin_array + translation_array
-
-        return np.hstack([rotation_scale_matrix, final_translation[:, np.newaxis]])
 
 
 class GeometryBodyGroup(EntityBase):
@@ -271,6 +230,7 @@ class GenericVolume(_VolumeEntityBase):
     Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata.
     By design these GenericVolume entities should only contain basic connectivity/mesh information.
+    These can only come from uploaded volume mesh.
     """
 
     private_attribute_entity_type_name: Literal["GenericVolume"] = pd.Field(
@@ -280,24 +240,6 @@ class GenericVolume(_VolumeEntityBase):
     axis: Optional[Axis] = pd.Field(None)  # Rotation support
     # pylint: disable=no-member
     center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
-
-
-def rotation_matrix_from_axis_and_angle(axis, angle):
-    """get rotation matrix from axis and angle of rotation"""
-    # Compute the components of the rotation matrix using Rodrigues' formula
-    cos_theta = np.cos(angle)
-    sin_theta = np.sin(angle)
-    one_minus_cos = 1 - cos_theta
-
-    n_x, n_y, n_z = axis
-
-    # Compute the skew-symmetric cross-product matrix of axis
-    cross_n = np.array([[0, -n_z, n_y], [n_z, 0, -n_x], [-n_y, n_x, 0]])
-
-    # Compute the rotation matrix
-    rotation_matrix = np.eye(3) + sin_theta * cross_n + one_minus_cos * np.dot(cross_n, cross_n)
-
-    return rotation_matrix
 
 
 class BoxCache(Flow360BaseModel):
@@ -470,37 +412,17 @@ class Cylinder(_VolumeEntityBase):
         return self
 
 
-class _SurfaceIssueEnums(str, Enum):
+class SurfacePrivateAttributes(Flow360BaseModel):
     """
-    Enums for indicating that there is something wrong/special about the surface.
-
-    +-------------------+--------------------+--------------------+
-    | If my sub faces...| Issue should be    | Conflict with when |
-    |                   | predicted as       | using              |
-    +-------------------+--------------------+--------------------+
-    | All overlaps with | overlap_half_model_| Auto and Quasi     |
-    | the HalfModel Symm| symmetric          |                    |
-    +-------------------+--------------------+--------------------+
-    | All overlaps with | overlap_quasi_3d_  | Quasi              |
-    | the Non Half      | symmetric          |                    |
-    | Model (the other  |                    |                    |
-    | Q3D) Symm. Or not |                    |                    |
-    | half model at all.|                    |                    |
-    +-------------------+--------------------+--------------------+
-    | Some on HalfModel | overlap_quasi_3d_  | Quasi              |
-    | Symm, Some on Non | symmetric          |                    |
-    | HalfModel Symm    |                    |                    |
-    +-------------------+--------------------+--------------------+
-    | Have some faces   | None               | None               |
-    | elsewhere         |                    |                    |
-    +-------------------+--------------------+--------------------+
-
-
+     Private attributes for Surface.
+    TODO: With the amount of private_attribute prefixes we have
+    TODO: Maybe it makes more sense to lump them together to save storage space?
     """
 
-    # pylint: disable=invalid-name
-    overlap_half_model_symmetric = "OverlapHalfModelSymmetric"
-    overlap_quasi_3d_symmetric = "OverlapQuasi3DSymmetric"
+    type_name: Literal["SurfacePrivateAttributes"] = pd.Field(
+        "SurfacePrivateAttributes", frozen=True
+    )
+    bounding_box: BoundingBoxType = pd.Field(description="Bounding box of the surface.")
 
 
 @final
@@ -523,53 +445,69 @@ class Surface(_SurfaceEntityBase):
     private_attribute_sub_components: Optional[List[str]] = pd.Field(
         [], description="The face ids in geometry that composed into this `Surface`."
     )
-    # pylint: disable=fixme
-    # TODO: This should be deprecated since it is not very useful or easy to use.
-    private_attribute_potential_issues: List[_SurfaceIssueEnums] = pd.Field(
-        [],
-        description="Issues (not necessarily problems) found on this `Surface` after inspection by "
-        "surface mesh / geometry pipeline. Used for determining the usability of the `Surface` instance"
-        " under certain features and/or its existence.",
-    )
     private_attribute_color: Optional[str] = pd.Field(
         None, description="Color used for visualization"
     )
+    private_attributes: Optional[SurfacePrivateAttributes] = pd.Field(None)
 
     # Note: private_attribute_id should not be `Optional` anymore.
     # B.C. Updater and geometry pipeline will populate it.
 
-    # pylint: disable=fixme
-    # TODO: With the amount of private_attribute prefixes we have
-    # TODO: here maybe it makes more sense to lump them together to save space?
+    def _overlaps(self, ghost_surface_center_y: Optional[float], length_tolerance: float) -> bool:
+        if self.private_attributes is None:
+            # Legacy cloud asset.
+            return False
+        # pylint: disable=no-member
+        my_bounding_box = self.private_attributes.bounding_box
+        if abs(my_bounding_box.ymax - ghost_surface_center_y) > length_tolerance:
+            return False
+        if abs(my_bounding_box.ymin - ghost_surface_center_y) > length_tolerance:
+            return False
+        return True
 
-    # TODO: Should inherit from `ReferenceGeometry` but we do not support this from solver side.
-
-    def _will_be_deleted_by_mesher(self, farfield_method: Literal["auto", "quasi-3d"]) -> bool:
+    def _will_be_deleted_by_mesher(
+        # pylint: disable=too-many-arguments, too-many-return-statements
+        self,
+        at_least_one_body_transformed: bool,
+        farfield_method: Optional[Literal["auto", "quasi-3d", "user-defined"]],
+        global_bounding_box: Optional[BoundingBoxType],
+        planar_face_tolerance: Optional[float],
+        half_model_symmetry_plane_center_y: Optional[float],
+        quasi_3d_symmetry_planes_center_y: Optional[tuple[float]],
+    ) -> bool:
         """
         Check against the automated farfield method and
         determine if the current `Surface` will be deleted by the mesher.
         """
-        if not self.private_attribute_potential_issues:
-            # If no special status reported or there is no auto farfield involved at all.
+        if at_least_one_body_transformed:
+            # If transformed then the following check will no longer be accurate
+            # since we do not know the final bounding box for each surface and global model.
             return False
 
+        if global_bounding_box is None or planar_face_tolerance is None or farfield_method is None:
+            # VolumeMesh or Geometry/SurfaceMesh with legacy schema.
+            return False
+
+        if farfield_method == "user-defined":
+            # Not applicable to user defined farfield
+            return False
+
+        length_tolerance = global_bounding_box.largest_dimension * planar_face_tolerance
+
         if farfield_method == "auto":
-            # Single symmetry
-            # pylint: disable=unsupported-membership-test
-            return (
-                _SurfaceIssueEnums.overlap_half_model_symmetric
-                in self.private_attribute_potential_issues
-            )
+            if half_model_symmetry_plane_center_y is None:
+                # Legacy schema.
+                return False
+            return self._overlaps(half_model_symmetry_plane_center_y, length_tolerance)
 
         if farfield_method == "quasi-3d":
-            # Two symmetry
-            # pylint: disable=unsupported-membership-test
-            return (
-                _SurfaceIssueEnums.overlap_quasi_3d_symmetric
-                in self.private_attribute_potential_issues
-                or _SurfaceIssueEnums.overlap_half_model_symmetric
-                in self.private_attribute_potential_issues
-            )
+            if quasi_3d_symmetry_planes_center_y is None:
+                # Legacy schema.
+                return False
+            for plane_center_y in quasi_3d_symmetry_planes_center_y:
+                if self._overlaps(plane_center_y, length_tolerance):
+                    return True
+            return False
 
         raise ValueError(f"Unknown auto farfield generation method: {farfield_method}.")
 
@@ -654,12 +592,12 @@ class GhostCircularPlane(_SurfaceEntityBase):
             # This likely means the user try to use mesher on old cloud resources.
             # We cannot validate if symmetric exists so will let it pass. Pipeline will error out anyway.
             return True
-
         y_min, y_max, tolerance, _ = self._get_existence_dependency(validation_info)
 
-        if abs(y_max) > tolerance and abs(y_min) > tolerance:
-            return False
-        return True
+        positive_half = abs(y_min) < tolerance < y_max
+        negative_half = abs(y_max) < tolerance and y_min < -tolerance
+
+        return positive_half or negative_half
 
 
 class SurfacePair(Flow360BaseModel):
@@ -703,4 +641,68 @@ class SurfacePair(Flow360BaseModel):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
 
 
-VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
+@final
+class CustomVolume(_VolumeEntityBase):
+    """
+    CustomVolume is a volume zone defined by its surrounding surfaces.
+    It will be generated by the volume mesher.
+    """
+
+    private_attribute_entity_type_name: Literal["CustomVolume"] = pd.Field(
+        "CustomVolume", frozen=True
+    )
+    type: Literal["CustomVolume"] = pd.Field("CustomVolume", frozen=True)
+    boundaries: EntityList[Surface] = pd.Field(
+        description="The surfaces that define the boundaries of the custom volume."
+    )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    # pylint: disable=no-member
+    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+
+    @pd.field_validator("boundaries", mode="after")
+    @classmethod
+    def ensure_unique_boundary_names(cls, v):
+        """Check if the boundaries have different names within a CustomVolume."""
+        if len(v.stored_entities) != len({boundary.name for boundary in v.stored_entities}):
+            raise ValueError("The boundaries of a CustomVolume must have different names.")
+        return v
+
+    @pd.model_validator(mode="after")
+    def ensure_beta_mesher_and_user_defined_farfield(self):
+        """Check if the beta mesher is enabled and that the user is using user defined farfield."""
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+        if validation_info.is_beta_mesher and validation_info.farfield_method == "user-defined":
+            return self
+        raise ValueError(
+            "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
+        )
+
+
+def check_custom_volume_creation(value):
+    """Check if the custom volume is listed under meshing->volume_zones."""
+    validation_info = get_validation_info()
+    if validation_info is None:
+        return value
+    for volume in value:
+        if not isinstance(volume, CustomVolume):
+            continue
+        if volume.name not in validation_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"CustomVolume {volume.name} is not listed under meshing->volume_zones."
+            )
+    return value
+
+
+class EntityListWithCustomVolume(EntityList):
+    """Entity list with customized validators for CustomVolume"""
+
+    @pd.field_validator("stored_entities", mode="after")
+    @classmethod
+    def custom_volume_validator(cls, value):
+        """Run all validators"""
+        return check_custom_volume_creation(value)

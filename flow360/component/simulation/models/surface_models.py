@@ -52,8 +52,8 @@ from flow360.component.simulation.validation.validation_utils import (
 from flow360.component.types import Axis
 
 
-class EntityListAllowingGhost(EntityList):  # Define EntityList to include validators
-    """Entity list with customized validators"""
+class EntityListAllowingGhost(EntityList):
+    """Entity list with customized validators for ghost entities"""
 
     @pd.field_validator("stored_entities", mode="after")
     @classmethod

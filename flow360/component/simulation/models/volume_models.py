@@ -51,7 +51,13 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    EntityListWithCustomVolume,
+    GenericVolume,
+)
 from flow360.component.simulation.unit_system import (
     AngleType,
     AngularVelocityType,
@@ -1191,7 +1197,7 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityList[GenericVolume, Cylinder] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1202,7 +1208,7 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(
+    parent_volume: Optional[Union[GenericVolume, Cylinder, CustomVolume]] = pd.Field(
         None,
         description="The parent rotating entity in a nested rotation case."
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1228,6 +1234,23 @@ class Rotation(Flow360BaseModel):
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `center` to be used under `Rotation`"
                 )
+        return value
+
+    @pd.field_validator("parent_volume", mode="after")
+    @classmethod
+    def _ensure_custom_volume_is_listed_under_volume_zones(
+        cls, value: Optional[Union[GenericVolume, Cylinder, CustomVolume]]
+    ):
+        """Ensure parent volume is a custom volume."""
+        if value is None:
+            return value
+        validation_info = get_validation_info()
+        if validation_info is None or not isinstance(value, CustomVolume):
+            return value
+        if value.name not in validation_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones."
+            )
         return value
 
 
@@ -1275,7 +1298,7 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityList[GenericVolume, Box] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume] = pd.Field(
         alias="volumes",
         description="The entity list for the `PorousMedium` model. "
         + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."

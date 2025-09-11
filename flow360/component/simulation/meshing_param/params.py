@@ -22,6 +22,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
+from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
@@ -46,7 +47,8 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield], pd.Field(discriminator="type")
+    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    pd.Field(discriminator="type"),
 ]
 
 
@@ -110,6 +112,7 @@ class MeshingDefaults(Flow360BaseModel):
 
     planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
         DEFAULT_PLANAR_FACE_TOLERANCE,
+        strict=True,
         description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
         " that need to be remeshed, such as symmetry planes."
         " This tolerance is non-dimensional, and represents a distance"
@@ -278,6 +281,25 @@ class MeshingParams(Flow360BaseModel):
 
         if total_farfield > 1:
             raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+
+        return v
+
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        """Ensure there won't be duplicated volume zone names."""
+
+        if v is None:
+            return v
+        to_be_generated_volume_zone_names = set()
+        for volume_zone in v:
+            if not isinstance(volume_zone, CustomVolume):
+                continue
+            if volume_zone.name in to_be_generated_volume_zone_names:
+                raise ValueError(
+                    f"Multiple CustomVolume with the same name `{volume_zone.name}` are not allowed."
+                )
+            to_be_generated_volume_zone_names.add(volume_zone.name)
 
         return v
 

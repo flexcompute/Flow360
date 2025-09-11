@@ -501,7 +501,7 @@ def test_updater_to_25_6_2():
 
     def _ensure_validity(params):
         params_new, _, _ = validate_model(
-            params_as_dict=params,
+            params_as_dict=copy.deepcopy(params),
             validated_by=ValidationCalledBy.LOCAL,
             root_item_type="VolumeMesh",
         )
@@ -747,3 +747,30 @@ def test_updater_to_25_6_5():
         root_item_type="Geometry",
     )
     assert params_new
+
+
+def test_updater_to_25_7_2():
+    with open("../data/simulation/simulation_pre_25_7_2.json", "r") as fp:
+        params_as_dict = json.load(fp)
+
+    params_new = updater(
+        version_from="25.7.1",
+        version_to=f"25.7.2",
+        params_as_dict=params_as_dict,
+    )
+    assert (
+        params_new["private_attribute_asset_cache"]["variable_context"][0]["post_processing"]
+        == True
+    )
+    assert (
+        params_new["private_attribute_asset_cache"]["variable_context"][1]["post_processing"]
+        == True
+    )
+    assert (
+        params_new["private_attribute_asset_cache"]["variable_context"][2]["post_processing"]
+        == False
+    )
+    assert (
+        params_new["private_attribute_asset_cache"]["variable_context"][3]["post_processing"]
+        == False
+    )

@@ -1,0 +1,118 @@
+{
+    "freestream": {
+        "alphaAngle": 0.0,
+        "betaAngle": 0.0,
+        "Mach": 0.029386353651012956,
+        "Temperature": 288.15,
+        "muRef": 4.292321046986499e-08
+    },
+    "timeStepping": {
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "maxRelativeChange": 1.0,
+            "convergenceLimitingFactor": 0.25
+        },
+        "physicalSteps": 1,
+        "orderOfAccuracy": 2,
+        "maxPseudoSteps": 2000,
+        "timeStepSize": "inf"
+    },
+    "navierStokesSolver": {
+        "absoluteTolerance": 1e-10,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 30
+        },
+        "CFLMultiplier": 1.0,
+        "kappaMUSCL": -1.0,
+        "numericalDissipationFactor": 1.0,
+        "limitVelocity": false,
+        "limitPressureDensity": false,
+        "lowMachPreconditioner": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "modelType": "Compressible",
+        "equationEvalFrequency": 1
+    },
+    "turbulenceModelSolver": {
+        "absoluteTolerance": 1e-08,
+        "relativeTolerance": 0.0,
+        "orderOfAccuracy": 2,
+        "linearSolver": {
+            "maxIterations": 20
+        },
+        "lowReynoldsCorrection": false,
+        "CFLMultiplier": 2.0,
+        "reconstructionGradientLimiter": 0.5,
+        "quadraticConstitutiveRelation": false,
+        "updateJacobianFrequency": 4,
+        "maxForceJacUpdatePhysicalSteps": 0,
+        "rotationCorrection": false,
+        "equationEvalFrequency": 4,
+        "modelType": "SpalartAllmaras",
+        "modelConstants": {
+            "C_DES": 0.72,
+            "C_d": 8.0,
+            "C_cb1": 0.1355,
+            "C_cb2": 0.622,
+            "C_sigma": 0.6666666666666666,
+            "C_v1": 7.1,
+            "C_vonKarman": 0.41,
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5,
+            "C_t3": 1.2,
+            "C_t4": 0.5,
+            "C_min_rd": 10.0
+        },
+        "DDES": false,
+        "ZDES": false,
+        "gridSizeForLES": "maxEdgeLength"
+    },
+    "initialCondition": {
+        "type": "initialCondition",
+        "rho": "rho",
+        "u": "u",
+        "v": "v",
+        "w": "w",
+        "p": "p"
+    },
+    "porousMedia": [
+        {
+            "zoneType": "mesh",
+            "zoneName": "zone2",
+            "axes": [
+                [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            ],
+            "DarcyCoefficient": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "ForchheimerCoefficient": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "volumetricHeatSource": 2.071576681443426e-08
+        }
+    ],
+    "boundaries": {},
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    }
+}

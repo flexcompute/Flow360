@@ -1,5 +1,5 @@
 {
-    "version": "25.7.1b1",
+    "version": "25.7.2b1",
     "unit_system": {
         "name": "SI"
     },
@@ -21,7 +21,7 @@
             "units": "m"
         },
         "area": {
-            "type_name":"number",
+            "type_name": "number",
             "value": 1.0,
             "units": "m**2"
         }
@@ -126,8 +126,8 @@
                 "type_name": "HeatFlux"
             },
             "roughness_height": {
-              "value": 0.0,
-              "units": "m"
+                "value": 0.0,
+                "units": "m"
             }
         },
         {
@@ -205,13 +205,16 @@
                     "C_v1": 7.1,
                     "C_vonKarman": 0.41,
                     "C_w2": 0.3,
+                    "C_w4": 0.21,
+                    "C_w5": 1.5,
                     "C_t3": 1.2,
                     "C_t4": 0.5,
                     "C_min_rd": 10.0
                 },
                 "update_jacobian_frequency": 4,
                 "max_force_jac_update_physical_steps": 0,
-                "rotation_correction": false
+                "rotation_correction": false,
+                "low_reynolds_correction": false
             },
             "transition_model_solver": {
                 "type_name": "None"
@@ -250,8 +253,7 @@
                         "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
-                        "private_attribute_sub_components": [],
-                        "private_attribute_potential_issues": []
+                        "private_attribute_sub_components": []
                     }
                 ]
             },

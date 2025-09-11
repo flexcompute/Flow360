@@ -7,7 +7,15 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
-from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
+from flow360.component.simulation.primitives import (
+    CustomVolume,
+    Cylinder,
+    GenericVolume,
+    Surface,
+)
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -93,7 +101,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "For input variables that already specified the source in the name (like bet_NUM_torque) "
         + "this entry does not have any effect.",
     )
-    output_target: Optional[Union[Cylinder, GenericVolume, Surface]] = pd.Field(
+    output_target: Optional[Union[Cylinder, GenericVolume, Surface, CustomVolume]] = pd.Field(
         None,
         description="The target to which the output variables belong to. For example this can be the rotating "
         + "volume zone name. Only one output target is supported per user defined dynamics instance. Only "
@@ -113,18 +121,40 @@ class UserDefinedDynamic(Flow360BaseModel):
     def ensure_output_surface_existence(cls, value):
         """Ensure that the output target surface is not a deleted surface"""
 
-        # --- Disabled for FXC-2006
-        # validation_info = get_validation_info()
-        # if validation_info is None or validation_info.auto_farfield_method is None:
-        #     # validation not necessary now.
-        #     return value
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
 
-        # # - Check if the surfaces are deleted.
-        # # pylint: disable=protected-access
-        # if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
-        #     validation_info.auto_farfield_method
-        # ):
-        #     raise ValueError(
-        #         f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
-        #     )
+        # pylint: disable=fixme, duplicate-code
+        # TODO: We can make this a Surface's after model validator once entity info is separated from params.
+        # TODO: And therefore no need for duplicate-code override.
+        # pylint: disable=protected-access
+        if isinstance(value, Surface) and value._will_be_deleted_by_mesher(
+            at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
+            farfield_method=validation_info.farfield_method,
+            global_bounding_box=validation_info.global_bounding_box,
+            planar_face_tolerance=validation_info.planar_face_tolerance,
+            half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+            quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+        ):
+            raise ValueError(
+                f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+            )
+        return value
+
+    @pd.field_validator("output_target", mode="after")
+    @classmethod
+    def _ensure_custom_volume_is_listed_under_volume_zones(
+        cls, value: Optional[Union[Cylinder, GenericVolume, Surface, CustomVolume]]
+    ):
+        """Ensure parent volume is a custom volume."""
+        if value is None:
+            return value
+        validation_info = get_validation_info()
+        if validation_info is None or not isinstance(value, CustomVolume):
+            return value
+        if value.name not in validation_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones."
+            )
         return value

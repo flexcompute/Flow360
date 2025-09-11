@@ -75,13 +75,19 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageStreamlineOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, ImportedSurface, SurfacePair
+from flow360.component.simulation.primitives import (
+    BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
+    Box,
+    ImportedSurface,
+    SurfacePair,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.user_expression_utils import (
@@ -258,6 +264,8 @@ def translate_output_fields(
         StreamlineOutput,
         ImportedSurfaceOutput,
         TimeAverageImportedSurfaceOutput,
+        StreamlineOutput,
+        TimeAverageStreamlineOutput,
     ],
 ):
     """Get output fields"""
@@ -279,7 +287,9 @@ def surface_probe_setting_translation_func(entity: Union[SurfaceProbeOutput, Sur
     """Translate non-entities part of SurfaceProbeOutput"""
     dict_with_merged_output_fields = monitor_translator(entity)
     dict_with_merged_output_fields["surfacePatches"] = [
-        surface.full_name for surface in entity.target_surfaces.stored_entities
+        surface.full_name
+        for surface in entity.target_surfaces.stored_entities
+        if surface.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
     ]
     return dict_with_merged_output_fields
 
@@ -396,7 +406,11 @@ def inject_surface_probe_info(entity: EntityList):
 def inject_surface_list_info(entity: EntityList):
     """inject entity info"""
     return {
-        "surfaces": [surface.full_name for surface in entity.stored_entities],
+        "surfaces": [
+            surface.full_name
+            for surface in entity.stored_entities
+            if surface.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+        ],
         "type": "surfaceIntegral",
     }
 
@@ -615,7 +629,9 @@ def translate_acoustic_output(output_params: list):
             aeroacoustic_output["patchType"] = output.patch_type
             if output.permeable_surfaces is not None:
                 aeroacoustic_output["permeableSurfaces"] = [
-                    item.full_name for item in output.permeable_surfaces.stored_entities
+                    item.full_name
+                    for item in output.permeable_surfaces.stored_entities
+                    if item.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
                 ]
             return aeroacoustic_output
     return None
@@ -752,11 +768,25 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     return generated_udfs, list(user_variable_udfs.values())
 
 
-def translate_streamline_output(output_params: list):
+def translate_streamline_output(output_params: list, streamline_class):
     """Translate streamline output settings."""
-    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    streamline_output = {
+        "Points": [],
+        "PointArrays": [],
+        "PointArrays2D": [],
+        "outputFields": [],
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+    }
     for output in output_params:
-        if isinstance(output, StreamlineOutput):
+        if isinstance(output, streamline_class):
+            streamline_output["outputFields"] = translate_output_fields(output)["outputFields"]
+            # streamline_output["outputFields"].extend(output.output_fields.items)
+            if isinstance(output, TimeAverageStreamlineOutput):
+                streamline_output["startAverageIntegrationStep"] = output.start_step
+                streamline_output["animationFrequencyTimeAverage"] = -1
+                streamline_output["animationFrequencyTimeAverageOffset"] = 0
+
             for entity in output.entities.stored_entities:
                 if isinstance(entity, Point):
                     point = {"name": entity.name, "location": entity.location.value.tolist()}
@@ -932,7 +962,12 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step8: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):
-        translated["streamlineOutput"] = translate_streamline_output(outputs)
+        translated["streamlineOutput"] = translate_streamline_output(outputs, StreamlineOutput)
+
+    if has_instance_in_list(outputs, TimeAverageStreamlineOutput):
+        translated["timeAverageStreamlineOutput"] = translate_streamline_output(
+            outputs, TimeAverageStreamlineOutput
+        )
 
     ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
     if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):
@@ -1100,10 +1135,14 @@ def boundary_entity_info_serializer(entity, translated_setting, solid_zone_bound
     if isinstance(entity, SurfacePair):
         key1 = _get_key_name(entity.pair[0])
         key2 = _get_key_name(entity.pair[1])
+        if BOUNDARY_FULL_NAME_WHEN_NOT_FOUND in (key1, key2):
+            return None
         output[key1] = {**translated_setting, "pairedPatchName": key2}
         output[key2] = translated_setting
     else:
         key_name = _get_key_name(entity)
+        if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+            return None
         output = {key_name: {**translated_setting}}
         if key_name in solid_zone_boundaries:
             if "temperature" in translated_setting:
@@ -1337,6 +1376,8 @@ def rename_modeling_constants(modeling_constants):
         replace_dict_key(modeling_constants, "CV1", "C_v1")
         replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
         replace_dict_key(modeling_constants, "CW2", "C_w2")
+        replace_dict_key(modeling_constants, "CW4", "C_w4")
+        replace_dict_key(modeling_constants, "CW5", "C_w5")
         replace_dict_key(modeling_constants, "CT3", "C_t3")
         replace_dict_key(modeling_constants, "CT4", "C_t4")
         replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
@@ -1473,7 +1514,10 @@ def get_solver_json(
             translated["navierStokesSolver"] = dump_dict(model.navier_stokes_solver)
 
             replace_dict_key(translated["navierStokesSolver"], "typeName", "modelType")
-            if isinstance(op, LiquidOperatingCondition):
+            if isinstance(op, LiquidOperatingCondition) and not (
+                model.navier_stokes_solver.private_attribute_dict is not None
+                and "typeName" in model.navier_stokes_solver.private_attribute_dict
+            ):
                 translated["navierStokesSolver"]["modelType"] = "CompressibleIsentropic"
             replace_dict_key(
                 translated["navierStokesSolver"],
@@ -1723,10 +1767,18 @@ def get_solver_json(
             if udd.input_boundary_patches is not None:
                 udd_dict_translated["inputBoundaryPatches"] = []
                 for surface in udd.input_boundary_patches.stored_entities:
-                    udd_dict_translated["inputBoundaryPatches"].append(_get_key_name(surface))
+                    full_name = _get_key_name(surface)
+                    if full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                        udd_dict_translated["inputBoundaryPatches"].append(full_name)
                 udd_dict_translated["inputBoundaryPatches"].sort()
             if udd.output_target is not None:
-                udd_dict_translated["outputTargetName"] = udd.output_target.full_name
+                full_name = udd.output_target.full_name
+                if full_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                    raise Flow360TranslationError(
+                        f"The output target {udd.output_target.name} is not found in the generated volume mesh.",
+                        input_value=udd.output_target,
+                    )
+                udd_dict_translated["outputTargetName"] = full_name
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
         translated["userDefinedDynamics"].sort(key=lambda udd: udd["dynamicsName"])
