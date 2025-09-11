@@ -14,7 +14,7 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
     RegistryLookup,
 )
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
@@ -115,6 +115,7 @@ class UserDefinedField(Flow360BaseModel):
 
 class _OutputBase(Flow360BaseModel):
     output_fields: UniqueItemList[str] = pd.Field()
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("output_fields", mode="after")
     @classmethod
@@ -1000,6 +1001,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("observers", mode="after")
     @classmethod
@@ -1105,6 +1107,7 @@ class StreamlineOutput(_OutputBase):
         description="List of output variables. Vector-valued fields will be colored by their magnitude.",
     )
     output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 
 class TimeAverageStreamlineOutput(StreamlineOutput):
