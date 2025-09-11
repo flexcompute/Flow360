@@ -50,9 +50,6 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
     Parameters
     ----------
     gap_resolution: Optional[LengthType.NonNegative], default: None
-
-    Example
-    -------
     """
 
     # pylint: disable=no-member
@@ -67,11 +64,8 @@ class SnappyRegionRefinement(SnappyEntityRefinement):
 
     Parameters
     ----------
-    min_spacing: LengthType.Positive, default: ??
-    max_spacing: LengthType.Positive, default: ??
-
-    Example
-    -------
+    min_spacing: LengthType.Positive
+    max_spacing: LengthType.Positive
     """
 
     # pylint: disable=no-member
@@ -90,17 +84,30 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     Parameters
     ----------
     spacing: Optional[Union[LengthType.Positive, List[LengthType.Positive]]], default: None
+        Spacing close to the edges.
+        Set to None to disable this metric.
+
     distances: Optional[List[LengthType.Positive]], default: None
+        Distance from the edge where to apply the spacings.
+        Set to None to disable this metric.
+
     min_elem: Optional[pd.NonNegativeInt], default: None
+        Minimum number of elements on the edge to apply the edge refinement.
+        Set to None to disable this metric.
+
     min_len: Optional[LengthType.NonNegative], default: None
+        Minimum length of the edge to apply edge refinement.
+        Set to None to disable this metric.
+
     included_angle: AngleType.Positive, default: 150°
+        If the angle between two elements is less than this value, the edge is extracted as a feature.
+
     bodies: Optional[List[SnappyBody]], default: None
     regions: Optional[EntityList[Surface]], default: None
+
     retain_on_smoothing: Optional[bool], default: True
-
-    Example
-    -------
-
+        Maitain the edge when smoothing is applied.
+        Set to None to disable this metric.
     """
 
     # pylint: disable=no-member

@@ -348,19 +348,16 @@ class SnappyCastellatedMeshControls(Flow360BaseModel):
         This parameter controls the local curvature refinement. The higher the value,
         the less features it captures. Applies maximum level of refinement to cells
         that can see intersections whose angle exceeds this value.
-        Set to None to disable this metric.
 
     n_cells_between_levels: Optional[pd.NonNegativeInt], default: 1
         This parameter controls the transition between cell refinement levels. Number
         of buffer layers of cells between different levels of refinement.
-        Set to None to disable this metric.
 
     min_refinement_cells: Optional[pd.NonNegativeInt], default: 10
         The refinement along the surfaces may spend many iterations on refinement of
         only few cells. Whenever the number of cells to be refined is less than or equal
         to this value, the refinement will stop. Unless the parameter is set to zero,
         at least one refining iteration will be performed.
-        Set to None to disable this metric.
     """
 
     # pylint: disable=no-member
