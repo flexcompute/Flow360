@@ -68,13 +68,13 @@ class GeometryRefinement(Flow360BaseModel):
 
     geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
         None,
-        description="The smallest length scale that will be resolved accurately by the surface meshing process. "
+        description="The smallest length scale that will be resolved accurately by the surface meshing process. ",
     )
 
     preserve_thin_geometry: Optional[bool] = pd.Field(
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
-        + "to geometry_accuracy should be resolved accurately during the surface meshing process."
+        + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
     @pd.field_validator("entities", mode="after")

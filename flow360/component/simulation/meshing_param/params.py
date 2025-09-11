@@ -156,7 +156,7 @@ class MeshingDefaults(Flow360BaseModel):
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process."
-        + "This can be overridden with class: ~flow360.GeometryRefinement"
+        + "This can be overridden with class: ~flow360.GeometryRefinement",
     )
 
     @pd.field_validator("number_of_boundary_layers", mode="after")
@@ -189,7 +189,10 @@ class MeshingDefaults(Flow360BaseModel):
         return value
 
     @pd.field_validator(
-        "surface_max_aspect_ratio", "surface_max_adaptation_iterations", "preserve_thin_geometry", mode="after"
+        "surface_max_aspect_ratio",
+        "surface_max_adaptation_iterations",
+        "preserve_thin_geometry",
+        mode="after",
     )
     @classmethod
     def invalid_geometry_ai_features(cls, value, info):
