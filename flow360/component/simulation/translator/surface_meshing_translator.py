@@ -154,6 +154,7 @@ GAI_SETTING_WHITELIST = {
             "curvature_resolution_angle": None,
             "surface_edge_growth_rate": None,
             "geometry_accuracy": None,
+            "preserve_thin_geometry": None,
             "surface_max_aspect_ratio": None,
             "surface_max_adaptation_iterations": None,
         },
