@@ -40,7 +40,7 @@ def test_reporttemplate_requirements():
         items=[
             Summary(),  # no requirements
             Inputs(),  # has params requirements
-            Table(data=["total_forces/CL"], section_title="Forces"),  # total_forces
+            Table(data=["total_forces/CL", "volume_mesh/stats"], section_title="misc"),
             Chart2D(
                 x="params/version", y="y_slicing_force_distribution/Y"
             ),  # y_slicing_force_distribution, total_forces
@@ -54,6 +54,7 @@ def test_reporttemplate_requirements():
         "volume_mesh",
         "surface_mesh",
         "geometry",
+        "volume_mesh/stats",
     ]
     expected_reqs = {RequirementItem.from_data_key(data_key=k) for k in expected_keys}
     assert set(reqs) == expected_reqs

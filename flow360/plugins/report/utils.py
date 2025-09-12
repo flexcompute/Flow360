@@ -152,8 +152,8 @@ class RequirementItem(pd.BaseModel):
                 .replace("(.+)", results_name),
             )
         raise NotImplementedError(
-            f"Unknown data key: {data_key}. Can not use this data for report generation yet" 
-            +" or wrong data key was specified."
+            f"Unknown data key: {data_key}. Can not use this data for report generation yet"
+            + " or wrong data key was specified."
         )
 
 
@@ -186,6 +186,8 @@ def get_requirements_from_data_path(data_path: List) -> List[RequirementItem]:
         if root_path[0] == "results":
             data_key = root_path[1]
             results_name = root_path[2]
+        elif root_path[0] == "volume_mesh" and len(root_path) > 1:
+            data_key = root_path[0] + "/" + root_path[1]
         else:
             data_key = root_path[0]
 
