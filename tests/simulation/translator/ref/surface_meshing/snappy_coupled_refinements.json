@@ -62,6 +62,23 @@
                     }
                 ]
             }
+        ],
+        "refinementVolumes": [
+            {
+                "type": "box",
+                "min": {"x": -10, "y": 15, "z": 40},
+                "max": {"x": 10, "y": 45, "z": 80},
+                "name": "box0",
+                "spacing": 2
+            },
+            {
+                "type": "cylinder",
+                "point1": {"x": 10, "y": 20, "z": 0},
+                "point2": {"x": 10, "y": 20, "z": 60},
+                "radius": 20,
+                "name": "cyl0",
+                "spacing": 2
+            }
         ]
     },
     "mesherSettings": {
@@ -80,7 +97,7 @@
                 "multiRegionFeatureSnap": true,
                 "strictRegionSnap": false
             }
-    },
+        },
     "meshQuality": {
             "maxNonOrtho": 85,
             "maxBoundarySkewness": 20,
@@ -99,5 +116,14 @@
             "minVolCollapseRatio": 0
         }
     },
-    "cadIsFluid": false
+    "smoothingControls": {
+        "lambda": 0.7,
+        "mu": 0.71,
+        "iter": 5,
+        "includedAngle": 150
+    },
+    "locationInMesh": {
+        "farfield": [0, 0, 0]
+    },
+    "cadIsFluid": true
 }

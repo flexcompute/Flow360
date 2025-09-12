@@ -24,7 +24,7 @@ def test_snappy_refinements_validators():
         )
 
     message = "UniformRefinement for snappy accepts only Boxes with axes aligned with the global coordinate system (angle_of_rotation=0)."
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)) as err:
         SnappySurfaceMeshingParams(
             defaults=SnappySurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=10 * u.mm, gap_resolution=0.1 * u.mm

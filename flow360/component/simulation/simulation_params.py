@@ -548,7 +548,7 @@ class SimulationParams(_ParamModelBase):
                 isinstance(self.meshing, ModularMeshingWorkflow)
                 and self.meshing.volume_meshing is not None
             ):
-                volume_zones = self.meshing.volume_meshing.volume_zones
+                volume_zones = self.meshing.zones
             if volume_zones is not None:
                 for volume in volume_zones:
                     if isinstance(volume, AutomatedFarfield):
