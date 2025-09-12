@@ -152,7 +152,8 @@ class RequirementItem(pd.BaseModel):
                 .replace("(.+)", results_name),
             )
         raise NotImplementedError(
-            f"Unknown data key: {data_key}. Can not use this data for report generation yet."
+            f"Unknown data key: {data_key}. Can not use this data for report generation yet" 
+            +" or wrong data key was specified."
         )
 
 

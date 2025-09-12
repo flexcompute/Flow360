@@ -1270,7 +1270,6 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
 
-
         legend = self._handle_legend(cases, x_data, y_data)
 
         if not self._is_multiline_data(x_data, y_data):
