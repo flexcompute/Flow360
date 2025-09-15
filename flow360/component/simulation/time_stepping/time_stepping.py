@@ -85,7 +85,8 @@ class AdaptiveCFL(Flow360BaseModel):
     type: Literal["adaptive"] = pd.Field("adaptive", frozen=True)
     min: pd.PositiveFloat = pd.Field(
         default=0.1,
-        description="The minimum allowable value for Adaptive CFL. Default value is 0.1 for both steady and unsteady simulations.",
+        description="The minimum allowable value for Adaptive CFL. "
+        + "Default value is 0.1 for both steady and unsteady simulations.",
     )
     max: Optional[pd.PositiveFloat] = pd.Field(
         None,
