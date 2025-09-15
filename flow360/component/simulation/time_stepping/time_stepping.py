@@ -30,17 +30,19 @@ class RampCFL(Flow360BaseModel):
 
     type: Literal["ramp"] = pd.Field("ramp", frozen=True)
     initial: Optional[pd.PositiveFloat] = pd.Field(
-        None, description="Initial CFL for solving pseudo time step. "
-        + "In steady simulations default value is 5. In unsteady simulations default value is 1."
+        None,
+        description="Initial CFL for solving pseudo time step. "
+        + "In steady simulations default value is 5. In unsteady simulations default value is 1.",
     )
     final: Optional[pd.PositiveFloat] = pd.Field(
-        None, description="Final CFL for solving pseudo time step. "
-        + "In steady simulations default value is 200. In unsteady simulations default value is 1e6."
+        None,
+        description="Final CFL for solving pseudo time step. "
+        + "In steady simulations default value is 200. In unsteady simulations default value is 1e6.",
     )
     ramp_steps: Optional[pd.PositiveInt] = pd.Field(
         None,
         description="Number of pseudo steps before reaching :py:attr:`RampCFL.final` within 1 physical step. "
-        + "In steady simulations default value is 40. In unsteady simulations default value is 30."
+        + "In steady simulations default value is 40. In unsteady simulations default value is 30.",
     )
 
     @classmethod
@@ -82,11 +84,13 @@ class AdaptiveCFL(Flow360BaseModel):
 
     type: Literal["adaptive"] = pd.Field("adaptive", frozen=True)
     min: pd.PositiveFloat = pd.Field(
-        default=0.1, description="The minimum allowable value for Adaptive CFL. Default value is 0.1 for both steady and unsteady simulations."
+        default=0.1,
+        description="The minimum allowable value for Adaptive CFL. Default value is 0.1 for both steady and unsteady simulations.",
     )
     max: Optional[pd.PositiveFloat] = pd.Field(
-        None, description="The maximum allowable value for Adaptive CFL. "
-        + "In steady simulations default value is 1e4. In unsteady simulations default value is 1e6."
+        None,
+        description="The maximum allowable value for Adaptive CFL. "
+        + "In steady simulations default value is 1e4. In unsteady simulations default value is 1e6.",
     )
     max_relative_change: Optional[pd.PositiveFloat] = pd.Field(
         None,
