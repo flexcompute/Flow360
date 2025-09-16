@@ -364,6 +364,7 @@ class Table(ReportItem):
         df = DataFrame(rows, columns=headers)
         return df
 
+    # pylint: disable=too-many-locals
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
         """
         Returns a LaTeX doc item (Tabulary) for the table,
@@ -376,6 +377,13 @@ class Table(ReportItem):
         headers, rows = self.calculate_table_data(context)
 
         num_columns = len(headers)
+        need_shrink = self.detect_overflow(headers, rows)
+        if need_shrink:
+            # pylint: disable=fixme
+            # TODO: may need set up the parameters dynamically baed on the overflow
+            # create one new line if necessary
+            context.doc.append(NoEscape(r"{\setlength{\tabcolsep}{4pt}%"))
+            context.doc.append(NoEscape(r"\resizebox{\linewidth}{!}{%"))
         with context.doc.create(Tabulary("|C" * num_columns + "|", width=num_columns)) as table:
             table.add_hline()
 
@@ -397,9 +405,26 @@ class Table(ReportItem):
                 table.add_row(formatted)
                 table.add_hline()
 
+        if need_shrink:
+            context.doc.append(NoEscape(r"}%"))  # end resizebox
+            context.doc.append(NoEscape(r"}"))  # end local group
+
         if settings is not None and settings.dump_table_csv:
             df = self.to_dataframe(context=context)
             df.to_csv(f"{self.section_title}.csv", index=False)
+
+    # pylint: disable=unused-argument
+    def detect_overflow(self, headers: List[str], rows: List[List]) -> bool:
+        # pylint: disable=fixme
+        """
+        TODO: detect based on the row data
+
+        :param headers:
+        :param rows:
+        :return: whether the table rows may overflow the page width
+        """
+        num_columns = len(headers)
+        return num_columns >= 11
 
 
 class PatternCaption(Flow360BaseModel):
