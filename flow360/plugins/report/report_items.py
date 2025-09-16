@@ -55,8 +55,8 @@ from flow360.plugins.report.utils import (
     Delta,
     Grouper,
     OperationTypes,
+    RequirementItem,
     Tabulary,
-    _requirements_mapping,
     data_from_path,
     downsample_image_to_relative_width,
     generate_colorbar_from_image,
@@ -170,7 +170,7 @@ class Inputs(ReportItem):
     """
 
     type_name: Literal["Inputs"] = Field("Inputs", frozen=True)
-    _requirements: List[str] = [_requirements_mapping["params"]]
+    _requirements: List[RequirementItem] = [RequirementItem.from_data_key(data_key="params")]
 
     # pylint: disable=too-many-arguments
     def get_doc_item(self, context: ReportContext, settings: Settings = None) -> None:
@@ -1033,19 +1033,12 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             return True
         return False
 
-    def _unpack_data_to_multiline(self, x_data: list, y_data: list):
-        if (
+    def _is_multiline_data(self, x_data: list, y_data: list):
+        return (
             len(x_data) == 1
             and isinstance(x_data[0], list)
             and len(y_data) == 1
             and isinstance(y_data[0], list)
-        ):
-            return x_data[0], y_data[0]
-        return x_data, y_data
-
-    def _is_multiline_data(self, x_data: list, y_data: list):
-        return all(not isinstance(data, list) for data in x_data) and all(
-            not isinstance(data, list) for data in y_data
         )
 
     @abstractmethod
@@ -1277,8 +1270,6 @@ class BaseChart2D(Chart, metaclass=ABCMeta):
             # pylint: disable=protected-access
             background_png = background._get_images([cases[0]], context)[0]
 
-        x_data, y_data = self._unpack_data_to_multiline(x_data=x_data, y_data=y_data)
-
         legend = self._handle_legend(cases, x_data, y_data)
 
         if not self._is_multiline_data(x_data, y_data):
@@ -1449,7 +1440,6 @@ class Chart2D(BaseChart2D):
         None,
         description='Background type for the chart; set to "geometry" or None. Defaults to ``None``.',
     )
-    _requirements: List[str] = [_requirements_mapping["total_forces"]]
     type_name: Literal["Chart2D"] = Field("Chart2D", frozen=True)
 
     @pd.model_validator(mode="after")
@@ -1527,8 +1517,6 @@ class Chart2D(BaseChart2D):
             return self.group_by.arrange_legend()
 
         if self._is_multiline_data(x_data, y_data):
-            x_data = [float(data) for data in x_data]
-            y_data = [float(data) for data in y_data]
             legend = None
         elif isinstance(self.y, list) and (len(self.y) > 1):
             legend = []
@@ -1685,7 +1673,9 @@ class NonlinearResiduals(BaseChart2D):
         "nonlinear_residuals/pseudo_step", frozen=True
     )
     y_log: Literal[True] = Field(True, frozen=True)
-    _requirements: List[str] = [_requirements_mapping["nonlinear_residuals"]]
+    _requirements: List[RequirementItem] = [
+        RequirementItem.from_data_key(data_key="nonlinear_residuals")
+    ]
     type_name: Literal["NonlinearResiduals"] = Field("NonlinearResiduals", frozen=True)
 
     def get_requirements(self):
