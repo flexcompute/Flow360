@@ -136,5 +136,9 @@
             "modelType": "FluidDynamics",
             "isRotatingReferenceFrame": false
         }
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }
