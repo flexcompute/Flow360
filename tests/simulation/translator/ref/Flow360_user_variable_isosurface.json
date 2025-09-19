@@ -192,5 +192,9 @@
             "name": "velocity_km_per_hr"
         }
     ],
-    "usingLiquidAsMaterial": false
+    "usingLiquidAsMaterial": false,
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
+    }
 }
