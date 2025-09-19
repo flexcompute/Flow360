@@ -4,6 +4,7 @@ from abc import ABCMeta
 from typing import Literal, Optional, Union
 
 import pydantic as pd
+import unyt as u
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid
@@ -16,8 +17,6 @@ from flow360.component.simulation.user_code.core.types import (
     ValueOrExpression,
     get_input_value_dimensions,
     get_input_value_length,
-    infer_units_by_unit_system,
-    is_variable_with_unit_system_as_units,
     solver_variable_to_user_variable,
 )
 from flow360.component.simulation.user_code.core.utils import is_runtime_expression
@@ -124,7 +123,16 @@ class Isosurface(_OutputItemBase):
     @pd.field_validator("iso_value", mode="before")
     @classmethod
     def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
-        if is_variable_with_unit_system_as_units(value):
+        if (
+            not isinstance(value, dict)
+            or "units" not in value
+            or value["units"]
+            not in (
+                "SI_unit_system",
+                "Imperial_unit_system",
+                "CGS_unit_system",
+            )
+        ):
             return value
         if info.data.get("field") is None:
             # `field` validation failed.
@@ -134,9 +142,12 @@ class Isosurface(_OutputItemBase):
         units = value["units"]
         field = info.data["field"]
         field_dimensions = get_input_value_dimensions(value=field)
-        value = infer_units_by_unit_system(
-            value=value, value_dimensions=field_dimensions, unit_system=units
-        )
+        if units == "SI_unit_system":
+            value["units"] = u.unit_systems.mks_unit_system[field_dimensions]
+        if units == "Imperial_unit_system":
+            value["units"] = u.unit_systems.imperial_unit_system[field_dimensions]
+        if units == "CGS_unit_system":
+            value["units"] = u.unit_systems.cgs_unit_system[field_dimensions]
         return value
 
     @pd.field_validator("field", mode="after")
