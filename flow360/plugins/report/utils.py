@@ -14,7 +14,7 @@ import shutil
 import uuid
 from abc import ABCMeta, abstractmethod
 from numbers import Number
-from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Any, ClassVar, List, Literal, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numexpr as ne
@@ -49,39 +49,112 @@ class RequirementItem(pd.BaseModel):
 
     model_config = {"frozen": True}
 
+    # pylint: disable=protected-access
+    _requirements_mapping: ClassVar[dict] = {
+        "params": {"resource_type": "case", "filename": "simulation.json"},
+        "cfl": {
+            "resource_type": "case",
+            "filename": case_results.CFLResultCSVModel()._remote_path(),
+        },
+        "total_forces": {
+            "resource_type": "case",
+            "filename": case_results.TotalForcesResultCSVModel()._remote_path(),
+        },
+        "surface_forces": {
+            "resource_type": "case",
+            "filename": case_results.SurfaceForcesResultCSVModel()._remote_path(),
+        },
+        "linear_residuals": {
+            "resource_type": "case",
+            "filename": case_results.LinearResidualsResultCSVModel()._remote_path(),
+        },
+        "nonlinear_residuals": {
+            "resource_type": "case",
+            "filename": case_results.NonlinearResidualsResultCSVModel()._remote_path(),
+        },
+        "x_slicing_force_distribution": {
+            "resource_type": "case",
+            "filename": case_results.XSlicingForceDistributionResultCSVModel()._remote_path(),
+        },
+        "y_slicing_force_distribution": {
+            "resource_type": "case",
+            "filename": case_results.YSlicingForceDistributionResultCSVModel()._remote_path(),
+        },
+        "volume_mesh": {"resource_type": "volume_mesh", "filename": "simulation.json"},
+        "volume_mesh/stats": {
+            "resource_type": "volume_mesh",
+            "filename": VolumeMeshV2._mesh_stats_file,
+        },
+        "volume_mesh/bounding_box": {
+            "resource_type": "volume_mesh",
+            "filename": VolumeMeshDownloadable.BOUNDING_BOX.value,
+        },
+        "surface_mesh": {"resource_type": "surface_mesh", "filename": "simulation.json"},
+        "geometry": {"resource_type": "geometry", "filename": "simulation.json"},
+        "bet_forces": {
+            "resource_type": "case",
+            "filename": case_results.BETForcesResultCSVModel()._remote_path(),
+        },
+        "bet_forces_radial_distribution": {
+            "resource_type": "case",
+            "filename": case_results.BETForcesRadialDistributionResultCSVModel()._remote_path(),
+        },
+        "actuator_disks": {
+            "resource_type": "case",
+            "filename": case_results.ActuatorDiskResultCSVModel()._remote_path(),
+        },
+        "aeroacoustics": {
+            "resource_type": "case",
+            "filename": case_results.AeroacousticsResultCSVModel()._remote_path(),
+        },
+        "surface_heat_transfer": {
+            "resource_type": "case",
+            "filename": case_results.SurfaceHeatTransferResultCSVModel()._remote_path(),
+        },
+    }
 
-# pylint: disable=protected-access
-_requirements_mapping = {
-    "params": RequirementItem(filename="simulation.json"),
-    "cfl": RequirementItem(filename=case_results.CFLResultCSVModel()._remote_path()),
-    "total_forces": RequirementItem(
-        filename=case_results.TotalForcesResultCSVModel()._remote_path()
-    ),
-    "surface_forces": RequirementItem(
-        filename=case_results.SurfaceForcesResultCSVModel()._remote_path()
-    ),
-    "linear_residuals": RequirementItem(
-        filename=case_results.LinearResidualsResultCSVModel()._remote_path()
-    ),
-    "nonlinear_residuals": RequirementItem(
-        filename=case_results.NonlinearResidualsResultCSVModel()._remote_path()
-    ),
-    "x_slicing_force_distribution": RequirementItem(
-        filename=case_results.XSlicingForceDistributionResultCSVModel()._remote_path()
-    ),
-    "y_slicing_force_distribution": RequirementItem(
-        filename=case_results.YSlicingForceDistributionResultCSVModel()._remote_path()
-    ),
-    "volume_mesh": RequirementItem(resource_type="volume_mesh", filename="simulation.json"),
-    "volume_mesh/stats": RequirementItem(
-        resource_type="volume_mesh", filename=VolumeMeshV2._mesh_stats_file
-    ),
-    "volume_mesh/bounding_box": RequirementItem(
-        resource_type="volume_mesh", filename=VolumeMeshDownloadable.BOUNDING_BOX.value
-    ),
-    "surface_mesh": RequirementItem(resource_type="surface_mesh", filename="simulation.json"),
-    "geometry": RequirementItem(resource_type="geometry", filename="simulation.json"),
-}
+    _named_results_mapping: ClassVar[dict] = {
+        "monitors": {
+            "resource_type": "case",
+            "pattern": case_results.CaseDownloadable.MONITOR_PATTERN.value,
+        },
+        "user_defined_dynamics": {
+            "resource_type": "case",
+            "pattern": case_results.CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value,
+        },
+    }
+
+    @classmethod
+    @pd.validate_call
+    def from_data_key(cls, data_key: str, results_name: Optional[str] = None):
+        """
+        Return a RequirementItem object based on the data key (a type of data that is required).
+
+        Examples
+        --------
+        >>> RequirementItem.from_data_key(data_key="nonlinear_residuals")
+        >>> RequirementItem.from_data_key(data_key="surface_mesh")
+        >>> RequirementItem.from_data_key(data_key="monitors", results_name="massFluxExhaust")
+        """
+        if data_key in cls._requirements_mapping:
+            return cls(
+                resource_type=cls._requirements_mapping.get(data_key).get("resource_type"),
+                filename=cls._requirements_mapping.get(data_key).get("filename"),
+            )
+        if data_key in cls._named_results_mapping:
+            if results_name is None:
+                raise ValueError(f"Results name is required for {data_key}.")
+            return cls(
+                resource_type=cls._named_results_mapping.get(data_key).get("resource_type"),
+                filename="results/"
+                + cls._named_results_mapping.get(data_key)
+                .get("pattern")
+                .replace("(.+)", results_name),
+            )
+        raise NotImplementedError(
+            f"Unknown data key: {data_key}. Can not use this data for report generation yet"
+            + " or wrong data key was specified."
+        )
 
 
 def get_requirements_from_data_path(data_path: List) -> List[RequirementItem]:
@@ -108,13 +181,18 @@ def get_requirements_from_data_path(data_path: List) -> List[RequirementItem]:
     requirements = set()
     for item in data_path:
         root_path = get_root_path(item)
-        matched_requirement = None
-        for key, value in _requirements_mapping.items():
-            if root_path.startswith(key):
-                matched_requirement = value
-                requirements.add(matched_requirement)
-        if matched_requirement is None:
-            raise ValueError(f"Unknown result type: {item}")
+        root_path = split_path(root_path)
+        results_name = None
+        if root_path[0] == "results":
+            data_key = root_path[1]
+            results_name = root_path[2]
+        elif root_path[0] == "volume_mesh" and len(root_path) > 1:
+            data_key = root_path[0] + "/" + root_path[1]
+        else:
+            data_key = root_path[0]
+
+        requirement = RequirementItem.from_data_key(data_key=data_key, results_name=results_name)
+        requirements.add(requirement)
     return list(requirements)
 
 
