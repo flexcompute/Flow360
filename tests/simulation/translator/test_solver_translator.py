@@ -43,7 +43,6 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
-    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -59,8 +58,6 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
-    MovingStatistic,
-    ProbeOutput,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
@@ -379,65 +376,6 @@ def test_om6wing_with_specified_turbulence_model_coefficient(get_om6Wing_tutoria
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_SST_with_modified_C_sigma_omega1.json",
-    )
-
-
-def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutorial_param):
-    params = get_om6Wing_tutorial_param
-    monitored_variable = UserVariable(
-        name="Helicity",
-        value=math.dot(solution.velocity, solution.vorticity),
-    )
-    probe_output = ProbeOutput(
-        name="point_legacy1",
-        output_fields=[
-            monitored_variable,
-        ],
-        probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-        private_attribute_id="11111",
-    )
-    criterion = StopCriterion(
-        name="Criterion_Helicity",
-        tolerance=18.66 * u.m / u.s**2,
-        monitor_output=probe_output,
-        monitor_field=monitored_variable,
-    )
-    params.models[0].stopping_criterion = [criterion]
-    params.outputs.append(probe_output)
-    translate_and_compare(
-        get_om6Wing_tutorial_param,
-        mesh_unit=0.8059 * u.m,
-        ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
-    )
-
-
-def test_stopping_criterion_tolerance_in_unit_system():
-    """
-    [Frontend] Test that an StopCriterion with the unit system as
-    tolerance's units can be validated and translated.
-    """
-
-    with open(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_stopping_criterion.json"
-        )
-    ) as fp:
-        params_as_dict = json.load(fp=fp)
-    params_validated, errors, _ = validate_model(
-        params_as_dict=params_as_dict,
-        validated_by=ValidationCalledBy.LOCAL,
-        root_item_type="Case",
-        validation_level="Case",
-    )
-    assert not errors, print(">>>", errors)
-    assert params_validated.models[0].stopping_criterion[0].tolerance == 18.66 * u.m / u.s**2
-
-    translate_and_compare(
-        params_validated,
-        mesh_unit=0.8059 * u.m,
-        ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
-        debug=True,
     )
 
 

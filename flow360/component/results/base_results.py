@@ -638,12 +638,3 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 regex_pattern = rf"^(?!total).*{variable}$"
                 df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
         self.update(df)
-
-    def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
-        """
-        Change default behavior of data loader, reload
-        """
-        super().reload_data(
-            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
-        )
-        self._filtered_sum()

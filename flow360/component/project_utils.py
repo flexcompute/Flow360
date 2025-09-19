@@ -3,7 +3,7 @@ Support class and functions for project interface.
 """
 
 import datetime
-from typing import List, Literal, Optional, get_args
+from typing import List, Literal, Optional
 
 import pydantic as pd
 
@@ -14,14 +14,12 @@ from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.outputs.outputs import MonitorOutputType
 from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
@@ -348,35 +346,6 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
-def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
-    """
-    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
-    """
-    if not params.models:
-        return params
-    stopping_criterion = None
-    for model in params.models:
-        if not isinstance(model, Fluid):
-            continue
-        stopping_criterion = model.stopping_criterion
-    if not stopping_criterion:
-        return params
-    monitor_output_ids = []
-    if params.outputs is not None:
-        for output in params.outputs:
-            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-                continue
-            monitor_output_ids.append(output.private_attribute_id)
-    for criterion in stopping_criterion:
-        monitor_output = criterion.monitor_output
-        if isinstance(monitor_output, str):
-            continue
-        if monitor_output.private_attribute_id not in monitor_output_ids:
-            params.outputs.append(monitor_output)
-            monitor_output_ids.append(monitor_output.private_attribute_id)
-    return params
-
-
 def set_up_params_for_uploading(
     root_asset,
     length_unit: LengthType,
@@ -422,7 +391,6 @@ def set_up_params_for_uploading(
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
-    params = _set_up_monitor_output_from_stopping_criterion(params=params)
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
