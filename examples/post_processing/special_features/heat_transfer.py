@@ -11,7 +11,6 @@ from flow360.plugins.report.report_items import (
     Settings,
     Summary,
 )
-from flow360.version import __solver_version__
 
 TutorialCHTSolver.get_files()
 
@@ -170,7 +169,6 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     "CHT, dpi=default",
     cases,
-    solver_version=__solver_version__,
 )
 
 report.wait()
