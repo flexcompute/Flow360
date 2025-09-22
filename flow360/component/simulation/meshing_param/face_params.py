@@ -77,11 +77,7 @@ class GeometryRefinement(Flow360BaseModel):
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def ensure_surface_existence(cls, value):
-        """Ensure all boundaries will be present after mesher"""
-        return check_deleted_surface_in_entity_list(value)
+    # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
 
     @pd.model_validator(mode="after")
     def ensure_geometry_ai(self):
@@ -96,7 +92,7 @@ class GeometryRefinement(Flow360BaseModel):
 
 class PassiveSpacing(Flow360BaseModel):
     """
-    Passively control the mesh spacing either through adjecent `Surface`'s meshing
+    Passively control the mesh spacing either through adjacent `Surface`'s meshing
     setting or doing nothing to change existing surface mesh at all.
 
     Example
