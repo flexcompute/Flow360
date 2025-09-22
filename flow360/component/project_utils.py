@@ -296,13 +296,6 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
                 )
                 with model_attribute_unlock(entity_info, entity_grouping_tags):
                     setattr(entity_info, entity_grouping_tags, used_tags[0])
-            else:
-                # User specified new grouping
-                raise Flow360ConfigurationError(
-                    f"Conflicting entity ({entity_type.__name__}) grouping tags found "
-                    f"in the SimulationParams ({used_tags}) and "
-                    f"the root asset ({current_tag})."
-                )
 
         if len(used_tags) > 1:
             raise Flow360ConfigurationError(
