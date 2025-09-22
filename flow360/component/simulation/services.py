@@ -865,7 +865,11 @@ def change_unit_system_recursive(
 
     if isinstance(data, dict):
         # 1. Check if dict matches the desired pattern
-        if set(data.keys()) == {"value", "units"}:
+        if set(data.keys()) == {"value", "units"} and data["units"] not in (
+            "SI_unit_system",
+            "Imperial_unit_system",
+            "CGS_unit_system",
+        ):
             data = _convert_unit_in_dict(
                 data=data,
                 target_unit_system=target_unit_system,
