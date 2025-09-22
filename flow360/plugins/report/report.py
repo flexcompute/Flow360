@@ -225,7 +225,11 @@ class ReportTemplate(Flow360BaseModel):
 
     # pylint: disable=unused-argument
     def create_in_cloud(
-        self, name: str, cases: list[Case], landscape: bool = False, solver_version: str = __solver_version__
+        self,
+        name: str,
+        cases: list[Case],
+        landscape: bool = False,
+        solver_version: str = __solver_version__,
     ):
         """
         Creates a report in the cloud for a specified set of cases.
