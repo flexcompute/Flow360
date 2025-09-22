@@ -377,7 +377,7 @@ class Table(ReportItem):
         headers, rows = self.calculate_table_data(context)
 
         num_columns = len(headers)
-        need_shrink = self.detect_overflow(headers, rows)
+        need_shrink = Table._detect_overflow(headers, rows)
         if need_shrink:
             # pylint: disable=fixme
             # TODO: may need set up the parameters dynamically baed on the overflow
@@ -414,7 +414,8 @@ class Table(ReportItem):
             df.to_csv(f"{self.section_title}.csv", index=False)
 
     # pylint: disable=unused-argument
-    def detect_overflow(self, headers: List[str], rows: List[List]) -> bool:
+    @classmethod
+    def _detect_overflow(cls, headers: List[str], rows: List[List]) -> bool:
         # pylint: disable=fixme
         """
         TODO: detect based on the row data
