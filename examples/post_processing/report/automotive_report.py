@@ -21,7 +21,6 @@ from flow360.plugins.report.report_items import (
     TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta, Expression, Variable
-from flow360.version import __solver_version__
 
 DrivAer.get_files()
 
@@ -419,7 +418,6 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     f"{size}-{len(cases)}cases-slices-using-groups-Cpt, Cpx, wallShear, dpi=default",
     cases,
-    solver_version=__solver_version__,
 )
 
 report.wait()
