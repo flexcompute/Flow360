@@ -50,6 +50,7 @@ from flow360.component.simulation.user_code.core.types import (
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    TimeSteppingType,
     get_validation_info,
     get_validation_levels,
 )
@@ -109,6 +110,58 @@ class UserDefinedField(Flow360BaseModel):
             raise ValueError(
                 f"User defined field variable name: {value} conflicts with pre-defined field names."
                 " Please consider renaming this user defined field variable."
+            )
+        return value
+
+
+class MovingStatistic(Flow360BaseModel):
+    """
+
+    :class:`MovingStatistic` class for moving statistic settings in
+    :class:`ProbeOutput`, :class:`SurfaceProbeOutput`,
+    :class:`SurfaceIntegralOutput` and :class:`ForceOutput`.
+
+    Example
+    -------
+
+    Define a moving statistic to compute the standard deviation in a moving window of
+    10 steps, with the initial 100 steps skipped.
+
+    >>> fl.MovingStatistic(
+    ...     moving_window=10,
+    ...     method="std",
+    ...     initial_skipping_steps=100,
+    ... )
+
+    ====
+    """
+
+    moving_window: pd.PositiveInt = pd.Field(
+        10,
+        description="The number of pseudo/time steps to compute moving statistics. "
+        "For steady simulation, the moving_window should be a multiple of 10.",
+    )
+    method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
+        "mean", description="The type of moving statistics used to monitor the output."
+    )
+    initial_skipping_steps: pd.NonNegativeInt = pd.Field(
+        0,
+        description="The number of steps to skip before computing the moving statistics. "
+        "For steady simulation, the moving_window should be a multiple of 10.",
+    )
+    type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
+
+    @pd.field_validator("moving_window", "initial_skipping_steps", mode="after")
+    @classmethod
+    def _check_moving_window_for_steady_simulation(cls, value):
+        validation_info = get_validation_info()
+        if (
+            validation_info
+            and validation_info.time_stepping == TimeSteppingType.STEADY
+            and value % 10 != 0
+        ):
+            raise ValueError(
+                "For steady simulation, the number of steps should be a multiple of 10."
             )
         return value
 
@@ -575,6 +628,9 @@ class SurfaceIntegralOutput(_OutputBase):
     output_fields: UniqueItemList[Union[str, UserVariable]] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
     )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
+    )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
     @pd.field_validator("entities", mode="after")
@@ -640,6 +696,9 @@ class ProbeOutput(_OutputBase):
         description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
         " and :class:`UserDefinedField`."
     )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
+    )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
@@ -703,6 +762,9 @@ class SurfaceProbeOutput(_OutputBase):
     output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
     )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
 
@@ -1316,3 +1378,8 @@ TimeAverageOutputTypes = (
     TimeAverageImportedSurfaceOutput,
     TimeAverageStreamlineOutput,
 )
+
+MonitorOutputType = Annotated[
+    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    pd.Field(discriminator="output_type"),
+]
