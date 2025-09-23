@@ -66,6 +66,36 @@ def get_volume_mesh_metadata():
     }
 
 
+@pytest.fixture()
+def get_snappy_like_volume_mesh_metadata():
+    """A realistic volume mesh metadata from snappy surface mesh w. multizone."""
+    return {
+        "zones": {
+            "fluid": {
+                "boundaryNames": [
+                    "fluid/box::ground",
+                    "fluid/box::walls",
+                    "fluid/tower::tunnel",
+                    "fluid/tower::walls",
+                ],
+                "donorInterfaceNames": ["radiator/rad::int-inlet", "radiator/rad::int-outlet"],
+                "donorZoneNames": ["radiator", "radiator"],
+                "receiverInterfaceNames": ["fluid/rad::int-inlet", "fluid/rad::int-outlet"],
+            },
+            "radiator": {
+                "boundaryNames": [
+                    "radiator/rad::int-inlet",
+                    "radiator/rad::int-outlet",
+                    "radiator/tower::tunnel",
+                ],
+                "donorInterfaceNames": ["fluid/rad::int-inlet", "fluid/rad::int-outlet"],
+                "donorZoneNames": ["fluid", "fluid"],
+                "receiverInterfaceNames": ["radiator/rad::int-inlet", "radiator/rad::int-outlet"],
+            },
+        }
+    }
+
+
 def test_update_zone_info_from_volume_mesh(get_volume_mesh_metadata):
     # Param is generated before the volume mesh metadata is available AKA the param generated the volume mesh.
     # (Though the volume meshing params are skipped here)
@@ -241,3 +271,28 @@ def test_update_zone_info_from_geometry_with_missing_wall():
             "surfacePatches"
         ]
     )
+
+
+def test_update_boundary_names_in_multiple_zones(get_snappy_like_volume_mesh_metadata):
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(
+                velocity_magnitude=40,
+            ),
+            models=[
+                Wall(
+                    surfaces=[
+                        Surface(name="box::ground"),
+                        Surface(name="tower::tunnel"),
+                        Surface(name="tower::walls"),
+                    ]
+                ),
+                Freestream(surfaces=[Surface(name="box::walls")]),
+            ],
+        )
+
+    assert len(params.models[0].entities.stored_entities) == 3
+
+    params._update_param_with_actual_volume_mesh_meta(get_snappy_like_volume_mesh_metadata)
+
+    assert len(params.models[0].entities.stored_entities) == 4
