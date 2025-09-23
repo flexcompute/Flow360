@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import ast
-import os
 import json
+import os
 from functools import cached_property
-from typing import Literal, Union, List
+from typing import List, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -147,16 +147,12 @@ class Draft(Flow360Resource):
         file_names = []
         for file_path in file_paths:
             file_names.append(os.path.basename(file_path))
-        resp:List = self.post(
-            json={
-                "filenames":file_names
-            },
+        resp: List = self.post(
+            json={"filenames": file_names},
             method="imported-surfaces",
         )
         for index, local_file_path in enumerate(file_paths):
-            self._upload_file(
-                resp[index]["filename"], local_file_path
-            )
+            self._upload_file(resp[index]["filename"], local_file_path)
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""

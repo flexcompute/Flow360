@@ -32,13 +32,11 @@ from flow360.component.project_utils import (
 )
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.folder import Folder
+from flow360.component.simulation.outputs.outputs import ImportedSurfaceOutput
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
-from flow360.component.simulation.outputs.outputs import (
-    ImportedSurfaceOutput
-)
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,

@@ -142,8 +142,8 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
-    ReferenceGeometry,
     ImportedSurface,
+    ReferenceGeometry,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
