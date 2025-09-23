@@ -106,6 +106,7 @@ WHITELISTED_CALLABLES = {
             "coordinate",
             "Cp",
             "Cpt",
+            "Cpt_auto",
             "grad_density",
             "grad_u",
             "grad_v",
