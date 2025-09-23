@@ -235,7 +235,7 @@
             "name": "iso_field_velocity_mag"
         },
         {
-            "expression": "constexpr double __gamma = 1.4;const double __MachTmp =    sqrt(primitiveVars[1] * primitiveVars[1] +         primitiveVars[2] * primitiveVars[2] +         primitiveVars[3] * primitiveVars[3]) /    sqrt(__gamma * primitiveVars[4] / primitiveVars[0]);constexpr double __power = __gamma / (__gamma - 1.0);const double __p1 =    __gamma * primitiveVars[4] *    pow(1.0 + (__gamma - 1.0) / 2.0 * __MachTmp * __MachTmp, __power);double ___Cpt_auto = (__p1 - 1.) / (0.5 * ___gamma * MachRef * MachRef);just_atan_auto = (atan(___Cpt_auto) * 1.0);",
+            "expression": "constexpr double __gamma = 1.4;const double __MachTmp =    sqrt(primitiveVars[1] * primitiveVars[1] +         primitiveVars[2] * primitiveVars[2] +         primitiveVars[3] * primitiveVars[3]) /    sqrt(__gamma * primitiveVars[4] / primitiveVars[0]);constexpr double __power = __gamma / (__gamma - 1.0);const double __p1 =    __gamma * primitiveVars[4] *    pow(1.0 + (__gamma - 1.0) / 2.0 * __MachTmp * __MachTmp, __power);double ___Cpt_auto = (__p1 - 1.) / (0.5 * __gamma * MachRef * MachRef);just_atan_auto = (atan(___Cpt_auto) * 1.0);",
             "name": "just_atan_auto"
         },
         {
@@ -323,6 +323,7 @@
             "const_value_dimensionless",
             "cross_res",
             "dot_res",
+            "just_atan_auto",
             "log_res",
             "magnitude_res",
             "max_res",
