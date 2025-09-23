@@ -4,12 +4,6 @@ import numpy as np
 
 udf_prepending_code = {
     "solution.Cp": "double ___Cp = (primitiveVars[4] - pressureFreestream) / (0.5 * MachRef * MachRef);",
-    # "solution.Cpt": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + "
-    # + "primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / "
-    # + "sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);"
-    # + "double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,"
-    # + "1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,"
-    # + "1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);",
     "solution.Cpt": (
         "constexpr double ___gamma = 1.4;"
         "const double ___MachTmp ="
