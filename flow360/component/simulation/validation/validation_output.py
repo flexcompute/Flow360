@@ -7,7 +7,9 @@ from typing import List, Literal, Union, get_args, get_origin
 from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ProbeOutput,
     SurfaceIntegralOutput,
+    SurfaceProbeOutput,
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady
 
@@ -144,4 +146,45 @@ def _check_unsteadiness_to_use_aero_acoustics(params):
                     "`AeroAcousticOutput` can only be activated with `Unsteady` simulation."
                 )
     # Not running case or is using unsteady
+    return params
+
+
+def _check_unique_surface_volume_probe_names(params):
+
+    if not params.outputs:
+        return params
+
+    active_probe_names = set()
+
+    for output_index, output in enumerate(params.outputs):
+        if isinstance(output, (ProbeOutput, SurfaceProbeOutput)):
+            if output.name in active_probe_names:
+                raise ValueError(
+                    f"In `outputs`[{output_index}] {output.output_type}: "
+                    f"Probe name {output.name} has already been used in a `ProbeOutput` "
+                    "or `SurfaceProbeOutput`. Probe names must be unique among all probe "
+                    "outputs."
+                )
+            active_probe_names.add(output.name)
+
+    return params
+
+
+def _check_unique_surface_volume_probe_entity_names(params):
+
+    if not params.outputs:
+        return params
+
+    for output_index, output in enumerate(params.outputs):
+        if isinstance(output, (ProbeOutput, SurfaceProbeOutput)):
+            active_entity_names = set()
+            for entity in output.entities.stored_entities:
+                if entity.name in active_entity_names:
+                    raise ValueError(
+                        f"In `outputs`[{output_index}] {output.output_type}: "
+                        f"Entity name {entity.name} has already been used in the "
+                        f"`{output.output_type}`. Entity names must be unique."
+                    )
+                active_entity_names.add(entity.name)
+
     return params

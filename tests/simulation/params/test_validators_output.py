@@ -21,6 +21,7 @@ from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
     ProbeOutput,
     SurfaceOutput,
+    SurfaceProbeOutput,
     TimeAverageSurfaceOutput,
     VolumeOutput,
 )
@@ -304,3 +305,147 @@ def test_moving_statitic_validator():
         validation_level="Case",
     )
     assert errors is None
+
+
+def test_duplicate_probe_names():
+
+    # should have no error
+    with imperial_unit_system:
+        params = SimulationParams(
+            outputs=[
+                ProbeOutput(
+                    name="probe_output_1",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["Cp"],
+                ),
+                ProbeOutput(
+                    name="probe_output_2",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["velocity_x"],
+                ),
+            ],
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "`outputs`[1] ProbeOutput: Probe name probe_output has already been used in a "
+            "`ProbeOutput` or `SurfaceProbeOutput`. Probe names must be unique among all probe outputs."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["Cp"],
+                    ),
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["velocity_x"],
+                    ),
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "`outputs`[1] SurfaceProbeOutput: Probe name probe_output has already been used in a "
+            "`ProbeOutput` or `SurfaceProbeOutput`. Probe names must be unique among all probe outputs."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["pressure"],
+                    ),
+                    SurfaceProbeOutput(
+                        name="probe_output",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["velocity_y"],
+                        target_surfaces=[Surface(name="fluid/body")],
+                    ),
+                ],
+            )
+
+
+def test_duplicate_probe_entity_names():
+
+    # should have no error
+    with imperial_unit_system:
+        params = SimulationParams(
+            outputs=[
+                ProbeOutput(
+                    name="probe_output",
+                    probe_points=[
+                        Point(name="point_1", location=[1, 2, 3] * u.m),
+                        Point(name="point_2", location=[1, 2, 3] * u.m),
+                    ],
+                    output_fields=["Cp"],
+                ),
+                ProbeOutput(
+                    name="probe_output2",
+                    probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                    output_fields=["velocity_x"],
+                ),
+            ],
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] ProbeOutput: Entity name point_1 has already been used in the "
+            "`ProbeOutput`. Entity names must be unique."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    ProbeOutput(
+                        name="probe_output_1",
+                        probe_points=[
+                            Point(name="point_1", location=[1, 2, 3] * u.m),
+                            Point(name="point_1", location=[1, 2, 3] * u.m),
+                        ],
+                        output_fields=["Cp"],
+                    ),
+                    ProbeOutput(
+                        name="probe_output_2",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["velocity_x"],
+                    ),
+                ],
+            )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "In `outputs`[0] SurfaceProbeOutput: Entity name point_1 has already been used in the "
+            "`SurfaceProbeOutput`. Entity names must be unique."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                outputs=[
+                    SurfaceProbeOutput(
+                        name="probe_output_1",
+                        probe_points=[
+                            Point(name="point_1", location=[1, 2, 3] * u.m),
+                            Point(name="point_1", location=[1, 2, 3] * u.m),
+                        ],
+                        output_fields=["pressure"],
+                        target_surfaces=[Surface(name="fluid/body")],
+                    ),
+                    SurfaceProbeOutput(
+                        name="probe_output_2",
+                        probe_points=[Point(name="point_1", location=[1, 2, 3] * u.m)],
+                        output_fields=["velocity_y"],
+                        target_surfaces=[Surface(name="fluid/body")],
+                    ),
+                ],
+            )

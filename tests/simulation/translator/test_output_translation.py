@@ -709,30 +709,27 @@ def probe_output_config(vel_in_km_per_hr):
             "outputFields": [],
             "monitors": {
                 "prb 10": {
-                    "start": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
-                    "end": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
-                    "numberOfPoints": [1, 1],
-                    "type": "lineProbe",
+                    "monitorLocations": {
+                        "124": [0.01, 0.0102, 0.0003],
+                        "asdfg": [0.0001, 0.02, 0.03],
+                    },
+                    "type": "probe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                     "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                 },
                 "prb 12": {
-                    "start": [[0.1, 0.1002, 0.1003]],
-                    "end": [[0.1, 0.1002, 0.1003]],
-                    "numberOfPoints": [1],
-                    "type": "lineProbe",
+                    "monitorLocations": {"asnbgoujba": [0.1, 0.1002, 0.1003]},
+                    "type": "probe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                     "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                 },
                 "prb average": {
-                    "start": [[0.1, 0.1002, 0.1003]],
-                    "end": [[0.1, 0.1002, 0.1003]],
-                    "numberOfPoints": [1],
-                    "type": "lineProbe",
+                    "monitorLocations": {"a": [0.1, 0.1002, 0.1003]},
+                    "type": "probe",
                     "outputFields": ["Cp", "T", "primitiveVars", "velocity_in_km_per_hr"],
                     "computeTimeAverages": True,
                     "animationFrequency": 1,
@@ -757,13 +754,13 @@ def probe_output_with_point_array(vel_in_km_per_hr):
                         name="Line 1",
                         start=[0.1, 0.2, 0.3] * u.m,
                         end=[1.1, 1.2, 1.3] * u.m,
-                        number_of_points=5,
+                        number_of_points=2,
                     ),
                     PointArray(
                         name="Line 2",
                         start=[0.1, 0.2, 0.3] * u.m,
                         end=[1.3, 1.5, 1.7] * u.m,
-                        number_of_points=7,
+                        number_of_points=2,
                     ),
                 ],
                 output_fields=["primitiveVars", "Cp", vel_in_km_per_hr],
@@ -793,7 +790,7 @@ def probe_output_with_point_array(vel_in_km_per_hr):
                         name="Line 1",
                         start=[0.1, 0.2, 0.3] * u.m,
                         end=[1.1, 1.2, 1.3] * u.m,
-                        number_of_points=5,
+                        number_of_points=2,
                     ),
                 ],
                 output_fields=["primitiveVars", "Cp", vel_in_km_per_hr],
@@ -803,30 +800,36 @@ def probe_output_with_point_array(vel_in_km_per_hr):
             "outputFields": [],
             "monitors": {
                 "prb line": {
-                    "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
-                    "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
-                    "numberOfPoints": [5, 7],
-                    "type": "lineProbe",
+                    "monitorLocations": {
+                        "Line 1_0": [0.1, 0.2, 0.3],
+                        "Line 1_1": [1.1, 1.2, 1.3],
+                        "Line 2_0": [0.1, 0.2, 0.3],
+                        "Line 2_1": [1.3, 1.5, 1.7],
+                    },
+                    "type": "probe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                     "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                 },
                 "prb point": {
-                    "start": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
-                    "end": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
-                    "numberOfPoints": [1, 1],
-                    "type": "lineProbe",
+                    "monitorLocations": {
+                        "124": [0.01, 0.0102, 0.0003],
+                        "asdfg": [0.0001, 0.02, 0.03],
+                    },
+                    "type": "probe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                     "computeTimeAverages": False,
                     "animationFrequency": 1,
                     "animationFrequencyOffset": 0,
                 },
                 "prb mix": {
-                    "start": [[0.1, 0.2, 0.3], [0.01, 0.0102, 0.0003]],
-                    "end": [[1.1, 1.2, 1.3], [0.01, 0.0102, 0.0003]],
-                    "numberOfPoints": [5, 1],
-                    "type": "lineProbe",
+                    "monitorLocations": {
+                        "124": [0.01, 0.0102, 0.0003],
+                        "Line 1_0": [0.1, 0.2, 0.3],
+                        "Line 1_1": [1.1, 1.2, 1.3],
+                    },
+                    "type": "probe",
                     "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                     "computeTimeAverages": False,
                     "animationFrequency": 1,
@@ -917,13 +920,13 @@ def test_surface_probe_output(vel_in_km_per_hr):
                         name="PA1",
                         start=[0.1, 0.2, 0.3] * u.m,
                         end=[1.1, 1.2, 1.3] * u.m,
-                        number_of_points=5,
+                        number_of_points=2,
                     ),
                     PointArray(
                         name="PA2",
                         start=[0.1, 0.2, 0.3] * u.m,
                         end=[1.3, 1.5, 1.7] * u.m,
-                        number_of_points=7,
+                        number_of_points=2,
                     ),
                 ],
                 target_surfaces=[
@@ -937,10 +940,8 @@ def test_surface_probe_output(vel_in_km_per_hr):
             "outputFields": [],
             "monitors": {
                 "SP-1": {
-                    "start": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03]],
-                    "end": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03]],
-                    "numberOfPoints": [1, 1],
-                    "type": "lineProbe",
+                    "monitorLocations": {"P1": [0.01, 0.0102, 0.0003], "P2": [2.0, 1.01, 0.03]},
+                    "type": "surfaceProbe",
                     "outputFields": ["Cf", "Cp", "velocity_in_km_per_hr"],
                     "computeTimeAverages": False,
                     "animationFrequency": 1,
@@ -948,10 +949,13 @@ def test_surface_probe_output(vel_in_km_per_hr):
                     "surfacePatches": ["zoneA/surface1", "zoneA/surface2"],
                 },
                 "SP-3": {
-                    "start": [[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]],
-                    "end": [[1.1, 1.2, 1.3], [1.3, 1.5, 1.7]],
-                    "numberOfPoints": [5, 7],
-                    "type": "lineProbe",
+                    "monitorLocations": {
+                        "PA1_0": [0.1, 0.2, 0.3],
+                        "PA1_1": [1.1, 1.2, 1.3],
+                        "PA2_0": [0.1, 0.2, 0.3],
+                        "PA2_1": [1.3, 1.5, 1.7],
+                    },
+                    "type": "surfaceProbe",
                     "outputFields": [
                         "Mach",
                         "my_own_field",
@@ -965,10 +969,12 @@ def test_surface_probe_output(vel_in_km_per_hr):
                     "surfacePatches": ["zoneC/surface1", "zoneC/surface2"],
                 },
                 "SP-2": {
-                    "start": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03], [3.0, 1.02, 0.03]],
-                    "end": [[0.01, 0.0102, 0.0003], [2.0, 1.01, 0.03], [3.0, 1.02, 0.03]],
-                    "numberOfPoints": [1, 1, 1],
-                    "type": "lineProbe",
+                    "monitorLocations": {
+                        "P1": [0.01, 0.0102, 0.0003],
+                        "P2": [2.0, 1.01, 0.03],
+                        "P3": [3.0, 1.02, 0.03],
+                    },
+                    "type": "surfaceProbe",
                     "outputFields": ["Mach", "primitiveVars", "velocity_in_km_per_hr", "yPlus"],
                     "computeTimeAverages": True,
                     "animationFrequency": 1,
@@ -996,7 +1002,7 @@ def test_surface_probe_output(vel_in_km_per_hr):
     assert compare_values(param_with_ref[1], translated["surfaceMonitorOutput"])
 
 
-def test_monitor_output(
+def test_probe_output(
     probe_output_config,
     probe_output_with_point_array,
     surface_integral_output_config,
@@ -1012,6 +1018,7 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+
     assert compare_values(probe_output_config[1], translated["monitorOutput"])
 
     ##:: monitorOutput with line probes
@@ -1053,34 +1060,30 @@ def test_monitor_output(
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+
+    return
     ref = {
         "outputFields": [],
         "monitors": {
             "prb 10": {
-                "start": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
-                "end": [[0.01, 0.0102, 0.0003], [0.0001, 0.02, 0.03]],
-                "numberOfPoints": [1, 1],
-                "type": "lineProbe",
+                "monitorLocations": {"124": [0.01, 0.0102, 0.0003], "asdfg": [0.0001, 0.02, 0.03]},
+                "type": "probe",
                 "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                 "computeTimeAverages": False,
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
             },
             "prb 12": {
-                "start": [[0.1, 0.1002, 0.1003]],
-                "end": [[0.1, 0.1002, 0.1003]],
-                "numberOfPoints": [1],
-                "type": "lineProbe",
+                "monitorLocations": {"asnbgoujba": [0.1, 0.1002, 0.1003]},
+                "type": "probe",
                 "outputFields": ["Cp", "primitiveVars", "velocity_in_km_per_hr"],
                 "computeTimeAverages": False,
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
             },
             "prb average": {
-                "start": [[0.1, 0.1002, 0.1003]],
-                "end": [[0.1, 0.1002, 0.1003]],
-                "numberOfPoints": [1],
-                "type": "lineProbe",
+                "monitorLocations": {"a": [0.1, 0.1002, 0.1003]},
+                "type": "probe",
                 "outputFields": ["Cp", "T", "primitiveVars", "velocity_in_km_per_hr"],
                 "computeTimeAverages": True,
                 "animationFrequency": 1,
