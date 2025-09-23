@@ -30,7 +30,7 @@ udf_prepending_code = {
         "const double __p1 ="
         "    __gamma * primitiveVars[4] *"
         "    pow(1.0 + (__gamma - 1.0) / 2.0 * __MachTmp * __MachTmp, __power);"
-        "double ___Cpt_auto = (__p1 - 1.) / (0.5 * ___gamma * MachRef * MachRef);"
+        "double ___Cpt_auto = (__p1 - 1.) / (0.5 * __gamma * MachRef * MachRef);"
     ),
     "solution.grad_density": "double ___grad_density[3]; ___grad_density[0] = gradPrimitive[0][0];"
     + "___grad_density[1] = gradPrimitive[0][1];"
