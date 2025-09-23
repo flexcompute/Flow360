@@ -36,6 +36,9 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
+from flow360.component.simulation.outputs.outputs import (
+    ImportedSurfaceOutput
+)
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
@@ -1439,6 +1442,12 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
+        imported_surface_file_paths = []
+        for output in params.outputs:
+            if isinstance(output, ImportedSurfaceOutput):
+                for surface in output.entities.stored_entities:
+                    imported_surface_file_paths.append(surface.file_name)
+        draft.upload_imported_surfaces(imported_surface_file_paths)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel

@@ -143,6 +143,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     ReferenceGeometry,
+    ImportedSurface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -308,4 +309,5 @@ __all__ = [
     "remove_user_variable",
     "StopCriterion",
     "MovingStatistic",
+    "ImportedSurface",
 ]
