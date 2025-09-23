@@ -32,7 +32,10 @@ from flow360.component.project_utils import (
 )
 from flow360.component.resource_base import Flow360Resource
 from flow360.component.simulation.folder import Folder
-from flow360.component.simulation.outputs.outputs import ImportedSurfaceOutput
+from flow360.component.simulation.outputs.outputs import (
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.web.asset_base import AssetBase
@@ -1442,7 +1445,7 @@ class Project(pd.BaseModel):
         draft.update_simulation_params(params)
         imported_surface_file_paths = []
         for output in params.outputs:
-            if isinstance(output, ImportedSurfaceOutput):
+            if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
                 for surface in output.entities.stored_entities:
                     imported_surface_file_paths.append(surface.file_name)
         draft.upload_imported_surfaces(imported_surface_file_paths)
