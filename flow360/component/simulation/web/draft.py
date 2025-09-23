@@ -142,6 +142,8 @@ class Draft(Flow360Resource):
     def upload_imported_surfaces(self, file_paths):
         """upload imported surfaces to draft"""
 
+        if len(file_paths) == 0:
+            return
         file_names = []
         for file_path in file_paths:
             file_names.append(os.path.basename(file_path))
