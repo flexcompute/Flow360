@@ -754,7 +754,7 @@ def probe_output_with_point_array(vel_in_km_per_hr):
                         name="Line 1",
                         start=[0.1, 0.2, 0.3] * u.m,
                         end=[1.1, 1.2, 1.3] * u.m,
-                        number_of_points=2,
+                        number_of_points=3,
                     ),
                     PointArray(
                         name="Line 2",
@@ -802,7 +802,8 @@ def probe_output_with_point_array(vel_in_km_per_hr):
                 "prb line": {
                     "monitorLocations": {
                         "Line 1_0": [0.1, 0.2, 0.3],
-                        "Line 1_1": [1.1, 1.2, 1.3],
+                        "Line 1_1": [0.6, 0.7, 0.8],
+                        "Line 1_2": [1.1, 1.2, 1.3],
                         "Line 2_0": [0.1, 0.2, 0.3],
                         "Line 2_1": [1.3, 1.5, 1.7],
                     },
