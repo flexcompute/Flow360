@@ -1327,6 +1327,14 @@ class Project(pd.BaseModel):
         simulation_json = json.loads(resp["simulationJson"])
         self._root_simulation_json = simulation_json
 
+    def _upload_imported_surfaces_to_draft(self, params, draft):
+        imported_surface_file_paths = []
+        for output in params.outputs:
+            if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+                for surface in output.entities.stored_entities:
+                    imported_surface_file_paths.append(surface.file_name)
+        draft.upload_imported_surfaces(imported_surface_file_paths)
+
     # pylint: disable=too-many-arguments, too-many-locals
     def _run(
         self,
@@ -1443,12 +1451,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
-        imported_surface_file_paths = []
-        for output in params.outputs:
-            if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
-                for surface in output.entities.stored_entities:
-                    imported_surface_file_paths.append(surface.file_name)
-        draft.upload_imported_surfaces(imported_surface_file_paths)
+        self._upload_imported_surfaces_to_draft(params, draft)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel
