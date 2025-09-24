@@ -378,7 +378,7 @@ def test_duplicate_probe_entity_names():
 
     # should have no error
     with imperial_unit_system:
-        params = SimulationParams(
+        SimulationParams(
             outputs=[
                 ProbeOutput(
                     name="probe_output",
