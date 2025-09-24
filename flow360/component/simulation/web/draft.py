@@ -152,7 +152,12 @@ class Draft(Flow360Resource):
             method="imported-surfaces",
         )
         for index, local_file_path in enumerate(file_paths):
-            self._upload_file(resp[index]["filename"], local_file_path)
+            if os.path.exists(local_file_path) and os.access(local_file_path, os.R_OK):
+                self._upload_file(resp[index]["filename"], local_file_path)
+            else:
+                raise Flow360RuntimeError(
+                    f"The file {local_file_path} does not exist or the user has no read access to it."
+                ) from None
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""
