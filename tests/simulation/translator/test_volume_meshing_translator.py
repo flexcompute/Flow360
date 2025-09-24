@@ -348,7 +348,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             },
             {
                 "name": "cone",
-                "axisOfRotation": [1.0, 0.0, 1.0],
+                "axisOfRotation": [0.7071067811865476, 0.0, 0.7071067811865476],
                 "center": [0.0, 0.0, 0.0],
                 "profileCurve": [[-1.0, 0.0], [-1.0, 1.0], [1.0, 2.0], [1.0, 0.0]],
                 "spacingAxial": 0.4,
