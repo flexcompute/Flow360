@@ -161,7 +161,7 @@ def _check_unique_surface_volume_probe_names(params):
             if output.name in active_probe_names:
                 raise ValueError(
                     f"In `outputs`[{output_index}] {output.output_type}: "
-                    f"Probe name {output.name} has already been used in a `ProbeOutput` "
+                    f"Output name {output.name} has already been used for a `ProbeOutput` "
                     "or `SurfaceProbeOutput`. Probe names must be unique among all probe "
                     "outputs."
                 )
