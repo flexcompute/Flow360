@@ -10,6 +10,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     Cylinder,
     GenericVolume,
@@ -107,6 +108,13 @@ class RotationCylinder(CylindricalRefinementBase):
       ...     entities=cylinder
       ... )
 
+      >>> fl.RotationCylinder(
+      ...     name="RotationConeFrustum",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=axisymmetric_body
+      ... )
     ====
     """
 
@@ -116,11 +124,11 @@ class RotationCylinder(CylindricalRefinementBase):
 
     type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
     name: Optional[str] = pd.Field("Rotation cylinder", description="Name to display in the GUI.")
-    entities: EntityList[Cylinder] = pd.Field()
-    enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
+    entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
+    enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody]] = pd.Field(
         None,
         description="Entities enclosed by :class:`RotationCylinder`. "
-        + "Can be `Surface` and/or other :class:`~flow360.Cylinder` (s).",
+        + "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s) and/or other :class:`~flow360.AxisymmetricBody`(s).",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -151,7 +159,7 @@ class RotationCylinder(CylindricalRefinementBase):
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
         for entity in values.stored_entities:
-            if len(entity.name) > max_cylinder_name_length:
+            if isinstance(entity, Cylinder) and len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
                     f"The name ({entity.name}) of `Cylinder` entity in `RotationCylinder` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
@@ -195,7 +203,9 @@ class AutomatedFarfield(Flow360BaseModel):
         """,
     )
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True, exclude=True
+        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
+        frozen=True,
+        exclude=True,
     )
 
     @property

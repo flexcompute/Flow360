@@ -17,7 +17,13 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, CustomVolume, Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    CustomVolume,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
@@ -98,7 +104,12 @@ def get_test_param():
             center=(0, 5, 0),
         )
         cylinder_3 = Cylinder(
-            name="3", inner_radius=1.5, outer_radius=2, height=2, axis=(0, 1, 0), center=(0, -5, 0)
+            name="3",
+            inner_radius=1.5,
+            outer_radius=2,
+            height=2,
+            axis=(0, 1, 0),
+            center=(0, -5, 0),
         )
         cylinder_outer = Cylinder(
             name="outer",
@@ -108,6 +119,13 @@ def get_test_param():
             axis=(1, 0, 0),
             center=(0, 0, 0),
         )
+        cone_frustum = AxisymmetricBody(
+            name="cone",
+            axis=(1, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(-1, 0), (-1, 1), (1, 2), (1, 0)],
+        )
+
         param = SimulationParams(
             meshing=MeshingParams(
                 refinement_factor=1.45,
@@ -134,8 +152,12 @@ def get_test_param():
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                     ),
-                    PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
-                    PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
+                    PassiveSpacing(
+                        entities=[Surface(name="passive1")], type="projected"
+                    ),
+                    PassiveSpacing(
+                        entities=[Surface(name="passive2")], type="unchanged"
+                    ),
                     BoundaryLayer(
                         entities=[Surface(name="boundary1")],
                         first_layer_thickness=0.5 * u.m,
@@ -145,7 +167,10 @@ def get_test_param():
                 volume_zones=[
                     CustomVolume(
                         name="custom_volume-1",
-                        boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                        boundaries=[
+                            Surface(name="interface1"),
+                            Surface(name="interface2"),
+                        ],
                     ),
                     UserDefinedFarfield(),
                     RotationCylinder(
@@ -193,6 +218,12 @@ def get_test_param():
                             cylinder_3,
                         ],
                     ),
+                    RotationCylinder(
+                        entities=cone_frustum,
+                        spacing_axial=40 * u.cm,
+                        spacing_radial=0.4,
+                        spacing_circumferential=20 * u.cm,
+                    ),
                 ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
@@ -214,7 +245,11 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             "numBoundaryLayers": -1,
         },
         "faces": {
-            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso", "growthRate": 1.3},
+            "boundary1": {
+                "firstLayerThickness": 0.5,
+                "type": "aniso",
+                "growthRate": 1.3,
+            },
             "passive1": {"type": "projectAnisoSpacing"},
             "passive2": {"type": "none"},
         },
@@ -314,6 +349,16 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                     "slidingInterface-2",
                     "slidingInterface-3",
                 ],
+            },
+            {
+                "name": "cone",
+                "axisOfRotation": [1.0, 0.0, 1.0],
+                "center": [0.0, 0.0, 0.0],
+                "profileCurve": [[-1.0, 0.0], [-1.0, 1.0], [1.0, 2.0], [1.0, 0.0]],
+                "spacingAxial": 0.4,
+                "spacingCircumferential": 0.2,
+                "spacingRadial": 0.4,
+                "enclosedObjects": [],
             },
         ],
         "zones": [

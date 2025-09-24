@@ -39,7 +39,9 @@ def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup
         if isinstance(item, list):
             # Recursively process nested lists.
             new_list.append(
-                _preprocess_nested_list(item, new_required_by, params, exclude, registry_lookup)
+                _preprocess_nested_list(
+                    item, new_required_by, params, exclude, registry_lookup
+                )
             )
         elif isinstance(item, Flow360BaseModel):
             # Process Flow360BaseModel instances.
@@ -185,12 +187,17 @@ class Flow360BaseModel(pd.BaseModel):
         if cls.model_config["require_one_of"]:
             set_values = [key for key, v in values.items() if v is not None]
             aliases = [
-                cls._get_field_alias(field_name=name) for name in cls.model_config["require_one_of"]
+                cls._get_field_alias(field_name=name)
+                for name in cls.model_config["require_one_of"]
             ]
             aliases = [item for item in aliases if item is not None]
-            intersection = list(set(set_values) & set(cls.model_config["require_one_of"] + aliases))
+            intersection = list(
+                set(set_values) & set(cls.model_config["require_one_of"] + aliases)
+            )
             if len(intersection) == 0:
-                raise ValueError(f"One of {cls.model_config['require_one_of']} is required.")
+                raise ValueError(
+                    f"One of {cls.model_config['require_one_of']} is required."
+                )
         return values
 
     # pylint: disable=no-self-argument
@@ -220,7 +227,10 @@ class Flow360BaseModel(pd.BaseModel):
             field2_alias = cls._get_field_alias(field_name=conflicting_field.field2)
             conflicting_field2_value = values.get(field2_alias, None)
 
-        if conflicting_field1_value is not None and conflicting_field2_value is not None:
+        if (
+            conflicting_field1_value is not None
+            and conflicting_field2_value is not None
+        ):
             raise ValueError(
                 f"{conflicting_field.field1} and {conflicting_field.field2} cannot be specified at the same time."
             )
@@ -276,7 +286,10 @@ class Flow360BaseModel(pd.BaseModel):
         for field_name, field in cls.model_fields.items():
             # Ignore discriminator validators
             # pylint: disable=comparison-with-callable
-            if get_origin(field.annotation) == Literal and field_name in DISCRIMINATOR_NAMES:
+            if (
+                get_origin(field.annotation) == Literal
+                and field_name in DISCRIMINATOR_NAMES
+            ):
                 need_to_rebuild = True
                 continue
 
@@ -342,7 +355,9 @@ class Flow360BaseModel(pd.BaseModel):
                     if ctx.get("relevant_for") is None:
                         # Enforce the relevant_for to be a list for consistency
                         ctx["relevant_for"] = (
-                            relevant_for if isinstance(relevant_for, list) else [relevant_for]
+                            relevant_for
+                            if isinstance(relevant_for, list)
+                            else [relevant_for]
                         )
                     validation_errors[i]["ctx"] = ctx
             raise pd.ValidationError.from_exception_data(
@@ -359,7 +374,9 @@ class Flow360BaseModel(pd.BaseModel):
     def copy(self, update=None, **kwargs) -> Flow360BaseModel:
         """Copy a Flow360BaseModel.  With ``deep=True`` as default."""
         if "deep" in kwargs and kwargs["deep"] is False:
-            raise ValueError("Can't do shallow copy of component, set `deep=True` in copy().")
+            raise ValueError(
+                "Can't do shallow copy of component, set `deep=True` in copy()."
+            )
         new_copy = pd.BaseModel.model_copy(self, update=update, deep=True, **kwargs)
         data = new_copy.model_dump()
         return self.model_validate(data)
@@ -422,7 +439,9 @@ class Flow360BaseModel(pd.BaseModel):
         elif ".yaml" in filename:
             model_dict = cls._dict_from_yaml(filename=filename)
         else:
-            raise Flow360FileError(f"File must be *.json or *.yaml type, given {filename}")
+            raise Flow360FileError(
+                f"File must be *.json or *.yaml type, given {filename}"
+            )
 
         model_dict = cls._handle_dict_with_hash(model_dict)
         return model_dict
@@ -642,7 +661,10 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         solver_values = self._nondimensionalization(
-            params=params, exclude=exclude, required_by=required_by, registry_lookup=registry_lookup
+            params=params,
+            exclude=exclude,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:

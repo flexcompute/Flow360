@@ -12,7 +12,13 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, CustomVolume, Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    CustomVolume,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
@@ -120,7 +126,9 @@ def rotor_disks_entity_injector(entity: Cylinder):
 
     return {
         "name": entity.name,
-        "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
+        "innerRadius": 0
+        if entity.inner_radius is None
+        else entity.inner_radius.value.item(),
         "outerRadius": entity.outer_radius.value.item(),
         "thickness": entity.height.value.item(),
         "axisThrust": list(entity.axis),
@@ -128,16 +136,29 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_cylinder_entity_injector(entity: Cylinder):
+def rotation_cylinder_entity_injector(entity: Cylinder | AxisymmetricBody):
     """Injector for Cylinder entity in RotationCylinder."""
-    return {
-        "name": entity.name,
-        "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
-        "outerRadius": entity.outer_radius.value.item(),
-        "thickness": entity.height.value.item(),
-        "axisOfRotation": list(entity.axis),
-        "center": list(entity.center.value),
-    }
+    if isinstance(entity, Cylinder):
+        return {
+            "name": entity.name,
+            "innerRadius": 0
+            if entity.inner_radius is None
+            else entity.inner_radius.value.item(),
+            "outerRadius": entity.outer_radius.value.item(),
+            "thickness": entity.height.value.item(),
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+    if isinstance(entity, AxisymmetricBody):
+        return {
+            "name": entity.name,
+            "profileCurve": [
+                list(profile_point.value) for profile_point in entity.profile_curve
+            ],
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+    return {}
 
 
 def _get_custom_volumes(volume_zones: list):
@@ -232,12 +253,18 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             "first_layer_thickness",
         )
     else:
-        default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness
+        default_first_layer_thickness = (
+            meshing_params.defaults.boundary_layer_first_layer_thickness
+        )
 
-    translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
+    translated["volume"]["firstLayerThickness"] = (
+        default_first_layer_thickness.value.item()
+    )
 
     # growthRate can only be global
-    translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
+    translated["volume"]["growthRate"] = (
+        meshing_params.defaults.boundary_layer_growth_rate
+    )
 
     translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
 
@@ -247,7 +274,9 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             number_of_boundary_layers if number_of_boundary_layers is not None else -1
         )
 
-        translated["volume"]["planarFaceTolerance"] = meshing_params.defaults.planar_face_tolerance
+        translated["volume"]["planarFaceTolerance"] = (
+            meshing_params.defaults.planar_face_tolerance
+        )
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(

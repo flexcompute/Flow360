@@ -47,7 +47,12 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    Union[
+        RotationCylinder,
+        AutomatedFarfield,
+        UserDefinedFarfield,
+        CustomVolume,
+    ],
     pd.Field(discriminator="type"),
 ]
 
