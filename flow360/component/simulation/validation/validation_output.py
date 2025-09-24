@@ -183,7 +183,7 @@ def _check_unique_surface_volume_probe_entity_names(params):
                     raise ValueError(
                         f"In `outputs`[{output_index}] {output.output_type}: "
                         f"Entity name {entity.name} has already been used in the "
-                        f"`{output.output_type}`. Entity names must be unique."
+                        f"same `{output.output_type}`. Entity names must be unique."
                     )
                 active_entity_names.add(entity.name)
 
