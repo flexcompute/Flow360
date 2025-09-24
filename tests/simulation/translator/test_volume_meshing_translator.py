@@ -152,12 +152,8 @@ def get_test_param():
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                     ),
-                    PassiveSpacing(
-                        entities=[Surface(name="passive1")], type="projected"
-                    ),
-                    PassiveSpacing(
-                        entities=[Surface(name="passive2")], type="unchanged"
-                    ),
+                    PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
+                    PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
                     BoundaryLayer(
                         entities=[Surface(name="boundary1")],
                         first_layer_thickness=0.5 * u.m,
