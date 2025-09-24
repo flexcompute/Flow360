@@ -180,7 +180,6 @@ def _update_entity_full_name(
                     )
                     if partial_additions is not None:
                         added_entities.extend(partial_additions)
-            print(added_entities)
             field.stored_entities.extend(added_entities)
 
         elif isinstance(field, (list, tuple)):
