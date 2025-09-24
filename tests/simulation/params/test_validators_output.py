@@ -329,8 +329,8 @@ def test_duplicate_probe_names():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "`outputs`[1] ProbeOutput: Probe name probe_output has already been used in a "
-            "`ProbeOutput` or `SurfaceProbeOutput`. Probe names must be unique among all probe outputs."
+            "`outputs`[1] ProbeOutput: Output name probe_output has already been used for a "
+            "`ProbeOutput` or `SurfaceProbeOutput`. Output names must be unique among all probe outputs."
         ),
     ):
         with imperial_unit_system:
@@ -352,8 +352,8 @@ def test_duplicate_probe_names():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "`outputs`[1] SurfaceProbeOutput: Probe name probe_output has already been used in a "
-            "`ProbeOutput` or `SurfaceProbeOutput`. Probe names must be unique among all probe outputs."
+            "`outputs`[1] SurfaceProbeOutput: Output name probe_output has already been used for a "
+            "`ProbeOutput` or `SurfaceProbeOutput`. Output names must be unique among all probe outputs."
         ),
     ):
         with imperial_unit_system:
@@ -400,7 +400,7 @@ def test_duplicate_probe_entity_names():
         ValueError,
         match=re.escape(
             "In `outputs`[0] ProbeOutput: Entity name point_1 has already been used in the "
-            "`ProbeOutput`. Entity names must be unique."
+            "same `ProbeOutput`. Entity names must be unique."
         ),
     ):
         with imperial_unit_system:
@@ -426,7 +426,7 @@ def test_duplicate_probe_entity_names():
         ValueError,
         match=re.escape(
             "In `outputs`[0] SurfaceProbeOutput: Entity name point_1 has already been used in the "
-            "`SurfaceProbeOutput`. Entity names must be unique."
+            "same `SurfaceProbeOutput`. Entity names must be unique."
         ),
     ):
         with imperial_unit_system:
