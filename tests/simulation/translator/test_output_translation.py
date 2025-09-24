@@ -1061,7 +1061,6 @@ def test_probe_output(
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
 
-    return
     ref = {
         "outputFields": [],
         "monitors": {
