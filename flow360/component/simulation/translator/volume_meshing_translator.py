@@ -8,7 +8,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     CylindricalRefinementBase,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -80,7 +80,7 @@ def passive_spacing_translator(obj: PassiveSpacing):
     }
 
 
-def rotation_cylinder_translator(obj: RotationCylinder, rotor_disk_names: list):
+def rotation_cylinder_translator(obj: RotationVolume, rotor_disk_names: list):
     """Setting translation for RotationCylinder."""
     setting = cylindrical_refinement_translator(obj)
     setting["enclosedObjects"] = []
@@ -310,7 +310,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
-        RotationCylinder,
+        RotationVolume,
         rotation_cylinder_translator,
         to_list=True,
         entity_injection_func=rotation_cylinder_entity_injector,

@@ -21,6 +21,7 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
+from flow360.log import log
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -90,7 +91,7 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class RotationCylinder(CylindricalRefinementBase):
+class RotationVolume(CylindricalRefinementBase):
     """
     - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
     - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
@@ -122,12 +123,12 @@ class RotationCylinder(CylindricalRefinementBase):
     # Note: https://www.notion.so/flexcompute/Python-model-design-document-
     # Note: 78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
 
-    type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
-    name: Optional[str] = pd.Field("Rotation cylinder", description="Name to display in the GUI.")
+    type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
+    name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
     entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
     enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody]] = pd.Field(
         None,
-        description="Entities enclosed by :class:`RotationCylinder`. "
+        description="Entities enclosed by :class:`RotationVolume`. "
         + "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s) and/or other :class:`~flow360.AxisymmetricBody`(s).",
     )
 
@@ -142,9 +143,7 @@ class RotationCylinder(CylindricalRefinementBase):
         """
         # pylint: disable=protected-access
         if len(values._get_expanded_entities(create_hard_copy=False)) > 1:
-            raise ValueError(
-                "Only single instance is allowed in entities for each RotationCylinder."
-            )
+            raise ValueError("Only single instance is allowed in entities for each RotationVolume.")
         return values
 
     @pd.field_validator("entities", mode="after")
@@ -161,7 +160,7 @@ class RotationCylinder(CylindricalRefinementBase):
         for entity in values.stored_entities:
             if isinstance(entity, Cylinder) and len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
-                    f"The name ({entity.name}) of `Cylinder` entity in `RotationCylinder` "
+                    f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
                 )
         return values

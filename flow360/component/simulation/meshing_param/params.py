@@ -18,7 +18,7 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -48,7 +48,7 @@ RefinementTypes = Annotated[
 
 VolumeZonesTypes = Annotated[
     Union[
-        RotationCylinder,
+        RotationVolume,
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomVolume,
@@ -337,7 +337,7 @@ class MeshingParams(Flow360BaseModel):
         usage = EntityUsageMap()
 
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-            if isinstance(volume_zone, RotationCylinder):
+            if isinstance(volume_zone, RotationVolume):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)

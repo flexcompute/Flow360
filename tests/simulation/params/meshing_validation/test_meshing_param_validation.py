@@ -5,7 +5,7 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
 )
 from flow360.component.simulation.primitives import AxisymmetricBody, Cylinder, Surface

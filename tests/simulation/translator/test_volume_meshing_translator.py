@@ -13,7 +13,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -169,7 +169,7 @@ def get_test_param():
                         ],
                     ),
                     UserDefinedFarfield(),
-                    RotationCylinder(
+                    RotationVolume(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
                         spacing_axial=20 * u.cm,
@@ -182,27 +182,27 @@ def get_test_param():
                             Surface(name="blade3"),
                         ],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=mid_cylinder,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                         enclosed_entities=[inner_cylinder],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_2,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                         enclosed_entities=[rotor_disk_cylinder],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_3,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_outer,
                         spacing_axial=40 * u.cm,
                         spacing_radial=0.4,
@@ -214,7 +214,7 @@ def get_test_param():
                             cylinder_3,
                         ],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cone_frustum,
                         spacing_axial=40 * u.cm,
                         spacing_radial=0.4,

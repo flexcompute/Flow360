@@ -27,7 +27,7 @@ from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
-    RotationCylinder,
+    RotationVolume,
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import (
@@ -146,7 +146,8 @@ class _ParamModelBase(Flow360BaseModel):
             if kwarg_unit_system != unit_system_manager.current:
                 raise Flow360RuntimeError(
                     unit_system_inconsistent_msg(
-                        kwarg_unit_system.system_repr(), unit_system_manager.current.system_repr()
+                        kwarg_unit_system.system_repr(),
+                        unit_system_manager.current.system_repr(),
                     )
                 )
 
@@ -177,7 +178,9 @@ class _ParamModelBase(Flow360BaseModel):
         forward_compatibility_mode = Flow360Version(input_version) > Flow360Version(version_to)
         if not forward_compatibility_mode:
             model_dict = updater(
-                version_from=input_version, version_to=version_to, params_as_dict=model_dict
+                version_from=input_version,
+                version_to=version_to,
+                params_as_dict=model_dict,
             )
         return model_dict, forward_compatibility_mode
 
@@ -294,7 +297,8 @@ class SimulationParams(_ParamModelBase):
     # Limitations:
     #    1. No per volume zone output. (single volume output)
     outputs: Optional[List[OutputTypes]] = CaseField(
-        None, description="Output settings. See :ref:`Outputs <outputs>` for more details."
+        None,
+        description="Output settings. See :ref:`Outputs <outputs>` for more details.",
     )
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
@@ -323,7 +327,10 @@ class SimulationParams(_ParamModelBase):
 
     @pd.validate_call
     def convert_unit(
-        self, value: DimensionedTypes, target_system: str, length_unit: Optional[LengthType] = None
+        self,
+        value: DimensionedTypes,
+        target_system: str,
+        length_unit: Optional[LengthType] = None,
     ):
         """
         Converts a given value to the specified unit system.
@@ -549,7 +556,7 @@ class SimulationParams(_ParamModelBase):
                         "symmetric*",
                         volume.private_attribute_entity.name,
                     )
-                if isinstance(volume, RotationCylinder):
+                if isinstance(volume, RotationVolume):
                     # pylint: disable=fixme
                     # TODO: Implement this
                     pass
