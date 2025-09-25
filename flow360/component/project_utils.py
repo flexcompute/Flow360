@@ -273,18 +273,16 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         return entity_info
     # pylint: disable=protected-access
     entity_types = [
-        (Surface, "face_group_tag", entity_info._get_default_grouping_tag("face")),
+        (Surface, "face_group_tag"),
     ]
 
     if entity_info.edge_ids:
-        entity_types.append((Edge, "edge_group_tag", entity_info._get_default_grouping_tag("edge")))
+        entity_types.append((Edge, "edge_group_tag"))
 
     if entity_info.body_ids:
-        entity_types.append(
-            (GeometryBodyGroup, "body_group_tag", entity_info._get_default_grouping_tag("body"))
-        )
+        entity_types.append((GeometryBodyGroup, "body_group_tag"))
 
-    for entity_type, entity_grouping_tags, default_grouping_tag in entity_types:
+    for entity_type, entity_grouping_tags in entity_types:
         used_tags = set()
         _get_used_tags(params, entity_type, used_tags)
 
@@ -294,19 +292,13 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
         if len(used_tags) == 1 and current_tag != used_tags[0]:
-            if current_tag == default_grouping_tag:
-                log.warning(
-                    f"Auto reset the grouping to the one in the SimulationParams ({used_tags[0]})."
-                )
-                with model_attribute_unlock(entity_info, entity_grouping_tags):
-                    setattr(entity_info, entity_grouping_tags, used_tags[0])
-            else:
-                # User specified new grouping
-                raise Flow360ConfigurationError(
-                    f"Conflicting entity ({entity_type.__name__}) grouping tags found "
-                    f"in the SimulationParams ({used_tags}) and "
-                    f"the root asset ({current_tag})."
-                )
+            log.warning(
+                f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
+                f" and SimulationParams ({used_tags[0]}). "
+                "Ignoring the geometry object and using the one in the SimulationParams."
+            )
+            with model_attribute_unlock(entity_info, entity_grouping_tags):
+                setattr(entity_info, entity_grouping_tags, used_tags[0])
 
         if len(used_tags) > 1:
             raise Flow360ConfigurationError(
