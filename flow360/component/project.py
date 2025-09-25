@@ -28,6 +28,7 @@ from flow360.component.project_utils import (
     get_project_records,
     set_up_params_for_uploading,
     show_projects_with_keyword_filter,
+    upload_imported_surfaces_to_draft,
     validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
@@ -1439,6 +1440,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
+        upload_imported_surfaces_to_draft(params, draft)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel

@@ -21,7 +21,11 @@ from flow360.component.simulation.outputs.output_entities import (
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.outputs.outputs import MonitorOutputType
+from flow360.component.simulation.outputs.outputs import (
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
+    MonitorOutputType,
+)
 from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
@@ -446,3 +450,14 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     return params, errors
+
+
+def upload_imported_surfaces_to_draft(params, draft):
+    """Upload imported surfaces to draft"""
+
+    imported_surface_file_paths = []
+    for output in params.outputs:
+        if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+            for surface in output.entities.stored_entities:
+                imported_surface_file_paths.append(surface.file_name)
+    draft.upload_imported_surfaces(imported_surface_file_paths)
