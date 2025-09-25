@@ -966,3 +966,19 @@ def formatting_validation_errors(errors):
         if error.get("ctx") and error["ctx"].get("relevant_for"):
             error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
     return error_msg
+
+
+def check_existence_of_one_file(file_path: str):
+    """Check existence of a file"""
+
+    if not os.path.exists(file_path):
+        raise Flow360RuntimeError(f"The file {file_path} does not exist.") from None
+
+
+def check_read_access_of_one_file(file_path: str):
+    """Check read permission of a file"""
+
+    if not os.access(file_path, os.R_OK):
+        raise Flow360RuntimeError(
+            f"Permission denied: Cannot read file {file_path}. Please check its permission settings."
+        ) from None

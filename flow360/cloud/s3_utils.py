@@ -174,6 +174,7 @@ class S3TransferType(Enum):
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
     REPORT = "Report"
+    DRAFT = "Draft"
 
     def _get_grant_url(self, resource_id, file_name: str) -> str:
         """
@@ -192,6 +193,8 @@ class S3TransferType(Enum):
             return f"v2/geometries/{resource_id}/file?filename={file_name}"
         if self is S3TransferType.REPORT:
             return f"v2/report/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.DRAFT:
+            return f"v2/drafts/{resource_id}/file?filename={file_name}"
 
         raise Flow360ValueError(f"unknown download method for {self}")
 
