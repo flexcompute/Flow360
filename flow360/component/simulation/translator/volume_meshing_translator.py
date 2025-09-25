@@ -7,7 +7,7 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    CylindricalRefinementBase,
+    AxisymmetricRefinementBase,
     RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
@@ -37,7 +37,7 @@ def uniform_refinement_translator(obj: UniformRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def cylindrical_refinement_translator(obj: CylindricalRefinementBase):
+def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
     """
     Translate CylindricalRefinementBase. [SlidingInterface + RotorDisks]
     """

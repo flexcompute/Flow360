@@ -49,7 +49,7 @@ class UniformRefinement(Flow360BaseModel):
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
-class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
+class AxisymmetricRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     """Base class for all refinements that requires spacing in axial, radial and circumferential directions."""
 
     # pylint: disable=no-member
@@ -62,7 +62,7 @@ class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-class AxisymmetricRefinement(CylindricalRefinementBase):
+class AxisymmetricRefinement(AxisymmetricRefinementBase):
     """
     - The mesh inside the :class:`AxisymmetricRefinement` is semi-structured.
     - The :class:`AxisymmetricRefinement` cannot enclose/intersect with other objects.
@@ -91,7 +91,7 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class RotationVolume(CylindricalRefinementBase):
+class RotationVolume(AxisymmetricRefinementBase):
     """
     - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
     - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
