@@ -9,6 +9,7 @@ from flow360.component.geometry import Geometry
 from flow360.component.project import Project
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
+from flow360.component.simulation.entity_operation import Transformation
 from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
@@ -19,6 +20,7 @@ from flow360.component.simulation.meshing_param.edge_params import (
 )
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -94,6 +96,7 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    StopCriterion,
     XFOILFile,
     XROTORFile,
 )
@@ -112,7 +115,10 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
     IsosurfaceOutput,
+    MovingStatistic,
     Observer,
     ProbeOutput,
     SliceOutput,
@@ -121,9 +127,11 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageImportedSurfaceOutput,
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageStreamlineOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
@@ -132,9 +140,10 @@ from flow360.component.simulation.outputs.outputs import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
+    ImportedSurface,
     ReferenceGeometry,
-    Transformation,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
@@ -163,18 +172,17 @@ from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.plugins import report
-from flow360.version import __solver_version__, __version__
 
 __all__ = [
+    "GeometryRefinement",
     "Env",
     "Case",
+    "CustomVolume",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
     "BoundaryLayer",
     "PassiveSpacing",
-    "__solver_version__",
-    "__version__",
     "Accounts",
     "Project",
     "u",
@@ -231,6 +239,11 @@ __all__ = [
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "ImportedSurfaceOutput",
+    "TimeAverageImportedSurfaceOutput",
+    "ImportedSurfaceIntegralOutput",
+    "StreamlineOutput",
+    "TimeAverageStreamlineOutput",
     "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
@@ -285,7 +298,6 @@ __all__ = [
     "migration",
     "Water",
     "PointArray2D",
-    "StreamlineOutput",
     "Transformation",
     "WallRotation",
     "UserVariable",
@@ -295,4 +307,7 @@ __all__ = [
     "get_user_variable",
     "show_user_variables",
     "remove_user_variable",
+    "StopCriterion",
+    "MovingStatistic",
+    "ImportedSurface",
 ]

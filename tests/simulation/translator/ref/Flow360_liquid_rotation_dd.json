@@ -35,7 +35,7 @@
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
         "lowMachPreconditionerThreshold": 0.05,
-        "modelType": "Compressible",
+        "modelType": "CompressibleIsentropic",
         "equationEvalFrequency": 1
     },
     "turbulenceModelSolver": {
@@ -45,6 +45,7 @@
         "linearSolver": {
             "maxIterations": 20
         },
+        "lowReynoldsCorrection": false,
         "CFLMultiplier": 2.0,
         "reconstructionGradientLimiter": 0.5,
         "quadraticConstitutiveRelation": false,
@@ -62,6 +63,8 @@
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5,
             "C_t3": 1.2,
             "C_t4": 0.5,
             "C_min_rd": 10.0
@@ -90,6 +93,10 @@
     },
     "userDefinedFields": [
         {
+            "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;velocity_SI[0] = (___velocity[0] * 10.0); velocity_SI[1] = (___velocity[1] * 10.0); velocity_SI[2] = (___velocity[2] * 10.0);",
+            "name": "velocity_SI"
+        },
+        {
             "expression": "double velocity[3];velocity[0] = primitiveVars[1];velocity[1] = primitiveVars[2];velocity[2] = primitiveVars[3];velocity_magnitude = magnitude(velocity) * velocityScale;",
             "name": "velocity_magnitude",
             "from_user_variables": false
@@ -98,6 +105,17 @@
     "usingLiquidAsMaterial": true,
     "outputRescale": {
         "velocityScale": 20.0
+    },
+    "volumeOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "animationFrequencyTimeAverage": -1,
+        "animationFrequencyTimeAverageOffset": 0,
+        "outputFields": [
+            "velocity_SI"
+        ],
+        "outputFormat": "paraview",
+        "startAverageIntegrationStep": -1
     },
     "volumeZones": {
         "zone_zone_1": {
@@ -117,5 +135,9 @@
             "modelType": "FluidDynamics",
             "isRotatingReferenceFrame": false
         }
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }

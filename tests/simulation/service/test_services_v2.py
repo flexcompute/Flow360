@@ -361,7 +361,7 @@ def test_validate_error_from_initialize_variable_space():
     with open("../translator/data/simulation_isosurface.json", "r") as fp:
         param_dict = json.load(fp)
 
-    a = UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
+    UserVariable(name="my_time_stepping_var", value=0.6 * u.s)
     _, errors, _ = services.validate_model(
         params_as_dict=param_dict,
         validated_by=services.ValidationCalledBy.LOCAL,
@@ -706,6 +706,7 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
@@ -715,6 +716,7 @@ def test_init():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     assert "meshing" not in data
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
@@ -729,6 +731,7 @@ def test_init():
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
     assert data["models"][0]["roughness_height"]["units"] == "cm"
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
@@ -1198,7 +1201,9 @@ def validate_proper_unit(obj, allowed_units_string):
         if "value" in obj and "units" in obj:
             assert is_expected_unit(obj["units"], allowed_units_string)
 
-        for _, val in obj.items():
+        for key, val in obj.items():
+            if key == "project_length_unit":
+                continue
             validate_proper_unit(val, allowed_units_string)
 
     elif isinstance(obj, list):
@@ -1291,6 +1296,21 @@ def test_SI_unit_system_conversion():
     assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
 
 
+def test_unchanged_BETDisk_length_unit():
+    with open("data/simulation_bet_disk.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
+    assert dict_to_convert["unit_system"]["name"] == "CGS"
+    assert dict_to_convert["models"][4]["private_attribute_input_cache"]["length_unit"] == {
+        "value": 1,
+        "units": "m",
+    }
+    assert dict_to_convert["models"][6]["private_attribute_input_cache"]["length_unit"] == {
+        "value": 1,
+        "units": "ft",
+    }
+
+
 def test_updater_service():
     with open("data/updater_should_pass.json", "r") as fp:
         dict_to_update = json.load(fp)
@@ -1341,7 +1361,6 @@ def test_unit_conversion_front_end_compatibility():
     for field_name, field_info in _PredefinedUnitSystem.model_fields.items():
         if field_name == "name":
             continue
-        print(">>> Unit: ", field_info.annotation.dim, field_info.annotation.dim.__class__)
         unit_system_dimension_string = str(field_info.annotation.dim)
         # for unit_name in unit:
         if unit_system_dimension_string not in supported_units_by_front_end.keys():

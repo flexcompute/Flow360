@@ -38,7 +38,7 @@
         "lowMachPreconditionerThreshold": 0.05,
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
+        "modelType": "CompressibleIsentropic",
         "equationEvalFrequency": 1
     },
     "turbulenceModelSolver": {
@@ -54,6 +54,7 @@
         "updateJacobianFrequency": 4,
         "maxForceJacUpdatePhysicalSteps": 0,
         "rotationCorrection": false,
+        "lowReynoldsCorrection": false,
         "equationEvalFrequency": 4,
         "modelType": "SpalartAllmaras",
         "modelConstants": {
@@ -65,6 +66,8 @@
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5,
             "C_t3": 1.2,
             "C_t4": 0.5,
             "C_min_rd": 10.0
@@ -103,5 +106,9 @@
     "usingLiquidAsMaterial": true,
     "outputRescale": {
         "velocityScale": 20.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }

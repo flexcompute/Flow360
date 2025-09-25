@@ -711,3 +711,12 @@ class PerEntityResultCSVModel(ResultCSVModel):
             )
         entity_groups = entity_info.get_body_group_to_face_group_name_map()
         return self._create_forces_group(entity_groups=entity_groups)
+
+    def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
+        """
+        Change default behavior of data loader, reload
+        """
+        super().reload_data(
+            filter_physical_steps_only=filter_physical_steps_only, include_time=include_time
+        )
+        self._filtered_sum()

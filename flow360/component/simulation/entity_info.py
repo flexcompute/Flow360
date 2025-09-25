@@ -16,6 +16,7 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.primitives import (
     Box,
+    CustomVolume,
     Cylinder,
     Edge,
     GenericVolume,
@@ -29,7 +30,7 @@ from flow360.component.utils import GeometryFiles
 from flow360.log import log
 
 DraftEntityTypes = Annotated[
-    Union[Box, Cylinder, Point, PointArray, PointArray2D, Slice],
+    Union[Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume],
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
@@ -370,15 +371,16 @@ class GeometryEntityInfo(EntityInfoModel):
                 "face", face_group_tag, registry=internal_registry
             )
 
-            if self.edge_group_tag is None:
-                edge_group_tag = self._get_default_grouping_tag("edge")
-                log.info(f"Using `{edge_group_tag}` as default grouping for edges.")
-            else:
-                edge_group_tag = self.edge_group_tag
+            if len(self.edge_ids) > 0:
+                if self.edge_group_tag is None:
+                    edge_group_tag = self._get_default_grouping_tag("edge")
+                    log.info(f"Using `{edge_group_tag}` as default grouping for edges.")
+                else:
+                    edge_group_tag = self.edge_group_tag
 
-            internal_registry = self._group_entity_by_tag(
-                "edge", edge_group_tag, registry=internal_registry
-            )
+                internal_registry = self._group_entity_by_tag(
+                    "edge", edge_group_tag, registry=internal_registry
+                )
 
             if self.body_attribute_names:
                 # Post-25.5 geometry asset. For Pre 25.5 we just skip body grouping.

@@ -46,9 +46,53 @@ class SurfaceRefinement(Flow360BaseModel):
         return check_deleted_surface_in_entity_list(value)
 
 
+class GeometryRefinement(Flow360BaseModel):
+    """
+    Setting for refining surface elements for given `Surface`.
+
+    Example
+    -------
+
+      >>> fl.GeometryRefinement(
+      ...     faces=[geometry["face1"], geometry["face2"]],
+      ...     geometry_accuracy=0.001*fl.u.m
+      ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field("Geometry refinement")
+    refinement_type: Literal["GeometryRefinement"] = pd.Field("GeometryRefinement", frozen=True)
+    entities: EntityList[Surface] = pd.Field(alias="faces")
+    # pylint: disable=no-member
+
+    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="The smallest length scale that will be resolved accurately by the surface meshing process. ",
+    )
+
+    preserve_thin_geometry: Optional[bool] = pd.Field(
+        False,
+        description="Flag to specify whether thin geometry features with thickness roughly equal "
+        + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
+    )
+
+    # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
+
+    @pd.model_validator(mode="after")
+    def ensure_geometry_ai(self):
+        """Ensure feature is only activated with geometry AI enabled."""
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+        if not validation_info.use_geometry_AI:
+            raise ValueError("GeometryRefinement is only supported by geometry AI.")
+        return self
+
+
 class PassiveSpacing(Flow360BaseModel):
     """
-    Passively control the mesh spacing either through adjecent `Surface`'s meshing
+    Passively control the mesh spacing either through adjacent `Surface`'s meshing
     setting or doing nothing to change existing surface mesh at all.
 
     Example

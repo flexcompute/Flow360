@@ -56,6 +56,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
+    post_processing: bool = pd.Field()
     description: Optional[str] = pd.Field(None)
 
     @pd.field_validator("value", mode="after")
@@ -328,7 +329,7 @@ class Variable(Flow360BaseModel):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
-        if "name" not in values:
+        if values is None or "name" not in values:
             raise ValueError("`name` is required for variable declaration.")
 
         if "value" in values:
@@ -370,6 +371,12 @@ class Variable(Flow360BaseModel):
             default_context.set_metadata(values["name"], "description", values["description"])
         values.pop("description", None)
 
+        if "post_processing" in values:
+            default_context.set_metadata(
+                values["name"], "post_processing", values["post_processing"]
+            )
+        values.pop("post_processing", None)
+
         return values
 
     @check_vector_binary_arithmetic
@@ -397,13 +404,13 @@ class Variable(Flow360BaseModel):
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"{self.name} / {str_arg}")
+        return Expression(expression=f"{self.name} / ({str_arg})")
 
     @check_vector_binary_arithmetic
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"{self.name} // {str_arg}")
+        return Expression(expression=f"{self.name} // ({str_arg})")
 
     @check_vector_binary_arithmetic
     def __mod__(self, other):
@@ -529,7 +536,9 @@ class UserVariable(Variable):
 
         all_field_names = set(AllFieldNames.__args__)
         if v in all_field_names:
-            raise ValueError(f"'{v}' is a reserved (legacy) output field name.")
+            raise ValueError(
+                f"'{v}' is a reserved (legacy) output field name. It cannot be used in expressions."
+            )
         return v
 
     @pd.field_validator("name", mode="after")
@@ -845,8 +854,9 @@ class Expression(Flow360BaseModel, Evaluable):
         validation_info = get_validation_info()
         if validation_info is None or self.expression not in validation_info.referenced_expressions:
             return self
-
-        for solver_variable_name in self.solver_variable_names():
+        # Setting recursive to False to avoid recursive error message.
+        # All user variables will be checked anyways.
+        for solver_variable_name in self.solver_variable_names(recursive=False):
             if solver_variable_name in _feature_requirement_map:
                 if not _feature_requirement_map[solver_variable_name][0](validation_info):
                     raise ValueError(
@@ -900,15 +910,65 @@ class Expression(Flow360BaseModel, Evaluable):
         return names
 
     def solver_variable_names(
-        self, variable_type: Literal["Volume", "Surface", "Scalar", "All"] = "All"
+        self,
+        recursive: bool,
+        variable_type: Literal["Volume", "Surface", "Scalar", "All"] = "All",
     ):
-        """Get list of solver variable names used in expression."""
-        expr = expr_to_model(self.expression, default_context)
-        names = expr.used_names()
-        names = [name for name in names if name in _solver_variables]
+        """Get list of solver variable names used in expression, recursively checking user variables.
+
+        Params:
+        -------
+        - variable_type: The type of variable to get the names of.
+        - recursive: Whether to recursively check user variables for solver variables.
+        """
+
+        def _get_solver_variable_names_recursive(
+            expression: Expression, visited: set[str], recursive: bool
+        ) -> set[str]:
+            """Recursively get solver variable names from expression and its user variables."""
+            solver_names = set()
+
+            # Prevent infinite recursion by tracking visited expressions
+            expr_str = str(expression)
+            if expr_str in visited:
+                return solver_names
+            visited.add(expr_str)
+
+            # Get solver variables directly from this expression
+            expr = expr_to_model(expression.expression, default_context)
+            names = expr.used_names()
+            direct_solver_names = [name for name in names if name in _solver_variables]
+            solver_names.update(direct_solver_names)
+
+            if not recursive:
+                return solver_names
+
+            # Get user variables from this expression and recursively check their values
+            user_vars = expression.user_variables()
+            for user_var in user_vars:
+                try:
+                    if isinstance(user_var.value, Expression):
+                        # Recursively check the user variable's expression
+                        recursive_solver_names = _get_solver_variable_names_recursive(
+                            user_var.value, visited, recursive
+                        )
+                        solver_names.update(recursive_solver_names)
+                except (ValueError, AttributeError):
+                    # Handle cases where user variable might not be properly defined
+                    pass
+
+            return solver_names
+
+        # Start the recursive search
+        all_solver_names = _get_solver_variable_names_recursive(self, set(), recursive)
+
+        # Filter by variable type if specified
         if variable_type != "All":
-            names = [name for name in names if _solver_variables[name] == variable_type]
-        return names
+            all_solver_names = {
+                name for name in all_solver_names if _solver_variables[name] == variable_type
+            }
+
+        return list(all_solver_names)
 
     def to_solver_code(self, params):
         """Convert to solver readable code."""
@@ -971,12 +1031,12 @@ class Expression(Flow360BaseModel, Evaluable):
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"({self.expression}) / {str_arg}")
+        return Expression(expression=f"({self.expression}) / ({str_arg})")
 
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"({self.expression}) // {str_arg}")
+        return Expression(expression=f"({self.expression}) // ({str_arg})")
 
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -1326,6 +1386,16 @@ def save_user_variables(params):
     for name, value in default_context._values.items():
         if "." in name:
             continue
+
+        # Get all output variables:
+        post_processing_variables = set()
+        for item in params.outputs if params.outputs else []:
+            if not "output_fields" in item.__class__.model_fields:
+                continue
+            for item in item.output_fields.items:
+                if isinstance(item, UserVariable):
+                    post_processing_variables.add(item.name)
+
         if params.private_attribute_asset_cache.variable_context is None:
             params.private_attribute_asset_cache.variable_context = []
         params.private_attribute_asset_cache.variable_context.append(
@@ -1333,6 +1403,7 @@ def save_user_variables(params):
                 name=name,
                 value=value,
                 description=default_context.get_metadata(name, "description"),
+                post_processing=name in post_processing_variables,
             )
         )
     return params
@@ -1490,3 +1561,32 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
         _get_dependent_expressions(Expression(expression=expr), dependent_expressions)
 
     return list(used_expressions.union(dependent_expressions))
+
+
+def is_variable_with_unit_system_as_units(value: dict) -> bool:
+    """
+    [Frontend] Check if the value is a variable with a unit system as units.
+    """
+    return (
+        not isinstance(value, dict)
+        or "units" not in value
+        or value["units"]
+        not in (
+            "SI_unit_system",
+            "Imperial_unit_system",
+            "CGS_unit_system",
+        )
+    )
+
+
+def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
+    """
+    [Frontend] Infer the units based on the unit system.
+    """
+    if unit_system == "SI_unit_system":
+        value["units"] = u.unit_systems.mks_unit_system[value_dimensions]
+    if unit_system == "Imperial_unit_system":
+        value["units"] = u.unit_systems.imperial_unit_system[value_dimensions]
+    if unit_system == "CGS_unit_system":
+        value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
+    return value

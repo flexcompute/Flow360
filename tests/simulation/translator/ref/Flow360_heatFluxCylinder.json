@@ -84,7 +84,6 @@
             "T"
         ],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
@@ -94,7 +93,6 @@
     "surfaceOutput": {
         "outputFields": [],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "surfaces": {
@@ -124,5 +122,9 @@
     "usingLiquidAsMaterial": false,
     "outputRescale": {
         "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }

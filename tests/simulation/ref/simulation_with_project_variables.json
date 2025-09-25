@@ -1,5 +1,5 @@
 {
-    "version": "25.7.1b1",
+    "version": "25.7.2b1",
     "unit_system": {
         "name": "SI"
     },
@@ -164,13 +164,16 @@
                     "C_v1": 7.1,
                     "C_vonKarman": 0.41,
                     "C_w2": 0.3,
+                    "C_w4": 0.21,
+                    "C_w5": 1.5,
                     "C_t3": 1.2,
                     "C_t4": 0.5,
                     "C_min_rd": 10.0
                 },
                 "update_jacobian_frequency": 4,
                 "max_force_jac_update_physical_steps": 0,
-                "rotation_correction": false
+                "rotation_correction": false,
+                "low_reynolds_correction": false
             },
             "transition_model_solver": {
                 "type_name": "None"
@@ -199,6 +202,7 @@
                     }
                 ]
             },
+            "private_attribute_id": "000",
             "frequency": -1,
             "frequency_offset": 0,
             "output_format": "paraview",
@@ -214,6 +218,7 @@
                     }
                 ]
             },
+            "private_attribute_id": "222",
             "name": "Probe output",
             "entities": {
                 "stored_entities": [
@@ -246,6 +251,7 @@
                     "type_name": "expression",
                     "expression": "12 * u.m / u.s"
                 },
+                "post_processing": false,
                 "description": "ccc description"
             },
             {
@@ -253,7 +259,8 @@
                 "value": {
                     "type_name": "expression",
                     "expression": "[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]"
-                }
+                },
+                "post_processing": false
             },
             {
                 "name": "bbb",
@@ -261,7 +268,8 @@
                     "type_name": "expression",
                     "expression": "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]",
                     "output_units": "km/ms"
-                }
+                },
+                "post_processing": true
             }
         ]
     }

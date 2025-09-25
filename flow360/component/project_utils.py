@@ -3,22 +3,38 @@ Support class and functions for project interface.
 """
 
 import datetime
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, get_args
 
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
 from flow360.component.simulation import services
+from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
     Slice,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, GhostSurface
+from flow360.component.simulation.outputs.outputs import (
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
+    MonitorOutputType,
+)
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    Edge,
+    GeometryBodyGroup,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -214,11 +230,82 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
 
     entity_registry = params.used_entity_registry
     # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice]:
+    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume]:
         draft_entities = entity_registry.find_by_type(draft_type)
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:
                 entity_info.draft_entities.append(draft_entity)
+    return entity_info
+
+
+def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> EntityInfoModel:
+    """
+    Update the entity grouping tags in params to resolve possible conflicts
+    between the SimulationParams and the root asset.This
+    """
+
+    def _get_used_tags(model: Flow360BaseModel, target_entity_type, used_tags: set):
+        for field in model.__dict__.values():
+            # Skip the AssetCache since the asset cache is exactly what we want to update later.
+
+            if isinstance(field, AssetCache):
+                continue
+
+            if isinstance(field, target_entity_type):
+                used_tags.add(field.private_attribute_tag_key)
+
+            if isinstance(field, EntityList):
+                for entity in field.stored_entities:
+                    if isinstance(entity, target_entity_type):
+                        used_tags.add(entity.private_attribute_tag_key)
+
+            elif isinstance(field, (list, tuple)):
+                for item in field:
+                    if isinstance(item, target_entity_type):
+                        used_tags.add(item.private_attribute_tag_key)
+                    elif isinstance(item, Flow360BaseModel):
+                        _get_used_tags(item, target_entity_type, used_tags)
+
+            elif isinstance(field, Flow360BaseModel):
+                _get_used_tags(field, target_entity_type, used_tags)
+
+    if entity_info.type_name != "GeometryEntityInfo":
+        return entity_info
+    # pylint: disable=protected-access
+    entity_types = [
+        (Surface, "face_group_tag"),
+    ]
+
+    if entity_info.edge_ids:
+        entity_types.append((Edge, "edge_group_tag"))
+
+    if entity_info.body_ids:
+        entity_types.append((GeometryBodyGroup, "body_group_tag"))
+
+    for entity_type, entity_grouping_tags in entity_types:
+        used_tags = set()
+        _get_used_tags(params, entity_type, used_tags)
+
+        if None in used_tags:
+            used_tags.remove(None)
+
+        used_tags = sorted(list(used_tags))
+        current_tag = getattr(entity_info, entity_grouping_tags)
+        if len(used_tags) == 1 and current_tag != used_tags[0]:
+            log.warning(
+                f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
+                f" and SimulationParams ({used_tags[0]}). "
+                "Ignoring the geometry object and using the one in the SimulationParams."
+            )
+            with model_attribute_unlock(entity_info, entity_grouping_tags):
+                setattr(entity_info, entity_grouping_tags, used_tags[0])
+
+        if len(used_tags) > 1:
+            raise Flow360ConfigurationError(
+                f"Multiple entity ({entity_type.__name__}) grouping tags found "
+                f"in the SimulationParams ({used_tags})."
+            )
+
     return entity_info
 
 
@@ -257,6 +344,35 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
     return params
 
 
+def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
+    """
+    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
+    """
+    if not params.models:
+        return params
+    stopping_criterion = None
+    for model in params.models:
+        if not isinstance(model, Fluid):
+            continue
+        stopping_criterion = model.stopping_criterion
+    if not stopping_criterion:
+        return params
+    monitor_output_ids = []
+    if params.outputs is not None:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            monitor_output_ids.append(output.private_attribute_id)
+    for criterion in stopping_criterion:
+        monitor_output = criterion.monitor_output
+        if isinstance(monitor_output, str):
+            continue
+        if monitor_output.private_attribute_id not in monitor_output_ids:
+            params.outputs.append(monitor_output)
+            monitor_output_ids.append(monitor_output.private_attribute_id)
+    return params
+
+
 def set_up_params_for_uploading(
     root_asset,
     length_unit: LengthType,
@@ -289,15 +405,20 @@ def set_up_params_for_uploading(
 
     # Check if there are any new draft entities that have been added in the params by the user
     entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+
+    # If the customer just load the param without re-specify the same set of entity grouping tags,
+    # we need to update the entity grouping tags to the ones in the SimulationParams.
+    entity_info = _update_entity_grouping_tags(entity_info, params)
+
     with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
         params.private_attribute_asset_cache.project_entity_info = entity_info
-
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
     params = _replace_ghost_surfaces(params)
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
+    params = _set_up_monitor_output_from_stopping_criterion(params=params)
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
@@ -321,3 +442,14 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     return params, errors
+
+
+def upload_imported_surfaces_to_draft(params, draft):
+    """Upload imported surfaces to draft"""
+
+    imported_surface_file_paths = []
+    for output in params.outputs:
+        if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+            for surface in output.entities.stored_entities:
+                imported_surface_file_paths.append(surface.file_name)
+    draft.upload_imported_surfaces(imported_surface_file_paths)

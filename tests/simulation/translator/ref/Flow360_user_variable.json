@@ -40,7 +40,8 @@
                     "ppp"
                 ],
                 "surfaceField": "iso_field_pressure",
-                "surfaceFieldMagnitude": 10.0
+                "surfaceFieldMagnitude": 10.0,
+                "wallDistanceClipThreshold": 0.1
             },
             "iso_surf_velocity_mag": {
                 "outputFields": [
@@ -83,7 +84,7 @@
         "lowMachPreconditioner": true,
         "lowMachPreconditionerThreshold": 0.05,
         "maxForceJacUpdatePhysicalSteps": 0,
-        "modelType": "Compressible",
+        "modelType": "CompressibleIsentropic",
         "numericalDissipationFactor": 1.0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
@@ -97,7 +98,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1,
@@ -136,6 +136,7 @@
         "linearSolver": {
             "maxIterations": 20
         },
+        "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
@@ -148,7 +149,9 @@
             "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
-            "C_w2": 0.3
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -184,7 +187,7 @@
             "name": "asin_res"
         },
         {
-            "expression": "double ___MachTmp = sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);double ___Cpt = (1.4 * primitiveVars[4] * pow(1.0 + (1.4 - 1.0) / 2. * ___MachTmp * ___MachTmp,1.4 / (1.4 - 1.0)) - pow(1.0 + (1.4 - 1.0) / 2. * MachRef * MachRef,1.4 / (1.4 - 1.0))) / (0.5 * 1.4 * MachRef * MachRef);atan_res = (atan(___Cpt) * 1.0);",
+            "expression": "constexpr double ___gamma = 1.4;const double ___MachTmp =    sqrt(primitiveVars[1] * primitiveVars[1] +         primitiveVars[2] * primitiveVars[2] +         primitiveVars[3] * primitiveVars[3]) /    sqrt(___gamma * primitiveVars[4] / primitiveVars[0]);constexpr double ___power = ___gamma / (___gamma - 1.0);const double ___p1 =    ___gamma * primitiveVars[4] *    pow(1.0 + (___gamma - 1.0) / 2.0 * ___MachTmp * ___MachTmp, ___power);const double ___p2 =    pow(1.0 + (___gamma - 1.0) / 2.0 * MachRef * MachRef, ___power);double ___Cpt = (___p1 - ___p2) / (0.5 * ___gamma * MachRef * MachRef);atan_res = (atan(___Cpt) * 1.0);",
             "name": "atan_res"
         },
         {
@@ -230,6 +233,10 @@
         {
             "expression": "double ___velocity[3];___velocity[0] = primitiveVars[1] * velocityScale;___velocity[1] = primitiveVars[2] * velocityScale;___velocity[2] = primitiveVars[3] * velocityScale;iso_field_velocity_mag = (pow(((pow(___velocity[0], 2) + pow(___velocity[1], 2)) + pow(___velocity[2], 2)), 0.5) * 10.0);",
             "name": "iso_field_velocity_mag"
+        },
+        {
+            "expression": "constexpr double __gamma = 1.4;const double __MachTmp =    sqrt(primitiveVars[1] * primitiveVars[1] +         primitiveVars[2] * primitiveVars[2] +         primitiveVars[3] * primitiveVars[3]) /    sqrt(__gamma * primitiveVars[4] / primitiveVars[0]);constexpr double __power = __gamma / (__gamma - 1.0);const double __p1 =    __gamma * primitiveVars[4] *    pow(1.0 + (__gamma - 1.0) / 2.0 * __MachTmp * __MachTmp, __power);double ___Cpt_auto = (__p1 - 1.) / (0.5 * __gamma * MachRef * MachRef);just_atan_auto = (atan(___Cpt_auto) * 1.0);",
+            "name": "just_atan_auto"
         },
         {
             "expression": "double ___Mach;___Mach = usingLiquidAsMaterial ? 0 : sqrt(primitiveVars[1] * primitiveVars[1] + primitiveVars[2] * primitiveVars[2] + primitiveVars[3] * primitiveVars[3]) / sqrt(1.4 * primitiveVars[4] / primitiveVars[0]);log_res = (log(___Mach) * 1.0);",
@@ -303,7 +310,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "Mach_SI",
             "abs_res",
@@ -317,6 +323,7 @@
             "const_value_dimensionless",
             "cross_res",
             "dot_res",
+            "just_atan_auto",
             "log_res",
             "magnitude_res",
             "max_res",
@@ -330,5 +337,9 @@
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }

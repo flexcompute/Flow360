@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum
+from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
@@ -13,6 +14,7 @@ from flow360.cloud.s3_utils import CloudFileNotFoundError
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
     _PSEUDO_STEP,
+    _TIME,
     PerEntityResultCSVModel,
     ResultBaseModel,
     ResultCSVModel,
@@ -225,7 +227,6 @@ class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     remote_file_name: str = pd.Field(None, frozen=True)  # Unused dummy field
 
 
-
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):
     """ForceDistributionResultCSVModel"""
 
@@ -282,6 +283,7 @@ class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResul
 class AeroacousticsResultCSVModel(TimeSeriesResultCSVModel):
     """AeroacousticsResultCSVModel"""
 
+    _x_columns: List[str] = [_PHYSICAL_STEP, _TIME]
     remote_file_name: str = pd.Field(CaseDownloadable.AEROACOUSTICS.value, frozen=True)
 
 
@@ -318,9 +320,9 @@ class MonitorsResultModel(ResultTarGZModel):
                 file["fileName"]
                 for file in self.get_download_file_list_method()  # pylint:disable=not-callable
             ]
-            for filename in file_list:
-                if filename.startswith("results/"):
-                    filename = filename.split("results/")[1]
+            for filepath in file_list:
+                if str(Path(filepath).parent) == "results":
+                    filename = Path(filepath).name
                     match = re.match(pattern, filename)
                     if match:
                         name = match.group(1)
@@ -400,9 +402,9 @@ class UserDefinedDynamicsResultModel(ResultBaseModel):
                 file["fileName"]
                 for file in self.get_download_file_list_method()  # pylint:disable=not-callable
             ]
-            for filename in file_list:
-                if filename.startswith("results/"):
-                    filename = filename.split("results/")[1]
+            for filepath in file_list:
+                if str(Path(filepath).parent) == "results":
+                    filename = Path(filepath).name
                     match = re.match(pattern, filename)
                     if match:
                         name = match.group(1)

@@ -73,6 +73,7 @@
         "linearSolver": {
             "maxIterations": 20
         },
+        "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
@@ -85,7 +86,9 @@
             "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
-            "C_w2": 0.3
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -107,7 +110,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "my_temperature"
         ],
@@ -125,5 +127,9 @@
             "thermalConductivity": 0.0014027733287811195,
             "volumetricHeatSource": "0"
         }
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
     }
 }

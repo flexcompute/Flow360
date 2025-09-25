@@ -711,6 +711,23 @@ def _local_download_overwrite(local_storage_path, class_name):
     return _local_download_file
 
 
+def _local_download_file_list_overwrite(local_storage_path):
+    def _local_download_file_list():
+        def _files_from_dir(directory_path):
+            file_list = []
+            for item in os.listdir(directory_path):
+                item_path = os.path.join(directory_path, item)
+                if os.path.isfile(item_path):
+                    file_list.append(os.path.relpath(item_path, local_storage_path))
+                else:
+                    file_list.extend(_files_from_dir(item_path))
+            return file_list
+
+        return [{"fileName": file} for file in _files_from_dir(local_storage_path)]
+
+    return _local_download_file_list
+
+
 class LocalResourceCache:
     """
     A cache for preloading and storing resources to avoid redundant construction.
@@ -949,3 +966,19 @@ def formatting_validation_errors(errors):
         if error.get("ctx") and error["ctx"].get("relevant_for"):
             error_msg += f" | Relevant for: {error['ctx']['relevant_for']}"
     return error_msg
+
+
+def check_existence_of_one_file(file_path: str):
+    """Check existence of a file"""
+
+    if not os.path.exists(file_path):
+        raise Flow360RuntimeError(f"The file {file_path} does not exist.") from None
+
+
+def check_read_access_of_one_file(file_path: str):
+    """Check read permission of a file"""
+
+    if not os.access(file_path, os.R_OK):
+        raise Flow360RuntimeError(
+            f"Permission denied: Cannot read file {file_path}. Please check its permission settings."
+        ) from None

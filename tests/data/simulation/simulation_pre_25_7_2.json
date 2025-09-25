@@ -1,0 +1,1027 @@
+{
+    "version": "25.7.1b1",
+    "unit_system": {
+        "name": "SI"
+    },
+    "meshing": {
+        "refinement_factor": 1,
+        "gap_treatment_strength": 0,
+        "defaults": {
+            "geometry_accuracy": {
+                "value": 0.001,
+                "units": "m"
+            },
+            "surface_edge_growth_rate": 1.2,
+            "boundary_layer_growth_rate": 1.2,
+            "planar_face_tolerance": 0.000001,
+            "surface_max_aspect_ratio": 10,
+            "surface_max_adaptation_iterations": 50,
+            "curvature_resolution_angle": {
+                "value": 12,
+                "units": "degree"
+            }
+        },
+        "volume_zones": [
+            {
+                "type": "AutomatedFarfield",
+                "name": "Farfield",
+                "method": "auto",
+                "_id": "0a2e90db-fa99-40a1-9125-3c834b7ae229"
+            }
+        ]
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0,
+                0,
+                0
+            ],
+            "units": "m"
+        },
+        "moment_length": {
+            "value": [
+                1,
+                1,
+                1
+            ],
+            "units": "m"
+        },
+        "area": {
+            "type_name": "number",
+            "value": 1,
+            "units": "m**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "default",
+        "reference_velocity_magnitude": {
+            "value": 1,
+            "units": "m/s"
+        },
+        "alpha": {
+            "value": 0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0,
+            "units": "degree"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "density": {
+                "value": 1.225,
+                "units": "kg/m**3"
+            },
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            }
+        }
+    },
+    "models": [
+        {
+            "_id": "6f2626d6-a1fc-4a51-a83d-f298deabaca5",
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 0.00001716,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 30
+                },
+                "CFL_multiplier": 1,
+                "kappa_MUSCL": -1,
+                "numerical_dissipation_factor": 1,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-8,
+                "relative_tolerance": 0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "CFL_multiplier": 2,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        },
+        {
+            "_id": "16604b6b-10c8-466e-8ab1-28032a115401",
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_BottomCap",
+                            "cylinder.lb8.ugrid_Curved",
+                            "cylinder.lb8.ugrid_TopCap"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -5,
+                                    -2.5000000000000004,
+                                    -10
+                                ],
+                                [
+                                    5,
+                                    2.5000000000000004,
+                                    8.881784197001252e-16
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid",
+                        "name": "tunnel.lb8.ugrid",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Bottom",
+                            "tunnel.lb8.ugrid_Inlet",
+                            "tunnel.lb8.ugrid_Left",
+                            "tunnel.lb8.ugrid_Outlet",
+                            "tunnel.lb8.ugrid_Right",
+                            "tunnel.lb8.ugrid_Top"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10.000000000000002,
+                                    -10.000000000000002
+                                ],
+                                [
+                                    25,
+                                    10.000000000000002,
+                                    10.000000000000002
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "name": "Wall",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0,
+                "units": "m"
+            }
+        },
+        {
+            "_id": "57331292-5a72-4b05-982a-de4ff0792906",
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostSphere",
+                        "name": "farfield",
+                        "_id": "8ae37a4b-6970-5d88-aef5-43a1abcc845e"
+                    }
+                ]
+            },
+            "name": "Freestream"
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 2000,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000,
+            "max_relative_change": 1,
+            "convergence_limiting_factor": 0.25
+        }
+    },
+    "outputs": [
+        {
+            "output_fields": {
+                "items": [
+                    "Cpt",
+                    {
+                        "name": "velocity_with_units",
+                        "type_name": "UserVariable"
+                    },
+                    {
+                        "name": "velocity_magnitude_with_units",
+                        "type_name": "UserVariable"
+                    }
+                ]
+            },
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "Surface output",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_BottomCap",
+                            "cylinder.lb8.ugrid_Curved",
+                            "cylinder.lb8.ugrid_TopCap"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -5,
+                                    -2.5000000000000004,
+                                    -10
+                                ],
+                                [
+                                    5,
+                                    2.5000000000000004,
+                                    8.881784197001252e-16
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid",
+                        "name": "tunnel.lb8.ugrid",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Bottom",
+                            "tunnel.lb8.ugrid_Inlet",
+                            "tunnel.lb8.ugrid_Left",
+                            "tunnel.lb8.ugrid_Outlet",
+                            "tunnel.lb8.ugrid_Right",
+                            "tunnel.lb8.ugrid_Top"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10.000000000000002,
+                                    -10.000000000000002
+                                ],
+                                [
+                                    25,
+                                    10.000000000000002,
+                                    10.000000000000002
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "write_single_file": false,
+            "output_type": "SurfaceOutput",
+            "_id": "40a22de9-69ef-44d9-88ae-cf66e9db932b"
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "units": "m",
+            "value": 1
+        },
+        "project_entity_info": {
+            "ghost_entities": [
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostSphere",
+                    "private_attribute_id": "farfield",
+                    "name": "farfield",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "max_radius": 2500
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-1",
+                    "name": "symmetric-1",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        -10.000000000000002,
+                        0
+                    ],
+                    "max_radius": 2500,
+                    "normal_axis": [
+                        0,
+                        -1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-2",
+                    "name": "symmetric-2",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        10.000000000000002,
+                        0
+                    ],
+                    "max_radius": 2500,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric",
+                    "name": "symmetric",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "max_radius": 2500,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                }
+            ],
+            "type_name": "GeometryEntityInfo",
+            "body_ids": [
+                "cylinder.lb8.ugrid",
+                "tunnel.lb8.ugrid"
+            ],
+            "body_attribute_names": [
+                "bodyId",
+                "groupByFile"
+            ],
+            "grouped_bodies": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "angle_of_rotation": {
+                                "value": 0,
+                                "units": "degree"
+                            },
+                            "axis_of_rotation": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1,
+                                1,
+                                1
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "type_name": "BodyGroupTransformation"
+                        },
+                        "mesh_exterior": true
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "tunnel.lb8.ugrid",
+                        "name": "tunnel.lb8.ugrid",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "angle_of_rotation": {
+                                "value": 0,
+                                "units": "degree"
+                            },
+                            "axis_of_rotation": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1,
+                                1,
+                                1
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "type_name": "BodyGroupTransformation"
+                        },
+                        "mesh_exterior": true
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "angle_of_rotation": {
+                                "value": 0,
+                                "units": "degree"
+                            },
+                            "axis_of_rotation": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1,
+                                1,
+                                1
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "type_name": "BodyGroupTransformation"
+                        },
+                        "mesh_exterior": true
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "tunnel.lb8.ugrid",
+                        "name": "tunnel.lb8.ugrid",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "angle_of_rotation": {
+                                "value": 0,
+                                "units": "degree"
+                            },
+                            "axis_of_rotation": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "scale": [
+                                1,
+                                1,
+                                1
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "type_name": "BodyGroupTransformation"
+                        },
+                        "mesh_exterior": true
+                    }
+                ]
+            ],
+            "face_ids": [
+                "cylinder.lb8.ugrid_BottomCap",
+                "cylinder.lb8.ugrid_Curved",
+                "cylinder.lb8.ugrid_TopCap",
+                "tunnel.lb8.ugrid_Bottom",
+                "tunnel.lb8.ugrid_Inlet",
+                "tunnel.lb8.ugrid_Left",
+                "tunnel.lb8.ugrid_Outlet",
+                "tunnel.lb8.ugrid_Right",
+                "tunnel.lb8.ugrid_Top"
+            ],
+            "face_attribute_names": [
+                "groupByBodyId",
+                "faceId"
+            ],
+            "grouped_faces": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid",
+                        "name": "cylinder.lb8.ugrid",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_BottomCap",
+                            "cylinder.lb8.ugrid_Curved",
+                            "cylinder.lb8.ugrid_TopCap"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -5,
+                                    -2.5000000000000004,
+                                    -10
+                                ],
+                                [
+                                    5,
+                                    2.5000000000000004,
+                                    8.881784197001252e-16
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid",
+                        "name": "tunnel.lb8.ugrid",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Bottom",
+                            "tunnel.lb8.ugrid_Inlet",
+                            "tunnel.lb8.ugrid_Left",
+                            "tunnel.lb8.ugrid_Outlet",
+                            "tunnel.lb8.ugrid_Right",
+                            "tunnel.lb8.ugrid_Top"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10.000000000000002,
+                                    -10.000000000000002
+                                ],
+                                [
+                                    25,
+                                    10.000000000000002,
+                                    10.000000000000002
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid_Curved",
+                        "name": "cylinder.lb8.ugrid_Curved",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_Curved"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -5,
+                                    -2.5000000000000004,
+                                    -10
+                                ],
+                                [
+                                    5,
+                                    2.5000000000000004,
+                                    8.881784197001252e-16
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid_TopCap",
+                        "name": "cylinder.lb8.ugrid_TopCap",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_TopCap"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -4.999999999999999,
+                                    2.4999999999999996,
+                                    -10
+                                ],
+                                [
+                                    4.999999999999999,
+                                    2.5000000000000004,
+                                    0
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "cylinder.lb8.ugrid_BottomCap",
+                        "name": "cylinder.lb8.ugrid_BottomCap",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "cylinder.lb8.ugrid_BottomCap"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -4.999999999999999,
+                                    -2.5000000000000004,
+                                    -10
+                                ],
+                                [
+                                    4.999999999999999,
+                                    -2.4999999999999996,
+                                    0
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid_Inlet",
+                        "name": "tunnel.lb8.ugrid_Inlet",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Inlet"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10,
+                                    -10
+                                ],
+                                [
+                                    -25,
+                                    10,
+                                    10
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid_Outlet",
+                        "name": "tunnel.lb8.ugrid_Outlet",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Outlet"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    25,
+                                    -10,
+                                    -10
+                                ],
+                                [
+                                    25,
+                                    10,
+                                    10
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid_Left",
+                        "name": "tunnel.lb8.ugrid_Left",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Left"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10.000000000000002,
+                                    -10.000000000000002
+                                ],
+                                [
+                                    25,
+                                    -9.999999999999998,
+                                    10.000000000000002
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid_Right",
+                        "name": "tunnel.lb8.ugrid_Right",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Right"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    9.999999999999998,
+                                    -10.000000000000002
+                                ],
+                                [
+                                    25,
+                                    10.000000000000002,
+                                    10.000000000000002
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid_Bottom",
+                        "name": "tunnel.lb8.ugrid_Bottom",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Bottom"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10.000000000000002,
+                                    -10.000000000000002
+                                ],
+                                [
+                                    25,
+                                    10.000000000000002,
+                                    -9.999999999999998
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel.lb8.ugrid_Top",
+                        "name": "tunnel.lb8.ugrid_Top",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel.lb8.ugrid_Top"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -25,
+                                    -10.000000000000002,
+                                    9.999999999999998
+                                ],
+                                [
+                                    25,
+                                    10.000000000000002,
+                                    10.000000000000002
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            ],
+            "body_group_tag": "groupByFile",
+            "face_group_tag": "groupByBodyId",
+            "global_bounding_box": [
+                [
+                    -25,
+                    -10.000000000000002,
+                    -10.000000000000002
+                ],
+                [
+                    25,
+                    10.000000000000002,
+                    10.000000000000002
+                ]
+            ]
+        },
+        "use_inhouse_mesher": false,
+        "use_geometry_AI": false,
+        "variable_context": [
+            {
+                "name": "velocity_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.velocity",
+                    "output_units": "SI_unit_system"
+                }
+            },
+            {
+                "name": "velocity_magnitude_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "math.magnitude(solution.velocity)",
+                    "output_units": "SI_unit_system"
+                }
+            },
+            {
+                "name": "pressure_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure",
+                    "output_units": "SI_unit_system"
+                }
+            },
+            {
+                "name": "wall_shear_stress_magnitude_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.wall_shear_stress_magnitude",
+                    "output_units": "SI_unit_system"
+                }
+            }
+        ]
+    },
+    "user_defined_dynamics": null
+}
