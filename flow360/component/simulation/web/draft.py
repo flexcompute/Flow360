@@ -19,7 +19,12 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import Flow360Resource, ResourceDraft
-from flow360.component.utils import formatting_validation_errors, validate_type
+from flow360.component.utils import (
+    check_existence_of_one_file,
+    check_read_access_of_one_file,
+    formatting_validation_errors,
+    validate_type,
+)
 from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
@@ -152,12 +157,9 @@ class Draft(Flow360Resource):
             method="imported-surfaces",
         )
         for index, local_file_path in enumerate(file_paths):
-            if os.path.exists(local_file_path) and os.access(local_file_path, os.R_OK):
-                self._upload_file(resp[index]["filename"], local_file_path)
-            else:
-                raise Flow360RuntimeError(
-                    f"The file {local_file_path} does not exist or the user has no read access to it."
-                ) from None
+            check_existence_of_one_file(local_file_path)
+            check_read_access_of_one_file(local_file_path)
+            self._upload_file(resp[index]["filename"], local_file_path)
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""
