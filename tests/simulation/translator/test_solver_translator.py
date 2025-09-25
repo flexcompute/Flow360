@@ -31,6 +31,7 @@ from flow360.component.simulation.models.surface_models import (
     Pressure,
     SlaterPorousBleed,
     SlipWall,
+    Supersonic,
     TotalPressure,
     Wall,
     WallRotation,
@@ -714,6 +715,16 @@ def test_boundaries():
                     surfaces=Surface(name="boundary_name_B"),
                     spec=MassFlowRate(value=mass_flow_rate, ramp_steps=10),
                     velocity_direction=(0, 0, 1),
+                ),
+                Inflow(
+                    name="inflow-3",
+                    total_temperature=300 * u.K,
+                    surfaces=Surface(name="boundary_name_C"),
+                    spec=Supersonic(
+                        total_pressure=operating_condition.thermal_state.pressure * 8.0,
+                        static_pressure=operating_condition.thermal_state.pressure * 0.9,
+                    ),
+                    velocity_direction=(0, 1, 0),
                 ),
                 Outflow(
                     name="outflow-1",
