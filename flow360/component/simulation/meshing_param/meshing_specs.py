@@ -166,6 +166,10 @@ class MeshingDefaults(Flow360BaseModel):
 
 
 class BetaVolumeMeshingDefaults(Flow360BaseModel):
+    """
+    Default/global settings for volume meshing parameters. To be used with class:`ModularMeshingWorkflow`.
+    """
+
     ##::    Default boundary layer settings
     boundary_layer_growth_rate: float = pd.Field(
         1.2,
@@ -199,6 +203,12 @@ class BetaVolumeMeshingDefaults(Flow360BaseModel):
 
 
 class SnappySurfaceMeshingDefaults(Flow360BaseModel):
+    """
+    Default/global settings for snappyHexMesh surface meshing parameters.
+    To be used with class:`ModularMeshingWorkflow`.
+    """
+
+    # pylint: disable=no-member
     min_spacing: LengthType.Positive = pd.Field()
     max_spacing: LengthType.Positive = pd.Field()
     gap_resolution: LengthType.Positive = pd.Field()
@@ -272,6 +282,7 @@ class SnappyQualityMetrics(Flow360BaseModel):
         If < 0: always deletes such cells.
     """
 
+    # pylint: disable=no-member
     max_non_ortho: Optional[AngleType.Positive] = pd.Field(default=85 * u.deg)
     max_boundary_skewness: Optional[AngleType] = pd.Field(default=20 * u.deg)
     max_internal_skewness: Optional[AngleType] = pd.Field(default=50 * u.deg)
@@ -291,43 +302,65 @@ class SnappyQualityMetrics(Flow360BaseModel):
     @pd.field_validator("max_non_ortho", "max_concave", mode="after")
     @classmethod
     def disable_angle_metrics_w_defaults(cls, value):
+        """Disable a quality metric in OpenFOAM by setting a specific value."""
         if value is None:
             return 180 * u.deg
         if value > 180 * u.deg:
             raise ValueError("Value must be less that 180 degrees.")
-        else:
-            return value
+        return value
 
     @pd.field_validator("max_boundary_skewness", "max_internal_skewness", mode="after")
     @classmethod
     def disable_skewness_metric(cls, value):
+        """Disable a quality metric in OpenFOAM by setting a specific value."""
         if value is None:
             return -1 * u.deg
         if value.to("degree") <= 0 * u.deg and value.to("degree") != -1 * u.deg:
             raise ValueError(
                 f"Maximum skewness must be positive (your value: {value}). To disable enter None or -1*u.deg."
             )
-        else:
-            return value
+        return value
 
     @pd.field_validator("min_vol", "min_tet_quality", "min_determinant", mode="after")
     @classmethod
     def disable_by_low_value(cls, value):
+        """Disable a quality metric in OpenFOAM by setting a specific value."""
         if value is None:
             return -1e30
-        else:
-            return value
+        return value
 
     @pd.field_validator("n_smooth_scale", "error_reduction", mode="after")
     @classmethod
     def disable_by_zero(cls, value):
+        """Disable a quality metric in OpenFOAM by setting a specific value."""
         if value is None:
             return 0
-        else:
-            return value
+        return value
 
 
 class SnappyCastellatedMeshControls(Flow360BaseModel):
+    """
+    snappyHexMesh castellation controls.
+
+    Parameters
+    ----------
+    resolve_feature_angle : Optional[AngleType.Positive], default: 25°
+        This parameter controls the local curvature refinement. The higher the value,
+        the less features it captures. Applies maximum level of refinement to cells
+        that can see intersections whose angle exceeds this value.
+
+    n_cells_between_levels: Optional[pd.NonNegativeInt], default: 1
+        This parameter controls the transition between cell refinement levels. Number
+        of buffer layers of cells between different levels of refinement.
+
+    min_refinement_cells: Optional[pd.NonNegativeInt], default: 10
+        The refinement along the surfaces may spend many iterations on refinement of
+        only few cells. Whenever the number of cells to be refined is less than or equal
+        to this value, the refinement will stop. Unless the parameter is set to zero,
+        at least one refining iteration will be performed.
+    """
+
+    # pylint: disable=no-member
     resolve_feature_angle: Optional[AngleType.Positive] = pd.Field(default=25 * u.deg)
     n_cells_between_levels: Optional[pd.NonNegativeInt] = pd.Field(1)
     min_refinement_cells: Optional[pd.NonNegativeInt] = pd.Field(10)
@@ -335,6 +368,7 @@ class SnappyCastellatedMeshControls(Flow360BaseModel):
     @pd.field_validator("resolve_feature_angle", mode="after")
     @classmethod
     def angle_limits(cls, value):
+        """Limit angular values."""
         if value is None:
             return value
         if value > 180 * u.deg:
@@ -343,6 +377,40 @@ class SnappyCastellatedMeshControls(Flow360BaseModel):
 
 
 class SnappySnapControls(Flow360BaseModel):
+    """
+    snappyHexMesh snap controls.
+
+    Parameters
+    ----------
+    n_smooth_patch: pd.NonNegativeInt, default: 3
+        Number of patch smoothing iterations before finding correspondence to surface.
+
+    tolerance: pd.PositiveFloat, default: 2
+        Ratio of distance for points to be attracted by surface feature point or edge,
+        to local maximum edge length.
+
+    n_solve_iter: pd.NonNegativeInt, default: 30
+        Number of mesh displacement relaxation iterations
+
+    n_relax_iter: pd.NonNegativeInt, default: 5
+        Number of relaxation iterations during the snapping. If the mesh does not conform the geometry
+        and all the iterations are spend, user may try to increase the number of iterations.
+
+    n_feature_snap_iter: pd.NonNegativeInt, default: 15
+        Number of relaxation iterations used for snapping onto the features.
+        If not specified, feature snapping will be disabled.
+
+    multi_region_feature_snap: bool, default: True
+        When using explicitFeatureSnap and this switch is on, features between multiple
+        surfaces will be captured. This is useful for multi-region meshing where the internal
+        mesh must conform the region geometrical boundaries.
+
+    strict_region_snap: bool, default: False
+        Attract points only to the surface they originate from. This can improve snapping of
+        intersecting surfaces.
+    """
+
+    # pylint: disable=no-member
     n_smooth_patch: pd.NonNegativeInt = pd.Field(3)
     tolerance: pd.PositiveFloat = pd.Field(2)
     n_solve_iter: pd.NonNegativeInt = pd.Field(30)
@@ -353,6 +421,26 @@ class SnappySnapControls(Flow360BaseModel):
 
 
 class SnappySmoothControls(Flow360BaseModel):
+    """
+    snappyHexMesh smoothing controls.
+
+    Parameters
+    ----------
+    lambda_factor: Optional[pd.NonNegativeFloat], default: 0.7
+        Lambda value within [0,1]
+
+    mu_factor: Optional[pd.NonNegativeFloat], default: 0.71
+        Mu value within [0,1]
+
+    iterations: Optional[pd.NonNegativeInt], default: 5
+        Number of smoothing iterations
+
+    min_elem: Optional[pd.NonNegativeInt], default: None
+    min_len: Optional[LengthType.NonNegative], default: None
+    included_angle: Optional[AngleType.NonNegative], default: 150°
+    """
+
+    # pylint: disable=no-member
     lambda_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.7)
     mu_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.71)
     iterations: Optional[pd.NonNegativeInt] = pd.Field(5)

@@ -1,7 +1,6 @@
 """Volume models for the simulation framework."""
 
 # pylint: disable=too-many-lines
-import inspect
 import os
 import re
 from abc import ABCMeta
@@ -18,7 +17,6 @@ from flow360.component.simulation.framework.expressions import (
 )
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
-    get_class_method,
 )
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
@@ -53,7 +51,12 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
+from flow360.component.simulation.primitives import (
+    Box,
+    Cylinder,
+    GenericVolume,
+    SeedpointZone,
+)
 from flow360.component.simulation.unit_system import (
     AngleType,
     AngularVelocityType,
@@ -1193,7 +1196,7 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityList[GenericVolume, Cylinder] = pd.Field(
+    entities: EntityList[GenericVolume, Cylinder, SeedpointZone] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1204,7 +1207,7 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(
+    parent_volume: Optional[Union[GenericVolume, Cylinder, SeedpointZone]] = pd.Field(
         None,
         description="The parent rotating entity in a nested rotation case."
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1277,10 +1280,11 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityList[GenericVolume, Box] = pd.Field(
+    entities: EntityList[GenericVolume, Box, SeedpointZone] = pd.Field(
         alias="volumes",
         description="The entity list for the `PorousMedium` model. "
-        + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
+        + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
+        + "by :class:`SeedpointZone` when using snappyHexMeshing."
         + "The axes of entity must be specified to serve as the the principle axes of the "
         + "porous medium material model.",
     )

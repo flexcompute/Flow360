@@ -45,6 +45,8 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
     `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support splitting boundary into
     blocks but we will need to support this someday.
     """
+    full_boundary_names = []
+
     for zone_name, zone_meta in volume_mesh_meta["zones"].items():
         for existing_boundary_name in zone_meta["boundaryNames"]:
             pattern = re.escape(zone_name) + r"/(.*)"
@@ -52,10 +54,13 @@ def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]
             if (
                 match is not None and match.group(1) == surface_name
             ) or existing_boundary_name == surface_name:
-                return existing_boundary_name
+                full_boundary_names.append(existing_boundary_name)
 
     # Not found
-    return BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+    if not full_boundary_names:
+        return [BOUNDARY_FULL_NAME_WHEN_NOT_FOUND]
+
+    return full_boundary_names
 
 
 def _check_axis_is_orthogonal(axis_pair: Tuple[Axis, Axis]) -> Tuple[Axis, Axis]:
@@ -186,10 +191,23 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
         """
         Update parent zone name once the volume mesh is done.
         """
+        updated_boundary_names = _get_boundary_full_name(self.name, volume_mesh_meta_data)
+
         with model_attribute_unlock(self, "private_attribute_full_name"):
-            self.private_attribute_full_name = _get_boundary_full_name(
-                self.name, volume_mesh_meta_data
+            self.private_attribute_full_name = updated_boundary_names.pop(0)
+
+        multipliation_result = []
+        for new_boundary_name in updated_boundary_names:
+            multipliation_result.append(
+                self.copy(
+                    update={
+                        "name": new_boundary_name,
+                        "private_attribute_full_name": new_boundary_name,
+                    }
+                )
             )
+
+        return multipliation_result if multipliation_result else None
 
     @property
     def full_name(self):
@@ -643,19 +661,34 @@ class SurfacePair(Flow360BaseModel):
 class SnappyBody(Flow360BaseModel):
     """
     Represents a group of faces forming a body for snappyHexMesh.
-    Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid keywords with a body::region naming scheme.
+    Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid"
+    keywords with a body::region naming scheme.
     """
 
     body_name: str = pd.Field()
 
 
-class MeshZone(Flow360BaseModel):
+@final
+class SeedpointZone(_VolumeEntityBase):
     """
     Represents a separate zone in the mesh, defined by a point inside it.
+    To be used only with snappyHexMesh.
     """
 
-    point_in_mesh: LengthType.Point
-    name: str
+    # pylint: disable=no-member
+    private_attribute_entity_type_name: Literal["SeedpointZone"] = pd.Field(
+        "SeedpointZone", frozen=True
+    )
+    type: Literal["SeedpointZone"] = pd.Field("SeedpointZone", frozen=True)
+    point_in_mesh: LengthType.Point = pd.Field(
+        description="Seedpoint for a main fluid zone in snappyHexMesh."
+    )
+    axes: Optional[OrthogonalAxes] = pd.Field(
+        None, description="Principal axes definition when using with PorousMedium"
+    )  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 
 VolumeEntityTypes = Union[GenericVolume, Cylinder, Box, str]
