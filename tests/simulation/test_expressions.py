@@ -923,7 +923,7 @@ def test_project_variables_metadata():
     with open("ref/simulation_with_project_variables.json", "r") as fh:
         data = json.load(fh)
     mock_metadata = {
-        "radom_key": "jibberish",
+        "radom_key": "some_value",
         "additional_dict": {"key>>>": ["value1", "value2"]},
     }
     data["private_attribute_asset_cache"]["variable_context"][0]["metadata"] = mock_metadata
@@ -940,10 +940,40 @@ def test_project_variables_metadata():
 
     param_dumped = params.model_dump(mode="json", exclude_none=True)
 
-    assert (
-        param_dumped["private_attribute_asset_cache"]["variable_context"][0]["metadata"]
-        == mock_metadata
-    )
+    assert param_dumped["private_attribute_asset_cache"]["variable_context"] == [
+        {
+            "name": "ccc",
+            "value": {"type_name": "expression", "expression": "12 * u.m / u.s"},
+            "post_processing": False,
+            "description": "ccc description",
+            "metadata": {
+                "radom_key": "some_value",
+                "additional_dict": {"key>>>": ["value1", "value2"]},
+            },
+        },
+        {
+            "name": "aaa",
+            "value": {
+                "type_name": "expression",
+                "expression": "[solution.velocity[0] + ccc, solution.velocity[1], solution.velocity[2]]",
+            },
+            "post_processing": False,
+        },
+        {
+            "name": "bbb",
+            "value": {
+                "type_name": "expression",
+                "expression": "[aaa[0] + 14 * u.m / u.s, aaa[1], aaa[2]]",
+                "output_units": "km/ms",
+            },
+            "post_processing": True,
+        },
+        {
+            "name": "a_var",
+            "value": {"type_name": "expression", "expression": "1111.0"},
+            "post_processing": True,
+        },
+    ]
     assert param_dumped["outputs"][0]["output_fields"]["items"] == [
         {"name": "bbb", "type_name": "UserVariable"},
         {

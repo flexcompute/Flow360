@@ -1405,15 +1405,28 @@ def save_user_variables(params):
 
         if params.private_attribute_asset_cache.variable_context is None:
             params.private_attribute_asset_cache.variable_context = []
-        params.private_attribute_asset_cache.variable_context.append(
-            VariableContextInfo(
-                name=name,
-                value=value,
-                description=default_context.get_metadata(name, "description"),
-                post_processing=name in post_processing_variables,
-                metadata=default_context.get_metadata(name, "metadata"),
-            )
+
+        # Check if variable with this name already exists
+        existing_index = None
+        for i, existing_var in enumerate(params.private_attribute_asset_cache.variable_context):
+            if existing_var.name == name:
+                existing_index = i
+                break
+
+        new_variable = VariableContextInfo(
+            name=name,
+            value=value,
+            description=default_context.get_metadata(name, "description"),
+            post_processing=name in post_processing_variables,
+            metadata=default_context.get_metadata(name, "metadata"),
         )
+
+        if existing_index is not None:
+            # Replace existing variable
+            params.private_attribute_asset_cache.variable_context[existing_index] = new_variable
+        else:
+            # Append new variable
+            params.private_attribute_asset_cache.variable_context.append(new_variable)
     return params
 
 
