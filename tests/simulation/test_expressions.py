@@ -918,6 +918,41 @@ def test_project_variables_deserialization():
     )  # Fully resolvable
 
 
+def test_project_variables_metadata():
+    # Testing of loading and saving metadata for project variable
+    with open("ref/simulation_with_project_variables.json", "r") as fh:
+        data = json.load(fh)
+    mock_metadata = {
+        "radom_key": "jibberish",
+        "additional_dict": {"key>>>": ["value1", "value2"]},
+    }
+    data["private_attribute_asset_cache"]["variable_context"][0]["metadata"] = mock_metadata
+    params, _, _ = validate_model(
+        params_as_dict=data,
+        root_item_type=None,
+        validated_by=ValidationCalledBy.LOCAL,
+    )
+
+    a_var = UserVariable(name="a_var", value=1111)
+    params.outputs[0].output_fields.items.append(a_var)
+
+    params = save_user_variables(params)
+
+    param_dumped = params.model_dump(mode="json", exclude_none=True)
+
+    assert (
+        param_dumped["private_attribute_asset_cache"]["variable_context"][0]["metadata"]
+        == mock_metadata
+    )
+    assert param_dumped["outputs"][0]["output_fields"]["items"] == [
+        {"name": "bbb", "type_name": "UserVariable"},
+        {
+            "name": "a_var",
+            "type_name": "UserVariable",
+        },
+    ]
+
+
 def test_overwriting_project_variables():
     a = UserVariable(name="a", value=1)
 

@@ -383,14 +383,11 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
             UserVariable(
                 name=variable_dict["name"],
                 value=value_or_expression,
-                **(
-                    {"description": variable_dict["description"]}
-                    if "description" in variable_dict
-                    else {}
-                ),
-                post_processing=variable_dict[
-                    "post_processing"
-                ],  # Should have been available after updater
+                description=variable_dict.get("description", None),
+                metadata=variable_dict.get("metadata", None),
+                # post_processing=variable_dict[
+                #     "post_processing"
+                # ],  # Should have been available after updater
             )
         except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
@@ -410,8 +407,8 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
                             "variable_context",
                             pre_sort_name_to_index[variable_name],
                         ),
-                        msg=error_detail["msg"],
-                        ctx=error_detail["ctx"],
+                        msg=error_detail.get("msg", "Unknown error"),
+                        ctx=error_detail.get("ctx", {}),
                     ),
                 ],
             )
