@@ -19,7 +19,7 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
 )
 from flow360.component.simulation.models.material import SolidMaterial
@@ -147,7 +147,10 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, file_suffix="")
     file_suffix_part = f"-{file_suffix}" if file_suffix else ""
     write_to_file(
         os.path.join(
-            here, data_folder, folder_name, f"json-schema-{version_postfix}{file_suffix_part}.json"
+            here,
+            data_folder,
+            folder_name,
+            f"json-schema-{version_postfix}{file_suffix_part}.json",
         ),
         schema,
     )
@@ -161,7 +164,6 @@ def write_example(
     additional_fields: dict = {},
     exclude=None,
 ):
-
     if isinstance(obj, dict):
         data = obj
     elif isinstance(obj, Flow360BaseModel):
@@ -228,7 +230,7 @@ with SI_unit_system:
             SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2)),
         ],
         volume_zones=[
-            RotationCylinder(
+            RotationVolume(
                 entities=my_cylinder_1,
                 spacing_axial=0.1 * u.m,
                 spacing_radial=0.12 * u.m,
@@ -400,7 +402,9 @@ write_example(
 
 with SI_unit_system:
     ac = AerospaceCondition.from_mach(
-        mach=0.8, alpha=1 * u.deg, thermal_state=ThermalState(temperature=100 * u.K, density=2)
+        mach=0.8,
+        alpha=1 * u.deg,
+        thermal_state=ThermalState(temperature=100 * u.K, density=2),
     )
 write_example(
     ac,

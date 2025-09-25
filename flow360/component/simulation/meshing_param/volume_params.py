@@ -10,6 +10,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     Cylinder,
     GenericVolume,
@@ -20,6 +21,7 @@ from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
+from flow360.log import log
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -47,7 +49,7 @@ class UniformRefinement(Flow360BaseModel):
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
-class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
+class AxisymmetricRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     """Base class for all refinements that requires spacing in axial, radial and circumferential directions."""
 
     # pylint: disable=no-member
@@ -60,7 +62,7 @@ class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-class AxisymmetricRefinement(CylindricalRefinementBase):
+class AxisymmetricRefinement(AxisymmetricRefinementBase):
     """
     - The mesh inside the :class:`AxisymmetricRefinement` is semi-structured.
     - The :class:`AxisymmetricRefinement` cannot enclose/intersect with other objects.
@@ -89,7 +91,7 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class RotationCylinder(CylindricalRefinementBase):
+class RotationVolume(AxisymmetricRefinementBase):
     """
     - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
     - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
@@ -107,6 +109,13 @@ class RotationCylinder(CylindricalRefinementBase):
       ...     entities=cylinder
       ... )
 
+      >>> fl.RotationCylinder(
+      ...     name="RotationConeFrustum",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=axisymmetric_body
+      ... )
     ====
     """
 
@@ -114,13 +123,13 @@ class RotationCylinder(CylindricalRefinementBase):
     # Note: https://www.notion.so/flexcompute/Python-model-design-document-
     # Note: 78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
 
-    type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
-    name: Optional[str] = pd.Field("Rotation cylinder", description="Name to display in the GUI.")
-    entities: EntityList[Cylinder] = pd.Field()
-    enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
+    type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
+    name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
+    entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
+    enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody]] = pd.Field(
         None,
-        description="Entities enclosed by :class:`RotationCylinder`. "
-        + "Can be `Surface` and/or other :class:`~flow360.Cylinder` (s).",
+        description="Entities enclosed by :class:`RotationVolume`. "
+        + "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s) and/or other :class:`~flow360.AxisymmetricBody`(s).",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -134,9 +143,7 @@ class RotationCylinder(CylindricalRefinementBase):
         """
         # pylint: disable=protected-access
         if len(values._get_expanded_entities(create_hard_copy=False)) > 1:
-            raise ValueError(
-                "Only single instance is allowed in entities for each RotationCylinder."
-            )
+            raise ValueError("Only single instance is allowed in entities for each RotationVolume.")
         return values
 
     @pd.field_validator("entities", mode="after")
@@ -151,9 +158,9 @@ class RotationCylinder(CylindricalRefinementBase):
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
         for entity in values.stored_entities:
-            if len(entity.name) > max_cylinder_name_length:
+            if isinstance(entity, Cylinder) and len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
-                    f"The name ({entity.name}) of `Cylinder` entity in `RotationCylinder` "
+                    f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
                 )
         return values
@@ -195,7 +202,9 @@ class AutomatedFarfield(Flow360BaseModel):
         """,
     )
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True, exclude=True
+        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
+        frozen=True,
+        exclude=True,
     )
 
     @property

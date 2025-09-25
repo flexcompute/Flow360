@@ -31,7 +31,7 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -196,7 +196,7 @@ __all__ = [
     "SurfaceRefinement",
     "AutomatedFarfield",
     "AxisymmetricRefinement",
-    "RotationCylinder",
+    "RotationVolume",
     "UniformRefinement",
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",

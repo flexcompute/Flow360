@@ -7,12 +7,18 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    CylindricalRefinementBase,
-    RotationCylinder,
+    AxisymmetricRefinementBase,
+    RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, CustomVolume, Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    CustomVolume,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
@@ -31,7 +37,7 @@ def uniform_refinement_translator(obj: UniformRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def cylindrical_refinement_translator(obj: CylindricalRefinementBase):
+def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
     """
     Translate CylindricalRefinementBase. [SlidingInterface + RotorDisks]
     """
@@ -74,7 +80,7 @@ def passive_spacing_translator(obj: PassiveSpacing):
     }
 
 
-def rotation_cylinder_translator(obj: RotationCylinder, rotor_disk_names: list):
+def rotation_cylinder_translator(obj: RotationVolume, rotor_disk_names: list):
     """Setting translation for RotationCylinder."""
     setting = cylindrical_refinement_translator(obj)
     setting["enclosedObjects"] = []
@@ -128,16 +134,25 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_cylinder_entity_injector(entity: Cylinder):
+def rotation_cylinder_entity_injector(entity: Cylinder | AxisymmetricBody):
     """Injector for Cylinder entity in RotationCylinder."""
-    return {
-        "name": entity.name,
-        "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
-        "outerRadius": entity.outer_radius.value.item(),
-        "thickness": entity.height.value.item(),
-        "axisOfRotation": list(entity.axis),
-        "center": list(entity.center.value),
-    }
+    if isinstance(entity, Cylinder):
+        return {
+            "name": entity.name,
+            "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
+            "outerRadius": entity.outer_radius.value.item(),
+            "thickness": entity.height.value.item(),
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+    if isinstance(entity, AxisymmetricBody):
+        return {
+            "name": entity.name,
+            "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+    return {}
 
 
 def _get_custom_volumes(volume_zones: list):
@@ -295,7 +310,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
-        RotationCylinder,
+        RotationVolume,
         rotation_cylinder_translator,
         to_list=True,
         entity_injection_func=rotation_cylinder_entity_injector,
