@@ -706,6 +706,7 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
@@ -715,6 +716,7 @@ def test_init():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     assert "meshing" not in data
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
@@ -729,6 +731,7 @@ def test_init():
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
     assert data["models"][0]["roughness_height"]["units"] == "cm"
+    data["outputs"][0].pop("private_attribute_id", None)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
@@ -1291,6 +1294,21 @@ def test_SI_unit_system_conversion():
     with open("./ref/unit_system_converted_SI.json", "r") as fp:
         ref_dict = json.load(fp)
     assert compare_values(dict_to_convert, ref_dict, rtol=1e-7)  # Default tol fail for Windows
+
+
+def test_unchanged_BETDisk_length_unit():
+    with open("data/simulation_bet_disk.json", "r") as fp:
+        dict_to_convert = json.load(fp)
+    services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
+    assert dict_to_convert["unit_system"]["name"] == "CGS"
+    assert dict_to_convert["models"][4]["private_attribute_input_cache"]["length_unit"] == {
+        "value": 1,
+        "units": "m",
+    }
+    assert dict_to_convert["models"][6]["private_attribute_input_cache"]["length_unit"] == {
+        "value": 1,
+        "units": "ft",
+    }
 
 
 def test_updater_service():

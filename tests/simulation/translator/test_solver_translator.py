@@ -43,19 +43,29 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
+    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     LiquidOperatingCondition,
     ThermalState,
 )
-from flow360.component.simulation.outputs.output_entities import Slice
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+    Slice,
+)
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
+    MovingStatistic,
+    ProbeOutput,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
+    TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -292,6 +302,38 @@ def test_om6wing_debug(get_om6Wing_tutorial_param):
     )
 
 
+def test_om6wing_streamlines(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    with SI_unit_system:
+        streamlineOutput = StreamlineOutput(
+            entities=[
+                Point(name="point_streamline", location=(0.0, 1.0, 0.04)),
+                PointArray(
+                    name="pointarray_streamline",
+                    start=(0.0, 0.0, 0.2),
+                    end=(0.0, 1.0, 0.2),
+                    number_of_points=20,
+                ),
+                PointArray2D(
+                    name="pointarray2d_streamline",
+                    origin=(0.0, 0.0, -0.2),
+                    u_axis_vector=(0.0, 1.4, 0.0),
+                    v_axis_vector=(0.0, 0.0, 0.4),
+                    u_number_of_points=10,
+                    v_number_of_points=10,
+                ),
+            ],
+            output_fields=[solution.Cp, solution.velocity],
+        )
+    params.outputs.append(streamlineOutput)
+
+    translate_and_compare(
+        params,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_streamlines.json",
+    )
+
+
 def test_om6wing_with_specified_freestream_BC(get_om6Wing_tutorial_param):
     params = get_om6Wing_tutorial_param
     params.models[3].turbulence_quantities = TurbulenceQuantities(modified_viscosity_ratio=10)
@@ -337,6 +379,76 @@ def test_om6wing_with_specified_turbulence_model_coefficient(get_om6Wing_tutoria
         get_om6Wing_tutorial_param,
         mesh_unit=0.8059 * u.m,
         ref_json_file="Flow360_om6wing_SST_with_modified_C_sigma_omega1.json",
+    )
+
+
+def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    monitored_variable = UserVariable(
+        name="Helicity",
+        value=math.dot(solution.velocity, solution.vorticity),
+    )
+    probe_output = ProbeOutput(
+        name="point_legacy1",
+        output_fields=[
+            monitored_variable,
+        ],
+        probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+        private_attribute_id="11111",
+    )
+    criterion = StopCriterion(
+        name="Criterion_Helicity",
+        tolerance=18.66 * u.m / u.s**2,
+        monitor_output=probe_output,
+        monitor_field=monitored_variable,
+    )
+    params.models[0].stopping_criterion = [criterion]
+    params.outputs.append(probe_output)
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
+        debug=True,
+    )
+
+
+def test_stopping_criterion_tolerance_in_unit_system():
+    """
+    [Frontend] Test that an StopCriterion with the unit system as
+    tolerance's units can be validated and translated.
+    """
+
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_stopping_criterion.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+    params_validated, errors, _ = validate_model(
+        params_as_dict=params_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Case",
+        validation_level="Case",
+    )
+    assert not errors, print(">>>", errors)
+    assert params_validated.models[0].stopping_criterion[0].tolerance == 18.66 * u.m / u.s**2
+
+    translate_and_compare(
+        params_validated,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6wing_stopping_criterion_and_moving_statistic.json",
+        debug=True,
+    )
+
+
+def test_om6wing_with_low_reynolds_correction(get_om6Wing_tutorial_param):
+    params = get_om6Wing_tutorial_param
+    params.models[0].turbulence_model_solver.low_reynolds_correction = True
+
+    translate_and_compare(
+        get_om6Wing_tutorial_param,
+        mesh_unit=0.8059 * u.m,
+        ref_json_file="Flow360_om6Wing_SA_with_low_reynolds_correction.json",
     )
 
 
@@ -738,6 +850,7 @@ def test_param_with_user_variables():
     asin_res = UserVariable(name="asin_res", value=math.asin(solution.mut_ratio))
     acos_res = UserVariable(name="acos_res", value=math.acos(solution.Cp))
     atan_res = UserVariable(name="atan_res", value=math.atan(solution.Cpt))
+    just_atan_auto = UserVariable(name="just_atan_auto", value=math.atan(solution.Cpt_auto))
     min_res = UserVariable(
         name="min_res", value=math.min(solution.vorticity[2], solution.vorticity[1])
     )
@@ -823,6 +936,7 @@ def test_param_with_user_variables():
                         atan_res,
                         min_res,
                         max_res,
+                        just_atan_auto,
                     ],
                 ),
                 IsosurfaceOutput(

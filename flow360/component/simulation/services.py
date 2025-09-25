@@ -388,6 +388,9 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
                     if "description" in variable_dict
                     else {}
                 ),
+                post_processing=variable_dict[
+                    "post_processing"
+                ],  # Should have been available after updater
             )
         except pd.ValidationError as e:
             # pylint:disable = raise-missing-from
@@ -462,6 +465,7 @@ def validate_model(  # pylint: disable=too-many-locals
 
     try:
         # pylint: disable=protected-access
+        params_as_dict = SimulationParams._sanitize_params_dict(params_as_dict)
         # Note: Need to run updater first to accommodate possible schema change in input caches.
         updated_param_as_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
             params_as_dict
@@ -845,7 +849,7 @@ def _convert_unit_in_dict(
     return data
 
 
-def change_unit_system(
+def change_unit_system_recursive(
     *, data, target_unit_system: Literal["SI", "Imperial", "CGS"], current_key: str = None
 ) -> None:
     """
@@ -853,6 +857,11 @@ def change_unit_system(
     If a dict has exactly the structure {'value': XX, 'units': XX},
     Try to convert to the new unit system
     """
+    white_list_keys = {
+        # current key -- sub key
+        ("private_attribute_asset_cache", "project_length_unit"),
+        ("private_attribute_input_cache", "length_unit"),
+    }
 
     if isinstance(data, dict):
         # 1. Check if dict matches the desired pattern
@@ -865,9 +874,9 @@ def change_unit_system(
 
         # 2. Otherwise, recurse into each item in the dictionary
         for key, val in data.items():
-            if key == "project_length_unit":
+            if (current_key, key) in white_list_keys:
                 continue
-            change_unit_system(
+            change_unit_system_recursive(
                 data=val,
                 target_unit_system=target_unit_system,
                 current_key=key,
@@ -876,7 +885,16 @@ def change_unit_system(
     elif isinstance(data, list):
         # Recurse into each item in the list
         for _, item in enumerate(data):
-            change_unit_system(data=item, target_unit_system=target_unit_system)
+            change_unit_system_recursive(data=item, target_unit_system=target_unit_system)
+
+
+def change_unit_system(*, data: dict, target_unit_system: Literal["SI", "Imperial", "CGS"]):
+    """
+    Change the unit system of the simulation parameters.
+    """
+    change_unit_system_recursive(data=data, target_unit_system=target_unit_system)
+    data["unit_system"]["name"] = target_unit_system
+    return data
 
 
 def update_simulation_json(*, params_as_dict: dict, target_python_api_version: str):

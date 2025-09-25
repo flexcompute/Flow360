@@ -536,7 +536,7 @@
         "type_name": "Steady"
     },
     "unit_system": {
-        "name": "SI"
+        "name": "CGS"
     },
     "version": "24.2.0"
 }
