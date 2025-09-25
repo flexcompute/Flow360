@@ -362,24 +362,29 @@ def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     return return_dict
 
 
+def get_monitor_locations(entities: EntityList):
+    """get monitor locations"""
+
+    monitor_locations = {}
+    for item in entities:
+        if isinstance(item, Point):
+            monitor_locations[item.name] = item.location.value.tolist()
+        elif isinstance(item, PointArray):
+            start = item.start.value
+            direction = item.end.value - item.start.value
+            for point_idx in range(item.number_of_points):
+                point_location = start + point_idx / (item.number_of_points - 1) * direction
+                point_name = f"{item.name}_{point_idx}"
+                monitor_locations[point_name] = point_location.tolist()
+
+    return monitor_locations
+
+
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
 
-    translated_entity_dict = {
-        "start": [],
-        "end": [],
-        "numberOfPoints": [],
-        "type": "lineProbe",
-    }
-    for item in entity.stored_entities:
-        if isinstance(item, PointArray):
-            translated_entity_dict["start"].append(item.start.value.tolist())
-            translated_entity_dict["end"].append(item.end.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
-        if isinstance(item, Point):
-            translated_entity_dict["start"].append(item.location.value.tolist())
-            translated_entity_dict["end"].append(item.location.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(1)
+    translated_entity_dict = {"type": "probe"}
+    translated_entity_dict["monitorLocations"] = get_monitor_locations(entity.stored_entities)
 
     return translated_entity_dict
 
@@ -387,21 +392,9 @@ def inject_probe_info(entity: EntityList):
 def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
 
-    translated_entity_dict = {
-        "start": [],
-        "end": [],
-        "numberOfPoints": [],
-        "type": "lineProbe",
-    }
-    for item in entity.stored_entities:
-        if isinstance(item, PointArray):
-            translated_entity_dict["start"].append(item.start.value.tolist())
-            translated_entity_dict["end"].append(item.end.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
-        if isinstance(item, Point):
-            translated_entity_dict["start"].append(item.location.value.tolist())
-            translated_entity_dict["end"].append(item.location.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(1)
+    translated_entity_dict = {"type": "surfaceProbe"}
+
+    translated_entity_dict["monitorLocations"] = get_monitor_locations(entity.stored_entities)
 
     return translated_entity_dict
 
