@@ -820,14 +820,7 @@ def snappy_settings():
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
             bounding_box=Box(name="enclosure", center=(0, 0, 0) * u.m, size=(0.4, 0.8, 0.6) * u.m),
-            smooth_controls=SnappySmoothControls(
-                lambda_factor=0.3,
-                mu_factor=0.31,
-                iterations=5,
-                min_elem=3,
-                min_len=30 * u.mm,
-                included_angle=120 * u.deg,
-            ),
+            smooth_controls=SnappySmoothControls(lambda_factor=0.3, mu_factor=0.31, iterations=5),
         )
 
         param = SimulationParams(
@@ -884,7 +877,7 @@ def snappy_settings_off_position():
             ),
             bounding_box=Box(name="enclosure", center=(0, 0, 0) * u.m, size=(0.4, 0.8, 0.6) * u.m),
             smooth_controls=SnappySmoothControls(
-                lambda_factor=None, mu_factor=None, iterations=None, included_angle=None
+                lambda_factor=None, mu_factor=None, iterations=None
             ),
         )
 

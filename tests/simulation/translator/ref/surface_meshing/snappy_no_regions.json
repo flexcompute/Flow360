@@ -75,8 +75,7 @@
     "smoothingControls": {
         "lambda": 0.7,
         "mu": 0.71,
-        "iter": 5,
-        "includedAngle": 150
+        "iter": 5
     },
     "locationInMesh": {
         "fluid": [0, 0, 0]

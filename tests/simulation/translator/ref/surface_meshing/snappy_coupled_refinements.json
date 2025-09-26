@@ -119,8 +119,7 @@
     "smoothingControls": {
         "lambda": 0.7,
         "mu": 0.71,
-        "iter": 5,
-        "includedAngle": 150
+        "iter": 5
     },
     "locationInMesh": {
         "farfield": [0, 0, 0]

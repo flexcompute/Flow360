@@ -397,19 +397,6 @@ def snappy_mesher_json(input_params: SimulationParams):
                 smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
             ),
         }
-        if smoothing_settings.included_angle is None or np.isclose(
-            smoothing_settings.included_angle.to("degree").value.item(), 0
-        ):
-            translated["smoothingControls"]["includedAngle"] = None
-        else:
-            translated["smoothingControls"]["includedAngle"] = smoothing_settings.included_angle.to(
-                "degree"
-            ).value.item()
-
-        if smoothing_settings.min_elem is not None:
-            translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem
-        if smoothing_settings.min_len is not None:
-            translated["smoothingControls"]["minLen"] = smoothing_settings.min_len.value.item()
 
     # bounding box
     bounding_box = surface_meshing_params.bounding_box

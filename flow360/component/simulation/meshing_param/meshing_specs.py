@@ -444,16 +444,9 @@ class SnappySmoothControls(Flow360BaseModel):
 
     iterations: Optional[pd.NonNegativeInt], default: 5
         Number of smoothing iterations
-
-    min_elem: Optional[pd.NonNegativeInt], default: None
-    min_len: Optional[LengthType.NonNegative], default: None
-    included_angle: Optional[AngleType.NonNegative], default: 150°
     """
 
     # pylint: disable=no-member
     lambda_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.7)
     mu_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.71)
     iterations: Optional[pd.NonNegativeInt] = pd.Field(5)
-    min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
-    min_len: Optional[LengthType.NonNegative] = pd.Field(None)
-    included_angle: Optional[AngleType.NonNegative] = pd.Field(150 * u.deg)
