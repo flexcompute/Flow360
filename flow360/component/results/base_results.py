@@ -563,10 +563,11 @@ class PerEntityResultCSVModel(ResultCSVModel):
 
     @classmethod
     # pylint: disable=arguments-differ
-    def from_dict(cls, data: dict, group: dict):
+    def from_dict(cls, data: dict, group: dict = None):
         obj = super().from_dict(data)
         # pylint: disable=protected-access
-        obj._entity_groups = group
+        if group is not None:
+            obj._entity_groups = group
         return obj
 
     @property
@@ -656,16 +657,23 @@ class PerEntityResultCSVModel(ResultCSVModel):
         """
         Create new CSV model for the given entity groups.
         """
+
+        def full_name_pattern(word: str) -> re.Pattern:
+            # Find the pattern that matches the name exactly or the full name (zone/boundary)
+            return rf"^(?:{re.escape(word)}|[^/]+/{re.escape(word)})$"
+
         raw_values = {}
         for x_column in self._x_columns:
             raw_values[x_column] = np.array(self.raw_values[x_column])
         for name, entities in entity_groups.items():
-            self.filter(include=entities)
+            entity_patterns = [full_name_pattern(name) for name in entities]
+            self.filter(include=entity_patterns)
             for variable in self._variables:
+                partial_sum = np.array(self.values[f"total{variable}"])
                 if f"{name}_{variable}" not in raw_values:
-                    raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
+                    raw_values[f"{name}_{variable}"] = partial_sum
                     continue
-                raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
+                raw_values[f"{name}_{variable}"] += partial_sum
 
         raw_values = {key: val.tolist() for key, val in raw_values.items()}
         entity_groups = {key: sorted(val) for key, val in entity_groups.items()}

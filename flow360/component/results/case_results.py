@@ -51,6 +51,14 @@ _CFz_PRESSURE = "CFzPressure"
 _CMx_PRESSURE = "CMxPressure"
 _CMy_PRESSURE = "CMyPressure"
 _CMz_PRESSURE = "CMzPressure"
+_CL_SKIN_FRICTION = "CLSkinFriction"
+_CD_SKIN_FRICTION = "CDSkinFriction"
+_CFx_SKIN_FRICTION = "CFxSkinFriction"
+_CFy_SKIN_FRICTION = "CFySkinFriction"
+_CFz_SKIN_FRICTION = "CFzSkinFriction"
+_CMx_SKIN_FRICTION = "CMxSkinFriction"
+_CMy_SKIN_FRICTION = "CMySkinFriction"
+_CMz_SKIN_FRICTION = "CMzSkinFriction"
 _CL_VISCOUS = "CLViscous"
 _CD_VISCOUS = "CDViscous"
 _CFx_VISCOUS = "CFxViscous"
@@ -198,15 +206,14 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
         _CMx_PRESSURE,
         _CMy_PRESSURE,
         _CMz_PRESSURE,
-        _CL_VISCOUS,
-        _CD_VISCOUS,
-        _CFx_VISCOUS,
-        _CFy_VISCOUS,
-        _CFz_VISCOUS,
-        _CMx_VISCOUS,
-        _CMy_VISCOUS,
-        _CMz_VISCOUS,
-        _HEAT_TRANSFER,
+        _CL_SKIN_FRICTION,
+        _CD_SKIN_FRICTION,
+        _CFx_SKIN_FRICTION,
+        _CFy_SKIN_FRICTION,
+        _CFz_SKIN_FRICTION,
+        _CMx_SKIN_FRICTION,
+        _CMy_SKIN_FRICTION,
+        _CMz_SKIN_FRICTION,
     ]
 
     def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
