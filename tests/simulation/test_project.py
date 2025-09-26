@@ -209,16 +209,11 @@ def test_conflicting_entity_grouping_tags(mock_response, capsys):
 
     geo.group_faces_by_tag("allInOne")
 
-    with pytest.raises(
-        Flow360ConfigurationError,
-        match=re.escape(
-            "Conflicting entity (Surface) grouping tags found in the SimulationParams "
-            "(['faceId']) and the root asset (allInOne)."
-        ),
-    ):
-        new_params = set_up_params_for_uploading(
-            geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
-        )
+    # Conflicting grouping in `geo`(allInOne) and in params(faceId)
+    new_params = set_up_params_for_uploading(
+        geo, 1 * u.m, params, use_beta_mesher=False, use_geometry_AI=False
+    )
+    assert new_params.private_attribute_asset_cache.project_entity_info.face_group_tag == "faceId"
 
     with pytest.raises(
         Flow360ConfigurationError,

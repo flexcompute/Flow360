@@ -62,7 +62,7 @@ ProjectInterface = BaseInterface(
 )
 
 DraftInterface = BaseInterface(
-    resource_type="drafts", s3_transfer_method=None, endpoint="v2/drafts"
+    resource_type="drafts", s3_transfer_method=S3TransferType.DRAFT, endpoint="v2/drafts"
 )
 
 FolderInterface = BaseInterface(resource_type="Folder", s3_transfer_method=None, endpoint="folders")

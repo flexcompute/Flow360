@@ -67,6 +67,7 @@ from flow360.component.simulation.models.surface_models import (
     Rotational,
     SlaterPorousBleed,
     SlipWall,
+    Supersonic,
     SymmetryPlane,
     Temperature,
     TotalPressure,
@@ -142,6 +143,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    ImportedSurface,
     ReferenceGeometry,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -278,6 +280,7 @@ __all__ = [
     "TurbulenceModelControls",
     "Pressure",
     "TotalPressure",
+    "Supersonic",
     "Rotational",
     "Mach",
     "MassFlowRate",
@@ -308,4 +311,5 @@ __all__ = [
     "remove_user_variable",
     "StopCriterion",
     "MovingStatistic",
+    "ImportedSurface",
 ]

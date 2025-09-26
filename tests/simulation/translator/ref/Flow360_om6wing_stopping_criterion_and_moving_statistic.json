@@ -46,27 +46,16 @@
                 "animationFrequency": 1,
                 "animationFrequencyOffset": 0,
                 "computeTimeAverages": false,
-                "end": [
-                    [
+		"monitorLocations" : {"Point1" : [
                         -0.033058692145427476,
                         0.7024941059684825,
                         0.0
                     ]
-                ],
-                "numberOfPoints": [
-                    1
-                ],
+	        },
                 "outputFields": [
                     "Helicity"
                 ],
-                "start": [
-                    [
-                        -0.033058692145427476,
-                        0.7024941059684825,
-                        0.0
-                    ]
-                ],
-                "type": "lineProbe"
+                "type": "probe"
             }
         },
         "outputFields": []
