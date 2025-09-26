@@ -25,6 +25,7 @@ from flow360.component.simulation.models.surface_models import (
     Pressure,
     SlaterPorousBleed,
     SlipWall,
+    Supersonic,
     SurfaceModelTypes,
     SymmetryPlane,
     Temperature,
@@ -1291,6 +1292,15 @@ def boundary_spec_translator(model: SurfaceModelTypes, op_acoustic_to_static_pre
             boundary["totalPressureRatio"] = (
                 model_dict["spec"]["value"] * op_acoustic_to_static_pressure_ratio
             )
+        if isinstance(model.spec, Supersonic):
+            boundary["type"] = "SupersonicInflow"
+            boundary["totalPressureRatio"] = (
+                model_dict["spec"]["totalPressure"] * op_acoustic_to_static_pressure_ratio
+            )
+            boundary["staticPressureRatio"] = (
+                model_dict["spec"]["staticPressure"] * op_acoustic_to_static_pressure_ratio
+            )
+
         elif isinstance(model.spec, MassFlowRate):
             boundary["type"] = "MassInflow"
             boundary["massFlowRate"] = model_dict["spec"]["value"]
