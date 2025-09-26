@@ -216,6 +216,26 @@ class MassFlowRate(Flow360BaseModel):
     )
 
 
+class Supersonic(Flow360BaseModel):
+    """
+    :class:`Supersonic` class to specify the supersonic conditions for `Inflow`.
+
+    Example
+    -------
+
+    >>> fl.Supersonic(
+    ...     total_pressure = 7.90e6 * fl.u.Pa,
+    ...     static_pressure = 1.01e6 * fl.u.Pa,
+    ... )
+
+    """
+
+    type_name: Literal["Supersonic"] = pd.Field("Supersonic", frozen=True)
+    # pylint: disable=no-member
+    total_pressure: PressureType.Positive = pd.Field(description="The total pressure.")
+    static_pressure: PressureType.Positive = pd.Field(description="The static pressure.")
+
+
 class Mach(SingleAttributeModel):
     """
     :class:`Mach` class to specify Mach number for the `Inflow`
@@ -569,9 +589,9 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     total_temperature: AbsoluteTemperatureType = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
     )
-    spec: Union[TotalPressure, MassFlowRate] = pd.Field(
+    spec: Union[TotalPressure, MassFlowRate, Supersonic] = pd.Field(
         discriminator="type_name",
-        description="Specify the total pressure or the mass flow rate at the `Inflow` boundary.",
+        description="Specify additional conditions at the `Inflow` boundary.",
     )
     velocity_direction: Optional[Axis] = pd.Field(
         None,
