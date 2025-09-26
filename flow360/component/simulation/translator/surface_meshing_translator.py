@@ -3,8 +3,6 @@
 from copy import deepcopy
 from typing import List
 
-import numpy as np
-
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
