@@ -169,14 +169,28 @@ class MeshingParams(Flow360BaseModel):
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
-        total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
+        total_automated_farfield = sum(
+            isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
         )
-        if total_farfield == 0:
-            raise ValueError("Farfield zone is required in `volume_zones`.")
+        total_user_defined_farfield = sum(
+            isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
+        )
+        total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
 
-        if total_farfield > 1:
-            raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+        if total_custom_volume:
+            total_user_defined_farfield = 0
+            log.warning(
+                "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
+            )
+
+        if total_automated_farfield > 1:
+            raise ValueError("Only one AutomatedFarfield zone is allowed in `volume_zones`.")
+
+        if total_user_defined_farfield > 1:
+            raise ValueError("Only one UserDefinedFarfield zone is allowed in `volume_zones`.")
+
+        if (total_automated_farfield + total_user_defined_farfield + total_custom_volume) == 0:
+            raise ValueError("Farfield zone is required in `volume_zones`.")
 
         return v
 
@@ -379,26 +393,75 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     @pd.field_validator("zones", mode="after")
     @classmethod
     def _check_volume_zones_has_farfied(cls, v):
-        total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
-        )
-        if total_farfield == 0:
-            raise ValueError("Farfield zone is required in `volume_zones`.")
 
-        if total_farfield > 1:
-            raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+        total_automated_farfield = sum(
+            isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
+        )
+        total_user_defined_farfield = sum(
+            isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
+        )
+        total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
+        total_seedpoint_zone = sum(isinstance(volume_zone, SeedpointZone) for volume_zone in v)
+
+        if total_custom_volume or total_seedpoint_zone:
+            total_user_defined_farfield = 0
+            log.warning(
+                "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
+            )
+
+        if total_automated_farfield > 1:
+            raise ValueError("Only one AutomatedFarfield zone is allowed in `volume_zones`.")
+
+        if total_user_defined_farfield > 1:
+            raise ValueError("Only one UserDefinedFarfield zone is allowed in `volume_zones`.")
+
+        if total_automated_farfield + total_user_defined_farfield > 1:
+            raise ValueError("Cannot use AutomatedFarfield and UserDefinedFarfield simultaneously.")
+
+        if (
+            total_user_defined_farfield
+            + total_automated_farfield
+            + total_custom_volume
+            + total_seedpoint_zone
+        ) == 0:
+            raise ValueError("At least one zone defining the farfield is required.")
+
+        if total_automated_farfield and (total_seedpoint_zone or total_custom_volume):
+            raise ValueError(
+                "SeedpointZone and CustomVolume cannot be used with AutomatedFarfield."
+            )
+
+        return v
+
+    @pd.field_validator("zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        """Ensure there won't be duplicated volume zone names."""
+
+        if v is None:
+            return v
+        to_be_generated_volume_zone_names = set()
+        for volume_zone in v:
+            if not isinstance(volume_zone, (CustomVolume, SeedpointZone)):
+                continue
+            if volume_zone.name in to_be_generated_volume_zone_names:
+                raise ValueError(
+                    f"Multiple CustomVolume or SeedpointZone with the same name `{volume_zone.name}` are not allowed."
+                )
+            to_be_generated_volume_zone_names.add(volume_zone.name)
 
         return v
 
     @pd.model_validator(mode="after")
     def _check_snappy_zones(self) -> Self:
         if isinstance(self.surface_meshing, SnappySurfaceMeshingParams):
+            if self.automated_farfield_method != "auto" and not sum(
+                isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
+            ):
+                raise ValueError(
+                    "snappyHexMeshing requires at least one SeedpointZone when not using AutomatedFarfield."
+                )
             for zone in self.zones:  # pylint: disable=not-an-iterable
-                if isinstance(zone, UserDefinedFarfield):
-                    if zone.point_in_mesh is None:
-                        raise ValueError(
-                            "When using snappy with user defined farfield, point in mesh has to be given."
-                        )
                 if isinstance(zone, CustomVolume):
                     raise ValueError(
                         "Volume zones with snappyHexMeshing are defined using SeedpointZones, not CustomVolumes."
@@ -407,11 +470,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
             for zone in self.zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, SeedpointZone):
                     raise ValueError("Seedpoint zones are applicable only with snappyHexMeshing.")
-                if isinstance(zone, UserDefinedFarfield):
-                    if zone.point_in_mesh is not None:
-                        log.warning(
-                            "Seedpoint in UserDefinedFarfield is applicable only with snappyHexMeshing."
-                        )
+
         return self
 
     @pd.model_validator(mode="after")

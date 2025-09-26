@@ -21,7 +21,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Cylinder, SnappyBody, Surface
+from flow360.component.simulation.primitives import (
+    Cylinder,
+    SeedpointZone,
+    SnappyBody,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 
@@ -412,7 +417,7 @@ def test_require_mesh_zones():
                     min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
                 ),
             ),
-            zones=[UserDefinedFarfield(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
+            zones=[SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0) * u.mm)],
         )
 
     with pytest.raises(ValueError):

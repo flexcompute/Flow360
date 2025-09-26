@@ -691,7 +691,7 @@ def snappy_coupled_refinements():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
                 volume_meshing=vol_meshing_params,
-                zones=[UserDefinedFarfield(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)],
+                zones=[SeedpointZone(name="farfield", point_in_mesh=[0, 0, 0] * u.mm)],
             ),
         )
     return param
@@ -776,7 +776,7 @@ def snappy_refinements_no_regions():
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
-                zones=[UserDefinedFarfield(name="fluid", point_in_mesh=[0, 0, 0] * u.m)],
+                zones=[SeedpointZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m)],
             ),
         )
     return param
@@ -837,7 +837,7 @@ def snappy_settings():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
                 zones=[
-                    UserDefinedFarfield(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                    SeedpointZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
                     SeedpointZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
                 ],
             ),
@@ -895,7 +895,7 @@ def snappy_settings_off_position():
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
                 zones=[
-                    UserDefinedFarfield(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
+                    SeedpointZone(name="fluid", point_in_mesh=[0, 0, 0] * u.m),
                     SeedpointZone(name="solid", point_in_mesh=[0.001, 0.002, 0.003] * u.m),
                 ],
             ),

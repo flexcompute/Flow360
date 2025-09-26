@@ -254,7 +254,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     ##::  Step 2:  Get farfield
     for zone in volume_zones:
-        if isinstance(zone, UserDefinedFarfield):
+        if isinstance(zone, (UserDefinedFarfield, CustomVolume, SeedpointZone)):
             translated["farfield"] = {"type": "user-defined"}
             break
 
