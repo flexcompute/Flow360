@@ -1,10 +1,9 @@
 {
-    "version": "25.7.1b1",
+    "version": "25.7.2b1",
     "unit_system": {
         "name": "SI"
     },
     "meshing": {
-        "type": "MeshingParams",
         "refinement_factor": 1.0,
         "gap_treatment_strength": 0.0,
         "defaults": {

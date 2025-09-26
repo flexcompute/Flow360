@@ -7,7 +7,15 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.expressions import StringExpression
-from flow360.component.simulation.primitives import Cylinder, GenericVolume, Surface
+from flow360.component.simulation.primitives import (
+    CustomVolume,
+    Cylinder,
+    GenericVolume,
+    Surface,
+)
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     get_validation_info,
@@ -94,7 +102,7 @@ class UserDefinedDynamic(Flow360BaseModel):
         + "For input variables that already specified the source in the name (like bet_NUM_torque) "
         + "this entry does not have any effect.",
     )
-    output_target: Optional[Union[Cylinder, GenericVolume, Surface]] = pd.Field(
+    output_target: Optional[Union[Cylinder, GenericVolume, Surface, CustomVolume]] = pd.Field(
         None,
         description="The target to which the output variables belong to. For example this can be the rotating "
         + "volume zone name. Only one output target is supported per user defined dynamics instance. Only "
@@ -132,5 +140,22 @@ class UserDefinedDynamic(Flow360BaseModel):
         ):
             raise ValueError(
                 f"Boundary `{value.name}` will likely be deleted after mesh generation. Therefore it cannot be used."
+            )
+        return value
+
+    @pd.field_validator("output_target", mode="after")
+    @classmethod
+    def _ensure_custom_volume_is_listed_under_volume_zones(
+        cls, value: Optional[Union[Cylinder, GenericVolume, Surface, CustomVolume]]
+    ):
+        """Ensure parent volume is a custom volume."""
+        if value is None:
+            return value
+        validation_info = get_validation_info()
+        if validation_info is None or not isinstance(value, CustomVolume):
+            return value
+        if value.name not in validation_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones."
             )
         return value

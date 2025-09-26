@@ -3,7 +3,7 @@ Support class and functions for project interface.
 """
 
 import datetime
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, get_args
 
 import pydantic as pd
 
@@ -14,11 +14,17 @@ from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
     PointArray2D,
     Slice,
+)
+from flow360.component.simulation.outputs.outputs import (
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
+    MonitorOutputType,
 )
 from flow360.component.simulation.primitives import (
     Box,
@@ -267,18 +273,16 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         return entity_info
     # pylint: disable=protected-access
     entity_types = [
-        (Surface, "face_group_tag", entity_info._get_default_grouping_tag("face")),
+        (Surface, "face_group_tag"),
     ]
 
     if entity_info.edge_ids:
-        entity_types.append((Edge, "edge_group_tag", entity_info._get_default_grouping_tag("edge")))
+        entity_types.append((Edge, "edge_group_tag"))
 
     if entity_info.body_ids:
-        entity_types.append(
-            (GeometryBodyGroup, "body_group_tag", entity_info._get_default_grouping_tag("body"))
-        )
+        entity_types.append((GeometryBodyGroup, "body_group_tag"))
 
-    for entity_type, entity_grouping_tags, default_grouping_tag in entity_types:
+    for entity_type, entity_grouping_tags in entity_types:
         used_tags = set()
         _get_used_tags(params, entity_type, used_tags)
 
@@ -288,19 +292,13 @@ def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> Entit
         used_tags = sorted(list(used_tags))
         current_tag = getattr(entity_info, entity_grouping_tags)
         if len(used_tags) == 1 and current_tag != used_tags[0]:
-            if current_tag == default_grouping_tag:
-                log.warning(
-                    f"Auto reset the grouping to the one in the SimulationParams ({used_tags[0]})."
-                )
-                with model_attribute_unlock(entity_info, entity_grouping_tags):
-                    setattr(entity_info, entity_grouping_tags, used_tags[0])
-            else:
-                # User specified new grouping
-                raise Flow360ConfigurationError(
-                    f"Conflicting entity ({entity_type.__name__}) grouping tags found "
-                    f"in the SimulationParams ({used_tags}) and "
-                    f"the root asset ({current_tag})."
-                )
+            log.warning(
+                f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
+                f" and SimulationParams ({used_tags[0]}). "
+                "Ignoring the geometry object and using the one in the SimulationParams."
+            )
+            with model_attribute_unlock(entity_info, entity_grouping_tags):
+                setattr(entity_info, entity_grouping_tags, used_tags[0])
 
         if len(used_tags) > 1:
             raise Flow360ConfigurationError(
@@ -343,6 +341,35 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
         if getattr(params.reference_geometry, field) is None:
             setattr(params.reference_geometry, field, getattr(default_reference_geometry, field))
 
+    return params
+
+
+def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
+    """
+    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
+    """
+    if not params.models:
+        return params
+    stopping_criterion = None
+    for model in params.models:
+        if not isinstance(model, Fluid):
+            continue
+        stopping_criterion = model.stopping_criterion
+    if not stopping_criterion:
+        return params
+    monitor_output_ids = []
+    if params.outputs is not None:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            monitor_output_ids.append(output.private_attribute_id)
+    for criterion in stopping_criterion:
+        monitor_output = criterion.monitor_output
+        if isinstance(monitor_output, str):
+            continue
+        if monitor_output.private_attribute_id not in monitor_output_ids:
+            params.outputs.append(monitor_output)
+            monitor_output_ids.append(monitor_output.private_attribute_id)
     return params
 
 
@@ -391,6 +418,10 @@ def set_up_params_for_uploading(
     params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
 
     params = _set_up_default_reference_geometry(params, length_unit)
+    params = _set_up_monitor_output_from_stopping_criterion(params=params)
+
+    # Convert all reference of UserVariables to VariableToken
+    params = save_user_variables(params)
 
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
@@ -414,3 +445,14 @@ def validate_params_with_context(params, root_item_type, up_to):
     )
 
     return params, errors
+
+
+def upload_imported_surfaces_to_draft(params, draft):
+    """Upload imported surfaces to draft"""
+
+    imported_surface_file_paths = []
+    for output in params.outputs:
+        if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+            for surface in output.entities.stored_entities:
+                imported_surface_file_paths.append(surface.file_name)
+    draft.upload_imported_surfaces(imported_surface_file_paths)

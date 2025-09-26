@@ -56,6 +56,7 @@ class VariableContextInfo(Flow360BaseModel):
 
     name: str
     value: ValueOrExpression.configure(allow_run_time_expression=True)[AnyNumericType]  # type: ignore
+    post_processing: bool = pd.Field()
     description: Optional[str] = pd.Field(None)
 
     @pd.field_validator("value", mode="after")
@@ -328,7 +329,7 @@ class Variable(Flow360BaseModel):
         """
         Supporting syntax like `a = fl.Variable(name="a", value=1, description="some description")`.
         """
-        if "name" not in values:
+        if values is None or "name" not in values:
             raise ValueError("`name` is required for variable declaration.")
 
         if "value" in values:
@@ -370,6 +371,12 @@ class Variable(Flow360BaseModel):
             default_context.set_metadata(values["name"], "description", values["description"])
         values.pop("description", None)
 
+        if "post_processing" in values:
+            default_context.set_metadata(
+                values["name"], "post_processing", values["post_processing"]
+            )
+        values.pop("post_processing", None)
+
         return values
 
     @check_vector_binary_arithmetic
@@ -397,13 +404,13 @@ class Variable(Flow360BaseModel):
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"{self.name} / {str_arg}")
+        return Expression(expression=f"{self.name} / ({str_arg})")
 
     @check_vector_binary_arithmetic
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"{self.name} // {str_arg}")
+        return Expression(expression=f"{self.name} // ({str_arg})")
 
     @check_vector_binary_arithmetic
     def __mod__(self, other):
@@ -1024,12 +1031,12 @@ class Expression(Flow360BaseModel, Evaluable):
     def __truediv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"({self.expression}) / {str_arg}")
+        return Expression(expression=f"({self.expression}) / ({str_arg})")
 
     def __floordiv__(self, other):
         (arg, parenthesize) = _convert_argument(other)
         str_arg = arg if not parenthesize else f"({arg})"
-        return Expression(expression=f"({self.expression}) // {str_arg}")
+        return Expression(expression=f"({self.expression}) // ({str_arg})")
 
     def __mod__(self, other):
         (arg, parenthesize) = _convert_argument(other)
@@ -1379,6 +1386,16 @@ def save_user_variables(params):
     for name, value in default_context._values.items():
         if "." in name:
             continue
+
+        # Get all output variables:
+        post_processing_variables = set()
+        for item in params.outputs if params.outputs else []:
+            if not "output_fields" in item.__class__.model_fields:
+                continue
+            for item in item.output_fields.items:
+                if isinstance(item, UserVariable):
+                    post_processing_variables.add(item.name)
+
         if params.private_attribute_asset_cache.variable_context is None:
             params.private_attribute_asset_cache.variable_context = []
         params.private_attribute_asset_cache.variable_context.append(
@@ -1386,6 +1403,7 @@ def save_user_variables(params):
                 name=name,
                 value=value,
                 description=default_context.get_metadata(name, "description"),
+                post_processing=name in post_processing_variables,
             )
         )
     return params
@@ -1543,3 +1561,32 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
         _get_dependent_expressions(Expression(expression=expr), dependent_expressions)
 
     return list(used_expressions.union(dependent_expressions))
+
+
+def is_variable_with_unit_system_as_units(value: dict) -> bool:
+    """
+    [Frontend] Check if the value is a variable with a unit system as units.
+    """
+    return (
+        not isinstance(value, dict)
+        or "units" not in value
+        or value["units"]
+        not in (
+            "SI_unit_system",
+            "Imperial_unit_system",
+            "CGS_unit_system",
+        )
+    )
+
+
+def infer_units_by_unit_system(value: dict, unit_system: str, value_dimensions):
+    """
+    [Frontend] Infer the units based on the unit system.
+    """
+    if unit_system == "SI_unit_system":
+        value["units"] = u.unit_systems.mks_unit_system[value_dimensions]
+    if unit_system == "Imperial_unit_system":
+        value["units"] = u.unit_systems.imperial_unit_system[value_dimensions]
+    if unit_system == "CGS_unit_system":
+        value["units"] = u.unit_systems.cgs_unit_system[value_dimensions]
+    return value

@@ -248,6 +248,7 @@ class GenericVolume(_VolumeEntityBase):
     Do not expose.
     This type of entity will get auto-constructed by assets when loading metadata.
     By design these GenericVolume entities should only contain basic connectivity/mesh information.
+    These can only come from uploaded volume mesh.
     """
 
     private_attribute_entity_type_name: Literal["GenericVolume"] = pd.Field(
@@ -710,6 +711,11 @@ class CustomVolume(_VolumeEntityBase):
     )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
+    axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
+    axis: Optional[Axis] = pd.Field(None)  # Rotation support
+    # pylint: disable=no-member
+    center: Optional[LengthType.Point] = pd.Field(None, description="")  # Rotation support
+
     @pd.field_validator("boundaries", mode="after")
     @classmethod
     def ensure_unique_boundary_names(cls, v):
@@ -719,7 +725,7 @@ class CustomVolume(_VolumeEntityBase):
         return v
 
     @pd.model_validator(mode="after")
-    def ensure_usable(self):
+    def ensure_beta_mesher_and_user_defined_farfield(self):
         """Check if the beta mesher is enabled and that the user is using user defined farfield."""
         validation_info = get_validation_info()
         if validation_info is None:
@@ -729,3 +735,28 @@ class CustomVolume(_VolumeEntityBase):
         raise ValueError(
             "CustomVolume is only supported when beta mesher and user defined farfield are enabled."
         )
+
+
+def check_custom_volume_creation(value):
+    """Check if the custom volume is listed under meshing->volume_zones."""
+    validation_info = get_validation_info()
+    if validation_info is None:
+        return value
+    for volume in value:
+        if not isinstance(volume, CustomVolume):
+            continue
+        if volume.name not in validation_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"CustomVolume {volume.name} is not listed under meshing->volume_zones."
+            )
+    return value
+
+
+class EntityListWithCustomVolume(EntityList):
+    """Entity list with customized validators for CustomVolume"""
+
+    @pd.field_validator("stored_entities", mode="after")
+    @classmethod
+    def custom_volume_validator(cls, value):
+        """Run all validators"""
+        return check_custom_volume_creation(value)

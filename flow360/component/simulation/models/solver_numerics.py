@@ -22,7 +22,12 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Box, GenericVolume
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    EntityListWithCustomVolume,
+    GenericVolume,
+)
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -165,6 +170,8 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     C_v1: NonNegativeFloat = pd.Field(7.1)
     C_vonKarman: NonNegativeFloat = pd.Field(0.41)
     C_w2: float = pd.Field(0.3)
+    C_w4: float = pd.Field(0.21)
+    C_w5: float = pd.Field(1.5)
     C_t3: NonNegativeFloat = pd.Field(1.2)
     C_t4: NonNegativeFloat = pd.Field(0.5)
     C_min_rd: NonNegativeFloat = pd.Field(10.0)
@@ -235,7 +242,7 @@ class TurbulenceModelControls(Flow360BaseModel):
         None, description="Force RANS or LES mode in a specific control region."
     )
 
-    entities: EntityList[GenericVolume, Box] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume, Box] = pd.Field(
         alias="volumes",
         description="The entity in which to apply the `TurbulenceMOdelControls``. "
         + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
@@ -420,6 +427,10 @@ class SpalartAllmaras(TurbulenceModelSolver):
         description="The strength of gradient limiter used in reconstruction of solution "
         + "variables at the faces (specified in the range [0.0, 2.0]). 0.0 corresponds to "
         + "setting the gradient equal to zero, and 2.0 means no limiting.",
+    )
+    low_reynolds_correction: Optional[bool] = pd.Field(
+        False,
+        description="Use low Reynolds number correction for Spalart-Allmaras turbulence model",
     )
 
 

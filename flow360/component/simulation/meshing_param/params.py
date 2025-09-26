@@ -41,6 +41,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     SeedpointZone,
+    CustomVolume
 )
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,

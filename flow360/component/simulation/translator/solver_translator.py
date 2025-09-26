@@ -1,7 +1,8 @@
 """Flow360 solver setting parameter translator."""
 
 # pylint: disable=too-many-lines
-from typing import Type, Union
+import hashlib
+from typing import Type, Union, get_args
 
 import unyt as u
 
@@ -63,6 +64,7 @@ from flow360.component.simulation.outputs.outputs import (
     ImportedSurfaceOutput,
     Isosurface,
     IsosurfaceOutput,
+    MonitorOutputType,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -75,6 +77,7 @@ from flow360.component.simulation.outputs.outputs import (
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageStreamlineOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
@@ -263,6 +266,8 @@ def translate_output_fields(
         StreamlineOutput,
         ImportedSurfaceOutput,
         TimeAverageImportedSurfaceOutput,
+        StreamlineOutput,
+        TimeAverageStreamlineOutput,
     ],
 ):
     """Get output fields"""
@@ -297,6 +302,7 @@ def monitor_translator(
         TimeAverageProbeOutput,
         SurfaceProbeOutput,
         TimeAverageSurfaceProbeOutput,
+        SurfaceIntegralOutput,
         SurfaceSliceOutput,
     ],
 ):
@@ -356,24 +362,29 @@ def inject_isosurface_info(entity: Isosurface, input_params: SimulationParams):
     return return_dict
 
 
+def get_monitor_locations(entities: EntityList):
+    """get monitor locations"""
+
+    monitor_locations = {}
+    for item in entities:
+        if isinstance(item, Point):
+            monitor_locations[item.name] = item.location.value.tolist()
+        elif isinstance(item, PointArray):
+            start = item.start.value
+            direction = item.end.value - item.start.value
+            for point_idx in range(item.number_of_points):
+                point_location = start + point_idx / (item.number_of_points - 1) * direction
+                point_name = f"{item.name}_{point_idx}"
+                monitor_locations[point_name] = point_location.tolist()
+
+    return monitor_locations
+
+
 def inject_probe_info(entity: EntityList):
     """inject entity info"""
 
-    translated_entity_dict = {
-        "start": [],
-        "end": [],
-        "numberOfPoints": [],
-        "type": "lineProbe",
-    }
-    for item in entity.stored_entities:
-        if isinstance(item, PointArray):
-            translated_entity_dict["start"].append(item.start.value.tolist())
-            translated_entity_dict["end"].append(item.end.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
-        if isinstance(item, Point):
-            translated_entity_dict["start"].append(item.location.value.tolist())
-            translated_entity_dict["end"].append(item.location.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(1)
+    translated_entity_dict = {"type": "probe"}
+    translated_entity_dict["monitorLocations"] = get_monitor_locations(entity.stored_entities)
 
     return translated_entity_dict
 
@@ -381,21 +392,9 @@ def inject_probe_info(entity: EntityList):
 def inject_surface_probe_info(entity: EntityList):
     """inject entity info"""
 
-    translated_entity_dict = {
-        "start": [],
-        "end": [],
-        "numberOfPoints": [],
-        "type": "lineProbe",
-    }
-    for item in entity.stored_entities:
-        if isinstance(item, PointArray):
-            translated_entity_dict["start"].append(item.start.value.tolist())
-            translated_entity_dict["end"].append(item.end.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(item.number_of_points)
-        if isinstance(item, Point):
-            translated_entity_dict["start"].append(item.location.value.tolist())
-            translated_entity_dict["end"].append(item.location.value.tolist())
-            translated_entity_dict["numberOfPoints"].append(1)
+    translated_entity_dict = {"type": "surfaceProbe"}
+
+    translated_entity_dict["monitorLocations"] = get_monitor_locations(entity.stored_entities)
 
     return translated_entity_dict
 
@@ -768,11 +767,25 @@ def process_output_fields_for_udf(input_params: SimulationParams):
     return generated_udfs, list(user_variable_udfs.values())
 
 
-def translate_streamline_output(output_params: list):
+def translate_streamline_output(output_params: list, streamline_class):
     """Translate streamline output settings."""
-    streamline_output = {"Points": [], "PointArrays": [], "PointArrays2D": []}
+    streamline_output = {
+        "Points": [],
+        "PointArrays": [],
+        "PointArrays2D": [],
+        "outputFields": [],
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+    }
     for output in output_params:
-        if isinstance(output, StreamlineOutput):
+        if isinstance(output, streamline_class):
+            streamline_output["outputFields"] = translate_output_fields(output)["outputFields"]
+            # streamline_output["outputFields"].extend(output.output_fields.items)
+            if isinstance(output, TimeAverageStreamlineOutput):
+                streamline_output["startAverageIntegrationStep"] = output.start_step
+                streamline_output["animationFrequencyTimeAverage"] = -1
+                streamline_output["animationFrequencyTimeAverageOffset"] = 0
+
             for entity in output.entities.stored_entities:
                 if isinstance(entity, Point):
                     point = {"name": entity.name, "location": entity.location.value.tolist()}
@@ -948,7 +961,37 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     ##:: Step8: Get translated["streamlineOutput"]
     if has_instance_in_list(outputs, StreamlineOutput):
-        translated["streamlineOutput"] = translate_streamline_output(outputs)
+        translated["streamlineOutput"] = translate_streamline_output(outputs, StreamlineOutput)
+
+    if has_instance_in_list(outputs, TimeAverageStreamlineOutput):
+        translated["timeAverageStreamlineOutput"] = translate_streamline_output(
+            outputs, TimeAverageStreamlineOutput
+        )
+
+    ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
+    if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):
+        process_user_variables_for_integral(
+            outputs,
+            ImportedSurfaceIntegralOutput,
+        )
+        translated["importedSurfaceIntegralOutput"] = translate_imported_surface_integral_output(
+            outputs,
+        )
+
+    ##:: Step10: Sort all "output_fields" everywhere
+    # Recursively sort all "outputFields" lists in the translated dict
+    def _sort_output_fields_in_dict(d):
+        if isinstance(d, dict):
+            for k, v in d.items():
+                if k == "outputFields" and isinstance(v, list):
+                    v.sort()
+                else:
+                    _sort_output_fields_in_dict(v)
+        elif isinstance(d, list):
+            for item in d:
+                _sort_output_fields_in_dict(item)
+
+    _sort_output_fields_in_dict(translated)
 
     ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
     if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):
@@ -1356,6 +1399,8 @@ def rename_modeling_constants(modeling_constants):
         replace_dict_key(modeling_constants, "CV1", "C_v1")
         replace_dict_key(modeling_constants, "CVonKarman", "C_vonKarman")
         replace_dict_key(modeling_constants, "CW2", "C_w2")
+        replace_dict_key(modeling_constants, "CW4", "C_w4")
+        replace_dict_key(modeling_constants, "CW5", "C_w5")
         replace_dict_key(modeling_constants, "CT3", "C_t3")
         replace_dict_key(modeling_constants, "CT4", "C_t4")
         replace_dict_key(modeling_constants, "CMinRd", "C_min_rd")
@@ -1386,6 +1431,51 @@ def update_controls_modeling_constants(controls, translated):
                 continue
             rename_modeling_constants(control_modeling_constants)
             control["modelConstants"] = control.pop("modelingConstants")
+
+
+def check_moving_statistic_existence(params: SimulationParams):
+    """Check if moving statistic exists in the monitor outputs"""
+    if not params.outputs:
+        return False
+    for output in params.outputs:
+        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+            continue
+        if output.moving_statistic is None:
+            continue
+        return True
+    return False
+
+
+def check_stopping_criterion_existence(params: SimulationParams):
+    """Check if stopping criterion exists in the Fluid model"""
+    if not params.models:
+        return False
+    for model in params.models:
+        if isinstance(model, Fluid):
+            return bool(model.stopping_criterion)
+    return False
+
+
+def calculate_monitor_semaphore_hash(params: SimulationParams):
+    """Get the hash for monitor processor's semaphore"""
+    json_string_list = []
+    if params.outputs:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            if output.moving_statistic is None:
+                continue
+            json_string_list.append(output.private_attribute_id)
+    if params.models:
+        for model in params.models:
+            if isinstance(model, Fluid) and model.stopping_criterion is not None:
+                json_string_list.extend(
+                    [criterion.model_dump_json() for criterion in model.stopping_criterion]
+                )
+    combined_string = "".join(sorted(json_string_list))
+    hasher = hashlib.sha256()
+    hasher.update(combined_string.encode("utf-8"))
+    return hasher.hexdigest()
 
 
 # pylint: disable=too-many-statements
@@ -1475,6 +1565,7 @@ def get_solver_json(
     dump_dict(input_params.time_stepping)
 
     ##:: Step 6: Get solver settings and initial condition
+    translated["runControl"] = {}
     for model in input_params.models:
         if isinstance(model, Fluid):
             if isinstance(op, LiquidOperatingCondition):
@@ -1562,6 +1653,11 @@ def get_solver_json(
                                 "axes": [list(axes[0]), list(axes[1])],
                             }
                         )
+            translated["runControl"]["shouldCheckStopCriterion"] = bool(model.stopping_criterion)
+            if model.stopping_criterion:
+                translated["runControl"]["stopCriterion"] = [
+                    dump_dict(criterion) for criterion in model.stopping_criterion
+                ]
 
             translated["initialCondition"] = get_navier_stokes_initial_condition(
                 model.initial_condition
@@ -1705,6 +1801,13 @@ def get_solver_json(
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
+    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
+        input_params
+    ) or check_stopping_criterion_existence(input_params)
+    if translated["runControl"]["externalProcessMonitorOutput"]:
+        translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
+            input_params
+        )
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
