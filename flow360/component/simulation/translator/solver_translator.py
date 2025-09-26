@@ -505,6 +505,9 @@ def translate_surface_output(
     surface_output["surfaces"] = translate_setting_and_apply_to_all_entities(
         output_params,
         surface_output_class,
+        entity_injection_func=lambda entity: (
+            {} if entity.full_name != BOUNDARY_FULL_NAME_WHEN_NOT_FOUND else None
+        ),
         translation_func=translate_output_fields,
         to_list=False,
     )

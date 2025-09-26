@@ -189,3 +189,59 @@ def test_update_zone_info_from_geometry_with_missing_symmetric():
     assert (
         BOUNDARY_FULL_NAME_WHEN_NOT_FOUND not in translated["surfaceOutput"]["surfaces"]
     )  # Silently removed
+    assert "symmetric" not in translated["boundaries"]  # Silently removed
+
+
+def test_update_zone_info_from_geometry_with_missing_wall():
+    mesh_meta_data = {
+        "zones": {
+            "farfield": {
+                "boundaryNames": ["farfield/leftWing", "farfield/farfield", "farfield/rightWing"],
+                "donorInterfaceNames": [],
+                "donorZoneNames": [],
+                "receiverInterfaceNames": [],
+            }
+        }
+    }
+    with open(
+        os.path.join(os.path.dirname(__file__), "data", "simulation_missing_from_meshing.json"),
+        "r",
+    ) as f:
+        param_as_dict = json.load(f)
+    param, _, _ = validate_model(
+        params_as_dict=param_as_dict,
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="Case",
+    )
+    assert param
+
+    param._update_param_with_actual_volume_mesh_meta(mesh_meta_data)
+
+    wall = param.used_entity_registry.find_by_naming_pattern(pattern="fuselage")[0]
+    assert wall.name == "fuselage"
+    assert wall.private_attribute_full_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+    translated = get_solver_json(param, mesh_unit="m")
+    assert "fuselage" not in translated["boundaries"]  # Silently removed
+    # only existing boundaries
+    assert BOUNDARY_FULL_NAME_WHEN_NOT_FOUND not in translated["surfaceOutput"]["surfaces"]
+    assert "farfield/fuselage" not in translated["surfaceOutput"]["surfaces"]
+    assert (
+        BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+        not in translated["surfaceSliceOutput"]["slices"][0]["surfacePatches"]
+    )
+    assert (
+        "farfield/fuselage" not in translated["surfaceSliceOutput"]["slices"][0]["surfacePatches"]
+    )
+    assert (
+        BOUNDARY_FULL_NAME_WHEN_NOT_FOUND
+        not in translated["surfaceMonitorOutput"]["monitors"]["Surface probe output"][
+            "surfacePatches"
+        ]
+    )
+    assert (
+        "farfield/fuselage"
+        not in translated["surfaceMonitorOutput"]["monitors"]["Surface probe output"][
+            "surfacePatches"
+        ]
+    )
