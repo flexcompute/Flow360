@@ -1459,6 +1459,8 @@ class Chart2D(BaseChart2D):
                 self.y = new_value
             else:
                 self.y = self._overload_include_exclude(include, exclude, self.y)
+            object.__setattr__(self, "include", include)
+            object.__setattr__(self, "exclude", exclude)
         return self
 
     @pd.model_validator(mode="after")
@@ -1632,12 +1634,15 @@ class Chart2D(BaseChart2D):
                     f"background={self.background} can be only used with x == x_slicing_force_distribution/X"
                     + " OR x == y_slicing_force_distribution/Y"
                 )
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            print(self.exclude)
             background = Chart3D(
                 show="boundaries",
                 camera=camera,
                 fig_name="background_" + self.fig_name,
                 include=self.include,
                 exclude=self.exclude,
+                # exclude=['blk-1/WT_ground_close', 'blk-1/WT_ground_patch', 'blk-1/WT_side1', 'blk-1/WT_side2', 'blk-1/WT_inlet', 'blk-1/WT_outlet', 'blk-1/WT_ceiling', 'blk-1/WT_ground_front', 'blk-1/WT_ground'],
             )
             return background
         return None
