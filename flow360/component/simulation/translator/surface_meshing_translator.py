@@ -433,7 +433,7 @@ def snappy_mesher_json(input_params: SimulationParams):
     for zone in zones:
         if isinstance(zone, AutomatedFarfield):
             translated["cadIsFluid"] = False
-        if isinstance(zone, UserDefinedFarfield):
+        if isinstance(zone, SeedpointZone):
             translated["cadIsFluid"] = True
 
     if "cadIsFluid" not in translated:

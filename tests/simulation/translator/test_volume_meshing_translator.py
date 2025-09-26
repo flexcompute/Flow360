@@ -160,7 +160,6 @@ def get_test_param():
                         name="custom_volume-1",
                         boundaries=[Surface(name="interface1"), Surface(name="interface2")],
                     ),
-                    UserDefinedFarfield(),
                     RotationCylinder(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
@@ -207,6 +206,33 @@ def get_test_param():
                         ],
                     ),
                 ],
+            ),
+            private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
+        )
+    return param
+
+
+@pytest.fixture()
+def get_test_param_automated_farfield():
+    with SI_unit_system:
+
+        param = SimulationParams(
+            meshing=MeshingParams(
+                refinement_factor=1.45,
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1.35e-06 * u.m,
+                    boundary_layer_growth_rate=1 + 0.04,
+                ),
+                refinements=[
+                    PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
+                    PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
+                    BoundaryLayer(
+                        entities=[Surface(name="boundary1")],
+                        first_layer_thickness=0.5 * u.m,
+                        growth_rate=1.3,
+                    ),
+                ],
+                volume_zones=[AutomatedFarfield()],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
         )
@@ -303,7 +329,6 @@ def get_test_param_modular():
                         name="custom_volume-1",
                         boundaries=[Surface(name="interface1"), Surface(name="interface2")],
                     ),
-                    UserDefinedFarfield(),
                     RotationCylinder(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
@@ -375,7 +400,7 @@ def get_test_param_w_seedpoints():
                     refinements=[],
                 ),
                 zones=[
-                    UserDefinedFarfield(name="fluid", point_in_mesh=(0, 0, 0)),
+                    SeedpointZone(name="fluid", point_in_mesh=(0, 0, 0)),
                     SeedpointZone(name="radiator", point_in_mesh=(1, 1, 1)),
                 ],
             ),
@@ -513,6 +538,31 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
     assert sorted(translated_modular.items()) == sorted(ref_dict.items())
 
 
+def test_param_to_json_automated_farfield(get_test_param_automated_farfield, get_surface_mesh):
+    translated_standard = get_volume_meshing_json(
+        get_test_param_automated_farfield, get_surface_mesh.mesh_unit
+    )
+
+    ref_dict = {
+        "refinementFactor": 1.45,
+        "farfield": {"type": "auto", "planarFaceTolerance": 1e-6},
+        "volume": {
+            "firstLayerThickness": 1.35e-06,
+            "growthRate": 1.04,
+            "gapTreatmentStrength": 0.0,
+            "planarFaceTolerance": 1e-6,
+            "numBoundaryLayers": -1,
+        },
+        "faces": {
+            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso", "growthRate": 1.3},
+            "passive1": {"type": "projectAnisoSpacing"},
+            "passive2": {"type": "none"},
+        },
+    }
+
+    assert sorted(translated_standard.items()) == sorted(ref_dict.items())
+
+
 def test_user_defined_farfield(get_test_param, get_surface_mesh):
     with SI_unit_system:
         params = SimulationParams(
@@ -531,7 +581,7 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
                 volume_meshing=BetaVolumeMeshingParams(
                     defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=100),
                 ),
-                zones=[UserDefinedFarfield(point_in_mesh=[0, 0, 0])],
+                zones=[SeedpointZone(point_in_mesh=[0, 0, 0], name="farfield")],
             )
         )
     translated = get_volume_meshing_json(params, get_surface_mesh.mesh_unit)
