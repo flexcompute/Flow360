@@ -68,7 +68,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     EntityListWithCustomVolume,
     GenericVolume,
-    SeedpointZone
+    SeedpointZone,
 )
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -1514,13 +1514,15 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointZone] = pd.Field(
-        alias="volumes",
-        description="The entity list for the `PorousMedium` model. "
-        + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
-        + "by :class:`SeedpointZone` when using snappyHexMeshing."
-        + "The axes of entity must be specified to serve as the the principle axes of the "
-        + "porous medium material model.",
+    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointZone] = (
+        pd.Field(
+            alias="volumes",
+            description="The entity list for the `PorousMedium` model. "
+            + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
+            + "by :class:`SeedpointZone` when using snappyHexMeshing."
+            + "The axes of entity must be specified to serve as the the principle axes of the "
+            + "porous medium material model.",
+        )
     )
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(

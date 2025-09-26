@@ -331,6 +331,7 @@ def _to_25_6_6(params_as_dict):
 
     return _remove_potential_issues_recursive(params_as_dict)
 
+
 def _to_25_7_2(params_as_dict):
     # Add post_processing_variable flag to variable_context entries
     # Variables that are used in outputs should have post_processing_variable=True
@@ -365,11 +366,14 @@ def _to_25_7_2(params_as_dict):
 
     return params_as_dict
 
+
 def _to_25_8_0(params_as_dict):
     # new method of specifying meshing was added, as well as the method discriminator
     meshing = params_as_dict.get("meshing")
     if meshing:
         meshing["type"] = "MeshingParams"
+
+    return params_as_dict
 
 
 VERSION_MILESTONES = [

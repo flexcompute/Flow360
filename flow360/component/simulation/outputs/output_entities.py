@@ -4,7 +4,6 @@ from abc import ABCMeta
 from typing import Literal, Optional, Union
 
 import pydantic as pd
-import unyt as u
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase, generate_uuid

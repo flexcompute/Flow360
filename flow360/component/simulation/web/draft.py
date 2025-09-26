@@ -10,8 +10,6 @@ from typing import List, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from pydantic import BaseModel, ConfigDict, Field
-
 from flow360.cloud.flow360_requests import (
     DraftCreateRequest,
     DraftRunRequest,

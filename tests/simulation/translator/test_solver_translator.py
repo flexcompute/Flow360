@@ -8,8 +8,8 @@ import pytest
 import flow360.component.simulation.units as u
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.meshing_specs import MeshingDefaults
+from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import UserDefinedFarfield
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (

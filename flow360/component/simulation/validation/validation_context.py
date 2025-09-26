@@ -151,13 +151,15 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         except KeyError:
             # No farfield/meshing info.
             return None
+
+        farfield_method = None
         if volume_zones:
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
-                if zone["type"] == "UserDefinedFarfield":
-                    return "user-defined"
-        return None
+                if zone["type"] in ["UserDefinedFarfield", "CustomVolume", "SeedpointZone"]:
+                    farfield_method = "user-defined"
+        return farfield_method
 
     @classmethod
     def _get_using_liquid_as_material_(cls, param_as_dict: dict):
@@ -332,6 +334,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
     @classmethod
     def _get_to_be_generated_custom_volumes(cls, param_as_dict: dict):
+        # pylint:disable=fixme
         # TODO: add seedpoint zones
         volume_zones = get_value_with_path(
             param_as_dict,

@@ -993,30 +993,6 @@ def translate_output(input_params: SimulationParams, translated: dict):
 
     _sort_output_fields_in_dict(translated)
 
-    ##:: Step9: Get translated["importedSurfaceIntegralOutput"]
-    if has_instance_in_list(outputs, ImportedSurfaceIntegralOutput):
-        process_user_variables_for_integral(
-            outputs,
-            ImportedSurfaceIntegralOutput,
-        )
-        translated["importedSurfaceIntegralOutput"] = translate_imported_surface_integral_output(
-            outputs,
-        )
-
-    ##:: Step10: Sort all "output_fields" everywhere
-    # Recursively sort all "outputFields" lists in the translated dict
-    def _sort_output_fields_in_dict(d):
-        if isinstance(d, dict):
-            for k, v in d.items():
-                if k == "outputFields" and isinstance(v, list):
-                    v.sort()
-                else:
-                    _sort_output_fields_in_dict(v)
-        elif isinstance(d, list):
-            for item in d:
-                _sort_output_fields_in_dict(item)
-
-    _sort_output_fields_in_dict(translated)
     return translated
 
 
