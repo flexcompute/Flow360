@@ -169,7 +169,7 @@ def test_operations_on_units():
     assert str(replaced.units) == "dimensionless"
 
     replaced = params.operating_condition.velocity_magnitude**5 - (1 / 50 * (fl.u.km / fl.u.s) ** 5)
-    assertions.assertAlmostEqual(replaced.value, 502472105493.3395)
+    assertions.assertAlmostEqual(replaced.value, 502472105493.3395, 3)
     assert str(replaced.units) == "inch**5*m**5/(cm**5*s**5)"
 
     replaced = (

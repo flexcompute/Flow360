@@ -24,7 +24,6 @@ from flow360.plugins.report.report_items import (
     TopCamera,
 )
 from flow360.plugins.report.utils import Average, DataItem
-from flow360.version import __solver_version__
 
 
 def main():
@@ -327,7 +326,6 @@ def generate_report(
     report = report.create_in_cloud(
         "sweep-script-report",
         cases,
-        solver_version=__solver_version__,
     )
 
     report.wait()

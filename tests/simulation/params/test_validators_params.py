@@ -99,7 +99,6 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
     UserDefinedDynamic,
 )
 from flow360.component.simulation.validation.validation_context import (
-    ALL,
     CASE,
     VOLUME_MESH,
     ParamsValidationInfo,
@@ -2126,3 +2125,50 @@ def test_check_duplicate_isosurface_names():
                 TimeAverageIsosurfaceOutput(isosurfaces=[isosurface2], output_fields=["pressure"]),
             ],
         )
+
+
+def test_check_custom_volume_in_volume_zones():
+    zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
+    zone_2.axes = [(1, 0, 0), (0, 1, 0)]
+
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    CustomVolume(name="zone1", boundaries=[Surface(name="face1")]),
+                    UserDefinedFarfield(),
+                ],
+            ),
+            models=[
+                PorousMedium(
+                    entities=[zone_2],
+                    darcy_coefficient=(1, 0, 0) / u.m**2,
+                    forchheimer_coefficient=(1, 0, 0) / u.m,
+                    volumetric_heat_source=1.0 * u.W / u.m**3,
+                ),
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="SurfaceMesh",
+        validation_level="All",
+    )
+    assert len(errors) == 1
+    assert errors[0]["msg"] == (
+        "Value error, CustomVolume zone2 is not listed under meshing->volume_zones."
+    )
+    assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")

@@ -132,9 +132,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         "project_length_unit",
         "global_bounding_box",
         "planar_face_tolerance",
+        "output_dict",
         "half_model_symmetry_plane_center_y",
         "quasi_3d_symmetry_planes_center_y",
         "at_least_one_body_transformed",
+        "to_be_generated_custom_volumes",
     ]
 
     @classmethod
@@ -149,13 +151,15 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         except KeyError:
             # No farfield/meshing info.
             return None
+
+        farfield_method = None
         if volume_zones:
             for zone in volume_zones:
                 if zone["type"] == "AutomatedFarfield":
                     return zone["method"]
-                if zone["type"] == "UserDefinedFarfield":
-                    return "user-defined"
-        return None
+                if zone["type"] in ["UserDefinedFarfield", "CustomVolume", "SeedpointZone"]:
+                    farfield_method = "user-defined"
+        return farfield_method
 
     @classmethod
     def _get_using_liquid_as_material_(cls, param_as_dict: dict):
@@ -249,6 +253,16 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         return planar_face_tolerance
 
     @classmethod
+    def _get_output_dict(cls, param_as_dict: dict):
+        if param_as_dict.get("outputs") is None:
+            return None
+        return {
+            output["private_attribute_id"]: output
+            for output in param_as_dict["outputs"]
+            if output.get("private_attribute_id") is not None
+        }
+
+    @classmethod
     def _get_half_model_symmetry_plane_center_y(cls, param_as_dict: dict):
         ghost_entities = get_value_with_path(
             param_as_dict,
@@ -318,6 +332,18 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
 
         return False
 
+    @classmethod
+    def _get_to_be_generated_custom_volumes(cls, param_as_dict: dict):
+        # pylint:disable=fixme
+        # TODO: add seedpoint zones
+        volume_zones = get_value_with_path(
+            param_as_dict,
+            ["meshing", "volume_zones"],
+        )
+        if not volume_zones:
+            return set()
+        return {zone["name"] for zone in volume_zones if zone["type"] == "CustomVolume"}
+
     def __init__(self, param_as_dict: dict, referenced_expressions: list):
         self.farfield_method = self._get_farfield_method_(param_as_dict=param_as_dict)
         self.is_beta_mesher = self._get_is_beta_mesher_(param_as_dict=param_as_dict)
@@ -333,6 +359,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         self.project_length_unit = self._get_project_length_unit_(param_as_dict=param_as_dict)
         self.global_bounding_box = self._get_global_bounding_box(param_as_dict=param_as_dict)
         self.planar_face_tolerance = self._get_planar_face_tolerance(param_as_dict=param_as_dict)
+        self.output_dict = self._get_output_dict(param_as_dict=param_as_dict)
         self.half_model_symmetry_plane_center_y = self._get_half_model_symmetry_plane_center_y(
             param_as_dict=param_as_dict
         )
@@ -340,6 +367,9 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
             param_as_dict=param_as_dict
         )
         self.at_least_one_body_transformed = self._get_at_least_one_body_transformed(
+            param_as_dict=param_as_dict
+        )
+        self.to_be_generated_custom_volumes = self._get_to_be_generated_custom_volumes(
             param_as_dict=param_as_dict
         )
 

@@ -3,8 +3,6 @@
 from copy import deepcopy
 from typing import List
 
-import numpy as np
-
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
@@ -397,19 +395,6 @@ def snappy_mesher_json(input_params: SimulationParams):
                 smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
             ),
         }
-        if smoothing_settings.included_angle is None or np.isclose(
-            smoothing_settings.included_angle.to("degree").value.item(), 0
-        ):
-            translated["smoothingControls"]["includedAngle"] = None
-        else:
-            translated["smoothingControls"]["includedAngle"] = smoothing_settings.included_angle.to(
-                "degree"
-            ).value.item()
-
-        if smoothing_settings.min_elem is not None:
-            translated["smoothingControls"]["minElem"] = smoothing_settings.min_elem
-        if smoothing_settings.min_len is not None:
-            translated["smoothingControls"]["minLen"] = smoothing_settings.min_len.value.item()
 
     # bounding box
     bounding_box = surface_meshing_params.bounding_box
@@ -539,6 +524,7 @@ GAI_SETTING_WHITELIST = {
             "curvature_resolution_angle": None,
             "surface_edge_growth_rate": None,
             "geometry_accuracy": None,
+            "preserve_thin_geometry": None,
             "surface_max_aspect_ratio": None,
             "surface_max_adaptation_iterations": None,
         },

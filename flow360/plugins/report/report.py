@@ -38,6 +38,7 @@ from flow360.plugins.report.utils import (
     get_requirements_from_data_path,
 )
 from flow360.plugins.report.uvf_shutter import ShutterBatchService
+from flow360.version import __solver_version__
 
 
 class Report(Flow360Resource):
@@ -197,7 +198,9 @@ class ReportTemplate(Flow360BaseModel):
         service.process_requests(context)
 
     def _get_baseline_requirements(self):
-        return get_requirements_from_data_path(["volume_mesh", "surface_mesh", "geometry"])
+        return get_requirements_from_data_path(
+            ["volume_mesh", "surface_mesh", "geometry", "params"]
+        )
 
     def get_requirements(self) -> List[RequirementItem]:
         """
@@ -222,7 +225,11 @@ class ReportTemplate(Flow360BaseModel):
 
     # pylint: disable=unused-argument
     def create_in_cloud(
-        self, name: str, cases: list[Case], landscape: bool = False, solver_version: str = None
+        self,
+        name: str,
+        cases: list[Case],
+        landscape: bool = False,
+        solver_version: str = __solver_version__,
     ):
         """
         Creates a report in the cloud for a specified set of cases.
