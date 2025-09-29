@@ -604,7 +604,7 @@ def test_operating_condition(get_2dcrm_tutorial_param):
     assertions.assertEqual(
         converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
             converted.operating_condition.thermal_state.temperature
-        ),
+        ).value,
         4e-8,
     )
 
