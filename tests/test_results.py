@@ -574,7 +574,7 @@ def test_y_sectional_results(mock_id, mock_response):
 @pytest.mark.usefixtures("s3_download_override")
 def test_surface_forces_result(mock_id, mock_response):
 
-    def validate_results(grouped_data, entity_group, flat_boundary_list, valid_names):
+    def validate_grouped_results(grouped_data, entity_group, flat_boundary_list, valid_names):
         """Validate that grouped surface-force results match expected aggregated values.
 
         Parameters
@@ -630,7 +630,7 @@ def test_surface_forces_result(mock_id, mock_response):
         "Freestream": ["farfield"],
     }
     assert surface_forces_by_boundary._entity_groups == ref_entity_group_by_boundary
-    validate_results(
+    validate_grouped_results(
         surface_forces_by_boundary,
         ref_entity_group_by_boundary,
         flat_boundary_list=("body00001", "body00002", "body00003"),
@@ -642,29 +642,9 @@ def test_surface_forces_result(mock_id, mock_response):
         "geo-11321727-9bb1-4fd5-b88d-19f360fb2149_box.csm": ["body00001", "body00002", "body00003"]
     }
     assert surface_forces_by_body_group._entity_groups == ref_entity_group_by_body_group
-    validate_results(
+    validate_grouped_results(
         surface_forces_by_boundary,
         ref_entity_group_by_boundary,
         flat_boundary_list=("body00001", "body00002", "body00003"),
         valid_names=("geo-11321727-9bb1-4fd5-b88d-19f360fb2149_box.csm"),
     )
-
-
-@pytest.mark.usefixtures("s3_download_override")
-def test_force_distribution_grouping(mock_id, mock_response):
-    case = fl.Case(id="case-c6f1b159-3dab-4729-b769-3ca9999b2b87")
-    params = case.params
-    entity_info = params.private_attribute_asset_cache.project_entity_info
-    x_dist = case.results.x_slicing_force_distribution
-    
-    # x_dist.filter(include=["fluid/body00002_face00003"])
-    # x_dist.as_dataframe().to_csv(path_or_buf="aaaaaa.csv")
-    # with open("aaaaaa.csv", "r") as fp:
-    #     print(fp.read())
-    
-    x_dist_by_boundary = x_dist.by_boundary_condition(params=params)
-    print("_entity_groups: ", x_dist_by_boundary._entity_groups)
-    print("_variables: ", x_dist_by_boundary._variables)
-    print("_entities: ", x_dist_by_boundary._entities)
-    for var_name in x_dist_by_boundary.raw_values.keys():
-        print("var_name: ", var_name, "len: ", len(x_dist_by_boundary.raw_values[var_name]))

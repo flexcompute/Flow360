@@ -563,7 +563,11 @@ class PerEntityResultCSVModel(ResultCSVModel):
 
     @classmethod
     # pylint: disable=arguments-differ
-    def from_dict(cls, data: dict, group: dict = None):
+    def from_dict(cls, data: dict, group: dict[str, List[str]] = None):
+        """
+        Overloaded version of from_dict to store entity groups.
+        """
+
         obj = super().from_dict(data)
         # pylint: disable=protected-access
         if group is not None:
@@ -653,7 +657,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
         self.update(df)
 
-    def _create_forces_group(self, entity_groups: Dict[str, List[str]]) -> PerEntityResultCSVModel:
+    def _create_forces_group(self, entity_groups: dict[str, List[str]]) -> PerEntityResultCSVModel:
         """
         Create new CSV model for the given entity groups.
         """
