@@ -1,4 +1,11 @@
 import os
+
+os.environ["MPLBACKEND"] = "Agg"
+
+import matplotlib
+
+matplotlib.use("Agg", force=True)
+
 import tempfile
 
 import pytest

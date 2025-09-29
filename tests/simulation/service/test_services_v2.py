@@ -1216,8 +1216,13 @@ def test_imperial_unit_system_conversion():
         dict_to_convert = json.load(fp)
     services.change_unit_system(data=dict_to_convert, target_unit_system="Imperial")
     imperial_units = {"ft", "lbf", "lb", "s", "degF", "delta_degF", "rad", "degree"}
+    unit_system_names = {
+        "SI_unit_system",
+        "Imperial_unit_system",
+        "CGS_unit_system",
+    }
 
-    validate_proper_unit(dict_to_convert, imperial_units)
+    validate_proper_unit(dict_to_convert, (imperial_units | unit_system_names))
     # Check that the angles are not changed
     assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
         "angle_of_rotation"
@@ -1233,6 +1238,12 @@ def test_imperial_unit_system_conversion():
     assert temperature_tester["units"] == "degF"
     assert abs(temperature_tester["value"] - 302) / 302 < 1e-10
 
+    # Assert stop criterion tolerance unit is correct
+    assert (
+        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        == "SI_unit_system"
+    )
+
     # General comparison\
     with open("./ref/unit_system_converted_imperial.json", "r") as fp:
         ref_dict = json.load(fp)
@@ -1245,8 +1256,13 @@ def test_CGS_unit_system_conversion():
         dict_to_convert = json.load(fp)
     services.change_unit_system(data=dict_to_convert, target_unit_system="CGS")
     CGS_units = {"dyn", "cm", "g", "s", "K", "rad", "degree"}
+    unit_system_names = {
+        "SI_unit_system",
+        "Imperial_unit_system",
+        "CGS_unit_system",
+    }
 
-    validate_proper_unit(dict_to_convert, CGS_units)
+    validate_proper_unit(dict_to_convert, (CGS_units | unit_system_names))
     # Check that the angles are not changed
     assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
         "angle_of_rotation"
@@ -1261,6 +1277,12 @@ def test_CGS_unit_system_conversion():
     ]["effective_temperature"]
     assert temperature_tester["units"] == "K"
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # Assert stop criterion tolerance unit is correct
+    assert (
+        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        == "SI_unit_system"
+    )
 
     # General comparison
     with open("./ref/unit_system_converted_CGS.json", "r") as fp:
@@ -1273,8 +1295,13 @@ def test_SI_unit_system_conversion():
         dict_to_convert = json.load(fp)
     services.change_unit_system(data=dict_to_convert, target_unit_system="SI")
     SI_units = {"m", "kg", "s", "K", "rad", "degree", "Pa"}
+    unit_system_names = {
+        "SI_unit_system",
+        "Imperial_unit_system",
+        "CGS_unit_system",
+    }
 
-    validate_proper_unit(dict_to_convert, SI_units)
+    validate_proper_unit(dict_to_convert, (SI_units | unit_system_names))
     # Check that the angles are not changed
     assert dict_to_convert["meshing"]["refinements"][0]["entities"]["stored_entities"][0][
         "angle_of_rotation"
@@ -1289,6 +1316,12 @@ def test_SI_unit_system_conversion():
     ]["effective_temperature"]
     assert temperature_tester["units"] == "K"
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
+
+    # Assert stop criterion tolerance unit is correct
+    assert (
+        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        == "SI_unit_system"
+    )
 
     # General comparison
     with open("./ref/unit_system_converted_SI.json", "r") as fp:
