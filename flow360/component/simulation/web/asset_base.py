@@ -240,7 +240,7 @@ class AssetBase(metaclass=ABCMeta):
         return self._webapi.get_download_file_list()
 
     @abstractmethod
-    def get_default_settings(self, simulation_dict):
+    def get_dynamic_default_settings(self, simulation_dict):
         """Get the default settings of the asset from the non-entity part of root asset's simulation dict"""
 
     @classmethod
@@ -263,7 +263,7 @@ class AssetBase(metaclass=ABCMeta):
         )
         # The default_settings will only make a difference when the asset is project root asset,
         # but we try to get it regardless to save the logic differentiating whether it is root or not.
-        asset_obj.get_default_settings(asset_simulation_dict)
+        asset_obj.get_dynamic_default_settings(asset_simulation_dict)
 
         # Attempting constructing entity registry.
         # This ensure that once from_cloud() returns, the entity_registry will be available.
@@ -318,7 +318,7 @@ class AssetBase(metaclass=ABCMeta):
             params_dict = json.load(f)
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
-        asset_obj.get_default_settings(params_dict)
+        asset_obj.get_dynamic_default_settings(params_dict)
 
         # pylint: disable=protected-access
         if not hasattr(asset_obj, "_webapi"):
