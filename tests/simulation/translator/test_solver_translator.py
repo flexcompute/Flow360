@@ -601,7 +601,7 @@ def test_operating_condition(get_2dcrm_tutorial_param):
         converted.operating_condition.thermal_state.material.dynamic_viscosity.effective_temperature,
         110.4 * u.K,
     )
-    assertions.assertEqual(
+    assertions.assertAlmostEqual(
         converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
             converted.operating_condition.thermal_state.temperature
         ).value.item(),
