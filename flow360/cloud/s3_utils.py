@@ -11,10 +11,10 @@ from enum import Enum
 
 import boto3
 from boto3.s3.transfer import TransferConfig
+from botocore.config import Config as BotocoreConfig
 
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
-from botocore.config import Config as BotocoreConfig
 from pydantic.v1 import BaseModel, Field
 
 from ..environment import Env
