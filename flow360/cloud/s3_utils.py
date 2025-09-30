@@ -14,6 +14,7 @@ from boto3.s3.transfer import TransferConfig
 
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
+from botocore.config import Config as BotocoreConfig
 from pydantic.v1 import BaseModel, Field
 
 from ..environment import Env
@@ -21,7 +22,6 @@ from ..exceptions import Flow360ValueError
 from ..log import log
 from .http_util import http
 from .utils import _get_progress, _S3Action
-from botocore.config import Config as BotocoreConfig
 
 MAX_CONCURRENCY = int(os.getenv("FLOW360_S3_MAX_CONCURRENCY", "50"))
 MAX_POOL = int(os.getenv("FLOW360_S3_MAX_POOL", str(MAX_CONCURRENCY + 6)))
