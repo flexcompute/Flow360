@@ -277,8 +277,10 @@ class Geometry(AssetBase):
             # pylint: disable=no-member
             return LengthType.validate(simulation_dict["meshing"]["defaults"]["geometry_accuracy"])
 
-        self.default_settings["geometry_accuracy"] = _get_default_geometry_accuracy(
-            simulation_dict=simulation_dict
+        self.default_settings["geometry_accuracy"] = (
+            self._entity_info.default_geometry_accuracy
+            if self._entity_info.default_geometry_accuracy
+            else _get_default_geometry_accuracy(simulation_dict=simulation_dict)
         )
 
     @classmethod
