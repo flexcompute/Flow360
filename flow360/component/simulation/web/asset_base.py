@@ -318,6 +318,8 @@ class AssetBase(metaclass=ABCMeta):
             params_dict = json.load(f)
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        asset_obj.get_default_settings(params_dict)
+
         # pylint: disable=protected-access
         if not hasattr(asset_obj, "_webapi"):
             # Handle local test case execution which has no valid ID
