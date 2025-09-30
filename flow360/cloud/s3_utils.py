@@ -21,6 +21,10 @@ from ..exceptions import Flow360ValueError
 from ..log import log
 from .http_util import http
 from .utils import _get_progress, _S3Action
+from botocore.config import Config as BotocoreConfig
+
+MAX_CONCURRENCY = int(os.getenv("FLOW360_S3_MAX_CONCURRENCY", "50"))
+MAX_POOL = int(os.getenv("FLOW360_S3_MAX_POOL", str(MAX_CONCURRENCY + 6)))
 
 
 class ProgressCallbackInterface(metaclass=ABCMeta):
@@ -145,6 +149,7 @@ class _S3STSToken(BaseModel):
             "aws_access_key_id": self.user_credential.access_key_id,
             "aws_secret_access_key": self.user_credential.secret_access_key,
             "aws_session_token": self.user_credential.session_token,
+            "config": BotocoreConfig(max_pool_connections=MAX_POOL),
         }
 
         if Env.current.s3_endpoint_url is not None:
