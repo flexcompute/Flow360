@@ -137,9 +137,7 @@ class GeometryEntityInfo(EntityInfoModel):
     # pylint: disable=no-member
     default_geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
         None,
-        description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-        "This parameter is only valid when using geometry AI."
-        "It can be overridden with class: ~flow360.GeometryRefinement.",
+        description="The default value based on uploaded geometry for geometry_accuracy.",
     )
 
     def group_in_registry(
