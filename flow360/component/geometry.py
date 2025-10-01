@@ -263,7 +263,7 @@ class Geometry(AssetBase):
     def body_group_tag(self, new_value: str):
         raise SyntaxError("Cannot set body_group_tag, use group_bodies_by_tag() instead.")
 
-    def get_default_settings(self, simulation_dict: dict):
+    def get_dynamic_default_settings(self, simulation_dict: dict):
         """Get the default geometry settings from the simulation dict"""
 
         def _get_default_geometry_accuracy(simulation_dict: dict) -> LengthType.Positive:
@@ -277,8 +277,10 @@ class Geometry(AssetBase):
             # pylint: disable=no-member
             return LengthType.validate(simulation_dict["meshing"]["defaults"]["geometry_accuracy"])
 
-        self.default_settings["geometry_accuracy"] = _get_default_geometry_accuracy(
-            simulation_dict=simulation_dict
+        self.default_settings["geometry_accuracy"] = (
+            self._entity_info.default_geometry_accuracy
+            if self._entity_info.default_geometry_accuracy
+            else _get_default_geometry_accuracy(simulation_dict=simulation_dict)
         )
 
     @classmethod

@@ -25,6 +25,7 @@ from flow360.component.simulation.primitives import (
     GhostSphere,
     Surface,
 )
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
 from flow360.component.utils import GeometryFiles
 from flow360.log import log
@@ -132,6 +133,12 @@ class GeometryEntityInfo(EntityInfoModel):
     edge_group_tag: Optional[str] = pd.Field(None, frozen=True)
 
     global_bounding_box: Optional[BoundingBoxType] = pd.Field(None)
+
+    # pylint: disable=no-member
+    default_geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="The default value based on uploaded geometry for geometry_accuracy.",
+    )
 
     def group_in_registry(
         self,

@@ -67,6 +67,7 @@ from flow360.component.simulation.models.surface_models import (
     Rotational,
     SlaterPorousBleed,
     SlipWall,
+    Supersonic,
     SymmetryPlane,
     Temperature,
     TotalPressure,
@@ -142,6 +143,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    ImportedSurface,
     ReferenceGeometry,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -171,7 +173,6 @@ from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
 from flow360.plugins import report
-from flow360.version import __solver_version__, __version__
 
 __all__ = [
     "GeometryRefinement",
@@ -183,8 +184,6 @@ __all__ = [
     "ProjectAnisoSpacing",
     "BoundaryLayer",
     "PassiveSpacing",
-    "__solver_version__",
-    "__version__",
     "Accounts",
     "Project",
     "u",
@@ -281,6 +280,7 @@ __all__ = [
     "TurbulenceModelControls",
     "Pressure",
     "TotalPressure",
+    "Supersonic",
     "Rotational",
     "Mach",
     "MassFlowRate",
@@ -311,4 +311,5 @@ __all__ = [
     "remove_user_variable",
     "StopCriterion",
     "MovingStatistic",
+    "ImportedSurface",
 ]

@@ -12,7 +12,6 @@ from flow360.plugins.report.report_items import (
     Table,
 )
 from flow360.plugins.report.utils import Average, DataItem, Delta
-from flow360.version import __solver_version__
 
 project_id = None  # if running for the first time
 
@@ -189,7 +188,6 @@ report = ReportTemplate(
 report = report.create_in_cloud(
     f"Geometry to report - Report, dpi=150",
     cases,
-    solver_version=__solver_version__,
 )
 
 report.wait()
