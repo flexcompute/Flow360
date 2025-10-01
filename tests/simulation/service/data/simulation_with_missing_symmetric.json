@@ -462,6 +462,11 @@
 								]
 							]
 						}
+					},
+					{
+						"name": "symmetric",
+						"_id": "037bd779-4a2f-5de5-9553-0bce6d233fe0",
+						"private_attribute_entity_type_name": "GhostCircularPlane"
 					}
 				]
 			},

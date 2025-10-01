@@ -11,7 +11,6 @@ from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
-from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
@@ -1290,6 +1289,9 @@ class Project(pd.BaseModel):
             Choose if the project tree is printed in horizontal (default) or vertical direction.
 
         """
+        # pylint: disable=import-outside-toplevel
+        # Defer importing since this package introduces 2 empty lines of output in the Jupyter Notebook when imported..
+        from PrettyPrint import PrettyPrintTree
 
         PrettyPrintTree(
             get_children=lambda x: x.children,
@@ -1441,15 +1443,6 @@ class Project(pd.BaseModel):
 
         draft.update_simulation_params(params)
         upload_imported_surfaces_to_draft(params, draft)
-
-        if draft_only:
-            # pylint: disable=import-outside-toplevel
-            import click
-
-            log.info("Draft submitted, copy the link to browser to view the draft:")
-            # Not using log.info to avoid the link being wrapped and thus not clickable.
-            click.secho(draft.web_url, fg="blue", underline=True)
-            return draft
 
         if draft_only:
             # pylint: disable=import-outside-toplevel

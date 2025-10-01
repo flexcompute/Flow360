@@ -21,6 +21,17 @@
                 1.0
             ]
         },
+        "boundary_name_C": {
+            "type": "SupersonicInflow",
+            "totalTemperatureRatio": 1.0411244143675171,
+            "totalPressureRatio": 8.0,
+            "staticPressureRatio": 0.9,
+            "velocityDirection": [
+                0.0,
+                1.0,
+                0.0
+            ]
+        },
         "boundary_name_E": {
             "type": "SubsonicOutflowPressure",
             "staticPressureRatio": 0.9

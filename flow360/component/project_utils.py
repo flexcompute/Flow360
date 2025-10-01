@@ -423,9 +423,6 @@ def set_up_params_for_uploading(
     # Convert all reference of UserVariables to VariableToken
     params = save_user_variables(params)
 
-    # Convert all reference of UserVariables to VariableToken
-    params = save_user_variables(params)
-
     return params
 
 

@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import time
 import uuid
+from collections import defaultdict
 from itertools import chain, product
 from typing import Callable, Dict, List, Optional
 
@@ -19,8 +20,11 @@ from flow360.cloud.s3_utils import (
     CloudFileNotFoundError,
     get_local_filename_and_create_folders,
 )
+from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.v1.flow360_params import Flow360Params
+from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
 # pylint: disable=consider-using-with
@@ -555,6 +559,20 @@ class PerEntityResultCSVModel(ResultCSVModel):
     _x_columns: List[str] = []
     _filter_when_zero = []
     _entities: List[str] = None
+    _entity_groups: dict = pd.PrivateAttr()
+
+    @classmethod
+    # pylint: disable=arguments-differ
+    def from_dict(cls, data: dict, group: dict[str, List[str]] = None):
+        """
+        Overloaded version of from_dict to store entity groups.
+        """
+
+        obj = super().from_dict(data)
+        # pylint: disable=protected-access
+        if group is not None:
+            obj._entity_groups = group
+        return obj
 
     @property
     def values(self):
@@ -574,7 +592,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
     @property
     def entities(self):
         """
-        Returns list of entities (boundary names) available for this result
+        Returns list of entity names available for this result
         """
         if self._entities is None:
             pattern = re.compile(rf"(.*)_({'|'.join(self._variables)})$")
@@ -638,6 +656,73 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 regex_pattern = rf"^(?!total).*{variable}$"
                 df[new_col_name] = list(df.filter(regex=regex_pattern).sum(axis=1))
         self.update(df)
+
+    def _create_forces_group(self, entity_groups: dict[str, List[str]]) -> PerEntityResultCSVModel:
+        """
+        Create new CSV model for the given entity groups.
+        """
+
+        def full_name_pattern(word: str) -> re.Pattern:
+            # Find the pattern that matches the name exactly or the full name (zone/boundary)
+            return rf"^(?:{re.escape(word)}|[^/]+/{re.escape(word)})$"
+
+        raw_values = {}
+        for x_column in self._x_columns:
+            raw_values[x_column] = np.array(self.raw_values[x_column])
+        for name, entities in entity_groups.items():
+            entity_patterns = [full_name_pattern(name) for name in entities]
+            self.filter(include=entity_patterns)
+            for variable in self._variables:
+                partial_sum = np.array(self.values[f"total{variable}"])
+                if f"{name}_{variable}" not in raw_values:
+                    raw_values[f"{name}_{variable}"] = partial_sum
+                    continue
+                raw_values[f"{name}_{variable}"] += partial_sum
+
+        raw_values = {key: val.tolist() for key, val in raw_values.items()}
+        entity_groups = {key: sorted(val) for key, val in entity_groups.items()}
+
+        return self.from_dict(data=raw_values, group=entity_groups)
+
+    def by_boundary_condition(self, params: SimulationParams) -> PerEntityResultCSVModel:
+        """
+        Group entities by boundary condition's name and create a
+        SurfaceForcesGroupResultCSVModel.
+        Forces from different boundaries but with the same type and name will be summed together.
+        """
+
+        entity_groups = defaultdict(list)
+        for model in params.models:
+            if not isinstance(model, BoundaryBase):
+                continue
+            boundary_name = model.name if model.name is not None else model.type
+            entity_groups[boundary_name].extend(
+                [entity.name for entity in model.entities.stored_entities]
+            )
+        return self._create_forces_group(entity_groups=entity_groups)
+
+    def by_body_group(self, params: SimulationParams) -> PerEntityResultCSVModel:
+        """
+        Group entities by body group's name and create a
+        SurfaceForcesGroupResultCSVModel
+        """
+        if not isinstance(
+            params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
+        ):
+            raise Flow360ValueError(
+                "Group surface forces by body group is only supported for case starting from geometry."
+            )
+        entity_info = params.private_attribute_asset_cache.project_entity_info
+        if (
+            not hasattr(entity_info, "body_attribute_names")
+            or "groupByBodyId" not in entity_info.face_attribute_names
+        ):
+            raise Flow360ValueError(
+                "The geometry in this case does not contain the necessary body group information, "
+                "please upgrade the project to the latest version and re-run the case."
+            )
+        entity_groups = entity_info.get_body_group_to_face_group_name_map()
+        return self._create_forces_group(entity_groups=entity_groups)
 
     def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """

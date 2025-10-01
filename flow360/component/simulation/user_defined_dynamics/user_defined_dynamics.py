@@ -13,9 +13,11 @@ from flow360.component.simulation.primitives import (
     GenericVolume,
     Surface,
 )
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
-    get_validation_info,
 )
 
 
