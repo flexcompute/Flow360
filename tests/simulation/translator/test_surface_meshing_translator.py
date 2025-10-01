@@ -57,11 +57,6 @@ from flow360.component.simulation.primitives import (
     SnappyBody,
     Surface,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
-from flow360.component.simulation.operating_condition.operating_condition import (
-    AerospaceCondition,
-)
-from flow360.component.simulation.primitives import Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
