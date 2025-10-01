@@ -1,5 +1,7 @@
 """Volume meshing parameter translator."""
 
+from typing import Union
+
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -135,7 +137,7 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_cylinder_entity_injector(entity: Cylinder | AxisymmetricBody):
+def rotation_cylinder_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
     """Injector for Cylinder entity in RotationCylinder."""
     if isinstance(entity, Cylinder):
         return {

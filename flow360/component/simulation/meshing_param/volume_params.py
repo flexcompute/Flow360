@@ -149,7 +149,8 @@ class RotationVolume(AxisymmetricRefinementBase):
     enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody]] = pd.Field(
         None,
         description="Entities enclosed by :class:`RotationVolume`. "
-        + "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s) and/or other :class:`~flow360.AxisymmetricBody`(s).",
+        + "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s)"
+        "and/or other :class:`~flow360.AxisymmetricBody`(s).",
     )
 
     @pd.field_validator("entities", mode="after")

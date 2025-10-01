@@ -415,8 +415,8 @@ class Cylinder(_VolumeEntityBase):
 @final
 class AxisymmetricBody(_VolumeEntityBase):
     """
-    :class:`AxisymmetricBody` class represents a generic body of revolution in three-dimensional space.
-    It is represented as a list[(Axial Position, Radial Extent)] profile polyline with arbitrary center and axial direction.
+    :class:`AxisymmetricBody` class represents a generic body of revolution in three-dimensional space,
+    represented as a list[(Axial Position, Radial Extent)] profile polyline with arbitrary center and axial direction.
     Expect first and last profile samples to connect to axis, i.e., have radius = 0.
 
     Example
@@ -460,7 +460,8 @@ class AxisymmetricBody(_VolumeEntityBase):
         for profile_point in self.profile_curve[1:-1]:
             if len(profile_point) != 2 or profile_point[1] < 0:
                 raise ValueError(
-                    f"Expect profile samples to be (Axial, Radial) samples with positive Radial. Found invalid point: {str(profile_point)}."
+                    f"Expect profile samples to be (Axial, Radial) samples with positive Radial."
+                    f" Found invalid point: {str(profile_point)}."
                 )
         return self
 
