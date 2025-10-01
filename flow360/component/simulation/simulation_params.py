@@ -81,6 +81,8 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
     _check_output_fields_valid_given_turbulence_model,
+    _check_unique_surface_volume_probe_entity_names,
+    _check_unique_surface_volume_probe_names,
     _check_unsteadiness_to_use_aero_acoustics,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
@@ -486,6 +488,16 @@ class SimulationParams(_ParamModelBase):
     def check_unsteadiness_to_use_aero_acoustics(self):
         """Only allow Aero acoustics when using unsteady simulation"""
         return _check_unsteadiness_to_use_aero_acoustics(self)
+
+    @pd.model_validator(mode="after")
+    def check_unique_surface_volume_probe_names(self):
+        """Only allow unique probe names"""
+        return _check_unique_surface_volume_probe_names(self)
+
+    @pd.model_validator(mode="after")
+    def check_unique_surface_volume_probe_entity_names(self):
+        """Only allow unique probe entity names"""
+        return _check_unique_surface_volume_probe_entity_names(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import ast
 import json
+import os
 from functools import cached_property
-from typing import Literal, Union
+from typing import List, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,7 +19,12 @@ from flow360.cloud.flow360_requests import (
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
 from flow360.component.resource_base import Flow360Resource, ResourceDraft
-from flow360.component.utils import formatting_validation_errors, validate_type
+from flow360.component.utils import (
+    check_existence_of_one_file,
+    check_read_access_of_one_file,
+    formatting_validation_errors,
+    validate_type,
+)
 from flow360.environment import Env
 from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
@@ -137,6 +143,23 @@ class Draft(Flow360Resource):
             },
             method="simulation/file",
         )
+
+    def upload_imported_surfaces(self, file_paths):
+        """upload imported surfaces to draft"""
+
+        if len(file_paths) == 0:
+            return
+        file_names = []
+        for file_path in file_paths:
+            file_names.append(os.path.basename(file_path))
+        resp: List = self.post(
+            json={"filenames": file_names},
+            method="imported-surfaces",
+        )
+        for index, local_file_path in enumerate(file_paths):
+            check_existence_of_one_file(local_file_path)
+            check_read_access_of_one_file(local_file_path)
+            self._upload_file(resp[index]["filename"], local_file_path)
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""

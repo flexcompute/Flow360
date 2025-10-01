@@ -312,9 +312,9 @@ class SurfaceMeshV2(AssetBase):
         )
 
     # pylint: disable=useless-parent-delegation
-    def get_default_settings(self, simulation_dict: dict):
+    def get_dynamic_default_settings(self, simulation_dict: dict):
         """Get the default surface mesh settings from the simulation dict"""
-        return super().get_default_settings(simulation_dict)
+        return super().get_dynamic_default_settings(simulation_dict)
 
     @property
     def boundary_names(self) -> List[str]:

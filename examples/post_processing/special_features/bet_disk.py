@@ -12,7 +12,6 @@ from flow360.plugins.report.report_items import (
     Settings,
     Summary,
 )
-from flow360.version import __solver_version__
 
 BETExampleData.get_files()
 
@@ -117,7 +116,7 @@ report = ReportTemplate(
     settings=Settings(dpi=150),
 )
 
-report = report.create_in_cloud("BET, dpi=default", cases, solver_version=__solver_version__)
+report = report.create_in_cloud("BET, dpi=default", cases)
 
 report.wait()
 report.download("report.pdf")

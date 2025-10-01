@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from enum import Enum
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -22,8 +21,6 @@ from flow360.component.results.base_results import (
     ResultTarGZModel,
 )
 from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
-from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.models.surface_models import BoundaryBase
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import (
     Flow360UnitSystem,
@@ -54,6 +51,14 @@ _CFz_PRESSURE = "CFzPressure"
 _CMx_PRESSURE = "CMxPressure"
 _CMy_PRESSURE = "CMyPressure"
 _CMz_PRESSURE = "CMzPressure"
+_CL_SKIN_FRICTION = "CLSkinFriction"
+_CD_SKIN_FRICTION = "CDSkinFriction"
+_CFx_SKIN_FRICTION = "CFxSkinFriction"
+_CFy_SKIN_FRICTION = "CFySkinFriction"
+_CFz_SKIN_FRICTION = "CFzSkinFriction"
+_CMx_SKIN_FRICTION = "CMxSkinFriction"
+_CMy_SKIN_FRICTION = "CMySkinFriction"
+_CMz_SKIN_FRICTION = "CMzSkinFriction"
 _CL_VISCOUS = "CLViscous"
 _CD_VISCOUS = "CDViscous"
 _CFx_VISCOUS = "CFxViscous"
@@ -201,15 +206,14 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
         _CMx_PRESSURE,
         _CMy_PRESSURE,
         _CMz_PRESSURE,
-        _CL_VISCOUS,
-        _CD_VISCOUS,
-        _CFx_VISCOUS,
-        _CFy_VISCOUS,
-        _CFz_VISCOUS,
-        _CMx_VISCOUS,
-        _CMy_VISCOUS,
-        _CMz_VISCOUS,
-        _HEAT_TRANSFER,
+        _CL_SKIN_FRICTION,
+        _CD_SKIN_FRICTION,
+        _CFx_SKIN_FRICTION,
+        _CFy_SKIN_FRICTION,
+        _CFz_SKIN_FRICTION,
+        _CMx_SKIN_FRICTION,
+        _CMy_SKIN_FRICTION,
+        _CMz_SKIN_FRICTION,
     ]
 
     def _preprocess(self, filter_physical_steps_only: bool = True, include_time: bool = True):
@@ -223,82 +227,11 @@ class SurfaceForcesResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVMo
     def reload_data(self, filter_physical_steps_only: bool = True, include_time: bool = True):
         return super().reload_data(filter_physical_steps_only, include_time)
 
-    def _create_surface_forces_group(
-        self, entity_groups: Dict[str, List[str]]
-    ) -> SurfaceForcesGroupResultCSVModel:
-        """
-        Create the SurfaceForcesGroupResultCSVModel for the given entity groups.
-        """
-        raw_values = {}
-        for x_column in self._x_columns:
-            raw_values[x_column] = np.array(self.raw_values[x_column])
-        for name, entities in entity_groups.items():
-            self.filter(include=entities)
-            for variable in self._variables:
-                if f"{name}_{variable}" not in raw_values:
-                    raw_values[f"{name}_{variable}"] = np.array(self.values[f"total{variable}"])
-                    continue
-                raw_values[f"{name}_{variable}"] += np.array(self.values[f"total{variable}"])
-
-        raw_values = {key: val.tolist() for key, val in raw_values.items()}
-        entity_groups = {key: sorted(val) for key, val in entity_groups.items()}
-
-        return SurfaceForcesGroupResultCSVModel.from_dict(data=raw_values, group=entity_groups)
-
-    def by_boundary_condition(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
-        """
-        Group entities by boundary condition's name and create a
-        SurfaceForcesGroupResultCSVModel.
-        Forces from different boundaries but with the same type and name will be summed together.
-        """
-
-        entity_groups = defaultdict(list)
-        for model in params.models:
-            if not isinstance(model, BoundaryBase):
-                continue
-            boundary_name = model.name if model.name is not None else model.type
-            entity_groups[boundary_name].extend(
-                [entity.name for entity in model.entities.stored_entities]
-            )
-        return self._create_surface_forces_group(entity_groups=entity_groups)
-
-    def by_body_group(self, params: SimulationParams) -> SurfaceForcesGroupResultCSVModel:
-        """
-        Group entities by body group's name and create a
-        SurfaceForcesGroupResultCSVModel
-        """
-        if not isinstance(
-            params.private_attribute_asset_cache.project_entity_info, GeometryEntityInfo
-        ):
-            raise Flow360ValueError(
-                "Group surface forces by body group is only supported for case starting from geometry."
-            )
-        entity_info = params.private_attribute_asset_cache.project_entity_info
-        if (
-            not hasattr(entity_info, "body_attribute_names")
-            or "groupByBodyId" not in entity_info.face_attribute_names
-        ):
-            raise Flow360ValueError(
-                "The geometry in this case does not contain the necessary body group information, "
-                "please upgrade the project to the latest version and re-run the case."
-            )
-        entity_groups = entity_info.get_body_group_to_face_group_name_map()
-        return self._create_surface_forces_group(entity_groups=entity_groups)
-
 
 class SurfaceForcesGroupResultCSVModel(SurfaceForcesResultCSVModel):
     """SurfaceForcesGroupResultCSVModel"""
 
     remote_file_name: str = pd.Field(None, frozen=True)  # Unused dummy field
-    _entity_groups: dict = pd.PrivateAttr()
-
-    @classmethod
-    # pylint: disable=arguments-differ
-    def from_dict(cls, data: dict, group: dict):
-        obj = super().from_dict(data)
-        # pylint: disable=protected-access
-        obj._entity_groups = group
-        return obj
 
 
 class LegacyForceDistributionResultCSVModel(ResultCSVModel):

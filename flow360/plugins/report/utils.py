@@ -27,7 +27,7 @@ from PIL import Image
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
-from flow360.component.case import Case
+from flow360.component.case import Case, CaseMetaV2
 from flow360.component.results import base_results, case_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
@@ -48,6 +48,8 @@ class RequirementItem(pd.BaseModel):
     filename: str
 
     model_config = {"frozen": True}
+
+    _base_case_attributes: ClassVar[list] = CaseMetaV2.model_fields.keys()
 
     # pylint: disable=protected-access
     _requirements_mapping: ClassVar[dict] = {
@@ -136,6 +138,9 @@ class RequirementItem(pd.BaseModel):
         >>> RequirementItem.from_data_key(data_key="surface_mesh")
         >>> RequirementItem.from_data_key(data_key="monitors", results_name="massFluxExhaust")
         """
+        if data_key in cls._base_case_attributes:
+            return None
+
         if data_key in cls._requirements_mapping:
             return cls(
                 resource_type=cls._requirements_mapping.get(data_key).get("resource_type"),
