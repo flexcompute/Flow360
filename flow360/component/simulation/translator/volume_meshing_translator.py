@@ -8,6 +8,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     AxisymmetricRefinementBase,
+    RotationCylinder,
     RotationVolume,
     UniformRefinement,
     UserDefinedFarfield,
@@ -316,8 +317,17 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         entity_injection_func=rotation_cylinder_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
     )
-    if sliding_interfaces:
-        translated["slidingInterfaces"] = sliding_interfaces
+    sliding_interfaces_cylinders = translate_setting_and_apply_to_all_entities(
+        meshing_params.volume_zones,
+        RotationCylinder,
+        rotation_cylinder_translator,
+        to_list=True,
+        entity_injection_func=rotation_cylinder_entity_injector,
+        translation_func_rotor_disk_names=rotor_disk_names,
+    )
+
+    if sliding_interfaces or sliding_interfaces_cylinders:
+        translated["slidingInterfaces"] = sliding_interfaces + sliding_interfaces_cylinders
 
     ##::  Step 6: Get custom volumes
     custom_volumes = _get_custom_volumes(meshing_params.volume_zones)
