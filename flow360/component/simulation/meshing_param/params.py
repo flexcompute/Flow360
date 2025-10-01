@@ -403,7 +403,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
         total_seedpoint_zone = sum(isinstance(volume_zone, SeedpointZone) for volume_zone in v)
 
-        if total_custom_volume or total_seedpoint_zone:
+        if (total_custom_volume or total_seedpoint_zone) and total_user_defined_farfield:
             total_user_defined_farfield = 0
             log.warning(
                 "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
