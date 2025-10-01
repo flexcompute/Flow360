@@ -15,6 +15,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -152,6 +153,19 @@ def get_test_param():
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
+                    ),
+                    StructuredBoxRefinement(
+                        entities=[
+                            Box.from_principal_axes(
+                                name="boxRefinement1",
+                                center=(0, 1, 1),
+                                size=(1, 2, 1),
+                                axes=((2, 2, 0), (-2, 2, 0)),
+                            )
+                        ],
+                        spacing_axis1=7.5 * u.cm,
+                        spacing_axis2=10 * u.cm,
+                        spacing_normal=15 * u.cm,
                     ),
                     PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
                     PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
@@ -357,6 +371,21 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                 "spacingRadial": 0.4,
                 "enclosedObjects": [],
             },
+        ],
+        "structuredRegions": [
+            {
+                "name": "boxRefinement1",
+                "type": "box",
+                "lengthAxis1": 1.0,
+                "lengthAxis2": 2.0,
+                "lengthNormal": 1.0,
+                "axis1": [0.7071067811865476, 0.7071067811865476, 0.0],
+                "axis2": [-0.7071067811865476, 0.7071067811865476, 0.0],
+                "center": [0.0, 1.0, 1.0],
+                "spacingAxis1": 0.075,
+                "spacingAxis2": 0.1,
+                "spacingNormal": 0.15,
+            }
         ],
         "zones": [
             {

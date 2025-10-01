@@ -20,6 +20,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -42,6 +43,7 @@ RefinementTypes = Annotated[
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
+        StructuredBoxRefinement,
         AxisymmetricRefinement,
     ],
     pd.Field(discriminator="refinement_type"),

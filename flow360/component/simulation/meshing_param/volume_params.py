@@ -49,6 +49,53 @@ class UniformRefinement(Flow360BaseModel):
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
+class BoxRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
+    """Base class for all refinements that require a spacing in 3 orthogonal directions."""
+
+    # pylint: disable=no-member
+    spacing_axis1: LengthType.Positive = pd.Field(
+        description="Spacing along the first axial direction."
+    )
+    spacing_axis2: LengthType.Positive = pd.Field(
+        description="Spacing along the second axial direction."
+    )
+    spacing_normal: LengthType.Positive = pd.Field(
+        description="Spacing along the normal axial direction."
+    )
+
+
+class StructuredBoxRefinement(BoxRefinementBase):
+    """
+    - The mesh inside the :class:`StructuredBoxRefinement` is semi-structured.
+    - The :class:`StructuredBoxRefinement` cannot enclose/intersect with other objects.
+    - The spacings along the three box axes can be adjusted independently.
+
+    Example
+    -------
+
+    >>> StructuredBoxRefinement(
+    ...     entities=[
+    ...        Box.from_principal_axes(
+    ...           name="boxRefinement",
+    ...           center=(0, 1, 1),
+    ...           size=(1, 2, 1),
+    ...           axes=((2, 2, 0), (-2, 2, 0)),
+    ...       )
+    ...     ],
+    ...     spacing_axis1=7.5*u.cm,
+    ...     spacing_axis2=10*u.cm,
+    ...     spacing_normal=15*u.cm,
+    ...   )
+    ====
+    """
+
+    name: Optional[str] = pd.Field("StructuredBoxRefinement")
+    refinement_type: Literal["StructuredBoxRefinement"] = pd.Field(
+        "StructuredBoxRefinement", frozen=True
+    )
+    entities: EntityList[Box] = pd.Field()
+
+
 class AxisymmetricRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     """Base class for all refinements that requires spacing in axial, radial and circumferential directions."""
 
