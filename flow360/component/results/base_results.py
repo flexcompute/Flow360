@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 import re
 import shutil
@@ -92,6 +93,11 @@ def _filter_headers_by_prefix(
     List[str]
         A list of headers that satisfy the inclusion/exclusion criteria.
     """
+
+    if not include and not exclude:
+        raise RuntimeError(
+            "Invalid use of filtering, include and exclude patterns are both empty/None."
+        )
 
     if suffixes is None:
         pattern = re.compile(r"(.*)$")
@@ -660,18 +666,29 @@ class PerEntityResultCSVModel(ResultCSVModel):
     def _create_forces_group(self, entity_groups: dict[str, List[str]]) -> PerEntityResultCSVModel:
         """
         Create new CSV model for the given entity groups.
+        Warning: This function will modify the current instance!!!
         """
 
         def full_name_pattern(word: str) -> re.Pattern:
             # Find the pattern that matches the name exactly or the full name (zone/boundary)
             return rf"^(?:{re.escape(word)}|[^/]+/{re.escape(word)})$"
 
+        self.reload_data()  # Remove all the imposed filters
+        print(">> _x_columns =", self._x_columns)
         raw_values = {}
         for x_column in self._x_columns:
             raw_values[x_column] = np.array(self.raw_values[x_column])
+
         for name, entities in entity_groups.items():
             entity_patterns = [full_name_pattern(name) for name in entities]
-            self.filter(include=entity_patterns)
+
+            # generates self.values[f"total{variable}"] for below
+            try:
+                self.filter(include=entity_patterns)
+            except RuntimeError:
+                # No entities matched the include or exclude patterns
+                continue
+
             for variable in self._variables:
                 partial_sum = np.array(self.values[f"total{variable}"])
                 if f"{name}_{variable}" not in raw_values:
@@ -682,7 +699,7 @@ class PerEntityResultCSVModel(ResultCSVModel):
         raw_values = {key: val.tolist() for key, val in raw_values.items()}
         entity_groups = {key: sorted(val) for key, val in entity_groups.items()}
 
-        return self.from_dict(data=raw_values, group=entity_groups)
+        return self.__class__.from_dict(data=raw_values, group=entity_groups)
 
     def by_boundary_condition(self, params: SimulationParams) -> PerEntityResultCSVModel:
         """
@@ -699,7 +716,9 @@ class PerEntityResultCSVModel(ResultCSVModel):
             entity_groups[boundary_name].extend(
                 [entity.name for entity in model.entities.stored_entities]
             )
-        return self._create_forces_group(entity_groups=entity_groups)
+        self_copy = copy.deepcopy(self)  # Shield from modifying the current instance
+        # pylint: disable=protected-access
+        return self_copy._create_forces_group(entity_groups=entity_groups)
 
     def by_body_group(self, params: SimulationParams) -> PerEntityResultCSVModel:
         """
@@ -722,7 +741,9 @@ class PerEntityResultCSVModel(ResultCSVModel):
                 "please upgrade the project to the latest version and re-run the case."
             )
         entity_groups = entity_info.get_body_group_to_face_group_name_map()
-        return self._create_forces_group(entity_groups=entity_groups)
+        self_copy = copy.deepcopy(self)  # Shield from modifying the current instance
+        # pylint: disable=protected-access
+        return self_copy._create_forces_group(entity_groups=entity_groups)
 
     def reload_data(self, filter_physical_steps_only: bool = False, include_time: bool = False):
         """
