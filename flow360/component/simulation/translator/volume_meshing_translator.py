@@ -83,8 +83,8 @@ def passive_spacing_translator(obj: PassiveSpacing):
     }
 
 
-def rotation_cylinder_translator(obj: RotationVolume, rotor_disk_names: list):
-    """Setting translation for RotationCylinder."""
+def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
+    """Setting translation for RotationVolume."""
     setting = cylindrical_refinement_translator(obj)
     setting["enclosedObjects"] = []
     if obj.enclosed_entities is not None:
@@ -98,6 +98,8 @@ def rotation_cylinder_translator(obj: RotationVolume, rotor_disk_names: list):
                     # Current sliding interface encloses another sliding interface
                     # Then we append the interace name which is hardcoded "slidingInterface-<name>""
                     setting["enclosedObjects"].append("slidingInterface-" + entity.name)
+            elif is_exact_instance(entity, Cylinder):
+                setting["enclosedObjects"].append("slidingInterface-" + entity.name)
             elif is_exact_instance(entity, Surface):
                 setting["enclosedObjects"].append(entity.name)
     return setting
@@ -137,7 +139,7 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_cylinder_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
+def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
     """Injector for Cylinder entity in RotationCylinder."""
     if isinstance(entity, Cylinder):
         return {
@@ -314,17 +316,17 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
         RotationVolume,
-        rotation_cylinder_translator,
+        rotation_volume_translator,
         to_list=True,
-        entity_injection_func=rotation_cylinder_entity_injector,
+        entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
     )
     sliding_interfaces_cylinders = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
         RotationCylinder,
-        rotation_cylinder_translator,
+        rotation_volume_translator,
         to_list=True,
-        entity_injection_func=rotation_cylinder_entity_injector,
+        entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
     )
 

@@ -5,7 +5,6 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
     RotationVolume,
     UniformRefinement,
 )
@@ -20,7 +19,7 @@ def test_disable_invalid_axisymmetric_body_construction():
     with pytest.raises(
         pd.ValidationError,
         match=re.escape(
-            "Expect profile samples to be (Axial, Radial) samples with positive Radial. Found invalid point: [-1.  1.  3.] cm."
+            "1 validation error for AxisymmetricBody\nprofile_curve.1\n  Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values [type=value_error, input_value=None, input_type=NoneType]\n"
         ),
     ):
         with CGS_unit_system:
@@ -60,7 +59,7 @@ def test_disable_invalid_axisymmetric_body_construction():
             )
 
 
-def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
+def test_disable_multiple_cylinder_in_one_rotation_volume():
     with pytest.raises(
         pd.ValidationError,
         match="Only single instance is allowed in entities for each `RotationVolume`.",
@@ -83,7 +82,7 @@ def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
             SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
-                        RotationCylinder(
+                        RotationVolume(
                             entities=[cylinder_1, cylinder_2],
                             spacing_axial=20,
                             spacing_radial=0.2,
@@ -115,7 +114,7 @@ def test_limit_cylinder_entity_name_length_in_rotation_cylinder():
             SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
-                        RotationCylinder(
+                        RotationVolume(
                             entities=[cylinder],
                             spacing_axial=20,
                             spacing_radial=0.2,
@@ -133,7 +132,7 @@ def test_limit_cylinder_entity_name_length_in_rotation_cylinder():
 def test_reuse_of_same_cylinder():
     with pytest.raises(
         pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationCylinder` at the same time is not allowed.",
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -146,7 +145,7 @@ def test_reuse_of_same_cylinder():
             SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
-                        RotationCylinder(
+                        RotationVolume(
                             entities=[cylinder],
                             spacing_axial=20,
                             spacing_radial=0.2,
@@ -179,7 +178,7 @@ def test_reuse_of_same_cylinder():
         SimulationParams(
             meshing=MeshingParams(
                 volume_zones=[
-                    RotationCylinder(
+                    RotationVolume(
                         entities=[cylinder],
                         spacing_axial=20,
                         spacing_radial=0.2,

@@ -339,7 +339,7 @@ class MeshingParams(Flow360BaseModel):
         usage = EntityUsageMap()
 
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-            if isinstance(volume_zone, RotationVolume):
+            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
@@ -357,9 +357,10 @@ class MeshingParams(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) == sorted(["RotationCylinder", "UniformRefinement"]):
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
+                    sorted(["RotationCylinder", "UniformRefinement"]),
+                    sorted(["RotationVolume", "UniformRefinement"]),
+                ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue
 

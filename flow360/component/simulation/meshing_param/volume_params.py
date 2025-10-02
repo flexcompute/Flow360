@@ -6,6 +6,7 @@ from abc import ABCMeta
 from typing import Literal, Optional
 
 import pydantic as pd
+from typing_extensions import deprecated
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -18,6 +19,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -177,6 +181,9 @@ class RotationVolume(AxisymmetricRefinementBase):
         limitation of all data structure names and labels in CGNS format.
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
+        validation_info = get_validation_info()
+        if validation_info.is_beta_mesher:
+            return values
 
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
@@ -185,6 +192,23 @@ class RotationVolume(AxisymmetricRefinementBase):
                 raise ValueError(
                     f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
+                )
+        return values
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_axisymmetric_only_in_beta_mesher(cls, values):
+        """
+        Ensure that axisymmetric RotationVolumes are only processed with the beta mesher.
+        """
+        validation_info = get_validation_info()
+        if validation_info.is_beta_mesher:
+            return values
+
+        for entity in values.stored_entities:
+            if isinstance(entity, AxisymmetricBody):
+                raise ValueError(
+                    "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )
         return values
 
@@ -197,6 +221,7 @@ class RotationVolume(AxisymmetricRefinementBase):
         return check_deleted_surface_in_entity_list(value)
 
 
+@deprecated("The `RotationCylinder` class is deprecated! Use `RotationVolume` instead.")
 class RotationCylinder(RotationVolume):
     """
     .. deprecated::
@@ -236,22 +261,6 @@ class RotationCylinder(RotationVolume):
             "Please use RotationVolume instead, which now supports both Cylinder and AxisymmetricBody entities.",
         )
         return data
-
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def validate_cylinders_only(cls, values):
-        """
-        Ensure only Cylinder entities are provided (not AxisymmetricBody).
-        This maintains backward compatibility with the original RotationCylinder behavior.
-        """
-        for entity in values.stored_entities:
-            if not isinstance(entity, Cylinder):
-                raise ValueError(
-                    f"RotationCylinder only accepts Cylinder entities. "
-                    f"Found {type(entity).__name__}. "
-                    f"Please use RotationVolume if you need to use AxisymmetricBody."
-                )
-        return values
 
 
 class AutomatedFarfield(Flow360BaseModel):
