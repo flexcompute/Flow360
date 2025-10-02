@@ -510,7 +510,7 @@ def test_y_sectional_results(mock_id, mock_response):
 
     boundaries = ["blk-1/fuselage", "blk-1/leftWing", "blk-1/rightWing"]
     variables = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
-    x_columns = ["Y", "stride"]
+    x_columns = ["Y"]
     total = [f"total{postfix}" for postfix in variables]
 
     all_headers = (
