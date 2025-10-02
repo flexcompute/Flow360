@@ -1658,7 +1658,6 @@ class Chart2D(BaseChart2D):
         x_data, _, _, _ = self._load_data([reference_case])
         return self._get_background_chart(x_data), reference_case
 
-
 class NonlinearResiduals(BaseChart2D):
     """
     Residuals is an object for showing the solution history of nonlinear residuals.
@@ -1740,7 +1739,6 @@ class NonlinearResiduals(BaseChart2D):
                 y_data.append(data_from_path(case, y, cases)[1:])
 
         return x_data, y_data, x_label, y_label
-
 
 class Chart3D(Chart):
     """
