@@ -6,10 +6,12 @@ from abc import ABCMeta
 from typing import Literal, Optional
 
 import pydantic as pd
+from typing_extensions import deprecated
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     Cylinder,
     GenericVolume,
@@ -17,6 +19,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -47,7 +52,7 @@ class UniformRefinement(Flow360BaseModel):
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
-class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
+class AxisymmetricRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     """Base class for all refinements that requires spacing in axial, radial and circumferential directions."""
 
     # pylint: disable=no-member
@@ -60,7 +65,7 @@ class CylindricalRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
     )
 
 
-class AxisymmetricRefinement(CylindricalRefinementBase):
+class AxisymmetricRefinement(AxisymmetricRefinementBase):
     """
     - The mesh inside the :class:`AxisymmetricRefinement` is semi-structured.
     - The :class:`AxisymmetricRefinement` cannot enclose/intersect with other objects.
@@ -89,17 +94,25 @@ class AxisymmetricRefinement(CylindricalRefinementBase):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class RotationCylinder(CylindricalRefinementBase):
+class RotationVolume(AxisymmetricRefinementBase):
     """
-    - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
-    - The :class:`RotationCylinder` is designed to enclose other objects, but it can’t intersect with other objects.
-    - Users could create a donut-shape :class:`RotationCylinder` and put their stationary centerbody in the middle.
-    - This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
+    Creates a rotation volume mesh using cylindrical or axisymmetric body entities.
+
+    - The mesh on :class:`RotationVolume` is guaranteed to be concentric.
+    - The :class:`RotationVolume` is designed to enclose other objects, but it can't intersect with other objects.
+    - Users can create a donut-shaped :class:`RotationVolume` and put their stationary centerbody in the middle.
+    - This type of volume zone can be used to generate volume zones compatible with :class:`~flow360.Rotation` model.
+    - Supports both :class:`Cylinder` and :class:`AxisymmetricBody` entities for defining the rotation volume geometry.
+
+    .. note::
+        The deprecated :class:`RotationCylinder` class is maintained for backward compatibility
+        but only accepts :class:`Cylinder` entities. New code should use :class:`RotationVolume`.
 
     Example
     -------
+    Using a Cylinder entity:
 
-      >>> fl.RotationCylinder(
+      >>> fl.RotationVolume(
       ...     name="RotationCylinder",
       ...     spacing_axial=0.5*fl.u.m,
       ...     spacing_circumferential=0.3*fl.u.m,
@@ -107,20 +120,40 @@ class RotationCylinder(CylindricalRefinementBase):
       ...     entities=cylinder
       ... )
 
-    ====
+    Using an AxisymmetricBody entity:
+
+      >>> fl.RotationVolume(
+      ...     name="RotationConeFrustum",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=axisymmetric_body
+      ... )
+
+    With enclosed entities:
+
+      >>> fl.RotationVolume(
+      ...     name="RotationVolume",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=outer_cylinder,
+      ...     enclosed_entities=[inner_cylinder, surface]
+      ... )
     """
 
     # Note: Please refer to
     # Note: https://www.notion.so/flexcompute/Python-model-design-document-
     # Note: 78d442233fa944e6af8eed4de9541bb1?pvs=4#c2de0b822b844a12aa2c00349d1f68a3
 
-    type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
-    name: Optional[str] = pd.Field("Rotation cylinder", description="Name to display in the GUI.")
-    entities: EntityList[Cylinder] = pd.Field()
-    enclosed_entities: Optional[EntityList[Cylinder, Surface]] = pd.Field(
+    type: Literal["RotationVolume"] = pd.Field("RotationVolume", frozen=True)
+    name: Optional[str] = pd.Field("Rotation Volume", description="Name to display in the GUI.")
+    entities: EntityList[Cylinder, AxisymmetricBody] = pd.Field()
+    enclosed_entities: Optional[EntityList[Cylinder, Surface, AxisymmetricBody]] = pd.Field(
         None,
-        description="Entities enclosed by :class:`RotationCylinder`. "
-        + "Can be `Surface` and/or other :class:`~flow360.Cylinder` (s).",
+        description="Entities enclosed by :class:`RotationVolume`. "
+        + "Can be `Surface` and/or other :class:`~flow360.Cylinder`(s)"
+        "and/or other :class:`~flow360.AxisymmetricBody`(s).",
     )
 
     @pd.field_validator("entities", mode="after")
@@ -135,7 +168,7 @@ class RotationCylinder(CylindricalRefinementBase):
         # pylint: disable=protected-access
         if len(values._get_expanded_entities(create_hard_copy=False)) > 1:
             raise ValueError(
-                "Only single instance is allowed in entities for each RotationCylinder."
+                "Only single instance is allowed in entities for each `RotationVolume`."
             )
         return values
 
@@ -147,14 +180,38 @@ class RotationCylinder(CylindricalRefinementBase):
         limitation of all data structure names and labels in CGNS format.
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return values
+        if validation_info.is_beta_mesher:
+            return values
 
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
         for entity in values.stored_entities:
-            if len(entity.name) > max_cylinder_name_length:
+            if isinstance(entity, Cylinder) and len(entity.name) > max_cylinder_name_length:
                 raise ValueError(
-                    f"The name ({entity.name}) of `Cylinder` entity in `RotationCylinder` "
+                    f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
+                )
+        return values
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_axisymmetric_only_in_beta_mesher(cls, values):
+        """
+        Ensure that axisymmetric RotationVolumes are only processed with the beta mesher.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return values
+        if validation_info.is_beta_mesher:
+            return values
+
+        for entity in values.stored_entities:
+            if isinstance(entity, AxisymmetricBody):
+                raise ValueError(
+                    "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )
         return values
 
@@ -165,6 +222,42 @@ class RotationCylinder(CylindricalRefinementBase):
         if value is None:
             return value
         return check_deleted_surface_in_entity_list(value)
+
+
+@deprecated(
+    "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
+    "which supports both `Cylinder` and `AxisymmetricBody` entities instead."
+)
+class RotationCylinder(RotationVolume):
+    """
+    .. deprecated::
+        Use :class:`RotationVolume` instead. This class is maintained for backward
+        compatibility but will be removed in a future version.
+
+    RotationCylinder creates a rotation volume mesh using cylindrical entities.
+
+    - The mesh on :class:`RotationCylinder` is guaranteed to be concentric.
+    - The :class:`RotationCylinder` is designed to enclose other objects, but it can't intersect with other objects.
+    - Users could create a donut-shape :class:`RotationCylinder` and put their stationary centerbody in the middle.
+    - This type of volume zone can be used to generate volume zone compatible with :class:`~flow360.Rotation` model.
+
+    .. note::
+        :class:`RotationVolume` now supports both :class:`Cylinder` and :class:`AxisymmetricBody` entities.
+        Please migrate to using :class:`RotationVolume` directly.
+
+    Example
+    -------
+      >>> fl.RotationCylinder(
+      ...     name="RotationCylinder",
+      ...     spacing_axial=0.5*fl.u.m,
+      ...     spacing_circumferential=0.3*fl.u.m,
+      ...     spacing_radial=1.5*fl.u.m,
+      ...     entities=cylinder
+      ... )
+    """
+
+    type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
+    entities: EntityList[Cylinder] = pd.Field()
 
 
 class AutomatedFarfield(Flow360BaseModel):
@@ -195,7 +288,9 @@ class AutomatedFarfield(Flow360BaseModel):
         """,
     )
     private_attribute_entity: GenericVolume = pd.Field(
-        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"), frozen=True, exclude=True
+        GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
+        frozen=True,
+        exclude=True,
     )
 
     @property

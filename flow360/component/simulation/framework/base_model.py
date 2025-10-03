@@ -642,7 +642,10 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         solver_values = self._nondimensionalization(
-            params=params, exclude=exclude, required_by=required_by, registry_lookup=registry_lookup
+            params=params,
+            exclude=exclude,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:
