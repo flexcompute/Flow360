@@ -25,11 +25,14 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UniformRefinement,
+)
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
 )
-from flow360.component.simulation.primitives import Edge, Surface
+from flow360.component.simulation.primitives import Cylinder, Edge, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.surface_meshing_translator import (
     get_surface_meshing_json,
@@ -559,3 +562,56 @@ def test_gai_surface_mesher_refinements():
         1 * u.m,
         "gai_surface_mesher.json",
     )
+
+
+def test_gai_translator_hashing_ignores_id():
+    """Test that hash calculation ignores private_attribute_id fields."""
+
+    hashes = []
+    json_dicts = []
+
+    # Create the same configuration twice in a loop
+    # Each iteration generates different UUIDs for entities with private_attribute_id
+    for i in range(2):
+        with SI_unit_system:
+            # Cylinder has private_attribute_id with generate_uuid factory
+            cylinder = Cylinder(
+                name="test_cylinder",
+                center=[0, 0, 0] * u.m,
+                axis=[0, 0, 1],
+                height=10 * u.m,
+                outer_radius=5 * u.m,
+            )
+
+            params = SimulationParams(
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        surface_max_edge_length=0.2,
+                    ),
+                    refinements=[
+                        UniformRefinement(
+                            name="cylinder_refinement", entities=[cylinder], spacing=0.1 * u.m
+                        )
+                    ],
+                )
+            )
+
+        # Export to dict
+        params_dict = params.model_dump(mode="json")
+        json_dicts.append(params_dict)
+
+        # Calculate hash
+        hash_value = SimulationParams._calculate_hash(params_dict)
+        hashes.append(hash_value)
+
+    # Verify JSONs are different (due to different UUIDs)
+    json_str_0 = json.dumps(json_dicts[0], sort_keys=True)
+    json_str_1 = json.dumps(json_dicts[1], sort_keys=True)
+    assert (
+        json_str_0 != json_str_1
+    ), "JSON strings should differ due to different private_attribute_id (UUID) values"
+
+    # Verify hashes are identical (UUID ignored in hash calculation)
+    assert (
+        hashes[0] == hashes[1]
+    ), f"Hashes should be identical despite different UUIDs:\n  Hash 1: {hashes[0]}\n  Hash 2: {hashes[1]}"

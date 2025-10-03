@@ -11,6 +11,10 @@ from flow360.component.simulation.entity_info import (
     VolumeMeshEntityInfo,
 )
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param.edge_params import (
+    HeightBasedRefinement,
+    SurfaceEdgeRefinement,
+)
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     GeometryRefinement,
@@ -82,6 +86,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    Edge,
     GenericVolume,
     GhostCircularPlane,
     GhostSphere,
@@ -2057,6 +2062,39 @@ def test_geometry_AI_only_features():
     assert len(errors) == 1
     assert (
         errors[0]["msg"] == "Value error, Geometry accuracy is required when geometry AI is used."
+    )
+
+
+def test_geometry_AI_unsupported_features():
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    geometry_accuracy=1e-4 * u.m,
+                    surface_max_aspect_ratio=20.0,
+                    surface_max_adaptation_iterations=20,
+                ),
+                refinements=[
+                    SurfaceEdgeRefinement(
+                        edges=[Edge(name="edge0001")], method=HeightBasedRefinement(value=1e-4)
+                    )
+                ],
+            ),
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=False, use_geometry_AI=True
+            ),
+        )
+    params, errors, _ = validate_model(
+        params_as_dict=params.model_dump(mode="json"),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="Geometry",
+        validation_level="VolumeMesh",
+    )
+    assert len(errors) == 1
+    assert (
+        errors[0]["msg"]
+        == "Value error, SurfaceEdgeRefinement is not currently supported with geometry AI."
     )
 
 

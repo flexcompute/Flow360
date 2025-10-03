@@ -729,6 +729,13 @@ class _DimensionedType(metaclass=ABCMeta):
             self, allow_zero_component=False, allow_negative_value=False
         )
 
+    @classproperty
+    def Pair(self):
+        """
+        Array value which accepts length 2.
+        """
+        return self._VectorType.get_class_object(self, length=2)
+
     # pylint: disable=invalid-name
     @classproperty
     def Direction(self):
