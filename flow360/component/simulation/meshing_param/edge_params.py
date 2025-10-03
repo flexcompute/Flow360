@@ -8,6 +8,9 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Edge
 from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 
 
 class AngleBasedRefinement(Flow360BaseModel):
@@ -104,3 +107,13 @@ class SurfaceEdgeRefinement(Flow360BaseModel):
         description="Method for determining the spacing. See :class:`AngleBasedRefinement`,"
         " :class:`HeightBasedRefinement`, :class:`AspectRatioBasedRefinement`, :class:`ProjectAnisoSpacing`",
     )
+
+    @pd.model_validator(mode="after")
+    def ensure_not_geometry_ai(self):
+        """Ensure that geometry AI is disabled when using this feature."""
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return self
+        if validation_info.use_geometry_AI:
+            raise ValueError("SurfaceEdgeRefinement is not currently supported with geometry AI.")
+        return self
