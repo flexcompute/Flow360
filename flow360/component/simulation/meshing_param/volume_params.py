@@ -208,7 +208,6 @@ class RotationVolume(AxisymmetricRefinementBase):
         if validation_info.is_beta_mesher:
             return values
 
-        print("VALIDATION IS BETA MESHER: ", validation_info.is_beta_mesher)
         for entity in values.stored_entities:
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
