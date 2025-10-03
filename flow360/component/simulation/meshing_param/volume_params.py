@@ -52,7 +52,7 @@ class UniformRefinement(Flow360BaseModel):
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
-class StructuredBoxRefinement:
+class StructuredBoxRefinement(Flow360BaseModel):
     """
     - The mesh inside the :class:`StructuredBoxRefinement` is semi-structured.
     - The :class:`StructuredBoxRefinement` cannot enclose/intersect with other objects.
@@ -289,7 +289,7 @@ class RotationVolume(AxisymmetricRefinementBase):
             return values
 
         for entity in values.stored_entities:
-            if isinstance(entity, Box):
+            if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )

@@ -386,3 +386,57 @@ def test_reuse_of_same_cylinder():
                     ],
                 )
             )
+
+
+def test_box_entity_enclosed_only_in_beta_mesher():
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`Box` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="cylinder",
+                    outer_radius=1,
+                    height=12,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                box_entity = Box.from_principal_axes(
+                    name="box",
+                    center=(0, 1, 1),
+                    size=(1, 2, 1),
+                    axes=((2, 2, 0), (-2, 2, 0)),
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[box_entity],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder = Cylinder(
+                name="cylinder",
+                outer_radius=1,
+                height=12,
+                axis=(0, 1, 0),
+                center=(0, 5, 0),
+            )
+            box_entity = Box.from_principal_axes(
+                name="box",
+                center=(0, 1, 1),
+                size=(1, 2, 1),
+                axes=((2, 2, 0), (-2, 2, 0)),
+            )
+            _ = RotationVolume(
+                entities=[cylinder],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[box_entity],
+            )
