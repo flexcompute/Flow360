@@ -544,8 +544,29 @@ class Flow360BaseModel(pd.BaseModel):
 
     @classmethod
     def _calculate_hash(cls, model_dict):
+        def remove_private_attribute_id(obj):
+            """
+            Recursively remove all 'private_attribute_id' keys from the data structure.
+            This ensures hash consistency when private_attribute_id contains UUID4 values
+            that change between runs.
+            """
+            if isinstance(obj, dict):
+                # Create new dict excluding 'private_attribute_id' keys
+                return {
+                    key: remove_private_attribute_id(value)
+                    for key, value in obj.items()
+                    if key != "private_attribute_id"
+                }
+            elif isinstance(obj, list):
+                # Recursively process list elements
+                return [remove_private_attribute_id(item) for item in obj]
+            # Return other types as-is (maintains reference for immutable objects)
+            return obj
+
+        # Remove private_attribute_id before calculating hash
+        cleaned_dict = remove_private_attribute_id(model_dict)
         hasher = hashlib.sha256()
-        json_string = json.dumps(model_dict, sort_keys=True)
+        json_string = json.dumps(cleaned_dict, sort_keys=True)
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
