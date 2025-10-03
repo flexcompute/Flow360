@@ -557,7 +557,7 @@ class Flow360BaseModel(pd.BaseModel):
                     for key, value in obj.items()
                     if key != "private_attribute_id"
                 }
-            elif isinstance(obj, list):
+            if isinstance(obj, list):
                 # Recursively process list elements
                 return [remove_private_attribute_id(item) for item in obj]
             # Return other types as-is (maintains reference for immutable objects)
