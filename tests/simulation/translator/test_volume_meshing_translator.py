@@ -15,6 +15,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinement,
     RotationCylinder,
     RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -127,6 +128,13 @@ def get_test_param():
             profile_curve=[(-1, 0), (-1, 1), (1, 2), (1, 0)],
         )
 
+        porous_medium = Box.from_principal_axes(
+            name="porousRegion",
+            center=(0, 1, 1),
+            size=(1, 2, 1),
+            axes=((2, 2, 0), (-2, 2, 0)),
+        )
+
         param = SimulationParams(
             meshing=MeshingParams(
                 refinement_factor=1.45,
@@ -152,6 +160,12 @@ def get_test_param():
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
+                    ),
+                    StructuredBoxRefinement(
+                        entities=[porous_medium],
+                        spacing_axis1=7.5 * u.cm,
+                        spacing_axis2=10 * u.cm,
+                        spacing_normal=15 * u.cm,
                     ),
                     PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
                     PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
@@ -196,7 +210,7 @@ def get_test_param():
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[rotor_disk_cylinder],
+                        enclosed_entities=[rotor_disk_cylinder, porous_medium],
                     ),
                     RotationVolume(
                         entities=cylinder_3,
@@ -323,7 +337,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                 "spacingAxial": 0.2,
                 "spacingRadial": 0.2,
                 "spacingCircumferential": 0.2,
-                "enclosedObjects": ["rotorDisk-enclosed"],
+                "enclosedObjects": ["rotorDisk-enclosed", "structuredBox-porousRegion"],
             },
             {
                 "name": "3",
@@ -364,6 +378,21 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                 "spacingRadial": 0.4,
                 "enclosedObjects": [],
             },
+        ],
+        "structuredRegions": [
+            {
+                "name": "porousRegion",
+                "type": "box",
+                "lengthAxis1": 1.0,
+                "lengthAxis2": 2.0,
+                "lengthNormal": 1.0,
+                "axis1": [0.7071067811865476, 0.7071067811865476, 0.0],
+                "axis2": [-0.7071067811865476, 0.7071067811865476, 0.0],
+                "center": [0.0, 1.0, 1.0],
+                "spacingAxis1": 0.075,
+                "spacingAxis2": 0.1,
+                "spacingNormal": 0.15,
+            }
         ],
         "zones": [
             {

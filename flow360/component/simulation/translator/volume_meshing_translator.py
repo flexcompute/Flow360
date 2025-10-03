@@ -12,6 +12,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AxisymmetricRefinementBase,
     RotationCylinder,
     RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -31,6 +32,8 @@ from flow360.component.simulation.translator.utils import (
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
+# pylint: disable=too-many-locals
+
 
 def uniform_refinement_translator(obj: UniformRefinement):
     """
@@ -48,6 +51,17 @@ def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
         "spacingAxial": obj.spacing_axial.value.item(),
         "spacingRadial": obj.spacing_radial.value.item(),
         "spacingCircumferential": obj.spacing_circumferential.value.item(),
+    }
+
+
+def box_refinement_translator(obj: StructuredBoxRefinement):
+    """
+    Translate StructuredBoxRefinement spacings
+    """
+    return {
+        "spacingAxis1": obj.spacing_axis1.value.item(),
+        "spacingAxis2": obj.spacing_axis2.value.item(),
+        "spacingNormal": obj.spacing_normal.value.item(),
     }
 
 
@@ -100,6 +114,8 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
                     setting["enclosedObjects"].append("slidingInterface-" + entity.name)
             elif is_exact_instance(entity, AxisymmetricBody):
                 setting["enclosedObjects"].append("slidingInterface-" + entity.name)
+            elif is_exact_instance(entity, Box):
+                setting["enclosedObjects"].append("structuredBox-" + entity.name)
             elif is_exact_instance(entity, Surface):
                 setting["enclosedObjects"].append(entity.name)
     return setting
@@ -124,6 +140,25 @@ def refinement_entity_injector(entity_obj):
             "angleOfRotation": entity_obj.angle_of_rotation.to("degree").value.item(),
         }
     return {}
+
+
+def refinement_entity_box_with_axes_injector(entity_obj: Box):
+    """Injector for Box entity in StructuredBoxRefinement."""
+    lengths = list(entity_obj.size.value)
+
+    axis1 = entity_obj.axes[0]
+    axis2 = entity_obj.axes[1]
+
+    return {
+        "name": entity_obj.name,
+        "type": "box",
+        "lengthAxis1": lengths[0],
+        "lengthAxis2": lengths[1],
+        "lengthNormal": lengths[2],
+        "axis1": list(axis1),
+        "axis2": list(axis2),
+        "center": list(entity_obj.center.value),
+    }
 
 
 def rotor_disks_entity_injector(entity: Cylinder):
@@ -284,6 +319,14 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=rotor_disks_entity_injector,
     )
+    structured_box_refinement = translate_setting_and_apply_to_all_entities(
+        meshing_params.refinements,
+        StructuredBoxRefinement,
+        box_refinement_translator,
+        to_list=True,
+        entity_injection_func=refinement_entity_box_with_axes_injector,
+    )
+
     if uniform_refinement_list:
         translated["refinement"] = []
         translated["refinement"].extend(uniform_refinement_list)
@@ -293,6 +336,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["rotorDisks"] = []
         translated["rotorDisks"].extend(rotor_disk_refinement)
         rotor_disk_names = [item["name"] for item in rotor_disk_refinement]
+
+    if structured_box_refinement:
+        translated["structuredRegions"] = []
+        translated["structuredRegions"].extend(structured_box_refinement)
 
     faces_aniso_setting = translate_setting_and_apply_to_all_entities(
         meshing_params.refinements,
