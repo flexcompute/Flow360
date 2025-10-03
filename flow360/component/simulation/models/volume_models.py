@@ -1413,10 +1413,12 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume, SeedpointZone] = pd.Field(
-        alias="volumes",
-        description="The entity list for the `Rotation` model. "
-        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume, SeedpointZone] = (
+        pd.Field(
+            alias="volumes",
+            description="The entity list for the `Rotation` model. "
+            + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+        )
     )
 
     # TODO: Add test for each of the spec specification.
