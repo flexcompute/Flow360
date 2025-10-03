@@ -336,6 +336,14 @@ class MeshingParams(Flow360BaseModel):
         | UniformRefinement      |          YES           |           NO           |           NO           |
         +------------------------+------------------------+------------------------+------------------------+
 
+        +------------------------+------------------------+------------------------+
+        |                        |StructuredBoxRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+
+        |StructuredBoxRefinement |          NO            |           --           |
+        +------------------------+------------------------+------------------------+
+        | UniformRefinement      |          NO            |           NO           |
+        +------------------------+------------------------+------------------------+
+
         """
 
         usage = EntityUsageMap()
@@ -349,7 +357,10 @@ class MeshingParams(Flow360BaseModel):
                 ]
 
         for refinement in self.refinements if self.refinements is not None else []:
-            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+            if isinstance(
+                refinement,
+                (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
+            ):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)

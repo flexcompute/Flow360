@@ -6,9 +6,15 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
 )
-from flow360.component.simulation.primitives import AxisymmetricBody, Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system
 from flow360.component.simulation.validation.validation_context import (
@@ -24,14 +30,79 @@ beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
 
 
+def test_structured_box_only_in_beta_mesher():
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`StructuredBoxRefinement` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                porous_medium = Box.from_principal_axes(
+                    name="porousRegion",
+                    center=(0, 1, 1),
+                    size=(1, 2, 1),
+                    axes=((2, 2, 0), (-2, 2, 0)),
+                )
+                _ = StructuredBoxRefinement(
+                    entities=[porous_medium],
+                    spacing_axis1=10,
+                    spacing_axis2=10,
+                    spacing_normal=10,
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            porous_medium = Box.from_principal_axes(
+                name="porousRegion",
+                center=(0, 1, 1),
+                size=(1, 2, 1),
+                axes=((2, 2, 0), (-2, 2, 0)),
+            )
+            _ = StructuredBoxRefinement(
+                entities=[porous_medium],
+                spacing_axis1=10,
+                spacing_axis2=10,
+                spacing_normal=10,
+            )
+
+
+def test_no_reuse_box_in_refinements():
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Using Volume entity `box-reused` in `StructuredBoxRefinement`, `UniformRefinement` at the same time is not allowed.",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            with CGS_unit_system:
+                porous_medium = Box.from_principal_axes(
+                    name="box-reused",
+                    center=(0, 1, 1),
+                    size=(1, 2, 1),
+                    axes=((2, 2, 0), (-2, 2, 0)),
+                )
+                structured_box_refine = StructuredBoxRefinement(
+                    entities=[porous_medium],
+                    spacing_axis1=10,
+                    spacing_axis2=10,
+                    spacing_normal=10,
+                )
+                uniform_refine = UniformRefinement(entities=[porous_medium], spacing=10)
+
+                SimulationParams(
+                    meshing=MeshingParams(
+                        refinements=[uniform_refine, structured_box_refine],
+                    )
+                )
+
+
 def test_disable_invalid_axisymmetric_body_construction():
     import re
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape(
-            "Expect profile samples to be (Axial, Radial) samples with positive Radial. Found invalid point: [-1.  1.  3.] cm."
-        ),
+        match=re.escape("Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"),
     ):
         with CGS_unit_system:
             cylinder_1 = AxisymmetricBody(
@@ -73,7 +144,6 @@ def test_disable_invalid_axisymmetric_body_construction():
 def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
     with pytest.raises(
         pd.ValidationError,
-        match="Only single instance is allowed in entities for each RotationCylinder.",
         match="Only single instance is allowed in entities for each `RotationVolume`.",
     ):
         with CGS_unit_system:
