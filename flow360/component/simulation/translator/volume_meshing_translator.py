@@ -98,7 +98,7 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
                     # Current sliding interface encloses another sliding interface
                     # Then we append the interace name which is hardcoded "slidingInterface-<name>""
                     setting["enclosedObjects"].append("slidingInterface-" + entity.name)
-            elif is_exact_instance(entity, Cylinder):
+            elif is_exact_instance(entity, AxisymmetricBody):
                 setting["enclosedObjects"].append("slidingInterface-" + entity.name)
             elif is_exact_instance(entity, Surface):
                 setting["enclosedObjects"].append(entity.name)

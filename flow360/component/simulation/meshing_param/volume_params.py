@@ -25,7 +25,6 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
-from flow360.log import log
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -182,6 +181,8 @@ class RotationVolume(AxisymmetricRefinementBase):
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
         validation_info = get_validation_info()
+        if validation_info is None:
+            return values
         if validation_info.is_beta_mesher:
             return values
 
@@ -202,9 +203,12 @@ class RotationVolume(AxisymmetricRefinementBase):
         Ensure that axisymmetric RotationVolumes are only processed with the beta mesher.
         """
         validation_info = get_validation_info()
+        if validation_info is None:
+            return values
         if validation_info.is_beta_mesher:
             return values
 
+        print("VALIDATION IS BETA MESHER: ", validation_info.is_beta_mesher)
         for entity in values.stored_entities:
             if isinstance(entity, AxisymmetricBody):
                 raise ValueError(
@@ -221,7 +225,10 @@ class RotationVolume(AxisymmetricRefinementBase):
         return check_deleted_surface_in_entity_list(value)
 
 
-@deprecated("The `RotationCylinder` class is deprecated! Use `RotationVolume` instead.")
+@deprecated(
+    "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
+    "which supports both `Cylinder` and `AxisymmetricBody` entities instead."
+)
 class RotationCylinder(RotationVolume):
     """
     .. deprecated::
@@ -252,15 +259,6 @@ class RotationCylinder(RotationVolume):
 
     type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
     entities: EntityList[Cylinder] = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _emit_deprecation_warning(cls, data):
-        log.warning(
-            "RotationCylinder is deprecated and will be removed in a future version. "
-            "Please use RotationVolume instead, which now supports both Cylinder and AxisymmetricBody entities.",
-        )
-        return data
 
 
 class AutomatedFarfield(Flow360BaseModel):
