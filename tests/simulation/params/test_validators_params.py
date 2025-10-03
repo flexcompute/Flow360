@@ -101,6 +101,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     VOLUME_MESH,
+    ParamsValidationInfo,
     ValidationContext,
 )
 
