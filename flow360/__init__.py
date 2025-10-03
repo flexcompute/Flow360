@@ -202,6 +202,7 @@ __all__ = [
     "StructuredBoxRefinement",
     "RotationVolume",
     "RotationCylinder",
+    "RotationVolume",
     "UniformRefinement",
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",

@@ -195,6 +195,7 @@ def get_test_param():
                             Surface(name="blade1"),
                             Surface(name="blade2"),
                             Surface(name="blade3"),
+                            cone_frustum,
                         ],
                     ),
                     RotationVolume(
@@ -306,7 +307,13 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                 "spacingAxial": 0.2,
                 "spacingRadial": 0.2,
                 "spacingCircumferential": 0.2,
-                "enclosedObjects": ["hub", "blade1", "blade2", "blade3"],
+                "enclosedObjects": [
+                    "hub",
+                    "blade1",
+                    "blade2",
+                    "blade3",
+                    "slidingInterface-cone",
+                ],
             },
             {
                 "name": "mid",

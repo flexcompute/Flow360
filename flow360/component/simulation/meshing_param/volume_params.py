@@ -6,6 +6,7 @@ from abc import ABCMeta
 from typing import Literal, Optional
 
 import pydantic as pd
+from typing_extensions import deprecated
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
@@ -18,6 +19,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
@@ -47,53 +51,6 @@ class UniformRefinement(Flow360BaseModel):
     )
     # pylint: disable=no-member
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
-
-
-class BoxRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
-    """Base class for all refinements that require a spacing in 3 orthogonal directions."""
-
-    # pylint: disable=no-member
-    spacing_axis1: LengthType.Positive = pd.Field(
-        description="Spacing along the first axial direction."
-    )
-    spacing_axis2: LengthType.Positive = pd.Field(
-        description="Spacing along the second axial direction."
-    )
-    spacing_normal: LengthType.Positive = pd.Field(
-        description="Spacing along the normal axial direction."
-    )
-
-
-class StructuredBoxRefinement(BoxRefinementBase):
-    """
-    - The mesh inside the :class:`StructuredBoxRefinement` is semi-structured.
-    - The :class:`StructuredBoxRefinement` cannot enclose/intersect with other objects.
-    - The spacings along the three box axes can be adjusted independently.
-
-    Example
-    -------
-
-    >>> StructuredBoxRefinement(
-    ...     entities=[
-    ...        Box.from_principal_axes(
-    ...           name="boxRefinement",
-    ...           center=(0, 1, 1),
-    ...           size=(1, 2, 1),
-    ...           axes=((2, 2, 0), (-2, 2, 0)),
-    ...       )
-    ...     ],
-    ...     spacing_axis1=7.5*u.cm,
-    ...     spacing_axis2=10*u.cm,
-    ...     spacing_normal=15*u.cm,
-    ...   )
-    ====
-    """
-
-    name: Optional[str] = pd.Field("StructuredBoxRefinement")
-    refinement_type: Literal["StructuredBoxRefinement"] = pd.Field(
-        "StructuredBoxRefinement", frozen=True
-    )
-    entities: EntityList[Box] = pd.Field()
 
 
 class AxisymmetricRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -224,6 +181,11 @@ class RotationVolume(AxisymmetricRefinementBase):
         limitation of all data structure names and labels in CGNS format.
         The current prefix is 'rotatingBlock-' with 14 characters.
         """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return values
+        if validation_info.is_beta_mesher:
+            return values
 
         cgns_max_zone_name_length = 32
         max_cylinder_name_length = cgns_max_zone_name_length - len("rotatingBlock-")
@@ -232,6 +194,25 @@ class RotationVolume(AxisymmetricRefinementBase):
                 raise ValueError(
                     f"The name ({entity.name}) of `Cylinder` entity in `RotationVolume` "
                     + f"exceeds {max_cylinder_name_length} characters limit."
+                )
+        return values
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def _validate_axisymmetric_only_in_beta_mesher(cls, values):
+        """
+        Ensure that axisymmetric RotationVolumes are only processed with the beta mesher.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return values
+        if validation_info.is_beta_mesher:
+            return values
+
+        for entity in values.stored_entities:
+            if isinstance(entity, AxisymmetricBody):
+                raise ValueError(
+                    "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )
         return values
 
@@ -244,6 +225,10 @@ class RotationVolume(AxisymmetricRefinementBase):
         return check_deleted_surface_in_entity_list(value)
 
 
+@deprecated(
+    "The `RotationCylinder` class is deprecated! Use `RotationVolume`,"
+    "which supports both `Cylinder` and `AxisymmetricBody` entities instead."
+)
 class RotationCylinder(RotationVolume):
     """
     .. deprecated::
@@ -274,31 +259,6 @@ class RotationCylinder(RotationVolume):
 
     type: Literal["RotationCylinder"] = pd.Field("RotationCylinder", frozen=True)
     entities: EntityList[Cylinder] = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _emit_deprecation_warning(cls, data):
-        log.warning(
-            "RotationCylinder is deprecated and will be removed in a future version. "
-            "Please use RotationVolume instead, which now supports both Cylinder and AxisymmetricBody entities.",
-        )
-        return data
-
-    @pd.field_validator("entities", mode="after")
-    @classmethod
-    def validate_cylinders_only(cls, values):
-        """
-        Ensure only Cylinder entities are provided (not AxisymmetricBody).
-        This maintains backward compatibility with the original RotationCylinder behavior.
-        """
-        for entity in values.stored_entities:
-            if not isinstance(entity, Cylinder):
-                raise ValueError(
-                    f"RotationCylinder only accepts Cylinder entities. "
-                    f"Found {type(entity).__name__}. "
-                    f"Please use RotationVolume if you need to use AxisymmetricBody."
-                )
-        return values
 
 
 class AutomatedFarfield(Flow360BaseModel):

@@ -425,7 +425,7 @@ class AxisymmetricBody(_VolumeEntityBase):
     ...     name="cone_frustum_body",
     ...     center=(0, 0, 0) * fl.u.inch,
     ...     axis=(0, 0, 1),
-    ...     profile_curve = [(-1, 0), (-1, 1), (1, 2), (1, 0)]
+    ...     profile_curve = [(-1, 0) * fl.u.inch, (-1, 1) * fl.u.inch, (1, 2) * fl.u.inch, (1, 0) * fl.u.inch]
     ... )
 
     ====
@@ -437,33 +437,35 @@ class AxisymmetricBody(_VolumeEntityBase):
     axis: Axis = pd.Field(description="The axis of the body of revolution.")
     # pylint: disable=no-member
     center: LengthType.Point = pd.Field(description="The center point of the body of revolution.")
-    profile_curve: List[LengthType.Array] = pd.Field(
+    profile_curve: List[LengthType.Pair] = pd.Field(
         description="The (Axial, Radial) profile of the body of revolution."
     )
 
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
-    @pd.model_validator(mode="after")
-    def _check_radial_profile_is_positive(self) -> Self:
-        first_point = self.profile_curve[0]
-        if len(first_point) != 2 or first_point[1] != 0:
+    @pd.field_validator("profile_curve", mode="after")
+    @classmethod
+    def _check_radial_profile_is_positive(cls, curve):
+        first_point = curve[0]
+        if first_point[1] != 0:
             raise ValueError(
                 f"Expect first profile sample to be (Axial, 0.0). Found invalid point: {str(first_point)}."
             )
 
-        last_point = self.profile_curve[-1]
-        if len(last_point) != 2 or last_point[1] != 0:
+        last_point = curve[-1]
+        if last_point[1] != 0:
             raise ValueError(
                 f"Expect last profile sample to be (Axial, 0.0). Found invalid point: {str(last_point)}."
             )
 
-        for profile_point in self.profile_curve[1:-1]:
-            if len(profile_point) != 2 or profile_point[1] < 0:
+        for profile_point in curve[1:-1]:
+            if profile_point[1] < 0:
                 raise ValueError(
                     f"Expect profile samples to be (Axial, Radial) samples with positive Radial."
                     f" Found invalid point: {str(profile_point)}."
                 )
-        return self
+
+        return curve
 
 
 class SurfacePrivateAttributes(Flow360BaseModel):

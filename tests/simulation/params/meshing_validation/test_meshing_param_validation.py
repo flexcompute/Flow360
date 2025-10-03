@@ -5,13 +5,23 @@ from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    RotationCylinder,
     RotationVolume,
     UniformRefinement,
 )
 from flow360.component.simulation.primitives import AxisymmetricBody, Cylinder, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system
+from flow360.component.simulation.validation.validation_context import (
+    VOLUME_MESH,
+    ParamsValidationInfo,
+    ValidationContext,
+)
+
+non_beta_mesher_context = ParamsValidationInfo({}, [])
+non_beta_mesher_context.is_beta_mesher = False
+
+beta_mesher_context = ParamsValidationInfo({}, [])
+beta_mesher_context.is_beta_mesher = True
 
 
 def test_disable_invalid_axisymmetric_body_construction():
@@ -63,6 +73,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
     with pytest.raises(
         pd.ValidationError,
+        match="Only single instance is allowed in entities for each RotationCylinder.",
         match="Only single instance is allowed in entities for each `RotationVolume`.",
     ):
         with CGS_unit_system:
@@ -83,7 +94,7 @@ def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
             SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
-                        RotationCylinder(
+                        RotationVolume(
                             entities=[cylinder_1, cylinder_2],
                             spacing_axial=20,
                             spacing_radial=0.2,
@@ -98,42 +109,103 @@ def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
             )
 
 
-def test_limit_cylinder_entity_name_length_in_rotation_cylinder():
+def test_limit_cylinder_entity_name_length_in_rotation_volume():
+    # raises when beta mesher is off
     with pytest.raises(
         pd.ValidationError,
         match=r"The name \(very_long_cylinder_name\) of `Cylinder` entity in `RotationVolume`"
         + " exceeds 18 characters limit.",
     ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder = Cylinder(
+                    name="very_long_cylinder_name",
+                    outer_radius=12,
+                    height=2,
+                    axis=(0, 1, 0),
+                    center=(0, 5, 0),
+                )
+                _ = RotationVolume(
+                    entities=[cylinder],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[
+                        Surface(name="hub"),
+                    ],
+                )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
         with CGS_unit_system:
-            cylinder = Cylinder(
+            cylinder2 = Cylinder(
                 name="very_long_cylinder_name",
                 outer_radius=12,
                 height=2,
                 axis=(0, 1, 0),
                 center=(0, 5, 0),
             )
-            SimulationParams(
-                meshing=MeshingParams(
-                    volume_zones=[
-                        RotationCylinder(
-                            entities=[cylinder],
-                            spacing_axial=20,
-                            spacing_radial=0.2,
-                            spacing_circumferential=20,
-                            enclosed_entities=[
-                                Surface(name="hub"),
-                            ],
-                        ),
-                        AutomatedFarfield(),
+            _ = RotationVolume(
+                entities=[cylinder2],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[
+                    Surface(name="hub"),
+                ],
+            )
+
+
+def test_limit_axisymmetric_body_in_rotation_volume():
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            with CGS_unit_system:
+                cylinder_1 = AxisymmetricBody(
+                    name="1",
+                    axis=(0, 0, 1),
+                    center=(0, 5, 0),
+                    profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+                )
+
+                _ = RotationVolume(
+                    entities=[cylinder_1],
+                    spacing_axial=20,
+                    spacing_radial=0.2,
+                    spacing_circumferential=20,
+                    enclosed_entities=[
+                        Surface(name="hub"),
                     ],
                 )
+
+    # does not raise with beta mesher on
+    with ValidationContext(VOLUME_MESH, beta_mesher_context):
+        with CGS_unit_system:
+            cylinder_2 = AxisymmetricBody(
+                name="1",
+                axis=(0, 0, 1),
+                center=(0, 5, 0),
+                profile_curve=[(-1, 0), (-1, 1), (1, 1), (1, 0)],
+            )
+
+            _ = RotationVolume(
+                entities=[cylinder_2],
+                spacing_axial=20,
+                spacing_radial=0.2,
+                spacing_circumferential=20,
+                enclosed_entities=[
+                    Surface(name="hub"),
+                ],
             )
 
 
 def test_reuse_of_same_cylinder():
     with pytest.raises(
         pd.ValidationError,
-        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationCylinder` at the same time is not allowed.",
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
     ):
         with CGS_unit_system:
             cylinder = Cylinder(
@@ -146,7 +218,7 @@ def test_reuse_of_same_cylinder():
             SimulationParams(
                 meshing=MeshingParams(
                     volume_zones=[
-                        RotationCylinder(
+                        RotationVolume(
                             entities=[cylinder],
                             spacing_axial=20,
                             spacing_radial=0.2,
@@ -179,7 +251,7 @@ def test_reuse_of_same_cylinder():
         SimulationParams(
             meshing=MeshingParams(
                 volume_zones=[
-                    RotationCylinder(
+                    RotationVolume(
                         entities=[cylinder],
                         spacing_axial=20,
                         spacing_radial=0.2,

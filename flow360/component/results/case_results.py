@@ -71,7 +71,6 @@ _HEAT_TRANSFER = "HeatTransfer"
 _HEAT_FLUX = "HeatFlux"
 _X = "X"
 _Y = "Y"
-_STRIDE = "stride"
 _CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
 _CD_PER_STRIP = "CD_per_strip"
 _CFx_PER_SPAN = "CFx_per_span"
@@ -276,7 +275,7 @@ class YSlicingForceDistributionResultCSVModel(PerEntityResultCSVModel):
 
     _variables: List[str] = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
     _filter_when_zero = [_CFx_PER_SPAN, _CFz_PER_SPAN, _CMy_PER_SPAN]
-    _x_columns: List[str] = [_Y, _STRIDE]
+    _x_columns: List[str] = [_Y]
 
 
 class SurfaceHeatTransferResultCSVModel(PerEntityResultCSVModel, TimeSeriesResultCSVModel):
