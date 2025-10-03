@@ -38,12 +38,13 @@ from flow360.component.types import Axis
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
 
-def _get_boundary_full_name(surface_name: str, volume_mesh_meta: dict[str, dict]) -> str:
-    """Ideally volume_mesh_meta should be a pydantic model.
+def _get_generated_boundary_names(surface_name: str, volume_mesh_meta: dict[str, dict]) -> list:
+    """
 
-    TODO:  Note that the same surface_name may appear in different blocks. E.g.
-    `farFieldBlock/slipWall`, and `plateBlock/slipWall`. Currently the mesher does not support splitting boundary into
-    blocks but we will need to support this someday.
+    Returns all the boundaries that are eventually generated from looking at the volume mesh metadata.
+
+    May return multiple boundaries when the original one is split into multiple boundaries.
+
     """
     full_boundary_names = []
 
@@ -191,14 +192,14 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
         """
         Update parent zone name once the volume mesh is done.
         """
-        updated_boundary_names = _get_boundary_full_name(self.name, volume_mesh_meta_data)
+        updated_boundary_names = _get_generated_boundary_names(self.name, volume_mesh_meta_data)
 
         with model_attribute_unlock(self, "private_attribute_full_name"):
             self.private_attribute_full_name = updated_boundary_names.pop(0)
 
-        multipliation_result = []
+        multiplication_result = []
         for new_boundary_name in updated_boundary_names:
-            multipliation_result.append(
+            multiplication_result.append(
                 self.copy(
                     update={
                         "name": new_boundary_name,
@@ -207,7 +208,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
                 )
             )
 
-        return multipliation_result if multipliation_result else None
+        return multiplication_result if multiplication_result else None
 
     @property
     def full_name(self):
