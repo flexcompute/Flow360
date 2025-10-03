@@ -12,6 +12,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 
+
 class AngleBasedRefinement(Flow360BaseModel):
     """
     Surface edge refinement by specifying curvature resolution angle.
