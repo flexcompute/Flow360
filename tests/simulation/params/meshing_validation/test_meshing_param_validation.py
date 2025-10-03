@@ -101,9 +101,7 @@ def test_disable_invalid_axisymmetric_body_construction():
 
     with pytest.raises(
         pd.ValidationError,
-        match=re.escape(
-            "Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"
-        ),
+        match=re.escape("Value error, arg '(-1, 1, 3)' needs to be a collection of 2 values"),
     ):
         with CGS_unit_system:
             cylinder_1 = AxisymmetricBody(
