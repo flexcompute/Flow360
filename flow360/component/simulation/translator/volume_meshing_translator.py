@@ -32,6 +32,8 @@ from flow360.component.simulation.translator.utils import (
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
+# pylint: disable=too-many-locals
+
 
 def uniform_refinement_translator(obj: UniformRefinement):
     """
@@ -54,7 +56,7 @@ def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
 
 def box_refinement_translator(obj: StructuredBoxRefinement):
     """
-    Translate BoxRefinementBase. [StructuredBoxRefinement]
+    Translate StructuredBoxRefinement spacings
     """
     return {
         "spacingAxis1": obj.spacing_axis1.value.item(),

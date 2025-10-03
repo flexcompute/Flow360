@@ -25,7 +25,6 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
-from flow360.log import log
 
 
 class UniformRefinement(Flow360BaseModel):
@@ -53,22 +52,7 @@ class UniformRefinement(Flow360BaseModel):
     spacing: LengthType.Positive = pd.Field(description="The required refinement spacing.")
 
 
-class BoxRefinementBase(Flow360BaseModel, metaclass=ABCMeta):
-    """Base class for all refinements that require a spacing in 3 orthogonal directions."""
-
-    # pylint: disable=no-member
-    spacing_axis1: LengthType.Positive = pd.Field(
-        description="Spacing along the first axial direction."
-    )
-    spacing_axis2: LengthType.Positive = pd.Field(
-        description="Spacing along the second axial direction."
-    )
-    spacing_normal: LengthType.Positive = pd.Field(
-        description="Spacing along the normal axial direction."
-    )
-
-
-class StructuredBoxRefinement(BoxRefinementBase):
+class StructuredBoxRefinement:
     """
     - The mesh inside the :class:`StructuredBoxRefinement` is semi-structured.
     - The :class:`StructuredBoxRefinement` cannot enclose/intersect with other objects.
@@ -93,14 +77,26 @@ class StructuredBoxRefinement(BoxRefinementBase):
     ====
     """
 
+    # pylint: disable=no-member
+    # pylint: disable=too-few-public-methods
     name: Optional[str] = pd.Field("StructuredBoxRefinement")
     refinement_type: Literal["StructuredBoxRefinement"] = pd.Field(
         "StructuredBoxRefinement", frozen=True
     )
     entities: EntityList[Box] = pd.Field()
 
+    spacing_axis1: LengthType.Positive = pd.Field(
+        description="Spacing along the first axial direction."
+    )
+    spacing_axis2: LengthType.Positive = pd.Field(
+        description="Spacing along the second axial direction."
+    )
+    spacing_normal: LengthType.Positive = pd.Field(
+        description="Spacing along the normal axial direction."
+    )
+
     @pd.model_validator(mode="after")
-    def _validate_axisymmetric_only_in_beta_mesher(self):
+    def _validate_only_in_beta_mesher(self):
         """
         Ensure that StructuredBoxRefinement objects are only processed with the beta mesher.
         """
@@ -258,6 +254,28 @@ class RotationVolume(AxisymmetricRefinementBase):
                 )
         return values
 
+    @pd.field_validator("enclosed_entities", mode="after")
+    @classmethod
+    def _validate_enclosed_box_only_in_beta_mesher(cls, values):
+        """
+        Check the name length for the cylinder entities due to the 32-character
+        limitation of all data structure names and labels in CGNS format.
+        The current prefix is 'rotatingBlock-' with 14 characters.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return values
+        if validation_info.is_beta_mesher:
+            return values
+
+        for entity in values.stored_entities:
+            if isinstance(entity, Box):
+                raise ValueError(
+                    "`Box` entity in `RotationVolume.enclosed_entities` is only supported with the beta mesher."
+                )
+
+        return values
+
     @pd.field_validator("entities", mode="after")
     @classmethod
     def _validate_axisymmetric_only_in_beta_mesher(cls, values):
@@ -271,7 +289,7 @@ class RotationVolume(AxisymmetricRefinementBase):
             return values
 
         for entity in values.stored_entities:
-            if isinstance(entity, AxisymmetricBody):
+            if isinstance(entity, Box):
                 raise ValueError(
                     "`AxisymmetricBody` entity for `RotationVolume` is only supported with the beta mesher."
                 )
