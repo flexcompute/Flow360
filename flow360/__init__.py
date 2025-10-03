@@ -200,7 +200,6 @@ __all__ = [
     "AutomatedFarfield",
     "AxisymmetricRefinement",
     "StructuredBoxRefinement",
-    "RotationVolume",
     "RotationCylinder",
     "RotationVolume",
     "UniformRefinement",

@@ -141,7 +141,7 @@ def test_disable_invalid_axisymmetric_body_construction():
             )
 
 
-def test_disable_multiple_cylinder_in_one_ratataion_cylinder():
+def test_disable_multiple_cylinder_in_one_rotation_volume():
     with pytest.raises(
         pd.ValidationError,
         match="Only single instance is allowed in entities for each `RotationVolume`.",
