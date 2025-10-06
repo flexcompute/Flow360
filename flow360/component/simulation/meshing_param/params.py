@@ -1,6 +1,6 @@
 """Meshing related parameters for volume and surface mesher."""
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 from typing_extensions import Self
@@ -15,6 +15,20 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
     SurfaceRefinement,
 )
+from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
+    MeshingDefaults,
+    SnappyCastellatedMeshControls,
+    SnappyQualityMetrics,
+    SnappySmoothControls,
+    SnappySnapControls,
+    SnappySurfaceMeshingDefaults,
+)
+from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
+    SnappyBodyRefinement,
+    SnappyRegionRefinement,
+    SnappySurfaceEdgeRefinement,
+)
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
@@ -22,16 +36,19 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import CustomVolume
-from flow360.component.simulation.unit_system import AngleType, LengthType
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    SeedpointZone,
+)
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
-    ConditionalField,
     ContextField,
-    get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
+from flow360.log import log
 
 RefinementTypes = Annotated[
     Union[
@@ -47,167 +64,34 @@ RefinementTypes = Annotated[
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume, SeedpointZone],
     pd.Field(discriminator="type"),
 ]
 
+SurfaceRefinementTypes = Annotated[
+    Union[
+        SurfaceEdgeRefinement,
+        SurfaceRefinement,
+    ],
+    pd.Field(discriminator="refinement_type"),
+]
 
-class MeshingDefaults(Flow360BaseModel):
-    """
-    Default/global settings for meshing parameters.
+SnappySurfaceRefinementTypes = Annotated[
+    Union[
+        SnappyBodyRefinement, SnappySurfaceEdgeRefinement, SnappyRegionRefinement, UniformRefinement
+    ],
+    pd.Field(discriminator="refinement_type"),
+]
 
-    Example
-    -------
-
-      >>> fl.MeshingDefaults(
-      ...     surface_max_edge_length=1*fl.u.m,
-      ...     surface_edge_growth_rate=1.2,
-      ...     curvature_resolution_angle=12*fl.u.deg,
-      ...     boundary_layer_growth_rate=1.1,
-      ...     boundary_layer_first_layer_thickness=1e-5*fl.u.m
-      ... )
-
-    ====
-    """
-
-    # pylint: disable=no-member
-    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
-        None,
-        description="The smallest length scale that will be resolved accurately by the surface meshing process. "
-        "This parameter is only valid when using geometry AI."
-        "It can be overridden with class: ~flow360.GeometryRefinement.",
-    )
-
-    ##::   Default surface edge settings
-    surface_edge_growth_rate: float = ContextField(
-        1.2,
-        ge=1,
-        description="Growth rate of the anisotropic layers grown from the edges."
-        "This can not be overridden per edge.",
-        context=SURFACE_MESH,
-    )
-
-    ##::    Default boundary layer settings
-    boundary_layer_growth_rate: float = ContextField(
-        1.2,
-        description="Default growth rate for volume prism layers.",
-        ge=1,
-        context=VOLUME_MESH,
-    )
-    # pylint: disable=no-member
-    boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = ConditionalField(
-        None,
-        description="Default first layer thickness for volumetric anisotropic layers."
-        " This can be overridden with :class:`~flow360.BoundaryLayer`.",
-        context=VOLUME_MESH,
-    )  # Truly optional if all BL faces already have first_layer_thickness
-
-    number_of_boundary_layers: Optional[pd.NonNegativeInt] = pd.Field(
-        None,
-        description="Default number of volumetric anisotropic layers."
-        " The volume mesher will automatically calculate the required"
-        " no. of layers to grow the boundary layer elements to isotropic size if not specified."
-        " This is only supported by the beta mesher and can not be overridden per face.",
-    )
-
-    planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
-        DEFAULT_PLANAR_FACE_TOLERANCE,
-        strict=True,
-        description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
-        " that need to be remeshed, such as symmetry planes."
-        " This tolerance is non-dimensional, and represents a distance"
-        " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
-        " This can not be overridden per face.",
-    )
-
-    ##::    Default surface layer settings
-    surface_max_edge_length: Optional[LengthType.Positive] = ConditionalField(
-        None,
-        description="Default maximum edge length for surface cells."
-        " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
-        context=SURFACE_MESH,
-    )
-
-    surface_max_aspect_ratio: Optional[pd.PositiveFloat] = ConditionalField(
-        10.0,
-        description="Maximum aspect ratio for surface cells for the GAI surface mesher."
-        " This cannot be overridden per face",
-        context=SURFACE_MESH,
-    )
-
-    surface_max_adaptation_iterations: Optional[pd.NonNegativeInt] = ConditionalField(
-        50,
-        description="Maximum adaptation iterations for the GAI surface mesher.",
-        context=SURFACE_MESH,
-    )
-
-    curvature_resolution_angle: Optional[AngleType.Positive] = ContextField(
-        12 * u.deg,
-        description=(
-            "Default maximum angular deviation in degrees. This value will restrict:"
-            " 1. The angle between a cell’s normal and its underlying surface normal."
-            " 2. The angle between a line segment’s normal and its underlying curve normal."
-            " This can not be overridden per face."
-        ),
-        context=SURFACE_MESH,
-    )
-
-    preserve_thin_geometry: Optional[bool] = pd.Field(
-        False,
-        description="Flag to specify whether thin geometry features with thickness roughly equal "
-        + "to geometry_accuracy should be resolved accurately during the surface meshing process."
-        + "This can be overridden with class: ~flow360.GeometryRefinement",
-    )
-
-    @pd.field_validator("number_of_boundary_layers", mode="after")
-    @classmethod
-    def invalid_number_of_boundary_layers(cls, value):
-        """Ensure number of boundary layers is not specified"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        if value is not None and not validation_info.is_beta_mesher:
-            raise ValueError("Number of boundary layers is only supported by the beta mesher.")
-        return value
-
-    @pd.field_validator("geometry_accuracy", mode="after")
-    @classmethod
-    def invalid_geometry_accuracy(cls, value):
-        """Ensure geometry accuracy is not specified when GAI is not used"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        if value is not None and not validation_info.use_geometry_AI:
-            raise ValueError("Geometry accuracy is only supported when geometry AI is used.")
-
-        if value is None and validation_info.use_geometry_AI:
-            raise ValueError("Geometry accuracy is required when geometry AI is used.")
-        return value
-
-    @pd.field_validator(
-        "surface_max_aspect_ratio",
-        "surface_max_adaptation_iterations",
-        "preserve_thin_geometry",
-        mode="after",
-    )
-    @classmethod
-    def invalid_geometry_ai_features(cls, value, info):
-        """Ensure GAI features are not specified when GAI is not used"""
-        validation_info = get_validation_info()
-
-        if validation_info is None:
-            return value
-
-        # pylint: disable=unsubscriptable-object
-        default_value = cls.model_fields[info.field_name].default
-        if value != default_value and not validation_info.use_geometry_AI:
-            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
-
-        return value
+VolumeRefinementTypes = Annotated[
+    Union[
+        UniformRefinement,
+        AxisymmetricRefinement,
+        BoundaryLayer,
+        PassiveSpacing,
+    ],
+    pd.Field(discriminator="refinement_type"),
+]
 
 
 class MeshingParams(Flow360BaseModel):
@@ -242,6 +126,7 @@ class MeshingParams(Flow360BaseModel):
     ====
     """
 
+    type: Literal["MeshingParams"] = pd.Field("MeshingParams", frozen=True)
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -249,6 +134,7 @@ class MeshingParams(Flow360BaseModel):
         + " finer mesh where r is the refinement_factor value.",
     )
 
+    # pylint: disable=duplicate-code
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
@@ -283,14 +169,28 @@ class MeshingParams(Flow360BaseModel):
             # User did not put anything in volume_zones so may not want to use volume meshing
             return v
 
-        total_farfield = sum(
-            isinstance(volume_zone, (AutomatedFarfield, UserDefinedFarfield)) for volume_zone in v
+        total_automated_farfield = sum(
+            isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
         )
-        if total_farfield == 0:
-            raise ValueError("Farfield zone is required in `volume_zones`.")
+        total_user_defined_farfield = sum(
+            isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
+        )
+        total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
 
-        if total_farfield > 1:
-            raise ValueError("Only one farfield zone is allowed in `volume_zones`.")
+        if total_custom_volume:
+            total_user_defined_farfield = 0
+            log.warning(
+                "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
+            )
+
+        if total_automated_farfield > 1:
+            raise ValueError("Only one AutomatedFarfield zone is allowed in `volume_zones`.")
+
+        if total_user_defined_farfield > 1:
+            raise ValueError("Only one UserDefinedFarfield zone is allowed in `volume_zones`.")
+
+        if (total_automated_farfield + total_user_defined_farfield + total_custom_volume) == 0:
+            raise ValueError("Farfield zone is required in `volume_zones`.")
 
         return v
 
@@ -381,4 +281,267 @@ class MeshingParams(Flow360BaseModel):
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
+        return None
+
+
+class SnappySurfaceMeshingParams(Flow360BaseModel):
+    """
+    Parameters for snappyHexMesh surface meshing.
+    """
+
+    type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
+        "SnappySurfaceMeshingParams", frozen=True
+    )
+    defaults: SnappySurfaceMeshingDefaults = pd.Field()
+    quality_metrics: SnappyQualityMetrics = pd.Field(SnappyQualityMetrics())
+    snap_controls: SnappySnapControls = pd.Field(SnappySnapControls())
+    castellated_mesh_controls: SnappyCastellatedMeshControls = pd.Field(
+        SnappyCastellatedMeshControls()
+    )
+    smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
+    bounding_box: Optional[Box] = pd.Field(None)
+    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
+
+    @pd.model_validator(mode="after")
+    def _check_body_refinements_w_defaults(self):
+        # set body refinements
+        # pylint: disable=no-member
+        for refinement in self.refinements:
+            if isinstance(refinement, SnappyBodyRefinement):
+                if refinement.min_spacing is None and refinement.max_spacing is None:
+                    continue
+                if refinement.min_spacing is None and self.defaults.min_spacing.to(
+                    "m"
+                ) > refinement.max_spacing.to("m"):
+                    raise ValueError(
+                        "Default minimum spacing is higher that refinement maximum spacing"
+                        + "and minimum spacing is not provided."
+                    )
+                if refinement.max_spacing is None and self.defaults.max_spacing.to(
+                    "m"
+                ) < refinement.min_spacing.to("m"):
+                    raise ValueError(
+                        "Default maximum spacing is lower that refinement minimum spacing"
+                        + "and maximum spacing is not provided."
+                    )
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_uniform_refinement_entities(self):
+        # pylint: disable=no-member
+        for refinement in self.refinements:
+            if isinstance(refinement, UniformRefinement):
+                for entity in refinement.entities.stored_entities:
+                    if isinstance(entity, Box) and entity.angle_of_rotation.to("deg") != 0 * u.deg:
+                        raise ValueError(
+                            "UniformRefinement for snappy accepts only Boxes with axes aligned"
+                            + " with the global coordinate system (angle_of_rotation=0)."
+                        )
+                    if isinstance(entity, Cylinder) and entity.inner_radius.to("m") != 0 * u.m:
+                        raise ValueError(
+                            "UniformRefinement for snappy accepts only full cylinders (where inner_radius = 0)."
+                        )
+
+        return self
+
+
+class BetaVolumeMeshingParams(Flow360BaseModel):
+    """
+    Volume meshing parameters.
+    """
+
+    type: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
+    defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
+    refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
+        default=1,
+        description="All spacings in refinement regions"
+        + "and first layer thickness will be adjusted to generate `r`-times"
+        + " finer mesh where r is the refinement_factor value.",
+    )
+
+    refinements: List[VolumeRefinementTypes] = pd.Field(
+        default=[],
+        description="Additional fine-tunning for refinements on top of the global settings",
+    )
+
+    planar_face_tolerance: pd.NonNegativeFloat = pd.Field(
+        DEFAULT_PLANAR_FACE_TOLERANCE,
+        description="Tolerance used for detecting planar faces in the input surface mesh"
+        " that need to be remeshed, such as symmetry planes."
+        " This tolerance is non-dimensional, and represents a distance"
+        " relative to the largest dimension of the bounding box of the input surface mesh."
+        " This is only supported by the beta mesher and can not be overridden per face.",
+    )
+
+
+SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
+VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
+
+
+class ModularMeshingWorkflow(Flow360BaseModel):
+    """
+    Structure consolidating surface and volume meshing parameters.
+    """
+
+    type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
+    surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
+        default=None, context=SURFACE_MESH
+    )
+    volume_meshing: Optional[VolumeMeshingParams] = ContextField(default=None, context=VOLUME_MESH)
+    zones: List[VolumeZonesTypes]
+
+    @pd.field_validator("zones", mode="after")
+    @classmethod
+    def _check_volume_zones_has_farfied(cls, v):
+
+        total_automated_farfield = sum(
+            isinstance(volume_zone, AutomatedFarfield) for volume_zone in v
+        )
+        total_user_defined_farfield = sum(
+            isinstance(volume_zone, UserDefinedFarfield) for volume_zone in v
+        )
+        total_custom_volume = sum(isinstance(volume_zone, CustomVolume) for volume_zone in v)
+        total_seedpoint_zone = sum(isinstance(volume_zone, SeedpointZone) for volume_zone in v)
+
+        if (total_custom_volume or total_seedpoint_zone) and total_user_defined_farfield:
+            total_user_defined_farfield = 0
+            log.warning(
+                "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
+            )
+
+        if total_automated_farfield > 1:
+            raise ValueError("Only one AutomatedFarfield zone is allowed in `volume_zones`.")
+
+        if total_user_defined_farfield > 1:
+            raise ValueError("Only one UserDefinedFarfield zone is allowed in `volume_zones`.")
+
+        if total_automated_farfield + total_user_defined_farfield > 1:
+            raise ValueError("Cannot use AutomatedFarfield and UserDefinedFarfield simultaneously.")
+
+        if (
+            total_user_defined_farfield
+            + total_automated_farfield
+            + total_custom_volume
+            + total_seedpoint_zone
+        ) == 0:
+            raise ValueError("At least one zone defining the farfield is required.")
+
+        if total_automated_farfield and (total_seedpoint_zone or total_custom_volume):
+            raise ValueError(
+                "SeedpointZone and CustomVolume cannot be used with AutomatedFarfield."
+            )
+
+        return v
+
+    @pd.field_validator("zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        """Ensure there won't be duplicated volume zone names."""
+
+        if v is None:
+            return v
+        to_be_generated_volume_zone_names = set()
+        for volume_zone in v:
+            if not isinstance(volume_zone, (CustomVolume, SeedpointZone)):
+                continue
+            if volume_zone.name in to_be_generated_volume_zone_names:
+                raise ValueError(
+                    f"Multiple CustomVolume or SeedpointZone with the same name `{volume_zone.name}` are not allowed."
+                )
+            to_be_generated_volume_zone_names.add(volume_zone.name)
+
+        return v
+
+    @pd.model_validator(mode="after")
+    def _check_snappy_zones(self) -> Self:
+        if isinstance(self.surface_meshing, SnappySurfaceMeshingParams):
+            if self.automated_farfield_method != "auto" and not sum(
+                isinstance(volume_zone, SeedpointZone) for volume_zone in self.zones
+            ):
+                raise ValueError(
+                    "snappyHexMeshing requires at least one SeedpointZone when not using AutomatedFarfield."
+                )
+            for zone in self.zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, CustomVolume):
+                    raise ValueError(
+                        "Volume zones with snappyHexMeshing are defined using SeedpointZones, not CustomVolumes."
+                    )
+        else:
+            for zone in self.zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, SeedpointZone):
+                    raise ValueError("Seedpoint zones are applicable only with snappyHexMeshing.")
+
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_no_reused_volume_entities(self) -> Self:
+        """
+        Meshing entities reuse check.
+        +------------------------+------------------------+------------------------+------------------------+
+        |                        | RotationCylinder       | AxisymmetricRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+------------------------+
+        | RotationCylinder       |          NO            |           --           |           --           |
+        +------------------------+------------------------+------------------------+------------------------+
+        | AxisymmetricRefinement |          NO            |           NO           |           --           |
+        +------------------------+------------------------+------------------------+------------------------+
+        | UniformRefinement      |          YES           |           NO           |           NO           |
+        +------------------------+------------------------+------------------------+------------------------+
+
+        """
+
+        usage = EntityUsageMap()
+
+        for volume_zone in self.zones:
+            if isinstance(volume_zone, RotationCylinder):
+                # pylint: disable=protected-access
+                _ = [
+                    usage.add_entity_usage(item, volume_zone.type)
+                    for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
+                ]
+        # pylint: disable=no-member
+        for refinement in (
+            self.volume_meshing.refinements
+            if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)
+            else []
+        ):
+            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+                # pylint: disable=protected-access
+                _ = [
+                    usage.add_entity_usage(item, refinement.refinement_type)
+                    for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
+                ]
+
+        error_msg = ""
+        for entity_type, entity_model_map in usage.dict_entity.items():
+            for entity_info in entity_model_map.values():
+                if len(entity_info["model_list"]) == 1 or sorted(
+                    entity_info["model_list"]
+                ) == sorted(["RotationCylinder", "UniformRefinement"]):
+                    # RotationCylinder and UniformRefinement are allowed to be used together
+                    continue
+
+                model_set = set(entity_info["model_list"])
+                if len(model_set) == 1:
+                    error_msg += (
+                        f"{entity_type} entity `{entity_info['entity_name']}` "
+                        + f"is used multiple times in `{model_set.pop()}`."
+                    )
+                else:
+                    model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
+                    error_msg += (
+                        f"Using {entity_type} entity `{entity_info['entity_name']}` "
+                        + f"in {model_string} at the same time is not allowed."
+                    )
+
+        if error_msg:
+            raise ValueError(error_msg)
+
+        return self
+
+    @property
+    def automated_farfield_method(self):
+        """Returns the automated farfield method used."""
+        for zone in self.zones:  # pylint: disable=not-an-iterable
+            if isinstance(zone, AutomatedFarfield):
+                return zone.method
         return None

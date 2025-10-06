@@ -68,6 +68,7 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     EntityListWithCustomVolume,
     GenericVolume,
+    SeedpointZone,
 )
 from flow360.component.simulation.unit_system import (
     AngleType,
@@ -1412,10 +1413,12 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume] = pd.Field(
-        alias="volumes",
-        description="The entity list for the `Rotation` model. "
-        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume, SeedpointZone] = (
+        pd.Field(
+            alias="volumes",
+            description="The entity list for the `Rotation` model. "
+            + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+        )
     )
 
     # TODO: Add test for each of the spec specification.
@@ -1423,7 +1426,7 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder, CustomVolume]] = pd.Field(
+    parent_volume: Optional[Union[GenericVolume, Cylinder, CustomVolume, SeedpointZone]] = pd.Field(
         None,
         description="The parent rotating entity in a nested rotation case."
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1513,12 +1516,15 @@ class PorousMedium(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume] = pd.Field(
-        alias="volumes",
-        description="The entity list for the `PorousMedium` model. "
-        + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
-        + "The axes of entity must be specified to serve as the the principle axes of the "
-        + "porous medium material model.",
+    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume, SeedpointZone] = (
+        pd.Field(
+            alias="volumes",
+            description="The entity list for the `PorousMedium` model. "
+            + "The entity should be defined by :class:`Box`, zones from the geometry/volume mesh or"
+            + "by :class:`SeedpointZone` when using snappyHexMeshing."
+            + "The axes of entity must be specified to serve as the the principle axes of the "
+            + "porous medium material model.",
+        )
     )
 
     darcy_coefficient: InverseAreaType.Point = pd.Field(

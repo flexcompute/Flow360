@@ -152,6 +152,7 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
             register_entity_list(field, registry)
 
 
+# pylint: disable=too-many-branches
 def _update_entity_full_name(
     model: Flow360BaseModel,
     target_entity_type: Union[type[_SurfaceEntityBase], type[_VolumeEntityBase]],
@@ -170,19 +171,35 @@ def _update_entity_full_name(
             field._update_entity_info_with_metadata(volume_mesh_meta_data)
 
         if isinstance(field, EntityList):
+            added_entities = []
             for entity in field.stored_entities:
                 if isinstance(entity, target_entity_type):
                     # pylint: disable=protected-access
-                    entity._update_entity_info_with_metadata(volume_mesh_meta_data)
-
-        elif isinstance(field, (list, tuple)):
-            for item in field:
-                if isinstance(item, target_entity_type):
-                    item._update_entity_info_with_metadata(  # pylint: disable=protected-access
+                    partial_additions = entity._update_entity_info_with_metadata(
                         volume_mesh_meta_data
                     )
+                    if partial_additions is not None:
+                        added_entities.extend(partial_additions)
+            field.stored_entities.extend(added_entities)
+
+        elif isinstance(field, (list, tuple)):
+            added_entities = []
+            for item in field:
+                if isinstance(item, target_entity_type):
+                    partial_additions = (
+                        item._update_entity_info_with_metadata(  # pylint: disable=protected-access
+                            volume_mesh_meta_data
+                        )
+                    )
+                    if partial_additions is not None:
+                        added_entities.extend(partial_additions)
                 elif isinstance(item, Flow360BaseModel):
                     _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
+
+            if isinstance(field, list):
+                field.extend(added_entities)
+            if isinstance(field, tuple):
+                field += tuple(added_entities)
 
         elif isinstance(field, Flow360BaseModel):
             _update_entity_full_name(field, target_entity_type, volume_mesh_meta_data)

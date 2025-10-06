@@ -45,7 +45,7 @@ def test_flow360_monitor_convert():
     )
     with open("./ref/ref_monitor.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
-    assert compare_values(params_dict, ref_dict, ignore_keys=["private_attribute_id"])
+    assert compare_values(params_dict, ref_dict, ignore_keys=["private_attribute_id", "version"])
 
     with pytest.raises(
         ValueError,
