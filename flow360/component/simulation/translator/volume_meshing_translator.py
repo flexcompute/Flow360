@@ -27,7 +27,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
-    check_meshing_specified,
+    ensure_meshing_is_specified,
     get_global_setting_from_first_instance,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
@@ -209,7 +209,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
 
     translated = {}
 
-    check_meshing_specified(input_params)
+    ensure_meshing_is_specified(input_params)
 
     if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
         input_params.meshing.volume_meshing, BetaVolumeMeshingParams
