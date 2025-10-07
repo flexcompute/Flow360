@@ -19,7 +19,7 @@ def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
 
 
-def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=True):
+def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
     disk = read_single_v1_BETDisk(
         file_path="./data/single_flow360_bet_disk.json",
         mesh_unit=1 * u.cm,
