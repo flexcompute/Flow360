@@ -756,6 +756,16 @@ def snappy_refinements_multiple_regions():
                         test_geometry["body1"]["patch2"],
                     ],
                 ),
+                SnappyRegionRefinement(
+                    min_spacing=10 * u.mm,
+                    max_spacing=40 * u.mm,
+                    regions=test_geometry["body0"]
+                ),
+                SnappyRegionRefinement(
+                    min_spacing=5 * u.mm,
+                    max_spacing=40 * u.mm,
+                    regions=[test_geometry["body2"], test_geometry["body3"]["patch0"]]
+                ),
                 SnappySurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,

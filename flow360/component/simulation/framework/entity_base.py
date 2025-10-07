@@ -275,11 +275,16 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         entities_to_store = []
         valid_types = cls._get_valid_entity_types()
 
+        if isinstance(input_data, EntityList) and input_data._get_valid_entity_types() == valid_types:
+            return {"stored_entities": input_data.stored_entities}
+
         if isinstance(input_data, list):  # A list of entities
             if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
-            for item in input_data:
-                if isinstance(item, list):  # Nested list comes from assets
+            for item in input_data: # for entity grouping types
+                if isinstance(item, EntityList) and item._get_valid_entity_types() == valid_types:
+                    entities_to_store.extend(item.stored_entities)
+                elif isinstance(item, list):  # Nested list comes from assets
                     _ = [cls._valid_individual_input(individual) for individual in item]
                     # pylint: disable=fixme
                     # TODO: Give notice when some of the entities are not selected due to `valid_types`?

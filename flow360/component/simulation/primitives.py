@@ -661,7 +661,7 @@ class SurfacePair(Flow360BaseModel):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
 
 
-class SnappyBody(EntityBase, EntityList):
+class SnappyBody(EntityBase, EntityList[Surface]):
     """
     Represents a group of faces forming a body for snappyHexMesh.
     Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid"
