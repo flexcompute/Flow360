@@ -8,6 +8,28 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.utils import _naming_pattern_handler
 
+class DoubleIndexableList(list):
+    def __getitem__(self, key: Union[str, slice, int]):
+        if isinstance(key, str):
+            returned_items = []
+            for item in self:
+                try:
+                    item_ret_value = item[key]
+                except KeyError:
+                    item_ret_value = []
+                except Exception:
+                    raise ValueError(f"Trying to access something in {item} through string indexing, which is not allowed.")
+                if isinstance(item_ret_value, list):
+                    returned_items += item_ret_value
+                else:
+                    returned_items.append(item_ret_value)
+            if not returned_items:
+                raise ValueError(
+                    f"No entity found in registry for parent entities: {', '.join([f'{entity.name}' for entity in self])} with given name/naming pattern: '{key}'."
+                )
+            return returned_items
+        else:
+            return super(DoubleIndexableList, self).__getitem__(key)
 
 class EntityRegistryBucket:
     """By reference, a snippet of certain collection of a EntityRegistry instance that is inside the same bucket."""
@@ -121,7 +143,7 @@ class EntityRegistry(Flow360BaseModel):
         Returns:
             List[EntityBase]: A list of entities whose names match the pattern.
         """
-        matched_entities = []
+        matched_entities = DoubleIndexableList()
         regex = _naming_pattern_handler(pattern=pattern)
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():

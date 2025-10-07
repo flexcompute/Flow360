@@ -24,6 +24,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     Surface,
+    SnappyBody
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
@@ -40,6 +41,7 @@ GhostSurfaceTypes = Annotated[
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
+GROUPED_SNAPPY = "Grouped with snappy name formatting."
 
 class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
@@ -142,7 +144,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
     def group_in_registry(
         self,
-        entity_type_name: Literal["face", "edge", "body"],
+        entity_type_name: Literal["face", "edge", "body", "snappy_body"],
         attribute_name: str,
         registry: EntityRegistry,
     ) -> EntityRegistry:
@@ -154,16 +156,32 @@ class GeometryEntityInfo(EntityInfoModel):
         for item in entity_list:
             known_frozen_hashes = registry.fast_register(item, known_frozen_hashes)
         return registry
+    
+    def _get_snappy_bodies(
+        self
+    ) -> List[SnappyBody]:
+        
+        snappy_body_mapping = {}
+        for patch in self.grouped_faces[self.face_attribute_names.index("faceId")]:
+            name_components = patch.name.split("::")
+            body_name = name_components[0]
+            if body_name not in snappy_body_mapping:
+                snappy_body_mapping[body_name] = []
+            if patch not in snappy_body_mapping[body_name]:
+                snappy_body_mapping[body_name].append(patch)
 
+        return [SnappyBody(name=snappy_body, stored_entities=body_entities) 
+                for snappy_body, body_entities in snappy_body_mapping.items()]
+                
     def _get_list_of_entities(
         self,
         attribute_name: Union[str, None] = None,
-        entity_type_name: Literal["face", "edge", "body"] = None,
-    ) -> Union[List[Surface], List[Edge], List[GeometryBodyGroup]]:
+        entity_type_name: Literal["face", "edge", "body", "snappy_body"] = None,
+    ) -> Union[List[Surface], List[Edge], List[GeometryBodyGroup], List[SnappyBody]]:
         # Validations
         if entity_type_name is None:
             raise ValueError("Entity type name is required.")
-        if entity_type_name not in ["face", "edge", "body"]:
+        if entity_type_name not in ["face", "edge", "body", "snappy_body"]:
             raise ValueError(
                 f"Invalid entity type name, expected 'body, 'face' or 'edge' but got {entity_type_name}."
             )
@@ -175,10 +193,12 @@ class GeometryEntityInfo(EntityInfoModel):
             entity_attribute_names = self.edge_attribute_names
             entity_full_list = self.grouped_edges
             specified_attribute_name = self.edge_group_tag
-        else:
+        elif entity_type_name == "body":
             entity_attribute_names = self.body_attribute_names
             entity_full_list = self.grouped_bodies
             specified_attribute_name = self.body_group_tag
+        else:
+            return self._get_snappy_bodies()
 
         # Use the supplied one if not None
         if attribute_name is not None:
@@ -188,6 +208,8 @@ class GeometryEntityInfo(EntityInfoModel):
         if specified_attribute_name in entity_attribute_names:
             # pylint: disable=no-member, unsubscriptable-object
             return entity_full_list[entity_attribute_names.index(specified_attribute_name)]
+        if specified_attribute_name == GROUPED_SNAPPY:
+            return self._get_snappy_bodies()
 
         raise ValueError(
             f"The given attribute_name `{attribute_name}` is not found"
@@ -199,6 +221,11 @@ class GeometryEntityInfo(EntityInfoModel):
         Get the full list of boundaries.
         If attribute_name is supplied then ignore stored face_group_tag and use supplied one.
         """
+        if self.face_group_tag == GROUPED_SNAPPY and attribute_name is None:
+            all_boundaries = []
+            for body in self._get_list_of_entities(attribute_name, "snappy_body"):
+                all_boundaries += body.stored_entities
+            return all_boundaries
         return self._get_list_of_entities(attribute_name, "face")
 
     def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
@@ -347,12 +374,39 @@ class GeometryEntityInfo(EntityInfoModel):
                 self.body_group_tag = tag_name
 
         return registry
+    
+    def _group_faces_by_snappy_format(
+            self,
+            registry: EntityRegistry = None
+        ):
+        if registry is None:
+            registry = EntityRegistry()
+
+        if self.face_group_tag is not None:
+            existing_face_tag = self.face_group_tag
+
+        if existing_face_tag:
+            if existing_face_tag != GROUPED_SNAPPY:
+                log.info(
+                    f"Regrouping face entities using snappy name formatting (previous `{GROUPED_SNAPPY}`)."
+                )
+            registry = self._reset_grouping(entity_type_name="face", registry=registry)
+
+        registry = self.group_in_registry(
+            "snappy_body", attribute_name=GROUPED_SNAPPY, registry=registry
+        )
+
+        with model_attribute_unlock(self, "face_group_tag"):
+            self.face_group_tag = GROUPED_SNAPPY
+
+        return registry
 
     def _reset_grouping(
         self, entity_type_name: Literal["face", "edge", "body"], registry: EntityRegistry
     ) -> EntityRegistry:
         if entity_type_name == "face":
             registry.clear(Surface)
+            registry.clear(SnappyBody)
             with model_attribute_unlock(self, "face_group_tag"):
                 self.face_group_tag = None
         elif entity_type_name == "edge":

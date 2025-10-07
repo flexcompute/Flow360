@@ -1,0 +1,3431 @@
+{
+    "version": "25.8.0b3",
+    "unit_system": {
+        "name": "SI"
+    },
+    "meshing": {
+        "type": "MeshingParams",
+        "refinement_factor": 1.0,
+        "gap_treatment_strength": 0.0,
+        "defaults": {
+            "geometry_accuracy": {
+                "value": 10.0,
+                "units": "mm"
+            },
+            "surface_edge_growth_rate": 1.2,
+            "boundary_layer_growth_rate": 1.2,
+            "planar_face_tolerance": 1e-06,
+            "surface_max_aspect_ratio": 10.0,
+            "surface_max_adaptation_iterations": 50,
+            "curvature_resolution_angle": {
+                "value": 12.0,
+                "units": "degree"
+            },
+            "preserve_thin_geometry": false
+        },
+        "refinements": [],
+        "volume_zones": [
+            {
+                "type": "AutomatedFarfield",
+                "name": "Farfield",
+                "method": "auto"
+            }
+        ]
+    },
+    "reference_geometry": {
+        "moment_center": {
+            "value": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "units": "mm"
+        },
+        "moment_length": {
+            "value": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "units": "mm"
+        },
+        "area": {
+            "type_name": "number",
+            "value": 1.0,
+            "units": "mm**2"
+        }
+    },
+    "operating_condition": {
+        "type_name": "AerospaceCondition",
+        "private_attribute_constructor": "default",
+        "private_attribute_input_cache": {
+            "alpha": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "beta": {
+                "value": 0.0,
+                "units": "degree"
+            },
+            "thermal_state": {
+                "type_name": "ThermalState",
+                "private_attribute_constructor": "default",
+                "private_attribute_input_cache": {},
+                "temperature": {
+                    "value": 288.15,
+                    "units": "K"
+                },
+                "density": {
+                    "value": 1.225,
+                    "units": "kg/m**3"
+                },
+                "material": {
+                    "type": "air",
+                    "name": "air",
+                    "dynamic_viscosity": {
+                        "reference_viscosity": {
+                            "value": 1.716e-05,
+                            "units": "Pa*s"
+                        },
+                        "reference_temperature": {
+                            "value": 273.15,
+                            "units": "K"
+                        },
+                        "effective_temperature": {
+                            "value": 110.4,
+                            "units": "K"
+                        }
+                    }
+                }
+            }
+        },
+        "alpha": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "beta": {
+            "value": 0.0,
+            "units": "degree"
+        },
+        "thermal_state": {
+            "type_name": "ThermalState",
+            "private_attribute_constructor": "default",
+            "private_attribute_input_cache": {},
+            "temperature": {
+                "value": 288.15,
+                "units": "K"
+            },
+            "density": {
+                "value": 1.225,
+                "units": "kg/m**3"
+            },
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            }
+        }
+    },
+    "models": [
+        {
+            "type": "Wall",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "name": "Wall",
+            "use_wall_function": false,
+            "heat_spec": {
+                "value": {
+                    "value": 0.0,
+                    "units": "W/m**2"
+                },
+                "type_name": "HeatFlux"
+            },
+            "roughness_height": {
+                "value": 0.0,
+                "units": "mm"
+            }
+        },
+        {
+            "type": "Freestream",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "GhostSurface",
+                        "name": "farfield"
+                    }
+                ]
+            },
+            "name": "Freestream"
+        },
+        {
+            "material": {
+                "type": "air",
+                "name": "air",
+                "dynamic_viscosity": {
+                    "reference_viscosity": {
+                        "value": 1.716e-05,
+                        "units": "Pa*s"
+                    },
+                    "reference_temperature": {
+                        "value": 273.15,
+                        "units": "K"
+                    },
+                    "effective_temperature": {
+                        "value": 110.4,
+                        "units": "K"
+                    }
+                }
+            },
+            "initial_condition": {
+                "type_name": "NavierStokesInitialCondition",
+                "rho": "rho",
+                "u": "u",
+                "v": "v",
+                "w": "w",
+                "p": "p"
+            },
+            "type": "Fluid",
+            "navier_stokes_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 1,
+                "linear_solver": {
+                    "max_iterations": 30
+                },
+                "CFL_multiplier": 1.0,
+                "kappa_MUSCL": -1.0,
+                "numerical_dissipation_factor": 1.0,
+                "limit_velocity": false,
+                "limit_pressure_density": false,
+                "type_name": "Compressible",
+                "low_mach_preconditioner": false,
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0
+            },
+            "turbulence_model_solver": {
+                "absolute_tolerance": 1e-08,
+                "relative_tolerance": 0.0,
+                "order_of_accuracy": 2,
+                "equation_evaluation_frequency": 4,
+                "linear_solver": {
+                    "max_iterations": 20
+                },
+                "CFL_multiplier": 2.0,
+                "type_name": "SpalartAllmaras",
+                "reconstruction_gradient_limiter": 0.5,
+                "quadratic_constitutive_relation": false,
+                "modeling_constants": {
+                    "type_name": "SpalartAllmarasConsts",
+                    "C_DES": 0.72,
+                    "C_d": 8.0,
+                    "C_cb1": 0.1355,
+                    "C_cb2": 0.622,
+                    "C_sigma": 0.6666666666666666,
+                    "C_v1": 7.1,
+                    "C_vonKarman": 0.41,
+                    "C_w2": 0.3,
+                    "C_w4": 0.21,
+                    "C_w5": 1.5,
+                    "C_t3": 1.2,
+                    "C_t4": 0.5,
+                    "C_min_rd": 10.0
+                },
+                "update_jacobian_frequency": 4,
+                "max_force_jac_update_physical_steps": 0,
+                "rotation_correction": false,
+                "low_reynolds_correction": false
+            },
+            "transition_model_solver": {
+                "type_name": "None"
+            }
+        }
+    ],
+    "time_stepping": {
+        "type_name": "Steady",
+        "max_steps": 2000,
+        "CFL": {
+            "type": "adaptive",
+            "min": 0.1,
+            "max": 10000.0,
+            "max_relative_change": 1.0,
+            "convergence_limiting_factor": 0.25
+        }
+    },
+    "user_defined_fields": [],
+    "outputs": [
+        {
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "yPlus",
+                    "Cf",
+                    "CfVec"
+                ]
+            },
+            "private_attribute_id": "806b10fa-b888-4208-9e19-badec6aa42c2",
+            "frequency": -1,
+            "frequency_offset": 0,
+            "output_format": "paraview",
+            "name": "Surface output",
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "name": "*",
+                        "private_attribute_sub_components": []
+                    }
+                ]
+            },
+            "write_single_file": false,
+            "output_type": "SurfaceOutput"
+        }
+    ],
+    "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1.0,
+            "units": "mm"
+        },
+        "use_inhouse_mesher": false,
+        "use_geometry_AI": false,
+        "project_entity_info": {
+            "draft_entities": [],
+            "ghost_entities": [
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostSphere",
+                    "private_attribute_id": "farfield",
+                    "name": "farfield",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "max_radius": 7684678.07
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-1",
+                    "name": "symmetric-1",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        25647.3643,
+                        -25600.0,
+                        9886.287672999999
+                    ],
+                    "max_radius": 7684678.07,
+                    "normal_axis": [
+                        0,
+                        -1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric-2",
+                    "name": "symmetric-2",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        25647.3643,
+                        25600.0,
+                        9886.287672999999
+                    ],
+                    "max_radius": 7684678.07,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                },
+                {
+                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                    "private_attribute_entity_type_name": "GhostCircularPlane",
+                    "private_attribute_id": "symmetric",
+                    "name": "symmetric",
+                    "private_attribute_full_name": null,
+                    "center": [
+                        25647.3643,
+                        0,
+                        9886.287672999999
+                    ],
+                    "max_radius": 7684678.07,
+                    "normal_axis": [
+                        0,
+                        1,
+                        0
+                    ]
+                }
+            ],
+            "type_name": "GeometryEntityInfo",
+            "body_ids": [
+                "f1_no_rad_frame.stl"
+            ],
+            "body_attribute_names": [
+                "bodyId",
+                "groupByFile"
+            ],
+            "grouped_bodies": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "f1_no_rad_frame.stl",
+                        "name": "f1_no_rad_frame.stl",
+                        "private_attribute_tag_key": "bodyId",
+                        "private_attribute_sub_components": [
+                            "f1_no_rad_frame.stl"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        },
+                        "mesh_exterior": true
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
+                        "private_attribute_entity_type_name": "GeometryBodyGroup",
+                        "private_attribute_id": "f1_no_rad_frame.stl",
+                        "name": "f1_no_rad_frame.stl",
+                        "private_attribute_tag_key": "groupByFile",
+                        "private_attribute_sub_components": [
+                            "f1_no_rad_frame.stl"
+                        ],
+                        "private_attribute_color": null,
+                        "transformation": {
+                            "type_name": "BodyGroupTransformation",
+                            "origin": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "axis_of_rotation": [
+                                1.0,
+                                0.0,
+                                0.0
+                            ],
+                            "angle_of_rotation": {
+                                "value": 0.0,
+                                "units": "degree"
+                            },
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "translation": {
+                                "value": [
+                                    0,
+                                    0,
+                                    0
+                                ],
+                                "units": "m"
+                            },
+                            "private_attribute_matrix": null
+                        },
+                        "mesh_exterior": true
+                    }
+                ]
+            ],
+            "face_ids": [
+                "body",
+                "body-aero-camera",
+                "body-camera",
+                "body-front-af",
+                "body-helmet",
+                "body-inner-nlyr",
+                "body-main-rad-duct",
+                "body-mirror",
+                "body-misc",
+                "body-nose",
+                "body-pit",
+                "body-rear-crash-bar",
+                "body-steering-wheel",
+                "diffuser",
+                "eb-engine",
+                "eb-exhaust",
+                "fr-int-brake-duct-lhs",
+                "fr-int-brake-duct-rhs",
+                "fr-int-caketin-lhs",
+                "fr-int-caketin-rhs",
+                "fr-int-winglet-lhs",
+                "fr-int-winglet-rhs",
+                "fr-susp-lwb-lhs",
+                "fr-susp-lwb-rhs",
+                "fr-susp-prod-lhs",
+                "fr-susp-prod-rhs",
+                "fr-susp-trod-lhs",
+                "fr-susp-trod-rhs",
+                "fr-susp-twb-lhs",
+                "fr-susp-twb-rhs",
+                "fr-wh-brake-disc-lhs",
+                "fr-wh-brake-disc-rhs",
+                "fr-wh-cover-OB-lhs",
+                "fr-wh-cover-OB-rhs",
+                "fr-wh-plinth-lhs",
+                "fr-wh-plinth-rhs",
+                "fr-wh-rim-lhs",
+                "fr-wh-rim-rhs",
+                "fr-wh-tyre-lhs",
+                "fr-wh-tyre-rhs",
+                "fw-brackets",
+                "fw-ep",
+                "fw-fine",
+                "fw-flap-1",
+                "fw-flap-2",
+                "fw-mp",
+                "rr-int-brake-duct-lhs",
+                "rr-int-brake-duct-rhs",
+                "rr-int-caketin-lhs",
+                "rr-int-caketin-rhs",
+                "rr-int-vanes-lhs",
+                "rr-int-vanes-rhs",
+                "rr-susp-lwb-lhs",
+                "rr-susp-lwb-rhs",
+                "rr-susp-prod-lhs",
+                "rr-susp-prod-rhs",
+                "rr-susp-trod-lhs",
+                "rr-susp-trod-rhs",
+                "rr-susp-twb-lhs",
+                "rr-susp-twb-rhs",
+                "rr-wh-brake-disc-lhs",
+                "rr-wh-brake-disc-rhs",
+                "rr-wh-cover-OB-lhs",
+                "rr-wh-cover-OB-rhs",
+                "rr-wh-plinth-lhs",
+                "rr-wh-plinth-rhs",
+                "rr-wh-rim-lhs",
+                "rr-wh-rim-rhs",
+                "rr-wh-tyre-lhs",
+                "rr-wh-tyre-rhs",
+                "rw-ep",
+                "rw-flap",
+                "rw-gf",
+                "rw-mp",
+                "rw-pillar",
+                "toint-rad-main-lhs-down",
+                "toint-rad-main-lhs-up",
+                "toint-rad-main-rhs-down",
+                "toint-rad-main-rhs-up",
+                "tunnel::ground",
+                "tunnel::inlet",
+                "tunnel::outlet",
+                "tunnel::sides",
+                "tunnel::top",
+                "uf",
+                "uf-strakes",
+                "velocity-inlet-exhaust-out",
+                "velocity-inlet-fr-int-duct-lhs-out",
+                "velocity-inlet-fr-int-duct-rhs-out",
+                "velocity-inlet-rr-int-duct-lhs-out",
+                "velocity-inlet-rr-int-duct-rhs-out",
+                "velocity-outlet-engine-intake-in",
+                "velocity-outlet-fr-int-duct-lhs-in",
+                "velocity-outlet-fr-int-duct-rhs-in",
+                "velocity-outlet-rr-int-duct-lhs-in",
+                "velocity-outlet-rr-int-duct-rhs-in"
+            ],
+            "face_attribute_names": [
+                "groupByBodyId",
+                "faceId"
+            ],
+            "grouped_faces": [
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "f1_no_rad_frame.stl",
+                        "name": "f1_no_rad_frame.stl",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "groupByBodyId",
+                        "private_attribute_sub_components": [
+                            "body",
+                            "body-aero-camera",
+                            "body-camera",
+                            "body-front-af",
+                            "body-helmet",
+                            "body-inner-nlyr",
+                            "body-main-rad-duct",
+                            "body-mirror",
+                            "body-misc",
+                            "body-nose",
+                            "body-pit",
+                            "body-rear-crash-bar",
+                            "body-steering-wheel",
+                            "diffuser",
+                            "eb-engine",
+                            "eb-exhaust",
+                            "fr-int-brake-duct-lhs",
+                            "fr-int-brake-duct-rhs",
+                            "fr-int-caketin-lhs",
+                            "fr-int-caketin-rhs",
+                            "fr-int-winglet-lhs",
+                            "fr-int-winglet-rhs",
+                            "fr-susp-lwb-lhs",
+                            "fr-susp-lwb-rhs",
+                            "fr-susp-prod-lhs",
+                            "fr-susp-prod-rhs",
+                            "fr-susp-trod-lhs",
+                            "fr-susp-trod-rhs",
+                            "fr-susp-twb-lhs",
+                            "fr-susp-twb-rhs",
+                            "fr-wh-brake-disc-lhs",
+                            "fr-wh-brake-disc-rhs",
+                            "fr-wh-cover-OB-lhs",
+                            "fr-wh-cover-OB-rhs",
+                            "fr-wh-plinth-lhs",
+                            "fr-wh-plinth-rhs",
+                            "fr-wh-rim-lhs",
+                            "fr-wh-rim-rhs",
+                            "fr-wh-tyre-lhs",
+                            "fr-wh-tyre-rhs",
+                            "fw-brackets",
+                            "fw-ep",
+                            "fw-fine",
+                            "fw-flap-1",
+                            "fw-flap-2",
+                            "fw-mp",
+                            "rr-int-brake-duct-lhs",
+                            "rr-int-brake-duct-rhs",
+                            "rr-int-caketin-lhs",
+                            "rr-int-caketin-rhs",
+                            "rr-int-vanes-lhs",
+                            "rr-int-vanes-rhs",
+                            "rr-susp-lwb-lhs",
+                            "rr-susp-lwb-rhs",
+                            "rr-susp-prod-lhs",
+                            "rr-susp-prod-rhs",
+                            "rr-susp-trod-lhs",
+                            "rr-susp-trod-rhs",
+                            "rr-susp-twb-lhs",
+                            "rr-susp-twb-rhs",
+                            "rr-wh-brake-disc-lhs",
+                            "rr-wh-brake-disc-rhs",
+                            "rr-wh-cover-OB-lhs",
+                            "rr-wh-cover-OB-rhs",
+                            "rr-wh-plinth-lhs",
+                            "rr-wh-plinth-rhs",
+                            "rr-wh-rim-lhs",
+                            "rr-wh-rim-rhs",
+                            "rr-wh-tyre-lhs",
+                            "rr-wh-tyre-rhs",
+                            "rw-ep",
+                            "rw-flap",
+                            "rw-gf",
+                            "rw-mp",
+                            "rw-pillar",
+                            "toint-rad-main-lhs-down",
+                            "toint-rad-main-lhs-up",
+                            "toint-rad-main-rhs-down",
+                            "toint-rad-main-rhs-up",
+                            "tunnel::ground",
+                            "tunnel::inlet",
+                            "tunnel::outlet",
+                            "tunnel::sides",
+                            "tunnel::top",
+                            "uf",
+                            "uf-strakes",
+                            "velocity-inlet-exhaust-out",
+                            "velocity-inlet-fr-int-duct-lhs-out",
+                            "velocity-inlet-fr-int-duct-rhs-out",
+                            "velocity-inlet-rr-int-duct-lhs-out",
+                            "velocity-inlet-rr-int-duct-rhs-out",
+                            "velocity-outlet-engine-intake-in",
+                            "velocity-outlet-fr-int-duct-lhs-in",
+                            "velocity-outlet-fr-int-duct-rhs-in",
+                            "velocity-outlet-rr-int-duct-lhs-in",
+                            "velocity-outlet-rr-int-duct-rhs-in"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -51199.4164,
+                                    -25600.0,
+                                    -479.571754
+                                ],
+                                [
+                                    102494.145,
+                                    25600.0,
+                                    20252.1471
+                                ]
+                            ]
+                        }
+                    }
+                ],
+                [
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-brake-disc-lhs",
+                        "name": "rr-wh-brake-disc-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-brake-disc-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3528.53613,
+                                    -804.524292,
+                                    224.419952
+                                ],
+                                [
+                                    3768.73926,
+                                    -767.610718,
+                                    465.21582
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-int-winglet-lhs",
+                        "name": "fr-int-winglet-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-int-winglet-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    130.478043,
+                                    -905.53125,
+                                    507.116272
+                                ],
+                                [
+                                    275.868744,
+                                    -586.723389,
+                                    767.907349
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-int-brake-duct-lhs",
+                        "name": "fr-int-brake-duct-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-int-brake-duct-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -18.4428139,
+                                    -739.646606,
+                                    265.103973
+                                ],
+                                [
+                                    404.780579,
+                                    -504.262573,
+                                    468.704041
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-int-caketin-lhs",
+                        "name": "fr-int-caketin-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-int-caketin-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -47.7378082,
+                                    -675.550354,
+                                    103.112488
+                                ],
+                                [
+                                    451.499847,
+                                    -605.055359,
+                                    603.143921
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-int-winglet-rhs",
+                        "name": "fr-int-winglet-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-int-winglet-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    130.478043,
+                                    586.723389,
+                                    507.116272
+                                ],
+                                [
+                                    275.868744,
+                                    905.53125,
+                                    767.907349
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-int-brake-duct-rhs",
+                        "name": "fr-int-brake-duct-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-int-brake-duct-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -18.4428139,
+                                    504.262573,
+                                    265.103973
+                                ],
+                                [
+                                    404.780579,
+                                    739.646606,
+                                    468.704041
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-int-caketin-rhs",
+                        "name": "fr-int-caketin-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-int-caketin-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -47.7378082,
+                                    605.055359,
+                                    103.112488
+                                ],
+                                [
+                                    451.499847,
+                                    675.550354,
+                                    603.143921
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-brake-disc-rhs",
+                        "name": "rr-wh-brake-disc-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-brake-disc-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3528.53613,
+                                    767.610718,
+                                    224.419952
+                                ],
+                                [
+                                    3768.73926,
+                                    804.524292,
+                                    465.21582
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-rim-rhs",
+                        "name": "rr-wh-rim-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-rim-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3613.97632,
+                                    927.772949,
+                                    314.425476
+                                ],
+                                [
+                                    3681.96411,
+                                    989.407898,
+                                    382.387024
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-tyre-rhs",
+                        "name": "rr-wh-tyre-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-tyre-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3285.27051,
+                                    524.285645,
+                                    -19.0590782
+                                ],
+                                [
+                                    4010.59131,
+                                    1006.66284,
+                                    706.757629
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-cover-OB-rhs",
+                        "name": "rr-wh-cover-OB-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-cover-OB-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3398.85815,
+                                    947.596863,
+                                    103.490883
+                                ],
+                                [
+                                    3895.13379,
+                                    1007.65698,
+                                    599.763306
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-prod-lhs",
+                        "name": "rr-susp-prod-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-prod-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3492.23975,
+                                    -638.711853,
+                                    204.865982
+                                ],
+                                [
+                                    3660.65845,
+                                    -109.020988,
+                                    336.563782
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-trod-lhs",
+                        "name": "rr-susp-trod-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-trod-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3638.37134,
+                                    -588.224548,
+                                    278.633698
+                                ],
+                                [
+                                    3772.90381,
+                                    -67.5311737,
+                                    381.919067
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-prod-rhs",
+                        "name": "rr-susp-prod-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-prod-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3492.23975,
+                                    109.020988,
+                                    204.865982
+                                ],
+                                [
+                                    3660.65845,
+                                    638.711853,
+                                    336.563782
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-trod-rhs",
+                        "name": "rr-susp-trod-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-trod-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3638.37134,
+                                    67.5311737,
+                                    278.633698
+                                ],
+                                [
+                                    3772.90381,
+                                    588.224548,
+                                    381.919067
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-lwb-rhs",
+                        "name": "rr-susp-lwb-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-lwb-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3087.22388,
+                                    57.8537598,
+                                    185.083481
+                                ],
+                                [
+                                    3835.37451,
+                                    657.063843,
+                                    346.585876
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-twb-rhs",
+                        "name": "rr-susp-twb-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-twb-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3231.52783,
+                                    87.1017914,
+                                    320.16684
+                                ],
+                                [
+                                    3737.80615,
+                                    577.314026,
+                                    411.765198
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-rim-lhs",
+                        "name": "rr-wh-rim-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-rim-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3613.97632,
+                                    -989.407898,
+                                    314.425476
+                                ],
+                                [
+                                    3681.96411,
+                                    -927.772949,
+                                    382.387024
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-cover-OB-lhs",
+                        "name": "rr-wh-cover-OB-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-cover-OB-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3398.85815,
+                                    -1007.65698,
+                                    103.490883
+                                ],
+                                [
+                                    3895.13379,
+                                    -947.596863,
+                                    599.763306
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-tyre-lhs",
+                        "name": "rr-wh-tyre-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-tyre-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3285.27051,
+                                    -1006.66284,
+                                    -19.0590782
+                                ],
+                                [
+                                    4010.59131,
+                                    -524.285645,
+                                    706.757629
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-twb-lhs",
+                        "name": "rr-susp-twb-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-twb-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3231.52783,
+                                    -577.314026,
+                                    320.16684
+                                ],
+                                [
+                                    3737.80615,
+                                    -87.1017914,
+                                    411.765198
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-susp-lwb-lhs",
+                        "name": "rr-susp-lwb-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-susp-lwb-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3087.22388,
+                                    -657.063843,
+                                    185.083481
+                                ],
+                                [
+                                    3835.37451,
+                                    -57.8537598,
+                                    346.585876
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-outlet-fr-int-duct-lhs-in",
+                        "name": "velocity-outlet-fr-int-duct-lhs-in",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-outlet-fr-int-duct-lhs-in"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -18.2780266,
+                                    -624.477478,
+                                    294.479309
+                                ],
+                                [
+                                    -18.0379314,
+                                    -549.215576,
+                                    409.860748
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-outlet-rr-int-duct-lhs-in",
+                        "name": "velocity-outlet-rr-int-duct-lhs-in",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-outlet-rr-int-duct-lhs-in"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3381.08179,
+                                    -506.241455,
+                                    339.74649
+                                ],
+                                [
+                                    3386.45068,
+                                    -458.97641,
+                                    500.824493
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-inlet-rr-int-duct-lhs-out",
+                        "name": "velocity-inlet-rr-int-duct-lhs-out",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-inlet-rr-int-duct-lhs-out"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3795.29932,
+                                    -536.357239,
+                                    356.644897
+                                ],
+                                [
+                                    3890.96411,
+                                    -509.965546,
+                                    524.550781
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-outlet-rr-int-duct-rhs-in",
+                        "name": "velocity-outlet-rr-int-duct-rhs-in",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-outlet-rr-int-duct-rhs-in"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3381.08179,
+                                    458.97641,
+                                    339.74649
+                                ],
+                                [
+                                    3386.45068,
+                                    506.241455,
+                                    500.824493
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-inlet-rr-int-duct-rhs-out",
+                        "name": "velocity-inlet-rr-int-duct-rhs-out",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-inlet-rr-int-duct-rhs-out"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3795.29932,
+                                    509.965546,
+                                    356.644897
+                                ],
+                                [
+                                    3890.96411,
+                                    536.357239,
+                                    524.550781
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-inlet-fr-int-duct-lhs-out",
+                        "name": "velocity-inlet-fr-int-duct-lhs-out",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-inlet-fr-int-duct-lhs-out"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    387.942505,
+                                    -617.122375,
+                                    295.317963
+                                ],
+                                [
+                                    404.739441,
+                                    -601.971924,
+                                    417.000702
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-outlet-fr-int-duct-rhs-in",
+                        "name": "velocity-outlet-fr-int-duct-rhs-in",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-outlet-fr-int-duct-rhs-in"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -18.2780266,
+                                    549.215576,
+                                    294.479309
+                                ],
+                                [
+                                    -18.0379314,
+                                    624.477478,
+                                    409.860748
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-inlet-fr-int-duct-rhs-out",
+                        "name": "velocity-inlet-fr-int-duct-rhs-out",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-inlet-fr-int-duct-rhs-out"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    387.942505,
+                                    601.971924,
+                                    295.317963
+                                ],
+                                [
+                                    404.739441,
+                                    617.122375,
+                                    417.000702
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-int-vanes-lhs",
+                        "name": "rr-int-vanes-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-int-vanes-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3540.86426,
+                                    -588.80304,
+                                    19.7100334
+                                ],
+                                [
+                                    4001.40381,
+                                    -410.7836,
+                                    346.564362
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-int-caketin-lhs",
+                        "name": "rr-int-caketin-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-int-caketin-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3404.07007,
+                                    -544.245911,
+                                    88.9916992
+                                ],
+                                [
+                                    3900.88843,
+                                    -524.285645,
+                                    585.785583
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-int-brake-duct-lhs",
+                        "name": "rr-int-brake-duct-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-int-brake-duct-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3380.96558,
+                                    -596.996582,
+                                    336.769257
+                                ],
+                                [
+                                    3891.61572,
+                                    -456.024445,
+                                    538.573975
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-int-vanes-rhs",
+                        "name": "rr-int-vanes-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-int-vanes-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3540.86426,
+                                    410.7836,
+                                    19.7100334
+                                ],
+                                [
+                                    4001.40381,
+                                    588.80304,
+                                    346.564362
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-int-caketin-rhs",
+                        "name": "rr-int-caketin-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-int-caketin-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3404.07007,
+                                    524.285645,
+                                    88.9916992
+                                ],
+                                [
+                                    3900.88843,
+                                    544.245911,
+                                    585.785583
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-int-brake-duct-rhs",
+                        "name": "rr-int-brake-duct-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-int-brake-duct-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3380.96558,
+                                    456.024445,
+                                    336.769257
+                                ],
+                                [
+                                    3891.61572,
+                                    596.996582,
+                                    538.573975
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-trod-lhs",
+                        "name": "fr-susp-trod-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-trod-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -32.343914,
+                                    -659.824585,
+                                    342.139618
+                                ],
+                                [
+                                    136.061615,
+                                    -127.707825,
+                                    418.902679
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-brake-disc-lhs",
+                        "name": "fr-wh-brake-disc-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-brake-disc-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    82.6637268,
+                                    -844.129395,
+                                    243.654556
+                                ],
+                                [
+                                    322.747253,
+                                    -800.744324,
+                                    484.96344
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-rim-lhs",
+                        "name": "fr-wh-rim-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-rim-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    170.600281,
+                                    -991.287476,
+                                    338.5466
+                                ],
+                                [
+                                    238.547424,
+                                    -928.948364,
+                                    406.453278
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-prod-lhs",
+                        "name": "fr-susp-prod-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-prod-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    233.320587,
+                                    -647.498047,
+                                    364.649658
+                                ],
+                                [
+                                    341.080322,
+                                    -121.885841,
+                                    547.665649
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-tyre-lhs",
+                        "name": "fr-wh-tyre-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-tyre-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -162.240814,
+                                    -1008.24963,
+                                    -2.54475045
+                                ],
+                                [
+                                    567.570251,
+                                    -608.473816,
+                                    729.472351
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-cover-OB-lhs",
+                        "name": "fr-wh-cover-OB-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-cover-OB-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -40.2233124,
+                                    -1009.67889,
+                                    129.541199
+                                ],
+                                [
+                                    449.751495,
+                                    -939.006958,
+                                    618.820923
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-twb-lhs",
+                        "name": "fr-susp-twb-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-twb-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    65.1378555,
+                                    -705.414734,
+                                    470.525513
+                                ],
+                                [
+                                    674.463806,
+                                    -146.351547,
+                                    523.297974
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-lwb-lhs",
+                        "name": "fr-susp-lwb-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-lwb-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    21.9377422,
+                                    -696.497864,
+                                    311.893402
+                                ],
+                                [
+                                    631.25531,
+                                    -137.314163,
+                                    359.434753
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-brake-disc-rhs",
+                        "name": "fr-wh-brake-disc-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-brake-disc-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    82.6637268,
+                                    800.744324,
+                                    243.654556
+                                ],
+                                [
+                                    322.747253,
+                                    844.129395,
+                                    484.96344
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-rim-rhs",
+                        "name": "fr-wh-rim-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-rim-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    170.600281,
+                                    928.948364,
+                                    338.5466
+                                ],
+                                [
+                                    238.547424,
+                                    991.287476,
+                                    406.453278
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-tyre-rhs",
+                        "name": "fr-wh-tyre-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-tyre-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -162.240814,
+                                    608.473816,
+                                    -2.54475045
+                                ],
+                                [
+                                    567.570251,
+                                    1008.24963,
+                                    729.472351
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-cover-OB-rhs",
+                        "name": "fr-wh-cover-OB-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-cover-OB-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -40.2233124,
+                                    939.006958,
+                                    129.541199
+                                ],
+                                [
+                                    449.751495,
+                                    1009.67889,
+                                    618.820923
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-twb-rhs",
+                        "name": "fr-susp-twb-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-twb-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    65.1378555,
+                                    146.351547,
+                                    470.525513
+                                ],
+                                [
+                                    674.463806,
+                                    705.414734,
+                                    523.297974
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-lwb-rhs",
+                        "name": "fr-susp-lwb-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-lwb-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    21.9377422,
+                                    137.314163,
+                                    311.893402
+                                ],
+                                [
+                                    631.25531,
+                                    696.497864,
+                                    359.434753
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-trod-rhs",
+                        "name": "fr-susp-trod-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-trod-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -32.343914,
+                                    127.707825,
+                                    342.139618
+                                ],
+                                [
+                                    136.061615,
+                                    659.824585,
+                                    418.902679
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-susp-prod-rhs",
+                        "name": "fr-susp-prod-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-susp-prod-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    233.320587,
+                                    121.885841,
+                                    364.649658
+                                ],
+                                [
+                                    341.080322,
+                                    647.498047,
+                                    547.665649
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-front-af",
+                        "name": "body-front-af",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-front-af"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -286.884003,
+                                    -257.778931,
+                                    471.992004
+                                ],
+                                [
+                                    -27.3599186,
+                                    257.940063,
+                                    515.808105
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-mirror",
+                        "name": "body-mirror",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-mirror"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1217.56311,
+                                    -624.887695,
+                                    630.0
+                                ],
+                                [
+                                    1416.33704,
+                                    624.748535,
+                                    733.204956
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-rear-crash-bar",
+                        "name": "body-rear-crash-bar",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-rear-crash-bar"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3075.84814,
+                                    -124.042969,
+                                    51.6927795
+                                ],
+                                [
+                                    4238.66211,
+                                    123.92334,
+                                    505.511597
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-nose",
+                        "name": "body-nose",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-nose"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -1110.39441,
+                                    -213.967285,
+                                    171.416901
+                                ],
+                                [
+                                    937.599487,
+                                    213.967285,
+                                    630.508484
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-pit",
+                        "name": "body-pit",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-pit"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    93.6389999,
+                                    -307.56897,
+                                    65.4090576
+                                ],
+                                [
+                                    1986.84497,
+                                    307.449341,
+                                    688.054932
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-misc",
+                        "name": "body-misc",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-misc"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    47.7120705,
+                                    -32.9937744,
+                                    364.313019
+                                ],
+                                [
+                                    3589.21216,
+                                    32.8741455,
+                                    837.305603
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-aero-camera",
+                        "name": "body-aero-camera",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-aero-camera"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1990.12012,
+                                    -131.107178,
+                                    972.437866
+                                ],
+                                [
+                                    2212.55811,
+                                    131.107788,
+                                    1077.61609
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body",
+                        "name": "body",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    668.940002,
+                                    -709.276917,
+                                    146.790924
+                                ],
+                                [
+                                    3574.80249,
+                                    709.276917,
+                                    977.956787
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-camera",
+                        "name": "body-camera",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-camera"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    2074.57397,
+                                    -234.837036,
+                                    888.095337
+                                ],
+                                [
+                                    2255.86377,
+                                    234.837036,
+                                    932.726624
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-inner-nlyr",
+                        "name": "body-inner-nlyr",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-inner-nlyr"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1665.6521,
+                                    -706.27948,
+                                    160.300827
+                                ],
+                                [
+                                    3573.76782,
+                                    706.27948,
+                                    729.13739
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-steering-wheel",
+                        "name": "body-steering-wheel",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-steering-wheel"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1198.47046,
+                                    -138.332077,
+                                    505.832886
+                                ],
+                                [
+                                    1331.07812,
+                                    144.985077,
+                                    661.674988
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-helmet",
+                        "name": "body-helmet",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-helmet"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1565.5127,
+                                    -140.424026,
+                                    608.354309
+                                ],
+                                [
+                                    1921.86829,
+                                    127.111374,
+                                    888.247375
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "diffuser",
+                        "name": "diffuser",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "diffuser"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    2644.19019,
+                                    -720.440308,
+                                    21.2196312
+                                ],
+                                [
+                                    3991.97485,
+                                    720.440308,
+                                    348.488983
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "eb-exhaust",
+                        "name": "eb-exhaust",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "eb-exhaust"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3468.92798,
+                                    -52.4777527,
+                                    389.730377
+                                ],
+                                [
+                                    4170.2749,
+                                    52.4777527,
+                                    550.748718
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-inlet-exhaust-out",
+                        "name": "velocity-inlet-exhaust-out",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-inlet-exhaust-out"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3954.79443,
+                                    -41.7258301,
+                                    437.802002
+                                ],
+                                [
+                                    3961.96875,
+                                    41.6550102,
+                                    520.770508
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "velocity-outlet-engine-intake-in",
+                        "name": "velocity-outlet-engine-intake-in",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "velocity-outlet-engine-intake-in"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    2501.02319,
+                                    -73.9224548,
+                                    728.33667
+                                ],
+                                [
+                                    2572.08179,
+                                    73.9239426,
+                                    799.237183
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "eb-engine",
+                        "name": "eb-engine",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "eb-engine"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    2471.24243,
+                                    -353.990387,
+                                    96.7360992
+                                ],
+                                [
+                                    3469.77515,
+                                    353.990387,
+                                    494.733337
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fw-ep",
+                        "name": "fw-ep",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fw-ep"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -751.499939,
+                                    -967.758789,
+                                    91.8769531
+                                ],
+                                [
+                                    -313.960022,
+                                    967.619629,
+                                    483.095978
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fw-fine",
+                        "name": "fw-fine",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fw-fine"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -613.639099,
+                                    -997.751709,
+                                    256.858368
+                                ],
+                                [
+                                    -339.892548,
+                                    997.751709,
+                                    364.61496
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fw-brackets",
+                        "name": "fw-brackets",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fw-brackets"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -811.409851,
+                                    -718.640747,
+                                    117.748993
+                                ],
+                                [
+                                    -506.989899,
+                                    718.501587,
+                                    244.408997
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fw-flap-2",
+                        "name": "fw-flap-2",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fw-flap-2"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -716.65509,
+                                    -919.516602,
+                                    123.274307
+                                ],
+                                [
+                                    -318.399963,
+                                    919.516602,
+                                    325.514954
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fw-flap-1",
+                        "name": "fw-flap-1",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fw-flap-1"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -868.590576,
+                                    -919.516602,
+                                    106.23748
+                                ],
+                                [
+                                    -488.7099,
+                                    919.516602,
+                                    232.348755
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fw-mp",
+                        "name": "fw-mp",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fw-mp"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -1038.42041,
+                                    -898.516846,
+                                    91.6744843
+                                ],
+                                [
+                                    -613.330017,
+                                    898.516846,
+                                    200.241943
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "toint-rad-main-lhs-up",
+                        "name": "toint-rad-main-lhs-up",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "toint-rad-main-lhs-up"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1820.08325,
+                                    -545.423523,
+                                    211.815872
+                                ],
+                                [
+                                    2284.84033,
+                                    -261.048706,
+                                    528.243774
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "body-main-rad-duct",
+                        "name": "body-main-rad-duct",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "body-main-rad-duct"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1665.66272,
+                                    -595.297302,
+                                    203.621841
+                                ],
+                                [
+                                    2306.65625,
+                                    595.297302,
+                                    558.621887
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "toint-rad-main-rhs-up",
+                        "name": "toint-rad-main-rhs-up",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "toint-rad-main-rhs-up"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1820.08325,
+                                    261.048706,
+                                    211.815872
+                                ],
+                                [
+                                    2284.84033,
+                                    545.423523,
+                                    528.243774
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "toint-rad-main-rhs-down",
+                        "name": "toint-rad-main-rhs-down",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "toint-rad-main-rhs-down"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1840.05518,
+                                    254.425583,
+                                    241.026443
+                                ],
+                                [
+                                    2304.81226,
+                                    538.800415,
+                                    557.454346
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "toint-rad-main-lhs-down",
+                        "name": "toint-rad-main-lhs-down",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "toint-rad-main-lhs-down"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    1840.05518,
+                                    -538.800415,
+                                    241.026443
+                                ],
+                                [
+                                    2304.81226,
+                                    -254.425583,
+                                    557.454346
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rw-ep",
+                        "name": "rw-ep",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rw-ep"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3740.35718,
+                                    -633.95874,
+                                    343.771637
+                                ],
+                                [
+                                    4195.57812,
+                                    633.839111,
+                                    967.431946
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rw-mp",
+                        "name": "rw-mp",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rw-mp"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3740.65234,
+                                    -567.830811,
+                                    744.579773
+                                ],
+                                [
+                                    4100.90186,
+                                    567.711182,
+                                    861.502075
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rw-pillar",
+                        "name": "rw-pillar",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rw-pillar"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3637.01025,
+                                    -16.9159756,
+                                    426.376282
+                                ],
+                                [
+                                    4069.29688,
+                                    16.8457813,
+                                    908.431763
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rw-flap",
+                        "name": "rw-flap",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rw-flap"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    4057.47876,
+                                    -567.739868,
+                                    866.495544
+                                ],
+                                [
+                                    4195.57715,
+                                    567.739868,
+                                    967.418945
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rw-gf",
+                        "name": "rw-gf",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rw-gf"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    4186.35303,
+                                    -567.739868,
+                                    966.577332
+                                ],
+                                [
+                                    4195.57617,
+                                    567.739868,
+                                    973.272095
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "uf-strakes",
+                        "name": "uf-strakes",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "uf-strakes"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    907.636963,
+                                    -739.659058,
+                                    30.3602257
+                                ],
+                                [
+                                    2031.8623,
+                                    739.659058,
+                                    264.314636
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "uf",
+                        "name": "uf",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "uf"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    737.347412,
+                                    -766.421021,
+                                    20.384058
+                                ],
+                                [
+                                    3092.76221,
+                                    766.421021,
+                                    340.326324
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel::ground",
+                        "name": "tunnel::ground",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel::ground"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -51199.4164,
+                                    -25600.0,
+                                    -479.571754
+                                ],
+                                [
+                                    102398.84,
+                                    25600.0,
+                                    252.374146
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel::inlet",
+                        "name": "tunnel::inlet",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel::inlet"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -51199.4164,
+                                    -25600.0,
+                                    252.374146
+                                ],
+                                [
+                                    -51104.1109,
+                                    25600.0,
+                                    20252.1471
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel::outlet",
+                        "name": "tunnel::outlet",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel::outlet"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    102398.84,
+                                    -25600.0,
+                                    -479.571754
+                                ],
+                                [
+                                    102494.145,
+                                    25600.0,
+                                    19520.2012
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel::sides",
+                        "name": "tunnel::sides",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel::sides"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -51199.4164,
+                                    -25600.0,
+                                    -479.571754
+                                ],
+                                [
+                                    102494.145,
+                                    25600.0,
+                                    20252.1471
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "tunnel::top",
+                        "name": "tunnel::top",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "tunnel::top"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    -51104.1109,
+                                    -25600.0,
+                                    19520.2012
+                                ],
+                                [
+                                    102494.145,
+                                    25600.0,
+                                    20252.1471
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-plinth-lhs",
+                        "name": "fr-wh-plinth-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-plinth-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    101.199685,
+                                    -922.789382,
+                                    -3.03971537
+                                ],
+                                [
+                                    300.55574,
+                                    -684.894588,
+                                    17.9096002
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "fr-wh-plinth-rhs",
+                        "name": "fr-wh-plinth-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "fr-wh-plinth-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    101.199685,
+                                    684.894588,
+                                    -3.03971537
+                                ],
+                                [
+                                    300.55574,
+                                    922.789382,
+                                    17.9096002
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-plinth-lhs",
+                        "name": "rr-wh-plinth-lhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-plinth-lhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3547.08768,
+                                    -923.96201,
+                                    -19.4631855
+                                ],
+                                [
+                                    3747.00768,
+                                    -589.461069,
+                                    1.48881742
+                                ]
+                            ]
+                        }
+                    },
+                    {
+                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        "private_attribute_entity_type_name": "Surface",
+                        "private_attribute_id": "rr-wh-plinth-rhs",
+                        "name": "rr-wh-plinth-rhs",
+                        "private_attribute_full_name": null,
+                        "private_attribute_is_interface": null,
+                        "private_attribute_tag_key": "faceId",
+                        "private_attribute_sub_components": [
+                            "rr-wh-plinth-rhs"
+                        ],
+                        "private_attribute_color": null,
+                        "private_attributes": {
+                            "type_name": "SurfacePrivateAttributes",
+                            "bounding_box": [
+                                [
+                                    3547.08768,
+                                    589.461069,
+                                    -19.4631855
+                                ],
+                                [
+                                    3747.00768,
+                                    923.96201,
+                                    1.48881742
+                                ]
+                            ]
+                        }
+                    }
+                ]
+            ],
+            "edge_ids": [],
+            "edge_attribute_names": [],
+            "grouped_edges": [],
+            "body_group_tag": "groupByFile",
+            "face_group_tag": "groupByBodyId",
+            "edge_group_tag": null,
+            "global_bounding_box": [
+                [
+                    -51199.4164,
+                    -25600.0,
+                    -479.571754
+                ],
+                [
+                    102494.145,
+                    25600.0,
+                    20252.1471
+                ]
+            ],
+            "default_geometry_accuracy": null
+        }
+    }
+}

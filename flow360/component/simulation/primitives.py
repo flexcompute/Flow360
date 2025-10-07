@@ -34,6 +34,7 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 from flow360.component.types import Axis
+from flow360.component.utils import _naming_pattern_handler
 
 BOUNDARY_FULL_NAME_WHEN_NOT_FOUND = "This boundary does not exist!!!"
 
@@ -660,14 +661,40 @@ class SurfacePair(Flow360BaseModel):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
 
 
-class SnappyBody(Flow360BaseModel):
+class SnappyBody(EntityBase, EntityList):
     """
     Represents a group of faces forming a body for snappyHexMesh.
     Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid"
     keywords with a body::region naming scheme.
     """
 
-    body_name: str = pd.Field()
+    private_attribute_registry_bucket_name: Literal["SurfaceGroupedEntityType"] = pd.Field("SurfaceGroupedEntityType", frozen=True)
+    private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
+
+    stored_entities: List[Surface] = pd.Field()
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _format_input_to_list(cls, input_data: dict):
+        """
+        Flatten List[EntityBase] and put into stored_entities. Do not delete other args.
+        """
+        if not isinstance(input_data, dict):
+            raise ValueError("Wrong definition for SnappyBody, should be a dictionary.")
+        input_data.update(super()._format_input_to_list(input_data))
+        return input_data
+
+    def __getitem__(self, key: str):
+        if len(self.stored_entities) == 1 and ("::" not in self.stored_entities[0].name):
+            regex = _naming_pattern_handler(pattern=key)
+        else:
+            regex = _naming_pattern_handler(pattern=f"{self.name}::{key}")
+
+        matched_surfaces = [entity for entity in self.stored_entities if regex.match(entity.name)]
+        if not matched_surfaces:
+            print(key)
+            raise KeyError(f"No entity found in registry for parent entity: {self.name} with given name/naming pattern: '{key}'.")
+        return matched_surfaces
 
 
 @final

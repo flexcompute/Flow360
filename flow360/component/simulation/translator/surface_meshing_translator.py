@@ -83,7 +83,7 @@ def apply_SnappyBodyRefinement(refinement: SnappyBodyRefinement, translated):
     """
     Translate SnappyBodyRefinement to bodies.
     """
-    applicable_bodies = [entity.body_name for entity in refinement.entities]
+    applicable_bodies = [entity.name for entity in refinement.entities.stored_entities]
     for body in translated["geometry"]["bodies"]:
         if body["bodyName"] in applicable_bodies:
             if refinement.gap_resolution is not None:
@@ -142,7 +142,7 @@ def apply_SnappySurfaceEdgeRefinement(
     else:
         edges["edgeSpacing"] = refinement.spacing.value.item()
     applicable_bodies = (
-        [entity.body_name for entity in refinement.bodies] if refinement.bodies is not None else []
+        [entity.name for entity in refinement.bodies.stored_entities] if refinement.bodies is not None else []
     )
     applicable_regions = get_applicable_regions_dict(refinement_regions=refinement.regions)
     for body in translated["geometry"]["bodies"]:

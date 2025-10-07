@@ -412,6 +412,9 @@ class Geometry(AssetBase):
             "body", tag_name, self.internal_registry
         )
 
+    def group_faces_for_snappy(self) -> None:
+        self.internal_registry = self._entity_info._group_faces_by_snappy_format(self.internal_registry)
+
     def reset_face_grouping(self) -> None:
         """Reset the face grouping"""
         # pylint: disable=protected-access,no-member
