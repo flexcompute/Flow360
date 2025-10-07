@@ -142,6 +142,7 @@ from flow360.component.simulation.outputs.outputs import (
     VolumeOutput,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
@@ -207,6 +208,7 @@ __all__ = [
     "HeightBasedRefinement",
     "ReferenceGeometry",
     "Cylinder",
+    "AxisymmetricBody",
     "AerospaceCondition",
     "ThermalState",
     "LiquidOperatingCondition",
