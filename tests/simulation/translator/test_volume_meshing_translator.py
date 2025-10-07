@@ -299,6 +299,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
         "slidingInterfaces": [  # comes from documentation page
             {
                 "name": "inner",
+                "type": "Cylinder",
                 "innerRadius": 0,
                 "outerRadius": 0.75,
                 "thickness": 0.5,
@@ -317,6 +318,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             },
             {
                 "name": "mid",
+                "type": "Cylinder",
                 "innerRadius": 0,
                 "outerRadius": 2.0,
                 "thickness": 2.0,
@@ -329,6 +331,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             },
             {
                 "name": "2",
+                "type": "Cylinder",
                 "innerRadius": 0,
                 "outerRadius": 2.0,
                 "thickness": 2.0,
@@ -341,6 +344,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             },
             {
                 "name": "3",
+                "type": "Cylinder",
                 "innerRadius": 1.5,
                 "outerRadius": 2.0,
                 "thickness": 2.0,
@@ -353,6 +357,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             },
             {
                 "name": "outer",
+                "type": "Cylinder",
                 "innerRadius": 0.0,
                 "outerRadius": 8.0,
                 "thickness": 6.0,
@@ -369,6 +374,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                 ],
             },
             {
+                "type": "Axisymmetric",
                 "name": "cone",
                 "axisOfRotation": [0.7071067811865476, 0.0, 0.7071067811865476],
                 "center": [0.0, 0.0, 0.0],

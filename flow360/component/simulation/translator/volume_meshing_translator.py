@@ -179,6 +179,7 @@ def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
     if isinstance(entity, Cylinder):
         return {
             "name": entity.name,
+            "type": "Cylinder",
             "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
             "outerRadius": entity.outer_radius.value.item(),
             "thickness": entity.height.value.item(),
@@ -188,6 +189,7 @@ def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
     if isinstance(entity, AxisymmetricBody):
         return {
             "name": entity.name,
+            "type": "Axisymmetric",
             "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
             "axisOfRotation": list(entity.axis),
             "center": list(entity.center.value),
