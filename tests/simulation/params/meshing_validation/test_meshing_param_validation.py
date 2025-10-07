@@ -439,7 +439,9 @@ def test_bad_refinements():
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
             refinements=[
-                SnappyBodyRefinement(min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", stored_entities=[])])
+                SnappyBodyRefinement(
+                    min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", stored_entities=[])]
+                )
             ],
         )
 
@@ -449,6 +451,8 @@ def test_bad_refinements():
                 min_spacing=1 * u.mm, max_spacing=5 * u.mm, gap_resolution=0.01 * u.mm
             ),
             refinements=[
-                SnappyBodyRefinement(max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", stored_entities=[])])
+                SnappyBodyRefinement(
+                    max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", stored_entities=[])]
+                )
             ],
         )

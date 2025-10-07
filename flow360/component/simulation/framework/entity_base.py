@@ -266,6 +266,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             "Expected entity instance."
         )
 
+    # pylint: disable=too-many-branches
     @pd.model_validator(mode="before")
     @classmethod
     def _format_input_to_list(cls, input_data: Union[dict, list]):
@@ -275,13 +276,18 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         entities_to_store = []
         valid_types = cls._get_valid_entity_types()
 
-        if isinstance(input_data, EntityList) and input_data._get_valid_entity_types() == valid_types:
+        # pylint: disable=protected-access
+        if (
+            isinstance(input_data, EntityList)
+            and input_data._get_valid_entity_types() == valid_types
+        ):
             return {"stored_entities": input_data.stored_entities}
 
         if isinstance(input_data, list):  # A list of entities
             if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
-            for item in input_data: # for entity grouping types
+            for item in input_data:  # for entity grouping types
+                # pylint: disable=protected-access
                 if isinstance(item, EntityList) and item._get_valid_entity_types() == valid_types:
                     entities_to_store.extend(item.stored_entities)
                 elif isinstance(item, list):  # Nested list comes from assets

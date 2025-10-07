@@ -23,8 +23,8 @@ from flow360.component.simulation.primitives import (
     GeometryBodyGroup,
     GhostCircularPlane,
     GhostSphere,
+    SnappyBody,
     Surface,
-    SnappyBody
 )
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.utils import BoundingBoxType, model_attribute_unlock
@@ -42,6 +42,7 @@ GhostSurfaceTypes = Annotated[
 ]
 
 GROUPED_SNAPPY = "Grouped with snappy name formatting."
+
 
 class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
@@ -156,11 +157,9 @@ class GeometryEntityInfo(EntityInfoModel):
         for item in entity_list:
             known_frozen_hashes = registry.fast_register(item, known_frozen_hashes)
         return registry
-    
-    def _get_snappy_bodies(
-        self
-    ) -> List[SnappyBody]:
-        
+
+    def _get_snappy_bodies(self) -> List[SnappyBody]:
+
         snappy_body_mapping = {}
         for patch in self.grouped_faces[self.face_attribute_names.index("faceId")]:
             name_components = patch.name.split("::")
@@ -170,9 +169,11 @@ class GeometryEntityInfo(EntityInfoModel):
             if patch not in snappy_body_mapping[body_name]:
                 snappy_body_mapping[body_name].append(patch)
 
-        return [SnappyBody(name=snappy_body, stored_entities=body_entities) 
-                for snappy_body, body_entities in snappy_body_mapping.items()]
-                
+        return [
+            SnappyBody(name=snappy_body, stored_entities=body_entities)
+            for snappy_body, body_entities in snappy_body_mapping.items()
+        ]
+
     def _get_list_of_entities(
         self,
         attribute_name: Union[str, None] = None,
@@ -374,14 +375,12 @@ class GeometryEntityInfo(EntityInfoModel):
                 self.body_group_tag = tag_name
 
         return registry
-    
-    def _group_faces_by_snappy_format(
-            self,
-            registry: EntityRegistry = None
-        ):
+
+    def _group_faces_by_snappy_format(self, registry: EntityRegistry = None):
         if registry is None:
             registry = EntityRegistry()
 
+        existing_face_tag = None
         if self.face_group_tag is not None:
             existing_face_tag = self.face_group_tag
 

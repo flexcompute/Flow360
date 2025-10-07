@@ -413,7 +413,13 @@ class Geometry(AssetBase):
         )
 
     def group_faces_for_snappy(self) -> None:
-        self.internal_registry = self._entity_info._group_faces_by_snappy_format(self.internal_registry)
+        """
+        Group faces according to body::region convention for snappyHexMesh.
+        """
+        # pylint: disable=protected-access
+        self.internal_registry = self._entity_info._group_faces_by_snappy_format(
+            self.internal_registry
+        )
 
     def reset_face_grouping(self) -> None:
         """Reset the face grouping"""

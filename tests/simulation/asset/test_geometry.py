@@ -321,6 +321,7 @@ def test_geometry_rename_body_groups():
     ):
         assert geometry["newAirplane_0002"]
 
+
 def test_geometry_group_for_snappy(stl_geo_meta):
     geo: Geometry = stl_geo_meta
 
@@ -343,6 +344,7 @@ def test_geometry_group_for_snappy(stl_geo_meta):
     # double indexing with wildcard
     assert len(geo["*nn*"]["*"]) == 6
 
+
 def test_snappy_grouping_not_found_messages(stl_geo_meta):
     geo: Geometry = stl_geo_meta
 
@@ -356,11 +358,11 @@ def test_snappy_grouping_not_found_messages(stl_geo_meta):
 
     with pytest.raises(
         ValueError,
-        match=(f"No entity found in registry for parent entities: body-inner-nlyr, tunnel with given name/naming pattern: 'dummy'."),
+        match=(
+            f"No entity found in registry for parent entities: body-inner-nlyr, tunnel with given name/naming pattern: 'dummy'."
+        ),
     ):
         assert geo["*nn*"]["dummy"]
 
-    with pytest.raises(
-        KeyError
-    ):
+    with pytest.raises(KeyError):
         assert geo["body-nose"]["dummy*"]

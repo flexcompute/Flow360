@@ -8,7 +8,12 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.utils import _naming_pattern_handler
 
+
 class DoubleIndexableList(list):
+    """
+    An extension of a list that allows accessing elements inside it through a string key.
+    """
+
     def __getitem__(self, key: Union[str, slice, int]):
         if isinstance(key, str):
             returned_items = []
@@ -17,19 +22,22 @@ class DoubleIndexableList(list):
                     item_ret_value = item[key]
                 except KeyError:
                     item_ret_value = []
-                except Exception:
-                    raise ValueError(f"Trying to access something in {item} through string indexing, which is not allowed.")
+                except Exception as e:
+                    raise ValueError(
+                        f"Trying to access something in {item} through string indexing, which is not allowed."
+                    ) from e
                 if isinstance(item_ret_value, list):
                     returned_items += item_ret_value
                 else:
                     returned_items.append(item_ret_value)
             if not returned_items:
                 raise ValueError(
-                    f"No entity found in registry for parent entities: {', '.join([f'{entity.name}' for entity in self])} with given name/naming pattern: '{key}'."
+                    "No entity found in registry for parent entities: "
+                    + f"{', '.join([f'{entity.name}' for entity in self])} with given name/naming pattern: '{key}'."
                 )
             return returned_items
-        else:
-            return super(DoubleIndexableList, self).__getitem__(key)
+        return super().__getitem__(key)
+
 
 class EntityRegistryBucket:
     """By reference, a snippet of certain collection of a EntityRegistry instance that is inside the same bucket."""

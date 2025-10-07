@@ -668,7 +668,9 @@ class SnappyBody(EntityBase, EntityList[Surface]):
     keywords with a body::region naming scheme.
     """
 
-    private_attribute_registry_bucket_name: Literal["SurfaceGroupedEntityType"] = pd.Field("SurfaceGroupedEntityType", frozen=True)
+    private_attribute_registry_bucket_name: Literal["SurfaceGroupedEntityType"] = pd.Field(
+        "SurfaceGroupedEntityType", frozen=True
+    )
     private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
 
     stored_entities: List[Surface] = pd.Field()
@@ -693,7 +695,9 @@ class SnappyBody(EntityBase, EntityList[Surface]):
         matched_surfaces = [entity for entity in self.stored_entities if regex.match(entity.name)]
         if not matched_surfaces:
             print(key)
-            raise KeyError(f"No entity found in registry for parent entity: {self.name} with given name/naming pattern: '{key}'.")
+            raise KeyError(
+                f"No entity found in registry for parent entity: {self.name} with given name/naming pattern: '{key}'."
+            )
         return matched_surfaces
 
 
