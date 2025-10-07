@@ -12,6 +12,7 @@ from typing import Annotated, List, Optional, Union, get_args, get_origin
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_selector import EntitySelector
 from flow360.component.simulation.utils import is_exact_instance
 
 
@@ -211,8 +212,6 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             instances of `Box`, `Cylinder`, or strings representing naming patterns.
 
     Methods:
-        _format_input_to_list(cls, input: List) -> dict: Class method that formats the input to a
-            dictionary with the key 'stored_entities'.
         _check_duplicate_entity_in_list(cls, values): Class method that checks for duplicate entities
             in the list of stored entities.
         _get_expanded_entities(self): Method that processes the stored entities to resolve any naming
@@ -222,6 +221,9 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     """
 
     stored_entities: List = pd.Field()
+    selectors: Optional[List[EntitySelector]] = pd.Field(
+        None, description="Selectors for rule-based selection."
+    )
 
     @classmethod
     def _get_valid_entity_types(cls):
@@ -268,18 +270,21 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
     @pd.model_validator(mode="before")
     @classmethod
-    def _format_input_to_list(cls, input_data: Union[dict, list]):
+    def deserializer(cls, input_data: Union[dict, list]):
         """
         Flatten List[EntityBase] and put into stored_entities.
         """
         entities_to_store = []
+        entity_patterns_to_store = []
         valid_types = cls._get_valid_entity_types()
 
-        if isinstance(input_data, list):  # A list of entities
+        if isinstance(input_data, list):
+            # -- User input mode. --
+            # List content might be entity Python objects or selector Python objects
             if input_data == []:
                 raise ValueError("Invalid input type to `entities`, list is empty.")
             for item in input_data:
-                if isinstance(item, list):  # Nested list comes from assets
+                if isinstance(item, list):  # Nested list comes from assets __getitem__
                     _ = [cls._valid_individual_input(individual) for individual in item]
                     # pylint: disable=fixme
                     # TODO: Give notice when some of the entities are not selected due to `valid_types`?
@@ -299,11 +304,17 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 raise KeyError(
                     f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
                 )
-            return {"stored_entities": input_data["stored_entities"]}
+            return {
+                "stored_entities": input_data["stored_entities"],
+                "selectors": None if not entity_patterns_to_store else entity_patterns_to_store,
+            }
         # pylint: disable=no-else-return
         else:  # Single entity
             if input_data is None:
-                return {"stored_entities": None}
+                return {
+                    "stored_entities": None,
+                    "selectors": None if not entity_patterns_to_store else entity_patterns_to_store,
+                }
             else:
                 cls._valid_individual_input(input_data)
                 if is_exact_instance(input_data, tuple(valid_types)):
@@ -315,7 +326,10 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 f" from the input."
             )
 
-        return {"stored_entities": entities_to_store}
+        return {
+            "stored_entities": entities_to_store,
+            "selectors": None if not entity_patterns_to_store else entity_patterns_to_store,
+        }
 
     def _get_expanded_entities(
         self,

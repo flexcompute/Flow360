@@ -99,7 +99,7 @@ def generate_BET_param(type, given_path_prefix: str = None):
     return param
 
 
-def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=False):
+def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debug=True):
     translated = generate_BET_param(type)
     translated = translated.model_dump_json(
         exclude={
