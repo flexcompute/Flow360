@@ -1,18 +1,21 @@
 """
 Module containing updaters from version to version
 
-TODO: remove duplication code with FLow360Params updater. 
+TODO: remove duplication code with FLow360Params updater.
 """
 
 # pylint: disable=R0801
 
 
+import copy
 import re
 from typing import Any
 
 from flow360.component.simulation.framework.entity_base import generate_uuid
 from flow360.component.simulation.framework.updater_functions import (
     fix_ghost_sphere_schema,
+    populate_entity_id_with_name,
+    update_symmetry_ghost_entity_name_to_symmetric,
 )
 from flow360.component.simulation.framework.updater_utils import (
     Flow360Version,
@@ -20,6 +23,8 @@ from flow360.component.simulation.framework.updater_utils import (
 )
 from flow360.log import log
 from flow360.version import __version__
+
+DEFAULT_PLANAR_FACE_TOLERANCE = 1e-6
 
 
 def _to_24_11_1(params_as_dict):
@@ -43,49 +48,57 @@ def _to_24_11_1(params_as_dict):
     if "time_stepping" in params_as_dict:
         params_as_dict["time_stepping"].pop("order_of_accuracy", None)
 
+    update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
     return params_as_dict
 
 
 def _to_24_11_7(params_as_dict):
-    # Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
-    # to all occurrence of the same PointArray
-    if params_as_dict.get("outputs") is None:
-        return params_as_dict
+    def _add_private_attribute_id_for_point_array(params_as_dict: dict) -> dict:
+        """
+                Check if PointArray has private_attribute_id. If not, generate the uuid and assign the id
+        to all occurrence of the same PointArray
+        """
+        if params_as_dict.get("outputs") is None:
+            return params_as_dict
 
-    point_array_list = []
-    for output in params_as_dict["outputs"]:
-        if output.get("entities", None) and output["entities"].get("stored_entities", None):
-            for entity in output["entities"]["stored_entities"]:
-                if (
-                    entity.get("private_attribute_entity_type_name") == "PointArray"
-                    and entity.get("private_attribute_id") is None
-                ):
-                    new_uuid = generate_uuid()
-                    entity["private_attribute_id"] = new_uuid
-                    point_array_list.append(entity)
+        point_array_list = []
+        for output in params_as_dict["outputs"]:
+            if output.get("entities", None) and output["entities"].get("stored_entities", None):
+                for entity in output["entities"]["stored_entities"]:
+                    if (
+                        entity.get("private_attribute_entity_type_name") == "PointArray"
+                        and entity.get("private_attribute_id") is None
+                    ):
+                        new_uuid = generate_uuid()
+                        entity["private_attribute_id"] = new_uuid
+                        point_array_list.append(entity)
 
-    if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
-        return params_as_dict
-    if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
-        "draft_entities"
-    ):
-        return params_as_dict
-    for idx, draft_entity in enumerate(
-        params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
-    ):
-        if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
-            continue
-        for point_array in point_array_list:
-            if compare_dicts(
-                dict1=draft_entity,
-                dict2=point_array,
-                ignore_keys=["private_attribute_id"],
-            ):
-                params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
-                    "draft_entities"
-                ][idx] = point_array
+        if not params_as_dict["private_attribute_asset_cache"].get("project_entity_info"):
+            return params_as_dict
+        if not params_as_dict["private_attribute_asset_cache"]["project_entity_info"].get(
+            "draft_entities"
+        ):
+            return params_as_dict
+
+        for idx, draft_entity in enumerate(
+            params_as_dict["private_attribute_asset_cache"]["project_entity_info"]["draft_entities"]
+        ):
+            if draft_entity.get("private_attribute_entity_type_name") != "PointArray":
                 continue
+            for point_array in point_array_list:
+                if compare_dicts(
+                    dict1=draft_entity,
+                    dict2=point_array,
+                    ignore_keys=["private_attribute_id"],
+                ):
+                    params_as_dict["private_attribute_asset_cache"]["project_entity_info"][
+                        "draft_entities"
+                    ][idx] = point_array
+                    continue
+        return params_as_dict
 
+    params_as_dict = _add_private_attribute_id_for_point_array(params_as_dict=params_as_dict)
+    update_symmetry_ghost_entity_name_to_symmetric(params_as_dict=params_as_dict)
     return params_as_dict
 
 
@@ -140,16 +153,233 @@ def _to_25_2_0(params_as_dict):
     return params_as_dict
 
 
-def _to_25_2_1(params_as_dict):
+def _to_24_11_10(params_as_dict):
     fix_ghost_sphere_schema(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_2_1(params_as_dict):
+    ## We need a better mechanism to run updater function once.
+    fix_ghost_sphere_schema(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_2_3(params_as_dict):
+    populate_entity_id_with_name(params_as_dict=params_as_dict)
+    return params_as_dict
+
+
+def _to_25_4_1(params_as_dict):
+    if params_as_dict.get("meshing") is None:
+        return params_as_dict
+    meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+    if meshing_defaults.get("geometry_relative_accuracy"):
+        geometry_relative_accuracy = meshing_defaults.pop("geometry_relative_accuracy")
+        meshing_defaults["geometry_accuracy"] = {"value": geometry_relative_accuracy, "units": "m"}
+    return params_as_dict
+
+
+def _fix_reynolds_mesh_unit(params_as_dict):
+    # Handling of the reynolds_mesh_unit rename
+    if "operating_condition" not in params_as_dict.keys():
+        return params_as_dict
+    if "private_attribute_input_cache" not in params_as_dict["operating_condition"].keys():
+        return params_as_dict
+    if (
+        "reynolds"
+        not in params_as_dict["operating_condition"]["private_attribute_input_cache"].keys()
+    ):
+        return params_as_dict
+    reynolds_mesh_unit = params_as_dict["operating_condition"]["private_attribute_input_cache"].pop(
+        "reynolds", None
+    )
+    if reynolds_mesh_unit is not None:
+        params_as_dict["operating_condition"]["private_attribute_input_cache"][
+            "reynolds_mesh_unit"
+        ] = reynolds_mesh_unit
+    return params_as_dict
+
+
+def _to_25_6_2(params_as_dict):
+    # Known: There can not be velocity_direction both under Inflow AND TotalPressure
+
+    # Move the velocity_direction under TotalPressure to the Inflow level.
+    for model in params_as_dict.get("models", []):
+        if model.get("type") != "Inflow" or model.get("velocity_direction", None):
+            continue
+
+        if model.get("spec") and model["spec"].get("type_name") == "TotalPressure":
+            velocity_direction = model["spec"].pop("velocity_direction", None)
+            if velocity_direction:
+                model["velocity_direction"] = velocity_direction
+
+    params_as_dict = _fix_reynolds_mesh_unit(params_as_dict)
+
+    # Handling the disable of same entity being in multiple outputs
+    if params_as_dict.get("outputs") is None:
+        return params_as_dict
+
+    # Process each output type separately
+    # pylint: disable=too-many-nested-blocks
+    for output_type in ["SurfaceOutput", "TimeAverageSurfaceOutput"]:
+        entity_map = {}
+        # entity_name -> {"creates_new" : bool, "output_settings":dict, "entity":entity_dict}
+        for output in params_as_dict["outputs"]:
+            if output.get("output_type") != output_type:
+                continue
+            entity_names = set()
+            entity_deduplicated = []
+            for entity in output["entities"]["stored_entities"]:
+                if entity["name"] in entity_names:
+                    continue
+                entity_names.add(entity["name"])
+                entity_deduplicated.append(entity)
+            output["entities"]["stored_entities"] = entity_deduplicated
+
+            for entity in output["entities"]["stored_entities"]:
+                name = entity["name"]
+                if name in entity_map:
+                    entity_map[name]["creates_new"] = True
+                    entity_map[entity["name"]]["output_settings"]["output_fields"]["items"] = (
+                        sorted(
+                            list(
+                                set(
+                                    entity_map[entity["name"]]["output_settings"]["output_fields"][
+                                        "items"
+                                    ]
+                                    + output["output_fields"]["items"]
+                                )
+                            )
+                        )
+                    )
+                else:
+                    entity_map[entity["name"]] = {}
+                    entity_map[entity["name"]]["creates_new"] = False
+                    entity_map[entity["name"]]["output_settings"] = copy.deepcopy(
+                        {key: value for key, value in output.items() if key != "entities"}
+                    )
+                    entity_map[entity["name"]]["entity"] = entity
+
+        for entity_info in entity_map.values():
+            if entity_info["creates_new"]:
+                for index, output in enumerate(params_as_dict["outputs"]):
+                    if output.get("output_type") != output_type:
+                        continue
+                    for entity in output["entities"]["stored_entities"]:
+                        if entity["name"] == entity_info["entity"]["name"]:
+                            params_as_dict["outputs"][index]["entities"]["stored_entities"].remove(
+                                entity
+                            )
+                params_as_dict["outputs"].append(
+                    {
+                        **entity_info["output_settings"],
+                        "entities": {"stored_entities": [entity_info["entity"]]},
+                    }
+                )
+    # remove empty outputs
+    params_as_dict["outputs"] = [
+        output
+        for output in params_as_dict["outputs"]
+        if "entities" not in output or output["entities"]["stored_entities"]
+    ]
+
+    return params_as_dict
+
+
+def _add_default_planar_face_tolerance(params_as_dict):
+    if params_as_dict.get("meshing") is None:
+        return params_as_dict
+    if "defaults" not in params_as_dict["meshing"]:
+        return params_as_dict
+    meshing_defaults = params_as_dict["meshing"].get("defaults", {})
+    if meshing_defaults.get("planar_face_tolerance") is None:
+        meshing_defaults["planar_face_tolerance"] = DEFAULT_PLANAR_FACE_TOLERANCE
+    return params_as_dict
+
+
+def _to_25_6_4(params_as_dict):
+    return _add_default_planar_face_tolerance(params_as_dict)
+
+
+def _to_25_6_5(params_as_dict):
+    # Some 25.6.4 JSONs are also missing the planar_face_tolerance.
+    return _add_default_planar_face_tolerance(params_as_dict)
+
+
+def _to_25_6_6(params_as_dict):
+    # Remove the "potential_issues" field from all surfaces.
+    # Recursively go through params_as_dict and remove the "private_attribute_potential_issues"
+    # field if the "private_attribute_entity_type_name" field is "Surface".
+    def _remove_potential_issues_recursive(data):
+        if isinstance(data, dict):
+            # First recursively process all nested elements
+            for key, value in data.items():
+                if isinstance(value, (dict, list)):
+                    data[key] = _remove_potential_issues_recursive(value)
+
+            # Then check if current dict is a Surface and remove potential_issues
+            if data.get("private_attribute_entity_type_name") == "Surface":
+                data.pop("private_attribute_potential_issues", None)
+
+            return data
+        if isinstance(data, list):
+            # Process each item in the list
+            return [_remove_potential_issues_recursive(item) for item in data]
+
+        # Return primitive types as-is
+        return data
+
+    return _remove_potential_issues_recursive(params_as_dict)
+
+
+def _to_25_7_2(params_as_dict):
+    # Add post_processing_variable flag to variable_context entries
+    # Variables that are used in outputs should have post_processing_variable=True
+    # Variables that are not used in outputs should have post_processing_variable=False
+
+    if params_as_dict.get("private_attribute_asset_cache") is None:
+        return params_as_dict
+
+    variable_context = params_as_dict["private_attribute_asset_cache"].get("variable_context")
+    if variable_context is None:
+        return params_as_dict
+
+    # Collect all user variable names used in outputs
+    used_variable_names = set()
+
+    if params_as_dict.get("outputs") is not None:
+        for output in params_as_dict["outputs"]:
+            if output.get("output_fields") and output["output_fields"].get("items"):
+                for item in output["output_fields"]["items"]:
+                    # Check if item is a user variable (has name and type_name fields)
+                    if (
+                        isinstance(item, dict)
+                        and "name" in item
+                        and item.get("type_name") == "UserVariable"
+                    ):
+                        used_variable_names.add(item["name"])
+
+    # Update variable_context entries with post_processing flag
+    for var_context in variable_context:
+        if "name" in var_context:
+            var_context["post_processing"] = var_context["name"] in used_variable_names
+
     return params_as_dict
 
 
 VERSION_MILESTONES = [
     (Flow360Version("24.11.1"), _to_24_11_1),
     (Flow360Version("24.11.7"), _to_24_11_7),
+    (Flow360Version("24.11.10"), _to_24_11_10),
     (Flow360Version("25.2.0"), _to_25_2_0),
     (Flow360Version("25.2.1"), _to_25_2_1),
+    (Flow360Version("25.2.3"), _to_25_2_3),
+    (Flow360Version("25.4.1"), _to_25_4_1),
+    (Flow360Version("25.6.2"), _to_25_6_2),
+    (Flow360Version("25.6.4"), _to_25_6_4),
+    (Flow360Version("25.6.5"), _to_25_6_5),
+    (Flow360Version("25.6.6"), _to_25_6_6),
+    (Flow360Version("25.7.2"), _to_25_7_2),
 ]  # A list of the Python API version tuple with there corresponding updaters.
 
 
@@ -164,17 +394,7 @@ def _find_update_path(
     if version_from == version_to:
         return []
 
-    if version_from > version_to:
-        raise ValueError(
-            "Input `SimulationParams` have higher version than the target version and thus cannot be handled."
-        )
-
-    if version_from > version_milestones[-1][0]:
-        raise ValueError(
-            "Input `SimulationParams` have higher version than all known versions and thus cannot be handled."
-        )
-
-    if version_from == version_milestones[-1][0]:
+    if version_from >= version_milestones[-1][0]:
         return []
 
     if version_to < version_milestones[0][0]:
@@ -205,7 +425,7 @@ def _find_update_path(
     ]
 
 
-def updater(version_from, version_to, params_as_dict):
+def updater(version_from, version_to, params_as_dict) -> dict:
     """
     Update parameters from version_from to version_to.
 
@@ -214,7 +434,7 @@ def updater(version_from, version_to, params_as_dict):
     version_from : str
         The starting version.
     version_to : str
-        The target version to update to.
+        The target version to update to. This has to be equal or higher than `version_from`
     params_as_dict : dict
         A dictionary containing parameters to be updated.
 
@@ -233,7 +453,13 @@ def updater(version_from, version_to, params_as_dict):
     This function iterates through the update map starting from version_from and
     updates the parameters based on the update path found.
     """
-    log.info(f"Input SimulationParam has version: {version_from}.")
+    log.debug(f"Input SimulationParam has version: {version_from}.")
+    version_from_is_newer = Flow360Version(version_from) > Flow360Version(version_to)
+
+    if version_from_is_newer:
+        raise ValueError(
+            f"[Internal] Misuse of updater, version_from ({version_from}) is higher than version_to ({version_to})"
+        )
     update_functions = _find_update_path(
         version_from=Flow360Version(version_from),
         version_to=Flow360Version(version_to),
@@ -241,7 +467,7 @@ def updater(version_from, version_to, params_as_dict):
     )
     for fun in update_functions:
         _to_version = re.search(r"_to_(\d+_\d+_\d+)", fun.__name__).group(1)
-        log.info(f"Updating input SimulationParam to {_to_version}...")
+        log.debug(f"Updating input SimulationParam to {_to_version}...")
         params_as_dict = fun(params_as_dict)
     params_as_dict["version"] = str(version_to)
     return params_as_dict

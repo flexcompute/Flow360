@@ -3,7 +3,7 @@ Contains basically only boundary conditons for now. In future we can add new mod
 """
 
 from abc import ABCMeta
-from typing import Annotated, Literal, Optional, Union
+from typing import Annotated, Dict, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -30,16 +30,36 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
+    AngularVelocityType,
     HeatFluxType,
+    InverseAreaType,
+    InverseLengthType,
     LengthType,
     MassFlowRateType,
     PressureType,
 )
-from flow360.component.simulation.utils import is_instance_of_type_in_union
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
+from flow360.component.simulation.validation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+    check_deleted_surface_pair,
+    check_symmetric_boundary_existence,
+)
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+
+
+class EntityListAllowingGhost(EntityList):
+    """Entity list with customized validators for ghost entities"""
+
+    @pd.field_validator("stored_entities", mode="after")
+    @classmethod
+    def ghost_entity_validator(cls, value):
+        """Run all validators"""
+        return check_symmetric_boundary_existence(value)
 
 
 class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
@@ -50,6 +70,14 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         alias="surfaces",
         description="List of boundaries with boundary condition imposed.",
     )
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        # pylint: disable=fixme
+        # TODO: This should have been moved to EntityListAllowingGhost?
+        return check_deleted_surface_in_entity_list(value)
 
 
 class BoundaryBaseWithTurbulenceQuantities(BoundaryBase, metaclass=ABCMeta):
@@ -110,7 +138,6 @@ class TotalPressure(Flow360BaseModel):
 
     >>> fl.TotalPressure(
     ...     value = 1.04e6 * fl.u.Pa,
-    ...     velocity_direction = (1, 0, 0),
     ... )
 
     ====
@@ -119,11 +146,6 @@ class TotalPressure(Flow360BaseModel):
     type_name: Literal["TotalPressure"] = pd.Field("TotalPressure", frozen=True)
     # pylint: disable=no-member
     value: PressureType.Positive = pd.Field(description="The total pressure value.")
-    velocity_direction: Optional[Axis] = pd.Field(
-        None,
-        description="Direction of the incoming flow. Must be a unit vector pointing "
-        + "into the volume. If unspecified, the direction will be normal to the surface.",
-    )
 
 
 class Pressure(SingleAttributeModel):
@@ -194,6 +216,26 @@ class MassFlowRate(Flow360BaseModel):
     )
 
 
+class Supersonic(Flow360BaseModel):
+    """
+    :class:`Supersonic` class to specify the supersonic conditions for `Inflow`.
+
+    Example
+    -------
+
+    >>> fl.Supersonic(
+    ...     total_pressure = 7.90e6 * fl.u.Pa,
+    ...     static_pressure = 1.01e6 * fl.u.Pa,
+    ... )
+
+    """
+
+    type_name: Literal["Supersonic"] = pd.Field("Supersonic", frozen=True)
+    # pylint: disable=no-member
+    total_pressure: PressureType.Positive = pd.Field(description="The total pressure.")
+    static_pressure: PressureType.Positive = pd.Field(description="The static pressure.")
+
+
 class Mach(SingleAttributeModel):
     """
     :class:`Mach` class to specify Mach number for the `Inflow`
@@ -233,12 +275,45 @@ class Rotational(Flow360BaseModel):
     axis_of_rotation: Optional[Axis] = pd.Field(None)
 
 
+class WallRotation(Flow360BaseModel):
+    """
+    :class:`WallRotation` class to specify the rotational velocity model for the `Wall` boundary condition.
+
+    The wall rotation model prescribes a rotational motion at the wall by defining a center of rotation,
+    an axis about which the wall rotates, and an angular velocity. This model can be used to simulate
+    rotating components or surfaces in a flow simulation.
+
+    Example
+    -------
+    >>> fl.Wall(
+    ...     entities=volume_mesh["fluid/wall"],
+    ...     velocity=fl.WallRotation(
+    ...         axis=(0, 0, 1),
+    ...         center=(1, 2, 3) * u.m,
+    ...         angular_velocity=100 * u.rpm
+    ...     ),
+    ...     use_wall_function=True,
+    ... )
+
+    ====
+    """
+
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field(description="The center of rotation")
+    axis: Axis = pd.Field(description="The axis of rotation.")
+    angular_velocity: AngularVelocityType = pd.Field("The value of the angular velocity.")
+    type_name: Literal["WallRotation"] = pd.Field("WallRotation", frozen=True)
+    private_attribute_circle_mode: Optional[dict] = pd.Field(None)
+
+
 ##########################################
 ############# Surface models #############
 ##########################################
 
 
-WallVelocityModelTypes = Annotated[Union[SlaterPorousBleed], pd.Field(discriminator="type_name")]
+WallVelocityModelTypes = Annotated[
+    Union[SlaterPorousBleed, WallRotation], pd.Field(discriminator="type_name")
+]
 
 
 class Wall(BoundaryBase):
@@ -258,10 +333,10 @@ class Wall(BoundaryBase):
 
       >>> fl.Wall(
       ...     entities=volume_mesh["8"],
-      ...     velocity = (
-      ...         f"{OMEGA[1]} * (z - {CENTER[2]}) - {OMEGA[2]} * (y - {CENTER[1]})",
-      ...         f"{OMEGA[2]} * (x - {CENTER[0]}) - {OMEGA[0]} * (z - {CENTER[2]})",
-      ...         f"{OMEGA[0]} * (y - {CENTER[1]}) - {OMEGA[1]} * (x - {CENTER[0]})",
+      ...     velocity=WallRotation(
+      ...       axis=(0, 0, 1),
+      ...       center=(1, 2, 3) * u.m,
+      ...       angular_velocity=100 * u.rpm
       ...     ),
       ...     use_wall_function=True,
       ... )
@@ -295,7 +370,7 @@ class Wall(BoundaryBase):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Wall` boundary condition.")
+    name: Optional[str] = pd.Field("Wall", description="Name of the `Wall` boundary condition.")
     type: Literal["Wall"] = pd.Field("Wall", frozen=True)
     use_wall_function: bool = pd.Field(
         False,
@@ -306,6 +381,7 @@ class Wall(BoundaryBase):
     velocity: Optional[Union[WallVelocityModelTypes, VelocityVectorType]] = pd.Field(
         None, description="Prescribe a velocity or the velocity model on the wall."
     )
+
     # pylint: disable=no-member
     heat_spec: Union[HeatFlux, Temperature] = pd.Field(
         HeatFlux(0 * u.W / u.m**2),
@@ -316,17 +392,47 @@ class Wall(BoundaryBase):
         0 * u.m,
         description="Equivalent sand grain roughness height. Available only to `Fluid` zone boundaries.",
     )
+    private_attribute_dict: Optional[Dict] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def check_wall_function_conflict(self):
         """Check no setting is conflicting with the usage of wall function"""
         if self.use_wall_function is False:
             return self
-        if is_instance_of_type_in_union(self.velocity, WallVelocityModelTypes):
+        if isinstance(self.velocity, SlaterPorousBleed):
             raise ValueError(
                 f"Using `{type(self.velocity).__name__}` with wall function is not supported currently."
             )
         return self
+
+    @pd.field_validator("heat_spec", mode="after")
+    @classmethod
+    def _ensure_adiabatic_wall_for_liquid(cls, value):
+        """Allow only adiabatic wall when liquid operating condition is used"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        if isinstance(value, HeatFlux) and value.value == 0 * u.W / u.m**2:
+            return value
+        raise ValueError("Only adiabatic wall is allowed when using liquid as simulation material.")
+
+    @pd.field_validator("velocity", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+
+        if isinstance(value, tuple):
+            if (
+                isinstance(value[0], str)
+                and isinstance(value[1], str)
+                and isinstance(value[2], str)
+            ):
+                raise ValueError(
+                    "Expression cannot be used when using liquid as simulation material."
+                )
+        return value
 
 
 class Freestream(BoundaryBaseWithTurbulenceQuantities):
@@ -357,7 +463,9 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Freestream` boundary condition.")
+    name: Optional[str] = pd.Field(
+        "Freestream", description="Name of the `Freestream` boundary condition."
+    )
     type: Literal["Freestream"] = pd.Field("Freestream", frozen=True)
     velocity: Optional[VelocityVectorType] = pd.Field(
         None,
@@ -365,10 +473,30 @@ class Freestream(BoundaryBaseWithTurbulenceQuantities):
         + ":py:attr:`AerospaceCondition.alpha` and :py:attr:`AerospaceCondition.beta` angles. "
         + "Optionally, an expression for each of the velocity components can be specified.",
     )
-    entities: EntityList[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = pd.Field(
-        alias="surfaces",
-        description="List of boundaries with the `Freestream` boundary condition imposed.",
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostSphere, GhostCircularPlane] = (
+        pd.Field(
+            alias="surfaces",
+            description="List of boundaries with the `Freestream` boundary condition imposed.",
+        )
     )
+
+    @pd.field_validator("velocity", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+
+        if isinstance(value, tuple):
+            if (
+                isinstance(value[0], str)
+                and isinstance(value[1], str)
+                and isinstance(value[2], str)
+            ):
+                raise ValueError(
+                    "Expression cannot be used when using liquid as simulation material."
+                )
+        return value
 
 
 class Outflow(BoundaryBase):
@@ -401,7 +529,9 @@ class Outflow(BoundaryBase):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Outflow` boundary condition.")
+    name: Optional[str] = pd.Field(
+        "Outflow", description="Name of the `Outflow` boundary condition."
+    )
     type: Literal["Outflow"] = pd.Field("Outflow", frozen=True)
     spec: Union[Pressure, MassFlowRate, Mach] = pd.Field(
         discriminator="type_name",
@@ -424,8 +554,8 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       ...     total_temperature=300 * fl.u.K,
       ...     spec=fl.TotalPressure(
       ...         value = 1.028e6 * fl.u.Pa,
-      ...         velocity_direction = (1, 0, 0),
       ...     ),
+      ...     velocity_direction = (1, 0, 0),
       ... )
 
     - Define inflow boundary condition with mass flow rate:
@@ -437,6 +567,7 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
       ...         value = 123 * fl.u.lb / fl.u.s,
       ...         ramp_steps = 10,
       ...     ),
+      ...     velocity_direction = (1, 0, 0),
       ... )
 
     - Define inflow boundary condition with turbulence quantities:
@@ -452,15 +583,20 @@ class Inflow(BoundaryBaseWithTurbulenceQuantities):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Inflow` boundary condition.")
+    name: Optional[str] = pd.Field("Inflow", description="Name of the `Inflow` boundary condition.")
     type: Literal["Inflow"] = pd.Field("Inflow", frozen=True)
     # pylint: disable=no-member
     total_temperature: AbsoluteTemperatureType = pd.Field(
         description="Specify the total temperature at the `Inflow` boundary."
     )
-    spec: Union[TotalPressure, MassFlowRate] = pd.Field(
+    spec: Union[TotalPressure, MassFlowRate, Supersonic] = pd.Field(
         discriminator="type_name",
-        description="Specify the total pressure or the mass flow rate at the `Inflow` boundary.",
+        description="Specify additional conditions at the `Inflow` boundary.",
+    )
+    velocity_direction: Optional[Axis] = pd.Field(
+        None,
+        description="Direction of the incoming flow. Must be a unit vector pointing "
+        + "into the volume. If unspecified, the direction will be normal to the surface.",
     )
 
 
@@ -488,9 +624,11 @@ class SlipWall(BoundaryBase):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `SlipWall` boundary condition.")
+    name: Optional[str] = pd.Field(
+        "Slip wall", description="Name of the `SlipWall` boundary condition."
+    )
     type: Literal["SlipWall"] = pd.Field("SlipWall", frozen=True)
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the :code:`SlipWall` boundary condition imposed.",
     )
@@ -518,10 +656,10 @@ class SymmetryPlane(BoundaryBase):
     """
 
     name: Optional[str] = pd.Field(
-        None, description="Name of the `SymmetryPlane` boundary condition."
+        "Symmetry", description="Name of the `SymmetryPlane` boundary condition."
     )
     type: Literal["SymmetryPlane"] = pd.Field("SymmetryPlane", frozen=True)
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane] = pd.Field(
         alias="surfaces",
         description="List of boundaries with the `SymmetryPlane` boundary condition imposed.",
     )
@@ -555,7 +693,9 @@ class Periodic(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Periodic` boundary condition.")
+    name: Optional[str] = pd.Field(
+        "Periodic", description="Name of the `Periodic` boundary condition."
+    )
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
         alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
@@ -566,6 +706,68 @@ class Periodic(Flow360BaseModel):
         + "via :class:`Translational`/:class:`Rotational`.",
     )
 
+    @pd.field_validator("entity_pairs", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        for surface_pair in value.items:
+            check_deleted_surface_pair(surface_pair)
+        return value
+
+
+class PorousJump(Flow360BaseModel):
+    """
+    :class:`PorousJump` defines the Porous Jump boundary condition.
+
+    Example
+    -------
+
+    - Define a porous jump condition:
+
+      >>> fl.PorousJump(
+      ...     surface_pairs=[
+      ...         (volume_mesh["blk-1/Interface-blk-2"], volume_mesh["blk-2/Interface-blk-1"]),
+      ...         (volume_mesh["blk-1/Interface-blk-3"], volume_mesh["blk-3/Interface-blk-1"]),
+      ...     ],
+      ...    darcy_coefficient = 1e6 / fl.u.m **2,
+      ...    forchheimer_coefficient = 1 / fl.u.m,
+      ...    thickness = 1 * fl.u.m,
+      ... )
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "PorousJump", description="Name of the `PorousJump` boundary condition."
+    )
+    type: Literal["PorousJump"] = pd.Field("PorousJump", frozen=True)
+    entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
+        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
+    )
+    darcy_coefficient: InverseAreaType = pd.Field(
+        description="Darcy coefficient of the porous media model which determines the scaling of the "
+        + "viscous loss term. The value defines the coefficient for the axis normal "
+        + "to the surface."
+    )
+    forchheimer_coefficient: InverseLengthType = pd.Field(
+        description="Forchheimer coefficient of the porous media model which determines "
+        + "the scaling of the inertial loss term."
+    )
+    thickness: LengthType = pd.Field(
+        description="Thickness of the thin porous media on the surface"
+    )
+
+    @pd.field_validator("entity_pairs", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher and all entities are surfaces"""
+        for surface_pair in value.items:
+            check_deleted_surface_pair(surface_pair)
+            for surface in surface_pair.pair:
+                if not surface.private_attribute_is_interface:
+                    raise ValueError(f"Boundary `{surface.name}` is not an interface")
+
+        return value
+
 
 SurfaceModelTypes = Union[
     Wall,
@@ -575,4 +777,5 @@ SurfaceModelTypes = Union[
     Inflow,
     Periodic,
     SymmetryPlane,
+    PorousJump,
 ]

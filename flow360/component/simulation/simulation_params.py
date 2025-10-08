@@ -4,11 +4,15 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Literal, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
+import unyt as u
 
-from flow360.component.simulation.conversion import unit_converter
+from flow360.component.simulation.conversion import (
+    LIQUID_IMAGINARY_FREESTREAM_MACH,
+    unit_converter,
+)
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import (
@@ -19,16 +23,19 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
+from flow360.component.simulation.framework.updater_utils import Flow360Version
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     RotationCylinder,
+    RotationVolume,
 )
 from flow360.component.simulation.models.surface_models import SurfaceModelTypes
 from flow360.component.simulation.models.volume_models import (
     ActuatorDisk,
     BETDisk,
     Fluid,
+    Solid,
     VolumeModelTypes,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -51,13 +58,22 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
+    AbsoluteTemperatureType,
+    DensityType,
     DimensionedTypes,
     LengthType,
+    MassType,
+    TimeType,
     UnitSystem,
     UnitSystemType,
+    VelocityType,
     is_flow360_unit,
     unit_system_manager,
     unyt_quantity,
+)
+from flow360.component.simulation.user_code.core.types import (
+    batch_get_user_variable_units,
+    get_post_processing_variables,
 )
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
@@ -66,6 +82,8 @@ from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.validation.validation_output import (
     _check_output_fields,
     _check_output_fields_valid_given_turbulence_model,
+    _check_unique_surface_volume_probe_entity_names,
+    _check_unique_surface_volume_probe_names,
     _check_unsteadiness_to_use_aero_acoustics,
 )
 from flow360.component.simulation.validation.validation_simulation_params import (
@@ -75,17 +93,23 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_consistency_hybrid_model_volume_output,
     _check_consistency_wall_function_and_surface_output,
     _check_duplicate_entities_in_models,
+    _check_duplicate_isosurface_names,
+    _check_duplicate_surface_usage,
+    _check_hybrid_model_to_use_zonal_enforcement,
     _check_low_mach_preconditioner_output,
     _check_numerical_dissipation_factor_output,
     _check_parent_volume_is_rotating,
     _check_time_average_output,
     _check_unsteadiness_to_use_hybrid_model,
+    _check_valid_models_for_liquid,
 )
+from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
 )
 from flow360.exceptions import Flow360ConfigurationError, Flow360RuntimeError
+from flow360.log import log
 from flow360.version import __version__
 
 from .validation.validation_context import (
@@ -95,6 +119,7 @@ from .validation.validation_context import (
     CaseField,
     ConditionalField,
     context_validator,
+    get_validation_info,
 )
 
 ModelTypes = Annotated[Union[VolumeModelTypes, SurfaceModelTypes], pd.Field(discriminator="type")]
@@ -124,23 +149,50 @@ class _ParamModelBase(Flow360BaseModel):
             if kwarg_unit_system != unit_system_manager.current:
                 raise Flow360RuntimeError(
                     unit_system_inconsistent_msg(
-                        kwarg_unit_system.system_repr(), unit_system_manager.current.system_repr()
+                        kwarg_unit_system.system_repr(),
+                        unit_system_manager.current.system_repr(),
                     )
                 )
 
         return kwargs
 
     @classmethod
-    def _update_input(cls, model_dict):
-        version = model_dict.pop("version", None)
+    def _get_version_from_dict(cls, model_dict: dict) -> str:
+        version = model_dict.get("version", None)
         if version is None:
-            raise Flow360RuntimeError(
-                "Missing version info in file content, please check the input file."
-            )
-        if version != __version__:
+            raise Flow360RuntimeError("Failed to find SimulationParams version from the input.")
+        return version
+
+    @classmethod
+    def _update_param_dict(cls, model_dict, version_to=__version__):
+        """
+        1. Find the version from the input dict.
+        2. Update the input dict to `version_to` which by default is the current version.
+        3. If the simulation.json has higher version, then return the dict as is without modification.
+
+        Returns
+        -------
+        dict
+            The updated parameters dictionary.
+        bool
+            Whether the `model_dict` has higher version than `version_to` (AKA forward compatibility mode).
+        """
+        input_version = cls._get_version_from_dict(model_dict=model_dict)
+        forward_compatibility_mode = Flow360Version(input_version) > Flow360Version(version_to)
+        if not forward_compatibility_mode:
             model_dict = updater(
-                version_from=version, version_to=__version__, params_as_dict=model_dict
+                version_from=input_version,
+                version_to=version_to,
+                params_as_dict=model_dict,
             )
+        return model_dict, forward_compatibility_mode
+
+    @classmethod
+    def _sanitize_params_dict(cls, model_dict):
+        """
+        Clean the redundant content in the params dict from WebUI
+        """
+        model_dict = remove_properties_by_name(model_dict, "_id")
         return model_dict
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):
@@ -158,8 +210,9 @@ class _ParamModelBase(Flow360BaseModel):
         else:
             model_dict = self._handle_dict(**file_content)
 
+        model_dict = _ParamModelBase._sanitize_params_dict(model_dict)
         # When treating files/file like contents the updater will always be run.
-        model_dict = _ParamModelBase._update_input(model_dict)
+        model_dict, _ = _ParamModelBase._update_param_dict(model_dict)
 
         unit_system = model_dict.get("unit_system")
 
@@ -172,6 +225,7 @@ class _ParamModelBase(Flow360BaseModel):
         """
         # When treating dicts the updater is skipped.
         kwargs = _ParamModelBase._init_check_unit_system(**kwargs)
+
         super().__init__(unit_system=unit_system_manager.current, **kwargs)
 
     # pylint: disable=super-init-not-called
@@ -246,11 +300,13 @@ class SimulationParams(_ParamModelBase):
     # Limitations:
     #    1. No per volume zone output. (single volume output)
     outputs: Optional[List[OutputTypes]] = CaseField(
-        None, description="Output settings. See :ref:`Outputs <outputs>` for more details."
+        None,
+        description="Output settings. See :ref:`Outputs <outputs>` for more details.",
     )
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
     private_attribute_asset_cache: AssetCache = pd.Field(AssetCache(), frozen=True)
+    private_attribute_dict: Optional[dict] = pd.Field(None)
 
     # pylint: disable=arguments-differ
     def _preprocess(self, mesh_unit=None, exclude: list = None) -> SimulationParams:
@@ -260,44 +316,24 @@ class SimulationParams(_ParamModelBase):
 
         if mesh_unit is None:
             raise Flow360ConfigurationError("Mesh unit has not been supplied.")
+        self._private_set_length_unit(LengthType.validate(mesh_unit))  # pylint: disable=no-member
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
-        return super().preprocess(params=self, mesh_unit=mesh_unit, exclude=exclude)
+                return super().preprocess(params=self, exclude=exclude)
+        return super().preprocess(params=self, exclude=exclude)
 
-    def convert_to_unit_system(
-        self,
-        unit_system: Literal["SI", "Imperial", "CGS"],
-        exclude: list = None,
-    ) -> SimulationParams:
-        """Internal function for non-dimensionalizing the simulation parameters"""
-        if exclude is None:
-            exclude = []
-
-        if unit_system not in ["SI", "Imperial", "CGS"]:
-            raise Flow360ConfigurationError(
-                f"Invalid unit system: {unit_system}. Must be one of ['SI', 'Imperial', 'CGS']"
-            )
-        converted_param = None
-        if unit_system_manager.current is None:
-            # pylint: disable=not-context-manager
-            with self.unit_system:
-                converted_param = super().convert_to_unit_system(
-                    to_unit_system=unit_system, exclude=exclude
-                )
-        else:
-            converted_param = super().convert_to_unit_system(
-                to_unit_system=unit_system, exclude=exclude
-            )
-        # Change the recorded unit system
-        with model_attribute_unlock(converted_param, "unit_system"):
-            converted_param.unit_system = UnitSystem.from_dict(**{"name": unit_system})
-        return converted_param
+    def _private_set_length_unit(self, validated_mesh_unit):
+        with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
+            # pylint: disable=assigning-non-slot
+            self.private_attribute_asset_cache.project_length_unit = validated_mesh_unit
 
     @pd.validate_call
     def convert_unit(
-        self, value: DimensionedTypes, target_system: str, length_unit: Optional[LengthType] = None
+        self,
+        value: DimensionedTypes,
+        target_system: str,
+        length_unit: Optional[LengthType] = None,
     ):
         """
         Converts a given value to the specified unit system.
@@ -338,17 +374,14 @@ class SimulationParams(_ParamModelBase):
         1.0 (flow360_length_unit)
         """
 
-        if length_unit is None:
+        if length_unit is not None:
             # pylint: disable=no-member
-            length_unit = self.private_attribute_asset_cache.project_length_unit
+            self._private_set_length_unit(LengthType.validate(length_unit))
 
         flow360_conv_system = unit_converter(
             value.units.dimensions,
-            length_unit,
             params=self,
-            required_by=[
-                f"{self.__class__.__name__}.convert_unit(value=, target_system=, length_unit=)"
-            ],
+            required_by=[f"{self.__class__.__name__}.convert_unit(value=, target_system=)"],
         )
 
         if target_system == "flow360":
@@ -365,7 +398,7 @@ class SimulationParams(_ParamModelBase):
     @pd.field_validator("models", mode="after")
     @classmethod
     def apply_default_fluid_settings(cls, v):
-        """apply default Fluid() settings if not found in models"""
+        """Apply default Fluid() settings if not found in mode`ls"""
         if v is None:
             v = []
         assert isinstance(v, list)
@@ -378,6 +411,37 @@ class SimulationParams(_ParamModelBase):
     def check_parent_volume_is_rotating(cls, models):
         """Ensure that all the parent volumes listed in the `Rotation` model are not static"""
         return _check_parent_volume_is_rotating(models)
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def check_valid_models_for_liquid(cls, models):
+        """Ensure that all the boundary conditions used are valid."""
+        return _check_valid_models_for_liquid(models)
+
+    @pd.field_validator("user_defined_dynamics", "user_defined_fields", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        """Ensure that string expressions are disabled for liquid simulation."""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        if value:
+            raise ValueError(
+                f"{info.field_name} cannot be used when using liquid as simulation material."
+            )
+        return value
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_duplicate_isosurface_names(cls, outputs):
+        """Check if we have isosurfaces with a duplicate name"""
+        return _check_duplicate_isosurface_names(outputs)
+
+    @pd.field_validator("outputs", mode="after")
+    @classmethod
+    def check_duplicate_surface_usage(cls, outputs):
+        """Disallow the same boundary/surface being used in multiple outputs"""
+        return _check_duplicate_surface_usage(outputs)
 
     @pd.field_validator("user_defined_fields", mode="after")
     @classmethod
@@ -417,9 +481,24 @@ class SimulationParams(_ParamModelBase):
         return _check_unsteadiness_to_use_hybrid_model(self)
 
     @pd.model_validator(mode="after")
+    def check_hybrid_model_to_use_zonal_enforcement(self):
+        """Only allow LES/RANS zonal enforcement in hybrid RANS-LES mode"""
+        return _check_hybrid_model_to_use_zonal_enforcement(self)
+
+    @pd.model_validator(mode="after")
     def check_unsteadiness_to_use_aero_acoustics(self):
         """Only allow Aero acoustics when using unsteady simulation"""
         return _check_unsteadiness_to_use_aero_acoustics(self)
+
+    @pd.model_validator(mode="after")
+    def check_unique_surface_volume_probe_names(self):
+        """Only allow unique probe names"""
+        return _check_unique_surface_volume_probe_names(self)
+
+    @pd.model_validator(mode="after")
+    def check_unique_surface_volume_probe_entity_names(self):
+        """Only allow unique probe entity names"""
+        return _check_unique_surface_volume_probe_entity_names(self)
 
     @pd.model_validator(mode="after")
     def check_duplicate_entities_in_models(self):
@@ -462,7 +541,7 @@ class SimulationParams(_ParamModelBase):
         """Only allow TimeAverage output field in the unsteady simulations"""
         return _check_time_average_output(params)
 
-    def _move_registry_to_asset_cache(self, registry: EntityRegistry) -> EntityRegistry:
+    def _register_assigned_entities(self, registry: EntityRegistry) -> EntityRegistry:
         """Recursively register all entities listed in EntityList to the asset cache."""
         # pylint: disable=no-member
         registry.clear()
@@ -471,7 +550,7 @@ class SimulationParams(_ParamModelBase):
 
     def _update_entity_private_attrs(self, registry: EntityRegistry) -> EntityRegistry:
         """
-        Once the SimulationParams is set, extract and upate information
+        Once the SimulationParams is set, extract and update information
         into all used entities by parsing the params.
         """
 
@@ -490,12 +569,78 @@ class SimulationParams(_ParamModelBase):
                         "symmetric*",
                         volume.private_attribute_entity.name,
                     )
-                if isinstance(volume, RotationCylinder):
+                if isinstance(volume, (RotationCylinder, RotationVolume)):
                     # pylint: disable=fixme
                     # TODO: Implement this
                     pass
 
         return registry
+
+    @property
+    def base_length(self) -> LengthType:
+        """Get base length unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        return self.private_attribute_asset_cache.project_length_unit.to("m")
+
+    @property
+    def base_temperature(self) -> AbsoluteTemperatureType:
+        """Get base temperature unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        if self.operating_condition.type_name == "LiquidOperatingCondition":
+            # Temperature in this condition has no effect because the thermal features will be disabled.
+            # Also the viscosity will be constant.
+            # pylint:disable = no-member
+            return 273 * u.K
+        return self.operating_condition.thermal_state.temperature.to("K")
+
+    @property
+    def base_velocity(self) -> VelocityType:
+        """Get base velocity unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        if self.operating_condition.type_name == "LiquidOperatingCondition":
+            # Provides an imaginary "speed of sound"
+            # Resulting in a hardcoded freestream mach of `LIQUID_IMAGINARY_FREESTREAM_MACH`
+            # To ensure incompressible range.
+            # pylint: disable=protected-access
+            if self.operating_condition._evaluated_velocity_magnitude.value != 0:
+                return (
+                    self.operating_condition._evaluated_velocity_magnitude
+                    / LIQUID_IMAGINARY_FREESTREAM_MACH
+                ).to("m/s")
+            return (
+                self.operating_condition.reference_velocity_magnitude
+                / LIQUID_IMAGINARY_FREESTREAM_MACH
+            ).to("m/s")
+        return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
+
+    @property
+    def base_density(self) -> DensityType:
+        """Get base density unit for non-dimensionalization"""
+        # pylint:disable=no-member
+        if self.operating_condition.type_name == "LiquidOperatingCondition":
+            return self.operating_condition.material.density.to("kg/m**3")
+        return self.operating_condition.thermal_state.density.to("kg/m**3")
+
+    @property
+    def base_mass(self) -> MassType:
+        """Get base mass unit for non-dimensionalization"""
+        return self.base_density * self.base_length**3
+
+    @property
+    def base_time(self) -> TimeType:
+        """Get base time unit for non-dimensionalization"""
+        return self.base_length / self.base_velocity
+
+    @property
+    def flow360_unit_system(self) -> u.UnitSystem:
+        """Get the unit system for non-dimensionalization"""
+        return u.UnitSystem(
+            name="flow360_nondim",
+            length_unit=self.base_length,
+            mass_unit=self.base_mass,
+            time_unit=self.base_time,
+            temperature_unit=self.base_temperature,
+        )
 
     @property
     def used_entity_registry(self) -> EntityRegistry:
@@ -504,7 +649,7 @@ class SimulationParams(_ParamModelBase):
         And also try to update the entities now that we have a global view of the simulation.
         """
         registry = EntityRegistry()
-        registry = self._move_registry_to_asset_cache(registry)
+        registry = self._register_assigned_entities(registry)
         registry = self._update_entity_private_attrs(registry)
         return registry
 
@@ -517,6 +662,7 @@ class SimulationParams(_ParamModelBase):
         """
         # pylint:disable=no-member
         used_entity_registry = self.used_entity_registry
+        # Below includes the Ghost entities.
         _update_entity_full_name(self, _SurfaceEntityBase, volume_mesh_meta_data)
         _update_entity_full_name(self, _VolumeEntityBase, volume_mesh_meta_data)
         _update_zone_boundaries_with_metadata(used_entity_registry, volume_mesh_meta_data)
@@ -527,6 +673,15 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams is steady state
         """
         return isinstance(self.time_stepping, Steady)
+
+    def has_solid(self):
+        """
+        returns True when SimulationParams has Solid model
+        """
+        if self.models is None:
+            return False
+        # pylint: disable=not-an-iterable
+        return any(isinstance(item, Solid) for item in self.models)
 
     def has_actuator_disks(self):
         """
@@ -590,3 +745,53 @@ class SimulationParams(_ParamModelBase):
         returns True when SimulationParams has user defined dynamics
         """
         return self.user_defined_dynamics is not None and len(self.user_defined_dynamics) > 0
+
+    def display_output_units(self) -> None:
+        """
+        Display all the output units for UserVariables used in `outputs`.
+        """
+        if not self.outputs:
+            return
+
+        post_processing_variables = get_post_processing_variables(self)
+
+        # Sort for consistent behavior
+        post_processing_variables = sorted(post_processing_variables)
+        name_units_pair = batch_get_user_variable_units(post_processing_variables, self)
+
+        if not name_units_pair:
+            return
+
+        # Calculate column widths dynamically
+        name_column_width = max(len("Variable Name"), max(len(name) for name in name_units_pair))
+        unit_column_width = max(
+            len("Unit"), max(len(str(unit)) for unit in name_units_pair.values())
+        )
+
+        # Ensure minimum column widths
+        name_column_width = max(name_column_width, 15)
+        unit_column_width = max(unit_column_width, 10)
+
+        # Create the table header
+        header = f"{'Variable Name':<{name_column_width}} | {'Unit':<{unit_column_width}}"
+        separator = "-" * len(header)
+
+        # Print the table
+        log.info("")
+        log.info("Units of output `UserVariables`:")
+        log.info(separator)
+        log.info(header)
+        log.info(separator)
+
+        # Print each row
+        for name, unit in name_units_pair.items():
+            log.info(f"{name:<{name_column_width}} | {str(unit):<{unit_column_width}}")
+
+        log.info(separator)
+        log.info("")
+
+    def pre_submit_summary(self):
+        """
+        Display a summary of the simulation params before submission.
+        """
+        self.display_output_units()

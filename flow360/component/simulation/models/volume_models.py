@@ -2,15 +2,22 @@
 
 # pylint: disable=too-many-lines
 import os
+import re
 from abc import ABCMeta
-from typing import Annotated, Dict, List, Literal, Optional, Union
+from typing import Annotated, Dict, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.expressions import StringExpression
+from flow360.component.simulation.framework.expressions import (
+    StringExpression,
+    validate_angle_expression_of_t_seconds,
+)
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
@@ -47,7 +54,21 @@ from flow360.component.simulation.models.validation.validation_bet_disk import (
     _check_bet_disk_initial_blade_direction_and_blade_line_chord,
     _check_bet_disk_sectional_radius_and_polars,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, GenericVolume
+from flow360.component.simulation.outputs.output_entities import Point
+from flow360.component.simulation.outputs.output_fields import _FIELD_IS_SCALAR_MAPPING
+from flow360.component.simulation.outputs.outputs import (
+    MonitorOutputType,
+    ProbeOutput,
+    SurfaceIntegralOutput,
+    SurfaceProbeOutput,
+)
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    EntityListWithCustomVolume,
+    GenericVolume,
+)
 from flow360.component.simulation.unit_system import (
     AngleType,
     AngularVelocityType,
@@ -58,13 +79,215 @@ from flow360.component.simulation.unit_system import (
     PressureType,
     u,
 )
-from flow360.component.simulation.validation_utils import (
+from flow360.component.simulation.user_code.core.types import (
+    SolverVariable,
+    UnytQuantity,
+    UserVariable,
+    ValueOrExpression,
+    get_input_value_dimensions,
+    get_input_value_length,
+    infer_units_by_unit_system,
+    is_variable_with_unit_system_as_units,
+    solver_variable_to_user_variable,
+)
+from flow360.component.simulation.validation.validation_context import (
+    get_validation_info,
+)
+from flow360.component.simulation.validation.validation_utils import (
     _validator_append_instance_name,
 )
 
 # pylint: disable=fixme
 # TODO: Warning: Pydantic V1 import
 from flow360.component.types import Axis
+
+
+class StopCriterion(Flow360BaseModel):
+    """
+
+    :class:`StopCriterion` class for :py:attr:`Fluid.stopping_criterion` settings.
+
+    Example
+    -------
+
+    Define a stopping criterion on a :class:`ProbeOutput` with a tolerance of 0.01.
+    The ProbeOutput monitors the moving deviation of Helicity in a moving window of 10 steps,
+    at the location of (0, 0, 0,005) * fl.u.m.
+
+    >>> monitored_variable = fl.UserVariable(
+    ...     name="Helicity_user",
+    ...     value=fl.math.dot(fl.solution.velocity, fl.solution.vorticity),
+    ... )
+    >>> criterion = fl.StopCriterion(
+    ...     name="Criterion_1",
+    ...     monitor_output=fl.ProbeOutput(
+    ...         name="Helicity_probe",
+    ...         output_fields=[
+    ...             monitored_variable,
+    ...         ],
+    ...         probe_points=fl.Point(name="Point1", location=(0, 0, 0.005) * fl.u.m),
+    ...         moving_statistic = fl.MovingStatistic(method = "deviation", moving_window = 10)
+    ...     ),
+    ...     monitor_field=monitored_variable,
+    ...     tolerance=0.01,
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field("StopCriterion", description="Name of this criterion.")
+    monitor_field: Union[UserVariable, str] = pd.Field(
+        description="The field to be monitored. This field must be "
+        "present in the `output_fields` of `monitor_output`."
+    )
+    monitor_output: Union[MonitorOutputType, str] = pd.Field(
+        description="The output to be monitored."
+    )
+    tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
+        description="The tolerance threshold of this criterion."
+    )
+    criterion_change_window: Optional[int] = pd.Field(
+        None,
+        description="The number of data points used to check if the deviation of "
+        "monitored field is below tolerance. "
+        "If not set, the criterion will directly compare the latest value with tolerance.",
+        ge=2,
+    )
+    type_name: Literal["StopCriterion"] = pd.Field("StopCriterion", frozen=True)
+
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_criterion = exclude + ["tolerance"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_criterion,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
+
+    @pd.field_serializer("monitor_output")
+    def serialize_monitor_output(self, v):
+        """Serialize only the output's id of the related object."""
+        if isinstance(v, get_args(get_args(MonitorOutputType)[0])):
+            return v.private_attribute_id
+        return v
+
+    @pd.field_validator("monitor_field", mode="after")
+    @classmethod
+    def _check_monitor_field_is_scalar(cls, v):
+        if (isinstance(v, UserVariable) and get_input_value_length(v.value) != 0) or (
+            isinstance(v, str) and v in _FIELD_IS_SCALAR_MAPPING and not _FIELD_IS_SCALAR_MAPPING[v]
+        ):
+            raise ValueError("The stopping criterion can only be defined on a scalar field.")
+        return v
+
+    @pd.field_validator("monitor_output", mode="before")
+    @classmethod
+    def _preprocess_monitor_output_with_id(cls, v):
+        if not isinstance(v, str):
+            return v
+        validation_info = get_validation_info()
+        if (
+            validation_info is None
+            or validation_info.output_dict is None
+            or validation_info.output_dict.get(v) is None
+        ):
+            raise ValueError("The monitor output does not exist in the outputs list.")
+        monitor_output_dict = validation_info.output_dict[v]
+        monitor_output = pd.TypeAdapter(MonitorOutputType).validate_python(monitor_output_dict)
+        return monitor_output
+
+    @pd.field_validator("monitor_output", mode="after")
+    @classmethod
+    def _check_single_point_in_probe_output(cls, v):
+        if not isinstance(v, (ProbeOutput, SurfaceProbeOutput)):
+            return v
+        if len(v.entities.stored_entities) == 1 and isinstance(
+            v.entities.stored_entities[0], Point
+        ):
+            return v
+        raise ValueError(
+            "For stopping criterion setup, only one single `Point` entity is allowed "
+            "in `ProbeOutput`/`SurfaceProbeOutput`."
+        )
+
+    @pd.field_validator("monitor_output", mode="after")
+    @classmethod
+    def _check_field_exists_in_monitor_output(cls, v, info: pd.ValidationInfo):
+        """Ensure the monitor field exist in the monitor output."""
+        if isinstance(v, str):
+            return v
+        monitor_field = info.data.get("monitor_field", None)
+        if monitor_field not in v.output_fields.items:
+            raise ValueError("The monitor field does not exist in the monitor output.")
+        return v
+
+    @pd.field_validator("tolerance", mode="before")
+    @classmethod
+    def _preprocess_field_with_unit_system(cls, value, info: pd.ValidationInfo):
+        if is_variable_with_unit_system_as_units(value):
+            return value
+        if info.data.get("monitor_field") is None:
+            # `field` validation failed.
+            raise ValueError(
+                "The monitor field is invalid and therefore unit inference is not possible."
+            )
+        if info.data.get("monitor_output") is None:
+            raise ValueError(
+                "The monitor output is invalid and therefore unit inference is not possible."
+            )
+        units = value["units"]
+        monitor_field = info.data["monitor_field"]
+        monitor_output = info.data.get("monitor_output")
+        field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            field_dimensions = field_dimensions * u.dimensions.length**2
+        value = infer_units_by_unit_system(
+            value=value, value_dimensions=field_dimensions, unit_system=units
+        )
+        return value
+
+    @pd.field_validator("tolerance", mode="after")
+    @classmethod
+    def check_tolerance_value_for_string_monitor_field(cls, v, info: pd.ValidationInfo):
+        """Ensure the tolerance is float when string field is used."""
+
+        monitor_field = info.data.get("monitor_field", None)
+        if isinstance(monitor_field, str) and not isinstance(v, float):
+            raise ValueError(
+                f"The monitor field ({monitor_field}) specified by string "
+                "can only be used with a nondimensional tolerance."
+            )
+        return v
+
+    @pd.field_validator("tolerance", mode="after")
+    @classmethod
+    def _check_tolerance_and_monitor_field_match_dimensions(cls, v, info: pd.ValidationInfo):
+        """Ensure the tolerance has the same dimensions as the monitor field."""
+        monitor_field = info.data.get("monitor_field", None)
+        monitor_output = info.data.get("monitor_output", None)
+        if not isinstance(monitor_field, UserVariable):
+            return v
+        field_dimensions = get_input_value_dimensions(value=monitor_field.value)
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            field_dimensions = field_dimensions * u.dimensions.length**2
+        tolerance_dimensions = get_input_value_dimensions(value=v)
+        if tolerance_dimensions != field_dimensions:
+            raise ValueError("The dimensions of monitor field and tolerance do not match.")
+        return v
+
+    @pd.field_validator("monitor_field", mode="before")
+    @classmethod
+    def _convert_solver_variable_as_user_variable(cls, value):
+        if isinstance(value, SolverVariable):
+            return solver_variable_to_user_variable(value)
+        return value
 
 
 class AngleExpression(SingleAttributeModel):
@@ -85,6 +308,25 @@ class AngleExpression(SingleAttributeModel):
         description="The expression defining the rotation angle as a function of time."
     )
 
+    @pd.field_validator("value", mode="after")
+    @classmethod
+    def _validate_angle_expression(cls, value):
+        errors = validate_angle_expression_of_t_seconds(value)
+        if errors:
+            raise ValueError(" | ".join(errors))
+        return value
+
+    def preprocess(self, **kwargs):
+        # locate t_seconds and convert it to (t*flow360_time_to_seconds)
+        params = kwargs.get("params")
+        one_sec_to_flow360_time = params.convert_unit(
+            value=1 * u.s, target_system="flow360_v2"  # pylint:disable=no-member
+        )
+        flow360_time_to_seconds_expression = f"({1.0/one_sec_to_flow360_time.value} * t)"
+        self.value = re.sub(r"\bt_seconds\b", flow360_time_to_seconds_expression, self.value)
+
+        return super().preprocess(**kwargs)
+
 
 class AngularVelocity(SingleAttributeModel):
     """
@@ -101,7 +343,9 @@ class AngularVelocity(SingleAttributeModel):
     """
 
     type_name: Literal["AngularVelocity"] = pd.Field("AngularVelocity", frozen=True)
-    value: AngularVelocityType = pd.Field(description="The value of the angular velocity.")
+    value: ValueOrExpression[AngularVelocityType] = pd.Field(
+        description="The value of the angular velocity."
+    )
 
 
 class FromUserDefinedDynamics(Flow360BaseModel):
@@ -129,7 +373,7 @@ class FromUserDefinedDynamics(Flow360BaseModel):
 
 class ExpressionInitialConditionBase(Flow360BaseModel):
     """
-    :class:`ExpressionInitialCondition` class for specifying the intial conditions of
+    :class:`ExpressionInitialCondition` class for specifying the initial conditions of
     :py:attr:`Fluid.initial_condition`.
     """
 
@@ -172,6 +416,18 @@ class NavierStokesInitialCondition(ExpressionInitialConditionBase):
     v: StringExpression = pd.Field("v", description="Y-direction velocity")
     w: StringExpression = pd.Field("w", description="Z-direction velocity")
     p: StringExpression = pd.Field("p", description="Pressure")
+
+    @pd.field_validator("rho", "u", "v", "w", "p", mode="after")
+    @classmethod
+    def _disable_expression_for_liquid(cls, value, info: pd.ValidationInfo):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+
+        # pylint:disable = unsubscriptable-object
+        if value != cls.model_fields[info.field_name].get_default():
+            raise ValueError("Expression cannot be used when using liquid as simulation material.")
+        return value
 
 
 class NavierStokesModifiedRestartSolution(NavierStokesInitialCondition):
@@ -255,7 +511,7 @@ class Fluid(PDEModelBase):
         + ":class:`TransitionModelSolver` documentation.",
     )
 
-    material: FluidMaterialTypes = pd.Field(Air(), description="The material propetry of fluid.")
+    material: FluidMaterialTypes = pd.Field(Air(), description="The material property of fluid.")
 
     initial_condition: Union[NavierStokesModifiedRestartSolution, NavierStokesInitialCondition] = (
         pd.Field(
@@ -263,6 +519,12 @@ class Fluid(PDEModelBase):
             discriminator="type_name",
             description="The initial condition of the fluid solver.",
         )
+    )
+
+    stopping_criterion: Optional[List[StopCriterion]] = pd.Field(
+        None,
+        description="The stopping criterion setting of the Fluid solver. "
+        "All criteria must be met at the same time to stop the solver.",
     )
 
     # pylint: disable=fixme
@@ -414,7 +676,7 @@ class ActuatorDisk(Flow360BaseModel):
         description="The force per area input for the `ActuatorDisk` model. "
         + "See :class:`ForcePerArea` documentation."
     )
-    name: Optional[str] = pd.Field(None, description="Name of the `ActuatorDisk` model.")
+    name: Optional[str] = pd.Field("Actuator disk", description="Name of the `ActuatorDisk` model.")
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
@@ -513,7 +775,7 @@ class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         file_content = get_file_content(input_data["file_path"])
 
-        return {"file_path": input_data["file_path"], "content": file_content}
+        return {"file_path": os.path.basename(input_data["file_path"]), "content": file_content}
 
 
 class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
@@ -556,7 +818,11 @@ class BETSingleMultiFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
             polar_file_obj_list.append(
                 [{"file_path": os.path.join(file_dir, file_name)} for file_name in file_name_list]
             )
-        return {"file_path": file_path, "content": file_content, "polar_files": polar_file_obj_list}
+        return {
+            "file_path": os.path.basename(file_path),
+            "content": file_content,
+            "polar_files": polar_file_obj_list,
+        }
 
 
 class XROTORFile(BETSingleInputFileBaseModel):
@@ -584,6 +850,7 @@ BETFileTypes = Annotated[
 class BETDiskCache(Flow360BaseModel):
     """[INTERNAL] Cache for BETDisk inputs"""
 
+    name: Optional[str] = None
     file: Optional[BETFileTypes] = None
     rotation_direction_rule: Optional[Literal["leftHand", "rightHand"]] = None
     omega: Optional[AngularVelocityType.NonNegative] = None
@@ -592,7 +859,6 @@ class BETDiskCache(Flow360BaseModel):
     entities: Optional[EntityList[Cylinder]] = None
     angle_unit: Optional[AngleType] = None
     length_unit: Optional[LengthType.NonNegative] = None
-    mesh_unit: Optional[LengthType.NonNegative] = None
     number_of_blades: Optional[pd.StrictInt] = None
     initial_blade_direction: Optional[Axis] = None
     blade_line_chord: Optional[LengthType.NonNegative] = None
@@ -604,8 +870,8 @@ class BETDisk(MultiConstructorBaseModel):
     To generate the sectional polars the BET translators can be used which are
     outlined :ref:`here <BET_Translators>`
     with best-practices for the sectional polars inputs available :ref:`here <secPolars_bestPractices>`.
-    A case study of the XV-15 rotor using the steady BET Disk method is available
-    in :ref:`Case Studies <XV15BETDisk_caseStudy>`.
+    A validation study of the XV-15 rotor using the steady BET Disk method is available
+    in :ref:`Validation Studies <XV15BETDiskValidationStudy>`.
     Because a transient BET Line simulation is simply a time-accurate version of a steady-state
     BET Disk simulation, most of the parameters below are applicable to both methods.
 
@@ -636,7 +902,7 @@ class BETDisk(MultiConstructorBaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `BETDisk` model.")
+    name: Optional[str] = pd.Field("BET disk", description="Name of the `BETDisk` model.")
     type: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     type_name: Literal["BETDisk"] = pd.Field("BETDisk", frozen=True)
     entities: EntityList[Cylinder] = pd.Field(alias="volumes")
@@ -670,34 +936,42 @@ class BETDisk(MultiConstructorBaseModel):
         "inf",
         description="Dimensional distance between blade tip and solid bodies to "
         + "define a :ref:`tip loss factor <TipGap>`.",
+        frozen=True,
     )
     mach_numbers: List[pd.NonNegativeFloat] = pd.Field(
         description="Mach numbers associated with airfoil polars provided "
-        + "in :class:`BETDiskSectionalPolar`."
+        + "in :class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
     reynolds_numbers: List[pd.PositiveFloat] = pd.Field(
         description="Reynolds numbers associated with the airfoil polars "
-        + "provided in :class:`BETDiskSectionalPolar`."
+        + "provided in :class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
     alphas: AngleType.Array = pd.Field(
         description="Alphas associated with airfoil polars provided in "
-        + ":class:`BETDiskSectionalPolar`."
+        + ":class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
     twists: List[BETDiskTwist] = pd.Field(
         description="A list of :class:`BETDiskTwist` objects specifying the twist in degrees as a "
-        + "function of radial location."
+        + "function of radial location.",
+        frozen=True,
     )
     chords: List[BETDiskChord] = pd.Field(
         description="A list of :class:`BETDiskChord` objects specifying the blade chord as a function "
-        + "of the radial location. "
+        + "of the radial location. ",
+        frozen=True,
     )
     sectional_polars: List[BETDiskSectionalPolar] = pd.Field(
         description="A list of :class:`BETDiskSectionalPolar` objects for every radial location specified in "
-        + ":py:attr:`sectional_radiuses`."
+        + ":py:attr:`sectional_radiuses`.",
+        frozen=True,
     )
     sectional_radiuses: LengthType.NonNegativeArray = pd.Field(
         description="A list of the radial locations in grid units at which :math:`C_l` "
-        + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`."
+        + "and :math:`C_d` are specified in :class:`BETDiskSectionalPolar`.",
+        frozen=True,
     )
 
     private_attribute_input_cache: BETDiskCache = BETDiskCache()
@@ -741,6 +1015,26 @@ class BETDisk(MultiConstructorBaseModel):
         """validate dimension of 3d coefficients in polars"""
         return _check_bet_disk_3d_coefficients_in_polars(self)
 
+    @pd.field_validator(
+        "name",
+        "rotation_direction_rule",
+        "omega",
+        "chord_ref",
+        "n_loading_nodes",
+        "number_of_blades",
+        "entities",
+        "initial_blade_direction",
+        mode="after",
+    )
+    @classmethod
+    def _update_input_cache(cls, value, info: pd.ValidationInfo):
+        setattr(
+            info.data["private_attribute_input_cache"],
+            info.field_name,
+            value if info.field_name != "entities" else value.stored_entities,
+        )
+        return value
+
     # pylint: disable=too-many-arguments, no-self-argument, not-callable
     @MultiConstructorBaseModel.model_constructor
     @pd.validate_call
@@ -757,6 +1051,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given C81 file and additional inputs.
 
@@ -822,6 +1117,7 @@ class BETDisk(MultiConstructorBaseModel):
             angle_unit=angle_unit,
             length_unit=length_unit,
             number_of_blades=number_of_blades,
+            name=name,
         )
 
         return cls(**params)
@@ -841,6 +1137,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given DFDC file and additional inputs.
 
@@ -878,7 +1175,7 @@ class BETDisk(MultiConstructorBaseModel):
         --------
         Create a BET disk with a DFDC file.
 
-        >>> param = fl.BETDisk.from_xrotor(
+        >>> param = fl.BETDisk.from_dfdc(
         ...     file=fl.DFDCFile(file_path="dfdc_xv15.case")),
         ...     rotation_direction_rule="leftHand",
         ...     omega=0.0046 * fl.u.deg / fl.u.s,
@@ -886,7 +1183,6 @@ class BETDisk(MultiConstructorBaseModel):
         ...     n_loading_nodes=20,
         ...     entities=bet_cylinder,
         ...     length_unit=fl.u.m,
-        ...     mesh_unit=fl.u.m,
         ...     angle_unit=fl.u.deg,
         ... )
         """
@@ -902,6 +1198,7 @@ class BETDisk(MultiConstructorBaseModel):
             entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
+            name=name,
         )
 
         return cls(**params)
@@ -922,6 +1219,7 @@ class BETDisk(MultiConstructorBaseModel):
         number_of_blades: pd.StrictInt,
         initial_blade_direction: Optional[Axis],
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
 
@@ -989,6 +1287,7 @@ class BETDisk(MultiConstructorBaseModel):
             angle_unit=angle_unit,
             length_unit=length_unit,
             number_of_blades=number_of_blades,
+            name=name,
         )
 
         return cls(**params)
@@ -1008,6 +1307,7 @@ class BETDisk(MultiConstructorBaseModel):
         angle_unit: AngleType,
         initial_blade_direction: Optional[Axis] = None,
         blade_line_chord: LengthType.NonNegative = 0 * u.m,
+        name: str = "BET disk",
     ):
         """Constructs a :class: `BETDisk` instance from a given XROTOR file and additional inputs.
 
@@ -1068,6 +1368,7 @@ class BETDisk(MultiConstructorBaseModel):
             entities=entities,
             angle_unit=angle_unit,
             length_unit=length_unit,
+            name=name,
         )
 
         return cls(**params)
@@ -1109,9 +1410,9 @@ class Rotation(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `Rotation` model.")
+    name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityList[GenericVolume, Cylinder] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1122,7 +1423,7 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder]] = pd.Field(
+    parent_volume: Optional[Union[GenericVolume, Cylinder, CustomVolume]] = pd.Field(
         None,
         description="The parent rotating entity in a nested rotation case."
         + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
@@ -1148,6 +1449,23 @@ class Rotation(Flow360BaseModel):
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `center` to be used under `Rotation`"
                 )
+        return value
+
+    @pd.field_validator("parent_volume", mode="after")
+    @classmethod
+    def _ensure_custom_volume_is_listed_under_volume_zones(
+        cls, value: Optional[Union[GenericVolume, Cylinder, CustomVolume]]
+    ):
+        """Ensure parent volume is a custom volume."""
+        if value is None:
+            return value
+        validation_info = get_validation_info()
+        if validation_info is None or not isinstance(value, CustomVolume):
+            return value
+        if value.name not in validation_info.to_be_generated_custom_volumes:
+            raise ValueError(
+                f"Parent CustomVolume {value.name} is not listed under meshing->volume_zones."
+            )
         return value
 
 
@@ -1193,9 +1511,9 @@ class PorousMedium(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field(None, description="Name of the `PorousMedium` model.")
+    name: Optional[str] = pd.Field("Porous medium", description="Name of the `PorousMedium` model.")
     type: Literal["PorousMedium"] = pd.Field("PorousMedium", frozen=True)
-    entities: EntityList[GenericVolume, Box] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, Box, CustomVolume] = pd.Field(
         alias="volumes",
         description="The entity list for the `PorousMedium` model. "
         + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
@@ -1226,6 +1544,22 @@ class PorousMedium(Flow360BaseModel):
                 raise ValueError(
                     f"Entity '{entity.name}' must specify `axes` to be used under `PorousMedium`."
                 )
+        return value
+
+    @pd.field_validator("volumetric_heat_source", mode="after")
+    @classmethod
+    def _validate_volumetric_heat_source_for_liquid(
+        cls, value: Optional[Union[StringExpression, HeatSourceType]]
+    ):
+        """Disable the volumetric_heat_source when liquid operating condition is used"""
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        if value is not None:
+            raise ValueError(
+                "`volumetric_heat_source` cannot be setup under `PorousMedium` when using "
+                "liquid as simulation material."
+            )
         return value
 
 

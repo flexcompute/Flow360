@@ -2,33 +2,37 @@
 validation for SimulationParams
 """
 
-from typing import get_args
+from typing import Type, Union, get_args
 
-from flow360.component.simulation.entity_info import DraftEntityTypes
 from flow360.component.simulation.models.solver_numerics import NoneSolver
-from flow360.component.simulation.models.surface_models import SurfaceModelTypes, Wall
+from flow360.component.simulation.models.surface_models import (
+    Inflow,
+    Outflow,
+    PorousJump,
+    SurfaceModelTypes,
+    Wall,
+)
 from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
     SliceOutput,
     SurfaceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageOutputTypes,
+    TimeAverageSurfaceOutput,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import (
-    GhostCircularPlane,
-    GhostSphere,
-    GhostSurface,
-    _SurfaceEntityBase,
-    _VolumeEntityBase,
-)
+from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
+from flow360.component.simulation.utils import is_exact_instance
 from flow360.component.simulation.validation.validation_context import (
     ALL,
     CASE,
+    get_validation_info,
     get_validation_levels,
 )
+from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 
 def _check_consistency_wall_function_and_surface_output(v):
@@ -60,49 +64,32 @@ def _check_consistency_wall_function_and_surface_output(v):
 
 
 def _check_duplicate_entities_in_models(params):
+    if not params.models:
+        return params
+
     models = params.models
+    usage = EntityUsageMap()
 
-    dict_entity = {"Surface": {}, "Volume": {}}
-
-    def _get_entity_key(entity):
-        draft_entity_types = get_args(get_args(DraftEntityTypes)[0])
-        if isinstance(entity, draft_entity_types):
-            return entity.private_attribute_id
-        return entity.name
-
-    def register_single_entity(entity, model_type, dict_entity):
-        entity_type = None
-        if isinstance(entity, _SurfaceEntityBase):
-            entity_type = "Surface"
-        if isinstance(entity, _VolumeEntityBase):
-            entity_type = "Volume"
-        entity_key = _get_entity_key(entity=entity)
-        entity_log = dict_entity[entity_type].get(
-            entity_key, {"entity_name": entity.name, "model_list": []}
-        )
-        entity_log["model_list"].append(model_type)
-        dict_entity[entity_type][entity_key] = entity_log
-        return dict_entity
-
-    if models:
-        for model in models:
-            if hasattr(model, "entities"):
-                for entity in model.entities.stored_entities:
-                    dict_entity = register_single_entity(entity, model.type, dict_entity)
+    for model in models:
+        if hasattr(model, "entities"):
+            # pylint: disable = protected-access
+            expanded_entities = model.entities._get_expanded_entities(create_hard_copy=False)
+            for entity in expanded_entities:
+                usage.add_entity_usage(entity, model.type)
 
     error_msg = ""
-    for entity_type, entity_model_map in dict_entity.items():
+    for entity_type, entity_model_map in usage.dict_entity.items():
         for entity_info in entity_model_map.values():
             if len(entity_info["model_list"]) > 1:
                 model_set = set(entity_info["model_list"])
                 model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
                 model_string += " models.\n" if len(model_set) > 1 else " model.\n"
                 error_msg += (
-                    f"{entity_type} entity `{entity_info['entity_name']}` appears "
-                    f"multiple times in {model_string}"
+                    f"{entity_type} entity `{entity_info['entity_name']}` "
+                    + f"appears multiple times in {model_string}"
                 )
 
-    if error_msg != "":
+    if error_msg:
         raise ValueError(error_msg)
 
     return params
@@ -243,6 +230,30 @@ def _check_unsteadiness_to_use_hybrid_model(v):
     return v
 
 
+def _check_hybrid_model_to_use_zonal_enforcement(v):
+    models = v.models
+    if not models:
+        return v
+
+    for model in models:
+        if isinstance(model, Fluid):
+            turbulence_model_solver = model.turbulence_model_solver
+            if not isinstance(turbulence_model_solver, NoneSolver):
+                if turbulence_model_solver.controls is None:
+                    continue
+                for index, control in enumerate(turbulence_model_solver.controls):
+                    if (
+                        control.enforcement is not None
+                        and turbulence_model_solver.hybrid_model is None
+                    ):
+                        raise ValueError(
+                            f"Control region {index} must be running in hybrid RANS-LES mode to "
+                            "apply zonal turbulence enforcement."
+                        )
+
+    return v
+
+
 def _check_cht_solver_settings(params):
     has_heat_transfer = False
 
@@ -299,20 +310,70 @@ def _validate_cht_has_heat_transfer(params):
     return params
 
 
-def _check_complete_boundary_condition_and_unknown_surface(params):
+def _check_complete_boundary_condition_and_unknown_surface(
+    params,
+):  # pylint:disable=too-many-branches, too-many-locals
     ## Step 1: Get all boundaries patches from asset cache
-
     current_lvls = get_validation_levels() if get_validation_levels() else []
     if all(level not in current_lvls for level in (ALL, CASE)):
         return params
 
+    validation_info = get_validation_info()
+
+    if not validation_info:
+        return params
+
     asset_boundary_entities = params.private_attribute_asset_cache.boundaries
+
+    # Filter out the ones that will be deleted by mesher
+    automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
+
+    if automated_farfield_method:
+        if validation_info.at_least_one_body_transformed:
+            # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+            # since we do not know the final bounding box for each surface and global model.
+            return params
+
+        # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
+        # since we do not know the final bounding box for each surface and global model.
+        # pylint:disable=protected-access
+        asset_boundary_entities = [
+            item
+            for item in asset_boundary_entities
+            if item._will_be_deleted_by_mesher(
+                at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
+                farfield_method=automated_farfield_method,
+                global_bounding_box=validation_info.global_bounding_box,
+                planar_face_tolerance=validation_info.planar_face_tolerance,
+                half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
+                quasi_3d_symmetry_planes_center_y=validation_info.quasi_3d_symmetry_planes_center_y,
+            )
+            is False
+        ]
+        if automated_farfield_method == "auto":
+            asset_boundary_entities += [
+                item
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
+                if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
+            ]
+        elif automated_farfield_method == "quasi-3d":
+            asset_boundary_entities += [
+                item
+                for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
+                if item.name != "symmetric"
+            ]
+
+    potential_zone_zone_interfaces = set()
+    if validation_info.farfield_method == "user-defined":
+        for zones in params.meshing.volume_zones:
+            if isinstance(zones, CustomVolume):
+                for boundary in zones.boundaries.stored_entities:
+                    potential_zone_zone_interfaces.add(boundary.name)
 
     if asset_boundary_entities is None or asset_boundary_entities == []:
         raise ValueError("[Internal] Failed to retrieve asset boundaries")
 
     asset_boundaries = {boundary.name for boundary in asset_boundary_entities}
-
     ## Step 2: Collect all used boundaries from the models
     if len(params.models) == 1 and isinstance(params.models[0], Fluid):
         raise ValueError("No boundary conditions are defined in the `models` section.")
@@ -321,6 +382,8 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
 
     for model in params.models:
         if not isinstance(model, get_args(SurfaceModelTypes)):
+            continue
+        if isinstance(model, PorousJump):
             continue
 
         entities = []
@@ -333,12 +396,10 @@ def _check_complete_boundary_condition_and_unknown_surface(params):
             ]
 
         for entity in entities:
-            if isinstance(entity, (GhostSurface, GhostSphere, GhostCircularPlane)):
-                continue
             used_boundaries.add(entity.name)
 
     ## Step 3: Use set operations to find missing and unknown boundaries
-    missing_boundaries = asset_boundaries - used_boundaries
+    missing_boundaries = asset_boundaries - used_boundaries - potential_zone_zone_interfaces
     unknown_boundaries = used_boundaries - asset_boundaries
 
     if missing_boundaries:
@@ -428,3 +489,73 @@ def _check_time_average_output(params):
         output_type_list.strip(",")
         raise ValueError(f"{output_type_list} can only be used in unsteady simulations.")
     return params
+
+
+def _check_valid_models_for_liquid(models):
+    if not models:
+        return models
+    validation_info = get_validation_info()
+    if validation_info is None or validation_info.using_liquid_as_material is False:
+        return models
+    for model in models:
+        if isinstance(model, (Inflow, Outflow, Solid)):
+            raise ValueError(
+                f"`{model.type}` type model cannot be used when using liquid as simulation material."
+            )
+    return models
+
+
+def _check_duplicate_isosurface_names(outputs):
+    if outputs is None:
+        return outputs
+    isosurface_names = []
+    isosurface_time_avg_names = []
+    for output in outputs:
+        if isinstance(output, IsosurfaceOutput):
+            for entity in output.entities.items:
+                if entity.name == "qcriterion":
+                    raise ValueError(
+                        "The name `qcriterion` is reserved for the autovis isosurface from solver, "
+                        "please rename the isosurface."
+                    )
+        if is_exact_instance(output, IsosurfaceOutput):
+            for entity in output.entities.items:
+                if entity.name in isosurface_names:
+                    raise ValueError(
+                        f"Another isosurface with name: `{entity.name}` already exists, please rename the isosurface."
+                    )
+                isosurface_names.append(entity.name)
+        if is_exact_instance(output, TimeAverageIsosurfaceOutput):
+            for entity in output.entities.items:
+                if entity.name in isosurface_time_avg_names:
+                    raise ValueError(
+                        "Another time average isosurface with name: "
+                        f"`{entity.name}` already exists, please rename the isosurface."
+                    )
+                isosurface_time_avg_names.append(entity.name)
+    return outputs
+
+
+def _check_duplicate_surface_usage(outputs):
+    if outputs is None:
+        return outputs
+
+    def _check_surface_usage(
+        outputs, output_type: Union[Type[SurfaceOutput], Type[TimeAverageSurfaceOutput]]
+    ):
+        surface_names = set()
+        for output in outputs:
+            if not is_exact_instance(output, output_type):
+                continue
+            for entity in output.entities.stored_entities:
+                if entity.name in surface_names:
+                    raise ValueError(
+                        f"The same surface `{entity.name}` is used in multiple `{output_type.__name__}`s."
+                        " Please specify all settings for the same surface in one output."
+                    )
+                surface_names.add(entity.name)
+
+    _check_surface_usage(outputs, SurfaceOutput)
+    _check_surface_usage(outputs, TimeAverageSurfaceOutput)
+
+    return outputs

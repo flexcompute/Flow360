@@ -443,7 +443,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [],
         "outputFormat": "paraview,tecplot",
         "startAverageIntegrationStep": -1,
@@ -479,7 +478,6 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "primitiveVars",
             "betMetrics",
@@ -533,5 +531,13 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[]
+    "userDefinedFields":[],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
+    }
 }

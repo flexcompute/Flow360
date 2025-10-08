@@ -4,13 +4,33 @@
             "type": "SubsonicInflow",
             "totalTemperatureRatio": 1.0411244143675171,
             "totalPressureRatio": 0.9,
-            "velocityDirection": [1.0,0.0,0.0]
+            "velocityDirection": [
+                1.0,
+                0.0,
+                0.0
+            ]
         },
         "boundary_name_B": {
             "type": "MassInflow",
             "totalTemperatureRatio": 1.0411244143675171,
             "massFlowRate": 0.2,
-            "rampSteps": 10
+            "rampSteps": 10,
+            "velocityDirection": [
+                0.0,
+                0.0,
+                1.0
+            ]
+        },
+        "boundary_name_C": {
+            "type": "SupersonicInflow",
+            "totalTemperatureRatio": 1.0411244143675171,
+            "totalPressureRatio": 8.0,
+            "staticPressureRatio": 0.9,
+            "velocityDirection": [
+                0.0,
+                1.0,
+                0.0
+            ]
         },
         "boundary_name_E": {
             "type": "SubsonicOutflowPressure",
@@ -25,17 +45,27 @@
             "type": "SubsonicOutflowMach",
             "MachNumber": 0.3
         },
-	"boundary_name_G" : {
-	    "type" : "NoSlipWall",
-	    "wallVelocityModel" : {
-		"type" : "SlaterPorousBleed",
-		"staticPressureRatio" :  0.8165514936615943,
-		"porosity" : 0.49,
-		"activationStep" : 20
-	    },
-	    "heatFlux" : 0.0,
-	    "roughnessHeight" : 0.0
-	}
+        "boundary_name_G": {
+            "type": "NoSlipWall",
+            "wallVelocityModel": {
+                "type": "SlaterPorousBleed",
+                "staticPressureRatio": 0.8165514936615943,
+                "porosity": 0.49,
+                "activationStep": 20
+            },
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0
+        },
+        "boundary_name_I": {
+            "type": "NoSlipWall",
+            "velocity": [
+                "0.0 * (z - 3.0) - 0.030773317581937965 * (y - 2.0)",
+                "0.030773317581937965 * (x - 1.0) - 0.0 * (z - 3.0)",
+                "0.0 * (y - 2.0) - 0.0 * (x - 1.0)"
+            ],
+            "heatFlux": 0.0,
+            "roughnessHeight": 0.0
+        }
     },
     "freestream": {
         "Mach": 0.8399999999999999,
@@ -86,13 +116,14 @@
     "turbulenceModelSolver": {
         "CFLMultiplier": 2.0,
         "DDES": false,
-        "ZDES": false,  
+        "ZDES": false,
         "absoluteTolerance": 1e-08,
         "equationEvalFrequency": 4,
         "gridSizeForLES": "maxEdgeLength",
         "linearSolver": {
             "maxIterations": 20
         },
+        "lowReynoldsCorrection": false,
         "maxForceJacUpdatePhysicalSteps": 0,
         "modelConstants": {
             "C_DES": 0.72,
@@ -105,7 +136,9 @@
             "C_t4": 0.5,
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
-            "C_w2": 0.3
+            "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5
         },
         "modelType": "SpalartAllmaras",
         "orderOfAccuracy": 2,
@@ -115,5 +148,67 @@
         "rotationCorrection": false,
         "updateJacobianFrequency": 4
     },
-    "userDefinedFields": []
+    "userDefinedFields": [],
+    "userDefinedDynamics": [
+        {
+            "constants": {
+                "Kp": 0.01,
+                "initialTotalPressureRatio": 1.0,
+                "massFlowRateTarget": 0.2
+            },
+            "dynamicsName": "massInflowController_boundary_name_B",
+            "inputBoundaryPatches": [
+                "boundary_name_B"
+            ],
+            "inputVars": [
+                "area",
+                "hasSupersonicFlow",
+                "massFlowRate"
+            ],
+            "outputTargetName": "boundary_name_B",
+            "outputVars": {
+                "totalPressureRatio": "(pseudoStep > 0) ? (state[0]) : (initialTotalPressureRatio);"
+            },
+            "stateVarsInitialValue": [
+                "initialTotalPressureRatio"
+            ],
+            "updateLaw": [
+                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 - Kp) * state[0]) : (state[0] - Kp * (massFlowRate/area - massFlowRateTarget/area));"
+            ]
+        },
+        {
+            "constants": {
+                "Kp": 0.01,
+                "initialStaticPressureRatio": 1.0,
+                "massFlowRateTarget": 0.2
+            },
+            "dynamicsName": "massOutflowController_boundary_name_H",
+            "inputBoundaryPatches": [
+                "boundary_name_H"
+            ],
+            "inputVars": [
+                "area",
+                "hasSupersonicFlow",
+                "massFlowRate"
+            ],
+            "outputTargetName": "boundary_name_H",
+            "outputVars": {
+                "staticPressureRatio": "(pseudoStep > 0) ? (state[0]) : (initialStaticPressureRatio);"
+            },
+            "stateVarsInitialValue": [
+                "initialStaticPressureRatio"
+            ],
+            "updateLaw": [
+                "(hasSupersonicFlow and massFlowRate > 0) ? ((1.0 + Kp) * state[0]) : (state[0] + Kp * (massFlowRate/area - massFlowRateTarget/area));"
+            ]
+        }
+    ],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
+    }
 }

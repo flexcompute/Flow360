@@ -40,6 +40,7 @@ def test_flow360_monitor_convert():
             "type_name",
             "private_attribute_constructor",
             "private_attribute_input_cache",
+            "private_attribute_dict",
         },
     )
     with open("./ref/ref_monitor.json", mode="r") as fp:

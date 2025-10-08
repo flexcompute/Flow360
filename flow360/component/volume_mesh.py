@@ -28,7 +28,8 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.project_utils import VolumeMeshFile
+from flow360.component.simulation.folder import Folder
+from flow360.component.utils import VolumeMeshFile
 from flow360.component.v1.cloud.flow360_requests import NewVolumeMeshRequest
 from flow360.component.v1.meshing.params import VolumeMeshingParams
 from flow360.exceptions import (
@@ -51,8 +52,8 @@ from .resource_base import (
     Flow360ResourceListBase,
     ResourceDraft,
 )
+from .results.base_results import PerEntityResultCSVModel
 from .simulation.entity_info import VolumeMeshEntityInfo
-from .simulation.framework.entity_registry import EntityRegistry
 from .simulation.primitives import GenericVolume, Surface
 from .simulation.web.asset_base import AssetBase
 from .types import COMMENTS
@@ -228,6 +229,7 @@ class VolumeMeshDownloadable(Enum):
     """
 
     CONFIG_JSON = "config.json"
+    BOUNDING_BOX = "meshBoundaryBoundingBox.json"
 
 
 # pylint: disable=E0213
@@ -804,6 +806,8 @@ class VolumeMeshStatusV2(Enum):
     UPLOADED = "uploaded"
     COMPLETED = "completed"
     PENDING = "pending"
+    GENERATING = "generating"
+    ERROR = "error"
 
     def is_final(self):
         """
@@ -814,7 +818,7 @@ class VolumeMeshStatusV2(Enum):
         bool
             True if status is final, False otherwise.
         """
-        if self in [VolumeMeshStatusV2.COMPLETED]:
+        if self in [VolumeMeshStatusV2.COMPLETED, VolumeMeshStatusV2.ERROR]:
             return True
         return False
 
@@ -843,6 +847,74 @@ class VolumeMeshStats(pd_v2.BaseModel):
     n_tet_wedge: int = pd_v2.Field(..., alias="nTetWedge")
 
 
+class VolumeMeshBoundingBox(PerEntityResultCSVModel):
+    """
+    VolumeMeshBoundingBox
+    """
+
+    remote_file_name: str = pd.Field(VolumeMeshDownloadable.BOUNDING_BOX.value, frozen=True)
+    _variables: Optional[List[str]] = None
+
+    @property
+    def entities(self):
+        """
+        Returns list of entities (boundary names) available for this result
+        """
+        return self.values.keys()
+
+    def _filtered_sum(self):
+        pass
+
+    def _get_range(self, df, min_key: str, max_key: str) -> float:
+        if min_key not in df.index or max_key not in df.index:
+            return 0.0
+        min_val = df.loc[min_key].min()
+        max_val = df.loc[max_key].max()
+        return max_val - min_val
+
+    @property
+    def length(self) -> float:
+        """
+        Compute and return the length of the bounding box.
+
+        The length is calculated as the difference between the maximum and minimum
+        x-coordinate values from the bounding box data.
+
+        Returns:
+            float: The computed length along the x-axis.
+        """
+        df = self.as_dataframe()
+        return self._get_range(df, "xmin", "xmax")
+
+    @property
+    def width(self) -> float:
+        """
+        Compute and return the width of the bounding box.
+
+        The width is calculated as the difference between the maximum and minimum
+        y-coordinate values from the bounding box data.
+
+        Returns:
+            float: The computed width along the y-axis.
+        """
+        df = self.as_dataframe()
+        return self._get_range(df, "ymin", "ymax")
+
+    @property
+    def height(self) -> float:
+        """
+        Compute and return the height of the bounding box.
+
+        The height is calculated as the difference between the maximum and minimum
+        z-coordinate values from the bounding box data.
+
+        Returns:
+            float: The computed height along the z-axis.
+        """
+        df = self.as_dataframe()
+        return self._get_range(df, "zmin", "zmax")
+
+
 class VolumeMeshDraftV2(ResourceDraft):
     """
     Volume mesh draft component
@@ -856,12 +928,14 @@ class VolumeMeshDraftV2(ResourceDraft):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         self.file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
+        self.folder = folder
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -871,7 +945,7 @@ class VolumeMeshDraftV2(ResourceDraft):
     def _validate_volume_mesh(self):
         if self.file_name is not None:
             try:
-                VolumeMeshFile(value=self.file_name)
+                VolumeMeshFile(file_names=self.file_name)
             except pd.ValidationError as e:
                 raise Flow360FileError(str(e)) from e
 
@@ -892,7 +966,9 @@ class VolumeMeshDraftV2(ResourceDraft):
             raise Flow360ValueError("solver_version field is required.")
 
     # pylint: disable=protected-access, too-many-locals
-    def submit(self, description="", progress_callback=None, compress=True) -> VolumeMeshV2:
+    def submit(
+        self, description="", progress_callback=None, compress=True, run_async=False
+    ) -> VolumeMeshV2:
         """
         Submit volume mesh to cloud and create a new project
 
@@ -906,6 +982,8 @@ class VolumeMeshDraftV2(ResourceDraft):
             Compress the volume mesh file when sending to S3, default is True
         fetch_entities : boolean, optional
             Whether to fetch and populate the entity info object after submitting, default is False
+        run_async : bool, optional
+            Whether to submit volume mesh asynchronously (default is False).
 
         Returns
         -------
@@ -937,6 +1015,7 @@ class VolumeMeshDraftV2(ResourceDraft):
             solver_version=self.solver_version,
             tags=self.tags,
             file_name=original_file_with_compression,
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             format=mesh_format.value,
             description=description,
@@ -991,6 +1070,9 @@ class VolumeMeshDraftV2(ResourceDraft):
 
         # Start processing pipeline
         volume_mesh._webapi._complete_upload()
+        self._id = info.id
+        if run_async:
+            return volume_mesh
         log.debug("Waiting for volume mesh to be processed.")
         volume_mesh._webapi.get_info()
         log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")
@@ -1019,8 +1101,6 @@ class VolumeMeshV2(AssetBase):
         ----------
         id : str
             ID of the volume mesh resource in the cloud
-        root_item_entity_info_type :
-        override the default entity info type
 
         Returns
         -------
@@ -1062,6 +1142,7 @@ class VolumeMeshV2(AssetBase):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ) -> VolumeMeshDraftV2:
         """
         Parameters
@@ -1076,6 +1157,8 @@ class VolumeMeshV2(AssetBase):
             Length unit to use for the project ("m", "mm", "cm", "inch", "ft")
         tags: List[str]
             List of string tags to be added to the project upon creation
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -1089,39 +1172,13 @@ class VolumeMeshV2(AssetBase):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            folder=folder,
         )
 
-    def _populate_registry(self):
-        if hasattr(self, "_entity_info") is False or self._entity_info is None:
-            raise Flow360ValueError("The entity info object does not exist")
-
-        if not isinstance(self._entity_info, VolumeMeshEntityInfo):
-            raise Flow360ValueError(
-                "Entity info is of invalid type for a "
-                f"volume mesh object {type(self._entity_info)}"
-            )
-
-        # Initialize the local registry
-        self.internal_registry = EntityRegistry()
-
-        # Populate boundaries
-        for boundary in self._entity_info.boundaries:
-            self.internal_registry.register(boundary)
-
-        for zone in self._entity_info.zones:
-            self.internal_registry.register(zone)
-
-    def _check_registry(self):
-        if not hasattr(self, "internal_registry") or self.internal_registry is None:
-            if hasattr(self, "_entity_info") and self._entity_info is not None:
-                self._populate_registry()
-                return
-
-            raise Flow360ValueError(
-                "The entity info registry has not been populated. "
-                "Currently entity info is populated only when loading "
-                "an asset from the cloud using the from_cloud method "
-            )
+    # pylint: disable=useless-parent-delegation
+    def get_dynamic_default_settings(self, simulation_dict: dict):
+        """Get the default volume mesh settings from the simulation dict"""
+        return super().get_dynamic_default_settings(simulation_dict)
 
     @cached_property
     def stats(self) -> VolumeMeshStats:
@@ -1137,6 +1194,22 @@ class VolumeMeshV2(AssetBase):
         data = self._webapi._parse_json_from_cloud(self._mesh_stats_file)
         return VolumeMeshStats(**data)
 
+    @cached_property
+    def bounding_box(self) -> VolumeMeshBoundingBox:
+        """
+        Get mesh bounding box
+
+        Returns
+        -------
+        VolumeMeshBoundingBox
+            return VolumeMeshBoundingBox object
+        """
+
+        # pylint: disable=protected-access
+        data = self._webapi._parse_json_from_cloud(VolumeMeshDownloadable.BOUNDING_BOX.value)
+        bbox = VolumeMeshBoundingBox.from_dict(data)
+        return bbox
+
     @property
     def boundary_names(self) -> List[str]:
         """
@@ -1147,7 +1220,9 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the volume mesh
         """
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(
+            internal_registry=self.internal_registry
+        )
 
         return [
             surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
@@ -1163,7 +1238,9 @@ class VolumeMeshV2(AssetBase):
         List[str]
             List of zone names contained within the volume mesh
         """
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(
+            internal_registry=self.internal_registry
+        )
 
         return [
             volume.name
@@ -1185,7 +1262,9 @@ class VolumeMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(
+            internal_registry=self.internal_registry
+        )
 
         return self.internal_registry.find_by_naming_pattern(
             key, enforce_output_as_list=False, error_when_no_match=True

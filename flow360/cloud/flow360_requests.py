@@ -1,13 +1,24 @@
 """Requests module"""
 
-from typing import List, Optional, Union
+from datetime import datetime
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd_v2
 import pydantic.v1 as pd
 from pydantic.alias_generators import to_camel
 from typing_extensions import Literal
 
+from ..component.utils import is_valid_uuid
+
 LengthUnitType = Literal["m", "mm", "cm", "inch", "ft"]
+
+
+def _valid_id_validator(input_id: str):
+    is_valid_uuid(input_id)
+    return input_id
+
+
+IDStringType = Annotated[str, pd_v2.AfterValidator(_valid_id_validator)]
 
 
 ###==== V1 API Payload definition ===###
@@ -149,7 +160,93 @@ class _Resource(Flow360RequestsV2):
 
 class NewReportRequest(Flow360RequestsV2):
     "New report request"
+
     name: str
     resources: List[_Resource]
     config_json: str
     solver_version: str
+
+
+class DraftCreateRequest(Flow360RequestsV2):
+    """Data model for draft create request"""
+
+    name: Optional[str] = pd.Field(None)
+    project_id: IDStringType = pd.Field()
+    source_item_id: IDStringType = pd.Field()
+    source_item_type: Literal[
+        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
+    ] = pd.Field()
+    solver_version: str = pd.Field()
+    fork_case: bool = pd.Field()
+    interpolation_volume_mesh_id: Optional[str] = pd.Field(None)
+    interpolation_case_id: Optional[str] = pd.Field(None)
+    tags: Optional[List[str]] = pd.Field(None)
+
+    @pd_v2.field_validator("name", mode="after")
+    @classmethod
+    def _generate_default_name(cls, values):
+        if values is None:
+            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
+        return values
+
+
+class ForceCreationConfig(Flow360RequestsV2):
+    """Data model for force creation configuration"""
+
+    start_from: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+
+
+class DraftRunRequest(Flow360RequestsV2):
+    """Data model for draft run request"""
+
+    up_to: Literal["SurfaceMesh", "VolumeMesh", "Case"] = pd.Field()
+    use_in_house: bool = pd.Field()
+    use_gai: bool = pd.Field()
+    force_creation_config: Optional[ForceCreationConfig] = pd.Field(
+        None,
+    )
+    source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"] = pd.Field(
+        exclude=True
+    )
+
+    @pd_v2.model_validator(mode="after")
+    def _validate_force_creation_config(self):
+        # pylint: disable=no-member
+
+        order = {"Geometry": 0, "SurfaceMesh": 1, "VolumeMesh": 2, "Case": 3}
+        source_order = order[self.source_item_type]
+        up_to_order = order[self.up_to]
+
+        if self.force_creation_config is not None:
+            force_start_order = order[self.force_creation_config.start_from]
+            if (force_start_order <= source_order and self.source_item_type != "Case") or (
+                self.source_item_type == "Case" and self.force_creation_config.start_from != "Case"
+            ):
+                raise ValueError(
+                    f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "
+                    f"must be later than 'source_item_type' ({self.source_item_type})."
+                )
+
+            if force_start_order > up_to_order:
+                raise ValueError(
+                    f"Invalid force creation configuration: 'start_from' ({self.force_creation_config.start_from}) "
+                    f"cannot be later than 'up_to' ({self.up_to})."
+                )
+        return self
+
+
+class MoveToFolderRequestV2(Flow360RequestsV2):
+    """Data model for moving folder using v2 endpoint"""
+
+    name: Optional[str] = pd_v2.Field(default=None, description="folder to move name")
+    tags: List[str] = pd_v2.Field(default=[], description="folder tags")
+    parent_folder_id: str = pd_v2.Field(alias="parentFolderId", default="ROOT.FLOW360")
+
+
+class RenameAssetRequestV2(Flow360RequestsV2):
+    """
+    Data model for renaming an asset (folder, project, surface mesh, volume mesh,
+    or case (other request fields, like folder to move to, already have implementations)
+    """
+
+    name: str = pd_v2.Field(description="case to rename")

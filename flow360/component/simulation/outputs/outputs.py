@@ -5,33 +5,58 @@ Caveats:
 2. We do not support multiple output frequencies/file format for the same type of output.
 """
 
-from typing import Annotated, List, Literal, Optional, Union
+# pylint: disable=too-many-lines
+from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
+from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
+from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.output_fields import (
+    AllFieldNames,
     CommonFieldNames,
+    InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
     VolumeFieldNames,
+    get_field_values,
 )
 from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    ImportedSurface,
     Surface,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import (
+    Expression,
+    UserVariable,
+    solver_variable_to_user_variable,
+)
+from flow360.component.simulation.validation.validation_context import (
+    ALL,
+    CASE,
+    TimeSteppingType,
+    get_validation_info,
+    get_validation_levels,
+)
+from flow360.component.simulation.validation.validation_utils import (
+    check_deleted_surface_in_entity_list,
+)
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -74,8 +99,137 @@ class UserDefinedField(Flow360BaseModel):
         description="The mathematical expression for the field."
     )
 
+    @pd.field_validator("name", mode="after")
+    @classmethod
+    def _check_redefined_user_defined_fields(cls, value):
+        current_levels = get_validation_levels() if get_validation_levels() else []
+        if all(level not in current_levels for level in (ALL, CASE)):
+            return value
+        defined_field_names = get_field_values(AllFieldNames)
+        if value in defined_field_names:
+            raise ValueError(
+                f"User defined field variable name: {value} conflicts with pre-defined field names."
+                " Please consider renaming this user defined field variable."
+            )
+        return value
 
-class _AnimationSettings(Flow360BaseModel):
+
+class MovingStatistic(Flow360BaseModel):
+    """
+
+    :class:`MovingStatistic` class for moving statistic settings in
+    :class:`ProbeOutput`, :class:`SurfaceProbeOutput`,
+    :class:`SurfaceIntegralOutput` and :class:`ForceOutput`.
+
+    Example
+    -------
+
+    Define a moving statistic to compute the standard deviation in a moving window of
+    10 steps, with the initial 100 steps skipped.
+
+    >>> fl.MovingStatistic(
+    ...     moving_window=10,
+    ...     method="std",
+    ...     initial_skipping_steps=100,
+    ... )
+
+    ====
+    """
+
+    moving_window: pd.PositiveInt = pd.Field(
+        10,
+        description="The number of pseudo/time steps to compute moving statistics. "
+        "For steady simulation, the moving_window should be a multiple of 10.",
+    )
+    method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
+        "mean", description="The type of moving statistics used to monitor the output."
+    )
+    initial_skipping_steps: pd.NonNegativeInt = pd.Field(
+        0,
+        description="The number of steps to skip before computing the moving statistics. "
+        "For steady simulation, the moving_window should be a multiple of 10.",
+    )
+    type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
+
+    @pd.field_validator("moving_window", "initial_skipping_steps", mode="after")
+    @classmethod
+    def _check_moving_window_for_steady_simulation(cls, value):
+        validation_info = get_validation_info()
+        if (
+            validation_info
+            and validation_info.time_stepping == TimeSteppingType.STEADY
+            and value % 10 != 0
+        ):
+            raise ValueError(
+                "For steady simulation, the number of steps should be a multiple of 10."
+            )
+        return value
+
+
+class _OutputBase(Flow360BaseModel):
+    output_fields: UniqueItemList[str] = pd.Field()
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @pd.field_validator("output_fields", mode="after")
+    @classmethod
+    def _validate_improper_surface_field_usage(cls, value: UniqueItemList):
+        if any(
+            output_type in cls.__name__
+            for output_type in [
+                "SurfaceProbeOutput",
+                "SurfaceOutput",
+                "SurfaceSliceOutput",
+                "SurfaceIntegralOutput",
+            ]
+        ):
+            return value
+        for output_item in value.items:
+            if not isinstance(output_item, UserVariable) or not isinstance(
+                output_item.value, Expression
+            ):
+                continue
+            surface_solver_variable_names = output_item.value.solver_variable_names(
+                recursive=True, variable_type="Surface"
+            )
+            if len(surface_solver_variable_names) > 0:
+                raise ValueError(
+                    f"Variable `{output_item}` cannot be used in `{cls.__name__}` "
+                    + "since it contains Surface solver variable(s): "
+                    + f"{', '.join(sorted(surface_solver_variable_names))}.",
+                )
+        return value
+
+    @pd.field_validator("output_fields", mode="after")
+    @classmethod
+    def _validate_non_liquid_output_fields(cls, value: UniqueItemList):
+        validation_info = get_validation_info()
+        if validation_info is None or validation_info.using_liquid_as_material is False:
+            return value
+        for output_item in value.items:
+            if output_item in get_args(InvalidOutputFieldsForLiquid):
+                raise ValueError(
+                    f"Output field {output_item} cannot be selected when using liquid as simulation material."
+                )
+        return value
+
+    @pd.field_validator("output_fields", mode="before")
+    @classmethod
+    def _convert_solver_variables_as_user_variables(cls, value):
+        # Handle both dict/list (deserialization) and UniqueItemList (python object)
+        # If input is a dict (from deserialization so no SolverVariable expected)
+        if isinstance(value, dict):
+            return value
+        # If input is a list (from Python mode)
+        if isinstance(value, list):
+            return [solver_variable_to_user_variable(item) for item in value]
+        # If input is a UniqueItemList (python object)
+        if hasattr(value, "items") and isinstance(value.items, list):
+            value.items = [solver_variable_to_user_variable(item) for item in value.items]
+            return value
+        return value
+
+
+class _AnimationSettings(_OutputBase):
     """
     Controls how frequently the output files are generated.
     """
@@ -137,9 +291,11 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
-        alias="surfaces",
-        description="List of boundaries where output is generated.",
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = (
+        pd.Field(
+            alias="surfaces",
+            description="List of boundaries where output is generated.",
+        )
     )
     write_single_file: bool = pd.Field(
         default=False,
@@ -148,11 +304,17 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
         + "Will choose the value of the last instance of this option of the same output type "
         + "(:class:`SurfaceOutput` or :class:`TimeAverageSurfaceOutput`) in the output list.",
     )
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         + " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceOutput"] = pd.Field("SurfaceOutput", frozen=True)
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class TimeAverageSurfaceOutput(SurfaceOutput):
@@ -209,7 +371,7 @@ class VolumeOutput(_AnimationAndFileFormatSettings):
     """
 
     name: Optional[str] = pd.Field("Volume output", description="Name of the `VolumeOutput`.")
-    output_fields: UniqueItemList[Union[VolumeFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[VolumeFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to VolumeOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
@@ -277,7 +439,7 @@ class SliceOutput(_AnimationAndFileFormatSettings):
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
     )
-    output_fields: UniqueItemList[Union[SliceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SliceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SliceOutput<VolumeAndSliceSpecificVariablesV2>`"
         " and :class:`UserDefinedField`."
@@ -363,14 +525,75 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
         alias="isosurfaces",
         description="List of :class:`~flow360.Isosurface` entities.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including "
         ":ref:`universal output variables<UniversalVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["IsosurfaceOutput"] = pd.Field("IsosurfaceOutput", frozen=True)
 
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_isosurface_output = exclude + ["iso_value"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_isosurface_output,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
 
-class SurfaceIntegralOutput(Flow360BaseModel):
+
+class TimeAverageIsosurfaceOutput(IsosurfaceOutput):
+    """
+
+    :class:`TimeAverageIsosurfaceOutput` class for isosurface output settings.
+
+    Example
+    -------
+
+    Define the :class:`TimeAverageIsosurfaceOutput` of :code:`qcriterion` on two isosurfaces:
+
+    - :code:`TimeAverageIsosurface_T_0.1` is the :class:`Isosurface` with its temperature equals
+      to 1.5 non-dimensional temperature;
+    - :code:`TimeAverageIsosurface_p_0.5` is the :class:`Isosurface` with its pressure equals
+      to 0.5 non-dimensional pressure.
+
+    >>> fl.TimeAverageIsosurfaceOutput(
+    ...     isosurfaces=[
+    ...         fl.Isosurface(
+    ...             name="TimeAverageIsosurface_T_0.1",
+    ...             iso_value=0.1,
+    ...             field="T",
+    ...         ),
+    ...         fl.Isosurface(
+    ...             name="TimeAverageIsosurface_p_0.5",
+    ...             iso_value=0.5,
+    ...             field="p",
+    ...         ),
+    ...     ],
+    ...     output_fields=["qcriterion"],
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Time Average Isosurface output", description="Name of `TimeAverageIsosurfaceOutput`."
+    )
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging."
+    )
+    output_type: Literal["TimeAverageIsosurfaceOutput"] = pd.Field(
+        "TimeAverageIsosurfaceOutput", frozen=True
+    )
+
+
+class SurfaceIntegralOutput(_OutputBase):
     """
 
     :class:`SurfaceIntegralOutput` class for surface integral output settings.
@@ -395,18 +618,29 @@ class SurfaceIntegralOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of integral.")
-    entities: EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = pd.Field(
-        alias="surfaces",
-        description="List of boundaries where the surface integral will be calculated.",
+    name: str = pd.Field("Surface integral output", description="Name of integral.")
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = (
+        pd.Field(
+            alias="surfaces",
+            description="List of boundaries where the surface integral will be calculated.",
+        )
     )
-    output_fields: UniqueItemList[str] = pd.Field(
+    output_fields: UniqueItemList[Union[str, UserVariable]] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
     )
     output_type: Literal["SurfaceIntegralOutput"] = pd.Field("SurfaceIntegralOutput", frozen=True)
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
-class ProbeOutput(Flow360BaseModel):
+
+class ProbeOutput(_OutputBase):
     """
     :class:`ProbeOutput` class for setting output data probed at monitor points.
 
@@ -450,7 +684,7 @@ class ProbeOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of the monitor group.")
+    name: str = pd.Field("Probe output", description="Name of the monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
@@ -458,14 +692,17 @@ class ProbeOutput(Flow360BaseModel):
         + "monitor group. :class:`~flow360.PointArray` is used to "
         + "define monitored points along a line.",
     )
-    output_fields: UniqueItemList[Union[CommonFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[CommonFieldNames, str, UserVariable]] = pd.Field(
         description="List of output fields. Including :ref:`universal output variables<UniversalVariablesV2>`"
         " and :class:`UserDefinedField`."
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
     )
     output_type: Literal["ProbeOutput"] = pd.Field("ProbeOutput", frozen=True)
 
 
-class SurfaceProbeOutput(Flow360BaseModel):
+class SurfaceProbeOutput(_OutputBase):
     """
     :class:`SurfaceProbeOutput` class for setting surface output data probed at monitor points.
     The specified monitor point will be projected to the :py:attr:`~SurfaceProbeOutput.target_surfaces`
@@ -508,7 +745,7 @@ class SurfaceProbeOutput(Flow360BaseModel):
     ====
     """
 
-    name: str = pd.Field(description="Name of the surface monitor group.")
+    name: str = pd.Field("Surface probe output", description="Name of the surface monitor group.")
     entities: EntityList[Point, PointArray] = pd.Field(
         alias="probe_points",
         description="List of monitored :class:`~flow360.Point`/"
@@ -522,11 +759,20 @@ class SurfaceProbeOutput(Flow360BaseModel):
         + "entities belonging to this monitor group."
     )
 
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
+    )
     output_type: Literal["SurfaceProbeOutput"] = pd.Field("SurfaceProbeOutput", frozen=True)
+
+    @pd.field_validator("target_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
@@ -534,7 +780,7 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
     Surface slice settings.
     """
 
-    name: str = pd.Field(description="Name of the `SurfaceSliceOutput`.")
+    name: str = pd.Field("Surface slice output", description="Name of the `SurfaceSliceOutput`.")
     entities: EntityList[Slice] = pd.Field(
         alias="slices", description="List of :class:`Slice` entities."
     )
@@ -545,11 +791,17 @@ class SurfaceSliceOutput(_AnimationAndFileFormatSettings):
 
     output_format: Literal["paraview"] = pd.Field(default="paraview")
 
-    output_fields: UniqueItemList[Union[SurfaceFieldNames, str]] = pd.Field(
+    output_fields: UniqueItemList[Union[SurfaceFieldNames, str, UserVariable]] = pd.Field(
         description="List of output variables. Including :ref:`universal output variables<UniversalVariablesV2>`,"
         " :ref:`variables specific to SurfaceOutput<SurfaceSpecificVariablesV2>` and :class:`UserDefinedField`."
     )
     output_type: Literal["SurfaceSliceOutput"] = pd.Field("SurfaceSliceOutput", frozen=True)
+
+    @pd.field_validator("target_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        return check_deleted_surface_in_entity_list(value)
 
 
 class TimeAverageProbeOutput(ProbeOutput):
@@ -615,6 +867,9 @@ class TimeAverageProbeOutput(ProbeOutput):
 
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average probe output", description="Name of the `TimeAverageProbeOutput`."
+    )
     # pylint: disable=abstract-method
     frequency: int = pd.Field(
         default=1,
@@ -703,6 +958,10 @@ class TimeAverageSurfaceProbeOutput(SurfaceProbeOutput):
     ====
     """
 
+    name: Optional[str] = pd.Field(
+        "Time average surface probe output",
+        description="Name of the `TimeAverageSurfaceProbeOutput`.",
+    )
     # pylint: disable=abstract-method
     frequency: int = pd.Field(
         default=1,
@@ -790,7 +1049,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "input.",
     )
     permeable_surfaces: Optional[
-        EntityList[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
+        EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere]
     ] = pd.Field(
         None, description="List of permeable surfaces. Left empty if `patch_type` is solid"
     )
@@ -804,6 +1063,7 @@ class AeroAcousticOutput(Flow360BaseModel):
         + "in addition to results for all wall surfaces combined.",
     )
     output_type: Literal["AeroAcousticOutput"] = pd.Field("AeroAcousticOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("observers", mode="after")
     @classmethod
@@ -832,6 +1092,255 @@ class AeroAcousticOutput(Flow360BaseModel):
 
         return self
 
+    @pd.field_validator("permeable_surfaces", mode="after")
+    @classmethod
+    def ensure_surface_existence(cls, value):
+        """Ensure all boundaries will be present after mesher"""
+        if value is None:
+            return value
+        return check_deleted_surface_in_entity_list(value)
+
+
+class StreamlineOutput(_OutputBase):
+    """
+    :class:`StreamlineOutput` class for calculating streamlines.
+    Stramtraces are computed upwind and downwind, and may originate from a single point,
+    from a line, or from points evenly distributed across a parallelogram.
+
+    Example
+    -------
+
+    Define a :class:`StreamlineOutput` with streaptraces originating from points,
+    lines (:class:`~flow360.PointArray`), and parallelograms (:class:`~flow360.PointArray2D`).
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+      including both starting and end points.
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+      orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
+      with 20 points along the v direction.
+
+    >>> fl.StreamlineOutput(
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_streamline",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...         fl.PointArray2D(
+    ...             name="Parallelogram_streamline",
+    ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
+    ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
+    ...             u_number_of_points=11,
+    ...             v_number_of_points=20
+    ...         )
+    ...     ],
+    ...     output_fields = [fl.solution.pressure, fl.solution.velocity],
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Streamline output", description="Name of the `StreamlineOutput`."
+    )
+    entities: EntityList[Point, PointArray, PointArray2D] = pd.Field(
+        alias="streamline_points",
+        description="List of monitored :class:`~flow360.Point`/"
+        + ":class:`~flow360.PointArray`/:class:`~flow360.PointArray2D` "
+        + "entities belonging to this "
+        + "streamline group. :class:`~flow360.PointArray` "
+        + "is used to define streamline originating along a line. "
+        + ":class:`~flow360.PointArray2D` "
+        + "is used to define streamline originating from a parallelogram.",
+    )
+    output_fields: Optional[UniqueItemList[UserVariable]] = pd.Field(
+        [],
+        description="List of output variables. Vector-valued fields will be colored by their magnitude.",
+    )
+    output_type: Literal["StreamlineOutput"] = pd.Field("StreamlineOutput", frozen=True)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+
+class TimeAverageStreamlineOutput(StreamlineOutput):
+    """
+    :class:`StreamlineOutput` class for calculating time-averaged streamlines.
+    Stramtraces are computed upwind and downwind, and may originate from a single point,
+    from a line, or from points evenly distributed across a parallelogram.
+
+    Example
+    -------
+
+    Define a :class:`TimeAverageStreamlineOutput` with streaptraces originating from points,
+    lines (:class:`~flow360.PointArray`), and parallelograms (:class:`~flow360.PointArray2D`).
+
+    - :code:`Point_1` and :code:`Point_2` are two specific points we want to track the streamlines.
+    - :code:`Line_streamline` is from (1,0,0) * fl.u.m to (1,0,-10) * fl.u.m and has 11 points,
+      including both starting and end points.
+    - :code:`Parallelogram_streamline` is a parallelogram in 3D space with an origin at (1.0, 0.0, 0.0), a u-axis
+      orientation of (0, 2.0, 2.0) with 11 points in the u direction, and a v-axis orientation of (0, 1.0, 0)
+      with 20 points along the v direction.
+
+    >>> fl.TimeAverageStreamlineOutput(
+    ...     entities=[
+    ...         fl.Point(
+    ...             name="Point_1",
+    ...             location=(0.0, 1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.Point(
+    ...             name="Point_2",
+    ...             location=(0.0, -1.5, 0.0) * fl.u.m,
+    ...         ),
+    ...         fl.PointArray(
+    ...             name="Line_streamline",
+    ...             start=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             end=(1.0, 0.0, -10.0) * fl.u.m,
+    ...             number_of_points=11,
+    ...         ),
+    ...         fl.PointArray2D(
+    ...             name="Parallelogram_streamline",
+    ...             origin=(1.0, 0.0, 0.0) * fl.u.m,
+    ...             u_axis_vector=(0, 2.0, 2.0) * fl.u.m,
+    ...             v_axis_vector=(0, 1.0, 0) * fl.u.m,
+    ...             u_number_of_points=11,
+    ...             v_number_of_points=20
+    ...         )
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Time-average Streamline output", description="Name of the `TimeAverageStreamlineOutput`."
+    )
+
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging."
+    )
+
+    output_type: Literal["TimeAverageStreamlineOutput"] = pd.Field(
+        "TimeAverageStreamlineOutput", frozen=True
+    )
+
+
+class ImportedSurfaceOutput(_AnimationAndFileFormatSettings):
+    """
+    :class:`ImportedSurfaceOutput` class for generating interpolated output on imported surfaces.
+
+    Example
+    -------
+    >>> fl.ImportedSurfaceOutput(
+    ...     name="Jet_cross_sections_output",
+    ...     entities=[
+    ...         geometry.imported_surfaces["*"],
+    ...     ],
+    ...     output_fields=[
+    ...         fl.solution.Cp,
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Imported surface output", description="Name of the `ImportedSurfaceOutput`."
+    )
+    entities: EntityList[ImportedSurface] = pd.Field(
+        alias="surfaces",
+        description="List of imported surfaces where output is generated.",
+    )
+    output_fields: UniqueItemList[UserVariable] = pd.Field(description="List of output variables.")
+    output_type: Literal["ImportedSurfaceOutput"] = pd.Field("ImportedSurfaceOutput", frozen=True)
+
+
+class TimeAverageImportedSurfaceOutput(ImportedSurfaceOutput):
+    """
+    :class:`TimeAverageImportedSurfaceOutput` class for generating **time-averaged**
+    output on imported surfaces.
+
+    Similar to :class:`ImportedSurfaceOutput`, this output type records user-specified
+    variables on imported geometry surfaces, but instead of instantaneous values,
+    it computes averages over a specified range of physical time steps.
+
+    Example
+    -------
+    >>> fl.TimeAverageImportedSurfaceOutput(
+    ...     name="Jet_cross_sections_output",
+    ...     entities=[
+    ...         geometry.imported_surfaces["*"],
+    ...     ],
+    ...     output_fields=[
+    ...         fl.solution.Cp,
+    ...     ],
+    ...     start_step=2000
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Time average imported surface output",
+        description="Name of the `TimeAverageImportedSurfaceOutput`.",
+    )
+    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
+        default=-1, description="Physical time step to start calculating averaging"
+    )
+    output_type: Literal["TimeAverageImportedSurfaceOutput"] = pd.Field(
+        "TimeAverageImportedSurfaceOutput", frozen=True
+    )
+
+
+class ImportedSurfaceIntegralOutput(_OutputBase):
+    """
+    :class:`ImportedSurfaceIntegralOutput` class for computing integrals of
+    user-specified variables over imported surfaces.
+    Integrals are computed for each of the individual surfaces.
+
+    Example
+    -------
+    Define a :class:`ImportedSurfaceIntegralOutput` to compute the integrated
+    mass flow rate across an imported cross-section plane
+    placed downstream of a nozzle. These planes are provided only for
+    post-processing and are not part of the simulated mesh boundaries.
+
+    >>> fl.ImportedSurfaceIntegralOutput(
+    ...     name="Nozzle_exit_planes_integrals",
+    ...     entities=[
+    ...         geometry.imported_surfaces["*"],
+    ...     ],
+    ...     output_fields=[
+    ...         fl.UserVariable(
+    ...             name="MassFlowRate",
+    ...             value=fl.solution.density
+    ...             * fl.math.dot(fl.solution.velocity, fl.solution.node_unit_normal)
+    ...         ),
+    ...     ]
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Imported surface integral output", description="Name of integral.")
+    entities: EntityList[ImportedSurface] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries where the surface integral will be calculated.",
+    )
+    output_fields: UniqueItemList[UserVariable] = pd.Field(description="List of output variables.")
+    output_type: Literal["ImportedSurfaceIntegralOutput"] = pd.Field(
+        "ImportedSurfaceIntegralOutput", frozen=True
+    )
+
 
 OutputTypes = Annotated[
     Union[
@@ -842,6 +1351,7 @@ OutputTypes = Annotated[
         SliceOutput,
         TimeAverageSliceOutput,
         IsosurfaceOutput,
+        TimeAverageIsosurfaceOutput,
         SurfaceIntegralOutput,
         ProbeOutput,
         SurfaceProbeOutput,
@@ -849,6 +1359,11 @@ OutputTypes = Annotated[
         TimeAverageProbeOutput,
         TimeAverageSurfaceProbeOutput,
         AeroAcousticOutput,
+        StreamlineOutput,
+        ImportedSurfaceOutput,
+        TimeAverageImportedSurfaceOutput,
+        ImportedSurfaceIntegralOutput,
+        TimeAverageStreamlineOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
@@ -857,6 +1372,14 @@ TimeAverageOutputTypes = (
     TimeAverageSurfaceOutput,
     TimeAverageVolumeOutput,
     TimeAverageSliceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
+    TimeAverageImportedSurfaceOutput,
+    TimeAverageStreamlineOutput,
 )
+
+MonitorOutputType = Annotated[
+    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    pd.Field(discriminator="output_type"),
+]

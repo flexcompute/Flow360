@@ -1,9 +1,14 @@
 """Utiliy functions for updater"""
 
 import re
+from functools import wraps
 from numbers import Number
 
 import numpy as np
+
+from flow360.version import __version__
+
+PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
 
 
 def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
@@ -32,8 +37,14 @@ def compare_dicts(dict1, dict2, atol=1e-15, rtol=1e-10, ignore_keys=None):
 
 def compare_values(value1, value2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     """Check two values are same or not"""
+    # Handle numerical comparisons first (including int vs float)
     if isinstance(value1, Number) and isinstance(value2, Number):
         return np.isclose(value1, value2, rtol, atol)
+
+    # Handle type mismatches for non-numerical types
+    if type(value1) != type(value2):
+        return False
+
     if isinstance(value1, dict) and isinstance(value2, dict):
         return compare_dicts(value1, value2, atol, rtol, ignore_keys)
     if isinstance(value1, list) and isinstance(value2, list):
@@ -46,7 +57,13 @@ def compare_lists(list1, list2, atol=1e-15, rtol=1e-10, ignore_keys=None):
     if len(list1) != len(list2):
         return False
 
-    if list1 and not isinstance(list1[0], dict):
+    # Only sort if the lists contain simple comparable types (not dicts, lists, etc.)
+    def is_simple_type(item):
+        return isinstance(item, (str, int, float, bool)) or (
+            isinstance(item, Number) and not isinstance(item, (dict, list))
+        )
+
+    if list1 and all(is_simple_type(item) for item in list1):
         list1, list2 = sorted(list1), sorted(list2)
 
     for item1, item2 in zip(list1, list2):
@@ -71,7 +88,7 @@ class Flow360Version:
         Each of major, minor, patch should be numeric.
         """
         # Match three groups of digits separated by dots
-        match = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$", version.strip())
+        match = re.match(PYTHON_API_VERSION_REGEXP, version.strip())
         if not match:
             raise ValueError(f"Invalid version string: {version}")
 
@@ -102,3 +119,27 @@ class Flow360Version:
 
     def __str__(self):
         return f"{self.major}.{self.minor}.{self.patch}"
+
+
+def deprecation_reminder(version: str):
+    """
+    If your_package.__version__ > version, raise.
+    Otherwise, do nothing special.
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            current = Flow360Version(__version__)
+            target = Flow360Version(version)
+            if current > target:
+                raise ValueError(
+                    f"[INTERNAL] This validator or function is detecting/handling deprecated schema that was"
+                    f" scheduled to be removed since {version}. "
+                    "Please deprecate the schema now, write updater and remove related checks."
+                )
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator

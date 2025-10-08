@@ -11,6 +11,7 @@ from enum import Enum
 
 import boto3
 from boto3.s3.transfer import TransferConfig
+from botocore.config import Config as BotocoreConfig
 
 # pylint: disable=unused-import
 from botocore.exceptions import ClientError as CloudFileNotFoundError
@@ -21,6 +22,9 @@ from ..exceptions import Flow360ValueError
 from ..log import log
 from .http_util import http
 from .utils import _get_progress, _S3Action
+
+MAX_CONCURRENCY = int(os.getenv("FLOW360_S3_MAX_CONCURRENCY", "50"))
+MAX_POOL = int(os.getenv("FLOW360_S3_MAX_POOL", str(MAX_CONCURRENCY + 6)))
 
 
 class ProgressCallbackInterface(metaclass=ABCMeta):
@@ -110,6 +114,7 @@ class _UserCredential(BaseModel):
     expiration: datetime
     secret_access_key: str = Field(alias="secretAccessKey")
     session_token: str = Field(alias="sessionToken")
+    region: str
 
 
 class _S3STSToken(BaseModel):
@@ -139,13 +144,18 @@ class _S3STSToken(BaseModel):
         :return:
         """
         # pylint: disable=no-member
-        return boto3.client(
-            "s3",
-            region_name=Env.current.aws_region,
-            aws_access_key_id=self.user_credential.access_key_id,
-            aws_secret_access_key=self.user_credential.secret_access_key,
-            aws_session_token=self.user_credential.session_token,
-        )
+        kwargs = {
+            "region_name": self.user_credential.region,
+            "aws_access_key_id": self.user_credential.access_key_id,
+            "aws_secret_access_key": self.user_credential.secret_access_key,
+            "aws_session_token": self.user_credential.session_token,
+            "config": BotocoreConfig(max_pool_connections=MAX_POOL),
+        }
+
+        if Env.current.s3_endpoint_url is not None:
+            kwargs["endpoint_url"] = Env.current.s3_endpoint_url
+
+        return boto3.client("s3", **kwargs)
 
     def is_expired(self):
         """
@@ -169,6 +179,7 @@ class S3TransferType(Enum):
     SURFACE_MESH = "SurfaceMesh"
     CASE = "Case"
     REPORT = "Report"
+    DRAFT = "Draft"
 
     def _get_grant_url(self, resource_id, file_name: str) -> str:
         """
@@ -187,6 +198,8 @@ class S3TransferType(Enum):
             return f"v2/geometries/{resource_id}/file?filename={file_name}"
         if self is S3TransferType.REPORT:
             return f"v2/report/{resource_id}/file?filename={file_name}"
+        if self is S3TransferType.DRAFT:
+            return f"v2/drafts/{resource_id}/file?filename={file_name}"
 
         raise Flow360ValueError(f"unknown download method for {self}")
 
@@ -407,4 +420,4 @@ class S3TransferType(Enum):
         )
 
 
-_s3_sts_tokens: [str, _S3STSToken] = {}
+_s3_sts_tokens: dict[str, _S3STSToken] = {}

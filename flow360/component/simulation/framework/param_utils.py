@@ -1,6 +1,6 @@
 """pre processing and post processing utilities for simulation parameters."""
 
-from typing import Optional, Union
+from typing import Annotated, List, Optional, Union
 
 import pydantic as pd
 
@@ -9,7 +9,10 @@ from flow360.component.simulation.entity_info import (
     SurfaceMeshEntityInfo,
     VolumeMeshEntityInfo,
 )
-from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.base_model import (
+    Flow360BaseModel,
+    RegistryLookup,
+)
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.unique_list import UniqueStringList
@@ -18,7 +21,16 @@ from flow360.component.simulation.primitives import (
     _VolumeEntityBase,
 )
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import (
+    VariableContextInfo,
+    update_global_context,
+)
 from flow360.component.simulation.utils import model_attribute_unlock
+
+VariableContextList = Annotated[
+    List[VariableContextInfo],
+    pd.AfterValidator(update_global_context),
+]
 
 
 class AssetCache(Flow360BaseModel):
@@ -31,15 +43,77 @@ class AssetCache(Flow360BaseModel):
     project_entity_info: Optional[
         Union[GeometryEntityInfo, VolumeMeshEntityInfo, SurfaceMeshEntityInfo]
     ] = pd.Field(None, frozen=True, discriminator="type_name")
+    use_inhouse_mesher: bool = pd.Field(
+        False,
+        description="Flag whether user requested the use of inhouse surface and volume mesher.",
+    )
+    use_geometry_AI: bool = pd.Field(
+        False, description="Flag whether user requested the use of GAI."
+    )
+    variable_context: Optional[VariableContextList] = pd.Field(
+        None, description="List of user variables that are used in all the `Expression` instances."
+    )
 
     @property
     def boundaries(self):
         """
-        Get all boundaries from the cached entity info.
+        Get all boundaries (not just names) from the cached entity info.
         """
         if self.project_entity_info is None:
             return None
         return self.project_entity_info.get_boundaries()
+
+    def preprocess(
+        self,
+        *,
+        params=None,
+        exclude: List[str] = None,
+        required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
+    ) -> Flow360BaseModel:
+        exclude_asset_cache = exclude + ["variable_context"]
+        return super().preprocess(
+            params=params,
+            exclude=exclude_asset_cache,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
+        )
+
+
+def find_instances(obj, target_type):
+    """Recursively find items of target_type within a python object"""
+    stack = [obj]
+    seen_ids = set()
+    results = set()
+
+    while stack:
+        current = stack.pop()
+
+        obj_id = id(current)
+        if obj_id in seen_ids:
+            continue
+        seen_ids.add(obj_id)
+
+        if isinstance(current, target_type):
+            results.add(current)
+
+        if isinstance(current, dict):
+            stack.extend(current.keys())
+            stack.extend(current.values())
+
+        elif isinstance(current, (list, tuple, set, frozenset)):
+            stack.extend(current)
+
+        elif hasattr(current, "__dict__"):
+            stack.extend(vars(current).values())
+
+        elif hasattr(current, "__iter__") and not isinstance(current, (str, bytes)):
+            try:
+                stack.extend(iter(current))
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass  # skip problematic iterables
+
+    return list(results)
 
 
 def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> None:
@@ -58,17 +132,18 @@ def register_entity_list(model: Flow360BaseModel, registry: EntityRegistry) -> N
     Returns:
         None
     """
+    known_frozen_hashes = set()
     for field in model.__dict__.values():
         if isinstance(field, EntityBase):
-            registry.register(field)
+            known_frozen_hashes = registry.fast_register(field, known_frozen_hashes)
 
         if isinstance(field, EntityList):
             # pylint: disable=protected-access
             expanded_entities = field._get_expanded_entities(create_hard_copy=False)
             for entity in expanded_entities if expanded_entities else []:
-                registry.register(entity)
+                known_frozen_hashes = registry.fast_register(entity, known_frozen_hashes)
 
-        elif isinstance(field, list):
+        elif isinstance(field, (list, tuple)):
             for item in field:
                 if isinstance(item, Flow360BaseModel):
                     register_entity_list(item, registry)
@@ -84,23 +159,29 @@ def _update_entity_full_name(
 ):
     """
     Update Surface/Boundary with zone name from volume mesh metadata.
-    TODO: Maybe no need to recursively looping the param and just manipulating the registry may suffice?
     """
     for field in model.__dict__.values():
+        # Skip the AssetCache since updating there makes no difference
+        if isinstance(field, AssetCache):
+            continue
+
         if isinstance(field, target_entity_type):
             # pylint: disable=protected-access
             field._update_entity_info_with_metadata(volume_mesh_meta_data)
 
         if isinstance(field, EntityList):
-            # pylint: disable=protected-access
-            expanded_entities = field._get_expanded_entities(create_hard_copy=False)
-            for entity in expanded_entities if expanded_entities else []:
+            for entity in field.stored_entities:
                 if isinstance(entity, target_entity_type):
+                    # pylint: disable=protected-access
                     entity._update_entity_info_with_metadata(volume_mesh_meta_data)
 
-        elif isinstance(field, list):
+        elif isinstance(field, (list, tuple)):
             for item in field:
-                if isinstance(item, Flow360BaseModel):
+                if isinstance(item, target_entity_type):
+                    item._update_entity_info_with_metadata(  # pylint: disable=protected-access
+                        volume_mesh_meta_data
+                    )
+                elif isinstance(item, Flow360BaseModel):
                     _update_entity_full_name(item, target_entity_type, volume_mesh_meta_data)
 
         elif isinstance(field, Flow360BaseModel):

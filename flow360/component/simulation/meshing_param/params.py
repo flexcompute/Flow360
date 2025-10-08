@@ -7,9 +7,11 @@ from typing_extensions import Self
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -17,39 +19,73 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
+    RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Cylinder
+from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.unit_system import AngleType, LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ConditionalField,
     ContextField,
+    get_validation_info,
 )
+from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 
 RefinementTypes = Annotated[
     Union[
         SurfaceEdgeRefinement,
         SurfaceRefinement,
+        GeometryRefinement,
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
+        StructuredBoxRefinement,
         AxisymmetricRefinement,
     ],
     pd.Field(discriminator="refinement_type"),
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield], pd.Field(discriminator="type")
+    Union[
+        RotationVolume,
+        RotationCylinder,
+        AutomatedFarfield,
+        UserDefinedFarfield,
+        CustomVolume,
+    ],
+    pd.Field(discriminator="type"),
 ]
 
 
 class MeshingDefaults(Flow360BaseModel):
     """
     Default/global settings for meshing parameters.
+
+    Example
+    -------
+
+      >>> fl.MeshingDefaults(
+      ...     surface_max_edge_length=1*fl.u.m,
+      ...     surface_edge_growth_rate=1.2,
+      ...     curvature_resolution_angle=12*fl.u.deg,
+      ...     boundary_layer_growth_rate=1.1,
+      ...     boundary_layer_first_layer_thickness=1e-5*fl.u.m
+      ... )
+
+    ====
     """
+
+    # pylint: disable=no-member
+    geometry_accuracy: Optional[LengthType.Positive] = pd.Field(
+        None,
+        description="The smallest length scale that will be resolved accurately by the surface meshing process. "
+        "This parameter is only valid when using geometry AI."
+        "It can be overridden with class: ~flow360.GeometryRefinement.",
+    )
 
     ##::   Default surface edge settings
     surface_edge_growth_rate: float = ContextField(
@@ -63,8 +99,7 @@ class MeshingDefaults(Flow360BaseModel):
     ##::    Default boundary layer settings
     boundary_layer_growth_rate: float = ContextField(
         1.2,
-        description="Default growth rate for volume prism layers."
-        " This can not be overridden per face.",
+        description="Default growth rate for volume prism layers.",
         ge=1,
         context=VOLUME_MESH,
     )
@@ -76,6 +111,24 @@ class MeshingDefaults(Flow360BaseModel):
         context=VOLUME_MESH,
     )  # Truly optional if all BL faces already have first_layer_thickness
 
+    number_of_boundary_layers: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="Default number of volumetric anisotropic layers."
+        " The volume mesher will automatically calculate the required"
+        " no. of layers to grow the boundary layer elements to isotropic size if not specified."
+        " This is only supported by the beta mesher and can not be overridden per face.",
+    )
+
+    planar_face_tolerance: Optional[pd.NonNegativeFloat] = pd.Field(
+        DEFAULT_PLANAR_FACE_TOLERANCE,
+        strict=True,
+        description="Tolerance used for detecting planar faces in the input surface mesh / geometry"
+        " that need to be remeshed, such as symmetry planes."
+        " This tolerance is non-dimensional, and represents a distance"
+        " relative to the largest dimension of the bounding box of the input surface mesh / geometry."
+        " This can not be overridden per face.",
+    )
+
     ##::    Default surface layer settings
     surface_max_edge_length: Optional[LengthType.Positive] = ConditionalField(
         None,
@@ -83,7 +136,21 @@ class MeshingDefaults(Flow360BaseModel):
         " This can be overridden with :class:`~flow360.SurfaceRefinement`.",
         context=SURFACE_MESH,
     )
-    curvature_resolution_angle: AngleType.Positive = ContextField(
+
+    surface_max_aspect_ratio: Optional[pd.PositiveFloat] = ConditionalField(
+        10.0,
+        description="Maximum aspect ratio for surface cells for the GAI surface mesher."
+        " This cannot be overridden per face",
+        context=SURFACE_MESH,
+    )
+
+    surface_max_adaptation_iterations: Optional[pd.NonNegativeInt] = ConditionalField(
+        50,
+        description="Maximum adaptation iterations for the GAI surface mesher.",
+        context=SURFACE_MESH,
+    )
+
+    curvature_resolution_angle: Optional[AngleType.Positive] = ContextField(
         12 * u.deg,
         description=(
             "Default maximum angular deviation in degrees. This value will restrict:"
@@ -94,10 +161,94 @@ class MeshingDefaults(Flow360BaseModel):
         context=SURFACE_MESH,
     )
 
+    preserve_thin_geometry: Optional[bool] = pd.Field(
+        False,
+        description="Flag to specify whether thin geometry features with thickness roughly equal "
+        + "to geometry_accuracy should be resolved accurately during the surface meshing process."
+        + "This can be overridden with class: ~flow360.GeometryRefinement",
+    )
+
+    @pd.field_validator("number_of_boundary_layers", mode="after")
+    @classmethod
+    def invalid_number_of_boundary_layers(cls, value):
+        """Ensure number of boundary layers is not specified"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if value is not None and not validation_info.is_beta_mesher:
+            raise ValueError("Number of boundary layers is only supported by the beta mesher.")
+        return value
+
+    @pd.field_validator("geometry_accuracy", mode="after")
+    @classmethod
+    def invalid_geometry_accuracy(cls, value):
+        """Ensure geometry accuracy is not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        if value is not None and not validation_info.use_geometry_AI:
+            raise ValueError("Geometry accuracy is only supported when geometry AI is used.")
+
+        if value is None and validation_info.use_geometry_AI:
+            raise ValueError("Geometry accuracy is required when geometry AI is used.")
+        return value
+
+    @pd.field_validator(
+        "surface_max_aspect_ratio",
+        "surface_max_adaptation_iterations",
+        "preserve_thin_geometry",
+        mode="after",
+    )
+    @classmethod
+    def invalid_geometry_ai_features(cls, value, info):
+        """Ensure GAI features are not specified when GAI is not used"""
+        validation_info = get_validation_info()
+
+        if validation_info is None:
+            return value
+
+        # pylint: disable=unsubscriptable-object
+        default_value = cls.model_fields[info.field_name].default
+        if value != default_value and not validation_info.use_geometry_AI:
+            raise ValueError(f"{info.field_name} is only supported when geometry AI is used.")
+
+        return value
+
 
 class MeshingParams(Flow360BaseModel):
     """
     Meshing parameters for volume and/or surface mesher. This contains all the meshing related settings.
+
+    Example
+    -------
+
+      >>> fl.MeshingParams(
+      ...     defaults=fl.MeshingDefaults(
+      ...         surface_max_edge_length=1*fl.u.m,
+      ...         boundary_layer_first_layer_thickness=1e-5*fl.u.m
+      ...     ),
+      ...     volume_zones=[farfield],
+      ...     refinements=[
+      ...         fl.SurfaceEdgeRefinement(
+      ...             edges=[geometry["edge1"], geometry["edge2"]],
+      ...             method=fl.AngleBasedRefinement(value=8*fl.u.deg)
+      ...         ),
+      ...         fl.SurfaceRefinement(
+      ...             faces=[geometry["face1"], geometry["face2"]],
+      ...             max_edge_length=0.001*fl.u.m
+      ...         ),
+      ...         fl.UniformRefinement(
+      ...             entities=[cylinder, box],
+      ...             spacing=1*fl.u.cm
+      ...         )
+      ...     ]
+      ... )
+
+    ====
     """
 
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
@@ -106,6 +257,7 @@ class MeshingParams(Flow360BaseModel):
         + "and first layer thickness will be adjusted to generate `r`-times"
         + " finer mesh where r is the refinement_factor value.",
     )
+
     gap_treatment_strength: Optional[float] = ContextField(
         default=0,
         ge=0,
@@ -151,47 +303,103 @@ class MeshingParams(Flow360BaseModel):
 
         return v
 
+    @pd.field_validator("volume_zones", mode="after")
+    @classmethod
+    def _check_volume_zones_have_unique_names(cls, v):
+        """Ensure there won't be duplicated volume zone names."""
+
+        if v is None:
+            return v
+        to_be_generated_volume_zone_names = set()
+        for volume_zone in v:
+            if not isinstance(volume_zone, CustomVolume):
+                continue
+            if volume_zone.name in to_be_generated_volume_zone_names:
+                raise ValueError(
+                    f"Multiple CustomVolume with the same name `{volume_zone.name}` are not allowed."
+                )
+            to_be_generated_volume_zone_names.add(volume_zone.name)
+
+        return v
+
     @pd.model_validator(mode="after")
-    def _check_no_reused_cylinder(self) -> Self:
+    def _check_no_reused_volume_entities(self) -> Self:
         """
-        Check that the RoatatoinCylinder, AxisymmetricRefinement, and UniformRefinement
-        do not share the same cylinder.
+        Meshing entities reuse check.
+        +------------------------+------------------------+------------------------+------------------------+
+        |                        | RotationCylinder       | AxisymmetricRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+------------------------+
+        | RotationCylinder       |          NO            |           --           |           --           |
+        +------------------------+------------------------+------------------------+------------------------+
+        | AxisymmetricRefinement |          NO            |           NO           |           --           |
+        +------------------------+------------------------+------------------------+------------------------+
+        | UniformRefinement      |          YES           |           NO           |           NO           |
+        +------------------------+------------------------+------------------------+------------------------+
+
+        +------------------------+------------------------+------------------------+
+        |                        |StructuredBoxRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+
+        |StructuredBoxRefinement |          NO            |           --           |
+        +------------------------+------------------------+------------------------+
+        | UniformRefinement      |          NO            |           NO           |
+        +------------------------+------------------------+------------------------+
+
         """
 
-        class CylinderUsageMap(dict):
-            """A customized dict to store the cylinder name and its usage."""
+        usage = EntityUsageMap()
 
-            def __setitem__(self, key, value):
-                if key in self:
-                    if self[key] != value:
-                        raise ValueError(
-                            f"The same cylinder named `{key}` is used in both {self[key]} and {value}."
-                        )
-                    raise ValueError(
-                        f"The cylinder named `{key}` is used multiple times in {value}."
-                    )
-                super().__setitem__(key, value)
-
-        cylinder_name_to_usage_map = CylinderUsageMap()
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-            if isinstance(volume_zone, RotationCylinder):
+            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
-                for cylinder in [
-                    item
+                _ = [
+                    usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
-                    if isinstance(item, Cylinder)
-                ]:
-                    cylinder_name_to_usage_map[cylinder.name] = RotationCylinder.model_fields[
-                        "type"
-                    ].default
+                ]
 
         for refinement in self.refinements if self.refinements is not None else []:
-            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+            if isinstance(
+                refinement,
+                (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
+            ):
                 # pylint: disable=protected-access
-                for cylinder in [
-                    item
+                _ = [
+                    usage.add_entity_usage(item, refinement.refinement_type)
                     for item in refinement.entities._get_expanded_entities(create_hard_copy=False)
-                    if isinstance(item, Cylinder)
+                ]
+
+        error_msg = ""
+        for entity_type, entity_model_map in usage.dict_entity.items():
+            for entity_info in entity_model_map.values():
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
+                    sorted(["RotationCylinder", "UniformRefinement"]),
+                    sorted(["RotationVolume", "UniformRefinement"]),
                 ]:
-                    cylinder_name_to_usage_map[cylinder.name] = refinement.refinement_type
+                    # RotationCylinder and UniformRefinement are allowed to be used together
+                    continue
+
+                model_set = set(entity_info["model_list"])
+                if len(model_set) == 1:
+                    error_msg += (
+                        f"{entity_type} entity `{entity_info['entity_name']}` "
+                        + f"is used multiple times in `{model_set.pop()}`."
+                    )
+                else:
+                    model_string = ", ".join(f"`{x}`" for x in sorted(model_set))
+                    error_msg += (
+                        f"Using {entity_type} entity `{entity_info['entity_name']}` "
+                        + f"in {model_string} at the same time is not allowed."
+                    )
+
+        if error_msg:
+            raise ValueError(error_msg)
+
         return self
+
+    @property
+    def automated_farfield_method(self):
+        """Returns the automated farfield method used."""
+        if self.volume_zones:
+            for zone in self.volume_zones:  # pylint: disable=not-an-iterable
+                if isinstance(zone, AutomatedFarfield):
+                    return zone.method
+        return None

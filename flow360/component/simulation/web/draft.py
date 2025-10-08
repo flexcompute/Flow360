@@ -2,50 +2,44 @@
 
 from __future__ import annotations
 
+import ast
 import json
-from datetime import datetime
-from typing import Annotated, Literal, Optional
+import os
+from functools import cached_property
+from typing import List, Literal, Union
 
-import pydantic as pd
+from pydantic import BaseModel, ConfigDict, Field
 
+from flow360.cloud.flow360_requests import (
+    DraftCreateRequest,
+    DraftRunRequest,
+    ForceCreationConfig,
+    IDStringType,
+)
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import DraftInterface
-from flow360.component.resource_base import (
-    AssetMetaBaseModel,
-    Flow360Resource,
-    ResourceDraft,
+from flow360.component.resource_base import Flow360Resource, ResourceDraft
+from flow360.component.utils import (
+    check_existence_of_one_file,
+    check_read_access_of_one_file,
+    formatting_validation_errors,
+    validate_type,
 )
-from flow360.component.utils import is_valid_uuid, validate_type
-from flow360.exceptions import Flow360WebError
+from flow360.environment import Env
+from flow360.exceptions import Flow360RuntimeError, Flow360WebError
 from flow360.log import log
 
 
-def _valid_id_validator(input_id: str):
-    is_valid_uuid(input_id)
-    return input_id
+class DraftMetaModel(BaseModel):
+    """Draft metadata deserializer"""
 
+    type: Literal["Draft"] = "Draft"
+    name: str
+    id: str
+    project_id: str = Field(alias="projectId")
+    solver_version: str = Field(alias="solverVersion")
 
-IDStringType = Annotated[str, pd.AfterValidator(_valid_id_validator)]
-
-
-class DraftPostRequest(pd.BaseModel):
-    """Data model for draft post request"""
-
-    name: Optional[str] = pd.Field(None)
-    project_id: IDStringType = pd.Field(serialization_alias="projectId")
-    source_item_id: IDStringType = pd.Field(serialization_alias="sourceItemId")
-    source_item_type: Literal[
-        "Project", "Folder", "Geometry", "SurfaceMesh", "VolumeMesh", "Case", "Draft"
-    ] = pd.Field(serialization_alias="sourceItemType")
-    solver_version: str = pd.Field(serialization_alias="solverVersion")
-    fork_case: bool = pd.Field(serialization_alias="forkCase")
-
-    @pd.field_validator("name", mode="after")
-    @classmethod
-    def _generate_default_name(cls, values):
-        if values is None:
-            values = "Draft " + datetime.now().strftime("%m-%d %H:%M:%S")
-        return values
+    model_config = ConfigDict(extra="ignore")
 
 
 class DraftDraft(ResourceDraft):
@@ -64,14 +58,19 @@ class DraftDraft(ResourceDraft):
         ],
         solver_version: str,
         fork_case: bool,
+        interpolation_volume_mesh_id: str,
+        tags: list[str],
     ):
-        self._request = DraftPostRequest(
+        self._request = DraftCreateRequest(
             name=name,
             project_id=project_id,
             source_item_id=source_item_id,
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            interpolation_volume_mesh_id=interpolation_volume_mesh_id,
+            interpolation_case_id=source_item_id if interpolation_volume_mesh_id else None,
+            tags=tags,
         )
         ResourceDraft.__init__(self)
 
@@ -90,14 +89,14 @@ class Draft(Flow360Resource):
     def __init__(self, draft_id: IDStringType):
         super().__init__(
             interface=DraftInterface,
-            meta_class=AssetMetaBaseModel,  # We do not have dedicated meta class for Draft
+            meta_class=DraftMetaModel,  # We do not have dedicated meta class for Draft
             id=draft_id,
         )
 
     @classmethod
     # pylint: disable=protected-access
-    def _from_meta(cls, meta: AssetMetaBaseModel):
-        validate_type(meta, "meta", AssetMetaBaseModel)
+    def _from_meta(cls, meta: DraftMetaModel):
+        validate_type(meta, "meta", DraftMetaModel)
         resource = cls(draft_id=meta.id)
         return resource
 
@@ -113,6 +112,8 @@ class Draft(Flow360Resource):
         ] = None,
         solver_version: str = None,
         fork_case: bool = None,
+        interpolation_volume_mesh_id: str = None,
+        tags: list[str] = None,
     ) -> DraftDraft:
         """Create a new instance of DraftDraft"""
         return DraftDraft(
@@ -122,6 +123,8 @@ class Draft(Flow360Resource):
             source_item_type=source_item_type,
             solver_version=solver_version,
             fork_case=fork_case,
+            interpolation_volume_mesh_id=interpolation_volume_mesh_id,
+            tags=tags,
         )
 
     @classmethod
@@ -133,38 +136,98 @@ class Draft(Flow360Resource):
         """update the SimulationParams of the draft"""
 
         self.post(
-            json={"data": params.model_dump_json(), "type": "simulation", "version": ""},
+            json={
+                "data": params.model_dump_json(exclude_none=True),
+                "type": "simulation",
+                "version": "",
+            },
             method="simulation/file",
         )
+
+    def upload_imported_surfaces(self, file_paths):
+        """upload imported surfaces to draft"""
+
+        if len(file_paths) == 0:
+            return
+        file_names = []
+        for file_path in file_paths:
+            file_names.append(os.path.basename(file_path))
+        resp: List = self.post(
+            json={"filenames": file_names},
+            method="imported-surfaces",
+        )
+        for index, local_file_path in enumerate(file_paths):
+            check_existence_of_one_file(local_file_path)
+            check_read_access_of_one_file(local_file_path)
+            self._upload_file(resp[index]["filename"], local_file_path)
 
     def get_simulation_dict(self) -> dict:
         """retrieve the SimulationParams of the draft"""
         response = self.get(method="simulation/file", params={"type": "simulation"})
         return json.loads(response["simulationJson"])
 
-    def run_up_to_target_asset(self, target_asset: type, use_beta_mesher: bool) -> str:
+    def run_up_to_target_asset(
+        self,
+        target_asset: type,
+        use_beta_mesher: bool,
+        use_geometry_AI: bool,  # pylint: disable=invalid-name
+        source_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh", "Case"],
+        start_from: Union[None, Literal["SurfaceMesh", "VolumeMesh", "Case"]],
+    ) -> str:
         """run the draft up to the target asset"""
 
         try:
             # pylint: disable=protected-access
             if use_beta_mesher is True:
                 log.info("Selecting beta/in-house mesher for possible meshing tasks.")
+            if use_geometry_AI is True:
+                log.info("Using the Geometry AI surface mesher.")
+            if start_from:
+                if start_from != target_asset._cloud_resource_type_name:
+                    log.info(
+                        f"Force creating new resource(s) from {start_from} "
+                        + f"until {target_asset._cloud_resource_type_name}"
+                    )
+                else:
+                    log.info(f"Force creating a new {target_asset._cloud_resource_type_name}.")
+            force_creation_config = (
+                ForceCreationConfig(start_from=start_from) if start_from else None
+            )
+            run_request = DraftRunRequest(
+                source_item_type=source_item_type,
+                up_to=target_asset._cloud_resource_type_name,
+                use_in_house=use_beta_mesher,
+                use_gai=use_geometry_AI,
+                force_creation_config=force_creation_config,
+            )
             run_response = self.post(
-                json={
-                    "upTo": target_asset._cloud_resource_type_name,
-                    "useInHouse": use_beta_mesher,
-                },
+                run_request.model_dump(by_alias=True),
                 method="run",
             )
             destination_id = run_response["id"]
             return destination_id
         except Flow360WebError as err:
             # Error found when translating/running the simulation
-            log.error(">>Submission failed.<<")
+            log.error(">>Submission to cloud failed.<<")
             try:
                 detailed_error = json.loads(err.auxiliary_json["detail"])["detail"]
-                log.error(f"Failure detail: {detailed_error}")
-            except json.decoder.JSONDecodeError:
+                log.error(
+                    f"Failure detail: {formatting_validation_errors(ast.literal_eval(detailed_error))}"
+                )
+            except (json.decoder.JSONDecodeError, TypeError):
                 # No detail given.
-                log.error("An unexpected error has occurred. Please contact customer support.")
+                raise Flow360RuntimeError(
+                    "An unexpected error has occurred. Please contact customer support."
+                ) from None
         raise RuntimeError("Submission not successful.")
+
+    @cached_property
+    def project_id(self) -> str:
+        """Get the project ID of the draft"""
+        return self.info.project_id
+
+    @property
+    def web_url(self) -> str:
+        """Get the web URL of the draft"""
+
+        return Env.current.web_url + f"/workbench/{self.project_id}?id={self.id}&type=Draft"

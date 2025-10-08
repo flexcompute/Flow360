@@ -44,6 +44,7 @@
         "linearSolver": {
             "maxIterations": 25
         },
+        "lowReynoldsCorrection": false,
         "CFLMultiplier": 2.0,
         "DDES": false,
         "ZDES": false,
@@ -64,6 +65,8 @@
             "C_v1": 7.1,
             "C_vonKarman": 0.41,
             "C_w2": 0.3,
+            "C_w4": 0.21,
+            "C_w5": 1.5,
             "C_t3": 1.2,
             "C_t4": 0.5,
             "C_min_rd": 10.0
@@ -89,7 +92,6 @@
             "gradW"
         ],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
@@ -99,7 +101,6 @@
     "surfaceOutput": {
         "outputFields": [],
         "outputFormat": "paraview",
-        "computeTimeAverages": false,
         "animationFrequency": -1,
         "animationFrequencyOffset": 0,
         "surfaces": {
@@ -125,5 +126,13 @@
         "v": "v",
         "w": "w"
     },
-    "userDefinedFields":[]
+    "userDefinedFields": [],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
+    }
 }

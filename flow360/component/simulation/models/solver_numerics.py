@@ -2,7 +2,7 @@
 Contains basic components(solvers) that composes the `volume` type models.
 Each volume model represents a physical phenomena that require a combination of solver features to model.
 
-E.g. 
+E.g.
 NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 
 """
@@ -10,7 +10,7 @@ NavierStokes, turbulence and transition composes FluidDynamics `volume` type
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Annotated, Dict, Literal, Optional, Union
+from typing import Annotated, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pydantic as pd
@@ -22,7 +22,12 @@ from flow360.component.simulation.framework.base_model import (
     Flow360BaseModel,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.primitives import Box
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    EntityListWithCustomVolume,
+    GenericVolume,
+)
 
 # from .time_stepping import UnsteadyTimeStepping
 
@@ -165,6 +170,8 @@ class SpalartAllmarasModelConstants(Flow360BaseModel):
     C_v1: NonNegativeFloat = pd.Field(7.1)
     C_vonKarman: NonNegativeFloat = pd.Field(0.41)
     C_w2: float = pd.Field(0.3)
+    C_w4: float = pd.Field(0.21)
+    C_w5: float = pd.Field(1.5)
     C_t3: NonNegativeFloat = pd.Field(1.2)
     C_t4: NonNegativeFloat = pd.Field(0.5)
     C_min_rd: NonNegativeFloat = pd.Field(10.0)
@@ -200,6 +207,48 @@ TurbulenceModelConstants = Annotated[
     Union[SpalartAllmarasModelConstants, KOmegaSSTModelConstants],
     pd.Field(discriminator="type_name"),
 ]
+
+
+class TurbulenceModelControls(Flow360BaseModel):
+    """
+    :class:`TurbulenceModelControls` class specifies modeling constants and enforces turbulence model
+    behavior on a zonal basis, as defined by mesh entities or boxes in space. These controls
+    supersede the global turbulence model solver settings.
+
+    Example
+    _______
+    >>> fl.TurbulenceModelControls(
+    ...     modeling_constants=fl.SpalartAllmarasConstants(C_w2=2.718),
+    ...     enforcement="RANS",
+    ...     entities=[
+    ...         volume_mesh["block-1"],
+    ...         fl.Box.from_principal_axes(
+    ...             name="box",
+    ...             axes=[(0, 1, 0), (0, 0, 1)],
+    ...             center=(0, 0, 0) * fl.u.m,
+    ...             size=(0.2, 0.3, 2) * fl.u.m,
+    ...         ),
+    ...     ],
+    ... )
+    """
+
+    modeling_constants: Optional[TurbulenceModelConstants] = pd.Field(
+        None,
+        description="A class of `SpalartAllmarasModelConstants` or `KOmegaSSTModelConstants`  used to "
+        + "specify constants in specific regions of the domain.",
+    )
+
+    enforcement: Optional[Literal["RANS", "LES"]] = pd.Field(
+        None, description="Force RANS or LES mode in a specific control region."
+    )
+
+    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume, Box] = pd.Field(
+        alias="volumes",
+        description="The entity in which to apply the `TurbulenceMOdelControls``. "
+        + "The entity should be defined by :class:`Box` or zones from the geometry/volume mesh."
+        + "The axes of entity must be specified to serve as the the principle axes of the "
+        + "`TurbulenceModelControls` region.",
+    )
 
 
 class DetachedEddySimulation(Flow360BaseModel):
@@ -295,6 +344,38 @@ class TurbulenceModelSolver(GenericSolverSettings, metaclass=ABCMeta):
         False, description="Rotation correction for the turbulence model."
     )
 
+    controls: Optional[List[TurbulenceModelControls]] = pd.Field(
+        None,
+        strict=True,  # Note: To ensure propoer err msg when none-list is fed.
+        description="List of control zones to enforce specific turbulence model constants "
+        + "and behavior.",
+    )
+
+    @pd.model_validator(mode="after")
+    def _check_zonal_modeling_constants_consistency(self) -> Self:
+        if self.controls is None:
+            return self
+
+        for index, control in enumerate(self.controls):
+            if control.modeling_constants is None:
+                continue
+            if not isinstance(
+                control.modeling_constants, SpalartAllmarasModelConstants
+            ) and isinstance(self, SpalartAllmaras):
+                raise ValueError(
+                    "Turbulence model is SpalartAllmaras, but controls.modeling"
+                    "_constants is of a conflicting class "
+                    f"in control region {index}."
+                )
+            if not isinstance(control.modeling_constants, KOmegaSSTModelConstants) and isinstance(
+                self, KOmegaSST
+            ):
+                raise ValueError(
+                    "Turbulence model is KOmegaSST, but controls.modeling_constants"
+                    f" is of a conflicting class in control region {index}."
+                )
+        return self
+
 
 class KOmegaSST(TurbulenceModelSolver):
     """
@@ -346,6 +427,10 @@ class SpalartAllmaras(TurbulenceModelSolver):
         description="The strength of gradient limiter used in reconstruction of solution "
         + "variables at the faces (specified in the range [0.0, 2.0]). 0.0 corresponds to "
         + "setting the gradient equal to zero, and 2.0 means no limiting.",
+    )
+    low_reynolds_correction: Optional[bool] = pd.Field(
+        False,
+        description="Use low Reynolds number correction for Spalart-Allmaras turbulence model",
     )
 
 

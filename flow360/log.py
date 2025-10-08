@@ -238,13 +238,17 @@ class Logger:
         message = f"[white]{message}[/white]"
         self._log(_level_value["CRITICAL"], "CRITICAL", message)
 
+    def status(self, status: str = ""):
+        """Returns status context to show spinner"""
+        return log.handlers["console"].console.status(status)
+
 
 # Initialize FLow360's logger
 log = Logger()
 
 
 def set_logging_level(level: LogValue = DEFAULT_LEVEL) -> None:
-    """Set tidy3d console logging level priority.
+    """Set flow360 console logging level priority.
     Parameters
     ----------
     level : str
@@ -331,12 +335,10 @@ def toggle_rotation(rotate: bool):
 # Set default logging output
 set_logging_console()
 
-
 log_dir = flow360_dir + "logs"
 try:
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    set_logging_file(os.path.join(log_dir, "flow360_python.log"), level="DEBUG")
 except OSError as err:
     log.warning(f"Could not setup file logging: {err}")

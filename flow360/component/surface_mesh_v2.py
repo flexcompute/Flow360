@@ -15,16 +15,19 @@ from flow360.cloud.flow360_requests import LengthUnitType, NewSurfaceMeshRequest
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import SurfaceMeshInterfaceV2
-from flow360.component.project_utils import SurfaceMeshFile
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
     Flow360Resource,
     ResourceDraft,
 )
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.web.asset_base import AssetBase
-from flow360.component.utils import MeshNameParser, shared_account_confirm_proceed
+from flow360.component.utils import (
+    MeshNameParser,
+    SurfaceMeshFile,
+    shared_account_confirm_proceed,
+)
 from flow360.exceptions import Flow360FileError, Flow360ValueError
 from flow360.log import log
 
@@ -88,12 +91,14 @@ class SurfaceMeshDraftV2(ResourceDraft):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         self._file_name = file_names
         self.project_name = project_name
         self.tags = tags if tags is not None else []
         self.length_unit = length_unit
         self.solver_version = solver_version
+        self.folder = folder
         self._validate()
         ResourceDraft.__init__(self)
 
@@ -103,7 +108,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
     def _validate_surface_mesh(self):
         if self._file_name is not None:
             try:
-                SurfaceMeshFile(value=self._file_name)
+                SurfaceMeshFile(file_names=self._file_name)
             except pd.ValidationError as e:
                 raise Flow360FileError(str(e)) from e
 
@@ -125,7 +130,7 @@ class SurfaceMeshDraftV2(ResourceDraft):
 
     # pylint: disable=protected-access
     # pylint: disable=duplicate-code
-    def submit(self, description="", progress_callback=None) -> SurfaceMeshV2:
+    def submit(self, description="", progress_callback=None, run_async=False) -> SurfaceMeshV2:
         """
         Submit surface mesh file to cloud and create a new project
 
@@ -135,6 +140,8 @@ class SurfaceMeshDraftV2(ResourceDraft):
             description of the project, by default ""
         progress_callback : callback, optional
             Use for custom progress bar, by default None
+        run_async : bool, optional
+            Whether to submit surface mesh asynchronously (default is False).
 
         Returns
         -------
@@ -147,16 +154,13 @@ class SurfaceMeshDraftV2(ResourceDraft):
         if not shared_account_confirm_proceed():
             raise Flow360ValueError("User aborted resource submit.")
 
-        mesh_parser = MeshNameParser(self._file_name)
         # The first geometry is assumed to be the main one.
         req = NewSurfaceMeshRequestV2(
             name=self.project_name,
             solver_version=self.solver_version,
             tags=self.tags,
             file_name=self._file_name,
-            # pylint: disable=fixme
-            # TODO: remove hardcoding
-            parent_folder_id="ROOT.FLOW360",
+            parent_folder_id=self.folder.id if self.folder else "ROOT.FLOW360",
             length_unit=self.length_unit,
             description=description,
         )
@@ -165,19 +169,27 @@ class SurfaceMeshDraftV2(ResourceDraft):
         resp = RestApi(SurfaceMeshInterfaceV2.endpoint).post(req.dict())
         info = SurfaceMeshMetaV2(**resp)
 
-        ##:: upload geometry files
+        ##:: upload surface mesh file
         surface_mesh = SurfaceMeshV2(info.id)
-        heartbeat_info = {"resourceId": info.id, "resourceType": "Geometry", "stop": False}
+        heartbeat_info = {"resourceId": info.id, "resourceType": "SurfaceMesh", "stop": False}
         # Keep posting the heartbeat to keep server patient about uploading.
         heartbeat_thread = threading.Thread(target=post_upload_heartbeat, args=(heartbeat_info,))
         heartbeat_thread.start()
 
+        surface_mesh._webapi._upload_file(
+            remote_file_name=info.file_name,
+            file_name=self._file_name,
+            progress_callback=progress_callback,
+        )
+
+        mesh_parser = MeshNameParser(self._file_name)
+        remote_mesh_parser = MeshNameParser(info.file_name)
         if mesh_parser.is_ugrid():
             # Upload the mapbc file too.
             expected_local_mapbc_file = mesh_parser.get_associated_mapbc_filename()
             if os.path.isfile(expected_local_mapbc_file):
                 surface_mesh._webapi._upload_file(
-                    remote_file_name=mesh_parser.get_associated_mapbc_filename(),
+                    remote_file_name=remote_mesh_parser.get_associated_mapbc_filename(),
                     file_name=mesh_parser.get_associated_mapbc_filename(),
                     progress_callback=progress_callback,
                 )
@@ -187,11 +199,6 @@ class SurfaceMeshDraftV2(ResourceDraft):
                     "user-specified boundary names doesn't exist."
                 )
 
-        surface_mesh._webapi._upload_file(
-            remote_file_name=info.file_name,
-            file_name=os.path.basename(self._file_name),
-            progress_callback=progress_callback,
-        )
         heartbeat_info["stop"] = True
         heartbeat_thread.join()
         ##:: kick off pipeline
@@ -199,6 +206,8 @@ class SurfaceMeshDraftV2(ResourceDraft):
         log.info(f"Surface mesh successfully submitted: {surface_mesh.short_description()}")
         # setting _id will disable "WARNING: You have not submitted..." warning message
         self._id = info.id
+        if run_async:
+            return surface_mesh
         log.info("Waiting for surface mesh to be processed.")
         surface_mesh._webapi.get_info()
         # uses from_cloud to ensure all metadata is ready before yielding the object
@@ -228,8 +237,6 @@ class SurfaceMeshV2(AssetBase):
         ----------
         id : str
             ID of the surface mesh resource in the cloud
-        root_item_entity_info_type :
-        override the default entity info type
 
         Returns
         -------
@@ -271,6 +278,7 @@ class SurfaceMeshV2(AssetBase):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ) -> SurfaceMeshDraftV2:
         """
         Parameters
@@ -285,6 +293,8 @@ class SurfaceMeshV2(AssetBase):
             Length unit to use for the project ("m", "mm", "cm", "inch", "ft")
         tags: List[str]
             List of string tags to be added to the project upon creation
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
 
         Returns
         -------
@@ -298,36 +308,13 @@ class SurfaceMeshV2(AssetBase):
             solver_version=solver_version,
             length_unit=length_unit,
             tags=tags,
+            folder=folder,
         )
 
-    def _populate_registry(self):
-        if hasattr(self, "_entity_info") is False or self._entity_info is None:
-            raise Flow360ValueError("The entity info object does not exist")
-
-        if not isinstance(self._entity_info, SurfaceMeshEntityInfo):
-            raise Flow360ValueError(
-                "Entity info is of invalid type for a "
-                f"surface mesh object {type(self._entity_info)}"
-            )
-
-        # Initialize the local registry
-        self.internal_registry = EntityRegistry()
-
-        # Populate boundaries
-        for boundary in self._entity_info.boundaries:
-            self.internal_registry.register(boundary)
-
-    def _check_registry(self):
-        if not hasattr(self, "internal_registry") or self.internal_registry is None:
-            if hasattr(self, "_entity_info") and self._entity_info is not None:
-                self._populate_registry()
-                return
-
-            raise Flow360ValueError(
-                "The entity info registry has not been populated. "
-                "Currently entity info is populated only when loading "
-                "an asset from the cloud using the from_cloud method "
-            )
+    # pylint: disable=useless-parent-delegation
+    def get_dynamic_default_settings(self, simulation_dict: dict):
+        """Get the default surface mesh settings from the simulation dict"""
+        return super().get_dynamic_default_settings(simulation_dict)
 
     @property
     def boundary_names(self) -> List[str]:
@@ -339,7 +326,7 @@ class SurfaceMeshV2(AssetBase):
         List[str]
             List of boundary names contained within the surface mesh
         """
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(self.internal_registry)
 
         return [
             surface.name for surface in self.internal_registry.get_bucket(by_type=Surface).entities
@@ -360,7 +347,7 @@ class SurfaceMeshV2(AssetBase):
         if isinstance(key, str) is False:
             raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
 
-        self._check_registry()
+        self.internal_registry = self._entity_info.get_registry(self.internal_registry)
 
         return self.internal_registry.find_by_naming_pattern(
             key, enforce_output_as_list=False, error_when_no_match=True

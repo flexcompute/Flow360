@@ -181,7 +181,7 @@
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "g/(cm*s)",
+                        "units": "dyn*s/cm**2",
                         "value": 0.0001716
                     }
                 },
@@ -229,6 +229,30 @@
                 "type_name": "SpalartAllmaras",
                 "update_jacobian_frequency": 4
             },
+            "stopping_criterion": [
+                {
+                    "name": "Criterion 1",
+                    "type_name": "StopCriterion",
+                    "criterion_change_window": 10,
+                    "tolerance": 0.01,
+                    "monitor_field": "Cp",
+                    "monitor_output": "da62dea4-0d26-499a-abdc-ef6d84c4a035"
+                },
+                {
+                    "name": "Criterion 2",
+                    "type_name": "StopCriterion",
+                    "criterion_change_window": 10,
+                    "tolerance": {
+                        "value": 0.01,
+                        "units": "SI_unit_system"
+                    },
+                    "monitor_field": {
+                        "name": "pressure_with_units",
+                        "type_name": "UserVariable"
+                    },
+                    "monitor_output": "da62dea4-0d26-499a-abdc-ef6d84c4a035"
+                }
+            ],
             "type": "Fluid"
         }
     ],
@@ -268,7 +292,7 @@
                             "value": 273.15
                         },
                         "reference_viscosity": {
-                            "units": "g/(cm*s)",
+                            "units": "dyn*s/cm**2",
                             "value": 0.0001716
                         }
                     },
@@ -309,7 +333,7 @@
                         "value": 273.15
                     },
                     "reference_viscosity": {
-                        "units": "g/(cm*s)",
+                        "units": "dyn*s/cm**2",
                         "value": 0.0001716
                     }
                 },
@@ -355,9 +379,42 @@
             "output_format": "paraview",
             "output_type": "SurfaceOutput",
             "write_single_file": false
+        },
+        {
+            "name": "Probe output3",
+            "output_type": "ProbeOutput",
+            "_id": "da62dea4-0d26-499a-abdc-ef6d84c4a035",
+            "private_attribute_id": "da62dea4-0d26-499a-abdc-ef6d84c4a035",
+            "output_fields": {
+                "items": [
+                    "Cp",
+                    "pressure_with_units"
+                ]
+            },
+            "entities": {
+                "stored_entities": [
+                    {
+                        "private_attribute_id": "3b6432ec-0b16-4626-a75f-fdef7f93e2af",
+                        "name": "Point",
+                        "private_attribute_entity_type_name": "Point",
+                        "location": {
+                            "value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "units": "cm"
+                        }
+                    }
+                ]
+            }
         }
     ],
     "private_attribute_asset_cache": {
+        "project_length_unit": {
+            "value": 1,
+            "units": "m"
+        },
         "registry": {
             "internal_registry": {
                 "VolumetricEntityType": [
@@ -518,7 +575,17 @@
                     }
                 ]
             }
-        }
+        },
+        "variable_context":[
+            {
+                "name": "pressure_with_units",
+                "value": {
+                    "type_name": "expression",
+                    "expression": "solution.pressure",
+                    "output_units": "SI_unit_system"
+                }
+            }
+        ]
     },
     "time_stepping": {
         "CFL": {
@@ -532,7 +599,7 @@
         "type_name": "Steady"
     },
     "unit_system": {
-        "name": "SI"
+        "name": "CGS"
     },
     "version": "24.2.0"
 }

@@ -3,7 +3,7 @@ Report generation interface
 """
 
 import os
-from typing import Callable, List, Optional, Set, Union
+from typing import Annotated, Callable, List, Optional, Set, Union
 
 import pydantic as pd
 
@@ -11,9 +11,9 @@ import pydantic as pd
 # pylint: disable=import-error
 from pylatex import Section, Subsection
 
-from flow360 import Case
 from flow360.cloud.flow360_requests import NewReportRequest
 from flow360.cloud.rest_api import RestApi
+from flow360.component.case import Case
 from flow360.component.interfaces import ReportInterface
 from flow360.component.resource_base import AssetMetaBaseModel, Flow360Resource
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
@@ -26,15 +26,19 @@ from flow360.plugins.report.report_items import (
     Chart3D,
     FileNameStr,
     Inputs,
+    NonlinearResiduals,
     Settings,
     Summary,
     Table,
 )
 from flow360.plugins.report.utils import (
+    Average,
+    DataItem,
     RequirementItem,
     get_requirements_from_data_path,
 )
 from flow360.plugins.report.uvf_shutter import ShutterBatchService
+from flow360.version import __solver_version__
 
 
 class Report(Flow360Resource):
@@ -131,27 +135,26 @@ class ReportDraft:
         return Report(resp["id"])
 
 
+ReportItemTypes = Annotated[
+    Union[Summary, Inputs, Table, NonlinearResiduals, Chart2D, Chart3D],
+    pd.Field(discriminator="type_name"),
+]
+
+
 class ReportTemplate(Flow360BaseModel):
     """
     A model representing a report containing various components such as summaries, inputs, tables,
     and charts in both 2D and 3D.
-
-    Parameters
-    ----------
-    title: str, optional
-        Title of report, shown on the first page
-    items : List[Union[Summary, Inputs, Table, Chart2D, Chart3D]]
-        A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart.
-        The `type` field acts as a discriminator for differentiating item types.
-    include_case_by_case : bool, default=True
-        Flag indicating whether to include a case-by-case analysis in the report.
     """
 
-    title: Optional[str] = None
-    items: List[Union[Summary, Inputs, Table, Chart2D, Chart3D]] = pd.Field(
-        discriminator="type_name"
+    title: Optional[str] = pd.Field(None, description="Title of report, shown on the first page.")
+    items: List[ReportItemTypes] = pd.Field(
+        description="A list of report items, each of which can be a summary, input data, table, 2D chart, or 3D chart."
     )
-    include_case_by_case: bool = False
+    include_case_by_case: bool = pd.Field(
+        False,
+        description="Flag indicating whether to include a case-by-case analysis in the report.",
+    )
     settings: Optional[Settings] = Settings()
 
     @pd.model_validator(mode="after")
@@ -172,7 +175,7 @@ class ReportTemplate(Flow360BaseModel):
                         f"Duplicate fig_name '{fig_name}' found in item at index {idx}"
                     )
                 used_fig_names.add(fig_name)
-        # return model
+        return self
 
     # pylint: disable=protected-access
     def _generate_shutter_screenshots(self, context: ReportContext):
@@ -195,7 +198,9 @@ class ReportTemplate(Flow360BaseModel):
         service.process_requests(context)
 
     def _get_baseline_requirements(self):
-        return get_requirements_from_data_path(["volume_mesh", "surface_mesh", "geometry"])
+        return get_requirements_from_data_path(
+            ["volume_mesh", "surface_mesh", "geometry", "params"]
+        )
 
     def get_requirements(self) -> List[RequirementItem]:
         """
@@ -220,7 +225,11 @@ class ReportTemplate(Flow360BaseModel):
 
     # pylint: disable=unused-argument
     def create_in_cloud(
-        self, name: str, cases: list[Case], landscape: bool = False, solver_version: str = None
+        self,
+        name: str,
+        cases: list[Case],
+        landscape: bool = False,
+        solver_version: str = __solver_version__,
     ):
         """
         Creates a report in the cloud for a specified set of cases.
@@ -318,3 +327,39 @@ class ReportTemplate(Flow360BaseModel):
                             item.get_doc_item(case_context, self.settings)
 
         report_doc.generate_pdf(os.path.join(data_storage, filename))
+
+
+def get_default_report_summary_template() -> ReportTemplate:
+    """
+    Returns default report template for result summary.
+    """
+    avg = Average(fraction=0.1)
+
+    data = [
+        "volume_mesh/bounding_box/length",
+        "volume_mesh/bounding_box/height",
+        "volume_mesh/bounding_box/width",
+        "params/reference_geometry/moment_length",
+        "params/reference_geometry/area",
+        DataItem(data="surface_forces/totalCL", title="CL", operations=avg),
+        DataItem(data="surface_forces/totalCD", title="CD", operations=avg),
+        DataItem(data="surface_forces/totalCFy", title="CFy", operations=avg),
+        DataItem(data="surface_forces/totalCMx", title="CMx", operations=avg),
+        DataItem(data="surface_forces/totalCMy", title="CMy", operations=avg),
+        DataItem(data="surface_forces/totalCMz", title="CMz", operations=avg),
+    ]
+    headers = [
+        "OAL",
+        "OAH",
+        "OAW",
+        "Reference Length",
+        "Reference Area",
+        "CL",
+        "CD",
+        "CFy",
+        "CMx",
+        "CMy",
+        "CMz",
+    ]
+    table = Table(data=data, section_title="result_summary", headers=headers)
+    return ReportTemplate(items=[table], settings=Settings(dump_table_csv=True))

@@ -1,12 +1,14 @@
 import os
+import re
 
 import pytest
 
 from flow360 import Case
 from flow360.component.case import CaseMeta
 from flow360.plugins.report.report import Report, ReportDraft, ReportTemplate
+from flow360.plugins.report.report_doc import ReportDoc
 from flow360.plugins.report.report_items import Chart2D, Inputs, Summary, Table
-from flow360.plugins.report.utils import _requirements_mapping
+from flow360.plugins.report.utils import RequirementItem
 
 
 @pytest.fixture
@@ -78,30 +80,6 @@ def test_reporttemplate_init_validation():
     assert len(template.items) == 3
 
 
-def test_reporttemplate_requirements():
-    template = ReportTemplate(
-        items=[
-            Summary(),  # no requirements
-            Inputs(),  # has params requirements
-            Table(data=["total_forces/CL"], section_title="Forces"),  # total_forces
-            Chart2D(
-                x="params/version", y="y_slicing_force_distribution/Y"
-            ),  # y_slicing_force_distribution, total_forces
-        ]
-    )
-    reqs = template.get_requirements()
-    expected_keys = [
-        "params",
-        "y_slicing_force_distribution",
-        "total_forces",
-        "volume_mesh",
-        "surface_mesh",
-        "geometry",
-    ]
-    expected_reqs = {_requirements_mapping[k] for k in expected_keys}
-    assert set(reqs) == expected_reqs
-
-
 def test_reporttemplate_create_in_cloud(mocker, cases):
     mock_submit = mocker.patch.object(ReportDraft, "submit", return_value="mock-response")
     template = ReportTemplate(title="Cloud Report", items=[Summary(), Inputs()])
@@ -130,6 +108,22 @@ def test_reporttemplate_no_items():
     assert template.title == "Empty"
     assert template.items == []
     reqs = template.get_requirements()
-    expected_keys = ["volume_mesh", "surface_mesh", "geometry"]
-    expected_reqs = {_requirements_mapping[k] for k in expected_keys}
+    expected_keys = ["volume_mesh", "surface_mesh", "geometry", "params"]
+    expected_reqs = {RequirementItem.from_data_key(data_key=k) for k in expected_keys}
     assert set(reqs) == expected_reqs
+
+
+@pytest.mark.usefixtures("mock_detect_latex_compiler")
+def test_filepaths_format():
+    report_doc = ReportDoc(title="test_doc")
+    tex = report_doc.doc.dumps()
+    lines = tex.split("\n")
+    for line in lines:
+        line = line.lstrip()
+        if line.startswith(r"\includegraphics"):
+            path_match = re.search(r"\{(.*?)\}", line)
+            if path_match:
+                path = path_match.group(1)
+                assert "\\" not in path
+        if line.startswith("Path"):
+            assert "\\" not in line

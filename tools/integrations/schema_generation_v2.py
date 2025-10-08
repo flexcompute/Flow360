@@ -1,8 +1,6 @@
 import json
 import os
-from typing import Annotated, List, Type, Union
-
-import pydantic as pd
+from typing import Type, Union
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.meshing_param.edge_params import (
@@ -21,7 +19,7 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
-    RotationCylinder,
+    RotationVolume,
     UniformRefinement,
 )
 from flow360.component.simulation.models.material import SolidMaterial
@@ -66,6 +64,7 @@ from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     Isosurface,
     IsosurfaceOutput,
+    Observer,
     ProbeOutput,
     Slice,
     SliceOutput,
@@ -148,7 +147,10 @@ def write_schemas(type_obj: Type[Flow360BaseModel], folder_name, file_suffix="")
     file_suffix_part = f"-{file_suffix}" if file_suffix else ""
     write_to_file(
         os.path.join(
-            here, data_folder, folder_name, f"json-schema-{version_postfix}{file_suffix_part}.json"
+            here,
+            data_folder,
+            folder_name,
+            f"json-schema-{version_postfix}{file_suffix_part}.json",
         ),
         schema,
     )
@@ -162,7 +164,6 @@ def write_example(
     additional_fields: dict = {},
     exclude=None,
 ):
-
     if isinstance(obj, dict):
         data = obj
     elif isinstance(obj, Flow360BaseModel):
@@ -229,7 +230,7 @@ with SI_unit_system:
             SurfaceEdgeRefinement(edges=[edge], method=AspectRatioBasedRefinement(value=2)),
         ],
         volume_zones=[
-            RotationCylinder(
+            RotationVolume(
                 entities=my_cylinder_1,
                 spacing_axial=0.1 * u.m,
                 spacing_radial=0.12 * u.m,
@@ -279,7 +280,7 @@ with SI_unit_system:
             Inflow(
                 surfaces=[my_inflow1],
                 total_temperature=300 * u.K,
-                spec=TotalPressure(123 * u.Pa),
+                spec=TotalPressure(value=123 * u.Pa),
                 turbulence_quantities=TurbulenceQuantities(
                     turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
                 ),
@@ -287,7 +288,7 @@ with SI_unit_system:
             Inflow(
                 surfaces=[my_inflow2],
                 total_temperature=300 * u.K,
-                spec=MassFlowRate(123 * u.lb / u.s),
+                spec=MassFlowRate(value=123 * u.lb / u.s),
             ),
         ],
         time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
@@ -401,7 +402,9 @@ write_example(
 
 with SI_unit_system:
     ac = AerospaceCondition.from_mach(
-        mach=0.8, alpha=1 * u.deg, thermal_state=ThermalState(temperature=100 * u.K, density=2)
+        mach=0.8,
+        alpha=1 * u.deg,
+        thermal_state=ThermalState(temperature=100 * u.K, density=2),
     )
 write_example(
     ac,
@@ -503,7 +506,7 @@ with imperial_unit_system:
 write_example(my_outflow_obj, "models", "outflow-Pressure")
 
 with imperial_unit_system:
-    my_outflow_obj = Outflow(entities=[my_outflow], spec=MassFlowRate(1))
+    my_outflow_obj = Outflow(entities=[my_outflow], spec=MassFlowRate(value=1))
 write_example(my_outflow_obj, "models", "outflow-MassFlowRate")
 
 my_outflow_obj = Outflow(entities=[my_outflow], spec=Mach(1))
@@ -515,7 +518,7 @@ with imperial_unit_system:
     my_inflow_surface_1 = Inflow(
         surfaces=[my_inflow1],
         total_temperature=300 * u.K,
-        spec=TotalPressure(123 * u.Pa),
+        spec=TotalPressure(value=123 * u.Pa),
         turbulence_quantities=TurbulenceQuantities(
             turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
         ),
@@ -526,7 +529,7 @@ with imperial_unit_system:
     my_inflow_surface_1 = Inflow(
         surfaces=[my_inflow1],
         total_temperature=300 * u.K,
-        spec=MassFlowRate(123),
+        spec=MassFlowRate(value=123),
         turbulence_quantities=TurbulenceQuantities(
             turbulent_kinetic_energy=123, specific_dissipation_rate=1e3
         ),
@@ -664,7 +667,10 @@ write_schemas(AeroAcousticOutput, "outputs", file_suffix="AeroAcousticOutput")
 with imperial_unit_system:
     setting = AeroAcousticOutput(
         write_per_surface_output=True,
-        observers=[(1, 2, 3), (2, 4, 6)],
+        observers=[
+            Observer(position=(1, 2, 3), group_name="1"),
+            Observer(position=(2, 4, 6), group_name="1"),
+        ],
     )
 write_example(setting, "outputs", "AeroAcousticOutput")
 

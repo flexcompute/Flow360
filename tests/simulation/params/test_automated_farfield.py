@@ -1,15 +1,27 @@
+import os
 import re
 
 import pytest
+import unyt as u
 
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import set_up_params_for_uploading
+from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation import services
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
-from flow360.component.simulation.meshing_param.params import MeshingParams
+from flow360.component.simulation.meshing_param.params import (
+    MeshingDefaults,
+    MeshingParams,
+)
 from flow360.component.simulation.meshing_param.volume_params import AutomatedFarfield
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
     SymmetryPlane,
     Wall,
+)
+from flow360.component.simulation.operating_condition.operating_condition import (
+    AerospaceCondition,
 )
 from flow360.component.simulation.outputs.outputs import (
     SurfaceIntegralOutput,
@@ -19,6 +31,12 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
+from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 def test_automated_farfield_surface_usage():
@@ -96,10 +114,10 @@ def test_automated_farfield_surface_usage():
                         my_farfield.symmetry_planes,
                         Surface(name="surface2"),
                     ],
-                    output_fields=["Cpt"],
+                    output_fields=["Cpt_user_defined"],
                 ),
             ],
-            user_defined_fields=[UserDefinedField(name="Cpt", expression="Cp-123")],
+            user_defined_fields=[UserDefinedField(name="Cpt_user_defined", expression="Cp-123")],
         )
 
 
@@ -124,3 +142,256 @@ def test_automated_farfield_import_export():
     model_as_dict = {"name": "my_farfield", "type": "AutomatedFarfield"}
     meshing = MeshingParams(**{"volume_zones": [model_as_dict]})
     assert isinstance(meshing.volume_zones[0], AutomatedFarfield)
+
+
+def test_symmetric_existence():
+    def _run_validation(params):
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=sm,
+            length_unit=1 * u.m,
+            use_beta_mesher=True,
+            use_geometry_AI=False,
+        )
+
+        _, errors, _ = services.validate_model(
+            params_as_dict=params.model_dump(exclude_none=True),
+            validated_by=services.ValidationCalledBy.LOCAL,
+            root_item_type="SurfaceMesh",
+            validation_level="All",
+        )
+
+        return errors
+
+    sm = SurfaceMeshV2.from_local_storage(
+        local_storage_path="data/surface_mesh",
+        meta_data=SurfaceMeshMetaV2(
+            **local_metadata_builder(
+                id="aaa",
+                name="aaa",
+                cloud_path_prefix="aaa",
+            )
+        ),
+    )
+    farfield = AutomatedFarfield()
+    with SI_unit_system:
+        params = SimulationParams(
+            operating_condition=AerospaceCondition(velocity_magnitude=1000),
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=0.001,
+                    boundary_layer_growth_rate=1.1,
+                ),
+                volume_zones=[farfield],
+            ),
+            models=[
+                Wall(surfaces=sm["*"]),
+                Freestream(surfaces=[farfield.farfield]),
+            ],
+        )
+
+    # Valid Symmetric but did not use it
+    errors = _run_validation(params)
+    assert len(errors) == 1
+    assert (
+        "The following boundaries do not have a boundary condition: symmetric." in errors[0]["msg"]
+    )
+
+    params.models.append(SymmetryPlane(surfaces=[farfield.symmetry_planes]))
+    errors = _run_validation(params)
+    assert errors is None
+
+    # Invalid Symmetric
+    params.meshing.defaults.planar_face_tolerance = 1e-100
+    errors = _run_validation(params)
+    assert len(errors) == 1
+    assert (
+        "`symmetric` boundary will not be generated: model spans: [-4.1e-05, 1.2e+03], tolerance = 1e-100 x 2.5e+03 = 2.5e-97."
+        in errors[0]["msg"]
+    )
+
+    # Invalid Symmetric but did not use it
+    params.models.pop()
+    errors = _run_validation(params)
+    assert errors is None
+
+
+def test_rotated_symmetric_existence():
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+        local_storage_path=os.path.join("data", "geometry"),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-e5c01a98-2180-449e-b255-d60162854a83",
+                name="Test",
+                cloud_path_prefix="/",
+                status="processed",
+            )
+        ),
+    )
+
+    geometry.group_faces_by_tag("faceId")
+    geometry.group_edges_by_tag("edgeId")
+    geometry.group_bodies_by_tag("groupByFile")
+
+    farfield = AutomatedFarfield()
+    body_name = "geo-9cafe735-1190-4e3e-978e-407271e254ed_cube-holes.csm"
+
+    def _test_and_show_errors(geometry):
+        # * 1: Missing symmetric
+        with SI_unit_system:
+            params = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=1000),
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=0.001,
+                        boundary_layer_growth_rate=1.1,
+                        geometry_accuracy=1e-7,
+                        surface_max_edge_length=1e-9,
+                    ),
+                    volume_zones=[farfield],
+                ),
+                models=[
+                    Wall(
+                        surfaces=[
+                            item for item in geometry["*"] if not item.name.endswith("face00005")
+                        ]
+                    ),
+                    Freestream(surfaces=[farfield.farfield]),
+                ],
+            )
+
+            processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, True, True)
+
+        _, errors_1, _ = services.validate_model(
+            params_as_dict=processed_params.model_dump(mode="json", exclude_none=True),
+            validated_by=services.ValidationCalledBy.LOCAL,
+            root_item_type="Geometry",
+            validation_level="All",
+        )
+
+        # * 2: Missing boundary
+        with SI_unit_system:
+            params = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=1000),
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=0.001,
+                        boundary_layer_growth_rate=1.1,
+                        geometry_accuracy=1e-7,
+                        surface_max_edge_length=1e-9,
+                    ),
+                    volume_zones=[farfield],
+                ),
+                models=[
+                    Freestream(surfaces=[farfield.farfield]),
+                    Wall(
+                        surfaces=[
+                            item
+                            for item in geometry["*"]
+                            if not item.name.endswith("face00005")
+                            and item.name != "body00001_face00001"
+                        ]
+                    ),
+                    SlipWall(surfaces=[farfield.symmetry_planes]),
+                ],
+            )
+
+        processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, True, True)
+
+        _, errors_2, _ = services.validate_model(
+            params_as_dict=processed_params.model_dump(mode="json", exclude_none=True),
+            validated_by=services.ValidationCalledBy.LOCAL,
+            root_item_type="Geometry",
+            validation_level="All",
+        )
+        print("# * 3: Deleted boundary")
+        # * 3: Deleted boundary
+        with SI_unit_system:
+            params = SimulationParams(
+                operating_condition=AerospaceCondition(velocity_magnitude=1000),
+                meshing=MeshingParams(
+                    defaults=MeshingDefaults(
+                        boundary_layer_first_layer_thickness=0.001,
+                        boundary_layer_growth_rate=1.1,
+                        geometry_accuracy=1e-7,
+                        surface_max_edge_length=1e-9,
+                    ),
+                    volume_zones=[farfield],
+                ),
+                models=[
+                    Freestream(surfaces=[farfield.farfield]),
+                    Wall(
+                        surfaces=[
+                            item for item in geometry["*"] if item.name != "body00001_face00005"
+                        ]
+                    ),
+                    SlipWall(surfaces=[farfield.symmetry_planes]),
+                ],
+            )
+
+        processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, True, True)
+
+        _, errors_3, _ = services.validate_model(
+            params_as_dict=processed_params.model_dump(mode="json", exclude_none=True),
+            validated_by=services.ValidationCalledBy.LOCAL,
+            root_item_type="Geometry",
+            validation_level="All",
+        )
+
+        return errors_1, errors_2, errors_3
+
+    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+
+    assert len(errors_1) == 1
+    assert (
+        "The following boundaries do not have a boundary condition: symmetric."
+        in errors_1[0]["msg"]
+    )
+
+    assert len(errors_2) == 1
+    assert (
+        "The following boundaries do not have a boundary condition: body00001_face00001."
+        in errors_2[0]["msg"]
+    )
+
+    assert len(errors_3) == 1
+    assert (
+        "Boundary `body00002_face00005` will likely be deleted after mesh generation."
+        in errors_3[0]["msg"]
+    )
+
+    geometry[body_name].transformation.angle_of_rotation = 90 * u.deg
+
+    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+
+    assert errors_1 is None
+    assert errors_2 is None
+    assert errors_3 is None
+
+    geometry[body_name].transformation.angle_of_rotation = 0 * u.deg
+    geometry[body_name].transformation.translation = [0, 0, 1e-9] * u.m
+
+    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+
+    assert errors_1 is None
+    assert errors_2 is None
+    assert errors_3 is None
+
+    geometry[body_name].transformation.angle_of_rotation = 0 * u.deg
+    geometry[body_name].transformation.translation = [0, 0, 1e-9] * u.m
+
+    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+
+    assert errors_1 is None
+    assert errors_2 is None
+    assert errors_3 is None
+
+    geometry[body_name].transformation.translation = [0, 0, 0] * u.m
+    geometry[body_name].transformation.scale = [0.5, 0.5, 1e-9]
+
+    errors_1, errors_2, errors_3 = _test_and_show_errors(geometry)
+
+    assert errors_1 is None
+    assert errors_2 is None
+    assert errors_3 is None

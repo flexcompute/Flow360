@@ -1,5 +1,7 @@
 """Volume meshing parameter translator."""
 
+from typing import Union
+
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
@@ -7,12 +9,20 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
-    CylindricalRefinementBase,
+    AxisymmetricRefinementBase,
     RotationCylinder,
+    RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, Surface
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    CustomVolume,
+    Cylinder,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
@@ -22,8 +32,10 @@ from flow360.component.simulation.translator.utils import (
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
 
+# pylint: disable=too-many-locals
 
-def unifrom_refinement_translator(obj: UniformRefinement):
+
+def uniform_refinement_translator(obj: UniformRefinement):
     """
     Translate UniformRefinement.
 
@@ -31,7 +43,7 @@ def unifrom_refinement_translator(obj: UniformRefinement):
     return {"spacing": obj.spacing.value.item()}
 
 
-def cylindrical_refinement_translator(obj: CylindricalRefinementBase):
+def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
     """
     Translate CylindricalRefinementBase. [SlidingInterface + RotorDisks]
     """
@@ -42,15 +54,28 @@ def cylindrical_refinement_translator(obj: CylindricalRefinementBase):
     }
 
 
+def box_refinement_translator(obj: StructuredBoxRefinement):
+    """
+    Translate StructuredBoxRefinement spacings
+    """
+    return {
+        "spacingAxis1": obj.spacing_axis1.value.item(),
+        "spacingAxis2": obj.spacing_axis2.value.item(),
+        "spacingNormal": obj.spacing_normal.value.item(),
+    }
+
+
 def boundary_layer_translator(obj: BoundaryLayer):
     """
     Translate BoundaryLayer.
 
     """
-    return {
-        "firstLayerThickness": obj.first_layer_thickness.value.item(),
-        "type": "aniso",
-    }
+    face = {"type": "aniso"}
+    if obj.first_layer_thickness is not None:
+        face["firstLayerThickness"] = obj.first_layer_thickness.value.item()
+    if obj.growth_rate is not None:
+        face["growthRate"] = obj.growth_rate
+    return face
 
 
 def passive_spacing_translator(obj: PassiveSpacing):
@@ -72,8 +97,8 @@ def passive_spacing_translator(obj: PassiveSpacing):
     }
 
 
-def rotation_cylinder_translator(obj: RotationCylinder, rotor_disk_names: list):
-    """Setting translation for RotationCylinder."""
+def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
+    """Setting translation for RotationVolume."""
     setting = cylindrical_refinement_translator(obj)
     setting["enclosedObjects"] = []
     if obj.enclosed_entities is not None:
@@ -87,12 +112,16 @@ def rotation_cylinder_translator(obj: RotationCylinder, rotor_disk_names: list):
                     # Current sliding interface encloses another sliding interface
                     # Then we append the interace name which is hardcoded "slidingInterface-<name>""
                     setting["enclosedObjects"].append("slidingInterface-" + entity.name)
+            elif is_exact_instance(entity, AxisymmetricBody):
+                setting["enclosedObjects"].append("slidingInterface-" + entity.name)
+            elif is_exact_instance(entity, Box):
+                setting["enclosedObjects"].append("structuredBox-" + entity.name)
             elif is_exact_instance(entity, Surface):
                 setting["enclosedObjects"].append(entity.name)
     return setting
 
 
-def refinement_entitity_injector(entity_obj):
+def refinement_entity_injector(entity_obj):
     """Injector for UniformRefinement entity [box & cylinder]."""
     if isinstance(entity_obj, Cylinder):
         return {
@@ -113,6 +142,25 @@ def refinement_entitity_injector(entity_obj):
     return {}
 
 
+def refinement_entity_box_with_axes_injector(entity_obj: Box):
+    """Injector for Box entity in StructuredBoxRefinement."""
+    lengths = list(entity_obj.size.value)
+
+    axis1 = entity_obj.axes[0]
+    axis2 = entity_obj.axes[1]
+
+    return {
+        "name": entity_obj.name,
+        "type": "box",
+        "lengthAxis1": lengths[0],
+        "lengthAxis2": lengths[1],
+        "lengthNormal": lengths[2],
+        "axis1": list(axis1),
+        "axis2": list(axis2),
+        "center": list(entity_obj.center.value),
+    }
+
+
 def rotor_disks_entity_injector(entity: Cylinder):
     """Injector for Cylinder entity in AxisymmetricRefinement."""
 
@@ -126,20 +174,50 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_cylinder_entity_injector(entity: Cylinder):
+def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
     """Injector for Cylinder entity in RotationCylinder."""
-    return {
-        "name": entity.name,
-        "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
-        "outerRadius": entity.outer_radius.value.item(),
-        "thickness": entity.height.value.item(),
-        "axisOfRotation": list(entity.axis),
-        "center": list(entity.center.value),
-    }
+    if isinstance(entity, Cylinder):
+        return {
+            "name": entity.name,
+            "type": "Cylinder",
+            "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
+            "outerRadius": entity.outer_radius.value.item(),
+            "thickness": entity.height.value.item(),
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+    if isinstance(entity, AxisymmetricBody):
+        return {
+            "name": entity.name,
+            "type": "Axisymmetric",
+            "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
+            "axisOfRotation": list(entity.axis),
+            "center": list(entity.center.value),
+        }
+    return {}
+
+
+def _get_custom_volumes(volume_zones: list):
+    """Get translated custom volumes from volume zones."""
+    custom_volumes = []
+    for zone in volume_zones:
+        if isinstance(zone, CustomVolume):
+            custom_volumes.append(
+                {
+                    "name": zone.name,
+                    "patches": sorted(
+                        [surface.name for surface in zone.boundaries.stored_entities]
+                    ),
+                }
+            )
+    if custom_volumes:
+        # Sort custom volumes by name
+        custom_volumes.sort(key=lambda x: x["name"])
+    return custom_volumes
 
 
 @preprocess_input
-# pylint: disable=unused-argument,too-many-branches
+# pylint: disable=unused-argument,too-many-branches,too-many-statements
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
@@ -186,7 +264,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             break
 
         if isinstance(zone, AutomatedFarfield):
-            translated["farfield"] = {"type": zone.method}
+            translated["farfield"] = {
+                "type": zone.method,
+                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance,
+            }
             break
 
     if "farfield" not in translated:
@@ -213,23 +294,25 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
 
     # growthRate can only be global
-    if meshing_params.defaults.boundary_layer_growth_rate is None:
-        raise Flow360TranslationError(
-            "`boundary_layer_growth_rate` is not set.",
-            None,
-            ["meshing", "defaults"],
-        )
     translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
 
     translated["volume"]["gapTreatmentStrength"] = meshing_params.gap_treatment_strength
+
+    if input_params.private_attribute_asset_cache.use_inhouse_mesher:
+        number_of_boundary_layers = meshing_params.defaults.number_of_boundary_layers
+        translated["volume"]["numBoundaryLayers"] = (
+            number_of_boundary_layers if number_of_boundary_layers is not None else -1
+        )
+
+        translated["volume"]["planarFaceTolerance"] = meshing_params.defaults.planar_face_tolerance
 
     ##::  Step 4: Get volume refinements (uniform + rotorDisks)
     uniform_refinement_list = translate_setting_and_apply_to_all_entities(
         meshing_params.refinements,
         UniformRefinement,
-        unifrom_refinement_translator,
+        uniform_refinement_translator,
         to_list=True,
-        entity_injection_func=refinement_entitity_injector,
+        entity_injection_func=refinement_entity_injector,
     )
     rotor_disk_refinement = translate_setting_and_apply_to_all_entities(
         meshing_params.refinements,
@@ -238,6 +321,14 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=rotor_disks_entity_injector,
     )
+    structured_box_refinement = translate_setting_and_apply_to_all_entities(
+        meshing_params.refinements,
+        StructuredBoxRefinement,
+        box_refinement_translator,
+        to_list=True,
+        entity_injection_func=refinement_entity_box_with_axes_injector,
+    )
+
     if uniform_refinement_list:
         translated["refinement"] = []
         translated["refinement"].extend(uniform_refinement_list)
@@ -247,6 +338,10 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         translated["rotorDisks"] = []
         translated["rotorDisks"].extend(rotor_disk_refinement)
         rotor_disk_names = [item["name"] for item in rotor_disk_refinement]
+
+    if structured_box_refinement:
+        translated["structuredRegions"] = []
+        translated["structuredRegions"].extend(structured_box_refinement)
 
     faces_aniso_setting = translate_setting_and_apply_to_all_entities(
         meshing_params.refinements,
@@ -269,13 +364,27 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ##::  Step 5: Get sliding interfaces ()
     sliding_interfaces = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
-        RotationCylinder,
-        rotation_cylinder_translator,
+        RotationVolume,
+        rotation_volume_translator,
         to_list=True,
-        entity_injection_func=rotation_cylinder_entity_injector,
+        entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
     )
-    if sliding_interfaces:
-        translated["slidingInterfaces"] = sliding_interfaces
+    sliding_interfaces_cylinders = translate_setting_and_apply_to_all_entities(
+        meshing_params.volume_zones,
+        RotationCylinder,
+        rotation_volume_translator,
+        to_list=True,
+        entity_injection_func=rotation_volume_entity_injector,
+        translation_func_rotor_disk_names=rotor_disk_names,
+    )
+
+    if sliding_interfaces or sliding_interfaces_cylinders:
+        translated["slidingInterfaces"] = sliding_interfaces + sliding_interfaces_cylinders
+
+    ##::  Step 6: Get custom volumes
+    custom_volumes = _get_custom_volumes(meshing_params.volume_zones)
+    if custom_volumes:
+        translated["zones"] = custom_volumes
 
     return translated

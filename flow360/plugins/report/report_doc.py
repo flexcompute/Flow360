@@ -21,7 +21,7 @@ from pylatex import (
     PageStyle,
     StandAloneGraphic,
 )
-from pylatex.utils import bold
+from pylatex.utils import bold, escape_latex
 
 from flow360.log import log
 from flow360.plugins.report.utils import detect_latex_compiler, font_definition
@@ -100,7 +100,9 @@ class ReportDoc:
                 r"labelsep=none, justification=raggedright, singlelinecheck=false}"
             )
         )
-        doc.preamble.append(NoEscape(r"\captionsetup[subfigure]{labelformat=empty}"))
+        doc.preamble.append(
+            NoEscape(r"\captionsetup[subfigure]{labelformat=empty, justification=centering}")
+        )
 
         if self.use_xelatex:
             doc.preamble.append(NoEscape(font_definition))
@@ -168,9 +170,9 @@ class ReportDoc:
                     logo1.append(
                         StandAloneGraphic(
                             image_options="height=18pt",
-                            filename=os.path.join(
+                            filename=posixpath.join(
                                 os.path.dirname(__file__), "img", "flow360_logo_grey.pdf"
-                            ),
+                            ).replace("\\", "/"),
                         )
                     )
 
@@ -190,7 +192,9 @@ class ReportDoc:
                 footer_content.append(
                     StandAloneGraphic(
                         image_options="height=25pt",
-                        filename=os.path.join(os.path.dirname(__file__), "img", "cover_logo.pdf"),
+                        filename=posixpath.join(
+                            os.path.dirname(__file__), "img", "cover_logo.pdf"
+                        ).replace("\\", "/"),
                     )
                 )
         doc.preamble.append(page_style)
@@ -208,7 +212,7 @@ class ReportDoc:
             doc.append(NoEscape(r"\vspace{1cm}"))
 
             if title is not None:
-                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + title + "}")))
+                doc.append(LargeText(NoEscape(r"\textcolor{gray}{" + escape_latex(title) + "}")))
                 doc.append(NewLine)
             doc.append(NoEscape(r"\vspace{2cm}"))
 

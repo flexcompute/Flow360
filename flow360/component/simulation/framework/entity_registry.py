@@ -5,13 +5,8 @@ from typing import Any, Dict, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import (
-    EntityBase,
-    MergeConflictError,
-    _merge_objects,
-)
+from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.utils import _naming_pattern_handler
-from flow360.log import log
 
 
 class EntityRegistryBucket:
@@ -48,6 +43,32 @@ class EntityRegistry(Flow360BaseModel):
 
     internal_registry: Dict[str, list[Any]] = pd.Field({})
 
+    def fast_register(self, entity: EntityBase, known_frozen_hashes: set[str]) -> set[str]:
+        """
+        Registers an entity in the registry under its type. Suitable for registering a large number of entities.
+
+        Parameters:
+            entity (EntityBase): The entity instance to register.
+            known_frozen_hashes (Optional[set[str]]): A set of hashes of frozen entities.
+                This is used to speed up checking if the has is already in the registry by avoiding O(N^2) complexity.
+                This can be provided when registering a large number of entities.
+
+        Returns:
+            known_frozen_hashes (set[str])
+        """
+        if entity.entity_bucket not in self.internal_registry:
+            # pylint: disable=unsupported-assignment-operation
+            self.internal_registry[entity.entity_bucket] = []
+
+        # pylint: disable=protected-access
+        if entity._get_hash() in known_frozen_hashes:
+            return known_frozen_hashes
+        known_frozen_hashes.add(entity._get_hash())
+
+        # pylint: disable=unsubscriptable-object
+        self.internal_registry[entity.entity_bucket].append(entity)
+        return known_frozen_hashes
+
     def register(self, entity: EntityBase):
         """
         Registers an entity in the registry under its type.
@@ -62,23 +83,15 @@ class EntityRegistry(Flow360BaseModel):
 
         # pylint: disable=unsubscriptable-object
         for existing_entity in self.internal_registry[entity.entity_bucket]:
-            if existing_entity.name == entity.name:
-                # Same type and same name. Now we try to update existing entity with new values.
-                try:
-                    existing_entity = _merge_objects(existing_entity, entity)
-                    return
-                except MergeConflictError as e:
-                    raise MergeConflictError(
-                        f"Entity with name '{entity.name}' and type '{entity.entity_bucket}' "
-                        "already exists and have different definition."
-                    ) from e
-                except Exception as e:
-                    log.debug("Merge failed unexpectly: %s", e)
-                    raise
+            # pylint: disable=protected-access
+            if existing_entity._get_hash() == entity._get_hash():
+                # Identical entities. Just ignore
+                return
+
         # pylint: disable=unsubscriptable-object
         self.internal_registry[entity.entity_bucket].append(entity)
 
-    def get_bucket(self, by_type: EntityBase) -> EntityRegistryBucket:
+    def get_bucket(self, by_type: type[EntityBase]) -> EntityRegistryBucket:
         """Get the bucket of a certain type of entity."""
         return EntityRegistryBucket(
             self.internal_registry,
@@ -123,15 +136,6 @@ class EntityRegistry(Flow360BaseModel):
 
         return matched_entities
 
-    def find_single_entity_by_name(self, name: str):
-        """Retrieve the entity with the given name from the registry."""
-        entities = self.find_by_naming_pattern(
-            name, enforce_output_as_list=True, error_when_no_match=True
-        )
-        if len(entities) > 1:
-            raise ValueError(f"Multiple entities found in registry with given name: '{name}'.")
-        return entities[0]
-
     def __str__(self):
         """
         Returns a string representation of all registered entities, grouped by type.
@@ -140,9 +144,9 @@ class EntityRegistry(Flow360BaseModel):
         result = "---- Content of the registry ----\n"
         # pylint: disable=no-member
         for entity_bucket, entities in self.internal_registry.items():
-            result += f"    Entities of type '{entity_bucket}':\n"
+            result += f"\n    Entities of type '{entity_bucket}':\n"
             for entity in entities:
-                result += f"    - [{index:03d}]\n{entity}\n"
+                result += f"    - [{index:05d}]\n{entity}\n"
                 index += 1
         result += "---- End of content ----"
         return result
@@ -199,6 +203,25 @@ class EntityRegistry(Flow360BaseModel):
                 return
 
         self.register(new_entity)
+
+    def find_by_asset_id(self, *, entity_id: str, entity_class: type[EntityBase]):
+        """
+        Find the entity with matching asset id and the same entity bucket as the input entity.
+        Return None if no such entity is found.
+        """
+        bucket = self.get_bucket(by_type=entity_class)
+        matched_entities = [
+            item for item in bucket.entities if item.private_attribute_id == entity_id
+        ]
+
+        if len(matched_entities) > 1:
+            raise ValueError(
+                f"[INTERNAL] Multiple entities with the same asset id ({entity_id}) found."
+                " Data is likely corrupted."
+            )
+        if len(matched_entities) == 0:
+            return None
+        return matched_entities[0]
 
     @property
     def is_empty(self):

@@ -16,6 +16,8 @@ from flow360.component.simulation.unit_system import (
 
 from ...exceptions import Flow360ConfigurationError
 
+LIQUID_IMAGINARY_FREESTREAM_MACH = 0.05
+
 
 def get_from_dict_by_key_list(key_list, data_dict):
     """
@@ -101,7 +103,7 @@ def require(required_parameter, required_by, params):
 
 
 # pylint: disable=too-many-locals, too-many-return-statements, too-many-statements, too-many-branches
-def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by: List[str] = None):
+def unit_converter(dimension, params, required_by: List[str] = None) -> u.UnitSystem:
     """
 
     Returns a flow360 conversion unit system for a given dimension.
@@ -133,25 +135,32 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
         required_by = []
 
     def get_base_length():
-        require(["length_unit"], required_by, {"length_unit": length_unit})
-        base_length = length_unit.to("m").v.item()
+        require(["private_attribute_asset_cache", "project_length_unit"], required_by, params)
+        base_length = params.base_length.v.item()
         return base_length
 
     def get_base_temperature():
-        require(["operating_condition", "thermal_state", "temperature"], required_by, params)
-        base_temperature = params.operating_condition.thermal_state.temperature.to("K").v.item()
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            # Temperature in Liquid condition has no effect because the thermal features will be disabled.
+            # Also the viscosity will be constant.
+            # pylint:disable = no-member
+            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_temperature = params.base_temperature.v.item()
         return base_temperature
 
     def get_base_velocity():
-        require(["operating_condition", "thermal_state", "temperature"], required_by, params)
-        base_velocity = params.operating_condition.thermal_state.speed_of_sound.to("m/s").v.item()
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            require(["operating_condition", "thermal_state", "temperature"], required_by, params)
+        base_velocity = params.base_velocity.v.item()
         return base_velocity
 
     def get_base_time():
-        base_length = get_base_length()
-        base_velocity = get_base_velocity()
-        base_time = base_length / base_velocity
+        base_time = params.base_time.v.item()
         return base_time
+
+    def get_base_mass():
+        base_mass = params.base_mass.v.item()
+        return base_mass
 
     def get_base_angular_velocity():
         base_time = get_base_time()
@@ -160,9 +169,9 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
         return base_angular_velocity
 
     def get_base_density():
-        require(["operating_condition", "thermal_state", "density"], required_by, params)
-        base_density = params.operating_condition.thermal_state.density.to("kg/m**3").v.item()
-
+        if params.operating_condition.type_name != "LiquidOperatingCondition":
+            require(["operating_condition", "thermal_state", "density"], required_by, params)
+        base_density = params.base_density.v.item()
         return base_density
 
     def get_base_viscosity():
@@ -172,6 +181,13 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
         base_viscosity = base_density * base_velocity * base_length
 
         return base_viscosity
+
+    def get_base_kinematic_viscosity():
+        base_length = get_base_length()
+        base_time = get_base_time()
+        base_kinematic_viscosity = base_length * base_length / base_time
+
+        return base_kinematic_viscosity
 
     def get_base_force():
         base_length = get_base_length()
@@ -234,6 +250,10 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
         base_length = get_base_length()
         flow360_conversion_unit_system.base_length = base_length
 
+    elif dimension == u.dimensions.mass:
+        base_mass = get_base_mass()
+        flow360_conversion_unit_system.base_mass = base_mass
+
     elif dimension == u.dimensions.temperature:
         base_temperature = get_base_temperature()
         flow360_conversion_unit_system.base_temperature = base_temperature
@@ -264,6 +284,10 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
     elif dimension == u.dimensions.viscosity:
         base_viscosity = get_base_viscosity()
         flow360_conversion_unit_system.base_viscosity = base_viscosity
+
+    elif dimension == u.dimensions.kinematic_viscosity:
+        base_kinematic_viscosity = get_base_kinematic_viscosity()
+        flow360_conversion_unit_system.base_kinematic_viscosity = base_kinematic_viscosity
 
     elif dimension == u.dimensions.force:
         base_force = get_base_force()
@@ -332,7 +356,94 @@ def unit_converter(dimension, length_unit: u.unyt_quantity, params, required_by:
 
     else:
         raise ValueError(
-            f"Unit converter: not recognised dimension: {dimension}. Conversion for this dimension is not implemented."
+            f"Unit converter: not recognized dimension: {dimension}. Conversion for this dimension is not implemented."
         )
 
     return flow360_conversion_unit_system.conversion_system
+
+
+def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.UnitSystem:
+    """
+    Returns the flow360 unit system when liquid operating condition is used.
+
+    Parameters
+    ----------
+    params : SimulationParams
+        The parameters needed for unit conversion.
+    to_flow360_unit : bool, optional
+        If True, return the flow360 unit system.
+
+    Returns
+    -------
+    u.UnitSystem
+        The flow360 unit system.
+
+    ##-- When to_flow360_unit is True,
+    ##-- time unit should be changed such that it takes into consideration
+    ##-- the fact that solver output already multiplied by "velocityScale"
+    """
+
+    if to_flow360_unit:
+        base_velocity = params.base_velocity
+    else:
+        # For dimensionalization of Flow360 output
+        # The solver output is already re-normalized by `reference velocity` due to "velocityScale"
+        # So we need to find the `reference velocity`.
+        # `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
+        if params.operating_condition.reference_velocity_magnitude is not None:
+            base_velocity = (params.operating_condition.reference_velocity_magnitude).to("m/s")
+        else:
+            base_velocity = params.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+
+    time_unit = params.base_length / base_velocity
+    return u.UnitSystem(
+        name="flow360_liquid",
+        length_unit=params.base_length,
+        mass_unit=params.base_mass,
+        time_unit=time_unit,
+        temperature_unit=params.base_temperature,
+    )
+
+
+def compute_udf_dimensionalization_factor(params, requested_unit, using_liquid_op):
+    """
+
+    Returns the dimensionalization coefficient and factor given a requested unit
+
+    Parameters
+    ----------
+    params : SimulationParams
+        The parameters needed for unit conversion.
+    unit: u.Unit
+        The unit to compute the factors.
+    using_liquid_op : bool
+        If True, compute the factor based on the flow360_liquid unit system.
+    Returns
+    -------
+    coefficient and offset for unit conversion from the requested unit to flow360 unit
+
+    """
+
+    def _compute_coefficient_and_offset(source_unit: u.Unit, target_unit: u.Unit):
+        y2 = (2.0 * target_unit).in_units(source_unit).value
+        y1 = (1.0 * target_unit).in_units(source_unit).value
+        x2 = 2.0
+        x1 = 1.0
+
+        coefficient = (y2 - y1) / (x2 - x1)
+        offset = y1 / coefficient - x1
+
+        return coefficient, offset
+
+    flow360_unit_system = (
+        params.flow360_unit_system
+        if not using_liquid_op
+        else get_flow360_unit_system_liquid(params=params)
+    )
+    # Note: Effectively assuming that all the solver vars uses radians and also the expressions expect radians
+    flow360_unit_system["angle"] = u.rad  # pylint:disable=no-member
+    flow360_unit = flow360_unit_system[requested_unit.dimensions]
+    coefficient, offset = _compute_coefficient_and_offset(
+        source_unit=requested_unit, target_unit=flow360_unit
+    )
+    return coefficient, offset

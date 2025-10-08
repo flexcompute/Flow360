@@ -1,9 +1,0 @@
-'1':
-    name: wing
-    type: NoSlipWall
-'2':
-    name: symmetry
-    type: SlipWall
-'3':
-    name: freestream
-    type: Freestream

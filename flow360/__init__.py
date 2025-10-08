@@ -7,14 +7,10 @@ from flow360.cli.api_set_func import configure_caller as configure
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
 from flow360.component.project import Project
-from flow360.component.project_utils import (
-    GeometryFiles,
-    SurfaceMeshFile,
-    VolumeMeshFile,
-)
 from flow360.component.simulation import migration, services
 from flow360.component.simulation import units as u
-from flow360.component.simulation.entity_info import GeometryEntityInfo
+from flow360.component.simulation.entity_operation import Transformation
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.meshing_param.edge_params import (
     AngleBasedRefinement,
     AspectRatioBasedRefinement,
@@ -24,6 +20,7 @@ from flow360.component.simulation.meshing_param.edge_params import (
 )
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
+    GeometryRefinement,
     PassiveSpacing,
     SurfaceRefinement,
 )
@@ -35,10 +32,17 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
+    RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
-from flow360.component.simulation.models.material import Air, SolidMaterial, Sutherland
+from flow360.component.simulation.models.material import (
+    Air,
+    SolidMaterial,
+    Sutherland,
+    Water,
+)
 from flow360.component.simulation.models.solver_numerics import (
     DetachedEddySimulation,
     HeatEquationSolver,
@@ -50,6 +54,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
     SpalartAllmarasModelConstants,
     TransitionModelSolver,
+    TurbulenceModelControls,
 )
 from flow360.component.simulation.models.surface_models import (
     Freestream,
@@ -59,15 +64,18 @@ from flow360.component.simulation.models.surface_models import (
     MassFlowRate,
     Outflow,
     Periodic,
+    PorousJump,
     Pressure,
     Rotational,
     SlaterPorousBleed,
     SlipWall,
+    Supersonic,
     SymmetryPlane,
     Temperature,
     TotalPressure,
     Translational,
     Wall,
+    WallRotation,
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -87,43 +95,60 @@ from flow360.component.simulation.models.volume_models import (
     FromUserDefinedDynamics,
     HeatEquationInitialCondition,
     NavierStokesInitialCondition,
+    NavierStokesModifiedRestartSolution,
     PorousMedium,
     Rotation,
     Solid,
+    StopCriterion,
     XFOILFile,
     XROTORFile,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
     GenericReferenceCondition,
+    LiquidOperatingCondition,
     ThermalState,
-    operating_condition_from_mach_reynolds,
 )
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
     PointArray,
+    PointArray2D,
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
     IsosurfaceOutput,
+    MovingStatistic,
     Observer,
     ProbeOutput,
     SliceOutput,
+    StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
     SurfaceProbeOutput,
     SurfaceSliceOutput,
+    TimeAverageImportedSurfaceOutput,
+    TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSliceOutput,
+    TimeAverageStreamlineOutput,
     TimeAverageSurfaceOutput,
     TimeAverageSurfaceProbeOutput,
     TimeAverageVolumeOutput,
     UserDefinedField,
     VolumeOutput,
 )
-from flow360.component.simulation.primitives import Box, Cylinder, ReferenceGeometry
+from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
+    Box,
+    CustomVolume,
+    Cylinder,
+    ImportedSurface,
+    ReferenceGeometry,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,
@@ -136,24 +161,32 @@ from flow360.component.simulation.unit_system import (
     SI_unit_system,
     imperial_unit_system,
 )
+from flow360.component.simulation.user_code.core.types import (
+    UserVariable,
+    get_user_variable,
+    remove_user_variable,
+    show_user_variables,
+)
+from flow360.component.simulation.user_code.functions import math
+from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
 )
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2 as SurfaceMesh
 from flow360.component.volume_mesh import VolumeMeshV2 as VolumeMesh
 from flow360.environment import Env
-from flow360.version import __solver_version__, __version__
+from flow360.plugins import report
 
 __all__ = [
+    "GeometryRefinement",
     "Env",
     "Case",
+    "CustomVolume",
     "AngleBasedRefinement",
     "AspectRatioBasedRefinement",
     "ProjectAnisoSpacing",
     "BoundaryLayer",
     "PassiveSpacing",
-    "__solver_version__",
-    "__version__",
     "Accounts",
     "Project",
     "u",
@@ -167,15 +200,18 @@ __all__ = [
     "SurfaceRefinement",
     "AutomatedFarfield",
     "AxisymmetricRefinement",
+    "StructuredBoxRefinement",
     "RotationCylinder",
+    "RotationVolume",
     "UniformRefinement",
     "SurfaceEdgeRefinement",
     "HeightBasedRefinement",
     "ReferenceGeometry",
     "Cylinder",
-    "GeometryEntityInfo",
+    "AxisymmetricBody",
     "AerospaceCondition",
     "ThermalState",
+    "LiquidOperatingCondition",
     "Steady",
     "Unsteady",
     "RampCFL",
@@ -186,6 +222,7 @@ __all__ = [
     "Outflow",
     "Inflow",
     "Periodic",
+    "PorousJump",
     "SymmetryPlane",
     "Fluid",
     "Solid",
@@ -204,10 +241,16 @@ __all__ = [
     "SliceOutput",
     "TimeAverageSliceOutput",
     "IsosurfaceOutput",
+    "TimeAverageIsosurfaceOutput",
     "SurfaceIntegralOutput",
     "ProbeOutput",
     "SurfaceProbeOutput",
     "AeroAcousticOutput",
+    "ImportedSurfaceOutput",
+    "TimeAverageImportedSurfaceOutput",
+    "ImportedSurfaceIntegralOutput",
+    "StreamlineOutput",
+    "TimeAverageStreamlineOutput",
     "Observer",
     "HeatEquationSolver",
     "NavierStokesSolver",
@@ -218,6 +261,7 @@ __all__ = [
     "DetachedEddySimulation",
     "KOmegaSSTModelConstants",
     "LinearSolver",
+    "Folder",
     "ForcePerArea",
     "Air",
     "Sutherland",
@@ -228,6 +272,7 @@ __all__ = [
     "UserDefinedDynamic",
     "Translational",
     "NavierStokesInitialCondition",
+    "NavierStokesModifiedRestartSolution",
     "FromUserDefinedDynamics",
     "HeatEquationInitialCondition",
     "Temperature",
@@ -238,13 +283,14 @@ __all__ = [
     "Box",
     "GenericReferenceCondition",
     "TransitionModelSolver",
+    "TurbulenceModelControls",
     "Pressure",
     "TotalPressure",
+    "Supersonic",
     "Rotational",
     "Mach",
     "MassFlowRate",
     "UserDefinedField",
-    "operating_condition_from_mach_reynolds",
     "VolumeMesh",
     "SurfaceMesh",
     "UserDefinedFarfield",
@@ -256,9 +302,20 @@ __all__ = [
     "TimeAverageProbeOutput",
     "TimeAverageSurfaceProbeOutput",
     "SurfaceSliceOutput",
-    "VolumeMeshFile",
-    "SurfaceMeshFile",
-    "GeometryFiles",
     "SlaterPorousBleed",
     "migration",
+    "Water",
+    "PointArray2D",
+    "Transformation",
+    "WallRotation",
+    "UserVariable",
+    "math",
+    "solution",
+    "report",
+    "get_user_variable",
+    "show_user_variables",
+    "remove_user_variable",
+    "StopCriterion",
+    "MovingStatistic",
+    "ImportedSurface",
 ]

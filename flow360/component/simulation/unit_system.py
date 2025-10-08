@@ -29,6 +29,7 @@ from flow360.log import log
 from flow360.utils import classproperty
 
 udim.viscosity = udim.pressure * udim.time
+udim.kinematic_viscosity = udim.length * udim.length / udim.time
 udim.angular_velocity = udim.angle / udim.time
 udim.heat_flux = udim.mass / udim.time**3
 udim.moment = udim.force * udim.length
@@ -54,11 +55,14 @@ class UnitSystemManager:
     :class: Class to manage global unit system context and switch currently used unit systems
     """
 
+    __slots__ = ("_current", "_suspended")
+
     def __init__(self):
         """
         Initialize the UnitSystemManager.
         """
         self._current = None
+        self._suspended = None
 
     @property
     def current(self) -> UnitSystem:
@@ -76,6 +80,19 @@ class UnitSystemManager:
         :return:
         """
         self._current = unit_system
+
+    def suspend(self):
+        """
+        Suspend the current UnitSystem.
+        """
+        self._suspended = self._current
+        self._current = None
+
+    def resume(self):
+        """
+        Resume the current UnitSystem.
+        """
+        self._current = self._suspended
 
 
 unit_system_manager = UnitSystemManager()
@@ -98,6 +115,19 @@ def _dimensioned_type_serializer(x):
     return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
 
 
+def _check_if_input_is_nested_collection(value, nest_level):
+    def get_nesting_level(value):
+        if isinstance(value, np.ndarray):
+            return value.ndim
+        if isinstance(value, _Flow360BaseUnit):
+            return value.value.ndim
+        if isinstance(value, (list, tuple)):
+            return 1 + max(get_nesting_level(item) for item in value)
+        return 0
+
+    return get_nesting_level(value) == nest_level
+
+
 def _check_if_input_has_delta_unit(quant):
     """
     Parse the input unit and see if it can be considered a delta unit. This only handles temperatures now.
@@ -117,7 +147,7 @@ def _check_if_input_has_delta_unit(quant):
 # pylint: disable=no-member
 def _has_dimensions(quant, dim, expect_delta_unit: bool):
     """
-    Checks the argument has the right dimensionality.
+    Checks the argument has the right dimensions.
     """
 
     try:
@@ -166,7 +196,26 @@ def _is_unit_validator(value):
     return value
 
 
-def _unit_inference_validator(value, dim_name, is_array=False):
+def _list_of_unyt_quantity_to_unyt_array(value):
+    """
+    Convert list of unyt_quantity (may come from `Expression`) to unyt_array
+    Only handles situation where all components share exact same unit.
+    We cab relax this to cover more expression results in the future when we decide how to convert.
+    """
+
+    if not isinstance(value, list):
+        return value
+    if not all(isinstance(item, unyt_quantity) for item in value):
+        return value
+    units = {item.units for item in value}
+    if not len(units) == 1:
+        return value
+    shared_unit = units.pop()
+    return [item.value for item in value] * shared_unit
+
+
+# pylint: disable=too-many-return-statements
+def _unit_inference_validator(value, dim_name, is_array=False, is_matrix=False):
     """
     Uses current unit system to infer units for value
 
@@ -186,6 +235,12 @@ def _unit_inference_validator(value, dim_name, is_array=False):
 
     if unit_system_manager.current:
         unit = unit_system_manager.current[dim_name]
+        if is_matrix:
+            if all(all(isinstance(item, Number) for item in row) for row in value):
+                float64_tuple = tuple(tuple(np.float64(row)) for row in value)
+                if isinstance(unit, _Flow360BaseUnit):
+                    return float64_tuple * unit
+                return float64_tuple * unit.units
         if is_array:
             if all(isinstance(item, Number) for item in value):
                 float64_tuple = tuple(np.float64(item) for item in value)
@@ -216,7 +271,7 @@ def _unit_array_validator(value, dim, expect_delta_unit: bool):
     """
 
     if not _has_dimensions(value, dim, expect_delta_unit):
-        if any(_has_dimensions(item, dim, expect_delta_unit) for item in value):
+        if any(_has_dimensions(item, dim, expect_delta_unit) for item in np.nditer(value)):
             raise TypeError(
                 f"arg '{value}' has unit provided per component, "
                 "instead provide dimension for entire array."
@@ -470,15 +525,14 @@ class _DimensionedType(metaclass=ABCMeta):
 
                 return schema
 
-            def validate(vec_cls, value, *args, **kwargs):
+            def validate(vec_cls, value, info, *args, **kwargs):
                 """additional validator for value"""
                 try:
                     value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _list_of_unyt_quantity_to_unyt_array(value)
                     value = _is_unit_validator(value)
 
-                    is_collection = isinstance(value, Collection) or (
-                        isinstance(value, _Flow360BaseUnit) and isinstance(value.val, Collection)
-                    )
+                    is_collection = _check_if_input_is_nested_collection(value=value, nest_level=1)
 
                     if length is None:
                         if not is_collection:
@@ -505,7 +559,12 @@ class _DimensionedType(metaclass=ABCMeta):
                         value, vec_cls.type.dim, vec_cls.type.expect_delta_unit
                     )
 
-                    if kwargs.get("allow_inf_nan", False) is False:
+                    allow_inf_nan = kwargs.get("allow_inf_nan", False)
+
+                    if info.context and "allow_inf_nan" in info.context:
+                        allow_inf_nan = info.context.get("allow_inf_nan", False)
+
+                    if allow_inf_nan is False:
                         value = _nan_inf_vector_validator(value)
 
                     value = _has_dimensions_validator(
@@ -520,15 +579,107 @@ class _DimensionedType(metaclass=ABCMeta):
                     raise pd.ValidationError.from_exception_data("validation error", [details])
 
             def __get_pydantic_core_schema__(vec_cls, *args, **kwargs) -> pd.CoreSchema:
-                return core_schema.no_info_plain_validator_function(
-                    lambda *val_args: validate(vec_cls, *val_args)
-                )
+                def validate_with_info(value, info):
+                    return validate(vec_cls, value, info, *args, **kwargs)
+
+                return core_schema.with_info_plain_validator_function(validate_with_info)
 
             cls_obj = type("_VectorType", (), {})
             cls_obj.type = dim_type
             cls_obj.allow_zero_norm = allow_zero_norm
             cls_obj.allow_zero_component = allow_zero_component
             cls_obj.allow_negative_value = allow_negative_value
+            cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
+                cls_obj, *args
+            )
+            cls_obj.__get_pydantic_json_schema__ = __get_pydantic_json_schema__
+
+            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
+
+    # pylint: disable=too-few-public-methods
+    class _MatrixType:
+        @classmethod
+        def get_class_object(
+            cls,
+            dim_type,
+            shape=(None, None),
+        ):
+            """Get a dynamically created metaclass representing the tensor"""
+
+            def __get_pydantic_json_schema__(
+                schema: pd.CoreSchema, handler: pd.GetJsonSchemaHandler
+            ):
+                schema = dim_type.__get_pydantic_json_schema__(schema, handler)
+                schema["properties"]["value"] = {
+                    "type": "array",
+                    "items": {"type": "array", "items": {"type": "number"}},
+                }
+                if shape[0] is not None:
+                    schema["properties"]["minItems"] = shape[0]
+                    schema["properties"]["maxItems"] = shape[0]
+                if shape[1] is not None:
+                    schema["properties"]["value"]["items"]["minItems"] = shape[1]
+                    schema["properties"]["value"]["items"]["maxItems"] = shape[1]
+
+                return schema
+
+            def validate(matrix_cls, value, *args, **kwargs):
+                """additional validator for value"""
+                try:
+                    value = _unit_object_parser(value, [u.unyt_array, _Flow360BaseUnit.factory])
+                    value = _is_unit_validator(value)
+
+                    is_nested_collection = _check_if_input_is_nested_collection(
+                        value=value, nest_level=2
+                    )
+                    if not is_nested_collection:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a 2-dimensional collection of values."
+                        )
+
+                    if shape[0] and len(value) != shape[0]:
+                        raise TypeError(
+                            f"arg '{value}' needs to be a 2-dimensional collection of values "
+                            + f"with the 1st dimension as {shape[0]}."
+                        )
+
+                    if shape[1] and any(
+                        len(item) != shape[1]
+                        for item in (
+                            value if not isinstance(value, _Flow360BaseUnit) else value.val
+                        )
+                    ):
+                        raise TypeError(
+                            f"arg '{value}' needs to be a 2-dimensional collection of values "
+                            + f"with the 2nd dimension as {shape[1]}."
+                        )
+
+                    if matrix_cls.type.has_defaults:
+                        value = _unit_inference_validator(
+                            value, matrix_cls.type.dim_name, is_matrix=True
+                        )
+                    value = _unit_array_validator(
+                        value, matrix_cls.type.dim, matrix_cls.type.expect_delta_unit
+                    )
+
+                    value = _has_dimensions_validator(
+                        value,
+                        matrix_cls.type.dim,
+                        matrix_cls.type.expect_delta_unit,
+                    )
+
+                    return value
+                except TypeError as err:
+                    details = InitErrorDetails(type="value_error", ctx={"error": err})
+                    raise pd.ValidationError.from_exception_data("validation error", [details])
+
+            def __get_pydantic_core_schema__(matrix_cls, *args, **kwargs) -> pd.CoreSchema:
+                return core_schema.no_info_plain_validator_function(
+                    lambda *val_args: validate(matrix_cls, *val_args)
+                )
+
+            cls_obj = type("_MatrixType", (), {})
+            cls_obj.type = dim_type
             cls_obj.__get_pydantic_core_schema__ = lambda *args: __get_pydantic_core_schema__(
                 cls_obj, *args
             )
@@ -578,6 +729,13 @@ class _DimensionedType(metaclass=ABCMeta):
             self, allow_zero_component=False, allow_negative_value=False
         )
 
+    @classproperty
+    def Pair(self):
+        """
+        Array value which accepts length 2.
+        """
+        return self._VectorType.get_class_object(self, length=2)
+
     # pylint: disable=invalid-name
     @classproperty
     def Direction(self):
@@ -603,6 +761,20 @@ class _DimensionedType(metaclass=ABCMeta):
         return self._VectorType.get_class_object(
             self, allow_zero_norm=False, allow_zero_component=False
         )
+
+    @classproperty
+    def CoordinateGroupTranspose(self):
+        """
+        CoordinateGroup value which stores a group of 3D coordinates
+        """
+        return self._MatrixType.get_class_object(self, shape=(3, None))
+
+    @classproperty
+    def CoordinateGroup(self):
+        """
+        CoordinateGroup value which stores a group of 3D coordinates
+        """
+        return self._MatrixType.get_class_object(self, shape=(None, 3))
 
 
 # pylint: disable=too-few-public-methods
@@ -756,6 +928,18 @@ class _ViscosityType(_DimensionedType):
 ViscosityType = Annotated[_ViscosityType, PlainSerializer(_dimensioned_type_serializer)]
 
 
+class _KinematicViscosityType(_DimensionedType):
+    """:class: KinematicViscosityType"""
+
+    dim = udim.kinematic_viscosity
+    dim_name = "kinematic_viscosity"
+
+
+KinematicViscosityType = Annotated[
+    _KinematicViscosityType, PlainSerializer(_dimensioned_type_serializer)
+]
+
+
 class _PowerType(_DimensionedType):
     """:class: PowerType"""
 
@@ -893,6 +1077,7 @@ DimensionedTypes = Union[
     PressureType,
     DensityType,
     ViscosityType,
+    KinematicViscosityType,
     PowerType,
     MomentType,
     AngularVelocityType,
@@ -1189,6 +1374,13 @@ class Flow360ViscosityUnit(_Flow360BaseUnit):
     unit_name = "flow360_viscosity_unit"
 
 
+class Flow360KinematicViscosityUnit(_Flow360BaseUnit):
+    """:class: Flow360KinematicViscosityUnit"""
+
+    dimension_type = KinematicViscosityType
+    unit_name = "flow360_kinematic_viscosity_unit"
+
+
 class Flow360PowerUnit(_Flow360BaseUnit):
     """:class: Flow360PowerUnit"""
 
@@ -1321,6 +1513,7 @@ _dim_names = [
     "pressure",
     "density",
     "viscosity",
+    "kinematic_viscosity",
     "power",
     "moment",
     "angular_velocity",
@@ -1353,6 +1546,7 @@ class UnitSystem(pd.BaseModel):
     pressure: PressureType = pd.Field()
     density: DensityType = pd.Field()
     viscosity: ViscosityType = pd.Field()
+    kinematic_viscosity: KinematicViscosityType = pd.Field()
     power: PowerType = pd.Field()
     moment: MomentType = pd.Field()
     angular_velocity: AngularVelocityType = pd.Field()
@@ -1438,8 +1632,8 @@ class UnitSystem(pd.BaseModel):
         >>> unit_system.defaults()
         {'mass': 'kg', 'length': 'm', 'time': 's', 'temperature': 'K', 'velocity': 'm/s',
         'area': 'm**2', 'force': 'N', 'pressure': 'Pa', 'density': 'kg/m**3',
-        'viscosity': 'Pa*s', 'power': 'W', 'angular_velocity': 'rad/s', 'heat_flux': 'kg/s**3',
-        'specific_heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
+        'viscosity': 'Pa*s', kinematic_viscosity': 'm**2/s', 'power': 'W', 'angular_velocity': 'rad/s',
+        'heat_flux': 'kg/s**3', 'specific_heat_capacity': 'm**2/(s**2*K)', 'thermal_conductivity': 'kg*m/(s**3*K)',
         'inverse_area': '1/m**2', 'inverse_length': '1/m', 'heat_source': 'kg/(m*s**3)'}
         """
 
@@ -1450,7 +1644,16 @@ class UnitSystem(pd.BaseModel):
 
     def __getitem__(self, item):
         """to support [] access"""
-        return getattr(self, item)
+        try:
+            return getattr(self, item)
+        except TypeError:
+            # Allowing usage like [(mass)/(time)]
+            for attr_name, attr in vars(self).items():
+                if not isinstance(attr, unyt_quantity):
+                    continue
+                if attr.units.dimensions == item:
+                    return getattr(self, attr_name)
+        raise AttributeError(f"'{item}' is not a valid attribute of {self.__class__.__name__}. ")
 
     def system_repr(self):
         """(mass, length, time, temperature) string representation of the system"""
@@ -1488,6 +1691,7 @@ flow360_force_unit = Flow360ForceUnit()
 flow360_pressure_unit = Flow360PressureUnit()
 flow360_density_unit = Flow360DensityUnit()
 flow360_viscosity_unit = Flow360ViscosityUnit()
+flow360_kinematic_viscosity_unit = Flow360KinematicViscosityUnit()
 flow360_power_unit = Flow360PowerUnit()
 flow360_moment_unit = Flow360MomentUnit()
 flow360_angular_velocity_unit = Flow360AngularVelocityUnit()
@@ -1514,6 +1718,7 @@ dimensions = [
     flow360_pressure_unit,
     flow360_density_unit,
     flow360_viscosity_unit,
+    flow360_kinematic_viscosity_unit,
     flow360_power_unit,
     flow360_moment_unit,
     flow360_angular_velocity_unit,
@@ -1560,6 +1765,9 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     base_viscosity: float = pd.Field(
         np.inf, json_schema_extra={"target_dimension": Flow360ViscosityUnit}
     )
+    base_kinematic_viscosity: float = pd.Field(
+        np.inf, json_schema_extra={"target_dimension": Flow360KinematicViscosityUnit}
+    )
     base_power: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360PowerUnit})
     base_moment: float = pd.Field(np.inf, json_schema_extra={"target_dimension": Flow360MomentUnit})
     base_angular_velocity: float = pd.Field(
@@ -1604,7 +1812,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
     def __init__(self):
         registry = u.UnitRegistry()
 
-        for field in self.model_fields.values():
+        for field in self.__class__.model_fields.values():
             if field.json_schema_extra is not None:
                 target_dimension = field.json_schema_extra.get("target_dimension", None)
                 if target_dimension is not None:
@@ -1630,6 +1838,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
         conversion_system["density"] = "flow360_density_unit"
         conversion_system["pressure"] = "flow360_pressure_unit"
         conversion_system["viscosity"] = "flow360_viscosity_unit"
+        conversion_system["kinematic_viscosity"] = "flow360_kinematic_viscosity_unit"
         conversion_system["power"] = "flow360_power_unit"
         conversion_system["moment"] = "flow360_moment_unit"
         conversion_system["angular_velocity"] = "flow360_angular_velocity_unit"
@@ -1649,6 +1858,7 @@ class Flow360ConversionUnitSystem(pd.BaseModel):
 
     # pylint: disable=no-self-argument
     @pd.field_validator("*")
+    @classmethod
     def assign_conversion_rate(cls, value, info: pd.ValidationInfo):
         """
         Pydantic validator for assigning conversion rates to a specific unit in the registry.
@@ -1678,6 +1888,7 @@ class _PredefinedUnitSystem(UnitSystem):
     pressure: PressureType = pd.Field(exclude=True)
     density: DensityType = pd.Field(exclude=True)
     viscosity: ViscosityType = pd.Field(exclude=True)
+    kinematic_viscosity: KinematicViscosityType = pd.Field(exclude=True)
     power: PowerType = pd.Field(exclude=True)
     moment: MomentType = pd.Field(exclude=True)
     angular_velocity: AngularVelocityType = pd.Field(exclude=True)

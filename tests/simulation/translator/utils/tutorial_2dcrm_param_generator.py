@@ -7,7 +7,7 @@ from flow360.component.simulation.models.surface_models import (
     Wall,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
-    operating_condition_from_mach_reynolds,
+    AerospaceCondition,
 )
 from flow360.component.simulation.primitives import ReferenceGeometry, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -24,9 +24,9 @@ def get_2dcrm_tutorial_param():
             reference_geometry=ReferenceGeometry(
                 moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
             ),
-            operating_condition=operating_condition_from_mach_reynolds(
+            operating_condition=AerospaceCondition.from_mach_reynolds(
                 mach=0.2,
-                reynolds=5e6,
+                reynolds_mesh_unit=5e6,
                 temperature=272.1 * u.K,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
@@ -52,9 +52,9 @@ def get_2dcrm_tutorial_param_deg_c():
             reference_geometry=ReferenceGeometry(
                 moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
             ),
-            operating_condition=operating_condition_from_mach_reynolds(
+            operating_condition=AerospaceCondition.from_mach_reynolds(
                 mach=0.2,
-                reynolds=5e6,
+                reynolds_mesh_unit=5e6,
                 temperature=-1.05 * u.degC,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,
@@ -80,9 +80,9 @@ def get_2dcrm_tutorial_param_deg_f():
             reference_geometry=ReferenceGeometry(
                 moment_center=[0.25, 0.005, 0], moment_length=[1, 1, 1], area=0.01
             ),
-            operating_condition=operating_condition_from_mach_reynolds(
+            operating_condition=AerospaceCondition.from_mach_reynolds(
                 mach=0.2,
-                reynolds=5e6,
+                reynolds_mesh_unit=5e6,
                 temperature=30.11 * u.degF,
                 alpha=16 * u.deg,
                 beta=0 * u.deg,

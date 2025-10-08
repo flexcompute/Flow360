@@ -55,7 +55,7 @@ test_data3 = dict(
 
 def _test_with_given_context_and_data(context, data: dict, expected_errors):
     try:
-        with validation_context.ValidationLevelContext(context):
+        with validation_context.ValidationContext(context):
             BaseModel(**data)
     except pd.ValidationError as err:
         errors = err.errors()
@@ -134,7 +134,7 @@ def test_with_sm_and_vm_context_validate():
     ]
 
     try:
-        with validation_context.ValidationLevelContext(
+        with validation_context.ValidationContext(
             [validation_context.SURFACE_MESH, validation_context.VOLUME_MESH]
         ):
             BaseModel(**test_data1)
@@ -160,7 +160,7 @@ def test_with_sm_and_vm_and_case_context_validate():
     ]
 
     try:
-        with validation_context.ValidationLevelContext(
+        with validation_context.ValidationContext(
             [
                 validation_context.SURFACE_MESH,
                 validation_context.VOLUME_MESH,
@@ -181,16 +181,16 @@ def test_with_sm_and_vm_and_case_context_validate():
 def test_correct_context_validate():
 
     BaseModel(**test_data2)
-    with validation_context.ValidationLevelContext(validation_context.SURFACE_MESH):
+    with validation_context.ValidationContext(validation_context.SURFACE_MESH):
         BaseModel(**test_data2)
 
-    with validation_context.ValidationLevelContext(validation_context.VOLUME_MESH):
+    with validation_context.ValidationContext(validation_context.VOLUME_MESH):
         BaseModel(**test_data2)
 
-    with validation_context.ValidationLevelContext(validation_context.CASE):
+    with validation_context.ValidationContext(validation_context.CASE):
         BaseModel(**test_data2)
 
-    with validation_context.ValidationLevelContext(validation_context.ALL):
+    with validation_context.ValidationContext(validation_context.ALL):
         BaseModel(**test_data2)
 
 
@@ -221,7 +221,7 @@ def test_without_context_validate_not_required_2():
 
 def test_with_context_validate_required():
     data = dict(a="f", b=1, c=None, d=1.2)
-    with validation_context.ValidationLevelContext(validation_context.SURFACE_MESH):
+    with validation_context.ValidationContext(validation_context.SURFACE_MESH):
         Model(**data)
 
     # Become invalid when validating against VOLUME_MESH
@@ -229,7 +229,7 @@ def test_with_context_validate_required():
         {"loc": ("c",), "type": "missing", "ctx": {"relevant_for": ["VolumeMesh"]}},
     ]
     try:
-        with validation_context.ValidationLevelContext(validation_context.VOLUME_MESH):
+        with validation_context.ValidationContext(validation_context.VOLUME_MESH):
             Model(**data)
     except pd.ValidationError as err:
         errors = err.errors()

@@ -87,12 +87,19 @@
         "animationFrequencyOffset": 0,
         "animationFrequencyTimeAverage": -1,
         "animationFrequencyTimeAverageOffset": 0,
-        "computeTimeAverages": false,
         "outputFields": [
             "primitiveVars"
         ],
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
     },
-    "userDefinedFields":[]
+    "userDefinedFields":[],
+    "usingLiquidAsMaterial": false,
+    "outputRescale": {
+        "velocityScale": 1.0
+    },
+    "runControl": {
+        "shouldCheckStopCriterion": false,
+        "externalProcessMonitorOutput": false
+    }
 }

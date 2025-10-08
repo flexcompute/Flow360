@@ -18,6 +18,8 @@ from flow360.cloud.s3_utils import (
 )
 from flow360.plugins.report import report_doc
 
+here = os.path.dirname(os.path.abspath(__file__))
+
 
 @pytest.fixture
 def mock_id():
@@ -110,8 +112,8 @@ def s3_download_override(monkeypatch):
         log_error=True,
         **kwargs,
     ):
-        full_remote_path = os.path.join("data", resource_id, remote_file_name)
-        print(f"DEBUG: looking for {remote_file_name=}")
+        full_remote_path = os.path.join(here, "data", resource_id, remote_file_name)
+        print(f"DEBUG: looking for {remote_file_name=} at {full_remote_path=}")
         if not os.path.exists(full_remote_path):
             raise CloudFileNotFoundError(
                 error_response={"Error": {"Message": f"file not found: {remote_file_name}"}},
@@ -128,6 +130,8 @@ def s3_download_override(monkeypatch):
             print(f"MOCK_DOWNLOAD: Saved to {to_file}")
 
     monkeypatch.setattr(S3TransferType.CASE, "download_file", s3_mock_download)
+    monkeypatch.setattr(S3TransferType.VOLUME_MESH, "download_file", s3_mock_download)
+    monkeypatch.setattr(S3TransferType.SURFACE_MESH, "download_file", s3_mock_download)
     monkeypatch.setattr(S3TransferType.GEOMETRY, "download_file", s3_mock_download)
 
 

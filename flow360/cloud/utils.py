@@ -1,5 +1,4 @@
-"""utils for cloud operations
-"""
+"""utils for cloud operations"""
 
 from enum import Enum
 

@@ -4,7 +4,14 @@ Environment Setup
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+import os
+from typing import Optional
+
+import toml
+from pydantic import BaseModel, ConfigDict
+
+from .file_path import flow360_dir
+from .log import log
 
 
 class EnvironmentConfig(BaseModel):
@@ -16,12 +23,14 @@ class EnvironmentConfig(BaseModel):
     domain: str
     web_api_endpoint: str
     web_url: str
-    aws_region: str
     apikey_profile: str
-    portal_web_api_endpoint: str = None
+    portal_web_api_endpoint: Optional[str] = None
+    s3_endpoint_url: Optional[str] = None
+
+    model_config = ConfigDict(extra="ignore")
 
     @classmethod
-    def from_domain(cls, name, domain, aws_region, apikey_profile="default") -> EnvironmentConfig:
+    def from_domain(cls, name, domain, apikey_profile="default", **kwargs) -> EnvironmentConfig:
         """Create EnvironmentConfig using domain and populating to web_api_endpoint, web_url and portal_web_api_endpoint
 
         Parameters
@@ -30,8 +39,6 @@ class EnvironmentConfig(BaseModel):
             name, for example DEV
         domain : str
             domain, for example dev-simulation.cloud
-        aws_region : str
-            aws region
         apikey_profile : str, optional
             profile to be used from flow360 config for apikey, by default 'default'
 
@@ -40,13 +47,15 @@ class EnvironmentConfig(BaseModel):
         EnvironmentConfig
             completed EnvironmentConfig
         """
+        if "aws_region" in kwargs:
+            log.warning("`aws_region` is no longer a required argument. Input will be ignored.")
+
         env = cls(
             name=name,
             domain=domain,
             web_api_endpoint=f"https://flow360-api.{domain}",
             web_url=f"https://flow360.{domain}",
             portal_web_api_endpoint=f"https://portal-api.{domain}",
-            aws_region=aws_region,
             apikey_profile=apikey_profile,
         )
         return env
@@ -82,15 +91,60 @@ class EnvironmentConfig(BaseModel):
         """
         return "/".join([self.web_url, path])
 
+    @classmethod
+    def from_config(cls, env_config_name: str):
+        """
+        Load specified environment configuration from config.toml.
+        """
+        config_file = os.path.join(flow360_dir, "config.toml")
+        if os.path.exists(config_file):
+            with open(config_file, encoding="utf-8", mode="r") as file_handler:
+                config = toml.loads(file_handler.read())
+                if "env_config" not in config:
+                    raise ValueError("Cannot find any environment configuration in config file.")
 
-dev = EnvironmentConfig.from_domain(
-    name="dev", domain="dev-simulation.cloud", aws_region="us-east-1", apikey_profile="dev"
-)
-uat = EnvironmentConfig.from_domain(
-    name="uat", domain="uat-simulation.cloud", aws_region="us-west-2", apikey_profile="uat"
-)
+                if env_config_name in config["env_config"]:
+                    env_config = config["env_config"][env_config_name]
+                    log.info(
+                        f"Loaded environment configuration from config.toml for {env_config_name}."
+                    )
+                    return cls.model_validate(env_config)
+
+                raise ValueError(
+                    f"Environment configuration for `{env_config_name}` not found."
+                    f" Available: {config['env_config'].keys()}."
+                )
+        else:
+            raise FileNotFoundError("Failed to find the config file.")
+
+    def save_config(self):
+        """
+        Save the configuration to the config file.
+        """
+        current_env_config = self.model_dump(mode="json")
+        config_file = os.path.join(flow360_dir, "config.toml")
+        if os.path.exists(config_file):
+            with open(config_file, encoding="utf-8", mode="r") as file_handler:
+                existing_config = toml.loads(file_handler.read())
+                if "env_config" not in existing_config:
+                    existing_config["env_config"] = {}
+                existing_config["env_config"][self.name] = current_env_config
+            with open(config_file, encoding="utf-8", mode="w") as file_handler:
+                file_handler.write(toml.dumps(existing_config))
+        else:
+            # Create the config file if it doesn't exist.
+            # This will not be triggered most likely.
+            log.info("Creating config.toml since it does not exist.")
+            with open(config_file, encoding="utf-8", mode="w") as file_handler:
+                file_handler.write(toml.dumps({"env_config": {self.name: [current_env_config]}}))
+        log.info("Saved environment configuration to config.toml.")
+
+
+dev = EnvironmentConfig.from_domain(name="dev", domain="dev-simulation.cloud", apikey_profile="dev")
+uat = EnvironmentConfig.from_domain(name="uat", domain="uat-simulation.cloud", apikey_profile="uat")
 prod = EnvironmentConfig.from_domain(
-    name="prod", domain="simulation.cloud", aws_region="us-gov-west-1"
+    name="prod",
+    domain="simulation.cloud",
 )
 
 preprod = EnvironmentConfig(
@@ -99,7 +153,6 @@ preprod = EnvironmentConfig(
     web_api_endpoint="https://preprod-flow360-api.simulation.cloud",
     web_url="https://preprod-flow360.simulation.cloud",
     portal_web_api_endpoint="https://preprod-portal-api.simulation.cloud",
-    aws_region="us-gov-west-1",
     apikey_profile="default",
 )
 
@@ -160,6 +213,22 @@ class Environment:
         :return:
         """
         return preprod
+
+    def load(self, /, env_config_name: str):
+        """
+        Load the environment configuration from config.toml.
+        """
+        if not isinstance(env_config_name, str):
+            raise ValueError(
+                f"The name of environment setting must be a string. Instead got {env_config_name}."
+            )
+
+        predefined_envs = (dev, uat, prod, preprod)
+        for env in predefined_envs:
+            if env_config_name == env.name:
+                return env
+
+        return EnvironmentConfig.from_config(env_config_name)
 
     def set_current(self, config: EnvironmentConfig):
         """

@@ -87,21 +87,58 @@ def test_unique_list():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Input should be 'Cp', 'Cpt', 'gradW', 'kOmega', 'Mach', 'mut', 'mutRatio', 'nuHat', 'primitiveVars', 'qcriterion', 'residualNavierStokes', 'residualTransition', 'residualTurbulence', 's', 'solutionNavierStokes', 'solutionTransition', 'solutionTurbulence', 'T', 'vorticity', 'wallDistance', 'numericalDissipationFactor', 'residualHeatSolver', 'VelocityRelative' or 'lowMachPreconditionerSensor'"
+            "Input should be "
+            "'Cp', "
+            "'Cpt', "
+            "'gradW', "
+            "'kOmega', "
+            "'Mach', "
+            "'mut', "
+            "'mutRatio', "
+            "'nuHat', "
+            "'primitiveVars', "
+            "'qcriterion', "
+            "'residualNavierStokes', "
+            "'residualTransition', "
+            "'residualTurbulence', "
+            "'s', "
+            "'solutionNavierStokes', "
+            "'solutionTransition', "
+            "'solutionTurbulence', "
+            "'T', "
+            "'velocity', "
+            "'velocity_x', "
+            "'velocity_y', "
+            "'velocity_z', "
+            "'velocity_magnitude', "
+            "'pressure', "
+            "'vorticity', "
+            "'vorticityMagnitude', "
+            "'vorticity_x', "
+            "'vorticity_y', "
+            "'vorticity_z', "
+            "'wallDistance', "
+            "'numericalDissipationFactor', "
+            "'residualHeatSolver', "
+            "'VelocityRelative', "
+            "'lowMachPreconditionerSensor', "
+            "'velocity_m_per_s', "
+            "'velocity_x_m_per_s', "
+            "'velocity_y_m_per_s', "
+            "'velocity_z_m_per_s', "
+            "'velocity_magnitude_m_per_s' "
+            "or 'pressure_pa'"
         ),
     ):
         TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["wallDistance", 1234])
 
-        # 5: Test append triggering validation
-        temp_iso = TempIsosurfaceOutput(
-            isosurfaces=[my_iso_1], output_fields=["Cp", "wallDistance"]
-        )
+    # 5: Test append triggering validation
+    temp_iso = TempIsosurfaceOutput(isosurfaces=[my_iso_1], output_fields=["Cp", "wallDistance"])
 
-        assert len(output.isosurfaces.items) == 1
+    assert len(temp_iso.isosurfaces.items) == 1
 
-        temp_iso.isosurfaces.append(my_iso_1)
-
-        assert len(output.isosurfaces.items) == 1
+    temp_iso.isosurfaces.append(my_iso_1)
+    assert len(temp_iso.isosurfaces.items) == 1
 
 
 def test_unique_list_with_surface_pair():

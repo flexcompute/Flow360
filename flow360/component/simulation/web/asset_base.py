@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 import os
 import time
-from abc import ABCMeta
-from typing import List, Union
+from abc import ABCMeta, abstractmethod
+from typing import List, Optional, Union
 
-from flow360.cloud.flow360_requests import LengthUnitType
+from pydantic import ValidationError
+from requests.exceptions import HTTPError
+
+from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import BaseInterface, ProjectInterface
 from flow360.component.resource_base import (
@@ -16,17 +19,26 @@ from flow360.component.resource_base import (
     Flow360Resource,
     ResourceDraft,
 )
+from flow360.component.simulation import services
 from flow360.component.simulation.entity_info import (
     EntityInfoModel,
     parse_entity_info_model,
 )
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
+    formatting_validation_errors,
     remove_properties_by_name,
     validate_type,
 )
+from flow360.exceptions import (
+    Flow360RuntimeError,
+    Flow360ValidationError,
+    Flow360WebError,
+)
 from flow360.log import log
+from flow360.version import __version__
 
 
 class AssetBase(metaclass=ABCMeta):
@@ -46,6 +58,8 @@ class AssetBase(metaclass=ABCMeta):
         # pylint: disable=not-callable
         self.id = id
         self.internal_registry = None
+        # The default_settings will only be used when the current instance is project's root
+        self.default_settings = {}
         if id is None:
             return
         self._webapi = self.__class__._web_api_class(
@@ -62,11 +76,31 @@ class AssetBase(metaclass=ABCMeta):
         return self.info.project_id
 
     @property
+    def tags(self) -> List[str]:
+        """
+        get asset tags
+        """
+        return self.info.tags
+
+    @property
     def solver_version(self):
         """
         get solver version
         """
         return self.info.solver_version
+
+    def rename(self, new_name: str):
+        """
+        Rename the current asset.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the asset.
+        """
+        RestApi(self._interface_class.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
 
     @classmethod
     # pylint: disable=protected-access
@@ -96,8 +130,12 @@ class AssetBase(metaclass=ABCMeta):
     def _from_supplied_entity_info(
         cls,
         simulation_dict: dict,
-        asset_obj,
+        asset_obj: AssetBase,
     ):
+        # pylint: disable=protected-access
+        simulation_dict, forward_compatibility_mode = SimulationParams._update_param_dict(
+            simulation_dict
+        )
         if "private_attribute_asset_cache" not in simulation_dict:
             raise KeyError(
                 "[Internal] Could not find private_attribute_asset_cache in the asset's simulation settings."
@@ -108,14 +146,24 @@ class AssetBase(metaclass=ABCMeta):
             raise KeyError(
                 "[Internal] Could not find project_entity_info in the asset's simulation settings."
             )
-        entity_info = asset_cache["project_entity_info"]
-        # Note: There is no need to exclude _id here since the birth setting of root item will never have _id.
-        # Note: Only the draft's and non-root item simulation.json will have it.
-        # Note: But we still add this because it is not clear currently if Asset is alywas the root item.
-        # Note: This should be addressed when we design the new project client interface.
-        entity_info = remove_properties_by_name(entity_info, "_id")
+        entity_info_dict = asset_cache["project_entity_info"]
+        entity_info_dict = remove_properties_by_name(entity_info_dict, "_id")
         # pylint: disable=protected-access
-        asset_obj._entity_info = parse_entity_info_model(entity_info)
+        try:
+            asset_obj._entity_info = parse_entity_info_model(entity_info_dict)
+        except ValidationError as e:
+            errors = e.errors()
+            log.error(formatting_validation_errors(errors=errors))
+            cloud_version_str = SimulationParams._get_version_from_dict(model_dict=simulation_dict)
+            if forward_compatibility_mode:
+                raise Flow360RuntimeError(
+                    "The cloud `SimulationParam` (version: "
+                    + cloud_version_str
+                    + ") is too new for your local Python client (version: "
+                    + __version__
+                    + ") and validation error occurred. Please try updating your local Python client."
+                ) from None
+            raise Flow360RuntimeError("Parsing cloud resource's entity info failed.") from None
         return asset_obj
 
     @classmethod
@@ -130,11 +178,18 @@ class AssetBase(metaclass=ABCMeta):
             asset.wait()
 
         # pylint: disable=protected-access
-        simulation_json = asset._webapi.get(
-            method="simulation/file", params={"type": "simulation"}
-        )["simulationJson"]
+        try:
+            simulation_json = asset._webapi.get(
+                method="simulation/file", params={"type": "simulation"}
+            )["simulationJson"]
+        except HTTPError:
+            # pylint:disable = raise-missing-from
+            raise Flow360WebError(
+                f"Failed to get simulation json for {asset._cloud_resource_type_name}."
+            )
 
-        return SimulationParams._update_input(json.loads(simulation_json))
+        updated_params_as_dict, _ = SimulationParams._update_param_dict(json.loads(simulation_json))
+        return updated_params_as_dict
 
     @property
     def info(self) -> AssetMetaBaseModelV2:
@@ -145,6 +200,26 @@ class AssetBase(metaclass=ABCMeta):
     def entity_info(self):
         """Return the entity info associated with the asset (copy to prevent unintentional overwrites)"""
         return self._entity_info_class.model_validate(self._entity_info.model_dump())
+
+    @property
+    def params(self):
+        """Return the simulation parameters associated with the asset"""
+        params_as_dict = self._get_simulation_json(self)
+
+        # pylint: disable=duplicate-code
+        param, errors, _ = services.validate_model(
+            params_as_dict=params_as_dict,
+            validated_by=services.ValidationCalledBy.LOCAL,
+            root_item_type=None,
+            validation_level=None,
+        )
+
+        if errors is not None:
+            raise Flow360ValidationError(
+                f"Error found in simulation params. The param may be created by an incompatible version. {errors}",
+            )
+
+        return param
 
     @classmethod
     def _interface(cls):
@@ -164,17 +239,37 @@ class AssetBase(metaclass=ABCMeta):
         """
         return self._webapi.get_download_file_list()
 
+    @abstractmethod
+    def get_dynamic_default_settings(self, simulation_dict):
+        """Get the default settings of the asset from the non-entity part of root asset's simulation dict"""
+
     @classmethod
-    def from_cloud(cls, id: str, **_):
+    def from_cloud(cls, id: str, **kwargs):
         """
         Create asset with the given ID.
-
-        if root_item_entity_info_type is not None then the current asset
-        is not the project root asset and should store the given entity info type instead
         """
         asset_obj = cls(id)
-        simulation_dict = cls._get_simulation_json(asset_obj)
-        asset_obj = cls._from_supplied_entity_info(simulation_dict, asset_obj)
+        entity_info_supplier_dict = None
+        entity_info_param: Optional[SimulationParams] = kwargs.pop("entity_info_param", None)
+        if entity_info_param:
+            # Use user requested json.
+            entity_info_supplier_dict = entity_info_param.model_dump(mode="json")
+        # Get the json from bucket, same as before.
+        asset_simulation_dict = cls._get_simulation_json(asset_obj)
+
+        asset_obj = cls._from_supplied_entity_info(
+            entity_info_supplier_dict if entity_info_supplier_dict else asset_simulation_dict,
+            asset_obj,
+        )
+        # The default_settings will only make a difference when the asset is project root asset,
+        # but we try to get it regardless to save the logic differentiating whether it is root or not.
+        asset_obj.get_dynamic_default_settings(asset_simulation_dict)
+
+        # Attempting constructing entity registry.
+        # This ensure that once from_cloud() returns, the entity_registry will be available.
+        asset_obj.internal_registry = asset_obj._entity_info.get_registry(
+            asset_obj.internal_registry
+        )
         return asset_obj
 
     @classmethod
@@ -186,12 +281,14 @@ class AssetBase(metaclass=ABCMeta):
         solver_version: str = None,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        folder: Optional[Folder] = None,
     ):
         """
         Create asset draft from files
         :param file_names:
         :param project_name:
         :param tags:
+        :param folder: Folder object where the asset will be created (optional; defaults to root if unspecified)
         :return:
         """
         # pylint: disable=not-callable
@@ -201,6 +298,7 @@ class AssetBase(metaclass=ABCMeta):
             solver_version=solver_version,
             tags=tags,
             length_unit=length_unit,
+            folder=folder,
         )
 
     @classmethod
@@ -220,6 +318,8 @@ class AssetBase(metaclass=ABCMeta):
             params_dict = json.load(f)
 
         asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+        asset_obj.get_dynamic_default_settings(params_dict)
+
         # pylint: disable=protected-access
         if not hasattr(asset_obj, "_webapi"):
             # Handle local test case execution which has no valid ID
@@ -230,12 +330,29 @@ class AssetBase(metaclass=ABCMeta):
         return asset_obj
 
     def wait(self, timeout_minutes=60):
-        """Wait until the Asset finishes processing, refresh periodically"""
+        """
+        Wait until the Resource finishes processing.
 
+        While waiting, an animated dot sequence is displayed using the current non-final status value.
+        The status is dynamically updated every few seconds with an increasing number of dots:
+        ⠇ running..............................
+        This implementation leverages Rich's `status()` method via our custom logger (log.status) to perform in-place
+        status updates. If the process does not finish within the specified timeout, a TimeoutError is raised.
+        """
+        max_dots = 30
+        update_every_seconds = 2
         start_time = time.time()
-        while self._webapi.status.is_final() is False:
-            if time.time() - start_time > timeout_minutes * 60:
-                raise TimeoutError(
-                    "Timeout: Process did not finish within the specified timeout period"
-                )
-            time.sleep(2)
+
+        with log.status() as status_logger:
+            while not self._webapi.status.is_final():
+
+                elapsed = time.time() - start_time
+                dot_count = int((elapsed // update_every_seconds) % max_dots)
+                status_logger.update(f"{self._webapi.status.value}{'.' * dot_count}")
+
+                if time.time() - start_time > timeout_minutes * 60:
+                    raise TimeoutError(
+                        "Timeout: Process did not finish within the specified timeout period"
+                    )
+
+                time.sleep(update_every_seconds)

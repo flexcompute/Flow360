@@ -1,0 +1,112 @@
+{
+    "items": [
+        {
+            "data": [
+                "volume_mesh/bounding_box/length",
+                "volume_mesh/bounding_box/height",
+                "volume_mesh/bounding_box/width",
+                "params/reference_geometry/moment_length",
+                "params/reference_geometry/area",
+                {
+                    "data": "surface_forces/totalCL",
+                    "title": "CL",
+                    "operations": [
+                        {
+                            "fraction": 0.1,
+                            "type_name": "Average"
+                        }
+                    ],
+                    "type_name": "DataItem"
+                },
+                {
+                    "data": "surface_forces/totalCD",
+                    "title": "CD",
+                    "operations": [
+                        {
+                            "fraction": 0.1,
+                            "type_name": "Average"
+                        }
+                    ],
+                    "type_name": "DataItem"
+                },
+                {
+                    "data": "surface_forces/totalCFy",
+                    "title": "CFy",
+                    "operations": [
+                        {
+                            "fraction": 0.1,
+                            "type_name": "Average"
+                        }
+                    ],
+                    "type_name": "DataItem"
+                },
+                {
+                    "data": "surface_forces/totalCMx",
+                    "title": "CMx",
+                    "operations": [
+                        {
+                            "fraction": 0.1,
+                            "type_name": "Average"
+                        }
+                    ],
+                    "type_name": "DataItem"
+                },
+                {
+                    "data": "surface_forces/totalCMy",
+                    "title": "CMy",
+                    "operations": [
+                        {
+                            "fraction": 0.1,
+                            "type_name": "Average"
+                        }
+                    ],
+                    "type_name": "DataItem"
+                },
+                {
+                    "data": "surface_forces/totalCMz",
+                    "title": "CMz",
+                    "operations": [
+                        {
+                            "fraction": 0.1,
+                            "type_name": "Average"
+                        }
+                    ],
+                    "type_name": "DataItem"
+                }
+            ],
+            "section_title": "result_summary",
+            "headers": [
+                "OAL",
+                "OAH",
+                "OAW",
+                "Reference Length",
+                "Reference Area",
+                "CL",
+                "CD",
+                "CFy",
+                "CMx",
+                "CMy",
+                "CMz"
+            ],
+            "type_name": "Table",
+            "formatter": [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ]
+        }
+    ],
+    "include_case_by_case": false,
+    "settings": {
+        "dpi": 300,
+        "dump_table_csv": true
+    }
+}

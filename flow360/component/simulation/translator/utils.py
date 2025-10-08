@@ -7,14 +7,20 @@ import json
 from collections import OrderedDict
 from typing import Union
 
+import numpy as np
+import unyt as u
+
+from flow360.component.simulation.framework.base_model import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
+    BOUNDARY_FULL_NAME_WHEN_NOT_FOUND,
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.utils import is_exact_instance
 
 
@@ -69,6 +75,7 @@ def preprocess_param(
 
     if param is not None:
         # pylint: disable=protected-access
+        param._private_set_length_unit(validated_mesh_unit)
         return param._preprocess(validated_mesh_unit, exclude=preprocess_exclude)
     raise ValueError(f"Invalid input <{input_params.__class__.__name__}> for translator. ")
 
@@ -113,12 +120,17 @@ def convert_tuples_to_lists(input_dict):
     return input_dict
 
 
-def remove_units_in_dict(input_dict):
+def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
     """Remove units from a dimensioned value."""
-    unit_keys = {"value", "units"}
+    if skip_keys is None:
+        skip_keys = []
+
+    def _is_unyt_or_unyt_like_obj(value):
+        return "value" in value.keys() and "units" in value.keys()
+
     if isinstance(input_dict, dict):
         new_dict = {}
-        if input_dict.keys() == unit_keys:
+        if _is_unyt_or_unyt_like_obj(input_dict):
             new_dict = input_dict["value"]
             if input_dict["units"].startswith("flow360_") is False:
                 raise ValueError(
@@ -126,17 +138,64 @@ def remove_units_in_dict(input_dict):
                 )
             return new_dict
         for key, value in input_dict.items():
-            if isinstance(value, dict) and value.keys() == unit_keys:
+            if key in skip_keys or key in [snake_to_camel(item) for item in skip_keys]:
+                new_dict[key] = value
+                continue
+            if isinstance(value, dict) and _is_unyt_or_unyt_like_obj(value):
                 if value["units"].startswith("flow360_") is False:
                     raise ValueError(
                         f"[Internal Error] Unit {value['units']} is not non-dimensionalized."
                     )
                 new_dict[key] = value["value"]
             else:
-                new_dict[key] = remove_units_in_dict(value)
+                new_dict[key] = remove_units_in_dict(value, skip_keys=skip_keys)
         return new_dict
     if isinstance(input_dict, list):
-        return [remove_units_in_dict(item) for item in input_dict]
+        return [remove_units_in_dict(item, skip_keys=skip_keys) for item in input_dict]
+    return input_dict
+
+
+def translate_value_or_expression_object(
+    obj: Union[Expression, u.unyt_quantity, u.unyt_array], input_params: SimulationParams
+):
+    """Translate for an ValueOrExpression object"""
+    if isinstance(obj, Expression):
+        # Only allowing client-time evaluable expressions
+        evaluated = obj.evaluate(raise_on_non_evaluable=True)
+        converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v.item()
+        return converted
+    # Non dimensionalized unyt objects
+    return obj.value.item()
+
+
+def inline_expressions_in_dict(input_dict, input_params):
+    """Inline all client-time evaluable expressions in the provided dict to their evaluated values"""
+    if isinstance(input_dict, dict):
+        new_dict = {}
+        if "type_name" in input_dict.keys() and input_dict["type_name"] == "Expression":
+            expression = Expression(expression=input_dict["expression"])
+            evaluated = expression.evaluate(raise_on_non_evaluable=False)
+            converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
+            new_dict = converted
+            return new_dict
+        for key, value in input_dict.items():
+            # For number-type fields the schema should match dimensioned unit fields
+            # so remove_units_in_dict should handle them correctly...
+            if isinstance(value, dict) and "expression" in value.keys():
+                expression = Expression(expression=value["expression"])
+                evaluated = expression.evaluate(raise_on_non_evaluable=False)
+                converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
+                if isinstance(converted, np.ndarray):
+                    if converted.ndim == 0:
+                        converted = float(converted)
+                    else:
+                        converted = converted.tolist()
+                new_dict[key] = converted
+            else:
+                new_dict[key] = inline_expressions_in_dict(value, input_params)
+        return new_dict
+    if isinstance(input_dict, list):
+        return [inline_expressions_in_dict(item, input_params) for item in input_dict]
     return input_dict
 
 
@@ -204,7 +263,7 @@ def _get_key_name(entity: EntityBase):
     return entity.name
 
 
-# pylint: disable=too-many-branches, too-many-arguments, too-many-locals
+# pylint: disable=too-many-branches, too-many-arguments, too-many-locals, too-many-statements
 def translate_setting_and_apply_to_all_entities(
     obj_list: list,
     class_type,
@@ -300,9 +359,9 @@ def translate_setting_and_apply_to_all_entities(
         if class_type and is_exact_instance(obj, class_type):
 
             list_of_entities = []
-            if "entities" in obj.model_fields:
+            if "entities" in obj.__class__.model_fields:
                 if obj.entities is None or (
-                    "stored_entities" in obj.entities.model_fields
+                    "stored_entities" in obj.entities.__class__.model_fields
                     and obj.entities.stored_entities is None
                 ):  # unique item list does not allow None "items" for now.
                     continue
@@ -316,7 +375,7 @@ def translate_setting_and_apply_to_all_entities(
                     list_of_entities = (
                         obj.entities.items if lump_list_of_entities is False else [obj.entities]
                     )
-            elif "entity_pairs" in obj.model_fields:
+            elif "entity_pairs" in obj.__class__.model_fields:
                 # Note: This is only used in Periodic BC and lump_list_of_entities is not relavant
                 if lump_list_of_entities:
                     raise NotImplementedError(
@@ -333,7 +392,10 @@ def translate_setting_and_apply_to_all_entities(
                 if not to_list:
                     # Generate a $name:{$value} dict
                     if custom_output_dict_entries:
-                        output.update(entity_injection_func(entity, **entity_injection_kwargs))
+                        setting = entity_injection_func(entity, **entity_injection_kwargs)
+                        if setting is None:
+                            continue
+                        output.update(setting)
                     else:
                         if use_instance_name_as_key is True and lump_list_of_entities is False:
                             raise NotImplementedError(
@@ -354,15 +416,21 @@ def translate_setting_and_apply_to_all_entities(
                                 )
                             ]
                         for key_name in key_names:
+                            if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                                # Skip missing boundary
+                                continue
                             if output.get(key_name) is None:
-                                output[key_name] = entity_injection_func(
-                                    entity, **entity_injection_kwargs
-                                )
+                                setting = entity_injection_func(entity, **entity_injection_kwargs)
+                                if setting is None:
+                                    continue
+                                output[key_name] = setting
                             update_dict_recursively(output[key_name], translated_setting)
                 else:
                     # Generate a list with $name being an item
-                    # Note: Surface/Boundary logic should be handeled in the entity_injection_func
+                    # Note: Surface/Boundary logic should be handled in the entity_injection_func
                     setting = entity_injection_func(entity, **entity_injection_kwargs)
+                    if setting is None:
+                        continue
                     setting.update(translated_setting)
                     output.append(setting)
     return output

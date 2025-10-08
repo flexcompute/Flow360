@@ -10,10 +10,10 @@ from enum import Enum
 from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
-from PrettyPrint import PrettyPrintTree
+import typing_extensions
 from pydantic import PositiveInt
 
-from flow360.cloud.flow360_requests import LengthUnitType
+from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
 from flow360.cloud.rest_api import RestApi
 from flow360.component.case import Case
 from flow360.component.geometry import Geometry
@@ -24,28 +24,25 @@ from flow360.component.interfaces import (
     VolumeMeshInterfaceV2,
 )
 from flow360.component.project_utils import (
-    GeometryFiles,
-    SurfaceMeshFile,
-    VolumeMeshFile,
-    replace_ghost_surfaces,
+    get_project_records,
+    set_up_params_for_uploading,
     show_projects_with_keyword_filter,
+    upload_imported_surfaces_to_draft,
+    validate_params_with_context,
 )
 from flow360.component.resource_base import Flow360Resource
-from flow360.component.simulation.entity_info import GeometryEntityInfo
-from flow360.component.simulation.outputs.output_entities import (
-    Point,
-    PointArray,
-    Slice,
-)
-from flow360.component.simulation.primitives import Box, Cylinder, Edge, Surface
+from flow360.component.simulation.folder import Folder
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
-from flow360.component.simulation.utils import model_attribute_unlock
 from flow360.component.simulation.web.asset_base import AssetBase
 from flow360.component.simulation.web.draft import Draft
 from flow360.component.surface_mesh_v2 import SurfaceMeshV2
 from flow360.component.utils import (
     AssetShortID,
+    GeometryFiles,
+    SurfaceMeshFile,
+    VolumeMeshFile,
+    formatting_validation_errors,
     get_short_asset_id,
     parse_datetime,
     wrapstring,
@@ -53,54 +50,10 @@ from flow360.component.utils import (
 from flow360.component.volume_mesh import VolumeMeshV2
 from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
 from flow360.log import log
+from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
 
 AssetOrResource = Union[type[AssetBase], type[Flow360Resource]]
-
-
-def _set_up_param_entity_info(entity_info, params: SimulationParams):
-    """
-    Setting up the entity info part of the params.
-    1. For non-persistent entities (AKA draft entities), add the ones used in params.
-    2. Add the face/edge tags either by looking at the params' value or deduct the tags according to what is used.
-    """
-
-    def _get_tag(entity_registry, entity_type: Union[type[Surface], type[Edge]]):
-        group_tag = None
-        if not entity_registry.find_by_type(entity_type):
-            # Did not use any entity of this type, so we add default grouping tag
-            return "edgeId" if entity_type == Edge else "faceId"
-        for entity in entity_registry.find_by_type(entity_type):
-            if entity.private_attribute_tag_key is None:
-                raise Flow360ValueError(
-                    f"`{entity_type.__name__}` without tagging information is found."
-                    f" Please make sure all `{entity_type.__name__}` come from the geometry and is not created ad-hoc."
-                )
-            if entity.private_attribute_tag_key == "__standalone__":
-                # Does not provide information on what grouping user selected.
-                continue
-            if group_tag is not None and group_tag != entity.private_attribute_tag_key:
-                raise Flow360ValueError(
-                    f"Multiple `{entity_type.__name__}` group tags detected in"
-                    " the simulation parameters which is not supported."
-                )
-            group_tag = entity.private_attribute_tag_key
-        return group_tag
-
-    entity_registry = params.used_entity_registry
-    # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, PointArray, Slice]:
-        draft_entities = entity_registry.find_by_type(draft_type)
-        for draft_entity in draft_entities:
-            if draft_entity not in entity_info.draft_entities:
-                entity_info.draft_entities.append(draft_entity)
-
-    if isinstance(entity_info, GeometryEntityInfo):
-        with model_attribute_unlock(entity_info, "face_group_tag"):
-            entity_info.face_group_tag = _get_tag(entity_registry, Surface)
-        with model_attribute_unlock(entity_info, "edge_group_tag"):
-            entity_info.edge_group_tag = _get_tag(entity_registry, Edge)
-    return entity_info
 
 
 class RootType(Enum):
@@ -134,6 +87,8 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
         The project ID.
     name : str
         The name of the project.
+    tags : List[str]
+        List of tags associated with the project.
     root_item_id : str
         ID of the root item in the project.
     root_item_type : RootType
@@ -143,6 +98,7 @@ class ProjectMeta(pd.BaseModel, extra="allow"):
     user_id: str = pd.Field(alias="userId")
     id: str = pd.Field()
     name: str = pd.Field()
+    tags: List[str] = pd.Field(default_factory=list)
     root_item_id: str = pd.Field(alias="rootItemId")
     root_item_type: RootType = pd.Field(alias="rootItemType")
 
@@ -403,6 +359,7 @@ class ProjectTree(pd.BaseModel):
         )
 
 
+# pylint: disable=too-many-public-methods
 class Project(pd.BaseModel):
     """
     Project class containing the interface for creating and running simulations.
@@ -448,6 +405,39 @@ class Project(pd.BaseModel):
             The project ID.
         """
         return self.metadata.id
+
+    @property
+    def tags(self) -> List[str]:
+        """
+        Returns the tags of the project.
+
+        Returns
+        -------
+        List[str]
+            List of the project's tags.
+        """
+        return self.metadata.tags
+
+    @property
+    def length_unit(self) -> LengthType.Positive:
+        """
+        Returns the length unit of the project.
+
+        Returns
+        -------
+        LengthType.Positive
+            The length unit.
+        """
+
+        defaults = self._root_simulation_json
+
+        cache_key = "private_attribute_asset_cache"
+        length_key = "project_length_unit"
+
+        if cache_key not in defaults or length_key not in defaults[cache_key]:
+            raise Flow360ValueError("[Internal] Simulation params do not contain length unit info.")
+
+        return LengthType.validate(defaults[cache_key][length_key])
 
     @property
     def geometry(self) -> Geometry:
@@ -499,9 +489,11 @@ class Project(pd.BaseModel):
         return SurfaceMeshV2.from_cloud(id=asset_id)
 
     @property
-    def surface_mesh(self):
+    def surface_mesh(self) -> SurfaceMeshV2:
         """
         Returns the last used surface mesh asset of the project.
+
+        If the project is initialized from surface mesh, the surface mesh asset is the root asset.
 
         Raises
         ------
@@ -513,6 +505,12 @@ class Project(pd.BaseModel):
         SurfaceMeshV2
             The surface mesh asset.
         """
+        if self.metadata.root_item_type is RootType.SURFACE_MESH:
+            return self._root_asset
+        log.warning(
+            f"Accessing surface mesh from a project initialized from {self.metadata.root_item_type.name}. "
+            "Please use the root asset for assigning entities to SimulationParams."
+        )
         return self.get_surface_mesh()
 
     def get_volume_mesh(self, asset_id: str = None) -> VolumeMeshV2:
@@ -542,7 +540,7 @@ class Project(pd.BaseModel):
         return VolumeMeshV2.from_cloud(id=asset_id)
 
     @property
-    def volume_mesh(self):
+    def volume_mesh(self) -> VolumeMeshV2:
         """
         Returns the last used volume mesh asset of the project.
 
@@ -556,6 +554,12 @@ class Project(pd.BaseModel):
         VolumeMeshV2
             The volume mesh asset.
         """
+        if self.metadata.root_item_type is RootType.VOLUME_MESH:
+            return self._root_asset
+        log.warning(
+            f"Accessing volume mesh from a project initialized from {self.metadata.root_item_type.name}. "
+            "Please use the root asset for assigning entities to SimulationParams."
+        )
         return self.get_volume_mesh()
 
     def get_case(self, asset_id: str = None) -> Case:
@@ -625,84 +629,389 @@ class Project(pd.BaseModel):
         # pylint: disable=protected-access
         return self.project_tree._get_asset_ids_by_type(asset_type="VolumeMesh")
 
-    def get_case_ids(self):
+    def get_case_ids(self, tags: Optional[List[str]] = None) -> List[str]:
         """
-        Returns the available IDs of cases in the project
+        Returns the available IDs of cases in the project, optionally filtered by tags.
+
+        Parameters
+        ----------
+        tags : List[str], optional
+            List of tags to filter cases by. If None or empty tags list, returns all case IDs.
 
         Returns
         -------
         Iterable[str]
-            An iterable of asset IDs.
+            An iterable of case IDs. If tags are provided, filters to return only
+            case IDs that have at least one matching tag.
         """
         # pylint: disable=protected-access
-        return self.project_tree._get_asset_ids_by_type(asset_type="Case")
+        all_case_ids = self.project_tree._get_asset_ids_by_type(asset_type="Case")
+
+        if not tags:
+            return all_case_ids
+
+        # Filter cases by tags
+        filtered_case_ids = []
+        for case_id in all_case_ids:
+            case = self.get_case(asset_id=case_id)
+            if set(tags) & set(case.info_v2.tags):
+                filtered_case_ids.append(case_id)
+
+        return filtered_case_ids
 
     @classmethod
-    def _detect_asset_type_from_file(
-        cls, files
-    ) -> Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, None]:
+    def get_project_ids(cls, tags: Optional[List[str]] = None) -> List[str]:
         """
-        Detects the asset type of a file based on its name or pattern.
+        Returns the available IDs of projects, optionally filtered by tags.
 
         Parameters
         ----------
-        file : str or list of str
-            The file name or path.
+        tags : List[str], optional
+            List of tags to filter projects by. If None, returns all project IDs.
 
         Returns
         -------
-        RootType
-            The detected file type.
-
-        Raises
-        ------
-        Flow360FileError
+        List[str]
+            A list of project IDs. If tags are provided, filters to return only
+            project IDs that have at least one matching tag.
         """
-        validated_objects = []
-        errors = [None, None, None]
-
-        for model in [GeometryFiles, SurfaceMeshFile, VolumeMeshFile]:
-            try:
-                validated_objects.append(model(value=files))
-            except pd.ValidationError as e:
-                validated_objects.append(None)
-                errors.append(e)
-
-        if validated_objects == [None, None, None]:
-            raise Flow360FileError(
-                f"The given file/s: {files} cannot be recognized as"
-                "geometry or surface mesh or volume mesh file."
-                f"\nGeometry file error: {errors[0]}"
-                f"\nSurfaceMesh file error: {errors[1]}"
-                f"\nVolumeMesh file error: {errors[2]}"
-            )
-
-        # Checking if the file is both a volume mesh and a surface mesh file:
-        if validated_objects[1] and validated_objects[2]:
-            raise Flow360FileError(
-                f"The given file: {files} may be recognized as both volume mesh and surface mesh input."
-                f" Please use `SurfaceMeshFile('{files}')` or `VolumeMeshFile('{files}')` to be specific."
-            )
-        if sum(item is not None for item in validated_objects) > 1:
-            raise Flow360FileError(
-                f"[Internal error]: More than one file type recognized ({files})."
-            )
-
-        return next((item for item in validated_objects if item is not None), None)
+        project_records, _ = get_project_records("", tags=tags)
+        return [record.project_id for record in project_records.records]
 
     # pylint: disable=too-many-arguments
     @classmethod
-    @pd.validate_call
-    def from_file(
+    def _create_project_from_files(
         cls,
         *,
-        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile, str, list[str]],
+        files: Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile],
         name: str = None,
         solver_version: str = __solver_version__,
         length_unit: LengthUnitType = "m",
         tags: List[str] = None,
+        run_async: bool = False,
+        folder: Optional[Folder] = None,
     ):
         """
+        Initializes a project from a file.
+
+        Parameters
+        ----------
+        files : Union[GeometryFiles, SurfaceMeshFile, VolumeMeshFile]
+            Path to the files.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create the project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
+
+        Returns
+        -------
+        Project
+            An instance of the project. Or Project ID when run_async is True.
+
+        Raises
+        ------
+        Flow360ValueError
+            If the project cannot be initialized from the file.
+        """
+        root_asset = None
+
+        # pylint:disable = protected-access
+        files._check_files_existence()
+
+        if isinstance(files, GeometryFiles):
+            draft = Geometry.from_file(
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
+            )
+        elif isinstance(files, SurfaceMeshFile):
+            draft = SurfaceMeshV2.from_file(
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
+            )
+        elif isinstance(files, VolumeMeshFile):
+            draft = VolumeMeshV2.from_file(
+                files.file_names, name, solver_version, length_unit, tags, folder=folder
+            )
+        else:
+            raise Flow360FileError(
+                "Cannot detect the intended project root with the given file(s)."
+            )
+
+        root_asset = draft.submit(run_async=run_async)
+        if run_async:
+            log.info(
+                f"The input file(s) has been successfully uploaded to project: {root_asset.project_id} "
+                "and is being processed on cloud. Only the project ID string is returned. "
+                "To retrieve this project later, use 'Project.from_cloud(project_id)'. "
+            )
+            return root_asset.project_id
+
+        if not root_asset:
+            raise Flow360ValueError(f"Couldn't initialize asset from {files.file_names}")
+        project_id = root_asset.project_id
+        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
+        info = project_api.get()
+        if not info:
+            raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
+        project = Project(
+            metadata=ProjectMeta(**info),
+            project_tree=ProjectTree(),
+            solver_version=root_asset.solver_version,
+        )
+        project._project_webapi = project_api
+        if isinstance(files, GeometryFiles):
+            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
+        elif isinstance(files, SurfaceMeshFile):
+            project._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
+        elif isinstance(files, VolumeMeshFile):
+            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
+        project._root_asset = root_asset
+        project._get_root_simulation_json()
+        project._get_tree_from_cloud()
+        return project
+
+    @classmethod
+    @pd.validate_call(
+        config={
+            "arbitrary_types_allowed": True
+        }  # Folder (v2: component/simulation/folder.py) does not have validate() defined
+    )
+    def from_geometry(
+        cls,
+        files: Union[str, list[str]],
+        /,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+        folder: Optional[Folder] = None,
+    ):
+        """
+        Initializes a project from local geometry files.
+
+        Parameters
+        ----------
+        files : Union[str, list[str]] (positional argument only)
+            Geometry file paths.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
+
+        Returns
+        -------
+        Project
+            An instance of the project. Or Project ID when run_async is True.
+
+        Raises
+        ------
+        Flow360FileError
+            If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_geometry(
+        ...     "/path/to/my/geometry/my_geometry.csm",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="cm"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
+        """
+        try:
+            validated_files = GeometryFiles(file_names=files)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Geometry file error: {str(err)}")
+
+        return cls._create_project_from_files(
+            files=validated_files,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+            folder=folder,
+        )
+
+    @classmethod
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
+    def from_surface_mesh(
+        cls,
+        file: str,
+        /,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+        folder: Optional[Folder] = None,
+    ):
+        """
+        Initializes a project from a local surface mesh file.
+
+        Parameters
+        ----------
+        file : str (positional argument only)
+            Surface mesh file path. For UGRID file the mapbc
+            file needs to be renamed with the same prefix under same folder.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
+
+        Returns
+        -------
+        Project
+            An instance of the project. Or Project ID when run_async is True.
+
+        Raises
+        ------
+        Flow360FileError
+            If the project cannot be initialized from the file.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_surface_mesh(
+        ...     "/path/to/my/mesh/my_mesh.ugrid",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="inch"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
+        """
+
+        try:
+            validated_files = SurfaceMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Surface mesh file error: {str(err)}")
+
+        return cls._create_project_from_files(
+            files=validated_files,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+            folder=folder,
+        )
+
+    @classmethod
+    @pd.validate_call(config={"arbitrary_types_allowed": True})
+    def from_volume_mesh(
+        cls,
+        file: str,
+        /,
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+        folder: Optional[Folder] = None,
+    ):
+        """
+        Initializes a project from a local volume mesh file.
+
+        Parameters
+        ----------
+        file : str (positional argument only)
+            Volume mesh file path. For UGRID file the mapbc
+            file needs to be renamed with the same prefix under same folder.
+        name : str, optional
+            Name of the project (default is None).
+        solver_version : str, optional
+            Version of the solver (default is None).
+        length_unit : LengthUnitType, optional
+            Unit of length (default is "m").
+        tags : list of str, optional
+            Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
+        folder : Optional[Folder], optional
+            Parent folder for the project. If None, creates in root.
+
+        Returns
+        -------
+        Project
+            An instance of the project.
+
+        Raises
+        ------
+        Flow360FileError
+            If the project cannot be initialized from the file. Or Project ID when run_async is True.
+
+        Example
+        -------
+        >>> my_project = fl.Project.from_volume_mesh(
+        ...     "/path/to/my/mesh/my_mesh.cgns",
+        ...     name="My_Project_name",
+        ...     solver_version="release-Major.Minor"
+        ...     length_unit="inch"
+        ...     tags=["Quarter 1", "Revision 2"]
+        ... )
+        ====
+        """
+
+        try:
+            validated_files = VolumeMeshFile(file_names=file)
+        except pd.ValidationError as err:
+            # pylint:disable = raise-missing-from
+            raise Flow360FileError(f"Volume mesh file error: {str(err)}")
+
+        return cls._create_project_from_files(
+            files=validated_files,
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+            folder=folder,
+        )
+
+    @classmethod
+    @typing_extensions.deprecated(
+        "Creating project with `from_file` is deprecated. Please use `from_geometry()`, "
+        "`from_surface_mesh()` or `from_volume_mesh()` instead.",
+        category=None,
+    )
+    @pd.validate_call
+    def from_file(
+        cls,
+        file: Union[str, list[str]],
+        name: str = None,
+        solver_version: str = __solver_version__,
+        length_unit: LengthUnitType = "m",
+        tags: List[str] = None,
+        run_async: bool = False,
+    ):
+        """
+        [Deprecated function]
         Initializes a project from a file.
 
         Parameters
@@ -717,69 +1026,88 @@ class Project(pd.BaseModel):
             Unit of length (default is "m").
         tags : list of str, optional
             Tags to assign to the project (default is None).
+        run_async : bool, optional
+            Whether to create project asynchronously (default is False).
 
         Returns
         -------
         Project
-            An instance of the project.
+            An instance of the project. Or Project ID when run_async is True.
 
         Raises
         ------
         Flow360ValueError
             If the project cannot be initialized from the file.
         """
-        root_asset = None
-        if isinstance(files, (GeometryFiles, SurfaceMeshFile, VolumeMeshFile)):
-            validated_files = files
-        else:
-            validated_files = Project._detect_asset_type_from_file(files)
 
-        if isinstance(validated_files, GeometryFiles):
-            draft = Geometry.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        elif isinstance(validated_files, SurfaceMeshFile):
-            draft = SurfaceMeshV2.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        elif isinstance(validated_files, VolumeMeshFile):
-            draft = VolumeMeshV2.from_file(
-                validated_files.value, name, solver_version, length_unit, tags
-            )
-        else:
-            raise Flow360FileError(
-                "Cannot detect the intended project root with the given file(s)."
-            )
-
-        root_asset = draft.submit()
-
-        if not root_asset:
-            raise Flow360ValueError(f"Couldn't initialize asset from {validated_files.value}")
-        project_id = root_asset.project_id
-        project_api = RestApi(ProjectInterface.endpoint, id=project_id)
-        info = project_api.get()
-        if not info:
-            raise Flow360ValueError(f"Couldn't retrieve project info for {project_id}")
-        project = Project(
-            metadata=ProjectMeta(**info),
-            project_tree=ProjectTree(),
-            solver_version=root_asset.solver_version,
+        log.warning(
+            "DeprecationWarning: Creating project with `from_file` is deprecated. "
+            + "Please use `from_geometry()`, `from_surface_mesh()` "
+            + "or `from_volume_mesh()` instead."
         )
-        project._project_webapi = project_api
-        if isinstance(validated_files, GeometryFiles):
-            project._root_webapi = RestApi(GeometryInterface.endpoint, id=root_asset.id)
-        elif isinstance(validated_files, SurfaceMeshFile):
-            project._root_webapi = RestApi(SurfaceMeshInterfaceV2.endpoint, id=root_asset.id)
-        elif isinstance(validated_files, VolumeMeshFile):
-            project._root_webapi = RestApi(VolumeMeshInterfaceV2.endpoint, id=root_asset.id)
-        project._root_asset = root_asset
-        project._get_root_simulation_json()
-        project._get_tree_from_cloud()
-        return project
+
+        def _detect_input_file_type(file: Union[str, list[str]]):
+            errors = []
+            for model in [GeometryFiles, VolumeMeshFile]:
+                try:
+                    return model(file_names=file)
+                except pd.ValidationError as e:
+                    errors.append(e)
+            raise Flow360FileError(f"Input file {file} cannot be recognized.\nErrors: {errors}")
+
+        return cls._create_project_from_files(
+            files=_detect_input_file_type(file=file),
+            name=name,
+            solver_version=solver_version,
+            length_unit=length_unit,
+            tags=tags,
+            run_async=run_async,
+        )
 
     @classmethod
-    @pd.validate_call
-    def from_cloud(cls, project_id: str):
+    def _get_user_requested_entity_info(
+        cls,
+        *,
+        current_project_id: str,
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+    ):
+        """
+        Get the entity info requested by the users when they specify `new_run_from` when calling
+        Project.from_cloud()
+        """
+
+        user_requested_entity_info = None
+        if new_run_from is None:
+            return user_requested_entity_info
+
+        if new_run_from.project_id is None:
+            # Can only happen to case created using V1 interface.
+            raise ValueError(
+                "The supplied case resource for `new_run_from` was created using old interface and "
+                "cannot be used as the starting point of a new run."
+            )
+        if current_project_id != new_run_from.project_id:
+            raise ValueError(
+                "The supplied cloud resource for `new_run_from` does not belong to the project."
+            )
+
+        if isinstance(new_run_from, Case):
+            user_requested_entity_info = new_run_from.get_simulation_params()
+        if isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2)):
+            user_requested_entity_info = new_run_from.params
+
+        return user_requested_entity_info
+
+    @classmethod
+    @pd.validate_call(
+        config={"arbitrary_types_allowed": True}  # Geometry etc do not have validate() defined
+    )
+    def from_cloud(
+        cls,
+        project_id: str,
+        *,
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]] = None,
+    ):
         """
         Loads a project from the cloud.
 
@@ -787,6 +1115,14 @@ class Project(pd.BaseModel):
         ----------
         project_id : str
             ID of the project.
+        new_run_from: Optional[Union[Geometry, SurfaceMeshV2, VolumeMeshV2, Case]]
+            The cloud resource that the current run should be based on.
+            The root asset will use entity settings (grouping, transformation etc) from this resource.
+            This results in the same behavior when user clicks New run on webUI.
+            By default this will be the root asset (what user uploaded) of the project.
+
+            TODO: We can add 'last' as one option to automatically start
+            from the latest created asset within the project.
 
         Returns
         -------
@@ -813,12 +1149,30 @@ class Project(pd.BaseModel):
         meta = ProjectMeta(**info)
         root_asset = None
         root_type = meta.root_item_type
+
+        if (
+            new_run_from is not None
+            and isinstance(new_run_from, (Geometry, SurfaceMeshV2, VolumeMeshV2, Case)) is False
+        ):
+            # Should have been caught by the validate_call?
+            raise ValueError(
+                "The supplied `new_run_from` is not valid. Please check the function description for more details."
+            )
+
+        entity_info_param = cls._get_user_requested_entity_info(
+            current_project_id=project_info.asset_id, new_run_from=new_run_from
+        )
+
         if root_type == RootType.GEOMETRY:
-            root_asset = Geometry.from_cloud(meta.root_item_id)
+            root_asset = Geometry.from_cloud(meta.root_item_id, entity_info_param=entity_info_param)
         elif root_type == RootType.SURFACE_MESH:
-            root_asset = SurfaceMeshV2.from_cloud(meta.root_item_id)
+            root_asset = SurfaceMeshV2.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param
+            )
         elif root_type == RootType.VOLUME_MESH:
-            root_asset = VolumeMeshV2.from_cloud(meta.root_item_id)
+            root_asset = VolumeMeshV2.from_cloud(
+                meta.root_item_id, entity_info_param=entity_info_param
+            )
         if not root_asset:
             raise Flow360ValueError(f"Couldn't retrieve root asset for {project_info.asset_id}")
         project = Project(
@@ -910,6 +1264,19 @@ class Project(pd.BaseModel):
         """Refresh the local project tree by fetching the latest project tree from cloud."""
         return self._get_tree_from_cloud()
 
+    def rename(self, new_name: str):
+        """
+        Rename the current project.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the project.
+        """
+        RestApi(ProjectInterface.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
+
     def print_project_tree(self, line_width: int = 30, is_horizontal: bool = True):
         """Print the project tree to the terminal.
 
@@ -922,6 +1289,9 @@ class Project(pd.BaseModel):
             Choose if the project tree is printed in horizontal (default) or vertical direction.
 
         """
+        # pylint: disable=import-outside-toplevel
+        # Defer importing since this package introduces 2 empty lines of output in the Jupyter Notebook when imported..
+        from PrettyPrint import PrettyPrintTree
 
         PrettyPrintTree(
             get_children=lambda x: x.children,
@@ -964,9 +1334,15 @@ class Project(pd.BaseModel):
         target: AssetOrResource,
         draft_name: str,
         fork_from: Case,
+        interpolate_to_mesh: VolumeMeshV2,
         run_async: bool,
         solver_version: str,
         use_beta_mesher: bool,
+        use_geometry_AI: bool,
+        raise_on_error: bool,
+        tags: List[str],
+        draft_only: bool,
+        **kwargs,
     ):
         """
         Runs a simulation for the project.
@@ -979,15 +1355,27 @@ class Project(pd.BaseModel):
             The target asset or resource to run the simulation against.
         draft_name : str, optional
             The name of the draft to create for the simulation run (default is None).
-        fork : bool, optional
-            Indicates if the simulation should fork the existing case (default is False).
+        fork_from : Case, optional
+            The parent case to fork from if fork (default is None).
+        interpolate_to_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpolate parent case's results to this mesh before running solver.
         run_async : bool, optional
             Specifies whether the simulation should run asynchronously (default is True).
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs
+        tags: List[str], optional
+            A list of tags to add to the target asset.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not run the simulation.
 
         Returns
         -------
         AssetOrResource
-            The destination asset
+            The destination asset or the draft if `draft_only` is True.
 
         Raises
         ------
@@ -996,47 +1384,86 @@ class Project(pd.BaseModel):
             root asset (Geometry or VolumeMesh) is not initialized.
         """
 
-        defaults = self._root_simulation_json
+        # pylint: disable=too-many-branches
+        if use_beta_mesher is None:
+            if use_geometry_AI is True:
+                log.info("Beta mesher is enabled to use Geometry AI.")
+                use_beta_mesher = True
+            else:
+                use_beta_mesher = False
 
-        cache_key = "private_attribute_asset_cache"
-        length_key = "project_length_unit"
+        if use_geometry_AI is True and use_beta_mesher is False:
+            raise Flow360ValueError("Enabling Geometry AI requires also enabling beta mesher.")
 
-        if cache_key not in defaults:
-            if length_key not in defaults[cache_key]:
-                raise Flow360ValueError("Simulation params do not contain default length unit info")
+        params = set_up_params_for_uploading(
+            params=params,
+            root_asset=self._root_asset,
+            length_unit=self.length_unit,
+            use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
+        )
 
-        length_unit = defaults[cache_key][length_key]
+        params, errors = validate_params_with_context(
+            params=params,
+            root_item_type=self.metadata.root_item_type.value,
+            up_to=target._cloud_resource_type_name,
+        )
 
-        with model_attribute_unlock(params.private_attribute_asset_cache, length_key):
-            params.private_attribute_asset_cache.project_length_unit = LengthType.validate(
-                length_unit
+        if errors is not None:
+            log.error(
+                f"Validation error found during local validation: {formatting_validation_errors(errors=errors)}"
             )
+            if raise_on_error:
+                raise ValueError("Submission terminated due to local validation error.")
+            return None
 
-        root_asset = self._root_asset
+        source_item_type = self.metadata.root_item_type.value if fork_from is None else "Case"
+        start_from = kwargs.get("start_from", None)
+        job_tags = kwargs.get("job_tags", None)
+
+        all_tags = []
+
+        if tags is not None:
+            all_tags += tags
+        if job_tags is not None:
+            all_tags += job_tags
 
         draft = Draft.create(
             name=draft_name,
             project_id=self.metadata.id,
             source_item_id=self.metadata.root_item_id if fork_from is None else fork_from.id,
-            source_item_type=(self.metadata.root_item_type.value if fork_from is None else "Case"),
+            source_item_type=source_item_type,
             solver_version=solver_version if solver_version else self.solver_version,
             fork_case=fork_from is not None,
+            interpolation_volume_mesh_id=interpolate_to_mesh.id if interpolate_to_mesh else None,
+            tags=all_tags,
         ).submit()
 
-        # Check if there are any new draft entities that have been added in the params by the user
-        entity_info = _set_up_param_entity_info(root_asset.entity_info, params)
-
-        with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
-            params.private_attribute_asset_cache.project_entity_info = entity_info
-        # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
-        # This has to be done after `project_entity_info` is properly set.
-        entity_info = replace_ghost_surfaces(params)
+        params.pre_submit_summary()
 
         draft.update_simulation_params(params)
+        upload_imported_surfaces_to_draft(params, draft)
+
+        if draft_only:
+            # pylint: disable=import-outside-toplevel
+            import click
+
+            log.info("Draft submitted, copy the link to browser to view the draft:")
+            # Not using log.info to avoid the link being wrapped and thus not clickable.
+            click.secho(draft.web_url, fg="blue", underline=True)
+            return draft
 
         try:
-            destination_id = draft.run_up_to_target_asset(target, use_beta_mesher=use_beta_mesher)
-        except RuntimeError:
+            destination_id = draft.run_up_to_target_asset(
+                target,
+                source_item_type=source_item_type,
+                use_beta_mesher=use_beta_mesher,
+                use_geometry_AI=use_geometry_AI,
+                start_from=start_from,
+            )
+        except RuntimeError as exception:
+            if raise_on_error:
+                raise ValueError("Submission terminated due to validation error.") from exception
             return None
 
         self._project_webapi.patch(
@@ -1047,14 +1474,9 @@ class Project(pd.BaseModel):
             }
         )
 
-        if target is SurfaceMeshV2 or target is VolumeMeshV2:
-            # Intermediate asset and we should enforce it to contain the entity info from root item.
-            # pylint: disable=protected-access
-            destination_obj = target.from_cloud(
-                destination_id, root_item_entity_info_type=self._root_asset._entity_info_class
-            )
-        else:
-            destination_obj = target.from_cloud(destination_id)
+        destination_obj = target.from_cloud(destination_id)
+
+        log.info(f"Successfully submitted: {destination_obj.short_description()}")
 
         if not run_async:
             destination_obj.wait()
@@ -1076,7 +1498,12 @@ class Project(pd.BaseModel):
         name: str = "SurfaceMesh",
         run_async: bool = True,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
+        raise_on_error: bool = True,
+        tags: List[str] = None,
+        draft_only: bool = False,
+        **kwargs,
     ):
         """
         Runs the surface mesher for the project.
@@ -1091,11 +1518,26 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is True)
+        tags: List[str], optional
+            A list of tags to add to the generated surface mesh.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not generate the surface mesh.
 
         Raises
         ------
         Flow360ValueError
             If the root item type is not Geometry.
+
+        Returns
+        -------
+        SurfaceMeshV2 | Draft
+            The surface mesh asset or the draft if `draft_only` is True.
         """
         self._check_initialized()
         if self.metadata.root_item_type is not RootType.GEOMETRY:
@@ -1108,8 +1550,14 @@ class Project(pd.BaseModel):
             draft_name=name,
             run_async=run_async,
             fork_from=None,
+            interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
+            raise_on_error=raise_on_error,
+            tags=tags,
+            draft_only=draft_only,
+            **kwargs,
         )
         return surface_mesh
 
@@ -1120,7 +1568,12 @@ class Project(pd.BaseModel):
         name: str = "VolumeMesh",
         run_async: bool = True,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
+        raise_on_error: bool = True,
+        tags: List[str] = None,
+        draft_only: bool = False,
+        **kwargs,
     ):
         """
         Runs the volume mesher for the project.
@@ -1135,11 +1588,26 @@ class Project(pd.BaseModel):
             Whether to run the mesher asynchronously (default is True).
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is True)
+        tags: List[str], optional
+            A list of tags to add to the generated volume mesh.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not generate the volume mesh.
 
         Raises
         ------
         Flow360ValueError
             If the root item type is not Geometry.
+
+        Returns
+        -------
+        VolumeMeshV2 | Draft
+            The volume mesh asset or the draft if `draft_only` is True.
         """
         self._check_initialized()
         if (
@@ -1149,15 +1617,25 @@ class Project(pd.BaseModel):
             raise Flow360ValueError(
                 "Volume mesher can only be run by projects with a geometry or surface mesh root asset"
             )
-        volume_mesh = self._run(
+        volume_mesh_or_draft = self._run(
             params=params,
             target=VolumeMeshV2,
             draft_name=name,
             run_async=run_async,
             fork_from=None,
+            interpolate_to_mesh=None,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
+            raise_on_error=raise_on_error,
+            tags=tags,
+            draft_only=draft_only,
+            **kwargs,
         )
+        if draft_only:
+            draft = volume_mesh_or_draft
+            return draft
+        volume_mesh = volume_mesh_or_draft
         return volume_mesh
 
     @pd.validate_call(config={"arbitrary_types_allowed": True})
@@ -1166,9 +1644,15 @@ class Project(pd.BaseModel):
         params: SimulationParams,
         name: str = "Case",
         run_async: bool = True,
-        fork_from: Case = None,
+        fork_from: Optional[Case] = None,
+        interpolate_to_mesh: Optional[VolumeMeshV2] = None,
         solver_version: str = None,
-        use_beta_mesher: bool = False,
+        use_beta_mesher: bool = None,
+        use_geometry_AI: bool = False,  # pylint: disable=invalid-name
+        raise_on_error: bool = True,
+        tags: List[str] = None,
+        draft_only: bool = False,
+        **kwargs,
     ):
         """
         Runs a case for the project.
@@ -1183,17 +1667,51 @@ class Project(pd.BaseModel):
             Whether to run the case asynchronously (default is True).
         fork_from : Case, optional
             Which Case we should fork from (if fork).
+        interpolate_to_mesh : VolumeMeshV2, optional
+            If specified, forked case will interpolate parent case results to this mesh before running solver.
         solver_version : str, optional
             Optional solver version to use during this run (defaults to the project solver version)
+        use_beta_mesher : bool, optional
+            Whether to use the beta mesher (default is None). Must be True when using Geometry AI.
+        use_geometry_AI : bool, optional
+            Whether to use the Geometry AI (default is False).
+        raise_on_error: bool, optional
+            Option to raise if submission error occurs (default is True)
+        tags: List[str], optional
+            A list of tags to add to the case.
+        draft_only: bool, optional
+            Whether to only create and submit a draft and not run the case.
+
+        Returns
+        -------
+        Case | Draft
+            The case asset or the draft if `draft_only` is True.
         """
         self._check_initialized()
-        case = self._run(
+        case_or_draft = self._run(
             params=params,
             target=Case,
             draft_name=name,
             run_async=run_async,
             fork_from=fork_from,
+            interpolate_to_mesh=interpolate_to_mesh,
             solver_version=solver_version,
             use_beta_mesher=use_beta_mesher,
+            use_geometry_AI=use_geometry_AI,
+            raise_on_error=raise_on_error,
+            tags=tags,
+            draft_only=draft_only,
+            **kwargs,
+        )
+
+        if draft_only:
+            draft = case_or_draft
+            return draft
+        case = case_or_draft
+        report_template = get_default_report_summary_template()
+        report_template.create_in_cloud(
+            name=f"{name}-summary",
+            cases=[case],
+            solver_version=solver_version if solver_version else self.solver_version,
         )
         return case

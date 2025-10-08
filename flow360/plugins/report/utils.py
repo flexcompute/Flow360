@@ -2,6 +2,7 @@
 report utils, utils.py
 """
 
+# pylint: disable=too-many-lines
 from __future__ import annotations
 
 import ast
@@ -13,7 +14,7 @@ import shutil
 import uuid
 from abc import ABCMeta, abstractmethod
 from numbers import Number
-from typing import Annotated, Any, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Any, ClassVar, List, Literal, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numexpr as ne
@@ -26,13 +27,13 @@ from PIL import Image
 # pylint: disable=import-error
 from pylatex import NoEscape, Package, Tabular
 
-from flow360 import Case
-from flow360.component.results import case_results
+from flow360.component.case import Case, CaseMetaV2
+from flow360.component.results import base_results, case_results
 from flow360.component.simulation.framework.base_model import (
     Conflicts,
     Flow360BaseModel,
 )
-from flow360.component.volume_mesh import VolumeMeshV2
+from flow360.component.volume_mesh import VolumeMeshDownloadable, VolumeMeshV2
 from flow360.log import log
 
 here = os.path.dirname(os.path.abspath(__file__))
@@ -48,36 +49,117 @@ class RequirementItem(pd.BaseModel):
 
     model_config = {"frozen": True}
 
+    _base_case_attributes: ClassVar[list] = CaseMetaV2.model_fields.keys()
 
-# pylint: disable=protected-access
-_requirements_mapping = {
-    "params": RequirementItem(filename="simulation.json"),
-    "cfl": RequirementItem(filename=case_results.CFLResultCSVModel()._remote_path()),
-    "total_forces": RequirementItem(
-        filename=case_results.TotalForcesResultCSVModel()._remote_path()
-    ),
-    "surface_forces": RequirementItem(
-        filename=case_results.SurfaceForcesResultCSVModel()._remote_path()
-    ),
-    "linear_residuals": RequirementItem(
-        filename=case_results.LinearResidualsResultCSVModel()._remote_path()
-    ),
-    "nonlinear_residuals": RequirementItem(
-        filename=case_results.NonlinearResidualsResultCSVModel()._remote_path()
-    ),
-    "x_slicing_force_distribution": RequirementItem(
-        filename=case_results.XSlicingForceDistributionResultCSVModel()._remote_path()
-    ),
-    "y_slicing_force_distribution": RequirementItem(
-        filename=case_results.YSlicingForceDistributionResultCSVModel()._remote_path()
-    ),
-    "volume_mesh": RequirementItem(resource_type="volume_mesh", filename="simulation.json"),
-    "volume_mesh/stats": RequirementItem(
-        resource_type="volume_mesh", filename=VolumeMeshV2._mesh_stats_file
-    ),
-    "surface_mesh": RequirementItem(resource_type="surface_mesh", filename="simulation.json"),
-    "geometry": RequirementItem(resource_type="geometry", filename="simulation.json"),
-}
+    # pylint: disable=protected-access
+    _requirements_mapping: ClassVar[dict] = {
+        "params": {"resource_type": "case", "filename": "simulation.json"},
+        "cfl": {
+            "resource_type": "case",
+            "filename": case_results.CFLResultCSVModel()._remote_path(),
+        },
+        "total_forces": {
+            "resource_type": "case",
+            "filename": case_results.TotalForcesResultCSVModel()._remote_path(),
+        },
+        "surface_forces": {
+            "resource_type": "case",
+            "filename": case_results.SurfaceForcesResultCSVModel()._remote_path(),
+        },
+        "linear_residuals": {
+            "resource_type": "case",
+            "filename": case_results.LinearResidualsResultCSVModel()._remote_path(),
+        },
+        "nonlinear_residuals": {
+            "resource_type": "case",
+            "filename": case_results.NonlinearResidualsResultCSVModel()._remote_path(),
+        },
+        "x_slicing_force_distribution": {
+            "resource_type": "case",
+            "filename": case_results.XSlicingForceDistributionResultCSVModel()._remote_path(),
+        },
+        "y_slicing_force_distribution": {
+            "resource_type": "case",
+            "filename": case_results.YSlicingForceDistributionResultCSVModel()._remote_path(),
+        },
+        "volume_mesh": {"resource_type": "volume_mesh", "filename": "simulation.json"},
+        "volume_mesh/stats": {
+            "resource_type": "volume_mesh",
+            "filename": VolumeMeshV2._mesh_stats_file,
+        },
+        "volume_mesh/bounding_box": {
+            "resource_type": "volume_mesh",
+            "filename": VolumeMeshDownloadable.BOUNDING_BOX.value,
+        },
+        "surface_mesh": {"resource_type": "surface_mesh", "filename": "simulation.json"},
+        "geometry": {"resource_type": "geometry", "filename": "simulation.json"},
+        "bet_forces": {
+            "resource_type": "case",
+            "filename": case_results.BETForcesResultCSVModel()._remote_path(),
+        },
+        "bet_forces_radial_distribution": {
+            "resource_type": "case",
+            "filename": case_results.BETForcesRadialDistributionResultCSVModel()._remote_path(),
+        },
+        "actuator_disks": {
+            "resource_type": "case",
+            "filename": case_results.ActuatorDiskResultCSVModel()._remote_path(),
+        },
+        "aeroacoustics": {
+            "resource_type": "case",
+            "filename": case_results.AeroacousticsResultCSVModel()._remote_path(),
+        },
+        "surface_heat_transfer": {
+            "resource_type": "case",
+            "filename": case_results.SurfaceHeatTransferResultCSVModel()._remote_path(),
+        },
+    }
+
+    _named_results_mapping: ClassVar[dict] = {
+        "monitors": {
+            "resource_type": "case",
+            "pattern": case_results.CaseDownloadable.MONITOR_PATTERN.value,
+        },
+        "user_defined_dynamics": {
+            "resource_type": "case",
+            "pattern": case_results.CaseDownloadable.USER_DEFINED_DYNAMICS_PATTERN.value,
+        },
+    }
+
+    @classmethod
+    @pd.validate_call
+    def from_data_key(cls, data_key: str, results_name: Optional[str] = None):
+        """
+        Return a RequirementItem object based on the data key (a type of data that is required).
+
+        Examples
+        --------
+        >>> RequirementItem.from_data_key(data_key="nonlinear_residuals")
+        >>> RequirementItem.from_data_key(data_key="surface_mesh")
+        >>> RequirementItem.from_data_key(data_key="monitors", results_name="massFluxExhaust")
+        """
+        if data_key in cls._base_case_attributes:
+            return None
+
+        if data_key in cls._requirements_mapping:
+            return cls(
+                resource_type=cls._requirements_mapping.get(data_key).get("resource_type"),
+                filename=cls._requirements_mapping.get(data_key).get("filename"),
+            )
+        if data_key in cls._named_results_mapping:
+            if results_name is None:
+                raise ValueError(f"Results name is required for {data_key}.")
+            return cls(
+                resource_type=cls._named_results_mapping.get(data_key).get("resource_type"),
+                filename="results/"
+                + cls._named_results_mapping.get(data_key)
+                .get("pattern")
+                .replace("(.+)", results_name),
+            )
+        raise NotImplementedError(
+            f"Unknown data key: {data_key}. Can not use this data for report generation yet"
+            + " or wrong data key was specified."
+        )
 
 
 def get_requirements_from_data_path(data_path: List) -> List[RequirementItem]:
@@ -104,13 +186,18 @@ def get_requirements_from_data_path(data_path: List) -> List[RequirementItem]:
     requirements = set()
     for item in data_path:
         root_path = get_root_path(item)
-        matched_requirement = None
-        for key, value in _requirements_mapping.items():
-            if root_path.startswith(key):
-                matched_requirement = value
-                requirements.add(matched_requirement)
-        if matched_requirement is None:
-            raise ValueError(f"Unknown result type: {item}")
+        root_path = split_path(root_path)
+        results_name = None
+        if root_path[0] == "results":
+            data_key = root_path[1]
+            results_name = root_path[2]
+        elif root_path[0] == "volume_mesh" and len(root_path) > 1:
+            data_key = root_path[0] + "/" + root_path[1]
+        else:
+            data_key = root_path[0]
+
+        requirement = RequirementItem.from_data_key(data_key=data_key, results_name=results_name)
+        requirements.add(requirement)
     return list(requirements)
 
 
@@ -217,9 +304,90 @@ def split_path(path):
     return path_components
 
 
-# pylint: disable=too-many-return-statements
+def path_variable_name(path):
+    """
+    Get the last component of the path.
+    """
+    return split_path(path)[-1]
+
+
+# pylint: disable=too-many-return-statements,too-many-branches
+def search_path(case: Case, component: str) -> Any:
+    """
+    Case starts as a `Case` object but changes as it recurses through the path components
+    """
+
+    # Check if component is an attribute
+    try:
+        return getattr(case, component)
+    except AttributeError:
+        pass
+
+    # Check if component is an attribute of case.results
+    # Convenience feature so the user doesn't have to include "results" in path
+    try:
+        return getattr(case.results, component)
+    except AttributeError:
+        pass
+
+    # Check if component is a key for a dictionary
+    try:
+        case = case[component]
+        # Have to test for int or str here otherwise...
+        if isinstance(case, (int, str)):
+            return case
+        # .. this raises a KeyError.
+        # This is a convenience that may be removed for if people want something other than the value
+        if "value" in case:
+            return case["value"]
+        return case
+    except TypeError:
+        pass
+
+    # Check if case is a list
+    # E.g. in user defined functions
+    if isinstance(case, list):
+        for obj in case:
+            try:
+                if obj.name == component:
+                    return obj
+                if obj.type_name == component:
+                    return obj
+            except AttributeError:
+                pass
+
+            if type(obj).__name__ == component:
+                return obj
+
+        # interpret component as an int index
+        try:
+            return case[int(component)]
+        except (ValueError, IndexError):
+            pass
+
+    # Check if case is a number
+    if isinstance(case, Number):
+        return case
+
+    # Check if component is a key of a value
+    try:
+        return case.values[component]
+    except KeyError as err:
+        raise ValueError(
+            f"Could not find path component: '{component}', available: {case.values.keys()}"
+        ) from err
+    except AttributeError:
+        log.warning(f"unknown value for path: {case=}, {component=}")
+
+    return None
+
+
 def data_from_path(
-    case: Case, path: str, cases: list[Case] = None, case_by_case: bool = False
+    case: Case,
+    path: str,
+    cases: list[Case] = None,
+    case_by_case: bool = False,
+    filter_physical_steps_only: bool = False,
 ) -> Any:
     """
     Retrieves data from a specified path within a `Case` object, with optional delta calculations.
@@ -234,6 +402,8 @@ def data_from_path(
         List of additional cases for delta calculations, default is an empty list.
     case_by_case : bool, default=False
         Flag for enabling case-by-case delta calculation when `path` is a `Delta` object.
+    filter_physical_steps_only: bool
+        Whether to return  data asociated only with the converged physical steps (last pseudo_step in a time step).
 
     Returns
     -------
@@ -265,69 +435,48 @@ def data_from_path(
     # Split path into components
     path_components = split_path(path)
 
-    def _search_path(case: Case, component: str) -> Any:
-        """
-        Case starts as a `Case` object but changes as it recurses through the path components
-        """
-        # Check if component is an attribute
-        try:
-            return getattr(case, component)
-        except AttributeError:
-            pass
-
-        # Check if component is an attribute of case.results
-        # Convenience feature so the user doesn't have to include "results" in path
-        try:
-            return getattr(case.results, component)
-        except AttributeError:
-            pass
-
-        # Check if component is a key for a dictionary
-        try:
-            case = case[component]
-            # Have to test for int or str here otherwise...
-            if isinstance(case, (int, str)):
-                return case
-            # .. this raises a KeyError.
-            # This is a convenience that may be removed for if people want something other than the value
-            if "value" in case:
-                return case["value"]
-            return case
-        except TypeError:
-            pass
-
-        # Check if case is a list and interpret component as an int index
-        # E.g. in user defined functions
-        if isinstance(case, list):
-            try:
-                return case[int(component)]
-            except (ValueError, IndexError):
-                pass
-
-        # Check if case is a number
-        if isinstance(case, Number):
-            return case
-
-        if isinstance(case, case_results.PerEntityResultCSVModel):
-            return case
-
-        # Check if component is a key of a value
-        try:
-            return case.values[component]
-        except KeyError as err:
-            raise ValueError(
-                f"Could not find path component: '{component}', available: {case.values.keys()}"
-            ) from err
-        except AttributeError:
-            log.warning(f"unknown value for path: {case=}, {component=}")
-
-        return None
-
     # Case variable is slightly misleading as this is only a case on the first iteration
     for component in path_components:
-        case = _search_path(case, component)
+        if component == "time":
+            case.reload_data(include_time=True)
+
+        if filter_physical_steps_only and (component == path_components[-1]):
+            case.reload_data(filter_physical_steps_only=True)
+
+        case = search_path(case, component)
 
     return case
+
+
+def results_from_path(
+    case, path
+) -> tuple[Union[base_results.ResultBaseModel, None], Union[str, None]]:
+    """
+    Returns the last ResultsBaseModel object on the path.
+
+    Parameters
+    ----------
+    path : str
+        The path string indicating the nested attributes or dictionary keys.
+
+    Returns
+    -------
+
+    returned_case, returned_component: tuple[Union[base_results.ResultBaseModel, None], Union[str, None]]
+        returned_case - the last ResultsBaseModel object on the path,
+        returned_component - component of the returned case or None if the case was a last part of the path
+
+    """
+    path_components = split_path(path)
+    returned_case = None
+    returned_component = None
+    for component in path_components:
+        returned_component = component
+        case = search_path(case, component)
+        if isinstance(case, base_results.ResultBaseModel):
+            returned_case = case
+            returned_component = None
+    return returned_case, returned_component
 
 
 class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
@@ -344,28 +493,47 @@ class GenericOperation(Flow360BaseModel, metaclass=ABCMeta):
         """
 
 
+class GetAttribute(GenericOperation):
+    """
+    Retrieve an attribute from a data object.
+
+    This operation extracts the attribute specified by `attr_name` from the provided data object
+    using Python's built-in `getattr` function. If the attribute is not found, an `AttributeError`
+    is raised, providing a clear error message.
+
+    Methods
+    -------
+    calculate(data, case, cases, variables, new_variable_name)
+        Retrieves the attribute specified by `attr_name` from the given data object.
+        Returns a tuple containing the original data, the cases list, and the extracted attribute value.
+    """
+
+    attr_name: str = pd.Field(
+        description="The name of the attribute to retrieve from the data object."
+    )
+    type_name: Literal["GetAttribute"] = pd.Field("GetAttribute", frozen=True)
+
+    def calculate(
+        self, data, case, cases, variables, new_variable_name
+    ):  # pylint: disable=too-many-arguments
+        """
+        Getting attribute on the provided data.
+        """
+
+        try:
+            result = getattr(data, self.attr_name)
+        except AttributeError as err:
+            raise AttributeError(f"Attribute {self.attr_name} not found in {type(data)=}") from err
+
+        return data, cases, result
+
+
 class Average(GenericOperation):
     """
     Represents an averaging operation on simulation results.
 
     This operation calculates the average of a given data set over a specified range of steps, time,
     or fraction of the dataset.
-
-    Attributes
-    ----------
-    start_step : Optional[pd.NonNegativeInt]
-        The starting step for averaging. If not specified, averaging starts from the beginning.
-    end_step : Optional[pd.NonNegativeInt]
-        The ending step for averaging. If not specified, averaging continues to the end.
-    start_time : Optional[pd.NonNegativeFloat]
-        The starting time for averaging. If not specified, averaging starts from the beginning.
-    end_time : Optional[pd.NonNegativeFloat]
-        The ending time for averaging. If not specified, averaging continues to the end.
-    fraction : Optional[pd.PositiveFloat]
-        The fraction of the dataset to be averaged, ranging from 0 to 1.
-        Only the fraction-based method is implemented.
-    type_name : Literal["Average"]
-        A literal string indicating the operation type.
 
     Raises
     ------
@@ -378,11 +546,28 @@ class Average(GenericOperation):
     result = avg.calculate(data, case, cases, variables, new_variable_name)
     """
 
-    start_step: Optional[pd.NonNegativeInt] = None
-    end_step: Optional[pd.NonNegativeInt] = None
-    start_time: Optional[pd.NonNegativeFloat] = None
-    end_time: Optional[pd.NonNegativeFloat] = None
-    fraction: Optional[pd.PositiveFloat] = pd.Field(None, le=1)
+    start_step: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="The starting step for averaging. If not specified, averaging starts from the beginning.",
+    )
+    end_step: Optional[pd.NonNegativeInt] = pd.Field(
+        None,
+        description="The ending step for averaging. If not specified, averaging continues to the end.",
+    )
+    start_time: Optional[pd.NonNegativeFloat] = pd.Field(
+        None,
+        description="The starting time for averaging. If not specified, averaging starts from the beginning.",
+    )
+    end_time: Optional[pd.NonNegativeFloat] = pd.Field(
+        None,
+        description="The ending time for averaging. If not specified, averaging continues to the end.",
+    )
+    fraction: Optional[pd.PositiveFloat] = pd.Field(
+        None,
+        le=1,
+        description="The fraction of the dataset to be averaged, ranging from 0 to 1."
+        + " Only the fraction-based method is implemented.",
+    )
     type_name: Literal["Average"] = pd.Field("Average", frozen=True)
 
     model_config = pd.ConfigDict(
@@ -407,7 +592,7 @@ class Average(GenericOperation):
             if self.fraction is None:
                 raise NotImplementedError('Only "fraction" average method implemented.')
             averages = data.get_averages(average_fraction=self.fraction)
-            return data, cases, averages
+            return data, cases, averages[new_variable_name]
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
@@ -419,8 +604,8 @@ class Variable(Flow360BaseModel):
     Variable model used in expressions
     """
 
-    name: str
-    data: str
+    name: str = pd.Field(description="Name of the variable.")
+    data: str = pd.Field(description="Data contained within the variable.")
 
 
 class Expression(GenericOperation):
@@ -430,13 +615,6 @@ class Expression(GenericOperation):
     This operation allows for defining and calculating custom expressions using
     variables extracted from simulation results. The results of the expression
     evaluation can be added as a new column to a dataframe for further analysis.
-
-    Attributes
-    ----------
-    expr : str
-        The mathematical expression to evaluate. It should be written in a syntax
-        compatible with the `numexpr` library, using variable names that correspond
-        to columns in the dataframe or user-defined variables.
 
     Example
     -------
@@ -452,7 +630,11 @@ class Expression(GenericOperation):
         If the data type is unsupported by the `calculate` method.
     """
 
-    expr: str
+    expr: str = pd.Field(
+        description="The mathematical expression to evaluate. It should be written in a syntax compatible"
+        + " with the `numexpr` library, using variable names that correspond to"
+        + " columns in the dataframe or user-defined variables."
+    )
     type_name: Literal["Expression"] = pd.Field("Expression", frozen=True)
 
     @classmethod
@@ -546,21 +728,24 @@ class Expression(GenericOperation):
         """
         log.debug(f"evaluating expression {self.expr}, {case.id=}")
 
-        if isinstance(data, case_results.SurfaceForcesResultCSVModel):
+        if isinstance(data, case_results.ResultCSVModel):
             df = self.evaluate_expression(
                 data.as_dataframe(), self.expr, variables, new_variable_name, case
             )
             data.update(df)
-            return data, cases, data.values
+            return data, cases, data.values[new_variable_name]
 
         raise NotImplementedError(
             f"{self.__class__.__name__} not implemented for data type: {type(data)=}"
         )
 
 
-OperationTypes = Annotated[Union[Average, Expression], pd.Field(discriminator="type_name")]
+OperationTypes = Annotated[
+    Union[Average, Expression, GetAttribute], pd.Field(discriminator="type_name")
+]
 
 
+# pylint: disable=no-member
 class DataItem(Flow360BaseModel):
     """
     Represents a retrievable data item that can be post-processed.
@@ -568,42 +753,46 @@ class DataItem(Flow360BaseModel):
     The `DataItem` class retrieves data from a specified path within a `Case` and allows for:
      - Excluding specific boundaries (if applicable).
      - Applying one or more post-processing operations (e.g., mathematical expressions, averaging).
+       Averaging should be applied as the last expression, accessing variables through `/averages` in path will
+       automatically append an averaging operation to the object's operations.
      - Introducing additional variables for use in these operations.
-
-    Parameters
-    ----------
-    data : str
-        Path to the data item to retrieve from a `Case`. The path can include nested attributes
-        and dictionary keys (e.g., "results.surface_forces").
-    title : str, optional
-        A human-readable title for this data item. If omitted, the title defaults to the
-        last component of the `data` path.
-    include : list[str], optional
-        A list of boundaries to include in the retrieved data (e.g., certain surfaces). Only
-        applicable to some data types, such as surface forces or slicing force distributions.
-    exclude : list[str], optional
-        A list of boundaries to exclude from the retrieved data (e.g., certain surfaces). Only
-        applicable to some data types, such as surface forces or slicing force distributions.
-    operations : list[OperationTypes], optional
-        A list of operations to apply to the retrieved data. Supported operations include:
-        `Expression` and `Average`.
-    variables : list[Variable], optional
-        Additional user-defined variables that may be referenced in the `Expression` operations.
-    type_name : Literal["DataItem"]
-        A literal string identifying the type of the item, set to "DataItem".
     """
 
-    data: str
-    title: Optional[str] = None
-    include: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
-    operations: Optional[List[OperationTypes]] = None
-    variables: Optional[List[Variable]] = None
+    data: str = pd.Field(
+        description="Path to the data item to retrieve from a `Case`."
+        + ' The path can include nested attributes and dictionary keys (e.g., "results.surface_forces").'
+    )
+    title: Optional[str] = pd.Field(
+        None,
+        description="A human-readable title for this data item."
+        + " If omitted, the title defaults to the last component of the `data` path.",
+    )
+    include: Optional[List[str]] = pd.Field(
+        None,
+        description="Boundaries to be included in the retrieved data (e.g., certain surfaces)."
+        + " Only applicable to some data types, such as surface forces or slicing force distributions.",
+    )
+    exclude: Optional[List[str]] = pd.Field(
+        None,
+        description="Boundaries to be excluded from the retrieved data (e.g., certain surfaces)."
+        + " Only applicable to some data types, such as surface forces or slicing force distributions.",
+    )
+    operations: Optional[List[OperationTypes]] = pd.Field(
+        None,
+        description="A list of operations to apply to the retrieved data."
+        + " Supported operations include: `Expression` and `Average`.",
+    )
+    variables: Optional[List[Variable]] = pd.Field(
+        None,
+        description="Additional user-defined variables that may be referenced in the `Expression` operations.",
+    )
     type_name: Literal["DataItem"] = pd.Field("DataItem", frozen=True)
 
     @pd.model_validator(mode="before")
     @classmethod
     def _validate_operations(cls, values):
+        if not isinstance(values, dict):
+            raise ValueError("Invalid input structure.")
         operations = values.get("operations")
         if operations is None:
             values["operations"] = []
@@ -611,24 +800,21 @@ class DataItem(Flow360BaseModel):
             values["operations"] = [operations]
         return values
 
-    def _preprocess_data(self, case):
-        source = data_from_path(case, self.data)
+    @pd.model_validator(mode="after")
+    def _check_for_averages(self):
+        components = split_path(self.data)
+        if "averages" in components:
+            self.operations.append(Average(fraction=0.1))
+            components.remove("averages")
+            self.data = "/".join(components)
+        return self
 
-        if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            full_path = split_path(self.data)
+    def _preprocess_data(self, source, component):
+
+        if isinstance(source, case_results.ResultCSVModel):
             new_variable_name = "opr_" + uuid.uuid4().hex[:8]
-            variable_name = None
-            if len(full_path) == 1:
-                pass
-            elif len(full_path) == 2:
-                variable_name = full_path[-1]
-                self.operations.insert(0, Expression(expr=variable_name))
-            else:
-                raise ValueError(
-                    f"{self.__class__.__name__}, unknown input: data={self.data},"
-                    + " allowed single <source> or <source>/<variable>"
-                )
-
+            if component is not None:
+                self.operations.insert(0, Expression(expr=component))
             return source, new_variable_name
 
         raise NotImplementedError(
@@ -637,7 +823,7 @@ class DataItem(Flow360BaseModel):
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
         """
-        Calculates the delta between the specified case and the reference case.
+        Calculates the DataItem values based on specified operations.
 
         Parameters
         ----------
@@ -649,27 +835,28 @@ class DataItem(Flow360BaseModel):
         Returns
         -------
         float
-            The computed delta value between the case and reference case data.
-
-        Raises
-        ------
-        ValueError
-            If `ref_index` is out of bounds or `None`, indicating a missing reference.
+            The computed data array.
 
         """
 
-        source = data_from_path(case, self.data)
-        if isinstance(source, case_results.SurfaceForcesResultCSVModel):
-            if self.exclude is not None or self.include is not None:
-                source.filter(include=self.include, exclude=self.exclude)
+        source, component = results_from_path(case, self.data)
 
-            source, new_variable_name = self._preprocess_data(case)
+        if isinstance(source, base_results.ResultCSVModel):
+            if self.exclude is not None or self.include is not None:
+                if isinstance(source, case_results.PerEntityResultCSVModel):
+                    source.filter(include=self.include, exclude=self.exclude)
+                else:
+                    raise AttributeError(
+                        "Include and exclude can be used only with some data types,"
+                        + " such as surface forces or slicing force distributions."
+                    )
+            source, new_variable_name = self._preprocess_data(source=source, component=component)
             if len(self.operations) > 0:
                 for opr in self.operations:  # pylint: disable=not-an-iterable
                     source, cases, result = opr.calculate(
                         source, case, cases, self.variables, new_variable_name
                     )
-                return result[new_variable_name]
+                return result
 
             return source
 
@@ -680,23 +867,20 @@ class DataItem(Flow360BaseModel):
     def __str__(self):
         if self.title is not None:
             return self.title
-        return split_path(self.data)[-1]
+        return path_variable_name(self.data)
 
 
 class Delta(Flow360BaseModel):
     """
     Represents a delta calculation between a reference case and a target case based on specified data.
-
-    Parameters
-    ----------
-    data : str
-        Path to the data item used for delta calculation.
-    ref_index : Optional[NonNegativeInt], default=0
-        Index of the reference case in the list of cases for comparison.
     """
 
-    data: Union[str, DataItem]
-    ref_index: Optional[pd.NonNegativeInt] = 0
+    data: Union[str, DataItem] = pd.Field(
+        description="Path to the data item used for delta calculation."
+    )
+    ref_index: Optional[pd.NonNegativeInt] = pd.Field(
+        0, description="Index of the reference case in the list of cases for comparison."
+    )
     type_name: Literal["Delta"] = pd.Field("Delta", frozen=True)
 
     def calculate(self, case: Case, cases: List[Case]) -> float:
@@ -730,7 +914,7 @@ class Delta(Flow360BaseModel):
 
     def __str__(self):
         if isinstance(self.data, str):
-            data_str = split_path(self.data)[-1]
+            data_str = path_variable_name(self.data)
         else:
             data_str = str(self.data)
         return f"Delta {data_str}"
@@ -738,7 +922,9 @@ class Delta(Flow360BaseModel):
 
 # pylint: disable=too-few-public-methods
 class Tabulary(Tabular):
-    """The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex"""
+    """
+    The `tabulary` package works better than the existing pylatex implementations so this includes it in pylatex
+    """
 
     packages = [Package("tabulary")]
 
@@ -751,6 +937,143 @@ class Tabulary(Tabular):
             text.
         """
         super().__init__(*args, start_arguments=width_argument, **kwargs)
+
+
+class Grouper(Flow360BaseModel):
+    """
+    Class for objects responsible for grouping data into series in Chart2D.
+
+    Example
+    -------
+    - Data will be grouped by each turbulence model and then by the first tag,
+        if the first tag is "a" or "b" the data point will be assigned to group "bucket0",
+        if the first tag is "c" the data point will be assigned to "bucket1"
+
+    >>> Grouper(
+    ...     group_by=["params/models/Fluid/turbulence_model_solver/type_name", "info/tags/0"],
+    ...     buckets=[None, {"bucket0": ["a", "b"], "bucket1": ["c"]}],
+    ... )
+
+    ====
+    """
+
+    group_by: Union[str, List[str], None, List[None]] = pd.Field(
+        description="The path to the data attribute (or paths to attributes in case of multi-level grouping)"
+        + " by which the grouping should be done."
+    )
+    buckets: Optional[Union[dict[str, List], List[Union[dict[str, List], None]]]] = pd.Field(
+        None,
+        description="Dictionaries where key represents the name of the group and value is the list of values,"
+        + " that belong to the group. If all the values should be unique, enter None for the corresponding bucket.",
+    )
+    _series_assignments: List[List[str]] = pd.PrivateAttr(default=None)
+
+    @pd.model_validator(mode="after")
+    def _handle_singular_inputs(self):
+        if not isinstance(self.group_by, List):
+            self.group_by = [self.group_by]
+        if not isinstance(self.buckets, List):
+            self.buckets = [self.buckets] * len(self.group_by)
+        return self
+
+    @pd.model_validator(mode="after")
+    def _check_argument_lengths(self):
+        if self.buckets is not None and len(self.group_by) != len(self.buckets):
+            raise pd.ValidationError(
+                "group_by and buckets must be the same length. "
+                + "If a category should not be grouped into buckets enter None in the bucket's place."
+            )
+        return self
+
+    def _get_possible_assignments(self, category, cases):
+        assignments = []
+        for case in cases:
+            assignment = data_from_path(case, category, cases)
+            if assignment not in assignments:
+                assignments.append(assignment)
+        return assignments
+
+    def initialize_arrays(self, cases, y_variables):
+        """
+        Initializes data structures for x_data and y_data.
+        """
+        self._series_assignments = [[path_variable_name(str(y))] for y in y_variables]
+
+        if self.group_by != [None]:
+            for category, bucket in zip(self.group_by, self.buckets):
+                if bucket is not None:
+                    grouping_attributes = bucket.keys()
+                else:
+                    grouping_attributes = self._get_possible_assignments(category, cases)
+
+                new_assignments = []
+                for assignment in self._series_assignments:
+                    for attribute in grouping_attributes:
+                        new_assignments.append(assignment + [attribute])
+
+                self._series_assignments = new_assignments
+
+        x_data = [[] for _ in range(len(self._series_assignments))]
+        y_data = [[] for _ in range(len(self._series_assignments))]
+        return x_data, y_data
+
+    # pylint: disable=inconsistent-return-statements
+    def _is_in_bucket(self, bucket_criteria, attribute) -> bool:
+        for criterion in bucket_criteria:
+            if attribute == criterion:
+                return True
+            if callable(criterion):
+                crit_result = criterion(attribute)
+                if isinstance(crit_result, bool):
+                    return crit_result
+                raise AttributeError(
+                    f"Bucket criterion must return bool, current returned is {type(crit_result)}."
+                )
+
+    # pylint: disable=too-many-arguments
+    def arrange_data(self, case, x_data, y_data, x_data_point, y_data_point, y_variable):
+        """
+        Sorts the data into appropriate series based on the case.
+        """
+
+        point_attributes = [path_variable_name(str(y_variable))]
+
+        if self.group_by != [None]:
+            for category, bucket in zip(self.group_by, self.buckets):
+                attribute = data_from_path(case, category)
+                if bucket is not None:
+                    for key, value in bucket.items():
+                        if self._is_in_bucket(value, attribute):
+                            point_attributes.append(key)
+                else:
+                    point_attributes.append(attribute)
+
+        for idx, assignment in enumerate(self._series_assignments):
+            if point_attributes == assignment:
+                x_data[idx].append(x_data_point)
+                y_data[idx].append(y_data_point)
+                return x_data, y_data
+
+        return x_data, y_data
+
+    def arrange_legend(self):
+        """
+        Creates the legend for the defined grouping.
+        """
+        legend = []
+        assignments = self._series_assignments.copy()
+
+        assignments_array = np.array(assignments)
+        if np.all(assignments_array[:, 0] == assignments_array[0, 0]):
+            assignments = assignments_array[:, 1:].tolist()
+
+        if assignments is None:
+            return None
+
+        for assignment in assignments:
+            legend.append(" - ".join(assignment))
+
+        return legend
 
 
 def generate_colorbar_from_image(
@@ -796,7 +1119,7 @@ def generate_colorbar_from_image(
     Notes
     -----
     - On a log scale, the main colorbar axis remains linear to avoid deforming
-      the color distribution. A twin axis is used solely for log-scale labeling.
+        the color distribution. A twin axis is used solely for log-scale labeling.
     """
 
     img = Image.open(image_filename)
@@ -837,7 +1160,7 @@ def generate_colorbar_from_image(
     plt.close(fig)
 
 
-font_path = posixpath.join(here, "fonts/")
+font_path = posixpath.join(here, "fonts/").replace("\\", "/")
 font_definition = (
     r"""
 \setmainfont{TWKEverett}[

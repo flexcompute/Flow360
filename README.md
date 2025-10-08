@@ -49,23 +49,22 @@ Environment ``FLOW360_APIKEY`` variable takes precedence before Flow360 configur
 ## setup
 0. clone repo
 1. Install poetry ``pip install poetry``
-2. Activate poetry shell ``poetry shell``
+2. ``poetry env activate`` gives you the command to activate the virtual environment, copy paste and run the command to enter the virtual environment. Or you can just prepend `poetry run` on all the python related commands.
 3. Install dependencies: ``poetry install``
 
 ## run examples
 - ``python examples/case_results.py``
-- You can also run examples without activating shell:\
+- You can also run examples without activating shell:
 ``poetry run python examples/case_results.py``
 
 ## check in
-1. ``poetry run pytest -rA``
-2. ``black .`` - performs auto-formatting
-3. ``isort .`` - sorts imports
-4. ``poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc`` - checks code style
-5. ``poetry run pytest -rA tests/simulation`` - run V2 related tests
-6. ``poetry run pytest -rA --ignore tests/simulation`` - run V1 related tests (cannot be run altogether)
-7. ``pytest -rA tests/simulation --cov-report=html --cov=flow360/component/simulation`` - see test coverage report for V2 client
-8. ``pytest -rA --ignore tests/simulation --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report for V1+V2 client
+1. ``black .`` - performs auto-formatting
+2. ``isort .`` - sorts imports
+3. ``poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc`` - checks code style
+4. ``poetry run pytest -rA tests/simulation`` - run V2 related tests
+5. ``poetry run pytest -rA --ignore tests/simulation`` - run V1 related tests (cannot be run altogether)
+6. ``pytest -rA tests/simulation --cov-report=html --cov=flow360/component/simulation`` - see test coverage report for V2 client
+7. ``pytest -rA --ignore tests/simulation --cov-report=html --cov=flow360 && open htmlcov/index.html`` - see test coverage report for V1+V2 client
 
 ## Documentation Requirements
 

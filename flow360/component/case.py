@@ -14,7 +14,11 @@ import pydantic as pd
 import pydantic.v1 as pd_v1
 
 from .. import error_messages
-from ..cloud.flow360_requests import MoveCaseItem, MoveToFolderRequest
+from ..cloud.flow360_requests import (
+    MoveCaseItem,
+    MoveToFolderRequest,
+    RenameAssetRequestV2,
+)
 from ..cloud.rest_api import RestApi
 from ..cloud.s3_utils import CloudFileNotFoundError
 from ..exceptions import Flow360RuntimeError, Flow360ValidationError, Flow360ValueError
@@ -39,6 +43,7 @@ from .resource_base import (
 from .results.case_results import (
     ActuatorDiskResultCSVModel,
     AeroacousticsResultCSVModel,
+    BETForcesRadialDistributionResultCSVModel,
     BETForcesResultCSVModel,
     CaseDownloadable,
     CFLResultCSVModel,
@@ -61,6 +66,7 @@ from .results.case_results import (
 from .simulation import services
 from .simulation.simulation_params import SimulationParams
 from .utils import (
+    _local_download_file_list_overwrite,
     _local_download_overwrite,
     is_valid_uuid,
     shared_account_confirm_proceed,
@@ -177,7 +183,6 @@ class CaseMetaV2(AssetMetaBaseModelV2):
     """
 
     id: str = pd.Field(alias="caseId")
-    case_mesh_id: str = pd.Field(alias="caseMeshId")
     status: Flow360Status = pd.Field()
 
     def to_case(self) -> Case:
@@ -453,12 +458,14 @@ class Case(CaseBase, Flow360Resource):
             params_as_dict = self._parse_json_from_cloud("simulation.json")
         except CloudFileNotFoundError as err:
             raise Flow360ValueError(
-                "Simulation params not found for this case. It is likely it was created with old interface"
+                "Simulation params not found for this case. It is likely it was created with old interface."
+                f" Original error: {str(err)}"
             ) from err
 
         # if the params come from GUI, it can contain data that is not conformal with SimulationParams thus cleaning
         param, errors, _ = services.validate_model(
             params_as_dict=params_as_dict,
+            validated_by=services.ValidationCalledBy.LOCAL,
             root_item_type=None,
             validation_level=None,
         )
@@ -533,11 +540,34 @@ class Case(CaseBase, Flow360Resource):
         raise Flow360RuntimeError("Case does not have parent case.")
 
     @property
-    def info(self) -> CaseMeta:
+    def info(self) -> CaseMetaV2:
         """
         returns metadata info for case
         """
         return super().info
+
+    @property
+    def info_v2(self) -> CaseMetaV2:
+        """
+        returns metadata v2 info for case
+        """
+        return self._web_api_v2.info
+
+    @property
+    def project_id(self) -> Optional[str]:
+        """Returns the project id of the case if case was run with V2 interface."""
+        if isinstance(self.info, CaseMeta):
+            return self.info.projectId
+        if isinstance(self.info, CaseMetaV2):
+            return self.info.project_id
+        raise ValueError("Case info is not of type CaseMeta or CaseMetaV2")
+
+    @property
+    def tags(self) -> List[str]:
+        """
+        get case tags
+        """
+        return self._web_api_v2.info.tags
 
     @property
     def volume_mesh(self) -> "VolumeMeshV2":
@@ -656,6 +686,19 @@ class Case(CaseBase, Flow360Resource):
         )
         return self
 
+    def rename(self, new_name: str):
+        """
+        Rename the current case.
+
+        Parameters
+        ----------
+        new_name : str
+            The new name for the case.
+        """
+        RestApi(CaseInterfaceV2.endpoint).patch(
+            RenameAssetRequestV2(name=new_name).dict(), method=self.id
+        )
+
     @classmethod
     def _interface(cls):
         return CaseInterface
@@ -705,8 +748,10 @@ class Case(CaseBase, Flow360Resource):
             An instance of `Case` with data loaded from local storage.
         """
         _local_download_file = _local_download_overwrite(local_storage_path, cls.__name__)
+        _local_download_file_list = _local_download_file_list_overwrite(local_storage_path)
         case = cls._from_meta(meta_data)
         case._download_file = _local_download_file
+        case.get_download_file_list = _local_download_file_list
         case._results = CaseResultsModel(case=case)
         case.results.set_local_storage(local_storage_path, keep_remote_structure=True)
         return case
@@ -811,6 +856,9 @@ class CaseResultsModel(pd.BaseModel):
     bet_forces: BETForcesResultCSVModel = pd.Field(
         default_factory=lambda: BETForcesResultCSVModel()
     )
+    bet_forces_radial_distribution: BETForcesRadialDistributionResultCSVModel = pd.Field(
+        default_factory=lambda: BETForcesRadialDistributionResultCSVModel()
+    )
     legacy_force_distribution: LegacyForceDistributionResultCSVModel = pd.Field(
         default_factory=lambda: LegacyForceDistributionResultCSVModel()
     )
@@ -849,7 +897,7 @@ class CaseResultsModel(pd.BaseModel):
         if not isinstance(self.case, Case):
             raise TypeError("case must be of type Case")
 
-        for field_name in self.model_fields:
+        for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 # pylint: disable=protected-access,no-member
@@ -858,15 +906,9 @@ class CaseResultsModel(pd.BaseModel):
                 value._get_params_method = lambda: self.case.params
                 value.local_storage = self.local_storage
 
-        return self
+                if hasattr(value, "get_download_file_list_method"):
+                    value.get_download_file_list_method = self.case.get_download_file_list
 
-    @pd.model_validator(mode="after")
-    def pass_get_files_function(self):
-        """
-        Pass file getters into fields of the case results
-        """
-        # pylint: disable=no-member,assigning-non-slot
-        self.monitors.get_download_file_list_method = self.case.get_download_file_list
         return self
 
     # pylint: disable=protected-access,no-member
@@ -879,6 +921,7 @@ class CaseResultsModel(pd.BaseModel):
         has_function_map = {
             "actuator_disks": self.case.has_actuator_disks,
             "bet_forces": self.case.has_bet_disks,
+            "bet_forces_radial_distribution": self.case.has_bet_disks,
             "isosurfaces": self.case.has_isosurfaces,
             "monitors": self.case.has_monitors,
             "volumes": self.case.has_volume_output,
@@ -886,7 +929,7 @@ class CaseResultsModel(pd.BaseModel):
             "user_defined_dynamics": self.case.has_user_defined_dynamics,
         }
 
-        for field_name in self.model_fields:
+        for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 function = has_function_map.get(field_name, lambda: True)
@@ -962,6 +1005,7 @@ class CaseResultsModel(pd.BaseModel):
         surface_forces: bool = None,
         total_forces: bool = None,
         bet_forces: bool = None,
+        bet_forces_radial_distribution: bool = None,
         actuator_disks: bool = None,
         legacy_force_distribution: bool = None,
         x_slicing_force_distribution: bool = None,
@@ -996,6 +1040,8 @@ class CaseResultsModel(pd.BaseModel):
             Download total forces file if True.
         bet_forces : bool, optional
             Download BET (Blade Element Theory) forces file if True.
+        bet_forces_radial_distribution : bool, optional
+            Download BET (Blade Element Theory) forces radial distribution file if True.
         actuator_disk_output : bool, optional
             Download actuator disk output file if True.
         all : bool, optional
@@ -1021,6 +1067,7 @@ class CaseResultsModel(pd.BaseModel):
         self.surface_forces.do_download = surface_forces
         self.total_forces.do_download = total_forces
         self.bet_forces.do_download = bet_forces
+        self.bet_forces_radial_distribution.do_download = bet_forces_radial_distribution
         self.actuator_disks.do_download = actuator_disks
         self.legacy_force_distribution.do_download = legacy_force_distribution
         self.x_slicing_force_distribution.do_download = x_slicing_force_distribution
@@ -1057,7 +1104,7 @@ class CaseResultsModel(pd.BaseModel):
         keep_remote_structure : bool, optional
             When true, remote folder structure is assumed to be preserved, otherwise flat structure, by default False
         """
-        for field_name in self.model_fields:
+        for field_name in self.__class__.model_fields:  # pylint:disable = not-an-iterable
             value = getattr(self, field_name)
             if isinstance(value, ResultBaseModel):
                 if keep_remote_structure is True:

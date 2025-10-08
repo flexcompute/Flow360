@@ -3,98 +3,45 @@ Support class and functions for project interface.
 """
 
 import datetime
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional, get_args
 
 import pydantic as pd
 
 from flow360.cloud.rest_api import RestApi
 from flow360.component.interfaces import ProjectInterface
+from flow360.component.simulation import services
+from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.single_attribute_base import (
-    SingleAttributeModel,
+from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.outputs.output_entities import (
+    Point,
+    PointArray,
+    PointArray2D,
+    Slice,
 )
-from flow360.component.simulation.primitives import GhostSurface
+from flow360.component.simulation.outputs.outputs import (
+    ImportedSurfaceIntegralOutput,
+    ImportedSurfaceOutput,
+    MonitorOutputType,
+)
+from flow360.component.simulation.primitives import (
+    Box,
+    CustomVolume,
+    Cylinder,
+    Edge,
+    GeometryBodyGroup,
+    GhostSurface,
+    Surface,
+)
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.utils import (
-    SUPPORTED_GEOMETRY_FILE_PATTERNS,
-    MeshFileFormat,
-    MeshNameParser,
-    match_file_pattern,
-    parse_datetime,
-)
+from flow360.component.simulation.unit_system import LengthType
+from flow360.component.simulation.user_code.core.types import save_user_variables
+from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.utils import parse_datetime
 from flow360.exceptions import Flow360ConfigurationError
 from flow360.log import log
-
-
-class GeometryFiles(SingleAttributeModel):
-    """Validation model to check if the given files are geometry files"""
-
-    type_name: Literal["GeometryFile"] = pd.Field("GeometryFile", frozen=True)
-    value: Union[List[str], str] = pd.Field()
-
-    @pd.field_validator("value", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        if isinstance(value, str):
-            if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, value):
-                raise ValueError(
-                    f"The given file: {value} is not a supported geometry file. "
-                    f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
-                )
-        else:  # list
-            for file in value:
-                if not match_file_pattern(SUPPORTED_GEOMETRY_FILE_PATTERNS, file):
-                    raise ValueError(
-                        f"The given file: {file} is not a supported geometry file. "
-                        f"Allowed file suffixes are: {SUPPORTED_GEOMETRY_FILE_PATTERNS}"
-                    )
-        return value
-
-
-class SurfaceMeshFile(SingleAttributeModel):
-    """Validation model to check if the given file is a surface mesh file"""
-
-    type_name: Literal["SurfaceMeshFile"] = pd.Field("SurfaceMeshFile", frozen=True)
-    value: str = pd.Field()
-
-    @pd.field_validator("value", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        try:
-            parser = MeshNameParser(input_mesh_file=value)
-        except Exception as e:
-            raise ValueError(str(e)) from e
-        if parser.is_valid_surface_mesh() or parser.is_valid_volume_mesh():
-            # We support extracting surface mesh from volume mesh as well
-            return value
-        raise ValueError(
-            f"The given mesh file {value} is not a valid surface mesh file. "
-            f"Unsupported surface mesh file extensions: {parser.format.ext()}. "
-            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}, {MeshFileFormat.STL.ext()}]."
-        )
-
-
-class VolumeMeshFile(SingleAttributeModel):
-    """Validation model to check if the given file is a volume mesh file"""
-
-    type_name: Literal["VolumeMeshFile"] = pd.Field("VolumeMeshFile", frozen=True)
-    value: str = pd.Field()
-
-    @pd.field_validator("value", mode="after")
-    @classmethod
-    def _validate_files(cls, value):
-        try:
-            parser = MeshNameParser(input_mesh_file=value)
-        except Exception as e:
-            raise ValueError(str(e)) from e
-        if parser.is_valid_volume_mesh():
-            return value
-        raise ValueError(
-            f"The given mesh file {value} is not a valid volume mesh file. ",
-            f"Unsupported volume mesh file extensions: {parser.format.ext()}. "
-            f"Supported: [{MeshFileFormat.UGRID.ext()},{MeshFileFormat.CGNS.ext()}].",
-        )
 
 
 class AssetStatistics(pd.BaseModel):
@@ -176,10 +123,11 @@ class ProjectRecords(pd.BaseModel):
         return output_str
 
 
-def show_projects_with_keyword_filter(search_keyword: str):
-    """Show all projects with a keyword filter"""
+def get_project_records(
+    search_keyword: str, tags: Optional[List[str]] = None
+) -> tuple[ProjectRecords, int]:
+    """Get all projects with a keyword filter"""
     # pylint: disable=invalid-name
-    MAX_DISPLAYABLE_ITEM_COUNT = 200
     MAX_SEARCHABLE_ITEM_COUNT = 1000
     _api = RestApi(ProjectInterface.endpoint, id=None)
     resp = _api.get(
@@ -187,23 +135,34 @@ def show_projects_with_keyword_filter(search_keyword: str):
             "page": "0",
             "size": MAX_SEARCHABLE_ITEM_COUNT,
             "filterKeywords": search_keyword,
+            "filterTags": tags,
             "sortFields": ["createdAt"],
             "sortDirections": ["asc"],
         }
     )
 
     all_projects = ProjectRecords.model_validate({"records": resp["records"]})
+    num_of_projects = resp["total"]
+
+    return all_projects, num_of_projects
+
+
+def show_projects_with_keyword_filter(search_keyword: str):
+    """Show all projects with a keyword filter"""
+    # pylint: disable=invalid-name
+    MAX_DISPLAYABLE_ITEM_COUNT = 200
+    all_projects, num_of_projects = get_project_records(search_keyword)
     log.info("%s", str(all_projects))
 
-    if resp["total"] > MAX_DISPLAYABLE_ITEM_COUNT:
+    if num_of_projects > MAX_DISPLAYABLE_ITEM_COUNT:
         log.warning(
-            f"Total number of projects matching the keyword on the cloud is {resp['total']}, "
+            f"Total number of projects matching the keyword on the cloud is {num_of_projects}, "
             f"but only the latest {MAX_DISPLAYABLE_ITEM_COUNT} will be displayed. "
         )
-    log.info("Total number of matching projects on the cloud: %d", resp["total"])
+    log.info("Total number of matching projects on the cloud: %d", num_of_projects)
 
 
-def replace_ghost_surfaces(params: SimulationParams):
+def _replace_ghost_surfaces(params: SimulationParams):
     """
     When the `SimulationParam` is constructed with python script on the Python side, the ghost boundaries
     will be obtained by for example `automated_farfield.farfield` which returns :class:`GhostSurface`
@@ -216,8 +175,8 @@ def replace_ghost_surfaces(params: SimulationParams):
             if item.name == ghost_surface.name:
                 return item
         raise Flow360ConfigurationError(
-            f"Unknown ghost surface with name `{ghost_surface.name}` found."
-            "Please double check the use of ghost surfaces."
+            f"Ghost surface `{ghost_surface.name}` is used but likely won't be generated."
+            " Please double check the use of ghost surfaces."
         )
 
     def _find_ghost_surfaces(*, model, ghost_entities_from_metadata):
@@ -237,9 +196,15 @@ def replace_ghost_surfaces(params: SimulationParams):
                                 ghost_entities_from_metadata=ghost_entities_from_metadata,
                             )
 
-            elif isinstance(field, list):
+            elif isinstance(field, (list, tuple)):
                 for item in field:
-                    if isinstance(item, Flow360BaseModel):
+                    if isinstance(item, GhostSurface):
+                        # pylint: disable=protected-access
+                        item = _replace_the_ghost_surface(
+                            ghost_surface=item,
+                            ghost_entities_from_metadata=ghost_entities_from_metadata,
+                        )
+                    elif isinstance(item, Flow360BaseModel):
                         _find_ghost_surfaces(
                             model=item, ghost_entities_from_metadata=ghost_entities_from_metadata
                         )
@@ -255,3 +220,236 @@ def replace_ghost_surfaces(params: SimulationParams):
     _find_ghost_surfaces(model=params, ghost_entities_from_metadata=ghost_entities_from_metadata)
 
     return params
+
+
+def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationParams):
+    """
+    Setting up non-persistent entities (AKA draft entities) in params.
+    Add the ones used to the entity info.
+    """
+
+    entity_registry = params.used_entity_registry
+    # Creating draft entities
+    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume]:
+        draft_entities = entity_registry.find_by_type(draft_type)
+        for draft_entity in draft_entities:
+            if draft_entity not in entity_info.draft_entities:
+                entity_info.draft_entities.append(draft_entity)
+    return entity_info
+
+
+def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> EntityInfoModel:
+    """
+    Update the entity grouping tags in params to resolve possible conflicts
+    between the SimulationParams and the root asset.This
+    """
+
+    def _get_used_tags(model: Flow360BaseModel, target_entity_type, used_tags: set):
+        for field in model.__dict__.values():
+            # Skip the AssetCache since the asset cache is exactly what we want to update later.
+
+            if isinstance(field, AssetCache):
+                continue
+
+            if isinstance(field, target_entity_type):
+                used_tags.add(field.private_attribute_tag_key)
+
+            if isinstance(field, EntityList):
+                for entity in field.stored_entities:
+                    if isinstance(entity, target_entity_type):
+                        used_tags.add(entity.private_attribute_tag_key)
+
+            elif isinstance(field, (list, tuple)):
+                for item in field:
+                    if isinstance(item, target_entity_type):
+                        used_tags.add(item.private_attribute_tag_key)
+                    elif isinstance(item, Flow360BaseModel):
+                        _get_used_tags(item, target_entity_type, used_tags)
+
+            elif isinstance(field, Flow360BaseModel):
+                _get_used_tags(field, target_entity_type, used_tags)
+
+    if entity_info.type_name != "GeometryEntityInfo":
+        return entity_info
+    # pylint: disable=protected-access
+    entity_types = [
+        (Surface, "face_group_tag"),
+    ]
+
+    if entity_info.edge_ids:
+        entity_types.append((Edge, "edge_group_tag"))
+
+    if entity_info.body_ids:
+        entity_types.append((GeometryBodyGroup, "body_group_tag"))
+
+    for entity_type, entity_grouping_tags in entity_types:
+        used_tags = set()
+        _get_used_tags(params, entity_type, used_tags)
+
+        if None in used_tags:
+            used_tags.remove(None)
+
+        used_tags = sorted(list(used_tags))
+        current_tag = getattr(entity_info, entity_grouping_tags)
+        if len(used_tags) == 1 and current_tag != used_tags[0]:
+            log.warning(
+                f"Inconsistent grouping of {entity_type.__name__} between the geometry object ({current_tag})"
+                f" and SimulationParams ({used_tags[0]}). "
+                "Ignoring the geometry object and using the one in the SimulationParams."
+            )
+            with model_attribute_unlock(entity_info, entity_grouping_tags):
+                setattr(entity_info, entity_grouping_tags, used_tags[0])
+
+        if len(used_tags) > 1:
+            raise Flow360ConfigurationError(
+                f"Multiple entity ({entity_type.__name__}) grouping tags found "
+                f"in the SimulationParams ({used_tags})."
+            )
+
+    return entity_info
+
+
+def _set_up_default_geometry_accuracy(
+    root_asset,
+    params: SimulationParams,
+    use_geometry_AI: bool,  # pylint: disable=invalid-name
+):
+    """
+    Set up the default geometry accuracy in params if not set by the user.
+    """
+    if not use_geometry_AI:
+        return params
+    if root_asset.default_settings.get("geometry_accuracy") is None:
+        return params
+    if not params.meshing.defaults.geometry_accuracy:
+        params.meshing.defaults.geometry_accuracy = root_asset.default_settings["geometry_accuracy"]
+    return params
+
+
+def _set_up_default_reference_geometry(params: SimulationParams, length_unit: LengthType):
+    """
+    Setting up the default reference geometry if not provided in params.
+    Ensure the simulation.json contains the default settings other than None.
+    """
+    # pylint: disable=protected-access
+    default_reference_geometry = services._get_default_reference_geometry(length_unit)
+    if params.reference_geometry is None:
+        params.reference_geometry = default_reference_geometry
+        return params
+
+    for field in params.reference_geometry.__class__.model_fields:
+        if getattr(params.reference_geometry, field) is None:
+            setattr(params.reference_geometry, field, getattr(default_reference_geometry, field))
+
+    return params
+
+
+def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
+    """
+    Setting up the monitor output in the stopping criterion if not provided in params.outputs.
+    """
+    if not params.models:
+        return params
+    stopping_criterion = None
+    for model in params.models:
+        if not isinstance(model, Fluid):
+            continue
+        stopping_criterion = model.stopping_criterion
+    if not stopping_criterion:
+        return params
+    monitor_output_ids = []
+    if params.outputs is not None:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            monitor_output_ids.append(output.private_attribute_id)
+    for criterion in stopping_criterion:
+        monitor_output = criterion.monitor_output
+        if isinstance(monitor_output, str):
+            continue
+        if monitor_output.private_attribute_id not in monitor_output_ids:
+            params.outputs.append(monitor_output)
+            monitor_output_ids.append(monitor_output.private_attribute_id)
+    return params
+
+
+def set_up_params_for_uploading(
+    root_asset,
+    length_unit: LengthType,
+    params: SimulationParams,
+    use_beta_mesher: bool,
+    use_geometry_AI: bool,  # pylint: disable=invalid-name
+) -> SimulationParams:
+    """
+    Set up params before submitting the draft.
+    """
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+        params.private_attribute_asset_cache.project_length_unit = length_unit
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
+        params.private_attribute_asset_cache.use_inhouse_mesher = (
+            use_beta_mesher if use_beta_mesher else False
+        )
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "use_geometry_AI"):
+        params.private_attribute_asset_cache.use_geometry_AI = (
+            use_geometry_AI if use_geometry_AI else False
+        )
+
+    # User may have made modifications to the entities which is recorded in asset's entity registry
+    # We need to reflect these changes.
+    root_asset.entity_info.update_persistent_entities(
+        asset_entity_registry=root_asset.internal_registry
+    )
+
+    # Check if there are any new draft entities that have been added in the params by the user
+    entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+
+    # If the customer just load the param without re-specify the same set of entity grouping tags,
+    # we need to update the entity grouping tags to the ones in the SimulationParams.
+    entity_info = _update_entity_grouping_tags(entity_info, params)
+
+    with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+        params.private_attribute_asset_cache.project_entity_info = entity_info
+    # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
+    # This has to be done after `project_entity_info` is properly set.
+    params = _replace_ghost_surfaces(params)
+    params = _set_up_default_geometry_accuracy(root_asset, params, use_geometry_AI)
+
+    params = _set_up_default_reference_geometry(params, length_unit)
+    params = _set_up_monitor_output_from_stopping_criterion(params=params)
+
+    # Convert all reference of UserVariables to VariableToken
+    params = save_user_variables(params)
+
+    return params
+
+
+def validate_params_with_context(params, root_item_type, up_to):
+    """Validate the simulation params with the simulation path."""
+
+    # pylint: disable=protected-access
+    validation_level = services._determine_validation_level(
+        root_item_type=root_item_type, up_to=up_to
+    )
+
+    params, errors, _ = services.validate_model(
+        params_as_dict=params.model_dump(mode="json", exclude_none=True),
+        validated_by=services.ValidationCalledBy.LOCAL,
+        root_item_type=root_item_type,
+        validation_level=validation_level,
+    )
+
+    return params, errors
+
+
+def upload_imported_surfaces_to_draft(params, draft):
+    """Upload imported surfaces to draft"""
+    if params.outputs:
+        imported_surface_file_paths = []
+        for output in params.outputs:
+            if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+                for surface in output.entities.stored_entities:
+                    imported_surface_file_paths.append(surface.file_name)
+        draft.upload_imported_surfaces(imported_surface_file_paths)

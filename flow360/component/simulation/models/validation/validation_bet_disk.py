@@ -20,6 +20,7 @@ def _check_bet_disk_initial_blade_direction_and_blade_line_chord(bet_disk):
 
 
 # pylint: disable=unused-argument
+# This is to enable getting name from the info.
 def _check_bet_disk_alphas_in_order(value, info: ValidationInfo):
     if any(value != sorted(value)):
         raise ValueError("the alphas are not in increasing order.")

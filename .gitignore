@@ -176,6 +176,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Matplotlib testing
+result_images/
+
 # Translations
 *.mo
 *.pot
@@ -329,3 +332,5 @@ tmp/
 
 # test residual
 flow360/examples/cylinder2D/flow360mesh.json
+
+/local_tests

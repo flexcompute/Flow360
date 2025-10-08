@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from itertools import chain
-from typing import Any, List, Literal, get_origin
+from typing import Any, List, Literal, Set, get_origin
 
 import pydantic as pd
 import rich
@@ -13,9 +14,9 @@ import yaml
 from pydantic import ConfigDict
 from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
 from pydantic_core import InitErrorDetails
+from unyt.unit_registry import UnitRegistry
 
 from flow360.component.simulation.conversion import need_conversion, unit_converter
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation import validation_context
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -28,6 +29,32 @@ DISCRIMINATOR_NAMES = [
     "output_type",
     "private_attribute_entity_type_name",
 ]
+
+
+def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup):
+    new_list = []
+    for i, item in enumerate(value):
+        # Extend the 'required_by' path with the current index.
+        new_required_by = required_by + [f"{i}"]
+        if isinstance(item, list):
+            # Recursively process nested lists.
+            new_list.append(
+                _preprocess_nested_list(item, new_required_by, params, exclude, registry_lookup)
+            )
+        elif isinstance(item, Flow360BaseModel):
+            # Process Flow360BaseModel instances.
+            new_list.append(
+                item.preprocess(
+                    params=params,
+                    required_by=new_required_by,
+                    exclude=exclude,
+                    registry_lookup=registry_lookup,
+                )
+            )
+        else:
+            # Return item unchanged if it doesn't need processing.
+            new_list.append(item)
+    return new_list
 
 
 def snake_to_camel(string: str) -> str:
@@ -67,10 +94,22 @@ class Conflicts(pd.BaseModel):
     field2: str
 
 
+class RegistryLookup:  # pylint:disable=too-few-public-methods
+    """
+    Helper object to cache the conversion unit system registry
+    """
+
+    __slots__ = ["converted_fields", "registry"]
+
+    def __init__(self):
+        self.converted_fields: Set[str] = set()
+        self.registry: UnitRegistry = None
+
+
 class Flow360BaseModel(pd.BaseModel):
     """Base pydantic (V2) model that all Flow360 components inherit from.
     Defines configuration for handling data structures
-    as well as methods for imporing, exporting, and hashing Flow360 objects.
+    as well as methods for importing, exporting, and hashing Flow360 objects.
     For more details on pydantic base models, see:
     `Pydantic Models <https://pydantic-docs.helpmanual.io/usage/models/>`
     """
@@ -130,8 +169,9 @@ class Flow360BaseModel(pd.BaseModel):
     )
 
     def __setattr__(self, name, value):
-        if name in self.model_fields:
-            is_frozen = self.model_fields[name].frozen
+        # pylint: disable=unsupported-membership-test,  unsubscriptable-object
+        if name in self.__class__.model_fields:
+            is_frozen = self.__class__.model_fields[name].frozen
             if is_frozen is not None and is_frozen is True:
                 raise ValueError(f"Cannot modify immutable/frozen fields: {name}")
         super().__setattr__(name, value)
@@ -202,6 +242,7 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def _get_field_context(cls, info, context_key):
         if info.field_name is not None:
+            # pylint:disable = unsubscriptable-object
             field_info = cls.model_fields[info.field_name]
             if isinstance(field_info.json_schema_extra, dict):
                 return field_info.json_schema_extra.get(context_key)
@@ -244,7 +285,10 @@ class Flow360BaseModel(pd.BaseModel):
         if need_to_rebuild is True:
             for mode, method in validators:
                 info = FieldValidatorDecoratorInfo(
-                    fields=tuple(fields_to_validate), mode=mode, check_fields=None
+                    fields=tuple(fields_to_validate),
+                    mode=mode,
+                    check_fields=None,
+                    json_schema_input_type=Any,
                 )
                 deco = Decorator.build(cls, cls_var_name=method, info=info, shim=None)
                 cls.__pydantic_decorators__.field_validators[method] = deco
@@ -404,29 +448,6 @@ class Flow360BaseModel(pd.BaseModel):
         raise Flow360FileError(f"File must be .json, or .yaml, type, given {filename}")
 
     @classmethod
-    def _from_json(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
-        """Load a :class:`Flow360BaseModel` from .json file.
-
-        Parameters
-        ----------
-        filename : str
-            Full path to the .json file to load the :class:`Flow360BaseModel` from.
-
-        Returns
-        -------
-        :class:`Flow360BaseModel`
-            An instance of the component class calling `load`.
-        **parse_obj_kwargs
-            Keyword arguments passed to pydantic's ``parse_obj`` method.
-
-        Example
-        -------
-        >>> params = Flow360BaseModel._from_json(filename='folder/flow360.json') # doctest: +SKIP
-        """
-        model_dict = cls._dict_from_file(filename=filename)
-        return cls.model_validate(model_dict, **parse_obj_kwargs)
-
-    @classmethod
     def _dict_from_json(cls, filename: str) -> dict:
         """Load dictionary of the model from a .json file.
 
@@ -460,35 +481,12 @@ class Flow360BaseModel(pd.BaseModel):
         -------
         >>> params._to_json(filename='folder/flow360.json') # doctest: +SKIP
         """
-        json_string = self.model_dump_json(**kwargs)
+        json_string = self.model_dump_json(exclude_none=True, **kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"] is True:
             model_dict["hash"] = self._calculate_hash(model_dict)
         with open(filename, "w+", encoding="utf-8") as file_handle:
             json.dump(model_dict, file_handle, indent=4, sort_keys=True)
-
-    @classmethod
-    def _from_yaml(cls, filename: str, **parse_obj_kwargs) -> Flow360BaseModel:
-        """Loads :class:`Flow360BaseModel` from .yaml file.
-
-        Parameters
-        ----------
-        filename : str
-            Full path to the .yaml file to load the :class:`Flow360BaseModel` from.
-        **parse_obj_kwargs
-            Keyword arguments passed to pydantic's ``parse_obj`` method.
-
-        Returns
-        -------
-        :class:`Flow360BaseModel`
-            An instance of the component class calling `from_yaml`.
-
-        Example
-        -------
-        >>> params = Flow360BaseModel._from_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
-        """
-        model_dict = cls._dict_from_file(filename=filename)
-        return cls.model_validate(model_dict, **parse_obj_kwargs)
 
     @classmethod
     def _dict_from_yaml(cls, filename: str) -> dict:
@@ -524,7 +522,7 @@ class Flow360BaseModel(pd.BaseModel):
         -------
         >>> params._to_yaml(filename='folder/flow360.yaml') # doctest: +SKIP
         """
-        json_string = self.model_dump_json(**kwargs)
+        json_string = self.model_dump_json(exclude_none=True, **kwargs)
         model_dict = json.loads(json_string)
         if self.model_config["include_hash"]:
             model_dict["hash"] = self._calculate_hash(model_dict)
@@ -533,6 +531,11 @@ class Flow360BaseModel(pd.BaseModel):
 
     @classmethod
     def _handle_dict_with_hash(cls, model_dict):
+        """
+        Handle dictionary input for the model.
+        1. Pop the hash.
+        2. Check file manipulation.
+        """
         hash_from_input = model_dict.pop("hash", None)
         if hash_from_input is not None:
             if hash_from_input != cls._calculate_hash(model_dict):
@@ -541,53 +544,40 @@ class Flow360BaseModel(pd.BaseModel):
 
     @classmethod
     def _calculate_hash(cls, model_dict):
+        def remove_private_attribute_id(obj):
+            """
+            Recursively remove all 'private_attribute_id' keys from the data structure.
+            This ensures hash consistency when private_attribute_id contains UUID4 values
+            that change between runs.
+            """
+            if isinstance(obj, dict):
+                # Create new dict excluding 'private_attribute_id' keys
+                return {
+                    key: remove_private_attribute_id(value)
+                    for key, value in obj.items()
+                    if key != "private_attribute_id"
+                }
+            if isinstance(obj, list):
+                # Recursively process list elements
+                return [remove_private_attribute_id(item) for item in obj]
+            # Return other types as-is (maintains reference for immutable objects)
+            return obj
+
+        # Remove private_attribute_id before calculating hash
+        cleaned_dict = remove_private_attribute_id(model_dict)
         hasher = hashlib.sha256()
-        json_string = json.dumps(model_dict, sort_keys=True)
+        json_string = json.dumps(cleaned_dict, sort_keys=True)
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
-
-    def _convert_unit(
-        self,
-        *,
-        exclude: List[str] = None,
-        to_unit_system: Literal["flow360_v2", "SI", "Imperial", "CGS"] = "flow360_v2",
-    ) -> dict:
-        solver_values = {}
-        self_dict = self.__dict__
-
-        if exclude is None:
-            exclude = []
-
-        additional_fields = {}
-
-        for property_name, value in chain(self_dict.items(), additional_fields.items()):
-            if need_conversion(value) and property_name not in exclude:
-                log.debug(f"   -> need conversion for: {property_name} = {value}")
-                # pylint: disable=no-member
-                solver_values[property_name] = value.in_base(unit_system=to_unit_system)
-                log.debug(f"      converted to: {solver_values[property_name]}")
-            elif isinstance(value, list) and property_name not in exclude:
-                new_value = []
-                for item in value:
-                    if need_conversion(item):
-                        # pylint: disable=no-member
-                        new_value.append(item.in_base(unit_system=to_unit_system))
-                    else:
-                        new_value.append(item)
-                solver_values[property_name] = new_value
-            else:
-                solver_values[property_name] = value
-
-        return solver_values
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-branches
     def _nondimensionalization(
         self,
         *,
         params,
-        mesh_unit: LengthType.Positive = None,
         exclude: List[str] = None,
         required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
@@ -599,43 +589,30 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         additional_fields = {}
-        assert mesh_unit is not None
 
         for property_name, value in chain(self_dict.items(), additional_fields.items()):
             loc_name = property_name
-            field = self.model_fields.get(property_name)
+            field = self.__class__.model_fields.get(property_name)
             if field is not None and field.alias is not None:
                 loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
-                log.debug(f"   -> need conversion for: {property_name} = {value}")
-                flow360_conv_system = unit_converter(
-                    value.units.dimensions,
-                    mesh_unit,
-                    params=params,
-                    required_by=[*required_by, loc_name],
-                )
-                # pylint: disable=no-member
-                value.units.registry = flow360_conv_system.registry
+                dimension = value.units.dimensions
+                if dimension not in registry_lookup.converted_fields:
+                    flow360_conv_system = unit_converter(
+                        value.units.dimensions,
+                        params=params,
+                        required_by=[*required_by, loc_name],
+                    )
+                    # Calling unit_converter is always additive on the global conversion system
+                    # so we can only keep track of the most recent registry and use it
+                    registry_lookup.registry = (
+                        flow360_conv_system.registry  # pylint:disable=no-member
+                    )
+                    registry_lookup.converted_fields.add(dimension)
+                value.units.registry = registry_lookup.registry
                 solver_values[property_name] = value.in_base(unit_system="flow360_v2")
-                log.debug(f"      converted to: {solver_values[property_name]}")
-            elif isinstance(value, list) and property_name not in exclude:
-                new_value = []
-                for item in value:
-                    if need_conversion(item):
-                        flow360_conv_system = unit_converter(
-                            item.units.dimensions,
-                            mesh_unit,
-                            params=params,
-                            required_by=[*required_by, loc_name],
-                        )
-                        # pylint: disable=no-member
-                        item.units.registry = flow360_conv_system.registry
-                        new_value.append(item.in_base(unit_system="flow360_v2"))
-                    else:
-                        new_value.append(item)
-                solver_values[property_name] = new_value
             else:
-                solver_values[property_name] = value
+                solver_values[property_name] = copy.copy(value)
 
         return solver_values
 
@@ -643,12 +620,12 @@ class Flow360BaseModel(pd.BaseModel):
         self,
         *,
         params=None,
-        mesh_unit=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
+        registry_lookup: RegistryLookup = None,
     ) -> Flow360BaseModel:
         """
-        Loops through all fields, for Flow360BaseModel runs .preprocess() recusrively. For dimensioned value performs
+        Loops through all fields, for Flow360BaseModel runs .preprocess() recursively. For dimensioned value performs
 
         unit conversion to flow360_base system.
 
@@ -666,11 +643,18 @@ class Flow360BaseModel(pd.BaseModel):
         required_by: List[str] (optional)
             Path to property which requires conversion.
 
+        registry_lookup: RegistryLookup (optional)
+            Lookup object that allows us to quickly perform conversions by
+            reducing redundant calls to the conversion system getter
+
         Returns
         -------
         caller class
             returns caller class with units all in flow360 base unit system
         """
+
+        if registry_lookup is None:
+            registry_lookup = RegistryLookup()
 
         if exclude is None:
             exclude = []
@@ -680,82 +664,28 @@ class Flow360BaseModel(pd.BaseModel):
 
         solver_values = self._nondimensionalization(
             params=params,
-            mesh_unit=mesh_unit,
             exclude=exclude,
             required_by=required_by,
+            registry_lookup=registry_lookup,
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:
                 continue
             loc_name = property_name
-            field = self.model_fields.get(property_name)
+            field = self.__class__.model_fields.get(property_name)
             if field is not None and field.alias is not None:
                 loc_name = field.alias
             if isinstance(value, Flow360BaseModel):
                 solver_values[property_name] = value.preprocess(
                     params=params,
-                    mesh_unit=mesh_unit,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
+                    registry_lookup=registry_lookup,
                 )
             elif isinstance(value, list):
-                for i, item in enumerate(value):
-                    if isinstance(item, Flow360BaseModel):
-                        solver_values[property_name][i] = item.preprocess(
-                            params=params,
-                            mesh_unit=mesh_unit,
-                            required_by=[*required_by, loc_name, f"{i}"],
-                            exclude=exclude,
-                        )
-
-        return self.__class__(**solver_values)
-
-    def convert_to_unit_system(
-        self,
-        *,
-        to_unit_system: Literal["SI", "Imperial", "CGS"],
-        exclude: List[str] = None,
-    ) -> Flow360BaseModel:
-        """
-        Loops through all fields and performs unit conversion to given unit system.
-        Separated from preprocess() to allow unit conversion only. preprocess may contain additonal processing.
-
-        Parameters
-        ----------
-        params : SimulationParams
-            Full config definition as Flow360Params.
-
-        exclude: List[str] (optional)
-            List of fields to not convert to solver dimensions.
-
-
-        Returns
-        -------
-        caller class
-            returns caller class with units all in flow360 base unit system
-        """
-
-        if exclude is None:
-            exclude = []
-
-        solver_values = self._convert_unit(
-            exclude=exclude,
-            to_unit_system=to_unit_system,
-        )
-        for property_name, value in self.__dict__.items():
-            if property_name in exclude:
-                continue
-            if isinstance(value, Flow360BaseModel):
-                solver_values[property_name] = value.convert_to_unit_system(
-                    exclude=exclude,
-                    to_unit_system=to_unit_system,
+                # Use the helper to handle nested lists.
+                solver_values[property_name] = _preprocess_nested_list(
+                    value, [loc_name], params, exclude, registry_lookup
                 )
-            elif isinstance(value, list):
-                for i, item in enumerate(value):
-                    if isinstance(item, Flow360BaseModel):
-                        solver_values[property_name][i] = item.convert_to_unit_system(
-                            exclude=exclude,
-                            to_unit_system=to_unit_system,
-                        )
 
         return self.__class__(**solver_values)

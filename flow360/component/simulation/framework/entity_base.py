@@ -3,21 +3,16 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import uuid
 from abc import ABCMeta
-from numbers import Number
+from collections import defaultdict
 from typing import Annotated, List, Optional, Union, get_args, get_origin
 
-import numpy as np
 import pydantic as pd
-import unyt
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.utils import is_exact_instance
-
-
-class MergeConflictError(Exception):
-    """Raised when a merge conflict is detected."""
 
 
 def generate_uuid():
@@ -35,7 +30,7 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
             This should be set in subclasses to differentiate between entity types.
             Warning:
             This controls the granularity of the registry and must be unique for each entity type
-            and it is **strongly recommended NOT** to change it as it will bring up compatability problems.
+            and it is **strongly recommended NOT** to change it as it will bring up compatibility problems.
 
         name (str):
             The name of the entity instance, used for identification and retrieval.
@@ -50,6 +45,11 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     )
 
     name: str = pd.Field(frozen=True)
+
+    # Whether the entity is dirty and needs to be re-hashed
+    _dirty: bool = pd.PrivateAttr(True)
+    # Cached hash of the entity
+    _hash_cache: str = pd.PrivateAttr(None)
 
     def __init__(self, **data):
         """
@@ -68,7 +68,7 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
                 f"private_attribute_entity_type_name is not defined in the entity class: {self.__class__.__name__}."
             )
 
-    def copy(self, update=None, **kwargs) -> EntityBase:
+    def copy(self, update: dict, **kwargs) -> EntityBase:  # pylint:disable=signature-differs
         """
         Creates a copy of the entity with compulsory updates.
 
@@ -79,11 +79,6 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
         Returns:
             A copy of the entity with the specified updates.
         """
-        if update is None:
-            raise ValueError(
-                "Change is necessary when calling .copy() as there cannot be two identical entities at the same time. "
-                "Please use update parameter to change the entity attributes."
-            )
         if "name" not in update or update["name"] == self.name:
             raise ValueError(
                 "Copying an entity requires a new name to be specified. "
@@ -121,8 +116,39 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     def __str__(self) -> str:
         return "\n".join([f"        {attr}: {value}" for attr, value in self.__dict__.items()])
 
-    def _is_generic(self):
-        return self.__class__.__name__.startswith("Generic")
+    def _recompute_hash(self):
+        new_hash = hashlib.sha256(self.model_dump_json().encode("utf-8")).hexdigest()
+        # Can further speed up 10% by using `object.__setattr__`
+        self._hash_cache = new_hash
+        self._dirty = False
+        return new_hash
+
+    def _get_hash(self):
+        """hash generator to identify if two entities are the same"""
+        # Can further speed up 10% by using `object.__getattribute__`
+        dirty = self._dirty
+        cache = self._hash_cache
+        if dirty or cache is None:
+            return self._recompute_hash()
+        return cache
+
+    def __setattr__(self, name, value):
+        """
+        [Large model performance]
+        Wrapping the __setattr__ to mark the entity as dirty when the attribute is not private
+        This enables caching the hash of the entity to avoid re-calculating the hash when the entity is not changed.
+        """
+
+        super().__setattr__(name, value)
+        if not name.startswith("_") and not self._dirty:
+            # Not using self to avoid invoking
+            # Can further speed up 10% by using `object.__setattr__`
+            self._dirty = True
+
+    @property
+    def id(self) -> str:
+        """Returns private_attribute_id of the entity."""
+        return self.private_attribute_id
 
 
 class _CombinedMeta(type(Flow360BaseModel), type):
@@ -155,162 +181,25 @@ class _EntityListMeta(_CombinedMeta):
         return new_cls
 
 
-def __combine_bools(input_data):
-    # If the input is a single boolean, return it directly
-    if isinstance(input_data, bool):
-        return input_data
-    # If the input is a numpy ndarray, flatten it
-    if isinstance(input_data, np.ndarray):
-        input_data = input_data.ravel()
-    # If the input is not a boolean or an ndarray, assume it's an iterable of booleans
-    return all(input_data)
-
-
-def _merge_fields(field_old, field_new):
-    """
-    Merges fields from a new object (field_new) into an existing object (field_old) with higher priority.
-    It recursively handles nested objects.
-
-    Parameters:
-        field_old (EntityBase): The existing object with higher priority.
-        field_new (EntityBase): The new object with lower priority.
-
-    Returns:
-        EntityBase: The merged object.
-
-    Raises:
-        MergeConflictError: If there's a conflict between the objects that can't be resolved.
-
-    Note:
-        The function skips merging for 'private_attribute_entity_type_name' and 'private_attribute_registry_bucket_name'
-        to handle cases where the objects could be different classes in nature.
-    """
-    # Define basic types that should not be merged further but directly compared or replaced
-    basic_types = (list, Number, str, tuple, unyt.unyt_array, unyt.unyt_quantity)
-
-    # Iterate over all attributes and values of the new object
-    for attr, value in field_new.__dict__.items():
-        # Ignore certain private attributes meant for entity type definition
-        if attr in [
-            "private_attribute_entity_type_name",
-            "private_attribute_registry_bucket_name",
-            "private_attribute_id",
-        ]:
-            continue
-
-        if field_new.__dict__[attr] is None:
-            # Skip merging this attribute since we always want more info.
-            continue
-
-        if attr in field_old.__dict__:
-            # Check for conflicts between old and new values
-            found_conflict = __combine_bools(field_old.__dict__[attr] != value)
-            if found_conflict:
-                if (
-                    not isinstance(field_old.__dict__[attr], basic_types)
-                    and field_old.__dict__[attr] is not None
-                ):
-                    # Recursive merge for nested objects until reaching basic types
-                    field_old.__dict__[attr] = _merge_fields(
-                        field_old.__dict__[attr], field_new.__dict__[attr]
-                    )
-                elif field_old.__dict__[attr] is None or (
-                    isinstance(field_old.__dict__[attr], list) and not field_old.__dict__[attr]
-                ):
-                    # Set the old value to the new value if the old value is empty
-                    field_old.__dict__[attr] = value
-                else:
-                    # Raise an error if basic types conflict and cannot be resolved
-                    raise MergeConflictError(
-                        f"Conflict on attribute '{attr}': {field_old.__dict__[attr]} != {value}"
-                    )
-        else:
-            # Add new attributes from the new object to the old object
-            field_old.__dict__[attr] = value
-
-    return field_old
-
-
-def _merge_objects(obj_old: EntityBase, obj_new: EntityBase) -> EntityBase:
-    """
-    Merges two entity objects, prioritizing the fields of the original object (obj_old) unless overridden
-    by non-generic values in the new object (obj_new). This function ensures that only compatible entities
-    are merged, raising exceptions when merge criteria are not met.
-
-    Parameters:
-        obj_old (EntityBase): The original object to be preserved with higher priority.
-        obj_new (EntityBase): The new object that might override or add to the fields of the original object.
-
-    Returns:
-        EntityBase: The merged entity object.
-
-    Raises:
-        MergeConflictError: Raised when the entities have different names or when they are of different types
-                            and both are non-generic, indicating that they should not be merged.
-    """
-
-    # Check if the names of the entities are the same; they must be for merging to make sense
-    if obj_new.name != obj_old.name:
-        raise MergeConflictError(
-            "Merge operation halted as the names of the entities do not match."
-            "Please ensure you are merging the correct entities."
-        )
-
-    # Swap objects if the new object is non-generic and the old one is generic.
-    # This ensures that the `obj_old` always has priority in attribute preservation.
-    # pylint: disable=protected-access
-    if not obj_new._is_generic() and obj_old._is_generic():
-        obj_new, obj_old = obj_old, obj_new
-
-    # Ensure that objects are of the same type if both are non-generic to prevent merging unrelated types
-    if not obj_new._is_generic() and not obj_old._is_generic():
-        if obj_new.__class__ != obj_old.__class__:
-            raise MergeConflictError(
-                f"Cannot merge objects of different classes: {obj_old.__class__.__name__}"
-                f" and {obj_new.__class__.__name__}."
-            )
-
-    # Utilize the _merge_fields function to merge the attributes of the two objects
-    merged_object = _merge_fields(obj_old, obj_new)
-    return merged_object
-
-
 def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
     """
-    In the expanded entity list from `_get_expanded_entities` we will very likely have generic entities
-    which comes from asset metadata. These entities may have counterparts given by users. We will try to update the
-    non-generic entities with the metadata contained within generic ones.
-    For example `entities = [my_mesh["*"], user_defined_zone]`. We need to keep the `user_defined_zone` while updating
-    it with the boundaries coming from mesh metadata in expanded list.
+    Removing completely identical entities which may result from usage like:
+    ```python
+        MyModel(entities=[my_vm["*"], my_vm["wing*"]])
+    ```
     """
-    all_entities = {}
 
+    entity_name_to_hash = defaultdict(set)
+    deduplicated_entities = []
+    # pylint: disable=protected-access
     for entity in expanded_entities:
-        if entity.name not in all_entities:
-            all_entities[entity.name] = []
-        all_entities[entity.name].append(entity)
-
-    for name, entity_list in all_entities.items():
-        if len(entity_list) > 1:
-            # step 1: find one instance that is non-generic if any
-            base_index = 0
-            for base_index, entity in enumerate(entity_list):
-                # pylint: disable=protected-access
-                if entity._is_generic() is False:
-                    break
-            for index, entity in enumerate(entity_list):
-                if index == base_index:
-                    continue  # no merging into self
-                entity_list[base_index] = _merge_objects(entity_list[base_index], entity)
-                entity_list.remove(entity)
-
-        if len(entity_list) != 1:
-            error_message = f"Duplicate entities found for {name}."
-            for entity in entity_list:
-                error_message += f"\n{entity}\n"
-            error_message += "Please remove duplicates."
-            raise ValueError(error_message)
-    return [entity_list[0] for entity_list in all_entities.values()]
+        entity_hash = entity._get_hash()
+        if entity_hash in entity_name_to_hash[entity.name]:
+            # Exact same entity found, ignore it.
+            continue
+        entity_name_to_hash[entity.name].add(entity_hash)
+        deduplicated_entities.append(entity)
+    return deduplicated_entities
 
 
 class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
@@ -374,7 +263,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
 
         raise ValueError(
             f"Type({type(input_data)}) of input to `entities` ({input_data}) is not valid. "
-            "Expected str or entity instance."
+            "Expected entity instance."
         )
 
     @pd.model_validator(mode="before")
@@ -405,7 +294,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                     cls._valid_individual_input(item)
                     if is_exact_instance(item, tuple(valid_types)):
                         entities_to_store.append(item)
-        elif isinstance(input_data, dict):  # Deseralization
+        elif isinstance(input_data, dict):  # Deserialization
             if "stored_entities" not in input_data:
                 raise KeyError(
                     f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
@@ -434,37 +323,39 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         create_hard_copy: bool,
     ) -> List[EntityBase]:
         """
-        Processes `stored_entities` to resolve any naming patterns into actual entity
-        references, expanding and filtering based on the defined entity types. This ensures that
-        all entities referenced either directly or by pattern are valid and registered.
+        Processes `stored_entities` to remove duplicate entities and raise error if conflicting entities are found.
 
-        **Warning**:
-            This method has to be called during preprocessing stage of Param when all settings have
-            been finalized. This ensures that all entities are registered in the registry (by assets or param).
-            Maybe we check hash or something to ensure consistency/integrity?
+        Possible future upgrade includes expanding `TokenEntity` (naming pattern, enabling compact data storage
+        like MatrixType and also templating SimulationParams which is planned when importing JSON as setting template)
 
         Raises:
             TypeError: If an entity does not match the expected type.
         Returns:
-            Exapnded entities list.
+            Expanded entities list.
         """
 
         entities = getattr(self, "stored_entities", [])
 
-        if entities is None:
-            return None
-
         expanded_entities = []
+        # Note: Points need to skip deduplication bc:
+        # 1. Performance of deduplication is slow when Point count is high.
+        not_merged_entity_types_name = [
+            "Point"
+        ]  # Entity types that need skipping deduplication (hacky)
+        not_merged_entities = []
 
         # pylint: disable=not-an-iterable
         for entity in entities:
-            if entity not in expanded_entities:
-                # Direct entity references are simply appended if they are of a valid type
-                expanded_entities.append(entity)
+            if entity.private_attribute_entity_type_name in not_merged_entity_types_name:
+                not_merged_entities.append(entity)
+                continue
+            # if entity not in expanded_entities:
+            expanded_entities.append(entity)
 
         expanded_entities = _remove_duplicate_entities(expanded_entities)
+        expanded_entities += not_merged_entities
 
-        if expanded_entities == []:
+        if not expanded_entities:
             raise ValueError(
                 f"Failed to find any matching entity with {entities}. Please check the input to entities."
             )
@@ -478,8 +369,9 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     # pylint: disable=arguments-differ
     def preprocess(self, **kwargs):
         """
-        Expand and overwrite self.stored_entities in preparation for submissin/serialization.
-        Should only be called as late as possible to incoperate all possible changes.
+        Expand and overwrite self.stored_entities in preparation for submission/serialization.
+        Should only be called as late as possible to incorporate all possible changes.
         """
+        # WARNING: this is very expensive all for long lists as it is quadratic
         self.stored_entities = self._get_expanded_entities(create_hard_copy=False)
         return super().preprocess(**kwargs)
