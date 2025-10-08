@@ -252,7 +252,7 @@ class SimulationParams(_ParamModelBase):
     meshing: Optional[Union[MeshingParams, ModularMeshingWorkflow]] = ConditionalField(
         None,
         context=[SURFACE_MESH, VOLUME_MESH],
-        discriminator="type",
+        discriminator="type_name",
         description="Surface and volume meshing parameters. See :class:`MeshingParams` for more details.",
     )
 

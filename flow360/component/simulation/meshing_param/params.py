@@ -126,7 +126,7 @@ class MeshingParams(Flow360BaseModel):
     ====
     """
 
-    type: Literal["MeshingParams"] = pd.Field("MeshingParams", frozen=True)
+    type_name: Literal["MeshingParams"] = pd.Field("MeshingParams", frozen=True)
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -289,7 +289,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     Parameters for snappyHexMesh surface meshing.
     """
 
-    type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
+    type_name: Literal["SnappySurfaceMeshingParams"] = pd.Field(
         "SnappySurfaceMeshingParams", frozen=True
     )
     defaults: SnappySurfaceMeshingDefaults = pd.Field()
@@ -350,7 +350,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     Volume meshing parameters.
     """
 
-    type: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
+    type_name: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
     defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
@@ -374,8 +374,10 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     )
 
 
-SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
-VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
+SurfaceMeshingParams = Annotated[
+    Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
+]
+VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type_name")]
 
 
 class ModularMeshingWorkflow(Flow360BaseModel):
@@ -383,7 +385,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     Structure consolidating surface and volume meshing parameters.
     """
 
-    type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
+    type_name: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
     surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
         default=None, context=SURFACE_MESH
     )

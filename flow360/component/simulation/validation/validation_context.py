@@ -144,7 +144,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         volume_zones = None
         try:
             if param_as_dict["meshing"]:
-                if param_as_dict["meshing"]["type"] == "MeshingParams":
+                if param_as_dict["meshing"]["type_name"] == "MeshingParams":
                     volume_zones = param_as_dict["meshing"]["volume_zones"]
                 else:
                     volume_zones = param_as_dict["meshing"]["zones"]
@@ -181,11 +181,11 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
         )
         if param_as_dict.get("meshing", None) is not None:
             beta_mesher_triggers.append(
-                param_as_dict.get("meshing", {}).get("surface_meshing", {}).get("type", "")
+                param_as_dict.get("meshing", {}).get("surface_meshing", {}).get("type_name", "")
                 == "SnappySurfaceMeshingParams"
             )
             beta_mesher_triggers.append(
-                param_as_dict.get("meshing", {}).get("volume_meshing", {}).get("type", "")
+                param_as_dict.get("meshing", {}).get("volume_meshing", {}).get("type_name", "")
                 == "BetaVolumeMeshingParams"
             )
         return any(beta_mesher_triggers)
@@ -242,7 +242,7 @@ class ParamsValidationInfo:  # pylint:disable=too-few-public-methods,too-many-in
     def _get_planar_face_tolerance(cls, param_as_dict: dict):
         planar_face_tolerance = None
         if "meshing" in param_as_dict and param_as_dict["meshing"]:
-            if param_as_dict["meshing"]["type"] == "MeshingParams":
+            if param_as_dict["meshing"]["type_name"] == "MeshingParams":
                 planar_face_tolerance = get_value_with_path(
                     param_as_dict, ["meshing", "defaults", "planar_face_tolerance"]
                 )
