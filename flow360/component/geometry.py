@@ -173,7 +173,7 @@ class GeometryDraft(ResourceDraft):
             if mesh_parser.is_ugrid() and os.path.isfile(
                 mesh_parser.get_associated_mapbc_filename()
             ):
-                file_name_mapbc = os.path.basename(mesh_parser.get_associated_mapbc_filename())
+                file_name_mapbc = mesh_parser.get_associated_mapbc_filename()
                 mapbc_files.append(file_name_mapbc)
 
         # Files with 'main' type are treated as MASTER_FILES and are processed after uploading
