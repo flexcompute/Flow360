@@ -11,7 +11,11 @@ from pydantic_core import ErrorDetails
 
 # Required for correct global scope initialization
 from flow360.component.simulation.blueprint.core.dependency_graph import DependencyGraph
+from flow360.component.simulation.entity_info import get_entity_database_for_selectors
 from flow360.component.simulation.exposed_units import supported_units_by_front_end
+from flow360.component.simulation.framework.entity_selector import (
+    expand_entity_selectors_in_place as expand_entity_selectors_in_place_impl,
+)
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     parse_model_dict,
 )
@@ -38,6 +42,7 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.outputs.outputs import SurfaceOutput
 from flow360.component.simulation.primitives import Box  # pylint: disable=unused-import
 from flow360.component.simulation.primitives import Surface  # For parse_model_dict
+from flow360.component.simulation.services_utils import has_any_entity_selectors
 from flow360.component.simulation.simulation_params import (
     ReferenceGeometry,
     SimulationParams,
@@ -414,6 +419,22 @@ def initialize_variable_space(param_as_dict: dict, use_clear_context: bool = Fal
             )
 
     return param_as_dict
+
+
+def resolve_selectors(params_as_dict: dict):
+    """
+    Expand the entity selectors in the params as dict.
+    """
+
+    # Step1: Check in the dictionary via looping and ensure selectors are present, if not just return.
+    if not has_any_entity_selectors(params_as_dict):
+        return params_as_dict
+
+    # Step2: Parse the entity info part and retrieve the entity lookup table.
+    entity_database = get_entity_database_for_selectors(params_as_dict=params_as_dict)
+
+    # Step3: Expand selectors using the entity database
+    return expand_entity_selectors_in_place_impl(entity_database, params_as_dict)
 
 
 def validate_model(  # pylint: disable=too-many-locals
@@ -1072,7 +1093,7 @@ def get_default_report_config() -> dict:
 
 
 def _parse_root_item_type_from_simulation_json(*, param_as_dict: dict):
-    """Deduct the root item entity type from simulation.json"""
+    """[External] Deduct the root item entity type from simulation.json"""
     try:
         entity_info_type = param_as_dict["private_attribute_asset_cache"]["project_entity_info"][
             "type_name"
