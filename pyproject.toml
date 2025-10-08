@@ -93,7 +93,7 @@ target-version = ["py37", "py38", "py39", "py310", "py311"]
 exclude = '''
 /(
     \.git
-    \.venv
+  | \.venv
 )/
 '''
 
