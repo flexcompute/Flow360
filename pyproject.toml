@@ -1,102 +1,55 @@
-[tool.poetry]
+[project]
 name = "flow360"
 version = "v25.7.4b0"
 description = "Flow360 Python Client"
-authors = ["Flexcompute <support@flexcompute.com>"]
+authors = [{ name = "Flexcompute", email = "support@flexcompute.com" }]
+requires-python = ">=3.9,<3.13"
+dependencies = [
+    "pydantic>=2.8,<2.12",
+    "pytest>=7.1.2,<8",
+    "click>=8.1.3,<9",
+    "toml>=0.10.2,<0.11",
+    "requests>=2.32.4,<3",
+    "boto3>=1.24.63,<2",
+    "numpy>=2.0,<3.0.0 ; python_version ~= '3.9'",
+    "numpy>=2.0,<3.0.0 ; python_version ~= '3.10'",
+    "numpy>=2.0,<3.0.0 ; python_version ~= '3.11'",
+    "numpy>=2.0,<3.0.0 ; python_version ~= '3.12'",
+    "scipy>=1.13.0,<2 ; python_version ~= '3.9'",
+    "scipy>=1.14.0,<2 ; python_version ~= '3.10'",
+    "matplotlib>=3.6.2,<4 ; python_version ~= '3.9'",
+    "matplotlib>=3.6.2,<4 ; python_version ~= '3.10'",
+    "pyyaml>=6.0.1,<7",
+    "rich>=13.3.4,<14",
+    "h5py>=3.10.0,<4",
+    "zstandard>=0.21.0,<0.22",
+    "unyt>=3.0.0,<4",
+    "pandas>=2.2.1,<3",
+    "pylint>=3.1.0,<4",
+    "black[jupyter]>=24.10.0,<25",
+    "numexpr>=2.10.1,<3",
+    "pylatex>=1.4.2,<2",
+    "prettyprinttree>=2.0.1,<3",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<3.13"
-pydantic = ">=2.8,<2.12"
-pytest = "^7.1.2"
-click = "^8.1.3"
-toml = "^0.10.2"
-requests = "^2.32.4"
-boto3 = "^1.24.63"
-numpy = [
-    { python = "^3.9", version = ">=2.0,<3.0.0" },
-    { python = "^3.10", version = ">=2.0,<3.0.0" },
-    { python = "^3.11", version = ">=2.0,<3.0.0" },
-    { python = "^3.12", version = ">=2.0,<3.0.0" }]
-scipy = [    
-    { python = "^3.9", version = "^1.13.0" },
-    { python = "^3.10", version = "^1.14.0" }]
-matplotlib =  [
-    { python = "^3.9", version = "^3.6.2" },
-    { python = "^3.10", version = "^3.6.2" }]
-pyyaml = "^6.0.1"
-rich = "^13.3.4"
-h5py = "^3.10.0"
-zstandard = "^0.21.0"
-unyt = "^3.0.0"
-pandas = "^2.2.1"
-pylint = "^3.1.0"
-black = {extras = ["jupyter"], version = "^24.10.0"}
-
-# docs
-autodoc_pydantic = {version="*", optional = true}
-jupyter = {version="*", optional = true}
-jinja2 = {version = ">=3.1.2", optional = true}
-ipython = {version="*", optional = true}
-nbconvert = {version = ">=7.11.0", optional = true}
-sphinx = {version=">=7", optional = true}
-nbsphinx = {version = ">=0.8.7", optional = true}
-sphinx-copybutton = {version=">=0.5.2", optional = true}
-sphinx-book-theme = {version = ">=1.0.1", optional = true}
-pydata-sphinx-theme = {version = ">=0.13.3", optional = true}
-sphinx-favicon = {version="*", optional = true}
-sphinx-sitemap = {version=">=2.5.1", optional = true}
-sphinx-notfound-page = {version="*", optional = true}
-sphinx-tabs = {version="*", optional = true}
-nbdime = {version="*", optional = true}
-myst-parser = {version="*", optional = true}
-sphinxemoji = {version="*", optional = true}
-
-readthedocs-sphinx-search = {version="*", optional = true}
-cairosvg = {version="*", optional = true }
-sphinxcontrib-svg2pdfconverter = {version="*", optional = true}
-sphinx-prompt = {version="*", optional = true}
-sphinx_design = {version="*", optional = true}
-sphinx_toolbox = {version="*", optional = true}
-sphinx_paramlinks = {version="*", optional = true}
-numpydoc = "^1.8.0"
-numexpr = "^2.10.1"
-sphinxcontrib-mermaid = {version="*", optional = true}
-pylatex = "^1.4.2"
-prettyprinttree = "^2.0.1"
-
-
-[tool.poetry.group.dev.dependencies]
-pytest-asyncio = "^0.20.3"
-pytest-cov = "^4.0.0"
-autohooks = "^23.4.0"
-autohooks-plugin-black = "^22.11.0"
-autohooks-plugin-isort = "^22.8.0"
-autohooks-plugin-pylint = "^23.10.0"
-pytest = "^7.3.0"
-pylint = "^3.1.0"
-black = "^24.1.0"
-notebook = "^7.0.6"
-pytest-mock = "^3.14.0"
-
-[tool.poetry.extras]
+[project.optional-dependencies]
 docs = [
     "autodoc_pydantic",
     "jupyter",
-    "jinja2",
+    "jinja2>=3.1.2",
     "ipython",
-    "nbconvert",
-    "sphinx",
-    "nbsphinx",
-    "sphinx-copybutton",
-    "sphinx-book-theme",
-    "pydata-sphinx-theme",
+    "nbconvert>=7.11.0",
+    "sphinx>=7",
+    "nbsphinx>=0.8.7",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-book-theme>=1.0.1",
+    "pydata-sphinx-theme>=0.13.3",
     "sphinx-favicon",
-    "sphinx-sitemap",
+    "sphinx-sitemap>=2.5.1",
     "sphinx-notfound-page",
     "sphinx-tabs",
     "nbdime",
     "myst-parser",
-    "pyswarms",
     "sphinxemoji",
     "readthedocs-sphinx-search",
     "cairosvg",
@@ -105,9 +58,31 @@ docs = [
     "sphinx_design",
     "sphinx_toolbox",
     "sphinx_paramlinks",
-    "numpydoc",
-    "sphinxcontrib-mermaid"
+    "numpydoc>=1.8.0,<2",
+    "sphinxcontrib-mermaid",
 ]
+
+[project.scripts]
+flow360 = "flow360.cli:flow360"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=0.20.3,<0.21",
+    "pytest-cov>=4.0.0,<5",
+    "autohooks>=23.4.0,<24",
+    "autohooks-plugin-black>=22.11.0,<23",
+    "autohooks-plugin-isort>=22.8.0,<23",
+    "autohooks-plugin-pylint>=23.10.0,<24",
+    "pytest>=7.3.0,<8",
+    "pylint>=3.1.0,<4",
+    "black>=24.1.0,<25",
+    "notebook>=7.0.6,<8",
+    "pytest-mock>=3.14.0,<4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.isort]
 profile = "black"
@@ -127,10 +102,3 @@ pre-commit = ["autohooks.plugins.black", "autohooks.plugins.isort", "autohooks.p
 
 [tool.autohooks.plugins.pylint]
 arguments = ["--rcfile=.pylintrc"]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
-flow360 = "flow360.cli:flow360"
