@@ -157,7 +157,7 @@ jobs:
         uses: repo-sync/pull-request@v2
         with:
           source_branch: " angran/addSlackNotificationScheduleMerge"
-          destination_branch: "develop"
+          destination_branch: "main"
           pr_title: "Scheduled sync: main → develop"
           pr_body: |
             Automated sync needs review:
