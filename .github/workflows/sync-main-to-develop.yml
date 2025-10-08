@@ -86,6 +86,7 @@ jobs:
         id: up
         run: |
           # TESTING: Force up_to_date=false to test PR creation
+          echo "up_to_date=false" >> "$GITHUB_OUTPUT"
           echo "[TEST MODE] Forcing out-of-date status to test PR creation."
           # if git merge-base --is-ancestor origin/main HEAD; then
           #   echo "up_to_date=true"  >> "$GITHUB_OUTPUT"
