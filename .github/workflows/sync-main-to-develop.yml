@@ -145,6 +145,7 @@ jobs:
 
       - name: Open PR main -> develop (on conflict OR push failure)
         if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
+        id: pr
         uses: repo-sync/pull-request@v2
         with:
           source_branch: "main"
@@ -158,6 +159,27 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # If using bot PAT, switch to:
           # github_token: ${{ secrets.BOT_PAT }}
+
+      - name: Send Slack notification
+        if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "<!channel> 🔄 Sync PR Created: main → develop",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "<!channel> 🔄 *Scheduled sync PR created*\n\n<${{ steps.pr.outputs.pr_url }}|View Pull Request>\n\n• Merge conflicted: `${{ steps.merge.outputs.conflicted == 'true' }}`\n• Direct push failed: `${{ steps.push.outputs.exit_code != '0' }}`"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_MERGE_NOTIFICATION_URL }}
 
       - name: Final summary
         run: |
