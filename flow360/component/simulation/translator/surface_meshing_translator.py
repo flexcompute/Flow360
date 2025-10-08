@@ -29,7 +29,7 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.utils import (
-    check_meshing_specified,
+    ensure_meshing_is_specified,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
 )
@@ -591,7 +591,7 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
     """
     Get JSON for surface meshing.
     """
-    check_meshing_specified(input_params)
+    ensure_meshing_is_specified(input_params)
     if not input_params.private_attribute_asset_cache.use_geometry_AI:
         if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
             input_params.meshing.surface_meshing, SnappySurfaceMeshingParams
