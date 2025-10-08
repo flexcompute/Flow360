@@ -205,24 +205,16 @@ def _remove_duplicate_entities(expanded_entities: List[EntityBase]):
 
 class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
     """
-    The type accepting a list of entities or (name, registry) pair.
+    The type accepting a list of entities or selectors.
 
     Attributes:
         stored_entities (List[Union[EntityBase, Tuple[str, registry]]]): List of stored entities, which can be
             instances of `Box`, `Cylinder`, or strings representing naming patterns.
-
-    Methods:
-        _check_duplicate_entity_in_list(cls, values): Class method that checks for duplicate entities
-            in the list of stored entities.
-        _get_expanded_entities(self): Method that processes the stored entities to resolve any naming
-            patterns into actual entity references, expanding and filtering based on the defined
-            entity types.
-
     """
 
     stored_entities: List = pd.Field()
     selectors: Optional[List[EntitySelector]] = pd.Field(
-        None, description="Selectors for rule-based selection."
+        None, description="Selectors on persistent entities for rule-based selection."
     )
 
     @classmethod

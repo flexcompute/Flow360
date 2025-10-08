@@ -779,7 +779,7 @@ def generate_process_json(
     mesh_unit = _get_mesh_unit(params_as_dict)
     validation_level = _determine_validation_level(up_to, root_item_type)
 
-    # Note: There should not be any validation error for params_as_dict. Here is just a deserilization of the JSON
+    # Note: There should not be any validation error for params_as_dict. Here is just a deserialization of the JSON
     params, errors, _ = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.SERVICE,  # This is called only by web service currently.
