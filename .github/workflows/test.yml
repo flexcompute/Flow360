@@ -47,7 +47,7 @@ jobs:
         uv sync --frozen
 
     - name: Run simulation_params tests
-      run: uv run pytest -rA tests/simulation -vv
+      run: uv run pytest -n logical -rA tests/simulation -vv
 
     - name: Run flow360_params tests
-      run: uv run pytest -rA --ignore tests/simulation -vv
+      run: uv run pytest -n logical -rA --ignore tests/simulation -vv
