@@ -236,6 +236,3 @@ class UserDefinedFarfield(Flow360BaseModel):
     # pylint: disable=no-member
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
     name: Optional[str] = pd.Field("farfield")
-    # point_in_mesh: Optional[LengthType.Point] = pd.Field(
-    #     None, description="Used to determine the fluid region with snappyHexMesh"
-    # )
