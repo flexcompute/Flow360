@@ -8,7 +8,6 @@ from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation import services
-from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
@@ -30,6 +29,7 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
