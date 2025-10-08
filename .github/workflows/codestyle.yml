@@ -9,45 +9,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv
+        run: pipx install uv
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-          cache: 'poetry'
+          cache: 'uv'
       - name: Install black
-        run: poetry install
+        run: uv sync --frozen
       - name: Run black
-        run: poetry run black . --check
+        run: uv run black . --check
 
   isort:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv
+        run: pipx install uv
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-          cache: 'poetry'
+          cache: 'uv'
       - name: Install isort
-        run: poetry install
+        run: uv sync --frozen
       - name: Check isort version
-        run: poetry run isort --version 
+        run: uv run isort --version 
       - name: Run isort
-        run: poetry run isort . --check-only
+        run: uv run isort . --check-only
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Install uv
+        run: pipx install uv
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-          cache: 'poetry'
+          cache: 'uv'
       - name: Install dependencies
-        run: poetry install
+        run: uv sync --frozen
       - name: Run pylint
-        run: poetry run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc
+        run: uv run pylint $(git ls-files "flow360/*.py") --rcfile .pylintrc

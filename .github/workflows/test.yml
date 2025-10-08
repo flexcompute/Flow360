@@ -31,24 +31,24 @@ jobs:
         echo "TEMP=${{ github.workspace }}/temp" >> $GITHUB_ENV
         echo "TMP=${{ github.workspace }}/temp" >> $GITHUB_ENV
 
-    - name: Install poetry
+    - name: Install uv
       run: |
-        pipx install poetry
-        # create local virtual environment 
-        poetry config --local virtualenvs.in-project true
+        pipx install uv
+        # # create local virtual environment 
+        # poetry config --local virtualenvs.in-project true
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'poetry'
+        cache: 'uv'
 
     - name: Install dependencies
       run: |
-        poetry install
+        uv sync --frozen
 
     - name: Run simulation_params tests
-      run: poetry run pytest -rA tests/simulation -vv
+      run: uv run pytest -rA tests/simulation -vv
 
     - name: Run flow360_params tests
-      run: poetry run pytest -rA --ignore tests/simulation -vv
+      run: uv run pytest -rA --ignore tests/simulation -vv
