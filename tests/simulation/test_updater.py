@@ -32,7 +32,7 @@ def test_version_consistency():
         config = toml.load(f)
 
     # Extract the version value from the pyproject.toml under [tool.poetry]
-    pyproject_version = config["tool"]["poetry"]["version"]
+    pyproject_version = config["project"]["version"]
 
     # Assert the version in pyproject.toml matches the internal __version__
     assert pyproject_version == "v" + __version__, (
