@@ -172,6 +172,7 @@ jobs:
         if: steps.up.outputs.up_to_date == 'false' && (steps.merge.outputs.conflicted == 'true' || steps.push.outputs.exit_code != '0')
         uses: slackapi/slack-github-action@v2
         with:
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "<!channel> 🔄 Sync PR Created: main → develop",
@@ -185,7 +186,6 @@ jobs:
                 }
               ]
             }
-            webhook-type: incoming-webhook
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_MERGE_NOTIFICATION_URL }}
 
