@@ -123,7 +123,7 @@ class StopCriterion(Flow360BaseModel):
     ...             monitored_variable,
     ...         ],
     ...         probe_points=fl.Point(name="Point1", location=(0, 0, 0.005) * fl.u.m),
-    ...         moving_statistic = fl.MovingStatistic(method = "deviation", moving_window = 10)
+    ...         moving_statistic = fl.MovingStatistic(method = "deviation", moving_window_size = 10)
     ...     ),
     ...     monitor_field=monitored_variable,
     ...     tolerance=0.01,

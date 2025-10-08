@@ -293,7 +293,7 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
     """Test StopCriterion with MovingStatistic in output."""
 
     single_point_probe_output.moving_statistic = MovingStatistic(
-        method="deviation", moving_window=10
+        method="deviation", moving_window_size=10
     )
     with SI_unit_system:
         criterion = StopCriterion(
@@ -305,7 +305,7 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
 
     assert criterion.name == "Criterion_1"
     assert criterion.monitor_output.moving_statistic.method == "deviation"
-    assert criterion.monitor_output.moving_statistic.moving_window == 10
+    assert criterion.monitor_output.moving_statistic.moving_window_size == 10
 
 
 def test_criterion_default_values(scalar_user_variable_density, single_point_probe_output):

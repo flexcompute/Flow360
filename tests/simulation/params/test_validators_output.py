@@ -261,7 +261,7 @@ def test_moving_statitic_validator():
                     name="point_legacy2",
                     output_fields=["Mach", monitored_variable],
                     probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window=15),
+                    moving_statistic=MovingStatistic(method="std", moving_window_size=15),
                 )
             ],
             private_attribute_asset_cache=asset_cache,
@@ -292,7 +292,7 @@ def test_moving_statitic_validator():
                     name="point_legacy2",
                     output_fields=["Mach", monitored_variable],
                     probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
-                    moving_statistic=MovingStatistic(method="std", moving_window=20),
+                    moving_statistic=MovingStatistic(method="std", moving_window_size=20),
                 )
             ],
             private_attribute_asset_cache=asset_cache,
