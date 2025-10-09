@@ -1685,7 +1685,7 @@ class Project(pd.BaseModel):
         """
 
         if interpolate_to_mesh is not None and fork_from is None:
-            raise Flow360ValueError(
+            raise Flow360ConfigError(
                 "Interpolation to mesh is only supported when forking from a case."
             )
 
