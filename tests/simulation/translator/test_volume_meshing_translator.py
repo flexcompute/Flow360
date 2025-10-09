@@ -326,6 +326,19 @@ def get_test_param_modular():
             axis=(1, 0, 0),
             center=(0, 0, 0),
         )
+        cone_frustum = AxisymmetricBody(
+            name="cone",
+            axis=(1, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(-1, 0), (-1, 1), (1, 2), (1, 0)],
+        )
+
+        porous_medium = Box.from_principal_axes(
+            name="porousRegion",
+            center=(0, 1, 1),
+            size=(1, 2, 1),
+            axes=((2, 2, 0), (-2, 2, 0)),
+        )
         param = SimulationParams(
             meshing=ModularMeshingWorkflow(
                 volume_meshing=BetaVolumeMeshingParams(
@@ -353,6 +366,12 @@ def get_test_param_modular():
                             spacing_radial=0.2,
                             spacing_circumferential=20 * u.cm,
                         ),
+                        StructuredBoxRefinement(
+                            entities=[porous_medium],
+                            spacing_axis1=7.5 * u.cm,
+                            spacing_axis2=10 * u.cm,
+                            spacing_normal=15 * u.cm,
+                        ),
                         PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
                         PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
                         BoundaryLayer(
@@ -367,7 +386,7 @@ def get_test_param_modular():
                         name="custom_volume-1",
                         boundaries=[Surface(name="interface1"), Surface(name="interface2")],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
                         spacing_axial=20 * u.cm,
@@ -378,29 +397,30 @@ def get_test_param_modular():
                             Surface(name="blade1"),
                             Surface(name="blade2"),
                             Surface(name="blade3"),
+                            cone_frustum,
                         ],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=mid_cylinder,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                         enclosed_entities=[inner_cylinder],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_2,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[rotor_disk_cylinder],
+                        enclosed_entities=[rotor_disk_cylinder, porous_medium],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_3,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_outer,
                         spacing_axial=40 * u.cm,
                         spacing_radial=0.4,
@@ -411,6 +431,12 @@ def get_test_param_modular():
                             cylinder_2,
                             cylinder_3,
                         ],
+                    ),
+                    RotationVolume(
+                        entities=cone_frustum,
+                        spacing_axial=40 * u.cm,
+                        spacing_radial=0.4,
+                        spacing_circumferential=20 * u.cm,
                     ),
                 ],
             ),

@@ -195,7 +195,10 @@ def test_disable_multiple_cylinder_in_one_rotation_volume():
                     ],
                 )
             )
-
+    with pytest.raises(
+        pd.ValidationError,
+        match="Only single instance is allowed in entities for each `RotationVolume`.",
+    ):
         with CGS_unit_system:
             cylinder_1 = Cylinder(
                 name="1",
@@ -213,20 +216,18 @@ def test_disable_multiple_cylinder_in_one_rotation_volume():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
-                        volume_zones=[
-                            RotationVolume(
-                                entities=[cylinder_1, cylinder_2],
-                                spacing_axial=20,
-                                spacing_radial=0.2,
-                                spacing_circumferential=20,
-                                enclosed_entities=[
-                                    Surface(name="hub"),
-                                ],
-                            ),
-                            AutomatedFarfield(),
-                        ],
-                    )
+                    zones=[
+                        RotationVolume(
+                            entities=[cylinder_1, cylinder_2],
+                            spacing_axial=20,
+                            spacing_radial=0.2,
+                            spacing_circumferential=20,
+                            enclosed_entities=[
+                                Surface(name="hub"),
+                            ],
+                        ),
+                        AutomatedFarfield(),
+                    ],
                 )
             )
 
@@ -323,33 +324,6 @@ def test_limit_axisymmetric_body_in_rotation_volume():
                 ],
             )
 
-        with CGS_unit_system:
-            cylinder = Cylinder(
-                name="very_long_cylinder_name",
-                outer_radius=12,
-                height=2,
-                axis=(0, 1, 0),
-                center=(0, 5, 0),
-            )
-            SimulationParams(
-                meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
-                        volume_zones=[
-                            RotationVolume(
-                                entities=[cylinder],
-                                spacing_axial=20,
-                                spacing_radial=0.2,
-                                spacing_circumferential=20,
-                                enclosed_entities=[
-                                    Surface(name="hub"),
-                                ],
-                            ),
-                            AutomatedFarfield(),
-                        ],
-                    )
-                )
-            )
-
 
 def test_reuse_of_same_cylinder():
     with pytest.raises(
@@ -389,6 +363,10 @@ def test_reuse_of_same_cylinder():
                 )
             )
 
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Using Volume entity `I am reused` in `AxisymmetricRefinement`, `RotationVolume` at the same time is not allowed.",
+    ):
         with CGS_unit_system:
             cylinder = Cylinder(
                 name="I am reused",

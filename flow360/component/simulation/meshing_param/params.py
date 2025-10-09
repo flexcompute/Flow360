@@ -99,6 +99,7 @@ VolumeRefinementTypes = Annotated[
         AxisymmetricRefinement,
         BoundaryLayer,
         PassiveSpacing,
+        StructuredBoxRefinement
     ],
     pd.Field(discriminator="refinement_type"),
 ]
@@ -510,24 +511,35 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         | UniformRefinement      |          YES           |           NO           |           NO           |
         +------------------------+------------------------+------------------------+------------------------+
 
+        +------------------------+------------------------+------------------------+
+        |                        |StructuredBoxRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+
+        |StructuredBoxRefinement |          NO            |           --           |
+        +------------------------+------------------------+------------------------+
+        | UniformRefinement      |          NO            |           NO           |
+        +------------------------+------------------------+------------------------+
+
         """
 
         usage = EntityUsageMap()
 
-        for volume_zone in self.zones:
-            if isinstance(volume_zone, RotationCylinder):
+        for volume_zone in self.zones if self.zones is not None else []:
+            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
                 ]
-        # pylint: disable=no-member
+
         for refinement in (
             self.volume_meshing.refinements
             if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)
             else []
         ):
-            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+            if isinstance(
+                refinement,
+                (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
+            ):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
@@ -537,9 +549,10 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) == sorted(["RotationCylinder", "UniformRefinement"]):
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
+                    sorted(["RotationCylinder", "UniformRefinement"]),
+                    sorted(["RotationVolume", "UniformRefinement"]),
+                ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue
 
