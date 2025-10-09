@@ -29,6 +29,7 @@ from flow360.component.simulation.outputs.outputs import (
     UserDefinedField,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.services import clear_context
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
@@ -37,6 +38,11 @@ from flow360.component.surface_mesh_v2 import SurfaceMeshMetaV2, SurfaceMeshV2
 @pytest.fixture(autouse=True)
 def change_test_dir(request, monkeypatch):
     monkeypatch.chdir(request.fspath.dirname)
+
+
+@pytest.fixture(autouse=True)
+def reset_context():
+    clear_context()
 
 
 def test_automated_farfield_surface_usage():
