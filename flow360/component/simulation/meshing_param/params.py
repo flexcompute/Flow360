@@ -73,7 +73,7 @@ VolumeZonesTypes = Annotated[
         AutomatedFarfield,
         UserDefinedFarfield,
         CustomVolume,
-        SeedpointZone
+        SeedpointZone,
     ],
     pd.Field(discriminator="type"),
 ]
@@ -99,7 +99,7 @@ VolumeRefinementTypes = Annotated[
         AxisymmetricRefinement,
         BoundaryLayer,
         PassiveSpacing,
-        StructuredBoxRefinement
+        StructuredBoxRefinement,
     ],
     pd.Field(discriminator="refinement_type"),
 ]
@@ -540,7 +540,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
                     usage.add_entity_usage(item, volume_zone.type)
                     for item in volume_zone.entities._get_expanded_entities(create_hard_copy=False)
                 ]
-
+        # pylint: disable=no-member
         for refinement in (
             self.volume_meshing.refinements
             if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)

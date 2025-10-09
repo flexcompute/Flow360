@@ -27,11 +27,11 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
     SeedpointZone,
-    AxisymmetricBody,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams

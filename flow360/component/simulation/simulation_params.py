@@ -582,7 +582,7 @@ class SimulationParams(_ParamModelBase):
                             "symmetric*",
                             volume.private_attribute_entity.name,
                         )
-                    if isinstance(volume, RotationCylinder):
+                    if isinstance(volume, (RotationCylinder, RotationVolume)):
                         # pylint: disable=fixme
                         # TODO: Implement this
                         pass

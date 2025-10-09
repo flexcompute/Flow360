@@ -23,15 +23,11 @@ from flow360.component.simulation.meshing_param.volume_params import (
     UserDefinedFarfield,
 )
 from flow360.component.simulation.primitives import (
-    Cylinder,
-    SeedpointZone,
-    SnappyBody,
-    Surface,
-)
-from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
     Cylinder,
+    SeedpointZone,
+    SnappyBody,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -620,6 +616,7 @@ def test_bad_refinements():
                 SnappyBodyRefinement(max_spacing=0.5 * u.mm, bodies=[SnappyBody(body_name="bbb")])
             ],
         )
+
 
 def test_box_entity_enclosed_only_in_beta_mesher():
     # raises when beta mesher is off
