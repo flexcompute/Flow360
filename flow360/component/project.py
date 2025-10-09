@@ -1683,6 +1683,12 @@ class Project(pd.BaseModel):
         Case | Draft
             The case asset or the draft if `draft_only` is True.
         """
+
+        if interpolate_to_mesh is not None and fork_from is None:
+            raise Flow360ValueError(
+                "Interpolation to mesh is only supported when forking from a case."
+            )
+
         self._check_initialized()
         case_or_draft = self._run(
             params=params,
