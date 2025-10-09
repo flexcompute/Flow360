@@ -63,7 +63,6 @@ numexpr = "^2.10.1"
 sphinxcontrib-mermaid = {version="*", optional = true}
 pylatex = "^1.4.2"
 prettyprinttree = "^2.0.1"
-pytest-xdist = {extras = ["psutil"], version = "^3.6.1"}
 
 
 [tool.poetry.group.dev.dependencies]

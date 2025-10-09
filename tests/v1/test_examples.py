@@ -33,8 +33,8 @@ def test_om6_release_22_3_3_0_example():
 def test_cylinder_example():
     Cylinder2D.get_files()
     assert os.path.exists(Cylinder2D.case_json)
-    assert os.path.exists(Cylinder2D.mesh_json)
-    assert os.path.exists(Cylinder2D.mesh_filename)
+    assert os.path.exists(OM6wing.mesh_json)
+    assert os.path.exists(OM6wing.mesh_filename)
 
 
 def test_airplane_example():

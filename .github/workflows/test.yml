@@ -48,6 +48,7 @@ jobs:
         poetry install
 
     - name: Run simulation_params tests
-      run: poetry run pytest -n logical -rA tests/simulation -vv
+      run: poetry run pytest -rA tests/simulation -vv
+
     - name: Run flow360_params tests
-      run: poetry run pytest -n logical -rA --ignore tests/simulation -vv
+      run: poetry run pytest -rA --ignore tests/simulation -vv
