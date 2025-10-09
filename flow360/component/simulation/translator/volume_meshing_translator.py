@@ -270,7 +270,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         refinements = input_params.meshing.volume_meshing.refinements
         refinement_factor = input_params.meshing.volume_meshing.refinement_factor
         defaults = input_params.meshing.volume_meshing.defaults
-        gap_treatment_strength = input_params.meshing.volume_meshing.defaults.gap_treatment_strength
+        gap_treatment_strength = input_params.meshing.volume_meshing.gap_treatment_strength
         planar_tolerance = input_params.meshing.volume_meshing.planar_face_tolerance
 
     if isinstance(input_params.meshing, MeshingParams):

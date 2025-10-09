@@ -396,6 +396,16 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
+    gap_treatment_strength: Optional[float] = pd.Field(
+        default=0,
+        ge=0,
+        le=1,
+        description="Narrow gap treatment strength used when two surfaces are in close proximity."
+        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
+        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
+        " However the impact on regions without close proximity is negligible.",
+    )
+
 
 SurfaceMeshingParams = Annotated[
     Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
