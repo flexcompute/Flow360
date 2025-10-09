@@ -193,16 +193,6 @@ class BetaVolumeMeshingDefaults(Flow360BaseModel):
         " This can be overridden with :class:`~flow360.BoundaryLayer`.",
     )  # Truly optional if all BL faces already have first_layer_thickness
 
-    gap_treatment_strength: Optional[float] = pd.Field(
-        default=0,
-        ge=0,
-        le=1,
-        description="Narrow gap treatment strength used when two surfaces are in close proximity."
-        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
-        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
-        " However the impact on regions without close proximity is negligible.",
-    )
-
     number_of_boundary_layers: Optional[pd.NonNegativeInt] = pd.Field(
         None,
         description="Default number of volumetric anisotropic layers."
