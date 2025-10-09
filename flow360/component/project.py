@@ -48,7 +48,12 @@ from flow360.component.utils import (
     wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360FileError,
+    Flow360ValueError,
+    Flow360WebError,
+)
 from flow360.log import log
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
