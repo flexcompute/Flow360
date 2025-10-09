@@ -27,6 +27,7 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.output_fields import (
     AllFieldNames,
     CommonFieldNames,
+    ForceOutputCoefficientNames,
     InvalidOutputFieldsForLiquid,
     SliceFieldNames,
     SurfaceFieldNames,
@@ -674,6 +675,41 @@ class SurfaceIntegralOutput(_OutputBase):
                     " Please assign them to separate outputs."
                 )
         return value
+
+
+class ForceOutput(_OutputBase):
+    """
+    :class:`ForceOutput` class for setting total force output of specific surfaces.
+
+    Example
+    -------
+
+    Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces.
+
+    >>> fl.ForceOutput(
+    ...     name="force_output_wings",
+    ...     entities=[volume_mesh["wing1"], volume_mesh["wing2"]],
+    ...     coefficient=["CL", "CD"]
+    ... )
+
+    ====
+    """
+
+    name: str = pd.Field("Force output", description="Name of the force output.")
+    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = (
+        pd.Field(
+            alias="surfaces",
+            description="List of boundaries where the force will be calculated.",
+        )
+    )
+    coefficient: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
+        description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz, "
+        "and their SkinFriction/Pressure, such as CLSkinFriction and CLPressure."
+    )
+    moving_statistic: Optional[MovingStatistic] = pd.Field(
+        None, description="The moving statistics used to monitor the output."
+    )
+    output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
 
 
 class ProbeOutput(_OutputBase):
@@ -1384,6 +1420,6 @@ TimeAverageOutputTypes = (
 )
 
 MonitorOutputType = Annotated[
-    Union[SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
+    Union[ForceOutput, SurfaceIntegralOutput, ProbeOutput, SurfaceProbeOutput],
     pd.Field(discriminator="output_type"),
 ]
