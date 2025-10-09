@@ -21,6 +21,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
+    RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -29,6 +31,7 @@ from flow360.component.simulation.primitives import (
     CustomVolume,
     Cylinder,
     SeedpointZone,
+    AxisymmetricBody,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -111,7 +114,12 @@ def get_test_param():
             center=(0, 5, 0),
         )
         cylinder_3 = Cylinder(
-            name="3", inner_radius=1.5, outer_radius=2, height=2, axis=(0, 1, 0), center=(0, -5, 0)
+            name="3",
+            inner_radius=1.5,
+            outer_radius=2,
+            height=2,
+            axis=(0, 1, 0),
+            center=(0, -5, 0),
         )
         cylinder_outer = Cylinder(
             name="outer",
@@ -121,6 +129,20 @@ def get_test_param():
             axis=(1, 0, 0),
             center=(0, 0, 0),
         )
+        cone_frustum = AxisymmetricBody(
+            name="cone",
+            axis=(1, 0, 1),
+            center=(0, 0, 0),
+            profile_curve=[(-1, 0), (-1, 1), (1, 2), (1, 0)],
+        )
+
+        porous_medium = Box.from_principal_axes(
+            name="porousRegion",
+            center=(0, 1, 1),
+            size=(1, 2, 1),
+            axes=((2, 2, 0), (-2, 2, 0)),
+        )
+
         param = SimulationParams(
             meshing=MeshingParams(
                 refinement_factor=1.45,
@@ -147,6 +169,12 @@ def get_test_param():
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                     ),
+                    StructuredBoxRefinement(
+                        entities=[porous_medium],
+                        spacing_axis1=7.5 * u.cm,
+                        spacing_axis2=10 * u.cm,
+                        spacing_normal=15 * u.cm,
+                    ),
                     PassiveSpacing(entities=[Surface(name="passive1")], type="projected"),
                     PassiveSpacing(entities=[Surface(name="passive2")], type="unchanged"),
                     BoundaryLayer(
@@ -158,9 +186,12 @@ def get_test_param():
                 volume_zones=[
                     CustomVolume(
                         name="custom_volume-1",
-                        boundaries=[Surface(name="interface1"), Surface(name="interface2")],
+                        boundaries=[
+                            Surface(name="interface1"),
+                            Surface(name="interface2"),
+                        ],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
                         spacing_axial=20 * u.cm,
@@ -171,29 +202,30 @@ def get_test_param():
                             Surface(name="blade1"),
                             Surface(name="blade2"),
                             Surface(name="blade3"),
+                            cone_frustum,
                         ],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=mid_cylinder,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                         enclosed_entities=[inner_cylinder],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_2,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
-                        enclosed_entities=[rotor_disk_cylinder],
+                        enclosed_entities=[rotor_disk_cylinder, porous_medium],
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_3,
                         spacing_axial=20 * u.cm,
                         spacing_radial=0.2,
                         spacing_circumferential=20 * u.cm,
                     ),
-                    RotationCylinder(
+                    RotationVolume(
                         entities=cylinder_outer,
                         spacing_axial=40 * u.cm,
                         spacing_radial=0.4,
@@ -204,6 +236,12 @@ def get_test_param():
                             cylinder_2,
                             cylinder_3,
                         ],
+                    ),
+                    RotationVolume(
+                        entities=cone_frustum,
+                        spacing_axial=40 * u.cm,
+                        spacing_radial=0.4,
+                        spacing_circumferential=20 * u.cm,
                     ),
                 ],
             ),
@@ -424,7 +462,11 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
             "numBoundaryLayers": -1,
         },
         "faces": {
-            "boundary1": {"firstLayerThickness": 0.5, "type": "aniso", "growthRate": 1.3},
+            "boundary1": {
+                "firstLayerThickness": 0.5,
+                "type": "aniso",
+                "growthRate": 1.3,
+            },
             "passive1": {"type": "projectAnisoSpacing"},
             "passive2": {"type": "none"},
         },
@@ -462,6 +504,7 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
         "slidingInterfaces": [  # comes from documentation page
             {
                 "name": "inner",
+                "type": "Cylinder",
                 "innerRadius": 0,
                 "outerRadius": 0.75,
                 "thickness": 0.5,
@@ -470,10 +513,17 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
                 "spacingAxial": 0.2,
                 "spacingRadial": 0.2,
                 "spacingCircumferential": 0.2,
-                "enclosedObjects": ["hub", "blade1", "blade2", "blade3"],
+                "enclosedObjects": [
+                    "hub",
+                    "blade1",
+                    "blade2",
+                    "blade3",
+                    "slidingInterface-cone",
+                ],
             },
             {
                 "name": "mid",
+                "type": "Cylinder",
                 "innerRadius": 0,
                 "outerRadius": 2.0,
                 "thickness": 2.0,
@@ -486,6 +536,7 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
             },
             {
                 "name": "2",
+                "type": "Cylinder",
                 "innerRadius": 0,
                 "outerRadius": 2.0,
                 "thickness": 2.0,
@@ -494,10 +545,11 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
                 "spacingAxial": 0.2,
                 "spacingRadial": 0.2,
                 "spacingCircumferential": 0.2,
-                "enclosedObjects": ["rotorDisk-enclosed"],
+                "enclosedObjects": ["rotorDisk-enclosed", "structuredBox-porousRegion"],
             },
             {
                 "name": "3",
+                "type": "Cylinder",
                 "innerRadius": 1.5,
                 "outerRadius": 2.0,
                 "thickness": 2.0,
@@ -510,6 +562,7 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
             },
             {
                 "name": "outer",
+                "type": "Cylinder",
                 "innerRadius": 0.0,
                 "outerRadius": 8.0,
                 "thickness": 6.0,
@@ -525,6 +578,32 @@ def test_param_to_json(get_test_param, get_surface_mesh, get_test_param_modular)
                     "slidingInterface-3",
                 ],
             },
+            {
+                "type": "Axisymmetric",
+                "name": "cone",
+                "axisOfRotation": [0.7071067811865476, 0.0, 0.7071067811865476],
+                "center": [0.0, 0.0, 0.0],
+                "profileCurve": [[-1.0, 0.0], [-1.0, 1.0], [1.0, 2.0], [1.0, 0.0]],
+                "spacingAxial": 0.4,
+                "spacingCircumferential": 0.2,
+                "spacingRadial": 0.4,
+                "enclosedObjects": [],
+            },
+        ],
+        "structuredRegions": [
+            {
+                "name": "porousRegion",
+                "type": "box",
+                "lengthAxis1": 1.0,
+                "lengthAxis2": 2.0,
+                "lengthNormal": 1.0,
+                "axis1": [0.7071067811865476, 0.7071067811865476, 0.0],
+                "axis2": [-0.7071067811865476, 0.7071067811865476, 0.0],
+                "center": [0.0, 1.0, 1.0],
+                "spacingAxis1": 0.075,
+                "spacingAxis2": 0.1,
+                "spacingNormal": 0.15,
+            }
         ],
         "zones": [
             {

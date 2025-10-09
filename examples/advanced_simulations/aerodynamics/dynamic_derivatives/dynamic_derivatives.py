@@ -31,7 +31,7 @@ with fl.SI_unit_system:
         outer_radius=1.0,
         height=2.5,
     )
-    sliding_interface = fl.RotationCylinder(
+    sliding_interface = fl.RotationVolume(
         spacing_axial=0.04,
         spacing_radial=0.04,
         spacing_circumferential=0.04,
