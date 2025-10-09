@@ -1,7 +1,12 @@
 [tool.poetry]
 name = "flow360"
+<<<<<<< HEAD
 version = "v25.7.4b0"
 description = "Flow360 Python Client"
+=======
+version = "v25.6.8"
+description = ""
+>>>>>>> 9a1318d1 ([25.6] Add cap version for pydantic (#1482))
 authors = ["Flexcompute <support@flexcompute.com>"]
 
 [tool.poetry.dependencies]

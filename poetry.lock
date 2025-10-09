@@ -6441,4 +6441,8 @@ docs = ["autodoc_pydantic", "cairosvg", "ipython", "jinja2", "jupyter", "myst-pa
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<3.13"
+<<<<<<< HEAD
 content-hash = "61f8de578809c08cf788c95b63b78ae66d760c6eb911f730fb981dddb478959c"
+=======
+content-hash = "58b62f5731e1e5896f3dc9c4eee51c6906bcc47b093044f530952bd623bea126"
+>>>>>>> 9a1318d1 ([25.6] Add cap version for pydantic (#1482))
