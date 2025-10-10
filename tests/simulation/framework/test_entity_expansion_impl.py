@@ -4,9 +4,9 @@ import os
 
 from flow360.component.simulation.framework.entity_selector import (
     EntityDictDatabase,
+    _compile_glob_cached,
     expand_entity_selectors_in_place,
 )
-from flow360.component.simulation.framework.entity_selector import _compile_glob_cached
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services import resolve_selectors
 
@@ -233,6 +233,50 @@ def test_combined_predicates_and_or():
     assert final_names == ["wing-root", "s1", "tail", "wing", "wing-root"]
 
 
+def test_attribute_tag_scalar_support():
+    # Entities include an additional scalar attribute 'tag'
+    surfaces = [
+        {"name": "wing", "tag": "A", "private_attribute_entity_type_name": "Surface"},
+        {"name": "tail", "tag": "B", "private_attribute_entity_type_name": "Surface"},
+        {"name": "fuselage", "tag": "A", "private_attribute_entity_type_name": "Surface"},
+    ]
+    db = EntityDictDatabase(surfaces=surfaces)
+
+    # Use attribute 'tag' in predicates (engine should not assume 'name')
+    params = {
+        "node": {
+            "selectors": [
+                {
+                    "target_class": "Surface",
+                    "logic": "AND",
+                    "children": [
+                        {"attribute": "tag", "operator": "equals", "value": "A"},
+                    ],
+                },
+                {
+                    "target_class": "Surface",
+                    "logic": "OR",
+                    "children": [
+                        {"attribute": "tag", "operator": "in", "value": ["B"]},
+                        {"attribute": "tag", "operator": "matches", "value": "A"},
+                    ],
+                },
+            ]
+        }
+    }
+
+    expand_entity_selectors_in_place(db, params)
+    stored = params["node"]["stored_entities"]
+
+    # Expect union of two selectors:
+    # 1) AND tag == A -> [wing, fuselage]
+    # 2) OR tag in {B} or matches 'A' -> pool-order union -> [wing, tail, fuselage]
+    final_names = [
+        e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Surface"
+    ]
+    assert final_names == ["wing", "fuselage", "wing", "tail", "fuselage"]
+
+
 def test_service_expand_entity_selectors_in_place_end_to_end():
     # Pick a complex simulation.json as input
     test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -268,7 +312,7 @@ def test_service_expand_entity_selectors_in_place_end_to_end():
     assert compare_values(expanded.get("outputs"), ref_outputs)
 
 
-def test__compile_glob_cached_extended_syntax_support():
+def test_compile_glob_cached_extended_syntax_support():
     # Comments in English for maintainers
     # Ensure extended glob features supported by wcmatch translation are honored.
     candidates = [

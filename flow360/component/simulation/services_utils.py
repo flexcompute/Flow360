@@ -1,3 +1,5 @@
+"""Utility functions for the simulation services."""
+
 from collections import deque
 from typing import Any
 
