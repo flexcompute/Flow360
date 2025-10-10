@@ -107,7 +107,8 @@ def _compile_glob_cached(pattern: str) -> re.Pattern:
             "wcmatch is required for extended glob support. Please install 'wcmatch>=10.0'."
         ) from exc
 
-    wc_flags = wfnmatch.BRACE | wfnmatch.EXTMATCH | wfnmatch.DOTMATCH
+    # Enforce case-sensitive matching across platforms (Windows defaults to case-insensitive).
+    wc_flags = wfnmatch.BRACE | wfnmatch.EXTMATCH | wfnmatch.DOTMATCH | wfnmatch.CASE
     translated = wfnmatch.translate(pattern, flags=wc_flags)
     # wcmatch.translate may return a tuple: (list_of_regex_strings, list_of_flags)
     if isinstance(translated, tuple):
