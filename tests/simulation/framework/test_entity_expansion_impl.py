@@ -6,6 +6,7 @@ from flow360.component.simulation.framework.entity_selector import (
     EntityDictDatabase,
     expand_entity_selectors_in_place,
 )
+from flow360.component.simulation.framework.entity_selector import _compile_glob_cached
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.services import resolve_selectors
 
@@ -265,3 +266,63 @@ def test_service_expand_entity_selectors_in_place_end_to_end():
     with open(ref_path, "r", encoding="utf-8") as fp:
         ref_outputs = json.load(fp)
     assert compare_values(expanded.get("outputs"), ref_outputs)
+
+
+def test__compile_glob_cached_extended_syntax_support():
+    # Comments in English for maintainers
+    # Ensure extended glob features supported by wcmatch translation are honored.
+    candidates = [
+        "a",
+        "b",
+        "ab",
+        "abc",
+        "file",
+        "file1",
+        "file2",
+        "file10",
+        "file.txt",
+        "File.TXT",
+        "data_01",
+        "data-xyz",
+        "[star]",
+        "literal*star",
+        "foo.bar",
+        ".hidden",
+        "1",
+        "2",
+        "3",
+    ]
+
+    def match(pattern: str) -> list[str]:
+        regex = _compile_glob_cached(pattern)
+        return [n for n in candidates if regex.fullmatch(n) is not None]
+
+    # Basic glob
+    assert match("file*") == ["file", "file1", "file2", "file10", "file.txt"]
+    assert match("file[0-9]") == ["file1", "file2"]
+
+    # Brace expansion
+    assert match("{a,b}") == ["a", "b"]
+    assert match("file{1,2}") == ["file1", "file2"]
+    assert match("{1..3}") == ["1", "2", "3"]
+    assert match("file{01..10}") == ["file10"]
+
+    # Extglob
+    # In extglob, @(file|data) means exactly 'file' or 'data'. To match 'data_*', use data*.
+    assert match("@(file|data*)") == ["file", "data_01", "data-xyz"]
+    expected_not_file = [n for n in candidates if n != "file"]
+    assert match("!(file)") == expected_not_file
+    assert match("?(file)") == ["file"]
+    assert match("+(file)") == ["file"]
+    assert match("*(file)") == ["file"]
+
+    # POSIX character classes
+    assert match("[[:digit:]]*") == ["1", "2", "3"]
+    assert match("file[[:digit:]]") == ["file1", "file2"]
+    assert match("[[:upper:]]*.[[:alpha:]]*") == ["File.TXT"]
+
+    # Escaping and literals
+    assert match("literal[*]star") == ["literal*star"]
+    assert match(r"literal\*star") == ["literal*star"]
+    assert match(r"foo\.bar") == ["foo.bar"]
+    assert match("foo[.]bar") == ["foo.bar"]

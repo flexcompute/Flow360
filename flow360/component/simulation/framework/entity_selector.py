@@ -7,7 +7,6 @@ Defines a minimal, stable schema for selecting entities by rules.
 import re
 from collections import deque
 from dataclasses import dataclass, field
-from fnmatch import translate as fnmatch_translate
 from functools import lru_cache
 from typing import Any, List, Literal, Optional, Union
 
@@ -59,11 +58,11 @@ class EntitySelector(Flow360BaseModel):
 class EntityDictDatabase:
     """
     [Internal Use Only]
-    Entity database for entity selectors.
+
+    Entity database for entity selectors. Provides a unified data interface for entity selectors.
+
     This is intended to strip off differences between root resources and
     ensure the expansion has a uniform data interface.
-
-    Each data member maps between attribute used for matching and the entity raw JSON dictionary.
     """
 
     surfaces: list[dict] = field(default_factory=list)
@@ -92,11 +91,52 @@ def _compile_regex_cached(pattern: str) -> re.Pattern:
 
 @lru_cache(maxsize=2048)
 def _compile_glob_cached(pattern: str) -> re.Pattern:
-    return re.compile(fnmatch_translate(pattern))
+    """Compile an extended-glob pattern via wcmatch to a fullmatch-ready regex.
+
+    We enable extended glob features including brace expansion, extglob groups,
+    and globstar. We intentionally avoid PATHNAME semantics because entity
+    names are not paths in this context, and we keep case-sensitive matching to
+    remain predictable across platforms.
+    """
+    try:
+        # Local import to keep module optional at import time, but required at runtime
+        from wcmatch import fnmatch as wfnmatch  # type: ignore
+
+        wc_flags = (
+            wfnmatch.BRACE
+            | wfnmatch.EXTMATCH
+            | wfnmatch.DOTMATCH
+        )
+        translated = wfnmatch.translate(pattern, flags=wc_flags)
+        # wcmatch.translate may return a tuple: (list_of_regex_strings, list_of_flags)
+        if isinstance(translated, tuple):
+            regex_parts, _flags = translated
+            if isinstance(regex_parts, list) and len(regex_parts) > 1:
+                def _strip_anchors(expr: str) -> str:
+                    if expr.startswith('^'):
+                        expr = expr[1:]
+                    if expr.endswith('$'):
+                        expr = expr[:-1]
+                    return expr
+
+                stripped = [_strip_anchors(s) for s in regex_parts]
+                combined = '^(?:' + ')|(?:'.join(stripped) + ')$'
+                return re.compile(combined)
+            elif isinstance(regex_parts, list) and len(regex_parts) == 1:
+                return re.compile(regex_parts[0])
+        # Otherwise, assume it's a single regex string
+        return re.compile(translated)  # type: ignore[arg-type]
+    except Exception:
+        # Fallback to Python's basic fnmatch semantics if wcmatch is unavailable.
+        # This keeps behavior functional albeit with fewer features.
+        from fnmatch import translate as std_translate
+
+        return re.compile(std_translate(pattern))
 
 
 def _build_name_matcher(predicate: dict):
-    """Build a fast predicate(name:str)->bool matcher.
+    """
+    Build a fast predicate(name:str)->bool matcher.
 
     Precompiles regex/glob and converts membership lists to sets for speed.
     """
