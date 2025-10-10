@@ -340,7 +340,19 @@ class RotationCylinder(RotationVolume):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class AutomatedFarfield(Flow360BaseModel):
+class _FarfieldBase(Flow360BaseModel):
+    """Base class for farfield parameters."""
+
+    enforced_half_model: Optional[Literal["Y+", "Y-"]] = (
+        pd.Field(  # In the future, we will support more half models via Union.
+            None,
+            description="If set, trim to a half-model by slicing the geometry with the global Y=0 plane; "
+            "keep the 'Y+' or 'Y-' side for meshing and simulation.",
+        )
+    )
+
+
+class AutomatedFarfield(_FarfieldBase):
     """
     Settings for automatic farfield volume zone generation.
 
@@ -393,7 +405,7 @@ class AutomatedFarfield(Flow360BaseModel):
         raise ValueError(f"Unsupported method: {self.method}")
 
 
-class UserDefinedFarfield(Flow360BaseModel):
+class UserDefinedFarfield(_FarfieldBase):
     """
     Setting for user defined farfield zone generation.
     This means the "farfield" boundaries are coming from the supplied geometry file
