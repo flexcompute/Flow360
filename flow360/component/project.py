@@ -48,7 +48,12 @@ from flow360.component.utils import (
     wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360FileError,
+    Flow360ValueError,
+    Flow360WebError,
+)
 from flow360.log import log
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
@@ -1687,6 +1692,12 @@ class Project(pd.BaseModel):
         Case | Draft
             The case asset or the draft if `draft_only` is True.
         """
+
+        if interpolate_to_mesh is not None and fork_from is None:
+            raise Flow360ConfigError(
+                "Interpolation to mesh is only supported when forking from a case."
+            )
+
         self._check_initialized()
         case_or_draft = self._run(
             params=params,
