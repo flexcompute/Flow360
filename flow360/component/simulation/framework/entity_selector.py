@@ -27,8 +27,6 @@ class Predicate(Flow360BaseModel):
     # For now only name matching is supported
     attribute: Literal["name"] = pd.Field("name", description="The attribute to match/filter on.")
     operator: Literal[
-        "equals",
-        "notEquals",
         "in",
         "notIn",
         "matches",
@@ -54,6 +52,7 @@ class EntitySelector(Flow360BaseModel):
     logic: Literal["AND", "OR"] = pd.Field("AND")
     children: List[Predicate] = pd.Field()
 
+    @pd.validate_call
     def match(
         self,
         pattern: str,
@@ -73,6 +72,7 @@ class EntitySelector(Flow360BaseModel):
         )
         return self
 
+    @pd.validate_call
     def not_match(
         self,
         pattern: str,
@@ -92,29 +92,14 @@ class EntitySelector(Flow360BaseModel):
         )
         return self
 
-    def equals(self, value: str, *, attribute: Literal["name"] = "name") -> Self:
-        """Append an equals predicate and return self for chaining."""
-        # pylint: disable=no-member
-        self.children.append(Predicate(attribute=attribute, operator="equals", value=value))
-        return self
-
-    def not_equals(self, value: str, *, attribute: Literal["name"] = "name") -> Self:
-        """Append a notEquals predicate and return self for chaining."""
-        # pylint: disable=no-member
-        self.children.append(Predicate(attribute=attribute, operator="notEquals", value=value))
-        return self
-
+    @pd.validate_call
     def any_of(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
         """Append an in predicate and return self for chaining."""
         # pylint: disable=no-member
         self.children.append(Predicate(attribute=attribute, operator="in", value=values))
         return self
 
-    # Backward-compatible alias for readability
-    def among(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
-        """Alias of any_of for readability when expressing set membership."""
-        return self.any_of(values, attribute=attribute)
-
+    @pd.validate_call
     def not_any_of(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
         """Append a notIn predicate and return self for chaining."""
         # pylint: disable=no-member
@@ -149,6 +134,7 @@ class SelectorFactory:
     """
 
     @classmethod
+    @pd.validate_call
     def match(
         cls,
         pattern: str,
@@ -168,9 +154,9 @@ class SelectorFactory:
         >>> # Regex full match
         >>> fl.Surface.match(r"^wing$", syntax="regex")
         >>> # Chain more predicates with AND logic
-        >>> fl.Surface.match("wing*").not_equals("wing")
+        >>> fl.Surface.match("wing*").not_any_of(["wing"])
         >>> # Use OR logic across predicates (short alias)
-        >>> fl.Surface.match("s1", logic="OR").equals("tail")
+        >>> fl.Surface.match("s1", logic="OR").any_of(["tail"])
 
         ====
         """
@@ -179,6 +165,7 @@ class SelectorFactory:
         return selector
 
     @classmethod
+    @pd.validate_call
     def not_match(
         cls,
         pattern: str,
@@ -204,54 +191,7 @@ class SelectorFactory:
         return selector
 
     @classmethod
-    def equals(
-        cls,
-        value: str,
-        /,
-        *,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-    ) -> EntitySelector:
-        """Create an EntitySelector and seed an equals predicate.
-
-        Example
-        -------
-        >>> # Exact name match
-        >>> fl.Surface.equals("wing")
-        >>> # Chain with another predicate
-        >>> fl.Surface.match("wing*").equals("wing")
-
-        ====
-        """
-        selector = generate_entity_selector_from_class(cls, logic=logic)
-        selector.equals(value, attribute=attribute)
-        return selector
-
-    @classmethod
-    def not_equals(
-        cls,
-        value: str,
-        /,
-        *,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-    ) -> EntitySelector:
-        """Create an EntitySelector and seed a notEquals predicate.
-
-        Example
-        -------
-        >>> # Exclude a specific name
-        >>> fl.Surface.not_equals("symmetry")
-        >>> # Exclude one after a glob include
-        >>> fl.Surface.match("wing*").not_equals("wing-root")
-
-        ====
-        """
-        selector = generate_entity_selector_from_class(cls, logic=logic)
-        selector.not_equals(value, attribute=attribute)
-        return selector
-
-    @classmethod
+    @pd.validate_call
     def any_of(
         cls,
         values: List[str],
@@ -276,46 +216,8 @@ class SelectorFactory:
         selector.any_of(values, attribute=attribute)
         return selector
 
-    # Backward-compatible aliases for class-level factories
     @classmethod
-    def in_(
-        cls,
-        values: List[str],
-        /,
-        *,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-    ) -> EntitySelector:
-        """Class-level alias: seed an in predicate with the provided values.
-
-        Example
-        -------
-        >>> fl.Surface.in_(["a", "b", "c"])
-
-        ====
-        """
-        return cls.any_of(values, attribute=attribute, logic=logic)
-
-    @classmethod
-    def among(
-        cls,
-        values: List[str],
-        /,
-        *,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-    ) -> EntitySelector:
-        """Class-level alias: alternate name for in predicate factory.
-
-        Example
-        -------
-        >>> fl.Surface.among(["left", "right"])
-
-        ====
-        """
-        return cls.any_of(values, attribute=attribute, logic=logic)
-
-    @classmethod
+    @pd.validate_call
     def not_any_of(
         cls,
         values: List[str],
@@ -336,55 +238,6 @@ class SelectorFactory:
         selector = generate_entity_selector_from_class(cls, logic=logic)
         selector.not_any_of(values, attribute=attribute)
         return selector
-
-    @classmethod
-    def not_in(
-        cls,
-        values: List[str],
-        /,
-        *,
-        attribute: Literal["name"] = "name",
-        logic: Literal["AND", "OR"] = "AND",
-    ) -> EntitySelector:
-        """Class-level alias: seed a notIn predicate with the provided values.
-
-        Example
-        -------
-        >>> fl.Surface.not_in(["symmetry", "freestream"])
-
-        ====
-        """
-        return cls.not_any_of(values, attribute=attribute, logic=logic)
-
-    @classmethod
-    def or_(
-        cls,
-    ) -> EntitySelector:
-        """Create an empty selector with OR logic for this class.
-
-        Example
-        -------
-        >>> # Start with OR logic and then add predicates
-        >>> fl.Surface.or_().match("a*").equals("b")
-
-        ====
-        """
-        return generate_entity_selector_from_class(cls, logic="OR")
-
-    @classmethod
-    def and_(
-        cls,
-    ) -> EntitySelector:
-        """Create an empty selector with AND logic for this class.
-
-        Example
-        -------
-        >>> # Start with AND logic (default) and then add predicates
-        >>> fl.Surface.and_().match("a*").not_equals("a-root")
-
-        ====
-        """
-        return generate_entity_selector_from_class(cls, logic="AND")
 
 
 def generate_entity_selector_from_class(
@@ -486,23 +339,16 @@ def _build_value_matcher(predicate: dict):
     non_glob_syntax = predicate.get("non_glob_syntax")
 
     negate = False
-    if operator in ("notEquals", "notIn", "notMatches"):
+    if operator in ("notIn", "notMatches"):
         negate = True
         base_operator = {
-            "notEquals": "equals",
             "notIn": "in",
             "notMatches": "matches",
         }.get(operator)
     else:
         base_operator = operator
 
-    if base_operator == "equals":
-        target = value
-
-        def base_match(val: Optional[str]) -> bool:
-            return val == target
-
-    elif base_operator == "in":
+    if base_operator == "in":
         values = set(value or [])
 
         def base_match(val: Optional[str]) -> bool:
@@ -528,7 +374,7 @@ def _build_value_matcher(predicate: dict):
 
 
 def _build_index(pool: list[dict], attribute: str) -> dict[str, list[int]]:
-    """Build an index for equals/in lookups on a given attribute."""
+    """Build an index for in lookups on a given attribute."""
     value_to_indices: dict[str, list[int]] = {}
     for idx, item in enumerate(pool):
         val = item.get(attribute)
@@ -584,10 +430,6 @@ def _apply_and_selector(
             predicate.pop("syntax", None)
         operator = predicate.get("operator")
         attribute = predicate.get("attribute", "name")
-        if operator == "equals":
-            idx_map = indices_by_attribute.get(attribute)
-            if idx_map is not None:
-                return set(idx_map.get(predicate.get("value"), []))
         if operator == "in":
             idx_map = indices_by_attribute.get(attribute)
             if idx_map is not None:
@@ -645,22 +487,18 @@ def _apply_single_selector(pool: list[dict], selector_dict: dict) -> list[dict]:
     def _cost(predicate: dict) -> int:
         op = predicate.get("operator")
         order = {
-            "equals": 0,
-            "in": 1,
-            "matches": 2,
-            "notEquals": 3,
-            "notIn": 4,
-            "notMatches": 5,
+            "in": 0,
+            "matches": 1,
+            "notIn": 2,
+            "notMatches": 3,
         }
         return order.get(op, 10)
 
     ordered_children = children if logic == "OR" else sorted(children, key=_cost)
 
-    # Optional per-attribute indices for equals/in
+    # Optional per-attribute indices for in
     attributes_needing_index = {
-        p.get("attribute", "name")
-        for p in ordered_children
-        if p.get("operator") in ("equals", "in")
+        p.get("attribute", "name") for p in ordered_children if p.get("operator") == "in"
     }
     indices_by_attribute: dict[str, dict[str, list[int]]] = (
         {attr: _build_index(pool, attr) for attr in attributes_needing_index}

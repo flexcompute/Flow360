@@ -31,7 +31,7 @@ def test_surface_class_match_and_chain_and():
     db = EntityDictDatabase(surfaces=_mk_pool(["wing", "wing-root", "wingtip", "tail"], "Surface"))
 
     # AND logic by default; expect intersection of predicates
-    selector = Surface.match("wing*").not_equals("wing")
+    selector = Surface.match("wing*").not_any_of(["wing"])
     names = _expand_and_get_names(db, selector)
     assert names == ["wing-root", "wingtip"]
 
@@ -40,7 +40,7 @@ def test_surface_class_match_or_union():
     db = EntityDictDatabase(surfaces=_mk_pool(["s1", "s2", "tail", "wing"], "Surface"))
 
     # OR logic: union of predicates
-    selector = Surface.match("s1", logic="OR").equals("tail")
+    selector = Surface.match("s1", logic="OR").any_of(["tail"])
     names = _expand_and_get_names(db, selector)
     # Order preserved by pool scan under OR
     assert names == ["s1", "tail"]
@@ -59,7 +59,7 @@ def test_in_and_not_any_of_chain():
     db = EntityDictDatabase(surfaces=_mk_pool(["a", "b", "c", "d"], "Surface"))
 
     # AND semantics: in {a,b,c} and not_in {b}
-    selector = Surface.match("*").among(["a", "b", "c"]).not_any_of(["b"])
+    selector = Surface.match("*").any_of(["a", "b", "c"]).not_any_of(["b"])
     names = _expand_and_get_names(db, selector)
     assert names == ["a", "c"]
 

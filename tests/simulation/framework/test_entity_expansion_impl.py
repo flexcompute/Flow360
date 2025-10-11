@@ -44,7 +44,7 @@ def test_in_place_expansion_and_replacement_per_class():
                         "target_class": "Edge",
                         "logic": "OR",
                         "children": [
-                            {"attribute": "name", "operator": "equals", "value": "edgeB"},
+                            {"attribute": "name", "operator": "in", "value": ["edgeB"]},
                         ],
                     },
                 ],
@@ -65,7 +65,7 @@ def test_in_place_expansion_and_replacement_per_class():
 
     assert names_by_type["Box"] == ["custom-box"]
     assert names_by_type["Surface"] == ["wing"]  # matches w*
-    assert names_by_type["Edge"] == ["edgeB"]  # equals edgeB
+    assert names_by_type["Edge"] == ["edgeB"]  # in ["edgeB"]
 
     # selectors cleared
     assert params["outputs"][0]["selectors"] == []
@@ -93,14 +93,14 @@ def test_operator_and_syntax_coverage():
         "node": {
             "selectors": [
                 {
-                    # equals("tail") -> ["tail"]
+                    # in(["tail"]) -> ["tail"]
                     "target_class": "Surface",
-                    "children": [{"attribute": "name", "operator": "equals", "value": "tail"}],
+                    "children": [{"attribute": "name", "operator": "in", "value": ["tail"]}],
                 },
                 {
-                    # notEquals("wing") -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
+                    # notIn(["wing"]) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
                     "target_class": "Surface",
-                    "children": [{"attribute": "name", "operator": "notEquals", "value": "wing"}],
+                    "children": [{"attribute": "name", "operator": "notIn", "value": ["wing"]}],
                 },
                 {
                     # in(["wing","fuselage"]) -> ["wing","fuselage"]
@@ -198,15 +198,15 @@ def test_combined_predicates_and_or():
                     "logic": "AND",
                     "children": [
                         {"attribute": "name", "operator": "matches", "value": "wing*"},
-                        {"attribute": "name", "operator": "notEquals", "value": "wing"},
+                        {"attribute": "name", "operator": "notIn", "value": ["wing"]},
                     ],
                 },
                 {
                     "target_class": "Surface",
                     "logic": "OR",
                     "children": [
-                        {"attribute": "name", "operator": "equals", "value": "s1"},
-                        {"attribute": "name", "operator": "equals", "value": "tail"},
+                        {"attribute": "name", "operator": "in", "value": ["s1"]},
+                        {"attribute": "name", "operator": "in", "value": ["tail"]},
                     ],
                 },
                 {
@@ -223,8 +223,8 @@ def test_combined_predicates_and_or():
     stored = params["node"]["stored_entities"]
 
     # Union across three selectors (concatenated in selector order, no dedup):
-    # 1) AND wing* & notEquals wing -> ["wing-root"]
-    # 2) OR equals s1 or tail -> ["s1", "tail"]
+    # 1) AND wing* & notIn ["wing"] -> ["wing-root"]
+    # 2) OR in ["s1"] or in ["tail"] -> ["s1", "tail"]
     # 3) default AND with in {wing, wing-root} -> ["wing", "wing-root"]
     # Final list -> ["wing-root", "s1", "tail", "wing", "wing-root"]
     final_names = [
@@ -250,7 +250,7 @@ def test_attribute_tag_scalar_support():
                     "target_class": "Surface",
                     "logic": "AND",
                     "children": [
-                        {"attribute": "tag", "operator": "equals", "value": "A"},
+                        {"attribute": "tag", "operator": "in", "value": ["A"]},
                     ],
                 },
                 {
@@ -269,7 +269,7 @@ def test_attribute_tag_scalar_support():
     stored = params["node"]["stored_entities"]
 
     # Expect union of two selectors:
-    # 1) AND tag == A -> [wing, fuselage]
+    # 1) AND tag in ["A"] -> [wing, fuselage]
     # 2) OR tag in {B} or matches 'A' -> pool-order union -> [wing, tail, fuselage]
     final_names = [
         e["name"] for e in stored if e["private_attribute_entity_type_name"] == "Surface"

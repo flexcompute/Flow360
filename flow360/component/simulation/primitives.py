@@ -23,11 +23,7 @@ from flow360.component.simulation.framework.entity_base import (
     EntityList,
     generate_uuid,
 )
-from flow360.component.simulation.framework.entity_selector import (
-    EntitySelector,
-    SelectorFactory,
-    generate_entity_selector_from_class,
-)
+from flow360.component.simulation.framework.entity_selector import SelectorFactory
 from flow360.component.simulation.framework.multi_constructor_model_base import (
     MultiConstructorBaseModel,
 )
