@@ -8,9 +8,10 @@ import re
 from collections import deque
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
+from typing_extensions import Self
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 
@@ -53,6 +54,73 @@ class EntitySelector(Flow360BaseModel):
     logic: Literal["AND", "OR"] = pd.Field("AND")
     children: List[Predicate] = pd.Field()
 
+    def match(
+        self,
+        pattern: str,
+        *,
+        attribute: Literal["name"] = "name",
+        syntax: Literal["glob", "regex"] = "glob",
+    ) -> Self:
+        """Append a matches predicate and return self for chaining."""
+        # pylint: disable=no-member
+        self.children.append(
+            Predicate(
+                attribute=attribute,
+                operator="matches",
+                value=pattern,
+                non_glob_syntax=("regex" if syntax == "regex" else None),
+            )
+        )
+        return self
+
+    def not_match(
+        self,
+        pattern: str,
+        *,
+        attribute: Literal["name"] = "name",
+        syntax: Literal["glob", "regex"] = "glob",
+    ) -> Self:
+        """Append a notMatches predicate and return self for chaining."""
+        # pylint: disable=no-member
+        self.children.append(
+            Predicate(
+                attribute=attribute,
+                operator="notMatches",
+                value=pattern,
+                non_glob_syntax=("regex" if syntax == "regex" else None),
+            )
+        )
+        return self
+
+    def equals(self, value: str, *, attribute: Literal["name"] = "name") -> Self:
+        """Append an equals predicate and return self for chaining."""
+        # pylint: disable=no-member
+        self.children.append(Predicate(attribute=attribute, operator="equals", value=value))
+        return self
+
+    def not_equals(self, value: str, *, attribute: Literal["name"] = "name") -> Self:
+        """Append a notEquals predicate and return self for chaining."""
+        # pylint: disable=no-member
+        self.children.append(Predicate(attribute=attribute, operator="notEquals", value=value))
+        return self
+
+    def any_of(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
+        """Append an in predicate and return self for chaining."""
+        # pylint: disable=no-member
+        self.children.append(Predicate(attribute=attribute, operator="in", value=values))
+        return self
+
+    # Backward-compatible alias for readability
+    def among(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
+        """Alias of any_of for readability when expressing set membership."""
+        return self.any_of(values, attribute=attribute)
+
+    def not_any_of(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
+        """Append a notIn predicate and return self for chaining."""
+        # pylint: disable=no-member
+        self.children.append(Predicate(attribute=attribute, operator="notIn", value=values))
+        return self
+
 
 @dataclass
 class EntityDictDatabase:
@@ -71,6 +139,271 @@ class EntityDictDatabase:
     geometry_body_groups: list[dict] = field(default_factory=list)
 
 
+########## API IMPLEMENTATION ##########
+
+
+class SelectorFactory:
+    """
+    Mixin providing class-level helpers to build EntitySelector instances with
+    preset predicates.
+    """
+
+    @classmethod
+    def match(
+        cls,
+        pattern: str,
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        syntax: Literal["glob", "regex"] = "glob",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """
+        Create an EntitySelector for this class and seed it with one matches predicate.
+
+        Example
+        -------
+        >>> # Glob match on Surface names (AND logic by default)
+        >>> fl.Surface.match("wing*")
+        >>> # Regex full match
+        >>> fl.Surface.match(r"^wing$", syntax="regex")
+        >>> # Chain more predicates with AND logic
+        >>> fl.Surface.match("wing*").not_equals("wing")
+        >>> # Use OR logic across predicates (short alias)
+        >>> fl.Surface.match("s1", logic="OR").equals("tail")
+
+        ====
+        """
+        selector = generate_entity_selector_from_class(cls, logic=logic)
+        selector.match(pattern, attribute=attribute, syntax=syntax)
+        return selector
+
+    @classmethod
+    def not_match(
+        cls,
+        pattern: str,
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        syntax: Literal["glob", "regex"] = "glob",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Create an EntitySelector and seed a notMatches predicate.
+
+        Example
+        -------
+        >>> # Exclude all surfaces ending with '-root'
+        >>> fl.Surface.match("*").not_match("*-root")
+        >>> # Exclude by regex
+        >>> fl.Surface.match("*").not_match(r".*-(root|tip)$", syntax="regex")
+
+        ====
+        """
+        selector = generate_entity_selector_from_class(cls, logic=logic)
+        selector.not_match(pattern, attribute=attribute, syntax=syntax)
+        return selector
+
+    @classmethod
+    def equals(
+        cls,
+        value: str,
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Create an EntitySelector and seed an equals predicate.
+
+        Example
+        -------
+        >>> # Exact name match
+        >>> fl.Surface.equals("wing")
+        >>> # Chain with another predicate
+        >>> fl.Surface.match("wing*").equals("wing")
+
+        ====
+        """
+        selector = generate_entity_selector_from_class(cls, logic=logic)
+        selector.equals(value, attribute=attribute)
+        return selector
+
+    @classmethod
+    def not_equals(
+        cls,
+        value: str,
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Create an EntitySelector and seed a notEquals predicate.
+
+        Example
+        -------
+        >>> # Exclude a specific name
+        >>> fl.Surface.not_equals("symmetry")
+        >>> # Exclude one after a glob include
+        >>> fl.Surface.match("wing*").not_equals("wing-root")
+
+        ====
+        """
+        selector = generate_entity_selector_from_class(cls, logic=logic)
+        selector.not_equals(value, attribute=attribute)
+        return selector
+
+    @classmethod
+    def any_of(
+        cls,
+        values: List[str],
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Create an EntitySelector and seed an in predicate.
+
+        Example
+        -------
+        >>> fl.Surface.any_of(["a", "b", "c"])
+        >>> # Equivalent alias
+        >>> fl.Surface.in_(["a", "b", "c"])
+        >>> # Combine with not_any_of to subtract
+        >>> fl.Surface.any_of(["a", "b", "c"]).not_any_of(["b"])
+
+        ====
+        """
+        selector = generate_entity_selector_from_class(cls, logic=logic)
+        selector.any_of(values, attribute=attribute)
+        return selector
+
+    # Backward-compatible aliases for class-level factories
+    @classmethod
+    def in_(
+        cls,
+        values: List[str],
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Class-level alias: seed an in predicate with the provided values.
+
+        Example
+        -------
+        >>> fl.Surface.in_(["a", "b", "c"])
+
+        ====
+        """
+        return cls.any_of(values, attribute=attribute, logic=logic)
+
+    @classmethod
+    def among(
+        cls,
+        values: List[str],
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Class-level alias: alternate name for in predicate factory.
+
+        Example
+        -------
+        >>> fl.Surface.among(["left", "right"])
+
+        ====
+        """
+        return cls.any_of(values, attribute=attribute, logic=logic)
+
+    @classmethod
+    def not_any_of(
+        cls,
+        values: List[str],
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Create an EntitySelector and seed a notIn predicate.
+
+        Example
+        -------
+        >>> # Select all except those in the set
+        >>> fl.Surface.match("*").not_any_of(["a", "b"])
+
+        ====
+        """
+        selector = generate_entity_selector_from_class(cls, logic=logic)
+        selector.not_any_of(values, attribute=attribute)
+        return selector
+
+    @classmethod
+    def not_in(
+        cls,
+        values: List[str],
+        /,
+        *,
+        attribute: Literal["name"] = "name",
+        logic: Literal["AND", "OR"] = "AND",
+    ) -> EntitySelector:
+        """Class-level alias: seed a notIn predicate with the provided values.
+
+        Example
+        -------
+        >>> fl.Surface.not_in(["symmetry", "freestream"])
+
+        ====
+        """
+        return cls.not_any_of(values, attribute=attribute, logic=logic)
+
+    @classmethod
+    def or_(
+        cls,
+    ) -> EntitySelector:
+        """Create an empty selector with OR logic for this class.
+
+        Example
+        -------
+        >>> # Start with OR logic and then add predicates
+        >>> fl.Surface.or_().match("a*").equals("b")
+
+        ====
+        """
+        return generate_entity_selector_from_class(cls, logic="OR")
+
+    @classmethod
+    def and_(
+        cls,
+    ) -> EntitySelector:
+        """Create an empty selector with AND logic for this class.
+
+        Example
+        -------
+        >>> # Start with AND logic (default) and then add predicates
+        >>> fl.Surface.and_().match("a*").not_equals("a-root")
+
+        ====
+        """
+        return generate_entity_selector_from_class(cls, logic="AND")
+
+
+def generate_entity_selector_from_class(
+    entity_class: type, logic: Literal["AND", "OR"] = "AND"
+) -> EntitySelector:
+    """Create a new selector for the given entity class.
+
+    entity_class should be one of the supported entity types (Surface, Edge, GenericVolume, GeometryBodyGroup).
+    """
+    class_name = getattr(entity_class, "__name__", str(entity_class))
+    allowed_classes = get_args(TargetClass)
+    assert (
+        class_name in allowed_classes
+    ), f"Unknown entity class: {entity_class} for generating entity selector."
+
+    return EntitySelector(target_class=class_name, logic=logic, children=[])
+
+
+########## EXPANSION IMPLEMENTATION ##########
 def _get_entity_pool(entity_database: EntityDictDatabase, target_class: TargetClass) -> list[dict]:
     """Return the correct entity list from the database for the target class."""
     if target_class == "Surface":
@@ -208,8 +541,18 @@ def _apply_or_selector(
     pool: list[dict],
     ordered_children: list[dict],
 ) -> list[dict]:
+    def _normalize_predicate(predicate: dict) -> dict:
+        # Accept either 'syntax' or 'non_glob_syntax' in incoming dicts without changing schema
+        if "non_glob_syntax" in predicate or "syntax" not in predicate:
+            return predicate
+        pred = dict(predicate)
+        pred["non_glob_syntax"] = "regex" if pred.get("syntax") == "regex" else None
+        pred.pop("syntax", None)
+        return pred
+
     indices: set[int] = set()
     for predicate in ordered_children:
+        predicate = _normalize_predicate(predicate)
         attribute = predicate.get("attribute", "name")
         matcher = _build_value_matcher(predicate)
         for i, item in enumerate(pool):
@@ -234,6 +577,11 @@ def _apply_and_selector(
     def _matched_indices_for_predicate(
         predicate: dict, current_candidates: Optional[set[int]]
     ) -> set[int]:
+        # Normalize for compatibility with 'syntax' key
+        if "non_glob_syntax" not in predicate and predicate.get("syntax") is not None:
+            predicate = dict(predicate)
+            predicate["non_glob_syntax"] = "regex" if predicate.get("syntax") == "regex" else None
+            predicate.pop("syntax", None)
         operator = predicate.get("operator")
         attribute = predicate.get("attribute", "name")
         if operator == "equals":
