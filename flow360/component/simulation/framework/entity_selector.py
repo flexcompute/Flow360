@@ -243,7 +243,8 @@ class SelectorFactory:
 def generate_entity_selector_from_class(
     entity_class: type, logic: Literal["AND", "OR"] = "AND"
 ) -> EntitySelector:
-    """Create a new selector for the given entity class.
+    """
+    Create a new selector for the given entity class.
 
     entity_class should be one of the supported entity types (Surface, Edge, GenericVolume, GeometryBodyGroup).
     """
@@ -387,18 +388,8 @@ def _apply_or_selector(
     pool: list[dict],
     ordered_children: list[dict],
 ) -> list[dict]:
-    def _normalize_predicate(predicate: dict) -> dict:
-        # Accept either 'syntax' or 'non_glob_syntax' in incoming dicts without changing schema
-        if "non_glob_syntax" in predicate or "syntax" not in predicate:
-            return predicate
-        pred = dict(predicate)
-        pred["non_glob_syntax"] = "regex" if pred.get("syntax") == "regex" else None
-        pred.pop("syntax", None)
-        return pred
-
     indices: set[int] = set()
     for predicate in ordered_children:
-        predicate = _normalize_predicate(predicate)
         attribute = predicate.get("attribute", "name")
         matcher = _build_value_matcher(predicate)
         for i, item in enumerate(pool):
@@ -423,11 +414,6 @@ def _apply_and_selector(
     def _matched_indices_for_predicate(
         predicate: dict, current_candidates: Optional[set[int]]
     ) -> set[int]:
-        # Normalize for compatibility with 'syntax' key
-        if "non_glob_syntax" not in predicate and predicate.get("syntax") is not None:
-            predicate = dict(predicate)
-            predicate["non_glob_syntax"] = "regex" if predicate.get("syntax") == "regex" else None
-            predicate.pop("syntax", None)
         operator = predicate.get("operator")
         attribute = predicate.get("attribute", "name")
         if operator == "in":

@@ -129,7 +129,7 @@ def test_operator_and_syntax_coverage():
                             "attribute": "name",
                             "operator": "notMatches",
                             "value": "^wing$",
-                            "syntax": "regex",
+                            "non_glob_syntax": "regex",
                         }
                     ],
                 },
