@@ -449,8 +449,8 @@ def test_quasi_3d_periodic_only_in_legacy_mesher():
         match=r"Only legacy mesher can support quasi-3d-periodic",
     ):
         with ValidationContext(VOLUME_MESH, beta_mesher_context):
-            _ = AutomatedFarfield(type="quasi-3d-periodic")
+            my_farfield = AutomatedFarfield(method="quasi-3d-periodic")
 
     # does not raise with legacy mesher on
     with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
-        _ = AutomatedFarfield(type="quasi-3d-periodic")
+        my_farfield = AutomatedFarfield(method="quasi-3d-periodic")
