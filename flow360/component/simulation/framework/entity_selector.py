@@ -27,10 +27,10 @@ class Predicate(Flow360BaseModel):
     # For now only name matching is supported
     attribute: Literal["name"] = pd.Field("name", description="The attribute to match/filter on.")
     operator: Literal[
-        "in",
-        "notIn",
+        "any_of",
+        "not_any_of",
         "matches",
-        "notMatches",
+        "not_matches",
     ] = pd.Field()
     value: Union[str, List[str]] = pd.Field()
     # Applies only to matches/notMatches; default to glob if not specified explicitly.
@@ -85,7 +85,7 @@ class EntitySelector(Flow360BaseModel):
         self.children.append(
             Predicate(
                 attribute=attribute,
-                operator="notMatches",
+                operator="not_matches",
                 value=pattern,
                 non_glob_syntax=("regex" if syntax == "regex" else None),
             )
@@ -96,14 +96,14 @@ class EntitySelector(Flow360BaseModel):
     def any_of(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
         """Append an in predicate and return self for chaining."""
         # pylint: disable=no-member
-        self.children.append(Predicate(attribute=attribute, operator="in", value=values))
+        self.children.append(Predicate(attribute=attribute, operator="any_of", value=values))
         return self
 
     @pd.validate_call
     def not_any_of(self, values: List[str], *, attribute: Literal["name"] = "name") -> Self:
         """Append a notIn predicate and return self for chaining."""
         # pylint: disable=no-member
-        self.children.append(Predicate(attribute=attribute, operator="notIn", value=values))
+        self.children.append(Predicate(attribute=attribute, operator="not_any_of", value=values))
         return self
 
 
@@ -340,16 +340,16 @@ def _build_value_matcher(predicate: dict):
     non_glob_syntax = predicate.get("non_glob_syntax")
 
     negate = False
-    if operator in ("notIn", "notMatches"):
+    if operator in ("not_any_of", "not_matches"):
         negate = True
         base_operator = {
-            "notIn": "in",
-            "notMatches": "matches",
+            "not_any_of": "any_of",
+            "not_matches": "matches",
         }.get(operator)
     else:
         base_operator = operator
 
-    if base_operator == "in":
+    if base_operator == "any_of":
         values = set(value or [])
 
         def base_match(val: Optional[str]) -> bool:
@@ -416,7 +416,7 @@ def _apply_and_selector(
     ) -> set[int]:
         operator = predicate.get("operator")
         attribute = predicate.get("attribute", "name")
-        if operator == "in":
+        if operator == "any_of":
             idx_map = indices_by_attribute.get(attribute)
             if idx_map is not None:
                 result: set[int] = set()
@@ -473,10 +473,10 @@ def _apply_single_selector(pool: list[dict], selector_dict: dict) -> list[dict]:
     def _cost(predicate: dict) -> int:
         op = predicate.get("operator")
         order = {
-            "in": 0,
+            "any_of": 0,
             "matches": 1,
-            "notIn": 2,
-            "notMatches": 3,
+            "not_any_of": 2,
+            "not_matches": 3,
         }
         return order.get(op, 10)
 
@@ -484,7 +484,7 @@ def _apply_single_selector(pool: list[dict], selector_dict: dict) -> list[dict]:
 
     # Optional per-attribute indices for in
     attributes_needing_index = {
-        p.get("attribute", "name") for p in ordered_children if p.get("operator") == "in"
+        p.get("attribute", "name") for p in ordered_children if p.get("operator") == "any_of"
     }
     indices_by_attribute: dict[str, dict[str, list[int]]] = (
         {attr: _build_index(pool, attr) for attr in attributes_needing_index}

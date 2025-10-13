@@ -44,7 +44,7 @@ def test_in_place_expansion_and_replacement_per_class():
                         "target_class": "Edge",
                         "logic": "OR",
                         "children": [
-                            {"attribute": "name", "operator": "in", "value": ["edgeB"]},
+                            {"attribute": "name", "operator": "any_of", "value": ["edgeB"]},
                         ],
                     },
                 ],
@@ -93,27 +93,29 @@ def test_operator_and_syntax_coverage():
         "node": {
             "selectors": [
                 {
-                    # in(["tail"]) -> ["tail"]
+                    # any_of(["tail"]) -> ["tail"]
                     "target_class": "Surface",
-                    "children": [{"attribute": "name", "operator": "in", "value": ["tail"]}],
+                    "children": [{"attribute": "name", "operator": "any_of", "value": ["tail"]}],
                 },
                 {
-                    # notIn(["wing"]) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
-                    "target_class": "Surface",
-                    "children": [{"attribute": "name", "operator": "notIn", "value": ["wing"]}],
-                },
-                {
-                    # in(["wing","fuselage"]) -> ["wing","fuselage"]
+                    # not_any_of(["wing"]) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
                     "target_class": "Surface",
                     "children": [
-                        {"attribute": "name", "operator": "in", "value": ["wing", "fuselage"]}
+                        {"attribute": "name", "operator": "not_any_of", "value": ["wing"]}
                     ],
                 },
                 {
-                    # notIn(["tail","hinge"]) -> ["wing","wingtip","wing-root","wind","tailplane","fuselage","body","leading-wing","my_wing"]
+                    # any_of(["wing","fuselage"]) -> ["wing","fuselage"]
                     "target_class": "Surface",
                     "children": [
-                        {"attribute": "name", "operator": "notIn", "value": ["tail", "hinge"]}
+                        {"attribute": "name", "operator": "any_of", "value": ["wing", "fuselage"]}
+                    ],
+                },
+                {
+                    # not_any_of(["tail","hinge"]) -> ["wing","wingtip","wing-root","wind","tailplane","fuselage","body","leading-wing","my_wing"]
+                    "target_class": "Surface",
+                    "children": [
+                        {"attribute": "name", "operator": "not_any_of", "value": ["tail", "hinge"]}
                     ],
                 },
                 {
@@ -122,12 +124,12 @@ def test_operator_and_syntax_coverage():
                     "children": [{"attribute": "name", "operator": "matches", "value": "wing*"}],
                 },
                 {
-                    # notMatches("^wing$", regex) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
+                    # not_matches("^wing$", regex) -> ["wingtip","wing-root","wind","tail","tailplane","fuselage","body","leading-wing","my_wing","hinge"]
                     "target_class": "Surface",
                     "children": [
                         {
                             "attribute": "name",
-                            "operator": "notMatches",
+                            "operator": "not_matches",
                             "value": "^wing$",
                             "non_glob_syntax": "regex",
                         }
@@ -198,21 +200,21 @@ def test_combined_predicates_and_or():
                     "logic": "AND",
                     "children": [
                         {"attribute": "name", "operator": "matches", "value": "wing*"},
-                        {"attribute": "name", "operator": "notIn", "value": ["wing"]},
+                        {"attribute": "name", "operator": "not_any_of", "value": ["wing"]},
                     ],
                 },
                 {
                     "target_class": "Surface",
                     "logic": "OR",
                     "children": [
-                        {"attribute": "name", "operator": "in", "value": ["s1"]},
-                        {"attribute": "name", "operator": "in", "value": ["tail"]},
+                        {"attribute": "name", "operator": "any_of", "value": ["s1"]},
+                        {"attribute": "name", "operator": "any_of", "value": ["tail"]},
                     ],
                 },
                 {
                     "target_class": "Surface",
                     "children": [
-                        {"attribute": "name", "operator": "in", "value": ["wing", "wing-root"]},
+                        {"attribute": "name", "operator": "any_of", "value": ["wing", "wing-root"]},
                     ],
                 },
             ]
@@ -250,14 +252,14 @@ def test_attribute_tag_scalar_support():
                     "target_class": "Surface",
                     "logic": "AND",
                     "children": [
-                        {"attribute": "tag", "operator": "in", "value": ["A"]},
+                        {"attribute": "tag", "operator": "any_of", "value": ["A"]},
                     ],
                 },
                 {
                     "target_class": "Surface",
                     "logic": "OR",
                     "children": [
-                        {"attribute": "tag", "operator": "in", "value": ["B"]},
+                        {"attribute": "tag", "operator": "any_of", "value": ["B"]},
                         {"attribute": "tag", "operator": "matches", "value": "A"},
                     ],
                 },
