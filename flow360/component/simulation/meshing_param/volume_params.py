@@ -405,6 +405,8 @@ class AutomatedFarfield(Flow360BaseModel):
         Check mesher and AutomatedFarfield method compatibility
         """
         validation_info = get_validation_info()
+        if validation_info is None:
+            return values
         if validation_info.is_beta_mesher and values == "quasi-3d-periodic":
             raise ValueError("Only legacy mesher can support quasi-3d-periodic")
         return values
