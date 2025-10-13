@@ -702,9 +702,9 @@ class ForceOutput(_OutputBase):
             description="List of boundaries where the force will be calculated.",
         )
     )
-    coefficient: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
-        description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz, "
-        "and their SkinFriction/Pressure, such as CLSkinFriction and CLPressure."
+    coefficients: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
+        description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
+        "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="The moving statistics used to monitor the output."
