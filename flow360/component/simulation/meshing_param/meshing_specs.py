@@ -17,6 +17,8 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 
+from math import log2
+import numpy as np
 
 class MeshingDefaults(Flow360BaseModel):
     """
@@ -440,3 +442,28 @@ class SnappySmoothControls(Flow360BaseModel):
     lambda_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.7)
     mu_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.71)
     iterations: Optional[pd.NonNegativeInt] = pd.Field(5)
+
+
+class OctreeSpacing(Flow360BaseModel):
+    base_spacing: LengthType.Positive
+
+    @pd.model_validator(mode="before")
+    @classmethod
+    def _project_spacing_to_object(cls, input_data):
+        if isinstance(input_data, u.unyt.unyt_quantity):
+            return {"base_spacing": input_data}
+        return input_data
+
+    @pd.validate_call
+    def __getitem__(self, idx: int):
+        return self.base_spacing * (2 ** idx)
+    
+    @pd.validate_call
+    def to_level(self, spacing: LengthType.Positive):
+        level = log2(spacing/self.base_spacing)
+
+        direct_spacing = np.isclose(level, np.ceil(level), atol=1e-8)
+
+        return np.ceil(level), direct_spacing
+    
+    
