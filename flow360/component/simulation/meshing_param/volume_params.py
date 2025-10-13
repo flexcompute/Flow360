@@ -396,7 +396,7 @@ class AutomatedFarfield(Flow360BaseModel):
                 GhostSurface(name="symmetric-2"),
             ]
         raise ValueError(f"Unsupported method: {self.method}")
-    
+
     @pd.field_validator("method", mode="after")
     @classmethod
     def _validate_quasi_3d_periodic_only_in_legacy_mesher(cls, values):

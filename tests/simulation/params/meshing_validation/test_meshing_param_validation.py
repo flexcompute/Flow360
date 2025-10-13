@@ -441,6 +441,7 @@ def test_box_entity_enclosed_only_in_beta_mesher():
                 enclosed_entities=[box_entity],
             )
 
+
 def test_quasi_3d_periodic_only_in_legacy_mesher():
     # raises when legacy mesher is off
     with pytest.raises(
@@ -453,4 +454,3 @@ def test_quasi_3d_periodic_only_in_legacy_mesher():
     # does not raise with legacy mesher on
     with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
         _ = AutomatedFarfield(type="quasi-3d-periodic")
-            
