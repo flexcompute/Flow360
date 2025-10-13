@@ -384,7 +384,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     @classmethod
     def _set_default_base_spacing(cls, base_spacing):
         info = get_validation_info()
-        if (info is None) or (base_spacing is not None):
+        if (info is None) or (base_spacing is not None) or (info.project_length_unit is None):
             return base_spacing
         
         base_spacing = 1 * LengthType.validate(info.project_length_unit)

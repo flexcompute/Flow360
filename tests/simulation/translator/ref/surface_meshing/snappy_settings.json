@@ -99,18 +99,6 @@
             "minVolCollapseRatio": 0.5
         }
     },
-    "boundingBox": {
-        "min": {
-            "x": -200,
-            "y": -400,
-            "z": -300
-        },
-        "max": {
-            "x": 200,
-            "y": 400,
-            "z": 300
-        }
-    },
     "smoothingControls": {
         "lambda": 0.3,
         "mu": 0.31,
@@ -120,5 +108,6 @@
         "fluid": [0, 0, 0],
         "solid": [1, 2, 3]
     },
-    "cadIsFluid": true
+    "cadIsFluid": true,
+    "enforcedSpacing": 1
 }

@@ -396,22 +396,9 @@ def snappy_mesher_json(input_params: SimulationParams):
             ),
         }
 
-    # bounding box
-    bounding_box = surface_meshing_params.bounding_box
-
-    if bounding_box is not None:
-        translated["boundingBox"] = {
-            "min": {
-                "x": bounding_box.center[0].value.item() - (bounding_box.size[0].value.item() / 2),
-                "y": bounding_box.center[1].value.item() - (bounding_box.size[1].value.item() / 2),
-                "z": bounding_box.center[2].value.item() - (bounding_box.size[2].value.item() / 2),
-            },
-            "max": {
-                "x": bounding_box.center[0].value.item() + (bounding_box.size[0].value.item() / 2),
-                "y": bounding_box.center[1].value.item() + (bounding_box.size[1].value.item() / 2),
-                "z": bounding_box.center[2].value.item() + (bounding_box.size[2].value.item() / 2),
-            },
-        }
+    # enforced spacing 
+    enforced_spacing = surface_meshing_params.base_spacing.base_spacing.value.item()
+    translated["enforcedSpacing"] = enforced_spacing
 
     # cad is fluid
     zones = input_params.meshing.zones

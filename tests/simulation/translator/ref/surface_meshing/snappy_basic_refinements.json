@@ -197,5 +197,6 @@
         "mu": 0.71,
         "iter": 5
     },
-    "cadIsFluid": false
+    "cadIsFluid": false,
+    "enforcedSpacing": 3.5
 }

@@ -443,6 +443,14 @@ class SnappySmoothControls(Flow360BaseModel):
     mu_factor: Optional[pd.NonNegativeFloat] = pd.Field(0.71)
     iterations: Optional[pd.NonNegativeInt] = pd.Field(5)
 
+    @pd.field_validator("iterations", mode="after")
+    @classmethod
+    def disable_by_zero(cls, value):
+        """Disable a quality metric in OpenFOAM by setting a specific valuesmoothing when None is set."""
+        if value is None:
+            return 0
+        return value
+
 
 class OctreeSpacing(Flow360BaseModel):
     base_spacing: LengthType.Positive
