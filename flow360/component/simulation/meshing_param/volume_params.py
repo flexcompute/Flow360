@@ -354,7 +354,7 @@ class AutomatedFarfield(Flow360BaseModel):
 
     type: Literal["AutomatedFarfield"] = pd.Field("AutomatedFarfield", frozen=True)
     name: Optional[str] = pd.Field("Automated Farfield")  # Kept optional for backward compatibility
-    method: Literal["auto", "quasi-3d"] = pd.Field(
+    method: Literal["auto", "quasi-3d", "quasi-3d-periodic"] = pd.Field(
         default="auto",
         frozen=True,
         description="""
@@ -364,6 +364,7 @@ class AutomatedFarfield(Flow360BaseModel):
             - -Y semi sphere if min{Y} < 0 and max{Y} = 0.
         - quasi-3d: Thin disk will be generated for quasi 3D cases.
                     Both sides of the farfield disk will be treated as "symmetric plane"
+        - quasi-3d-periodic: The two sides of the quasi-3d disk will be conformal
         Note: For quasi-3d, please do not group patches from both sides of the farfield disk into a single surface.
         """,
     )
@@ -371,6 +372,10 @@ class AutomatedFarfield(Flow360BaseModel):
         GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
         frozen=True,
         exclude=True,
+    )
+    relative_size: Optional[float] = pd.Field(
+        default="50",
+        description="Relative size of the far-field (semi)sphere/cylinder relative to the maximum dimension of the geometry bounding box."
     )
 
     @property
