@@ -440,3 +440,17 @@ def test_box_entity_enclosed_only_in_beta_mesher():
                 spacing_circumferential=20,
                 enclosed_entities=[box_entity],
             )
+
+def test_quasi_3d_periodic_only_in_legacy_mesher():
+    # raises when legacy mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"Only legacy mesher can support quasi-3d-periodic",
+    ):
+        with ValidationContext(VOLUME_MESH, beta_mesher_context):
+            _ = AutomatedFarfield(type="quasi-3d-periodic")
+
+    # does not raise with legacy mesher on
+    with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+        _ = AutomatedFarfield(type="quasi-3d-periodic")
+            
