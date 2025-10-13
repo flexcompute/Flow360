@@ -396,7 +396,7 @@ def snappy_mesher_json(input_params: SimulationParams):
             ),
         }
 
-    # enforced spacing 
+    # enforced spacing
     enforced_spacing = surface_meshing_params.base_spacing.base_spacing.value.item()
     translated["enforcedSpacing"] = enforced_spacing
 

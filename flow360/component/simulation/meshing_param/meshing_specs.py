@@ -1,7 +1,9 @@
 """Default settings for meshing using different meshing algorithms"""
 
+from math import log2
 from typing import Optional
 
+import numpy as np
 import pydantic as pd
 from typing_extensions import Self
 
@@ -17,8 +19,6 @@ from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
 
-from math import log2
-import numpy as np
 
 class MeshingDefaults(Flow360BaseModel):
     """
@@ -453,6 +453,11 @@ class SnappySmoothControls(Flow360BaseModel):
 
 
 class OctreeSpacing(Flow360BaseModel):
+    """
+    Helper class for octree-based meshers. Holds the base for the octree spacing and lows calculation of levels.
+    """
+
+    # pylint: disable=no-member
     base_spacing: LengthType.Positive
 
     @pd.model_validator(mode="before")
@@ -464,14 +469,17 @@ class OctreeSpacing(Flow360BaseModel):
 
     @pd.validate_call
     def __getitem__(self, idx: int):
-        return self.base_spacing * (2 ** idx)
-    
+        return self.base_spacing * (2**idx)
+
+    # pylint: disable=no-member
     @pd.validate_call
     def to_level(self, spacing: LengthType.Positive):
-        level = log2(spacing/self.base_spacing)
+        """
+        Can be used to check in what refinement level would the given spacing result
+        and if it is a direct match in the spacing series.
+        """
+        level = log2(spacing / self.base_spacing)
 
         direct_spacing = np.isclose(level, np.ceil(level), atol=1e-8)
 
         return np.ceil(level), direct_spacing
-    
-    

@@ -3,8 +3,8 @@ import pytest
 
 from flow360 import u
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    OctreeSpacing,
     SnappySurfaceMeshingDefaults,
-    OctreeSpacing
 )
 from flow360.component.simulation.meshing_param.params import (
     BetaVolumeMeshingParams,
@@ -34,10 +34,10 @@ from flow360.component.simulation.primitives import (
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.validation.validation_context import (
+    SURFACE_MESH,
     VOLUME_MESH,
     ParamsValidationInfo,
     ValidationContext,
-    SURFACE_MESH
 )
 
 non_beta_mesher_context = ParamsValidationInfo({}, [])
@@ -676,29 +676,27 @@ def test_box_entity_enclosed_only_in_beta_mesher():
 
 
 def test_octree_spacing():
-    spacing = OctreeSpacing(base_spacing=2*u.mm)
+    spacing = OctreeSpacing(base_spacing=2 * u.mm)
 
-    assert spacing[0] == 2*u.mm
-    assert spacing[-3] == 2*u.mm * (2 ** -3)
-    assert spacing[4] == 2*u.mm * (2 ** 4)
-    assert spacing[-1] == 2*u.mm * (2 ** -1)
+    assert spacing[0] == 2 * u.mm
+    assert spacing[-3] == 2 * u.mm * (2**-3)
+    assert spacing[4] == 2 * u.mm * (2**4)
+    assert spacing[-1] == 2 * u.mm * (2**-1)
 
     with pytest.raises(pd.ValidationError):
         _ = spacing[0.2]
 
-    assert spacing.to_level(2*u.mm) == (0, True)
-    assert spacing.to_level(4*u.mm) == (1, True)
-    assert spacing.to_level(0.5*u.mm) == (-2, True)
-    assert spacing.to_level(3.9993*u.mm) == (1, False)
-    assert spacing.to_level(3.9999999999993*u.mm) == (1, True)
+    assert spacing.to_level(2 * u.mm) == (0, True)
+    assert spacing.to_level(4 * u.mm) == (1, True)
+    assert spacing.to_level(0.5 * u.mm) == (-2, True)
+    assert spacing.to_level(3.9993 * u.mm) == (1, False)
+    assert spacing.to_level(3.9999999999993 * u.mm) == (1, True)
 
 
 def test_set_default_base_spacing():
     surface_meshing = SnappySurfaceMeshingParams(
         defaults=SnappySurfaceMeshingDefaults(
-            min_spacing=1*u.mm,
-            max_spacing=2*u.mm,
-            gap_resolution=1*u.mm
+            min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         )
     )
 
@@ -707,34 +705,29 @@ def test_set_default_base_spacing():
     with ValidationContext(SURFACE_MESH, beta_mesher_context):
         surface_meshing = SnappySurfaceMeshingParams(
             defaults=SnappySurfaceMeshingDefaults(
-                min_spacing=1*u.mm,
-                max_spacing=2*u.mm,
-                gap_resolution=1*u.mm
+                min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
             )
         )
-        
-    assert surface_meshing.base_spacing.base_spacing == 1*u.mm
-    assert surface_meshing.base_spacing[-2] == 0.25*u.mm
-    assert surface_meshing.base_spacing.to_level(2*u.mm) == (1, True)
+
+    assert surface_meshing.base_spacing.base_spacing == 1 * u.mm
+    assert surface_meshing.base_spacing[-2] == 0.25 * u.mm
+    assert surface_meshing.base_spacing.to_level(2 * u.mm) == (1, True)
+
 
 def test_set_spacing_with_value():
     surface_meshing = SnappySurfaceMeshingParams(
         defaults=SnappySurfaceMeshingDefaults(
-            min_spacing=1*u.mm,
-            max_spacing=2*u.mm,
-            gap_resolution=1*u.mm
+            min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
         ),
-        base_spacing=3*u.mm
+        base_spacing=3 * u.mm,
     )
 
-    assert surface_meshing.base_spacing.base_spacing == 3*u.mm
+    assert surface_meshing.base_spacing.base_spacing == 3 * u.mm
 
     with pytest.raises(pd.ValidationError):
         surface_meshing = SnappySurfaceMeshingParams(
-        defaults=SnappySurfaceMeshingDefaults(
-            min_spacing=1*u.mm,
-            max_spacing=2*u.mm,
-            gap_resolution=1*u.mm
-        ),
-        base_spacing=-3*u.mm
-    )
+            defaults=SnappySurfaceMeshingDefaults(
+                min_spacing=1 * u.mm, max_spacing=2 * u.mm, gap_resolution=1 * u.mm
+            ),
+            base_spacing=-3 * u.mm,
+        )

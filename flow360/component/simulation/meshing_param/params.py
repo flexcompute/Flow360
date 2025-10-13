@@ -9,7 +9,6 @@ import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.updater import DEFAULT_PLANAR_FACE_TOLERANCE
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
-from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     GeometryRefinement,
@@ -19,12 +18,12 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.meshing_specs import (
     BetaVolumeMeshingDefaults,
     MeshingDefaults,
+    OctreeSpacing,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
     SnappySnapControls,
     SnappySurfaceMeshingDefaults,
-    OctreeSpacing
 )
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
@@ -46,11 +45,12 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointZone,
 )
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
-    get_validation_info
+    get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 from flow360.log import log
@@ -369,15 +369,15 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                         )
 
         return self
-    
+
     @pd.model_validator(mode="after")
     def _check_sizing_against_octree_series(self):
-        
+
         if self.base_spacing is None:
             return self
-        
+
         return self
-        
+
         # check against the series of sizings
 
     @pd.field_validator("base_spacing", mode="after")
@@ -386,7 +386,8 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         info = get_validation_info()
         if (info is None) or (base_spacing is not None) or (info.project_length_unit is None):
             return base_spacing
-        
+
+        # pylint: disable=no-member
         base_spacing = 1 * LengthType.validate(info.project_length_unit)
         return OctreeSpacing(base_spacing=base_spacing)
 
