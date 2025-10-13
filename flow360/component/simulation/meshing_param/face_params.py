@@ -8,6 +8,7 @@ from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.unit_system import LengthType
+import flow360.component.simulation.units as u
 from flow360.component.simulation.validation.validation_context import (
     get_validation_info,
 )
@@ -75,6 +76,11 @@ class GeometryRefinement(Flow360BaseModel):
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
+    )
+
+    healing_gap_size: Optional[LengthType.NonNegative] = pd.Field(
+        0.0 * u.m,
+        description="FFlag that defines the threshold size below which all geometry gaps are automatically closed..",
     )
 
     # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
