@@ -276,8 +276,7 @@ class RotationVolume(AxisymmetricRefinementBase):
 
         return values
 
-    @pd.field_validator("" \
-    "", mode="after")
+    @pd.field_validator("entities", mode="after")
     @classmethod
     def _validate_axisymmetric_only_in_beta_mesher(cls, values):
         """
@@ -376,7 +375,10 @@ class AutomatedFarfield(Flow360BaseModel):
     )
     relative_size: Optional[float] = pd.Field(
         default="50",
-        description="Relative size of the far-field (semi)sphere/cylinder relative to the maximum dimension of the geometry bounding box."
+        description="""
+        Size of the far-field (semi)sphere/cylinder relative to
+        the maximum dimension of the geometry bounding box.
+        """,
     )
 
     @property
