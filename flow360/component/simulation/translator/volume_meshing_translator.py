@@ -264,10 +264,12 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             break
 
         if isinstance(zone, AutomatedFarfield):
-            translated["farfield"] = {
-                "type": zone.method,
-                "planarFaceTolerance": meshing_params.defaults.planar_face_tolerance,
-            }
+            translated["farfield"] = {"planarFaceTolerance": meshing_params.defaults.planar_face_tolerance}
+            if zone.method == "quasi-3d-periodic":
+                translated["farfield"]["type"] = "quasi-3d"
+                translated["farfield"]["periodic"] = {"type": "translational"}
+            else:
+                translated["farfield"]["type"] = zone.method
             break
 
     if "farfield" not in translated:
