@@ -263,7 +263,8 @@ def snappy_mesher_json(input_params: SimulationParams):
         ]
     }
     # apply refinements
-    for refinement in surface_meshing_params.refinements:
+    refinements = surface_meshing_params.refinements if surface_meshing_params.refinements is not None else []
+    for refinement in refinements:
         if isinstance(refinement, SnappyBodyRefinement):
             apply_SnappyBodyRefinement(refinement, translated)
         elif isinstance(refinement, SnappySurfaceEdgeRefinement):

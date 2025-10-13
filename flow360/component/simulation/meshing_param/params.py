@@ -29,6 +29,7 @@ from flow360.component.simulation.meshing_param.surface_mesh_refinements import 
     SnappyBodyRefinement,
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
+    SnappyEntityRefinement
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -325,13 +326,15 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         SnappyCastellatedMeshControls()
     )
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
-    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
+    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
     base_spacing: Optional[OctreeSpacing] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
         # set body refinements
         # pylint: disable=no-member
+        if self.refinements is None:
+            return self
         for refinement in self.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
                 if refinement.min_spacing is None and refinement.max_spacing is None:
@@ -355,6 +358,8 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
         # pylint: disable=no-member
+        if self.refinements is None:
+            return self
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
                 for entity in refinement.entities.stored_entities:
@@ -375,10 +380,35 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
 
         if self.base_spacing is None:
             return self
+        
+        def check_spacing(spacing, location):
+            lvl, close = self.base_spacing.to_level(spacing)
+            if not close:
+                closest_spacing = self.base_spacing[lvl]
+                msg = f"The spacing of {spacing} spcified in {location} will be cast to" 
+                msg += f" the first lower refinement in the octree series which is {closest_spacing}."
+                log.warning(msg)
+        
+        check_spacing(self.defaults.min_spacing, "defaults")
+        check_spacing(self.defaults.max_spacing, "defaults")
+
+        if self.refinements is not None:
+            for refinement in self.refinements:
+                if isinstance(refinement, SnappyEntityRefinement):
+                    if refinement.min_spacing is not None:
+                        check_spacing(refinement.min_spacing, type(refinement))
+                    if refinement.max_spacing is not None:
+                        check_spacing(refinement.max_spacing, type(refinement))
+                    if refinement.proximity_spacing is not None:
+                        check_spacing(refinement.proximity_spacing, type(refinement))
+                if isinstance(refinement, SnappySurfaceEdgeRefinement):
+                    if refinement.distances:
+                        for spacing in refinement.spacing:
+                            check_spacing(spacing, type(refinement))
+                    else:
+                        check_spacing(refinement.spacing, type(refinement))
 
         return self
-
-        # check against the series of sizings
 
     @pd.field_validator("base_spacing", mode="after")
     @classmethod
