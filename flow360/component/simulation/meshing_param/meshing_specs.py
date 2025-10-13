@@ -480,6 +480,6 @@ class OctreeSpacing(Flow360BaseModel):
         """
         level = log2(spacing / self.base_spacing)
 
-        direct_spacing = np.isclose(level, np.ceil(level), atol=1e-8)
+        direct_spacing = np.isclose(level, np.floor(level), atol=1e-8)
 
-        return np.ceil(level), direct_spacing
+        return np.floor(level), direct_spacing
