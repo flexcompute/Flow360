@@ -88,7 +88,7 @@ def createBaseParams(volumeMesh):
 
 if __name__ == "__main__":
     meshFile = "cartesian_2d_mesh.oblique.cgns"
-    project = fl.Project.from_volume_mesh(meshFile, name="Test Imported Surface Output", solver_version="release-25.7.0")
+    project = fl.Project.from_volume_mesh(meshFile, name="Test Imported Surface Output", solver_version="release-25.7.1")
     vm = project.volume_mesh
     params = createBaseParams(vm)
     case = project.run_case(params, "Run_imported_surface_output")
