@@ -276,7 +276,8 @@ class RotationVolume(AxisymmetricRefinementBase):
 
         return values
 
-    @pd.field_validator("entities", mode="after")
+    @pd.field_validator("" \
+    "", mode="after")
     @classmethod
     def _validate_axisymmetric_only_in_beta_mesher(cls, values):
         """
@@ -396,6 +397,17 @@ class AutomatedFarfield(Flow360BaseModel):
                 GhostSurface(name="symmetric-2"),
             ]
         raise ValueError(f"Unsupported method: {self.method}")
+    
+    @pd.field_validator("method", mode="after")
+    @classmethod
+    def _validate_quasi_3d_periodic_only_in_legacy_mesher(cls, values):
+        """
+        Check mesher and AutomatedFarfield method compatibility
+        """
+        validation_info = get_validation_info()
+        if validation_info.is_beta_mesher and values == "quasi-3d-periodic":
+            raise ValueError("Only legacy mesher can support quasi-3d-periodic")
+        return values
 
 
 class UserDefinedFarfield(Flow360BaseModel):
