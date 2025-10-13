@@ -608,10 +608,28 @@ class SimulationParams(_ParamModelBase):
                     / LIQUID_IMAGINARY_FREESTREAM_MACH
                 ).to("m/s")
             return (
-                self.operating_condition.reference_velocity_magnitude
+                self.operating_condition.reference_velocity_magnitude  # pylint:disable=no-member
                 / LIQUID_IMAGINARY_FREESTREAM_MACH
             ).to("m/s")
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
+
+    @property
+    def _liquid_reference_velocity(self) -> VelocityType:
+        """
+        For dimensionalization of Flow360 output (converting FROM flow360 unit)
+        The solver output is already re-normalized by `reference velocity` due to "velocityScale"
+        So we need to find the `reference velocity`.
+        `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
+        """
+        if (
+            self.operating_condition.reference_velocity_magnitude is not None
+        ):  # pylint:disable=no-member
+            base_velocity = (self.operating_condition.reference_velocity_magnitude).to(
+                "m/s"
+            )  # pylint:disable=no-member
+        else:
+            base_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        return base_velocity
 
     @property
     def base_density(self) -> DensityType:
