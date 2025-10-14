@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
@@ -332,7 +332,7 @@ class SimulationParams(_ParamModelBase):
     def convert_unit(
         self,
         value: DimensionedTypes,
-        target_system: str,
+        target_system: Literal["SI", "Imperial", "flow360"],
         length_unit: Optional[LengthType] = None,
     ):
         """
@@ -347,7 +347,7 @@ class SimulationParams(_ParamModelBase):
             The dimensioned quantity to convert. This should have units compatible with Flow360's
             unit system.
         target_system : str
-            The target unit system for conversion. Common values include "SI", "Imperial", flow360".
+            The target unit system for conversion. Common values include "SI", "Imperial", "flow360".
         length_unit : LengthType, optional
             The length unit to use for conversion. If not provided, the method defaults to
             the project length unit stored in the `private_attribute_asset_cache`.
@@ -616,6 +616,9 @@ class SimulationParams(_ParamModelBase):
     @property
     def _liquid_reference_velocity(self) -> VelocityType:
         """
+        This function returns the reference velocity for liquid operating condition.
+        Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
+
         For dimensionalization of Flow360 output (converting FROM flow360 unit)
         The solver output is already re-normalized by `reference velocity` due to "velocityScale"
         So we need to find the `reference velocity`.

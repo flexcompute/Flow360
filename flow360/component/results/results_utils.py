@@ -87,34 +87,53 @@ class CoefficientsComputationUtils:
 
     @staticmethod
     def _get_reference_geometry(params: SimulationParams):
-        # pylint:disable=import-outside-toplevel, no-member
+        # pylint:disable=import-outside-toplevel, no-member, protected-access
         from flow360.component.simulation.primitives import ReferenceGeometry
 
+        # Fill defaults using preprocessed params
         reference_geometry_filled = ReferenceGeometry.fill_defaults(
             params.reference_geometry, params
         )
 
-        area_in_m2 = float(reference_geometry_filled.area.to("m**2").value)
-
-        moment_length = reference_geometry_filled.moment_length
-        try:
-            moment_length_vec_in_m = np.array(
-                [
-                    moment_length[0].to("m").value,
-                    moment_length[1].to("m").value,
-                    moment_length[2].to("m").value,
-                ]
-            )
-        except (TypeError, IndexError):
-            val = moment_length.to("m").value
-            moment_length_vec_in_m = np.array([val, val, val], dtype=float)
-
-        mc = reference_geometry_filled.moment_center
-        moment_center_in_m = np.array(
-            [mc[0].to("m").value, mc[1].to("m").value, mc[2].to("m").value], dtype=float
+        reference_geometry_filled_flow360: ReferenceGeometry = reference_geometry_filled.preprocess(
+            params=params
+        )
+        # Extract dimensionless area (in Flow360 units)
+        area_flow360 = float(reference_geometry_filled_flow360.area.value)
+        print(
+            ">>> double check the unit of area_flow360",
+            reference_geometry_filled_flow360.area.units,
         )
 
-        return area_in_m2, moment_length_vec_in_m, moment_center_in_m
+        # Extract dimensionless moment_length
+        moment_length_flow360 = reference_geometry_filled_flow360.moment_length
+        print(
+            ">>> double check the unit of moment_length_flow360",
+            moment_length_flow360.units,
+        )
+
+        if isinstance(moment_length_flow360, (list, tuple)):
+            moment_length_vec_flow360 = np.array(
+                [
+                    moment_length_flow360[0],
+                    moment_length_flow360[1],
+                    moment_length_flow360[2],
+                ],
+                dtype=float,
+            )
+        else:
+            moment_length_vec_flow360 = np.array(
+                [moment_length_flow360, moment_length_flow360, moment_length_flow360], dtype=float
+            )
+
+        # Extract dimensionless moment_center
+        moment_center = reference_geometry_filled_flow360.moment_center
+        moment_center_flow360 = np.array(
+            [moment_center[0], moment_center[1], moment_center[2]],
+            dtype=float,
+        )
+
+        return area_flow360, moment_length_vec_flow360, moment_center_flow360
 
     @staticmethod
     def _get_freestream_vectors(params: SimulationParams):
@@ -143,18 +162,19 @@ class CoefficientsComputationUtils:
         return lift_dir, drag_dir
 
     @staticmethod
-    def _get_dynamic_pressure(params):
+    def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
         # pylint:disable=protected-access
         oc = params.operating_condition
         using_liquid_op = oc.type_name == "LiquidOperatingCondition"
 
         if using_liquid_op:
-            v_ref = float(params._liquid_reference_velocity.to("m/s").value)
+            v_ref = params._liquid_reference_velocity
         else:
-            v_ref = float(params.base_velocity.to("m/s").value)
+            v_ref = params.base_velocity
 
-        rho = float(params.base_density.to("kg/m**3").value)
-        return 0.5 * rho * v_ref * v_ref
+        Mach_ref = params.convert_unit(value=v_ref, target_system="flow360")
+        print(">>> double check the value of Mach_ref: ", Mach_ref)
+        return 0.5 * v_ref * v_ref
 
 
 def collect_disk_axes_and_centers(
@@ -172,7 +192,7 @@ def collect_disk_axes_and_centers(
     Returns
     -------
     (disk_axes, disk_centers) : Tuple[List[np.ndarray], List[np.ndarray]]
-        Lists of axis vectors (normalized) and center positions (in meters).
+        Lists of axis vectors (normalized) and center positions (dimensionless Flow360 units).
     """
 
     disk_axes: List[np.ndarray] = []
@@ -185,10 +205,9 @@ def collect_disk_axes_and_centers(
             # Axis is assumed normalized by the inputs
             # pylint:disable=protected-access
             axis = CoefficientsComputationUtils._vector_to_np3(cyl.axis)
-
-            center = cyl.center
+            center_flow360 = params.convert_unit(value=cyl.center, target_system="flow360")
             center_np = np.array(
-                [center[0].to("m").value, center[1].to("m").value, center[2].to("m").value],
+                [center_flow360[0].value, center_flow360[1].value, center_flow360[2].value],
                 dtype=float,
             )
             disk_axes.append(axis)
@@ -231,7 +250,9 @@ class DiskCoefficientsComputation:
         area, moment_length_vec, moment_center_global = (
             CoefficientsComputationUtils._get_reference_geometry(params)
         )
-        dynamic_pressure = CoefficientsComputationUtils._get_dynamic_pressure(params)
+        dynamic_pressure = CoefficientsComputationUtils._get_dynamic_pressure_in_flow360_unit(
+            params
+        )
         lift_dir, drag_dir = CoefficientsComputationUtils._get_freestream_vectors(params)
         return {
             "moment_center_global": moment_center_global,
