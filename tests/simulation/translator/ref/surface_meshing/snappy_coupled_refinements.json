@@ -124,5 +124,6 @@
     "locationInMesh": {
         "farfield": [0, 0, 0]
     },
-    "cadIsFluid": true
+    "cadIsFluid": true,
+    "enforcedSpacing": 5
 }

@@ -99,5 +99,6 @@
             "minVolCollapseRatio": 0
         }
     },
-    "cadIsFluid": false
+    "cadIsFluid": false,
+    "enforcedSpacing": 1
 }

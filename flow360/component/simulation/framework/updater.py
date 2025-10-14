@@ -371,7 +371,7 @@ def _to_25_8_0(params_as_dict):
     # new method of specifying meshing was added, as well as the method discriminator
     meshing = params_as_dict.get("meshing")
     if meshing:
-        meshing["type"] = "MeshingParams"
+        meshing["type_name"] = "MeshingParams"
 
     return params_as_dict
 

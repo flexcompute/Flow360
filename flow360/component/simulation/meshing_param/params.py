@@ -18,6 +18,7 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.meshing_specs import (
     BetaVolumeMeshingDefaults,
     MeshingDefaults,
+    OctreeSpacing,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
@@ -26,6 +27,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
 )
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
+    SnappyEntityRefinement,
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
 )
@@ -33,6 +35,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
+    RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -42,10 +46,12 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointZone,
 )
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 from flow360.log import log
@@ -58,13 +64,21 @@ RefinementTypes = Annotated[
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
+        StructuredBoxRefinement,
         AxisymmetricRefinement,
     ],
     pd.Field(discriminator="refinement_type"),
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume, SeedpointZone],
+    Union[
+        RotationVolume,
+        RotationCylinder,
+        AutomatedFarfield,
+        UserDefinedFarfield,
+        CustomVolume,
+        SeedpointZone,
+    ],
     pd.Field(discriminator="type"),
 ]
 
@@ -89,6 +103,7 @@ VolumeRefinementTypes = Annotated[
         AxisymmetricRefinement,
         BoundaryLayer,
         PassiveSpacing,
+        StructuredBoxRefinement,
     ],
     pd.Field(discriminator="refinement_type"),
 ]
@@ -126,7 +141,7 @@ class MeshingParams(Flow360BaseModel):
     ====
     """
 
-    type: Literal["MeshingParams"] = pd.Field("MeshingParams", frozen=True)
+    type_name: Literal["MeshingParams"] = pd.Field("MeshingParams", frozen=True)
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -227,12 +242,20 @@ class MeshingParams(Flow360BaseModel):
         | UniformRefinement      |          YES           |           NO           |           NO           |
         +------------------------+------------------------+------------------------+------------------------+
 
+        +------------------------+------------------------+------------------------+
+        |                        |StructuredBoxRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+
+        |StructuredBoxRefinement |          NO            |           --           |
+        +------------------------+------------------------+------------------------+
+        | UniformRefinement      |          NO            |           NO           |
+        +------------------------+------------------------+------------------------+
+
         """
 
         usage = EntityUsageMap()
 
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-            if isinstance(volume_zone, RotationCylinder):
+            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
@@ -240,7 +263,10 @@ class MeshingParams(Flow360BaseModel):
                 ]
 
         for refinement in self.refinements if self.refinements is not None else []:
-            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+            if isinstance(
+                refinement,
+                (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
+            ):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
@@ -250,9 +276,10 @@ class MeshingParams(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) == sorted(["RotationCylinder", "UniformRefinement"]):
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
+                    sorted(["RotationCylinder", "UniformRefinement"]),
+                    sorted(["RotationVolume", "UniformRefinement"]),
+                ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue
 
@@ -289,7 +316,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     Parameters for snappyHexMesh surface meshing.
     """
 
-    type: Literal["SnappySurfaceMeshingParams"] = pd.Field(
+    type_name: Literal["SnappySurfaceMeshingParams"] = pd.Field(
         "SnappySurfaceMeshingParams", frozen=True
     )
     defaults: SnappySurfaceMeshingDefaults = pd.Field()
@@ -299,13 +326,15 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         SnappyCastellatedMeshControls()
     )
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
-    bounding_box: Optional[Box] = pd.Field(None)
-    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
+    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
+    base_spacing: Optional[OctreeSpacing] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
         # set body refinements
         # pylint: disable=no-member
+        if self.refinements is None:
+            return self
         for refinement in self.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
                 if refinement.min_spacing is None and refinement.max_spacing is None:
@@ -329,6 +358,8 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
         # pylint: disable=no-member
+        if self.refinements is None:
+            return self
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
                 for entity in refinement.entities.stored_entities:
@@ -344,13 +375,65 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
 
         return self
 
+    @pd.model_validator(mode="after")
+    def _check_sizing_against_octree_series(self):
+
+        if self.base_spacing is None:
+            return self
+
+        def check_spacing(spacing, location):
+            # pylint: disable=no-member
+            lvl, close = self.base_spacing.to_level(spacing)
+            spacing_unit = spacing.units
+            if not close:
+                closest_spacing = self.base_spacing[lvl]
+                msg = f"The spacing of {spacing:.4g} spcified in {location} will be cast to the first lower refinement"
+                msg += f" in the octree series which is {closest_spacing.to(spacing_unit):.4g}."
+                log.warning(msg)
+
+        # pylint: disable=no-member
+        check_spacing(self.defaults.min_spacing, "defaults")
+        check_spacing(self.defaults.max_spacing, "defaults")
+
+        if self.refinements is not None:
+            # pylint: disable=not-an-iterable
+            for refinement in self.refinements:
+                if isinstance(refinement, SnappyEntityRefinement):
+                    if refinement.min_spacing is not None:
+                        check_spacing(refinement.min_spacing, type(refinement).__name__)
+                    if refinement.max_spacing is not None:
+                        check_spacing(refinement.max_spacing, type(refinement).__name__)
+                    if refinement.proximity_spacing is not None:
+                        check_spacing(refinement.proximity_spacing, type(refinement).__name__)
+                if isinstance(refinement, SnappySurfaceEdgeRefinement):
+                    if refinement.distances:
+                        for spacing in refinement.spacing:
+                            check_spacing(spacing, type(refinement).__name__)
+                    else:
+                        check_spacing(refinement.spacing, type(refinement).__name__)
+                if isinstance(refinement, UniformRefinement):
+                    check_spacing(refinement.spacing, type(refinement).__name__)
+
+        return self
+
+    @pd.field_validator("base_spacing", mode="after")
+    @classmethod
+    def _set_default_base_spacing(cls, base_spacing):
+        info = get_validation_info()
+        if (info is None) or (base_spacing is not None) or (info.project_length_unit is None):
+            return base_spacing
+
+        # pylint: disable=no-member
+        base_spacing = 1 * LengthType.validate(info.project_length_unit)
+        return OctreeSpacing(base_spacing=base_spacing)
+
 
 class BetaVolumeMeshingParams(Flow360BaseModel):
     """
     Volume meshing parameters.
     """
 
-    type: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
+    type_name: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
     defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
@@ -373,9 +456,21 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
         " This is only supported by the beta mesher and can not be overridden per face.",
     )
 
+    gap_treatment_strength: Optional[float] = pd.Field(
+        default=0,
+        ge=0,
+        le=1,
+        description="Narrow gap treatment strength used when two surfaces are in close proximity."
+        " Use a value between 0 and 1, where 0 is no treatment and 1 is the most conservative treatment."
+        " This parameter has a global impact where the anisotropic transition into the isotropic mesh."
+        " However the impact on regions without close proximity is negligible.",
+    )
 
-SurfaceMeshingParams = Annotated[Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type")]
-VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type")]
+
+SurfaceMeshingParams = Annotated[
+    Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
+]
+VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type_name")]
 
 
 class ModularMeshingWorkflow(Flow360BaseModel):
@@ -383,7 +478,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
     Structure consolidating surface and volume meshing parameters.
     """
 
-    type: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
+    type_name: Literal["ModularMeshingWorkflow"] = pd.Field("ModularMeshingWorkflow", frozen=True)
     surface_meshing: Optional[SurfaceMeshingParams] = ContextField(
         default=None, context=SURFACE_MESH
     )
@@ -404,8 +499,7 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         total_seedpoint_zone = sum(isinstance(volume_zone, SeedpointZone) for volume_zone in v)
 
         if (total_custom_volume or total_seedpoint_zone) and total_user_defined_farfield:
-            total_user_defined_farfield = 0
-            log.warning(
+            raise ValueError(
                 "When using CustomVolume or SeedpointZone the UserDefinedFarfield will be ignored."
             )
 
@@ -487,12 +581,20 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         | UniformRefinement      |          YES           |           NO           |           NO           |
         +------------------------+------------------------+------------------------+------------------------+
 
+        +------------------------+------------------------+------------------------+
+        |                        |StructuredBoxRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+
+        |StructuredBoxRefinement |          NO            |           --           |
+        +------------------------+------------------------+------------------------+
+        | UniformRefinement      |          NO            |           NO           |
+        +------------------------+------------------------+------------------------+
+
         """
 
         usage = EntityUsageMap()
 
-        for volume_zone in self.zones:
-            if isinstance(volume_zone, RotationCylinder):
+        for volume_zone in self.zones if self.zones is not None else []:
+            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
@@ -504,7 +606,10 @@ class ModularMeshingWorkflow(Flow360BaseModel):
             if (self.volume_meshing is not None and self.volume_meshing.refinements is not None)
             else []
         ):
-            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+            if isinstance(
+                refinement,
+                (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
+            ):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
@@ -514,9 +619,10 @@ class ModularMeshingWorkflow(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) == sorted(["RotationCylinder", "UniformRefinement"]):
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
+                    sorted(["RotationCylinder", "UniformRefinement"]),
+                    sorted(["RotationVolume", "UniformRefinement"]),
+                ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue
 

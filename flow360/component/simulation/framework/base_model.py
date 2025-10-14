@@ -544,8 +544,29 @@ class Flow360BaseModel(pd.BaseModel):
 
     @classmethod
     def _calculate_hash(cls, model_dict):
+        def remove_private_attribute_id(obj):
+            """
+            Recursively remove all 'private_attribute_id' keys from the data structure.
+            This ensures hash consistency when private_attribute_id contains UUID4 values
+            that change between runs.
+            """
+            if isinstance(obj, dict):
+                # Create new dict excluding 'private_attribute_id' keys
+                return {
+                    key: remove_private_attribute_id(value)
+                    for key, value in obj.items()
+                    if key != "private_attribute_id"
+                }
+            if isinstance(obj, list):
+                # Recursively process list elements
+                return [remove_private_attribute_id(item) for item in obj]
+            # Return other types as-is (maintains reference for immutable objects)
+            return obj
+
+        # Remove private_attribute_id before calculating hash
+        cleaned_dict = remove_private_attribute_id(model_dict)
         hasher = hashlib.sha256()
-        json_string = json.dumps(model_dict, sort_keys=True)
+        json_string = json.dumps(cleaned_dict, sort_keys=True)
         hasher.update(json_string.encode("utf-8"))
         return hasher.hexdigest()
 
@@ -642,7 +663,10 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         solver_values = self._nondimensionalization(
-            params=params, exclude=exclude, required_by=required_by, registry_lookup=registry_lookup
+            params=params,
+            exclude=exclude,
+            required_by=required_by,
+            registry_lookup=registry_lookup,
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:
@@ -658,7 +682,7 @@ class Flow360BaseModel(pd.BaseModel):
                     exclude=exclude,
                     registry_lookup=registry_lookup,
                 )
-            elif isinstance(value, (list, tuple)):
+            elif isinstance(value, list):
                 # Use the helper to handle nested lists.
                 solver_values[property_name] = _preprocess_nested_list(
                     value, [loc_name], params, exclude, registry_lookup

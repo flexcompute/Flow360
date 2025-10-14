@@ -106,7 +106,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     regions: Optional[EntityList[Surface]], default: None
 
     retain_on_smoothing: Optional[bool], default: True
-        Maitain the edge when smoothing is applied.
+        Maintain the edge when smoothing is applied.
         Set to None to disable this metric.
     """
 
