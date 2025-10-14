@@ -3,6 +3,7 @@ Support class and functions for project interface.
 """
 
 import datetime
+import os
 from typing import List, Literal, Optional, get_args
 
 import pydantic as pd
@@ -72,7 +73,9 @@ class ProjectInfo(pd.BaseModel):
     description: str = pd.Field()
     statistics: ProjectStatistics = pd.Field()
     solver_version: Optional[str] = pd.Field(
-        None, alias="solverVersion", description="If None then the project is from old database"
+        None,
+        alias="solverVersion",
+        description="If None then the project is from old database",
     )
     created_at: str = pd.Field(alias="createdAt")
     root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"] = pd.Field(
@@ -94,7 +97,9 @@ class ProjectRecords(pd.BaseModel):
     def __str__(self):
         """Print out all info about the project"""
         if not self.records:
-            output_str = "No matching projects found. Try skip naming patterns to show all."
+            output_str = (
+                "No matching projects found. Try skip naming patterns to show all."
+            )
             return output_str
         output_str = ">>> Projects sorted by creation time:\n"
         # pylint: disable=not-an-iterable
@@ -103,9 +108,7 @@ class ProjectRecords(pd.BaseModel):
             output_str += f" Created at:   {item.local_time_zone_created_time.strftime('%Y-%m-%d %H:%M %Z')}\n"
             output_str += f" Created with: {item.root_item_type}\n"
             output_str += f" ID:           {item.project_id}\n"
-            output_str += (
-                f" Link:         https://flow360.simulation.cloud/workbench/{item.project_id}\n"
-            )
+            output_str += f" Link:         https://flow360.simulation.cloud/workbench/{item.project_id}\n"
             if item.tags:
                 output_str += f" Tags:         {item.tags}\n"
             if item.description:
@@ -113,9 +116,13 @@ class ProjectRecords(pd.BaseModel):
             if item.statistics.geometry:
                 output_str += f" Geometry count:     {item.statistics.geometry.count}\n"
             if item.statistics.surface_mesh:
-                output_str += f" Surface Mesh count: {item.statistics.surface_mesh.count}\n"
+                output_str += (
+                    f" Surface Mesh count: {item.statistics.surface_mesh.count}\n"
+                )
             if item.statistics.volume_mesh:
-                output_str += f" Volume Mesh count:  {item.statistics.volume_mesh.count}\n"
+                output_str += (
+                    f" Volume Mesh count:  {item.statistics.volume_mesh.count}\n"
+                )
             if item.statistics.case:
                 output_str += f" Case count:         {item.statistics.case.count}\n"
 
@@ -184,16 +191,21 @@ def _replace_ghost_surfaces(params: SimulationParams):
             if isinstance(field, GhostSurface):
                 # pylint: disable=protected-access
                 field = _replace_the_ghost_surface(
-                    ghost_surface=field, ghost_entities_from_metadata=ghost_entities_from_metadata
+                    ghost_surface=field,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
                 )
 
             if isinstance(field, EntityList):
                 if field.stored_entities:
                     for entity_index, _ in enumerate(field.stored_entities):
-                        if isinstance(field.stored_entities[entity_index], GhostSurface):
-                            field.stored_entities[entity_index] = _replace_the_ghost_surface(
-                                ghost_surface=field.stored_entities[entity_index],
-                                ghost_entities_from_metadata=ghost_entities_from_metadata,
+                        if isinstance(
+                            field.stored_entities[entity_index], GhostSurface
+                        ):
+                            field.stored_entities[entity_index] = (
+                                _replace_the_ghost_surface(
+                                    ghost_surface=field.stored_entities[entity_index],
+                                    ghost_entities_from_metadata=ghost_entities_from_metadata,
+                                )
                             )
 
             elif isinstance(field, (list, tuple)):
@@ -206,18 +218,22 @@ def _replace_ghost_surfaces(params: SimulationParams):
                         )
                     elif isinstance(item, Flow360BaseModel):
                         _find_ghost_surfaces(
-                            model=item, ghost_entities_from_metadata=ghost_entities_from_metadata
+                            model=item,
+                            ghost_entities_from_metadata=ghost_entities_from_metadata,
                         )
 
             elif isinstance(field, Flow360BaseModel):
                 _find_ghost_surfaces(
-                    model=field, ghost_entities_from_metadata=ghost_entities_from_metadata
+                    model=field,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
                 )
 
     ghost_entities_from_metadata = (
         params.private_attribute_asset_cache.project_entity_info.ghost_entities
     )
-    _find_ghost_surfaces(model=params, ghost_entities_from_metadata=ghost_entities_from_metadata)
+    _find_ghost_surfaces(
+        model=params, ghost_entities_from_metadata=ghost_entities_from_metadata
+    )
 
     return params
 
@@ -230,7 +246,15 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
 
     entity_registry = params.used_entity_registry
     # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume]:
+    for draft_type in [
+        Box,
+        Cylinder,
+        Point,
+        PointArray,
+        PointArray2D,
+        Slice,
+        CustomVolume,
+    ]:
         draft_entities = entity_registry.find_by_type(draft_type)
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:
@@ -238,7 +262,9 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
     return entity_info
 
 
-def _update_entity_grouping_tags(entity_info, params: SimulationParams) -> EntityInfoModel:
+def _update_entity_grouping_tags(
+    entity_info, params: SimulationParams
+) -> EntityInfoModel:
     """
     Update the entity grouping tags in params to resolve possible conflicts
     between the SimulationParams and the root asset.This
@@ -322,11 +348,15 @@ def _set_up_default_geometry_accuracy(
     if root_asset.default_settings.get("geometry_accuracy") is None:
         return params
     if not params.meshing.defaults.geometry_accuracy:
-        params.meshing.defaults.geometry_accuracy = root_asset.default_settings["geometry_accuracy"]
+        params.meshing.defaults.geometry_accuracy = root_asset.default_settings[
+            "geometry_accuracy"
+        ]
     return params
 
 
-def _set_up_default_reference_geometry(params: SimulationParams, length_unit: LengthType):
+def _set_up_default_reference_geometry(
+    params: SimulationParams, length_unit: LengthType
+):
     """
     Setting up the default reference geometry if not provided in params.
     Ensure the simulation.json contains the default settings other than None.
@@ -339,7 +369,11 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
 
     for field in params.reference_geometry.__class__.model_fields:
         if getattr(params.reference_geometry, field) is None:
-            setattr(params.reference_geometry, field, getattr(default_reference_geometry, field))
+            setattr(
+                params.reference_geometry,
+                field,
+                getattr(default_reference_geometry, field),
+            )
 
     return params
 
@@ -384,15 +418,21 @@ def set_up_params_for_uploading(
     Set up params before submitting the draft.
     """
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "project_length_unit"):
+    with model_attribute_unlock(
+        params.private_attribute_asset_cache, "project_length_unit"
+    ):
         params.private_attribute_asset_cache.project_length_unit = length_unit
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "use_inhouse_mesher"):
+    with model_attribute_unlock(
+        params.private_attribute_asset_cache, "use_inhouse_mesher"
+    ):
         params.private_attribute_asset_cache.use_inhouse_mesher = (
             use_beta_mesher if use_beta_mesher else False
         )
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "use_geometry_AI"):
+    with model_attribute_unlock(
+        params.private_attribute_asset_cache, "use_geometry_AI"
+    ):
         params.private_attribute_asset_cache.use_geometry_AI = (
             use_geometry_AI if use_geometry_AI else False
         )
@@ -404,13 +444,17 @@ def set_up_params_for_uploading(
     )
 
     # Check if there are any new draft entities that have been added in the params by the user
-    entity_info = _set_up_params_non_persistent_entity_info(root_asset.entity_info, params)
+    entity_info = _set_up_params_non_persistent_entity_info(
+        root_asset.entity_info, params
+    )
 
     # If the customer just load the param without re-specify the same set of entity grouping tags,
     # we need to update the entity grouping tags to the ones in the SimulationParams.
     entity_info = _update_entity_grouping_tags(entity_info, params)
 
-    with model_attribute_unlock(params.private_attribute_asset_cache, "project_entity_info"):
+    with model_attribute_unlock(
+        params.private_attribute_asset_cache, "project_entity_info"
+    ):
         params.private_attribute_asset_cache.project_entity_info = entity_info
     # Replace the ghost surfaces in the SimulationParams by the real ghost ones from asset metadata.
     # This has to be done after `project_entity_info` is properly set.
@@ -443,22 +487,31 @@ def validate_params_with_context(params, root_item_type, up_to):
 
     return params, errors
 
-def _get_imported_surface_file_paths(params):
+
+def _get_imported_surface_files(params, basename_only=False):
     if params is None or params.outputs is None:
         return []
-    imported_surface_file_paths = []
+    imported_surface_files = []
     for output in params.outputs:
         if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
             for surface in output.entities.stored_entities:
-                imported_surface_file_paths.append(surface.file_name)
-    return imported_surface_file_paths
+                if basename_only:
+                    imported_surface_files.append(os.path.basename(surface.file_name))
+                else:
+                    imported_surface_files.append(surface.file_name)
+    return imported_surface_files
+
 
 def upload_imported_surfaces_to_draft(params, draft, fork_case):
     """Upload imported surfaces to draft"""
-    parent_existing_imported_file_basenames = _get_imported_surface_file_paths(fork_case.params)
-    current_draft_surface_file_paths_to_import = _get_imported_surface_file_paths(params)
+
+    parent_existing_imported_file_basenames = _get_imported_surface_files(
+        fork_case.params, basename_only=True
+    )
+    current_draft_surface_file_paths_to_import = _get_imported_surface_files(params)
     deduplicated_surface_file_paths_to_import = []
-
-
-
-    draft.upload_imported_surfaces(imported_surface_file_paths)
+    for file_path_to_import in current_draft_surface_file_paths_to_import:
+        file_basename = os.path.basename(file_path_to_import)
+        if file_basename not in parent_existing_imported_file_basenames:
+            deduplicated_surface_file_paths_to_import.append(file_path_to_import)
+    draft.upload_imported_surfaces(deduplicated_surface_file_paths_to_import)
