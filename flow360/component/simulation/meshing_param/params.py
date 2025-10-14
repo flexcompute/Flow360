@@ -384,12 +384,11 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         def check_spacing(spacing, location):
             # pylint: disable=no-member
             lvl, close = self.base_spacing.to_level(spacing)
+            spacing_unit = spacing.units
             if not close:
                 closest_spacing = self.base_spacing[lvl]
-                msg = f"The spacing of {spacing} spcified in {location} will be cast to"
-                msg += (
-                    f" the first lower refinement in the octree series which is {closest_spacing}."
-                )
+                msg = f"The spacing of {spacing:.4g} spcified in {location} will be cast to the first lower refinement"
+                msg += f" in the octree series which is {closest_spacing.to(spacing_unit):.4g}."
                 log.warning(msg)
 
         # pylint: disable=no-member
