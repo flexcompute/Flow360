@@ -1,0 +1,281 @@
+from __future__ import annotations
+
+from typing import Any, Dict, List, Tuple
+
+import numpy as np
+
+from flow360.component.results.base_results import (
+    _PHYSICAL_STEP,
+    _PSEUDO_STEP,
+    ResultCSVModel,
+)
+from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.exceptions import Flow360ValueError
+
+# pylint:disable=invalid-name
+_CL = "CL"
+_CD = "CD"
+_CFx = "CFx"
+_CFy = "CFy"
+_CFz = "CFz"
+_CMx = "CMx"
+_CMy = "CMy"
+_CMz = "CMz"
+
+
+class CoefficientsComputationUtils:
+    """Static utilities for aerodynamic coefficient computations.
+
+    Provides helper methods for computing aerodynamic coefficients using
+    reference geometry and operating condition information.
+
+    This class contains only static methods and should not be instantiated.
+    """
+
+    @staticmethod
+    def _to_float(value):
+        try:
+            return float(value.v)
+        except AttributeError:
+            return float(value)
+
+    @staticmethod
+    def _vector_to_np3(vec):
+        try:
+            return np.array([float(vec[0]), float(vec[1]), float(vec[2])], dtype=float)
+        except Exception as exc:  # pylint:disable=broad-except
+            raise Flow360ValueError(f"Invalid vector: {vec}") from exc
+
+    @staticmethod
+    def _normalize(vec):
+        norm = np.linalg.norm(vec)
+        if norm == 0:
+            return vec
+        return vec / norm
+
+    @staticmethod
+    def _get_reference_geometry(params: SimulationParams):
+        # pylint:disable=import-outside-toplevel, no-member
+        from flow360.component.simulation.primitives import ReferenceGeometry
+
+        reference_geometry_filled = ReferenceGeometry.fill_defaults(
+            params.reference_geometry, params
+        )
+
+        area_in_m2 = float(reference_geometry_filled.area.to("m**2").value)
+
+        moment_length = reference_geometry_filled.moment_length
+        try:
+            moment_length_vec_in_m = np.array(
+                [
+                    moment_length[0].to("m").value,
+                    moment_length[1].to("m").value,
+                    moment_length[2].to("m").value,
+                ]
+            )
+        except (TypeError, IndexError):
+            val = moment_length.to("m").value
+            moment_length_vec_in_m = np.array([val, val, val], dtype=float)
+
+        mc = reference_geometry_filled.moment_center
+        moment_center_in_m = np.array(
+            [mc[0].to("m").value, mc[1].to("m").value, mc[2].to("m").value], dtype=float
+        )
+
+        return area_in_m2, moment_length_vec_in_m, moment_center_in_m
+
+    @staticmethod
+    def _get_freestream_vectors(params: SimulationParams):
+        oc = params.operating_condition
+        if oc is None:
+            raise Flow360ValueError(
+                "Operating condition is required for computing freestream vectors."
+            )
+        alpha_rad = float(oc.alpha.to("rad").value)
+        beta_rad = float(oc.beta.to("rad").value)
+
+        u_inf = np.array(
+            [
+                np.cos(alpha_rad) * np.cos(beta_rad),
+                np.sin(beta_rad),
+                np.sin(alpha_rad) * np.cos(beta_rad),
+            ],
+            dtype=float,
+        )
+        u_inf = CoefficientsComputationUtils._normalize(u_inf)
+
+        lift_dir = np.array([-np.sin(alpha_rad), 0.0, np.cos(alpha_rad)], dtype=float)
+        lift_dir = CoefficientsComputationUtils._normalize(lift_dir)
+
+        drag_dir = -u_inf
+        return lift_dir, drag_dir
+
+    @staticmethod
+    def _get_dynamic_pressure(params):
+        # pylint:disable=protected-access
+        oc = params.operating_condition
+        using_liquid_op = oc.type_name == "LiquidOperatingCondition"
+
+        if using_liquid_op:
+            v_ref = float(params._liquid_reference_velocity.to("m/s").value)
+        else:
+            v_ref = float(params.base_velocity.to("m/s").value)
+
+        rho = float(params.base_density.to("kg/m**3").value)
+        return 0.5 * rho * v_ref * v_ref
+
+
+def collect_disk_axes_and_centers(
+    params: SimulationParams, model_type: str
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    """Collect normalized disk axes and centers for a given model type.
+
+    Parameters
+    ----------
+    params : SimulationParams
+        Simulation parameters including models and entities.
+    model_type : str
+        The type name of the disk model to match (e.g. "ActuatorDisk", "BETDisk").
+
+    Returns
+    -------
+    (disk_axes, disk_centers) : Tuple[List[np.ndarray], List[np.ndarray]]
+        Lists of axis vectors (normalized) and center positions (in meters).
+    """
+
+    disk_axes: List[np.ndarray] = []
+    disk_centers: List[np.ndarray] = []
+
+    for model in params.models:
+        if model.type != model_type:
+            continue
+        for cyl in model.entities.stored_entities:
+            # Axis is assumed normalized by the inputs
+            axis = CoefficientsComputationUtils._vector_to_np3(cyl.axis)
+
+            center = cyl.center
+            center_np = np.array(
+                [center[0].to("m").value, center[1].to("m").value, center[2].to("m").value],
+                dtype=float,
+            )
+            disk_axes.append(axis)
+            disk_centers.append(center_np)
+
+    return disk_axes, disk_centers
+
+
+class DiskCoefficientsComputation:
+    """
+    Static utilities for disk coefficient computations.
+
+    This class provides only static methods and should not be instantiated or subclassed.
+    All methods are self-contained and require explicit parameters.
+    """
+
+    @staticmethod
+    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
+        out: Dict[str, list] = {}
+        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
+        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
+        return out
+
+    @staticmethod
+    def _iter_disks(params, disk_model_type: str, values: Dict[str, list]):
+        disk_axes, disk_centers = collect_disk_axes_and_centers(params, disk_model_type)
+        disk_names = np.unique([v.split("_")[0] for v in values.keys() if v.startswith("Disk")])
+        for disk_name in disk_names:
+            idx = int(disk_name[4:])
+            axis = (
+                disk_axes[idx] if idx < len(disk_axes) else np.array([1.0, 0.0, 0.0], dtype=float)
+            )
+            center = disk_centers[idx]
+            yield disk_name, axis, center
+
+    @staticmethod
+    def _build_coeff_env(params) -> Dict[str, Any]:
+        area, moment_length_vec, moment_center_global = (
+            CoefficientsComputationUtils._get_reference_geometry(params)
+        )
+        dynamic_pressure = CoefficientsComputationUtils._get_dynamic_pressure(params)
+        lift_dir, drag_dir = CoefficientsComputationUtils._get_freestream_vectors(params)
+        return {
+            "moment_center_global": moment_center_global,
+            "dynamic_pressure": dynamic_pressure,
+            "area": area,
+            "moment_length_vec": moment_length_vec,
+            "lift_dir": lift_dir,
+            "drag_dir": drag_dir,
+        }
+
+    @staticmethod
+    def _init_disk_output(out: Dict[str, list], disk_name: str) -> Dict[str, str]:
+        keys = {
+            "CFx": f"{disk_name}_{_CFx}",
+            "CFy": f"{disk_name}_{_CFy}",
+            "CFz": f"{disk_name}_{_CFz}",
+            "CMx": f"{disk_name}_{_CMx}",
+            "CMy": f"{disk_name}_{_CMy}",
+            "CMz": f"{disk_name}_{_CMz}",
+            "CL": f"{disk_name}_{_CL}",
+            "CD": f"{disk_name}_{_CD}",
+        }
+        out[keys["CFx"]], out[keys["CFy"]], out[keys["CFz"]] = [], [], []
+        out[keys["CMx"]], out[keys["CMy"]], out[keys["CMz"]] = [], [], []
+        out[keys["CL"]], out[keys["CD"]] = [], []
+        return keys
+
+    @staticmethod
+    def compute_coefficients_static(
+        params: SimulationParams,
+        values: Dict[str, list],
+        disk_model_type: str,
+        iterate_step_values_func,
+        coefficients_model_class,
+    ):
+        """
+        Compute disk coefficients from raw force/moment data.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters containing reference geometry and flow conditions
+        values : Dict[str, list]
+            Dictionary containing time series data (pseudo/physical step and disk forces/moments)
+        disk_model_type : str
+            Type of disk model (e.g., "ActuatorDisk" or "BETDisk")
+        iterate_step_values_func : callable
+            Function that yields (CF, CM, CL, CD) for each time step.
+            Signature: func(disk_name, disk_ctx, env, values) -> Iterator[Tuple]
+        coefficients_model_class : type
+            Class to instantiate for the output coefficients model
+
+        Returns
+        -------
+        coefficients_model_class instance
+            Model containing computed coefficients
+        """
+        if not isinstance(params, SimulationParams):
+            raise ValueError(
+                "compute_coefficients() is not supported for legacy cases with Flow360Params."
+            )
+
+        env = DiskCoefficientsComputation._build_coeff_env(params)
+        out = DiskCoefficientsComputation._copy_time_columns(values)
+
+        for disk_name, axis, center in DiskCoefficientsComputation._iter_disks(
+            params, disk_model_type, values
+        ):
+            DiskCoefficientsComputation._init_disk_output(out, disk_name)
+            for CF, CM, CL_val, CD_val in iterate_step_values_func(  # pylint:disable=invalid-name
+                disk_name, {"axis": axis, "center": center}, env, values
+            ):
+                out[f"{disk_name}_{_CFx}"].append(CF[0])
+                out[f"{disk_name}_{_CFy}"].append(CF[1])
+                out[f"{disk_name}_{_CFz}"].append(CF[2])
+                out[f"{disk_name}_{_CMx}"].append(CM[0])
+                out[f"{disk_name}_{_CMy}"].append(CM[1])
+                out[f"{disk_name}_{_CMz}"].append(CM[2])
+                out[f"{disk_name}_{_CD}"].append(CD_val)
+                out[f"{disk_name}_{_CL}"].append(CL_val)
+
+        return coefficients_model_class().from_dict(out)

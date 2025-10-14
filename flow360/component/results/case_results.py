@@ -6,7 +6,7 @@ from __future__ import annotations
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import pydantic as pd
@@ -20,6 +20,10 @@ from flow360.component.results.base_results import (
     ResultBaseModel,
     ResultCSVModel,
     ResultTarGZModel,
+)
+from flow360.component.results.results_utils import (
+    CoefficientsComputationUtils,
+    DiskCoefficientsComputation,
 )
 from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -558,117 +562,6 @@ class _ActuatorDiskResults(_DimensionedCSVResultModel):
         self.moment = self._in_base_component(base, self.moment, "moment", params)
 
 
-class BaseCoefficientsResultCSVModel(ResultCSVModel):
-    """Base CSV model for coefficient-style outputs.
-
-    Provides common helpers for computing aerodynamic coefficients
-    using reference geometry and operating condition information.
-    """
-
-    @staticmethod
-    def _to_float(value):
-        # Convert Flow360 quantity or plain value to float
-        try:
-            # Quantity
-            return float(value.v)
-        except AttributeError:
-            return float(value)
-
-    @staticmethod
-    def _vector_to_np3(vec):
-        # Accepts tuple/list/np array or length-type vector; returns np.ndarray shape (3,)
-        try:
-            return np.array([float(vec[0]), float(vec[1]), float(vec[2])], dtype=float)
-        except Exception as exc:  # pylint:disable=broad-except
-            raise Flow360ValueError(f"Invalid vector: {vec}") from exc
-
-    @staticmethod
-    def _normalize(vec):
-        norm = np.linalg.norm(vec)
-        if norm == 0:
-            return vec
-        return vec / norm
-
-    @staticmethod
-    def _get_reference_geometry(params: SimulationParams):
-        # pylint:disable=import-outside-toplevel, no-member
-        from flow360.component.simulation.primitives import ReferenceGeometry
-
-        reference_geometry_filled = ReferenceGeometry.fill_defaults(
-            params.reference_geometry, params
-        )
-
-        area_in_m2 = float(reference_geometry_filled.area.to("m**2").value)
-
-        moment_length = reference_geometry_filled.moment_length
-        # Allow scalar or vector LengthType; convert to 3-vector
-        try:
-            moment_length_vec_in_m = np.array(
-                [
-                    moment_length[0].to("m").value,
-                    moment_length[1].to("m").value,
-                    moment_length[2].to("m").value,
-                ]
-            )
-        except (TypeError, IndexError):
-            val = moment_length.to("m").value
-            moment_length_vec_in_m = np.array([val, val, val], dtype=float)
-
-        mc = reference_geometry_filled.moment_center
-        moment_center_in_m = np.array(
-            [mc[0].to("m").value, mc[1].to("m").value, mc[2].to("m").value], dtype=float
-        )
-
-        return area_in_m2, moment_length_vec_in_m, moment_center_in_m
-
-    @staticmethod
-    def _get_freestream_vectors(params: SimulationParams):
-        # Compute freestream unit vector from alpha/beta (radians) in Aerospace or Liquid conditions
-        oc = params.operating_condition
-        if oc is None:
-            raise Flow360ValueError(
-                "Operating condition is required for computing freestream vectors."
-            )
-        # alpha/beta can be quantity types
-        alpha_rad = float(oc.alpha.to("rad").value)
-        beta_rad = float(oc.beta.to("rad").value)
-
-        # Standard body axes: x forward, y to right, z up
-        u_inf = np.array(
-            [
-                np.cos(alpha_rad) * np.cos(beta_rad),
-                np.sin(beta_rad),
-                np.sin(alpha_rad) * np.cos(beta_rad),
-            ],
-            dtype=float,
-        )
-        u_inf = BaseCoefficientsResultCSVModel._normalize(u_inf)
-
-        # Lift direction defined by alpha only: [ -sin(alpha), 0, cos(alpha) ]
-        lift_dir = np.array([-np.sin(alpha_rad), 0.0, np.cos(alpha_rad)], dtype=float)
-        lift_dir = BaseCoefficientsResultCSVModel._normalize(lift_dir)
-
-        drag_dir = -u_inf
-        return lift_dir, drag_dir
-
-    @staticmethod
-    def _get_dynamic_pressure(params):
-        # Precedence for V_ref
-        # pylint:disable=protected-access
-        oc = params.operating_condition
-        v_ref = None
-        using_liquid_op = oc.type_name == "LiquidOperatingCondition"
-
-        if using_liquid_op:
-            v_ref = float(params._liquid_reference_velocity.to("m/s").value)
-        else:
-            v_ref = float(params.base_velocity.to("m/s").value)
-
-        # density
-        rho = float(params.base_density.to("kg/m**3").value)
-        return 0.5 * rho * v_ref * v_ref
-
-
 class OptionallyDownloadableResultCSVModel(ResultCSVModel):
     """
     Model for handling optionally downloadable CSV results.
@@ -765,180 +658,59 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
                 self.values["ForceUnits"] = disk.force.units
                 self.values["MomentUnits"] = disk.moment.units
 
-    @staticmethod
-    def _collect_disk_axes_and_centers(params: SimulationParams):
-        """Collect normalized disk axes and centers from SimulationParams models."""
-        # TODO: Validate that the ordering here is consistent with the CSV header number indexing with a real case.
-        disk_axes = []
-        disk_centers = []
-        for model in params.models:
-            if model.type != "ActuatorDisk":
-                continue
-            for cyl in model.entities.stored_entities:
-                # Axis already normalized
-                axis = BaseCoefficientsResultCSVModel._vector_to_np3(
-                    cyl.axis
-                )  # pylint:disable=protected-access
-                center = cyl.center
-                center_np = np.array(
-                    [center[0].to("m").value, center[1].to("m").value, center[2].to("m").value],
-                    dtype=float,
-                )
-                disk_axes.append(axis)
-                disk_centers.append(center_np)
-        return disk_axes, disk_centers
-
-    @staticmethod
-    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
-        """Initialize output dictionary with step/time columns preserved."""
-        out: Dict[str, list] = {}
-        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
-        return out
-
-    def _iter_disks(self, params: SimulationParams):
-        """Yield (disk_name, axis, center) for available disks in values order."""
-        disk_axes, disk_centers = self._collect_disk_axes_and_centers(params)
-        disk_names = np.unique(
-            [v.split("_")[0] for v in self.values.keys() if v.startswith("Disk")]
-        )
-        for disk_name in disk_names:
-            idx = int(disk_name[4:])
-            axis = (
-                disk_axes[idx] if idx < len(disk_axes) else np.array([1.0, 0.0, 0.0], dtype=float)
-            )
-            center = disk_centers[idx]
-            yield disk_name, axis, center
-
-    @staticmethod
-    def _build_coeff_env(params: SimulationParams) -> Dict[str, Any]:
-        """Build immutable environment used for coefficient calculations."""
-        area, moment_length_vec, moment_center_global = (
-            BaseCoefficientsResultCSVModel._get_reference_geometry(
-                params
-            )  # pylint:disable=protected-access
-        )
-        dynamic_pressure = BaseCoefficientsResultCSVModel._get_dynamic_pressure(
-            params
-        )  # pylint:disable=protected-access
-        lift_dir, drag_dir = BaseCoefficientsResultCSVModel._get_freestream_vectors(
-            params
-        )  # pylint:disable=protected-access
-        return {
-            "moment_center_global": moment_center_global,
-            "dynamic_pressure": dynamic_pressure,
-            "area": area,
-            "moment_length_vec": moment_length_vec,
-            "lift_dir": lift_dir,
-            "drag_dir": drag_dir,
-        }
-
-    @staticmethod
-    def _init_disk_output(out: Dict[str, list], disk_name: str) -> Dict[str, str]:
-        """Create output keys for a disk and initialize arrays; return key mapping."""
-        keys = {
-            "CFx": f"{disk_name}_{_CFx}",
-            "CFy": f"{disk_name}_{_CFy}",
-            "CFz": f"{disk_name}_{_CFz}",
-            "CMx": f"{disk_name}_{_CMx}",
-            "CMy": f"{disk_name}_{_CMy}",
-            "CMz": f"{disk_name}_{_CMz}",
-            "CL": f"{disk_name}_{_CL}",
-            "CD": f"{disk_name}_{_CD}",
-        }
-        out[keys["CFx"]], out[keys["CFy"]], out[keys["CFz"]] = [], [], []
-        out[keys["CMx"]], out[keys["CMy"]], out[keys["CMz"]] = [], [], []
-        out[keys["CL"]], out[keys["CD"]] = [], []
-        return keys
-
-    def _get_series(self, disk_name: str):
-        """Return force and moment magnitude series for a disk name."""
-        return (
-            self.values.get(f"{disk_name}_Force", []),
-            self.values.get(f"{disk_name}_Moment", []),
-        )
-
-    @staticmethod
-    def _compute_step_values(
-        force_mag: float,
-        moment_mag: float,
-        axis: np.ndarray,
-        center: np.ndarray,
-        env: Dict[str, Any],
-    ):
-        """Compute CF components, CM components, CL and CD for a single step."""
-        force_vec = force_mag * axis
-        r_vec = center - env["moment_center_global"]
-        moment_global = moment_mag * axis + np.cross(r_vec, force_vec)
-
-        dp_area = env["dynamic_pressure"] * env["area"]
-        denom_force = dp_area if dp_area != 0 else 1.0
-        denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
-
-        CF = force_vec / denom_force
-        CM = np.divide(moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0)
-
-        CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
-        CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
-        return CF, CM, CL_val, CD_val
-
-    def _process_disk(
-        self,
-        disk_name: str,
-        disk_ctx: Dict[str, np.ndarray],
-        env: Dict[str, Any],
-        out: Dict[str, list],
-    ) -> None:
-        """Populate output arrays for a single disk over all steps."""
-        self._init_disk_output(out, disk_name)
-        force_mag_series, moment_mag_series = self._get_series(disk_name)
-        for f_val, m_val in zip(force_mag_series, moment_mag_series):
-            vals = self._compute_step_values(
-                BaseCoefficientsResultCSVModel._to_float(f_val),  # pylint:disable=protected-access
-                BaseCoefficientsResultCSVModel._to_float(m_val),  # pylint:disable=protected-access
-                disk_ctx["axis"],
-                disk_ctx["center"],
-                env,
-            )
-
-            out[f"{disk_name}_{_CFx}"].append(vals[0][0])
-            out[f"{disk_name}_{_CFy}"].append(vals[0][1])
-            out[f"{disk_name}_{_CFz}"].append(vals[0][2])
-            out[f"{disk_name}_{_CMx}"].append(vals[1][0])
-            out[f"{disk_name}_{_CMy}"].append(vals[1][1])
-            out[f"{disk_name}_{_CMz}"].append(vals[1][2])
-            out[f"{disk_name}_{_CD}"].append(vals[3])
-            out[f"{disk_name}_{_CL}"].append(vals[2])
-
     def compute_coefficients(self, params: SimulationParams):
         """
-        Compute CFx/CFy/CFz, CMx/CMy/CMz, CL/CD per disk and return a coefficients model.
+        Compute disk coefficients from actuator disk forces and moments.
 
-        The computation reconstructs vector force/moment using disk axis and center
-        from SimulationParams and projects onto reference directions.
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+
+        Returns
+        -------
+        ActuatorDiskCoefficientsCSVModel
+            Model containing computed coefficients
         """
+        return DiskCoefficientsComputation.compute_coefficients_static(
+            params=params,
+            values=self.as_dict(),
+            disk_model_type="ActuatorDisk",
+            iterate_step_values_func=self._iterate_step_values_static,
+            coefficients_model_class=ActuatorDiskCoefficientsCSVModel,
+        )
 
-        # pylint:disable=protected-access
-        if not isinstance(params, SimulationParams):
-            raise ValueError(
-                "compute_coefficients() is not supported for legacy cases with Flow360Params."
-            )
+    @staticmethod
+    def _iterate_step_values_static(disk_name, disk_ctx, env, values):
+        # pylint:disable=too-many-locals, protected-access
+        force_mag_series = values.get(f"{disk_name}_Force", [])
+        moment_mag_series = values.get(f"{disk_name}_Moment", [])
+        for f_val, m_val in zip(force_mag_series, moment_mag_series):
+            force_mag = CoefficientsComputationUtils._to_float(f_val)
+            moment_mag = CoefficientsComputationUtils._to_float(m_val)
+            axis = disk_ctx["axis"]
+            center = disk_ctx["center"]
 
-        env = self._build_coeff_env(params)
+            force_vec = force_mag * axis
+            r_vec = center - env["moment_center_global"]
+            moment_global = moment_mag * axis + np.cross(r_vec, force_vec)
 
-        # Build output dictionary and carry over step/time columns if present
-        out = self._copy_time_columns(self.as_dict())
+            dp_area = env["dynamic_pressure"] * env["area"]
+            denom_force = dp_area if dp_area != 0 else 1.0
+            denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
 
-        for disk_name, axis, center in self._iter_disks(params):
-            self._process_disk(disk_name, {"axis": axis, "center": center}, env, out)
+            CF = force_vec / denom_force
+            CM = np.divide(moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0)
 
-        return ActuatorDiskCoefficientsCSVModel.from_dict(out)
+            CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
+            CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
+            yield CF, CM, CL_val, CD_val
 
 
-class ActuatorDiskCoefficientsCSVModel(BaseCoefficientsResultCSVModel):
+class ActuatorDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for actuator disk coefficients output."""
 
-    remote_file_name: str = pd.Field("actuator_disk_coefficients.csv", frozen=True)
+    remote_file_name: str = pd.Field("actuator_disk_coefficients_v2.csv", frozen=True)
 
 
 class _BETDiskResults(_DimensionedCSVResultModel):
@@ -1052,6 +824,71 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
+
+    def compute_coefficients(self, params: SimulationParams):
+        """
+        Compute disk coefficients from BET disk forces and moments.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+
+        Returns
+        -------
+        BETDiskCoefficientsCSVModel
+            Model containing computed coefficients
+        """
+        return DiskCoefficientsComputation.compute_coefficients_static(
+            params=params,
+            values=self.as_dict(),
+            disk_model_type="BETDisk",
+            iterate_step_values_func=self._iterate_step_values_static,
+            coefficients_model_class=BETDiskCoefficientsCSVModel,
+        )
+
+    @staticmethod
+    def _iterate_step_values_static(disk_name, disk_ctx, env, values):
+        # pylint:disable=protected-access, too-many-locals
+        fx_series = values.get(f"{disk_name}_Force_x", [])
+        fy_series = values.get(f"{disk_name}_Force_y", [])
+        fz_series = values.get(f"{disk_name}_Force_z", [])
+        mx_series = values.get(f"{disk_name}_Moment_x", [])
+        my_series = values.get(f"{disk_name}_Moment_y", [])
+        mz_series = values.get(f"{disk_name}_Moment_z", [])
+
+        for fx_val, fy_val, fz_val, mx_val, my_val, mz_val in zip(
+            fx_series, fy_series, fz_series, mx_series, my_series, mz_series
+        ):
+            fx = CoefficientsComputationUtils._to_float(fx_val)
+            fy = CoefficientsComputationUtils._to_float(fy_val)
+            fz = CoefficientsComputationUtils._to_float(fz_val)
+            mx = CoefficientsComputationUtils._to_float(mx_val)
+            my = CoefficientsComputationUtils._to_float(my_val)
+            mz = CoefficientsComputationUtils._to_float(mz_val)
+
+            center = disk_ctx["center"]
+            force_vec = np.array([fx, fy, fz], dtype=float)
+            moment_vec = np.array([mx, my, mz], dtype=float)
+            r_vec = center - env["moment_center_global"]
+            moment_global = moment_vec + np.cross(r_vec, force_vec)
+
+            dp_area = env["dynamic_pressure"] * env["area"]
+            denom_force = dp_area if dp_area != 0 else 1.0
+            denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
+
+            CF = force_vec / denom_force
+            CM = np.divide(moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0)
+
+            CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
+            CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
+            yield CF, CM, CL_val, CD_val
+
+
+class BETDiskCoefficientsCSVModel(ResultCSVModel):
+    """CSV model for BET disk coefficients output."""
+
+    remote_file_name: str = pd.Field("bet_disk_coefficients.csv", frozen=True)
 
 
 class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):
