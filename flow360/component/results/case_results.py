@@ -22,8 +22,40 @@ from flow360.component.results.base_results import (
     ResultTarGZModel,
 )
 from flow360.component.results.results_utils import (
+    _CD,
+    _CD_PER_STRIP,
+    _CD_PRESSURE,
+    _CD_SKIN_FRICTION,
+    _CL,
+    _CL_PRESSURE,
+    _CL_SKIN_FRICTION,
+    _CUMULATIVE_CD_CURVE,
+    _HEAT_FLUX,
+    _X,
+    _Y,
     CoefficientsComputationUtils,
     DiskCoefficientsComputation,
+    _CFx,
+    _CFx_PER_SPAN,
+    _CFx_PRESSURE,
+    _CFx_SKIN_FRICTION,
+    _CFy,
+    _CFy_PRESSURE,
+    _CFy_SKIN_FRICTION,
+    _CFz,
+    _CFz_PER_SPAN,
+    _CFz_PRESSURE,
+    _CFz_SKIN_FRICTION,
+    _CMx,
+    _CMx_PRESSURE,
+    _CMx_SKIN_FRICTION,
+    _CMy,
+    _CMy_PER_SPAN,
+    _CMy_PRESSURE,
+    _CMy_SKIN_FRICTION,
+    _CMz,
+    _CMz_PRESSURE,
+    _CMz_SKIN_FRICTION,
 )
 from flow360.component.simulation.conversion import unit_converter as unit_converter_v2
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -38,49 +70,6 @@ from flow360.component.v1.conversions import unit_converter as unit_converter_v1
 from flow360.component.v1.flow360_params import Flow360Params
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
-
-# pylint:disable=invalid-name
-_CL = "CL"
-_CD = "CD"
-_CFx = "CFx"
-_CFy = "CFy"
-_CFz = "CFz"
-_CMx = "CMx"
-_CMy = "CMy"
-_CMz = "CMz"
-_CL_PRESSURE = "CLPressure"
-_CD_PRESSURE = "CDPressure"
-_CFx_PRESSURE = "CFxPressure"
-_CFy_PRESSURE = "CFyPressure"
-_CFz_PRESSURE = "CFzPressure"
-_CMx_PRESSURE = "CMxPressure"
-_CMy_PRESSURE = "CMyPressure"
-_CMz_PRESSURE = "CMzPressure"
-_CL_SKIN_FRICTION = "CLSkinFriction"
-_CD_SKIN_FRICTION = "CDSkinFriction"
-_CFx_SKIN_FRICTION = "CFxSkinFriction"
-_CFy_SKIN_FRICTION = "CFySkinFriction"
-_CFz_SKIN_FRICTION = "CFzSkinFriction"
-_CMx_SKIN_FRICTION = "CMxSkinFriction"
-_CMy_SKIN_FRICTION = "CMySkinFriction"
-_CMz_SKIN_FRICTION = "CMzSkinFriction"
-_CL_VISCOUS = "CLViscous"
-_CD_VISCOUS = "CDViscous"
-_CFx_VISCOUS = "CFxViscous"
-_CFy_VISCOUS = "CFyViscous"
-_CFz_VISCOUS = "CFzViscous"
-_CMx_VISCOUS = "CMxViscous"
-_CMy_VISCOUS = "CMyViscous"
-_CMz_VISCOUS = "CMzViscous"
-_HEAT_TRANSFER = "HeatTransfer"
-_HEAT_FLUX = "HeatFlux"
-_X = "X"
-_Y = "Y"
-_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
-_CD_PER_STRIP = "CD_per_strip"
-_CFx_PER_SPAN = "CFx_per_span"
-_CFz_PER_SPAN = "CFz_per_span"
-_CMy_PER_SPAN = "CMy_per_span"
 
 
 class CaseDownloadable(Enum):
@@ -699,12 +688,15 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
             denom_force = dp_area if dp_area != 0 else 1.0
             denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
 
-            CF = force_vec / denom_force
-            CM = np.divide(moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0)
+            # pylint:disable=invalid-name
+            CF_vec = force_vec / denom_force
+            CM_vec = np.divide(
+                moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0
+            )
 
             CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
             CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
-            yield CF, CM, CL_val, CD_val
+            yield CF_vec, CM_vec, CL_val, CD_val
 
 
 class ActuatorDiskCoefficientsCSVModel(ResultCSVModel):
@@ -877,12 +869,15 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
             denom_force = dp_area if dp_area != 0 else 1.0
             denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
 
-            CF = force_vec / denom_force
-            CM = np.divide(moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0)
+            # pylint:disable=invalid-name
+            CF_vec = force_vec / denom_force
+            CM_vec = np.divide(
+                moment_global, denom_moment, out=np.zeros(3), where=denom_moment != 0
+            )
 
             CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
             CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
-            yield CF, CM, CL_val, CD_val
+            yield CF_vec, CM_vec, CL_val, CD_val
 
 
 class BETDiskCoefficientsCSVModel(ResultCSVModel):

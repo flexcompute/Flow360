@@ -1,14 +1,12 @@
+"""Utilities for processing solver outputs."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from flow360.component.results.base_results import (
-    _PHYSICAL_STEP,
-    _PSEUDO_STEP,
-    ResultCSVModel,
-)
+from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError
 
@@ -21,9 +19,43 @@ _CFz = "CFz"
 _CMx = "CMx"
 _CMy = "CMy"
 _CMz = "CMz"
+_CL_PRESSURE = "CLPressure"
+_CD_PRESSURE = "CDPressure"
+_CFx_PRESSURE = "CFxPressure"
+_CFy_PRESSURE = "CFyPressure"
+_CFz_PRESSURE = "CFzPressure"
+_CMx_PRESSURE = "CMxPressure"
+_CMy_PRESSURE = "CMyPressure"
+_CMz_PRESSURE = "CMzPressure"
+_CL_SKIN_FRICTION = "CLSkinFriction"
+_CD_SKIN_FRICTION = "CDSkinFriction"
+_CFx_SKIN_FRICTION = "CFxSkinFriction"
+_CFy_SKIN_FRICTION = "CFySkinFriction"
+_CFz_SKIN_FRICTION = "CFzSkinFriction"
+_CMx_SKIN_FRICTION = "CMxSkinFriction"
+_CMy_SKIN_FRICTION = "CMySkinFriction"
+_CMz_SKIN_FRICTION = "CMzSkinFriction"
+_CL_VISCOUS = "CLViscous"
+_CD_VISCOUS = "CDViscous"
+_CFx_VISCOUS = "CFxViscous"
+_CFy_VISCOUS = "CFyViscous"
+_CFz_VISCOUS = "CFzViscous"
+_CMx_VISCOUS = "CMxViscous"
+_CMy_VISCOUS = "CMyViscous"
+_CMz_VISCOUS = "CMzViscous"
+_HEAT_TRANSFER = "HeatTransfer"
+_HEAT_FLUX = "HeatFlux"
+_X = "X"
+_Y = "Y"
+_CUMULATIVE_CD_CURVE = "Cumulative_CD_Curve"
+_CD_PER_STRIP = "CD_per_strip"
+_CFx_PER_SPAN = "CFx_per_span"
+_CFz_PER_SPAN = "CFz_per_span"
+_CMy_PER_SPAN = "CMy_per_span"
 
 
 class CoefficientsComputationUtils:
+    # pylint:disable=too-few-public-methods
     """Static utilities for aerodynamic coefficient computations.
 
     Provides helper methods for computing aerodynamic coefficients using
@@ -151,6 +183,7 @@ def collect_disk_axes_and_centers(
             continue
         for cyl in model.entities.stored_entities:
             # Axis is assumed normalized by the inputs
+            # pylint:disable=protected-access
             axis = CoefficientsComputationUtils._vector_to_np3(cyl.axis)
 
             center = cyl.center
@@ -165,6 +198,7 @@ def collect_disk_axes_and_centers(
 
 
 class DiskCoefficientsComputation:
+    # pylint:disable=too-few-public-methods
     """
     Static utilities for disk coefficient computations.
 
@@ -193,6 +227,7 @@ class DiskCoefficientsComputation:
 
     @staticmethod
     def _build_coeff_env(params) -> Dict[str, Any]:
+        # pylint:disable=protected-access
         area, moment_length_vec, moment_center_global = (
             CoefficientsComputationUtils._get_reference_geometry(params)
         )
