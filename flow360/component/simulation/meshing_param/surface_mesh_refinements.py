@@ -125,12 +125,14 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def _check_spacing_format(self) -> Self:
-        if isinstance(self.spacing, List):
-            if not self.distances or len(self.distances) != len(self.spacing):
-                raise ValueError(
-                    f"When using a distance spacing specification both spacing ({self.spacing}) and distances"
-                    + f"({self.distances}) fields must be Lists and the same length."
-                )
+        if (self.distances and not isinstance(self.spacing, List)) or (
+            isinstance(self.spacing, List)
+            and (not self.distances or len(self.distances) != len(self.spacing))
+        ):
+            raise ValueError(
+                f"When using a distance spacing specification both spacing ({self.spacing}) and distances"
+                + f"({self.distances}) fields must be Lists and the same length."
+            )
         return self
 
     @pd.model_validator(mode="after")
