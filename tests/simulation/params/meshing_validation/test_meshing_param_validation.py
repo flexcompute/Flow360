@@ -689,7 +689,7 @@ def test_octree_spacing():
     assert spacing.to_level(2 * u.mm) == (0, True)
     assert spacing.to_level(4 * u.mm) == (1, True)
     assert spacing.to_level(0.5 * u.mm) == (-2, True)
-    assert spacing.to_level(3.9993 * u.mm) == (1, False)
+    assert spacing.to_level(3.9993 * u.mm) == (0, False)
     assert spacing.to_level(3.9999999999993 * u.mm) == (1, True)
 
 

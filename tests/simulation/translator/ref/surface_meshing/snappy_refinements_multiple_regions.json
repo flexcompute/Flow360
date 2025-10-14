@@ -132,5 +132,5 @@
         "iter": 5
     },
     "cadIsFluid": false,
-    "enforcedSpacing": 1
+    "enforcedSpacing": 3
 }

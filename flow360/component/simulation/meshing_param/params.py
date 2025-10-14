@@ -412,6 +412,8 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                             check_spacing(spacing, type(refinement).__name__)
                     else:
                         check_spacing(refinement.spacing, type(refinement).__name__)
+                if isinstance(refinement, UniformRefinement):
+                    check_spacing(refinement.spacing, type(refinement).__name__)
 
         return self
 

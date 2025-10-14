@@ -705,8 +705,9 @@ def snappy_refinements_multiple_regions():
     with SI_unit_system:
         surf_meshing_params = SnappySurfaceMeshingParams(
             defaults=SnappySurfaceMeshingDefaults(
-                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                min_spacing=2.999999992 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
+            base_spacing=3 * u.mm,
             refinements=[
                 SnappyRegionRefinement(
                     min_spacing=20 * u.mm,
