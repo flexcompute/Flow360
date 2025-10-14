@@ -18,6 +18,7 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.meshing_specs import (
     BetaVolumeMeshingDefaults,
     MeshingDefaults,
+    OctreeSpacing,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
@@ -26,6 +27,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
 )
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyBodyRefinement,
+    SnappyEntityRefinement,
     SnappyRegionRefinement,
     SnappySurfaceEdgeRefinement,
 )
@@ -44,10 +46,12 @@ from flow360.component.simulation.primitives import (
     Cylinder,
     SeedpointZone,
 )
+from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.validation.validation_context import (
     SURFACE_MESH,
     VOLUME_MESH,
     ContextField,
+    get_validation_info,
 )
 from flow360.component.simulation.validation.validation_utils import EntityUsageMap
 from flow360.log import log
@@ -322,13 +326,15 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         SnappyCastellatedMeshControls()
     )
     smooth_controls: Optional[SnappySmoothControls] = pd.Field(None)
-    bounding_box: Optional[Box] = pd.Field(None)
-    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field([])
+    refinements: Optional[List[SnappySurfaceRefinementTypes]] = pd.Field(None)
+    base_spacing: Optional[OctreeSpacing] = pd.Field(None)
 
     @pd.model_validator(mode="after")
     def _check_body_refinements_w_defaults(self):
         # set body refinements
         # pylint: disable=no-member
+        if self.refinements is None:
+            return self
         for refinement in self.refinements:
             if isinstance(refinement, SnappyBodyRefinement):
                 if refinement.min_spacing is None and refinement.max_spacing is None:
@@ -352,6 +358,8 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
     @pd.model_validator(mode="after")
     def _check_uniform_refinement_entities(self):
         # pylint: disable=no-member
+        if self.refinements is None:
+            return self
         for refinement in self.refinements:
             if isinstance(refinement, UniformRefinement):
                 for entity in refinement.entities.stored_entities:
@@ -366,6 +374,59 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                         )
 
         return self
+
+    @pd.model_validator(mode="after")
+    def _check_sizing_against_octree_series(self):
+
+        if self.base_spacing is None:
+            return self
+
+        def check_spacing(spacing, location):
+            # pylint: disable=no-member
+            lvl, close = self.base_spacing.to_level(spacing)
+            if not close:
+                closest_spacing = self.base_spacing[lvl]
+                msg = f"The spacing of {spacing} spcified in {location} will be cast to"
+                msg += (
+                    f" the first lower refinement in the octree series which is {closest_spacing}."
+                )
+                log.warning(msg)
+
+        # pylint: disable=no-member
+        check_spacing(self.defaults.min_spacing, "defaults")
+        check_spacing(self.defaults.max_spacing, "defaults")
+
+        if self.refinements is not None:
+            # pylint: disable=not-an-iterable
+            for refinement in self.refinements:
+                if isinstance(refinement, SnappyEntityRefinement):
+                    if refinement.min_spacing is not None:
+                        check_spacing(refinement.min_spacing, type(refinement).__name__)
+                    if refinement.max_spacing is not None:
+                        check_spacing(refinement.max_spacing, type(refinement).__name__)
+                    if refinement.proximity_spacing is not None:
+                        check_spacing(refinement.proximity_spacing, type(refinement).__name__)
+                if isinstance(refinement, SnappySurfaceEdgeRefinement):
+                    if refinement.distances:
+                        for spacing in refinement.spacing:
+                            check_spacing(spacing, type(refinement).__name__)
+                    else:
+                        check_spacing(refinement.spacing, type(refinement).__name__)
+                if isinstance(refinement, UniformRefinement):
+                    check_spacing(refinement.spacing, type(refinement).__name__)
+
+        return self
+
+    @pd.field_validator("base_spacing", mode="after")
+    @classmethod
+    def _set_default_base_spacing(cls, base_spacing):
+        info = get_validation_info()
+        if (info is None) or (base_spacing is not None) or (info.project_length_unit is None):
+            return base_spacing
+
+        # pylint: disable=no-member
+        base_spacing = 1 * LengthType.validate(info.project_length_unit)
+        return OctreeSpacing(base_spacing=base_spacing)
 
 
 class BetaVolumeMeshingParams(Flow360BaseModel):

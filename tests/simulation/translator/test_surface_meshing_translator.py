@@ -5,6 +5,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import validate_params_with_context
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.entity_operation import Transformation
@@ -538,7 +539,7 @@ def snappy_all_defaults():
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
@@ -555,6 +556,7 @@ def snappy_basic_refinements():
             defaults=SnappySurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
+            base_spacing=3.5 * u.mm,
             refinements=[
                 SnappyBodyRefinement(
                     gap_resolution=2 * u.mm,
@@ -629,7 +631,7 @@ def snappy_basic_refinements():
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
@@ -646,6 +648,7 @@ def snappy_coupled_refinements():
             defaults=SnappySurfaceMeshingDefaults(
                 min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
+            base_spacing=5 * u.mm,
             refinements=[],
             smooth_controls=SnappySmoothControls(),
         )
@@ -685,7 +688,7 @@ def snappy_coupled_refinements():
         )
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
@@ -702,8 +705,9 @@ def snappy_refinements_multiple_regions():
     with SI_unit_system:
         surf_meshing_params = SnappySurfaceMeshingParams(
             defaults=SnappySurfaceMeshingDefaults(
-                min_spacing=3 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
+                min_spacing=2.999999992 * u.mm, max_spacing=4 * u.mm, gap_resolution=1 * u.mm
             ),
+            base_spacing=3 * u.mm,
             refinements=[
                 SnappyRegionRefinement(
                     min_spacing=20 * u.mm,
@@ -728,7 +732,7 @@ def snappy_refinements_multiple_regions():
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params, zones=[AutomatedFarfield()]
@@ -771,7 +775,7 @@ def snappy_refinements_no_regions():
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
@@ -818,13 +822,12 @@ def snappy_settings():
             castellated_mesh_controls=SnappyCastellatedMeshControls(
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
-            bounding_box=Box(name="enclosure", center=(0, 0, 0) * u.m, size=(0.4, 0.8, 0.6) * u.m),
             smooth_controls=SnappySmoothControls(lambda_factor=0.3, mu_factor=0.31, iterations=5),
         )
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
@@ -874,7 +877,6 @@ def snappy_settings_off_position():
             castellated_mesh_controls=SnappyCastellatedMeshControls(
                 resolve_feature_angle=10 * u.deg, n_cells_between_levels=3, min_refinement_cells=50
             ),
-            bounding_box=Box(name="enclosure", center=(0, 0, 0) * u.m, size=(0.4, 0.8, 0.6) * u.m),
             smooth_controls=SnappySmoothControls(
                 lambda_factor=None, mu_factor=None, iterations=None
             ),
@@ -882,7 +884,7 @@ def snappy_settings_off_position():
 
         param = SimulationParams(
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=test_geometry._get_entity_info()
+                project_entity_info=test_geometry._get_entity_info(), project_length_unit=1 * u.mm
             ),
             meshing=ModularMeshingWorkflow(
                 surface_meshing=surf_meshing_params,
@@ -929,6 +931,7 @@ def deep_sort_lists(obj):
 
 
 def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
+    param, _ = validate_params_with_context(param, "Geometry", "SurfaceMesh")
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(

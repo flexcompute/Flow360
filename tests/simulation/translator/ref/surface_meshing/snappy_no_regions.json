@@ -80,5 +80,6 @@
     "locationInMesh": {
         "fluid": [0, 0, 0]
     },
-    "cadIsFluid": true
+    "cadIsFluid": true,
+    "enforcedSpacing": 1
 }

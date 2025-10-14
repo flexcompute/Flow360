@@ -6,6 +6,7 @@ from typing import List
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
+from flow360.component.simulation.meshing_param.meshing_specs import OctreeSpacing
 from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow,
@@ -79,7 +80,19 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
     }
 
 
-def apply_SnappyBodyRefinement(refinement: SnappyBodyRefinement, translated):
+def remove_numerical_noise_from_spacing(spacing, spacing_system: OctreeSpacing):
+    """
+    If the spacing is in the proximity of 1e-8 to one of the octree series spacing casts that spacing onto the series.
+    """
+    direct = spacing_system.to_level(spacing)[1]
+    if direct:
+        return spacing_system[spacing_system.to_level(spacing)[0]]
+    return spacing
+
+
+def apply_SnappyBodyRefinement(
+    refinement: SnappyBodyRefinement, translated, spacing_system: OctreeSpacing
+):
     """
     Translate SnappyBodyRefinement to bodies.
     """
@@ -89,11 +102,17 @@ def apply_SnappyBodyRefinement(refinement: SnappyBodyRefinement, translated):
             if refinement.gap_resolution is not None:
                 body["gap"] = refinement.gap_resolution.value.item()
             if refinement.proximity_spacing is not None:
-                body["gapSpacingReduction"] = refinement.proximity_spacing.value.item()
+                body["gapSpacingReduction"] = remove_numerical_noise_from_spacing(
+                    refinement.proximity_spacing, spacing_system
+                ).value.item()
             if refinement.min_spacing is not None:
-                body["spacing"]["min"] = refinement.min_spacing.value.item()
+                body["spacing"]["min"] = remove_numerical_noise_from_spacing(
+                    refinement.min_spacing, spacing_system
+                ).value.item()
             if refinement.max_spacing is not None:
-                body["spacing"]["max"] = refinement.max_spacing.value.item()
+                body["spacing"]["max"] = remove_numerical_noise_from_spacing(
+                    refinement.max_spacing, spacing_system
+                ).value.item()
 
 
 def get_applicable_regions_dict(refinement_regions):
@@ -120,7 +139,7 @@ def get_applicable_regions_dict(refinement_regions):
 
 
 def apply_SnappySurfaceEdgeRefinement(
-    refinement: SnappySurfaceEdgeRefinement, translated, defaults
+    refinement: SnappySurfaceEdgeRefinement, translated, defaults, spacing_system: OctreeSpacing
 ):
     """
     Translate SnappySurfaceEdgeRefinement to bodies and regions.
@@ -140,7 +159,9 @@ def apply_SnappySurfaceEdgeRefinement(
             for (dist, spac) in zip(refinement.distances, refinement.spacing)
         ]
     else:
-        edges["edgeSpacing"] = refinement.spacing.value.item()
+        edges["edgeSpacing"] = remove_numerical_noise_from_spacing(
+            refinement.spacing, spacing_system
+        ).value.item()
     applicable_bodies = (
         [entity.body_name for entity in refinement.bodies] if refinement.bodies is not None else []
     )
@@ -156,7 +177,9 @@ def apply_SnappySurfaceEdgeRefinement(
                     region["edges"] = edges
 
 
-def apply_SnappyRegionRefinement(refinement: SnappyRegionRefinement, translated):
+def apply_SnappyRegionRefinement(
+    refinement: SnappyRegionRefinement, translated, spacing_system: OctreeSpacing
+):
     """
     Translate SnappyRegionRefinement to applicable regions.
     """
@@ -168,15 +191,23 @@ def apply_SnappyRegionRefinement(refinement: SnappyRegionRefinement, translated)
             for region in body.get("regions", []):
                 if region["patchName"] in applicable_regions[body["bodyName"]]:
                     if refinement.proximity_spacing is not None:
-                        region["gapSpacingReduction"] = refinement.proximity_spacing.value.item()
+                        region["gapSpacingReduction"] = remove_numerical_noise_from_spacing(
+                            refinement.proximity_spacing, spacing_system
+                        ).value.item()
 
                     region["spacing"] = {
-                        "min": refinement.min_spacing.value.item(),
-                        "max": refinement.max_spacing.value.item(),
+                        "min": remove_numerical_noise_from_spacing(
+                            refinement.min_spacing, spacing_system
+                        ).value.item(),
+                        "max": remove_numerical_noise_from_spacing(
+                            refinement.max_spacing, spacing_system
+                        ).value.item(),
                     }
 
 
-def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
+def apply_UniformRefinement_w_snappy(
+    refinement: UniformRefinement, translated, spacing_system: OctreeSpacing
+):
     """
     Translate UniformRefinement to defined volumetric regions.
     """
@@ -184,7 +215,12 @@ def apply_UniformRefinement_w_snappy(refinement: UniformRefinement, translated):
         translated["geometry"]["refinementVolumes"] = []
 
     for volume in refinement.entities.stored_entities:
-        volume_body = {"spacing": refinement.spacing.value.item(), "name": volume.name}
+        volume_body = {
+            "spacing": remove_numerical_noise_from_spacing(
+                refinement.spacing, spacing_system
+            ).value.item(),
+            "name": volume.name,
+        }
         if isinstance(volume, Box):
             volume_body["type"] = "box"
             volume_body["min"] = {
@@ -235,6 +271,9 @@ def snappy_mesher_json(input_params: SimulationParams):
     """
     translated = {}
     surface_meshing_params = input_params.meshing.surface_meshing
+    # spacing system
+    spacing_system: OctreeSpacing = surface_meshing_params.base_spacing
+
     # extract geometry information in body: {patch0, ...} format
     bodies = {}
     for face_id in input_params.private_attribute_asset_cache.project_entity_info.face_ids:
@@ -248,8 +287,12 @@ def snappy_mesher_json(input_params: SimulationParams):
     common_defaults = {
         "gap": surface_meshing_params.defaults.gap_resolution.value.item(),
         "spacing": {
-            "min": surface_meshing_params.defaults.min_spacing.value.item(),
-            "max": surface_meshing_params.defaults.max_spacing.value.item(),
+            "min": remove_numerical_noise_from_spacing(
+                surface_meshing_params.defaults.min_spacing, spacing_system
+            ).value.item(),
+            "max": remove_numerical_noise_from_spacing(
+                surface_meshing_params.defaults.max_spacing, spacing_system
+            ).value.item(),
         },
     }
     translated["geometry"] = {
@@ -262,18 +305,21 @@ def snappy_mesher_json(input_params: SimulationParams):
             for (name, regions) in bodies.items()
         ]
     }
+
     # apply refinements
-    for refinement in surface_meshing_params.refinements:
+    for refinement in (
+        surface_meshing_params.refinements if surface_meshing_params.refinements is not None else []
+    ):
         if isinstance(refinement, SnappyBodyRefinement):
-            apply_SnappyBodyRefinement(refinement, translated)
+            apply_SnappyBodyRefinement(refinement, translated, spacing_system)
         elif isinstance(refinement, SnappySurfaceEdgeRefinement):
             apply_SnappySurfaceEdgeRefinement(
-                refinement, translated, surface_meshing_params.defaults
+                refinement, translated, surface_meshing_params.defaults, spacing_system
             )
         elif isinstance(refinement, SnappyRegionRefinement):
-            apply_SnappyRegionRefinement(refinement, translated)
+            apply_SnappyRegionRefinement(refinement, translated, spacing_system)
         elif isinstance(refinement, UniformRefinement):
-            apply_UniformRefinement_w_snappy(refinement, translated)
+            apply_UniformRefinement_w_snappy(refinement, translated, spacing_system)
         else:
             raise Flow360TranslationError(
                 f"Refinement of type {type(refinement)} cannot be used with Snappy.",
@@ -285,7 +331,7 @@ def snappy_mesher_json(input_params: SimulationParams):
     if input_params.meshing.volume_meshing is not None:
         for refinement in input_params.meshing.volume_meshing.refinements:
             if isinstance(refinement, UniformRefinement) and refinement.project_to_surface is True:
-                apply_UniformRefinement_w_snappy(refinement, translated)
+                apply_UniformRefinement_w_snappy(refinement, translated, spacing_system)
 
     # apply settings
     castellated_mesh_controls = surface_meshing_params.castellated_mesh_controls
@@ -395,23 +441,8 @@ def snappy_mesher_json(input_params: SimulationParams):
                 smoothing_settings.iterations if smoothing_settings.iterations is not None else 0
             ),
         }
-
-    # bounding box
-    bounding_box = surface_meshing_params.bounding_box
-
-    if bounding_box is not None:
-        translated["boundingBox"] = {
-            "min": {
-                "x": bounding_box.center[0].value.item() - (bounding_box.size[0].value.item() / 2),
-                "y": bounding_box.center[1].value.item() - (bounding_box.size[1].value.item() / 2),
-                "z": bounding_box.center[2].value.item() - (bounding_box.size[2].value.item() / 2),
-            },
-            "max": {
-                "x": bounding_box.center[0].value.item() + (bounding_box.size[0].value.item() / 2),
-                "y": bounding_box.center[1].value.item() + (bounding_box.size[1].value.item() / 2),
-                "z": bounding_box.center[2].value.item() + (bounding_box.size[2].value.item() / 2),
-            },
-        }
+    # enforced spacing
+    translated["enforcedSpacing"] = spacing_system.base_spacing.value.item()
 
     # cad is fluid
     zones = input_params.meshing.zones
