@@ -479,9 +479,11 @@ def _get_imported_surface_files(params, basename_only=False):
 def upload_imported_surfaces_to_draft(params, draft, fork_case):
     """Upload imported surfaces to draft"""
 
-    parent_existing_imported_file_basenames = _get_imported_surface_files(
-        fork_case.params, basename_only=True
-    )
+    parent_existing_imported_file_basenames = []
+    if fork_case is not None and fork_case.params is not None:
+        parent_existing_imported_file_basenames = _get_imported_surface_files(
+            fork_case.params, basename_only=True
+        )
     current_draft_surface_file_paths_to_import = _get_imported_surface_files(params)
     deduplicated_surface_file_paths_to_import = []
     for file_path_to_import in current_draft_surface_file_paths_to_import:
