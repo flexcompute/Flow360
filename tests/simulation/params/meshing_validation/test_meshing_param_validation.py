@@ -679,18 +679,18 @@ def test_octree_spacing():
     spacing = OctreeSpacing(base_spacing=2 * u.mm)
 
     assert spacing[0] == 2 * u.mm
-    assert spacing[-3] == 2 * u.mm * (2**-3)
-    assert spacing[4] == 2 * u.mm * (2**4)
-    assert spacing[-1] == 2 * u.mm * (2**-1)
+    assert spacing[3] == 2 * u.mm * (2**-3)
+    assert spacing[-4] == 2 * u.mm * (2**4)
+    assert spacing[1] == 2 * u.mm * (2**-1)
 
     with pytest.raises(pd.ValidationError):
         _ = spacing[0.2]
 
     assert spacing.to_level(2 * u.mm) == (0, True)
-    assert spacing.to_level(4 * u.mm) == (1, True)
-    assert spacing.to_level(0.5 * u.mm) == (-2, True)
+    assert spacing.to_level(4 * u.mm) == (-1, True)
+    assert spacing.to_level(0.5 * u.mm) == (2, True)
     assert spacing.to_level(3.9993 * u.mm) == (0, False)
-    assert spacing.to_level(3.9999999999993 * u.mm) == (1, True)
+    assert spacing.to_level(3.9999999999993 * u.mm) == (-1, True)
 
 
 def test_set_default_base_spacing():
@@ -710,8 +710,8 @@ def test_set_default_base_spacing():
         )
 
     assert surface_meshing.base_spacing.base_spacing == 1 * u.mm
-    assert surface_meshing.base_spacing[-2] == 0.25 * u.mm
-    assert surface_meshing.base_spacing.to_level(2 * u.mm) == (1, True)
+    assert surface_meshing.base_spacing[2] == 0.25 * u.mm
+    assert surface_meshing.base_spacing.to_level(2 * u.mm) == (-1, True)
 
 
 def test_set_spacing_with_value():

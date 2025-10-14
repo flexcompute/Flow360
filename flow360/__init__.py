@@ -27,12 +27,12 @@ from flow360.component.simulation.meshing_param.face_params import (
 from flow360.component.simulation.meshing_param.meshing_specs import (
     BetaVolumeMeshingDefaults,
     MeshingDefaults,
+    OctreeSpacing,
     SnappyCastellatedMeshControls,
     SnappyQualityMetrics,
     SnappySmoothControls,
     SnappySnapControls,
     SnappySurfaceMeshingDefaults,
-    OctreeSpacing
 )
 from flow360.component.simulation.meshing_param.params import (
     BetaVolumeMeshingParams,
@@ -351,5 +351,5 @@ __all__ = [
     "StopCriterion",
     "MovingStatistic",
     "ImportedSurface",
-    "OctreeSpacing"
+    "OctreeSpacing",
 ]

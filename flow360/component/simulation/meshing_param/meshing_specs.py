@@ -469,7 +469,7 @@ class OctreeSpacing(Flow360BaseModel):
 
     @pd.validate_call
     def __getitem__(self, idx: int):
-        return self.base_spacing * (2**idx)
+        return self.base_spacing * (2 ** (-idx))
 
     # pylint: disable=no-member
     @pd.validate_call
@@ -478,8 +478,8 @@ class OctreeSpacing(Flow360BaseModel):
         Can be used to check in what refinement level would the given spacing result
         and if it is a direct match in the spacing series.
         """
-        level = log2(spacing / self.base_spacing)
+        level = -log2(spacing / self.base_spacing)
 
         direct_spacing = np.isclose(level, np.round(level), atol=1e-8)
-        returned_level = np.round(level) if direct_spacing else np.floor(level)
+        returned_level = np.round(level) if direct_spacing else np.ceil(level)
         return returned_level, direct_spacing
