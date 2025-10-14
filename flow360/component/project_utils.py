@@ -443,13 +443,22 @@ def validate_params_with_context(params, root_item_type, up_to):
 
     return params, errors
 
+def _get_imported_surface_file_paths(params):
+    if params is None or params.outputs is None:
+        return []
+    imported_surface_file_paths = []
+    for output in params.outputs:
+        if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+            for surface in output.entities.stored_entities:
+                imported_surface_file_paths.append(surface.file_name)
+    return imported_surface_file_paths
 
-def upload_imported_surfaces_to_draft(params, draft):
+def upload_imported_surfaces_to_draft(params, draft, fork_case):
     """Upload imported surfaces to draft"""
-    if params.outputs:
-        imported_surface_file_paths = []
-        for output in params.outputs:
-            if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
-                for surface in output.entities.stored_entities:
-                    imported_surface_file_paths.append(surface.file_name)
-        draft.upload_imported_surfaces(imported_surface_file_paths)
+    parent_existing_imported_file_basenames = _get_imported_surface_file_paths(fork_case.params)
+    current_draft_surface_file_paths_to_import = _get_imported_surface_file_paths(params)
+    deduplicated_surface_file_paths_to_import = []
+
+
+
+    draft.upload_imported_surfaces(imported_surface_file_paths)
