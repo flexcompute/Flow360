@@ -434,7 +434,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     """
 
     type_name: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
-    defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
+    defaults: BetaVolumeMeshingDefaults = pd.Field()
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"

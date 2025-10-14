@@ -189,11 +189,10 @@ class BetaVolumeMeshingDefaults(Flow360BaseModel):
         ge=1,
     )
     # pylint: disable=no-member
-    boundary_layer_first_layer_thickness: Optional[LengthType.Positive] = pd.Field(
-        None,
+    boundary_layer_first_layer_thickness: LengthType.Positive = pd.Field(
         description="Default first layer thickness for volumetric anisotropic layers."
         " This can be overridden with :class:`~flow360.BoundaryLayer`.",
-    )  # Truly optional if all BL faces already have first_layer_thickness
+    )
 
     number_of_boundary_layers: Optional[pd.NonNegativeInt] = pd.Field(
         None,
