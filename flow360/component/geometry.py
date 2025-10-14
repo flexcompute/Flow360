@@ -236,6 +236,11 @@ class Geometry(AssetBase):
     _entity_info_class = GeometryEntityInfo
     _cloud_resource_type_name = "Geometry"
 
+    # pylint: disable=redefined-builtin
+    def __init__(self, id: Union[str, None]):
+        super().__init__(id)
+        self.snappy_body_registry = None
+
     @property
     def face_group_tag(self):
         "getter for face_group_tag"
@@ -262,6 +267,16 @@ class Geometry(AssetBase):
     @body_group_tag.setter
     def body_group_tag(self, new_value: str):
         raise SyntaxError("Cannot set body_group_tag, use group_bodies_by_tag() instead.")
+
+    @property
+    def snappy_bodies(self):
+        """Getter for the snappy registry."""
+        if hasattr(self, "snappy_body_registry") is False or self.snappy_body_registry is None:
+            raise Flow360ValueError(
+                "The faces in geometry are not grouped for snappy."
+                "Please use `group_faces_for_snappy` function to group them first."
+            )
+        return self.snappy_body_registry
 
     def get_dynamic_default_settings(self, simulation_dict: dict):
         """Get the default geometry settings from the simulation dict"""
@@ -416,15 +431,21 @@ class Geometry(AssetBase):
         """
         Group faces according to body::region convention for snappyHexMesh.
         """
-        # pylint: disable=protected-access
-        self.internal_registry = self._entity_info._group_faces_by_snappy_format(
-            self.internal_registry
+        # pylint: disable=protected-access,no-member
+        self.internal_registry = self._entity_info._group_entity_by_tag(
+            "face", "faceId", self.internal_registry
         )
+        # pylint: disable=protected-access
+        self.snappy_body_registry = self._entity_info._group_faces_by_snappy_format()
 
     def reset_face_grouping(self) -> None:
         """Reset the face grouping"""
         # pylint: disable=protected-access,no-member
         self.internal_registry = self._entity_info._reset_grouping("face", self.internal_registry)
+        if hasattr(self, "snappy_body_registry") is True and self.snappy_body_registry:
+            self.snappy_body_registry = self.snappy_body._reset_grouping(
+                "face", self.snappy_body_registry
+            )
 
     def reset_edge_grouping(self) -> None:
         """Reset the edge grouping"""

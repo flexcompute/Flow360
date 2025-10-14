@@ -607,7 +607,7 @@ def test_bad_refinements():
             ),
             refinements=[
                 SnappyBodyRefinement(
-                    min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", stored_entities=[])]
+                    min_spacing=6 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
                 )
             ],
         )
@@ -619,7 +619,7 @@ def test_bad_refinements():
             ),
             refinements=[
                 SnappyBodyRefinement(
-                    max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", stored_entities=[])]
+                    max_spacing=0.5 * u.mm, bodies=[SnappyBody(name="bbb", surfaces=[])]
                 )
             ],
         )

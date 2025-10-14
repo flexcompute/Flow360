@@ -7,7 +7,10 @@ from typing import Annotated, List, Literal, Optional, Union
 import pydantic as pd
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_registry import EntityRegistry
+from flow360.component.simulation.framework.entity_registry import (
+    EntityRegistry,
+    SnappyBodyRegistry,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -170,7 +173,7 @@ class GeometryEntityInfo(EntityInfoModel):
                 snappy_body_mapping[body_name].append(patch)
 
         return [
-            SnappyBody(name=snappy_body, stored_entities=body_entities)
+            SnappyBody(name=snappy_body, surfaces=body_entities)
             for snappy_body, body_entities in snappy_body_mapping.items()
         ]
 
@@ -225,7 +228,7 @@ class GeometryEntityInfo(EntityInfoModel):
         if self.face_group_tag == GROUPED_SNAPPY and attribute_name is None:
             all_boundaries = []
             for body in self._get_list_of_entities(attribute_name, "snappy_body"):
-                all_boundaries += body.stored_entities
+                all_boundaries += body.surfaces
             return all_boundaries
         return self._get_list_of_entities(attribute_name, "face")
 
@@ -376,9 +379,8 @@ class GeometryEntityInfo(EntityInfoModel):
 
         return registry
 
-    def _group_faces_by_snappy_format(self, registry: EntityRegistry = None):
-        if registry is None:
-            registry = EntityRegistry()
+    def _group_faces_by_snappy_format(self):
+        registry = SnappyBodyRegistry()
 
         existing_face_tag = None
         if self.face_group_tag is not None:
@@ -400,6 +402,7 @@ class GeometryEntityInfo(EntityInfoModel):
 
         return registry
 
+    @pd.validate_call
     def _reset_grouping(
         self, entity_type_name: Literal["face", "edge", "body"], registry: EntityRegistry
     ) -> EntityRegistry:

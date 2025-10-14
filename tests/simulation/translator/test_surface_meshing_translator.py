@@ -319,7 +319,10 @@ class TempGeometry(AssetBase):
     def _populate_registry(self):
         self.mesh_unit = LengthType.validate(self._get_meta_data()["mesh_unit"])
         if self.snappy:
-            self.internal_registry = self._get_entity_info()._group_faces_by_snappy_format()
+            self.internal_registry = self._get_entity_info()._group_entity_by_tag(
+                "face", "faceId", self.internal_registry
+            )
+            self.snappy_bodies = self._get_entity_info()._group_faces_by_snappy_format()
         else:
             for zone_name in (
                 self._get_meta_data()["edges"] if "edges" in self._get_meta_data() else []
@@ -600,13 +603,16 @@ def snappy_basic_refinements():
                     gap_resolution=2 * u.mm,
                     min_spacing=5 * u.mm,
                     max_spacing=10 * u.mm,
-                    bodies=[test_geometry["body1"], test_geometry["body3"]],
+                    bodies=[
+                        test_geometry.snappy_bodies["body1"],
+                        test_geometry.snappy_bodies["body3"],
+                    ],
                 ),
                 SnappyBodyRefinement(
                     gap_resolution=0.5 * u.mm,
                     min_spacing=1 * u.mm,
                     max_spacing=2 * u.mm,
-                    bodies=[test_geometry["body2"]],
+                    bodies=[test_geometry.snappy_bodies["body2"]],
                     proximity_spacing=0.2 * u.mm,
                 ),
                 SnappyRegionRefinement(
@@ -614,28 +620,28 @@ def snappy_basic_refinements():
                     max_spacing=40 * u.mm,
                     proximity_spacing=3 * u.mm,
                     regions=[
-                        test_geometry["body0"]["patch0"],
-                        test_geometry["body1"]["patch1"],
+                        test_geometry.snappy_bodies["body0"]["patch0"],
+                        test_geometry["body1::patch1"],
                     ],
                 ),
                 SnappySurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
-                    bodies=test_geometry["body1"],
+                    bodies=test_geometry.snappy_bodies["body1"],
                 ),
                 SnappySurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
-                    regions=[test_geometry["body0"]["patch0"]],
+                    regions=[test_geometry.snappy_bodies["body0"]["patch0"]],
                 ),
                 SnappySurfaceEdgeRefinement(
                     spacing=[3 * u.mm, 5 * u.mm],
                     distances=[1 * u.mm, 3 * u.mm],
                     min_len=6 * u.mm,
-                    regions=[test_geometry["*"]["patch1"]],
-                    bodies=[test_geometry["body3"]],
+                    regions=[test_geometry.snappy_bodies["*"]["patch1"]],
+                    bodies=[test_geometry.snappy_bodies["body3"]],
                     retain_on_smoothing=False,
                 ),
                 UniformRefinement(
@@ -752,24 +758,27 @@ def snappy_refinements_multiple_regions():
                     max_spacing=40 * u.mm,
                     proximity_spacing=3 * u.mm,
                     regions=[
-                        test_geometry["body1"]["patch0"],
-                        test_geometry["body1"]["patch1"],
-                        test_geometry["body1"]["patch2"],
+                        test_geometry["body1::patch0"],
+                        test_geometry.snappy_bodies["body1"]["patch1"],
+                        test_geometry["body1::patch2"],
                     ],
                 ),
                 SnappyRegionRefinement(
-                    min_spacing=10 * u.mm, max_spacing=40 * u.mm, regions=test_geometry["body0"]
+                    min_spacing=10 * u.mm, max_spacing=40 * u.mm, regions=test_geometry["body0::*"]
                 ),
                 SnappyRegionRefinement(
                     min_spacing=5 * u.mm,
                     max_spacing=40 * u.mm,
-                    regions=[test_geometry["body2"], test_geometry["body3"]["patch0"]],
+                    regions=[
+                        test_geometry.snappy_bodies["body2"]["*"],
+                        test_geometry["body3::patch0"],
+                    ],
                 ),
                 SnappySurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
-                    regions=[test_geometry["body0"]["patch0"], test_geometry["body0"]["patch1"]],
+                    regions=[test_geometry["body0::patch0"], test_geometry["body0::patch1"]],
                     retain_on_smoothing=False,
                 ),
             ],
@@ -800,20 +809,20 @@ def snappy_refinements_no_regions():
                     gap_resolution=2 * u.mm,
                     min_spacing=5 * u.mm,
                     max_spacing=10 * u.mm,
-                    bodies=[test_geometry["body01_face001"]],
+                    bodies=[test_geometry.snappy_bodies["body01_face001"]],
                 ),
                 SnappyBodyRefinement(
                     gap_resolution=0.5 * u.mm,
                     min_spacing=1 * u.mm,
                     max_spacing=2 * u.mm,
-                    bodies=[test_geometry["body01_face002"]],
+                    bodies=[test_geometry.snappy_bodies["body01_face002"]],
                     proximity_spacing=0.2 * u.mm,
                 ),
                 SnappySurfaceEdgeRefinement(
                     spacing=4 * u.mm,
                     min_elem=3,
                     included_angle=120 * u.deg,
-                    bodies=[test_geometry["body01_face003"]],
+                    bodies=[test_geometry.snappy_bodies["body01_face003"]],
                 ),
             ],
             smooth_controls=SnappySmoothControls(),

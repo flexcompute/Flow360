@@ -717,7 +717,7 @@ class SurfacePair(Flow360BaseModel):
         return ",".join(sorted([self.pair[0].name, self.pair[1].name]))
 
 
-class SnappyBody(EntityBase, EntityList[Surface]):
+class SnappyBody(EntityBase):
     """
     Represents a group of faces forming a body for snappyHexMesh.
     Bodies and their regions are defined in the ASCII STL file by using the solid -> endsolid"
@@ -729,26 +729,15 @@ class SnappyBody(EntityBase, EntityList[Surface]):
     )
     private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
 
-    stored_entities: List[Surface] = pd.Field()
-
-    @pd.model_validator(mode="before")
-    @classmethod
-    def _format_input_to_list(cls, input_data: dict):
-        """
-        Flatten List[EntityBase] and put into stored_entities. Do not delete other args.
-        """
-        if not isinstance(input_data, dict):
-            raise ValueError("Wrong definition for SnappyBody, should be a dictionary.")
-        input_data.update(super()._format_input_to_list(input_data))
-        return input_data
+    surfaces: List[Surface] = pd.Field()
 
     def __getitem__(self, key: str):
-        if len(self.stored_entities) == 1 and ("::" not in self.stored_entities[0].name):
+        if len(self.surfaces) == 1 and ("::" not in self.surfaces[0].name):
             regex = _naming_pattern_handler(pattern=key)
         else:
             regex = _naming_pattern_handler(pattern=f"{self.name}::{key}")
 
-        matched_surfaces = [entity for entity in self.stored_entities if regex.match(entity.name)]
+        matched_surfaces = [entity for entity in self.surfaces if regex.match(entity.name)]
         if not matched_surfaces:
             print(key)
             raise KeyError(

@@ -7,6 +7,7 @@ import pydantic as pd
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityBase
 from flow360.component.utils import _naming_pattern_handler
+from flow360.exceptions import Flow360ValueError
 
 
 class DoubleIndexableList(list):
@@ -151,7 +152,7 @@ class EntityRegistry(Flow360BaseModel):
         Returns:
             List[EntityBase]: A list of entities whose names match the pattern.
         """
-        matched_entities = DoubleIndexableList()
+        matched_entities = []
         regex = _naming_pattern_handler(pattern=pattern)
         # pylint: disable=no-member
         for entity_list in self.internal_registry.values():
@@ -257,3 +258,48 @@ class EntityRegistry(Flow360BaseModel):
     def is_empty(self):
         """Return True if the registry is empty, False otherwise."""
         return not self.internal_registry
+
+
+class SnappyBodyRegistry(EntityRegistry):
+    """
+    Extension of Entityregistry to be used with SnappyBody, allows double indexing.
+    """
+
+    def find_by_naming_pattern(
+        self, pattern: str, enforce_output_as_list: bool = True, error_when_no_match: bool = False
+    ) -> list[EntityBase]:
+        """
+        Finds all registered entities whose names match a given pattern.
+
+        Parameters:
+            pattern (str): A naming pattern, which can include '*' as a wildcard.
+
+        Returns:
+            List[EntityBase]: A list of entities whose names match the pattern.
+        """
+        matched_entities = DoubleIndexableList()
+        regex = _naming_pattern_handler(pattern=pattern)
+        # pylint: disable=no-member
+        for entity_list in self.internal_registry.values():
+            matched_entities.extend(filter(lambda x: regex.match(x.name), entity_list))
+
+        if not matched_entities and error_when_no_match is True:
+            raise ValueError(
+                f"No entity found in registry with given name/naming pattern: '{pattern}'."
+            )
+        if enforce_output_as_list is False and len(matched_entities) == 1:
+            return matched_entities[0]
+
+        return matched_entities
+
+    def __getitem__(self, key):
+        """
+        Get the entity by name.
+        `key` is the name of the entity or the naming pattern if wildcard is used.
+        """
+        if isinstance(key, str) is False:
+            raise Flow360ValueError(f"Entity naming pattern: {key} is not a string.")
+
+        return self.find_by_naming_pattern(
+            key, enforce_output_as_list=False, error_when_no_match=True
+        )
