@@ -335,3 +335,93 @@ class DiskCoefficientsComputation:
                 out[f"{disk_name}_{_CL}"].append(CL_val)
 
         return coefficients_model_class().from_dict(out)
+
+
+class PorousMediumCoefficientsComputation:
+    # pylint:disable=too-few-public-methods
+    """Static utilities for porous medium coefficient computations."""
+
+    @staticmethod
+    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
+        out: Dict[str, list] = {}
+        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
+        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
+        return out
+
+    @staticmethod
+    def _iter_zones(values: Dict[str, list]):
+        zone_names = np.unique(
+            [
+                v.split("_")[0] + "_" + v.split("_")[1]
+                for v in values.keys()
+                if v.startswith("zone_")
+            ]
+        )
+        yield from zone_names
+
+    @staticmethod
+    def _init_zone_output(out: Dict[str, list], zone_name: str) -> Dict[str, str]:
+        keys = {
+            "CFx": f"{zone_name}_{_CFx}",
+            "CFy": f"{zone_name}_{_CFy}",
+            "CFz": f"{zone_name}_{_CFz}",
+            "CMx": f"{zone_name}_{_CMx}",
+            "CMy": f"{zone_name}_{_CMy}",
+            "CMz": f"{zone_name}_{_CMz}",
+            "CL": f"{zone_name}_{_CL}",
+            "CD": f"{zone_name}_{_CD}",
+        }
+        out[keys["CFx"]], out[keys["CFy"]], out[keys["CFz"]] = [], [], []
+        out[keys["CMx"]], out[keys["CMy"]], out[keys["CMz"]] = [], [], []
+        out[keys["CL"]], out[keys["CD"]] = [], []
+        return keys
+
+    @staticmethod
+    def compute_coefficients_static(
+        params: SimulationParams,
+        values: Dict[str, list],
+        iterate_step_values_func,
+        coefficients_model_class,
+    ):
+        """
+        Compute porous medium coefficients from raw force/moment data.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters containing reference geometry and flow conditions
+        values : Dict[str, list]
+            Dictionary containing time series data (pseudo/physical step and zone forces/moments)
+        iterate_step_values_func : callable
+            Function that yields (CF, CM, CL, CD) for each time step.
+            Signature: func(zone_name, zone_ctx, env, values) -> Iterator[Tuple]
+        coefficients_model_class : type
+            Class to instantiate for the output coefficients model
+
+        Returns
+        -------
+        coefficients_model_class instance
+            Model containing computed coefficients
+        """
+        if not isinstance(params, SimulationParams):
+            raise ValueError(
+                "compute_coefficients() is not supported for legacy cases with Flow360Params."
+            )
+
+        # pylint:disable=protected-access
+        env = DiskCoefficientsComputation._build_coeff_env(params)
+        out = PorousMediumCoefficientsComputation._copy_time_columns(values)
+
+        for zone_name in PorousMediumCoefficientsComputation._iter_zones(values):
+            PorousMediumCoefficientsComputation._init_zone_output(out, zone_name)
+            for CF, CM, CL_val, CD_val in iterate_step_values_func(zone_name, {}, env, values):
+                out[f"{zone_name}_{_CFx}"].append(CF[0])
+                out[f"{zone_name}_{_CFy}"].append(CF[1])
+                out[f"{zone_name}_{_CFz}"].append(CF[2])
+                out[f"{zone_name}_{_CMx}"].append(CM[0])
+                out[f"{zone_name}_{_CMy}"].append(CM[1])
+                out[f"{zone_name}_{_CMz}"].append(CM[2])
+                out[f"{zone_name}_{_CD}"].append(CD_val)
+                out[f"{zone_name}_{_CL}"].append(CL_val)
+
+        return coefficients_model_class().from_dict(out)

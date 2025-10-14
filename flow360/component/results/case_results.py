@@ -35,6 +35,7 @@ from flow360.component.results.results_utils import (
     _Y,
     CoefficientsComputationUtils,
     DiskCoefficientsComputation,
+    PorousMediumCoefficientsComputation,
     _CFx,
     _CFx_PER_SPAN,
     _CFx_PRESSURE,
@@ -97,6 +98,7 @@ class CaseDownloadable(Enum):
     BET_FORCES = "bet_forces_v2.csv"
     BET_FORCES_RADIAL_DISTRIBUTION = "bet_forces_radial_distribution_v2.csv"
     ACTUATOR_DISKS = "actuatorDisk_output_v2.csv"
+    POROUS_MEDIA = "porous_media_output_v2.csv"
     LEGACY_FORCE_DISTRIBUTION = "postprocess/forceDistribution.csv"
     Y_SLICING_FORCE_DISTRIBUTION = "Y_slicing_forceDistribution.csv"
     X_SLICING_FORCE_DISTRIBUTION = "X_slicing_forceDistribution.csv"
@@ -884,6 +886,76 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for BET disk coefficients output."""
 
     remote_file_name: str = pd.Field("bet_disk_coefficients.csv", frozen=True)
+
+
+class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
+    """Model for handling porous medium CSV results."""
+
+    remote_file_name: str = pd.Field(CaseDownloadable.POROUS_MEDIA.value, frozen=True)
+    _err_msg = "Case does not have any porous media zones."
+
+    def compute_coefficients(self, params: SimulationParams):
+        """
+        Compute porous medium coefficients from forces and moments.
+
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+
+        Returns
+        -------
+        PorousMediumCoefficientsCSVModel
+            Model containing computed coefficients
+        """
+        return PorousMediumCoefficientsComputation.compute_coefficients_static(
+            params=params,
+            values=self.as_dict(),
+            iterate_step_values_func=self._iterate_step_values_static,
+            coefficients_model_class=PorousMediumCoefficientsCSVModel,
+        )
+
+    @staticmethod
+    def _iterate_step_values_static(zone_name, _, env, values):
+        # pylint:disable=protected-access, too-many-locals
+        fx_series = values.get(f"{zone_name}_Force_x", [])
+        fy_series = values.get(f"{zone_name}_Force_y", [])
+        fz_series = values.get(f"{zone_name}_Force_z", [])
+        mx_series = values.get(f"{zone_name}_Moment_x", [])
+        my_series = values.get(f"{zone_name}_Moment_y", [])
+        mz_series = values.get(f"{zone_name}_Moment_z", [])
+
+        for fx_val, fy_val, fz_val, mx_val, my_val, mz_val in zip(
+            fx_series, fy_series, fz_series, mx_series, my_series, mz_series
+        ):
+            fx = CoefficientsComputationUtils._to_float(fx_val)
+            fy = CoefficientsComputationUtils._to_float(fy_val)
+            fz = CoefficientsComputationUtils._to_float(fz_val)
+            mx = CoefficientsComputationUtils._to_float(mx_val)
+            my = CoefficientsComputationUtils._to_float(my_val)
+            mz = CoefficientsComputationUtils._to_float(mz_val)
+
+            force_vec = np.array([fx, fy, fz], dtype=float)
+            moment_vec = np.array([mx, my, mz], dtype=float)
+            # Note: moment is already relative to global moment center from solver
+
+            dp_area = env["dynamic_pressure"] * env["area"]
+            denom_force = dp_area if dp_area != 0 else 1.0
+            denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
+
+            # pylint:disable=invalid-name
+            CF_vec = force_vec / denom_force
+            CM_vec = np.divide(moment_vec, denom_moment, out=np.zeros(3), where=denom_moment != 0)
+
+            CD_val = float(np.dot(force_vec, env["drag_dir"]) / denom_force)
+            CL_val = float(np.dot(force_vec, env["lift_dir"]) / denom_force)
+            yield CF_vec, CM_vec, CL_val, CD_val
+
+
+class PorousMediumCoefficientsCSVModel(ResultCSVModel):
+    """CSV model for porous medium coefficients output."""
+
+    remote_file_name: str = pd.Field("porous_medium_coefficients_v2.csv", frozen=True)
 
 
 class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):
