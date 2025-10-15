@@ -8,11 +8,11 @@ import numpy as np
 def compute_freestream_direction(alpha_deg: float, beta_deg: float) -> np.ndarray:
     """
     Compute the freestream velocity direction vector from angle of attack and sideslip angle.
-    
+
     Args:
         alpha_deg: Angle of attack in degrees
         beta_deg: Sideslip angle in degrees
-        
+
     Returns:
         Normalized velocity direction vector [x, y, z]
     """
@@ -29,12 +29,12 @@ def compute_freestream_direction(alpha_deg: float, beta_deg: float) -> np.ndarra
 def compute_lift_direction(alpha_deg: float) -> np.ndarray:
     """
     Compute the lift direction vector from angle of attack.
-    
+
     The lift direction is perpendicular to the freestream direction in the x-z plane.
-    
+
     Args:
         alpha_deg: Angle of attack in degrees
-        
+
     Returns:
         Normalized lift direction vector [x, y, z]
     """
@@ -42,4 +42,3 @@ def compute_lift_direction(alpha_deg: float) -> np.ndarray:
     vector = np.array([-np.sin(alpha), 0.0, np.cos(alpha)], dtype=float)
     vector /= np.linalg.norm(vector)
     return vector
-

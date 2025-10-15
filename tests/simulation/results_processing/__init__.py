@@ -1,2 +1,1 @@
 """Results processing tests."""
-
