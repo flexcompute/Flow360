@@ -113,17 +113,20 @@ class CoefficientsComputationUtils:
         )
 
         # Convert to numpy array properly - handle both arrays and scalars
-        if hasattr(moment_length_flow360, "__len__") and len(moment_length_flow360) == 3:
-            # It's already a vector-like object (array with units)
-            moment_length_vec_flow360 = np.array(
-                [
-                    float(moment_length_flow360[0]),
-                    float(moment_length_flow360[1]),
-                    float(moment_length_flow360[2]),
-                ],
-                dtype=float,
-            )
-        else:
+        try:
+            # Try to treat it as a vector-like object
+            if len(moment_length_flow360) == 3:
+                moment_length_vec_flow360 = np.array(
+                    [
+                        float(moment_length_flow360[0]),
+                        float(moment_length_flow360[1]),
+                        float(moment_length_flow360[2]),
+                    ],
+                    dtype=float,
+                )
+            else:
+                raise ValueError("moment_length must be scalar or length 3")
+        except (TypeError, AttributeError):
             # It's a scalar, replicate for all three directions
             scalar_val = float(moment_length_flow360)
             moment_length_vec_flow360 = np.array([scalar_val, scalar_val, scalar_val], dtype=float)
