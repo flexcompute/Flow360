@@ -462,7 +462,7 @@ def validate_params_with_context(params, root_item_type, up_to):
     return params, errors
 
 
-def _get_imported_surface_files(params, basename_only=False):
+def _get_imported_surface_file_names(params, basename_only=False):
     if params is None or params.outputs is None:
         return []
     imported_surface_files = []
@@ -476,15 +476,21 @@ def _get_imported_surface_files(params, basename_only=False):
     return imported_surface_files
 
 
-def upload_imported_surfaces_to_draft(params, draft, fork_case):
-    """Upload imported surfaces to draft"""
+def upload_imported_surfaces_to_draft(params, draft, parent_case):
+    """
+    Upload imported surfaces to draft, excluding duplicates from parent case.
+
+    Note:
+        - If parent_case is None, all surfaces from params will be uploaded.
+        - Only surfaces not present in the parent case are uploaded.
+    """
 
     parent_existing_imported_file_basenames = []
-    if fork_case is not None and fork_case.params is not None:
-        parent_existing_imported_file_basenames = _get_imported_surface_files(
-            fork_case.params, basename_only=True
+    if parent_case is not None:
+        parent_existing_imported_file_basenames = _get_imported_surface_file_names(
+            parent_case.params, basename_only=True
         )
-    current_draft_surface_file_paths_to_import = _get_imported_surface_files(params)
+    current_draft_surface_file_paths_to_import = _get_imported_surface_file_names(params)
     deduplicated_surface_file_paths_to_import = []
     for file_path_to_import in current_draft_surface_file_paths_to_import:
         file_basename = os.path.basename(file_path_to_import)
