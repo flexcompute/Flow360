@@ -6,20 +6,7 @@ import flow360 as fl
 from flow360.component.results.case_results import BETForcesResultCSVModel
 from flow360.component.simulation.framework.param_utils import AssetCache
 
-
-def _u_inf(alpha_deg: float, beta_deg: float):
-    a = np.deg2rad(alpha_deg)
-    b = np.deg2rad(beta_deg)
-    v = np.array([np.cos(a) * np.cos(b), -np.sin(b), np.sin(a) * np.cos(b)], dtype=float)
-    v /= np.linalg.norm(v)
-    return v
-
-
-def _lift_dir_alpha(alpha_deg: float):
-    a = np.deg2rad(alpha_deg)
-    k = np.array([-np.sin(a), 0.0, np.cos(a)], dtype=float)
-    k /= np.linalg.norm(k)
-    return k
+from .test_helpers import compute_freestream_direction, compute_lift_direction
 
 
 def test_bet_disk_simple_coefficients():
@@ -116,11 +103,10 @@ def test_bet_disk_simple_coefficients():
     assert not np.isclose(CF[2], 0.0)
 
     # Drag and lift from projections
-    u = _u_inf(alpha, beta)
-    drag_dir = u
-    k = _lift_dir_alpha(alpha)
+    drag_dir = compute_freestream_direction(alpha, beta)
+    lift_dir = compute_lift_direction(alpha)
     assert np.isclose(CD, float(np.dot(CF, drag_dir)), rtol=1e-6, atol=1e-12)
-    assert np.isclose(CL, float(np.dot(CF, k)), rtol=1e-6, atol=1e-12)
+    assert np.isclose(CL, float(np.dot(CF, lift_dir)), rtol=1e-6, atol=1e-12)
 
     # Check that CM values are non-zero and have reasonable magnitudes
     # (The exact values depend on unit conversion which may need refinement)
