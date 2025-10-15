@@ -1447,7 +1447,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
-        upload_imported_surfaces_to_draft(params, draft, fork_from)
+        upload_imported_surfaces_to_draft(params, draft)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel

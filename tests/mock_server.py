@@ -427,7 +427,7 @@ class MockResponseProjectCaseSimConfig(MockResponse):
     @staticmethod
     def json():
         with open(
-            os.path.join(here, "data/case-69b8c249-fce5-412a-9927-6a79049deebb/simulation.json")
+            os.path.join(here, "data/mock_webapi/project_case_simulation_json_resp.json")
         ) as fh:
             res = json.load(fh)
         return res
