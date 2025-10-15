@@ -373,8 +373,8 @@ class AutomatedFarfield(Flow360BaseModel):
         frozen=True,
         exclude=True,
     )
-    relative_size: Optional[float] = pd.Field(
-        default="50",
+    relative_size: pd.PositiveFloat = pd.Field(
+        default=50.0,
         description="Radius of the far-field (semi)sphere/cylinder relative to "
         "the max dimension of the geometry bounding box.",
     )
