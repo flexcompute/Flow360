@@ -112,19 +112,21 @@ class CoefficientsComputationUtils:
             moment_length_flow360.units,
         )
 
-        if isinstance(moment_length_flow360, (list, tuple)):
+        # Convert to numpy array properly - handle both arrays and scalars
+        if hasattr(moment_length_flow360, "__len__") and len(moment_length_flow360) == 3:
+            # It's already a vector-like object (array with units)
             moment_length_vec_flow360 = np.array(
                 [
-                    moment_length_flow360[0],
-                    moment_length_flow360[1],
-                    moment_length_flow360[2],
+                    float(moment_length_flow360[0]),
+                    float(moment_length_flow360[1]),
+                    float(moment_length_flow360[2]),
                 ],
                 dtype=float,
             )
         else:
-            moment_length_vec_flow360 = np.array(
-                [moment_length_flow360, moment_length_flow360, moment_length_flow360], dtype=float
-            )
+            # It's a scalar, replicate for all three directions
+            scalar_val = float(moment_length_flow360)
+            moment_length_vec_flow360 = np.array([scalar_val, scalar_val, scalar_val], dtype=float)
 
         # Extract dimensionless moment_center
         moment_center = reference_geometry_filled_flow360.moment_center
