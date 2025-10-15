@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
@@ -54,143 +55,123 @@ _CFz_PER_SPAN = "CFz_per_span"
 _CMy_PER_SPAN = "CMy_per_span"
 
 
-class CoefficientsComputationUtils:
-    # pylint:disable=too-few-public-methods
-    """Static utilities for aerodynamic coefficient computations.
+# Static utilities for aerodynamic coefficient computations.
 
-    Provides helper methods for computing aerodynamic coefficients using
-    reference geometry and operating condition information.
+# Provides helper methods for computing aerodynamic coefficients using
+# reference geometry and operating condition information.
 
-    This class contains only static methods and should not be instantiated.
-    """
 
-    @staticmethod
-    def _to_float(value):
-        try:
-            return float(value.v)
-        except AttributeError:
-            return float(value)
+def _vector_to_np3(vec):
+    try:
+        return np.array([float(vec[0]), float(vec[1]), float(vec[2])], dtype=float)
+    except Exception as exc:  # pylint:disable=broad-except
+        raise Flow360ValueError(f"Invalid vector: {vec}") from exc
 
-    @staticmethod
-    def _vector_to_np3(vec):
-        try:
-            return np.array([float(vec[0]), float(vec[1]), float(vec[2])], dtype=float)
-        except Exception as exc:  # pylint:disable=broad-except
-            raise Flow360ValueError(f"Invalid vector: {vec}") from exc
 
-    @staticmethod
-    def _get_reference_geometry(params: SimulationParams):
-        # pylint:disable=import-outside-toplevel, no-member, protected-access
-        from flow360.component.simulation.primitives import ReferenceGeometry
+def _get_reference_geometry(params: SimulationParams):
+    # pylint:disable=import-outside-toplevel, no-member, protected-access
+    from flow360.component.simulation.primitives import ReferenceGeometry
 
-        # Fill defaults using preprocessed params
-        reference_geometry_filled = ReferenceGeometry.fill_defaults(
-            params.reference_geometry, params
-        )
+    # Fill defaults using preprocessed params
+    reference_geometry_filled = ReferenceGeometry.fill_defaults(params.reference_geometry, params)
 
-        reference_geometry_filled_flow360: ReferenceGeometry = reference_geometry_filled.preprocess(
-            params=params
-        )
-        # Extract dimensionless area (in Flow360 units)
-        area_flow360 = float(reference_geometry_filled_flow360.area.value)
+    reference_geometry_filled_flow360: ReferenceGeometry = reference_geometry_filled.preprocess(
+        params=params
+    )
+    # Extract dimensionless area (in Flow360 units)
+    area_flow360 = float(reference_geometry_filled_flow360.area.value)
 
-        # Extract dimensionless moment_length
-        moment_length_flow360 = reference_geometry_filled_flow360.moment_length
+    # Extract dimensionless moment_length
+    moment_length_flow360 = reference_geometry_filled_flow360.moment_length
 
-        # Convert to numpy array properly - handle both arrays and scalars
-        try:
-            # Try to treat it as a vector-like object
-            if len(moment_length_flow360) == 3:
-                moment_length_vec_flow360 = np.array(
-                    [
-                        float(moment_length_flow360[0]),
-                        float(moment_length_flow360[1]),
-                        float(moment_length_flow360[2]),
-                    ],
-                    dtype=float,
-                )
-            else:
-                raise ValueError("moment_length must be scalar or length 3")
-        except (TypeError, AttributeError):
-            # It's a scalar, replicate for all three directions
-            scalar_val = float(moment_length_flow360)
-            moment_length_vec_flow360 = np.array([scalar_val, scalar_val, scalar_val], dtype=float)
-
-        # Extract dimensionless moment_center
-        moment_center = reference_geometry_filled_flow360.moment_center
-        moment_center_flow360 = np.array(
-            [moment_center[0], moment_center[1], moment_center[2]],
-            dtype=float,
-        )
-
-        return area_flow360, moment_length_vec_flow360, moment_center_flow360
-
-    @staticmethod
-    def _get_lift_drag_direction(params: SimulationParams):
-        oc = params.operating_condition
-        if oc is None:
-            raise Flow360ValueError(
-                "Operating condition is required for computing freestream vectors."
-            )
-        alpha_rad = float(oc.alpha.to("rad").value)
-        beta_rad = float(oc.beta.to("rad").value)
-
-        u_inf = np.array(
+    # Convert to numpy array properly - handle both arrays and scalars
+    try:
+        # Try to treat it as a vector-like object
+        len(moment_length_flow360)
+        moment_length_vec_flow360 = np.array(
             [
-                np.cos(alpha_rad) * np.cos(beta_rad),
-                -np.sin(beta_rad),
-                np.sin(alpha_rad) * np.cos(beta_rad),
+                float(moment_length_flow360[0]),
+                float(moment_length_flow360[1]),
+                float(moment_length_flow360[2]),
             ],
             dtype=float,
         )
+    except (TypeError, AttributeError):
+        # It's a scalar, replicate for all three directions
+        scalar_val = float(moment_length_flow360)
+        moment_length_vec_flow360 = np.array([scalar_val, scalar_val, scalar_val], dtype=float)
 
-        lift_dir = np.array([-np.sin(alpha_rad), 0.0, np.cos(alpha_rad)], dtype=float)
+    # Extract dimensionless moment_center
+    moment_center = reference_geometry_filled_flow360.moment_center
+    moment_center_flow360 = np.array(
+        [moment_center[0], moment_center[1], moment_center[2]],
+        dtype=float,
+    )
 
-        drag_dir = u_inf
-        return lift_dir, drag_dir
-
-    @staticmethod
-    def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
-        # pylint:disable=protected-access
-        oc = params.operating_condition
-        using_liquid_op = oc.type_name == "LiquidOperatingCondition"
-
-        if using_liquid_op:
-            v_ref = params._liquid_reference_velocity
-        else:
-            v_ref = params.base_velocity
-
-        Mach_ref = params.convert_unit(value=v_ref, target_system="flow360")
-        return 0.5 * Mach_ref * Mach_ref
-
-    @staticmethod
-    def _build_coeff_env(params) -> Dict[str, Any]:
-        # pylint:disable=protected-access
-        area, moment_length_vec, moment_center_global = (
-            CoefficientsComputationUtils._get_reference_geometry(params)
-        )
-        dynamic_pressure = CoefficientsComputationUtils._get_dynamic_pressure_in_flow360_unit(
-            params
-        )
-        lift_dir, drag_dir = CoefficientsComputationUtils._get_lift_drag_direction(params)
-        return {
-            "moment_center_global": moment_center_global,
-            "dynamic_pressure": dynamic_pressure,
-            "area": area,
-            "moment_length_vec": moment_length_vec,
-            "lift_dir": lift_dir,
-            "drag_dir": drag_dir,
-        }
-
-    @staticmethod
-    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
-        out: Dict[str, list] = {}
-        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
-        return out
+    return area_flow360, moment_length_vec_flow360, moment_center_flow360
 
 
-def collect_disk_axes_and_centers(
+def _get_lift_drag_direction(params: SimulationParams):
+    oc = params.operating_condition
+
+    if oc is None:
+        raise Flow360ValueError("Operating condition is required for computing freestream vectors.")
+
+    alpha_rad = float(oc.alpha.to("rad").value)
+    beta_rad = float(oc.beta.to("rad").value)
+
+    u_inf = np.array(
+        [
+            np.cos(alpha_rad) * np.cos(beta_rad),
+            -np.sin(beta_rad),
+            np.sin(alpha_rad) * np.cos(beta_rad),
+        ],
+        dtype=float,
+    )
+
+    lift_dir = np.array([-np.sin(alpha_rad), 0.0, np.cos(alpha_rad)], dtype=float)
+
+    drag_dir = u_inf
+    return lift_dir, drag_dir
+
+
+def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
+    # pylint:disable=protected-access
+    oc = params.operating_condition
+    using_liquid_op = oc.type_name == "LiquidOperatingCondition"
+
+    if using_liquid_op:
+        v_ref = params._liquid_reference_velocity
+    else:
+        v_ref = params.base_velocity
+
+    Mach_ref = params.convert_unit(value=v_ref, target_system="flow360")
+    return 0.5 * Mach_ref * Mach_ref
+
+
+def _build_coeff_env(params) -> Dict[str, Any]:
+    # pylint:disable=protected-access
+    area, moment_length_vec, moment_center_global = _get_reference_geometry(params)
+    dynamic_pressure = _get_dynamic_pressure_in_flow360_unit(params)
+    lift_dir, drag_dir = _get_lift_drag_direction(params)
+    return {
+        "moment_center_global": moment_center_global,
+        "dynamic_pressure": dynamic_pressure,
+        "area": area,
+        "moment_length_vec": moment_length_vec,
+        "lift_dir": lift_dir,
+        "drag_dir": drag_dir,
+    }
+
+
+def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
+    out: Dict[str, list] = {}
+    out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
+    out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
+    return out
+
+
+def _collect_disk_axes_and_centers(
     params: SimulationParams, model_type: str
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Collect normalized disk axes and centers for a given model type.
@@ -217,7 +198,7 @@ def collect_disk_axes_and_centers(
         for cyl in model.entities.stored_entities:
             # Axis is assumed normalized by the inputs
             # pylint:disable=protected-access
-            axis = CoefficientsComputationUtils._vector_to_np3(cyl.axis)
+            axis = _vector_to_np3(cyl.axis)
             center_flow360 = params.convert_unit(value=cyl.center, target_system="flow360")
             center_np = np.array(
                 [center_flow360[0].value, center_flow360[1].value, center_flow360[2].value],
@@ -240,15 +221,20 @@ class DiskCoefficientsComputation:
 
     @staticmethod
     def _iter_disks(params, disk_model_type: str, values: Dict[str, list]):
-        disk_axes, disk_centers = collect_disk_axes_and_centers(params, disk_model_type)
-        disk_names = np.unique([v.split("_")[0] for v in values.keys() if v.startswith("Disk")])
+        disk_axes, disk_centers = _collect_disk_axes_and_centers(params, disk_model_type)
+        # Extract disk names matching pattern "Disk<number>"
+        disk_pattern = re.compile(r"^(Disk\d+)_")
+        disk_names = np.unique(
+            [match.group(1) for key in values.keys() if (match := disk_pattern.match(key))]
+        )
         for disk_name in disk_names:
-            idx = int(disk_name[4:])
-            axis = (
-                disk_axes[idx] if idx < len(disk_axes) else np.array([1.0, 0.0, 0.0], dtype=float)
-            )
-            center = disk_centers[idx]
-            yield disk_name, axis, center
+            # Extract disk index from pattern "Disk<number>"
+            match = re.search(r"Disk(\d+)", disk_name)
+            if match:
+                idx = int(match.group(1))
+                axis = disk_axes[idx]
+                center = disk_centers[idx]
+                yield disk_name, axis, center
 
     @staticmethod
     def _init_disk_output(out: Dict[str, list], disk_name: str) -> Dict[str, str]:
@@ -303,8 +289,8 @@ class DiskCoefficientsComputation:
             )
 
         # pylint:disable=protected-access
-        env = CoefficientsComputationUtils._build_coeff_env(params)
-        out = CoefficientsComputationUtils._copy_time_columns(values)
+        env = _build_coeff_env(params)
+        out = _copy_time_columns(values)
 
         for disk_name, axis, center in DiskCoefficientsComputation._iter_disks(
             params, disk_model_type, values
@@ -397,8 +383,8 @@ class PorousMediumCoefficientsComputation:
             )
 
         # pylint:disable=protected-access
-        env = CoefficientsComputationUtils._build_coeff_env(params)
-        out = CoefficientsComputationUtils._copy_time_columns(values)
+        env = _build_coeff_env(params)
+        out = _copy_time_columns(values)
 
         for zone_name in PorousMediumCoefficientsComputation._iter_zones(values):
             PorousMediumCoefficientsComputation._init_zone_output(out, zone_name)

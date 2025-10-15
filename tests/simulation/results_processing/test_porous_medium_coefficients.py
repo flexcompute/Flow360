@@ -10,7 +10,7 @@ from flow360.component.simulation.framework.param_utils import AssetCache
 def _u_inf(alpha_deg: float, beta_deg: float):
     a = np.deg2rad(alpha_deg)
     b = np.deg2rad(beta_deg)
-    v = np.array([np.cos(a) * np.cos(b), np.sin(b), np.sin(a) * np.cos(b)], dtype=float)
+    v = np.array([np.cos(a) * np.cos(b), -np.sin(b), np.sin(a) * np.cos(b)], dtype=float)
     v /= np.linalg.norm(v)
     return v
 
@@ -25,7 +25,12 @@ def _lift_dir_alpha(alpha_deg: float):
 def test_porous_medium_simple_coefficients():
     # Prepare a simple porous medium CSV with one timestep
     csv_path = os.path.join(
-        os.path.dirname(__file__), "data", "coeff_simple", "results", "porous_media_output_v2.csv"
+        os.path.dirname(__file__),
+        os.path.pardir,
+        "data",
+        "coeff_simple",
+        "results",
+        "porous_media_output_v2.csv",
     )
     csv_path = os.path.abspath(csv_path)
 
@@ -96,7 +101,7 @@ def test_porous_medium_simple_coefficients():
 
     # Drag and lift from projections
     u = _u_inf(alpha, beta)
-    drag_dir = -u
+    drag_dir = u
     k = _lift_dir_alpha(alpha)
     assert np.isclose(CD, float(np.dot(CF, drag_dir)), rtol=1e-6, atol=1e-12)
     assert np.isclose(CL, float(np.dot(CF, k)), rtol=1e-6, atol=1e-12)

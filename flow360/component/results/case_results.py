@@ -1,6 +1,5 @@
 """Case results module"""
 
-# pylint:disable=too-many-lines
 from __future__ import annotations
 
 import re
@@ -33,7 +32,6 @@ from flow360.component.results.results_utils import (
     _HEAT_FLUX,
     _X,
     _Y,
-    CoefficientsComputationUtils,
     DiskCoefficientsComputation,
     PorousMediumCoefficientsComputation,
     _CFx,
@@ -667,18 +665,16 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
             params=params,
             values=self.as_dict(),
             disk_model_type="ActuatorDisk",
-            iterate_step_values_func=self._iterate_step_values_static,
+            iterate_step_values_func=self._iterate_step_values,
             coefficients_model_class=ActuatorDiskCoefficientsCSVModel,
         )
 
     @staticmethod
-    def _iterate_step_values_static(disk_name, disk_ctx, env, values):
+    def _iterate_step_values(disk_name, disk_ctx, env, values):
         # pylint:disable=too-many-locals, protected-access
         force_mag_series = values.get(f"{disk_name}_Force", [])
         moment_mag_series = values.get(f"{disk_name}_Moment", [])
-        for f_val, m_val in zip(force_mag_series, moment_mag_series):
-            force_mag = CoefficientsComputationUtils._to_float(f_val)
-            moment_mag = CoefficientsComputationUtils._to_float(m_val)
+        for force_mag, moment_mag in zip(force_mag_series, moment_mag_series):
             axis = disk_ctx["axis"]
             center = disk_ctx["center"]
 
@@ -687,8 +683,8 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
             moment_global = moment_mag * axis + np.cross(r_vec, force_vec)
 
             dp_area = env["dynamic_pressure"] * env["area"]
-            denom_force = dp_area if dp_area != 0 else 1.0
-            denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
+            denom_force = dp_area
+            denom_moment = dp_area * env["moment_length_vec"]
 
             # pylint:disable=invalid-name
             CF_vec = force_vec / denom_force
@@ -837,12 +833,12 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
             params=params,
             values=self.as_dict(),
             disk_model_type="BETDisk",
-            iterate_step_values_func=self._iterate_step_values_static,
+            iterate_step_values_func=self._iterate_step_values,
             coefficients_model_class=BETDiskCoefficientsCSVModel,
         )
 
     @staticmethod
-    def _iterate_step_values_static(disk_name, disk_ctx, env, values):
+    def _iterate_step_values(disk_name, disk_ctx, env, values):
         # pylint:disable=protected-access, too-many-locals
         fx_series = values.get(f"{disk_name}_Force_x", [])
         fy_series = values.get(f"{disk_name}_Force_y", [])
@@ -851,15 +847,9 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
         my_series = values.get(f"{disk_name}_Moment_y", [])
         mz_series = values.get(f"{disk_name}_Moment_z", [])
 
-        for fx_val, fy_val, fz_val, mx_val, my_val, mz_val in zip(
+        for fx, fy, fz, mx, my, mz in zip(
             fx_series, fy_series, fz_series, mx_series, my_series, mz_series
         ):
-            fx = CoefficientsComputationUtils._to_float(fx_val)
-            fy = CoefficientsComputationUtils._to_float(fy_val)
-            fz = CoefficientsComputationUtils._to_float(fz_val)
-            mx = CoefficientsComputationUtils._to_float(mx_val)
-            my = CoefficientsComputationUtils._to_float(my_val)
-            mz = CoefficientsComputationUtils._to_float(mz_val)
 
             center = disk_ctx["center"]
             force_vec = np.array([fx, fy, fz], dtype=float)
@@ -868,8 +858,8 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
             moment_global = moment_vec + np.cross(r_vec, force_vec)
 
             dp_area = env["dynamic_pressure"] * env["area"]
-            denom_force = dp_area if dp_area != 0 else 1.0
-            denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
+            denom_force = dp_area
+            denom_moment = dp_area * env["moment_length_vec"]
 
             # pylint:disable=invalid-name
             CF_vec = force_vec / denom_force
@@ -911,12 +901,12 @@ class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
         return PorousMediumCoefficientsComputation.compute_coefficients_static(
             params=params,
             values=self.as_dict(),
-            iterate_step_values_func=self._iterate_step_values_static,
+            iterate_step_values_func=self._iterate_step_values,
             coefficients_model_class=PorousMediumCoefficientsCSVModel,
         )
 
     @staticmethod
-    def _iterate_step_values_static(zone_name, _, env, values):
+    def _iterate_step_values(zone_name, _, env, values):
         # pylint:disable=protected-access, too-many-locals
         fx_series = values.get(f"{zone_name}_Force_x", [])
         fy_series = values.get(f"{zone_name}_Force_y", [])
@@ -925,23 +915,17 @@ class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
         my_series = values.get(f"{zone_name}_Moment_y", [])
         mz_series = values.get(f"{zone_name}_Moment_z", [])
 
-        for fx_val, fy_val, fz_val, mx_val, my_val, mz_val in zip(
+        for fx, fy, fz, mx, my, mz in zip(
             fx_series, fy_series, fz_series, mx_series, my_series, mz_series
         ):
-            fx = CoefficientsComputationUtils._to_float(fx_val)
-            fy = CoefficientsComputationUtils._to_float(fy_val)
-            fz = CoefficientsComputationUtils._to_float(fz_val)
-            mx = CoefficientsComputationUtils._to_float(mx_val)
-            my = CoefficientsComputationUtils._to_float(my_val)
-            mz = CoefficientsComputationUtils._to_float(mz_val)
 
             force_vec = np.array([fx, fy, fz], dtype=float)
             moment_vec = np.array([mx, my, mz], dtype=float)
             # Note: moment is already relative to global moment center from solver
 
             dp_area = env["dynamic_pressure"] * env["area"]
-            denom_force = dp_area if dp_area != 0 else 1.0
-            denom_moment = env["dynamic_pressure"] * env["area"] * env["moment_length_vec"]
+            denom_force = dp_area
+            denom_moment = dp_area * env["moment_length_vec"]
 
             # pylint:disable=invalid-name
             CF_vec = force_vec / denom_force

@@ -626,10 +626,10 @@ class SimulationParams(_ParamModelBase):
         """
         # pylint:disable=no-member
         if self.operating_condition.reference_velocity_magnitude is not None:
-            base_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
+            reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
         else:
-            base_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
-        return base_velocity
+            reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        return reference_velocity
 
     @property
     def base_density(self) -> DensityType:
