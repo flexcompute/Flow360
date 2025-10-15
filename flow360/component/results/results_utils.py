@@ -79,13 +79,6 @@ class CoefficientsComputationUtils:
             raise Flow360ValueError(f"Invalid vector: {vec}") from exc
 
     @staticmethod
-    def _normalize(vec):
-        norm = np.linalg.norm(vec)
-        if norm == 0:
-            return vec
-        return vec / norm
-
-    @staticmethod
     def _get_reference_geometry(params: SimulationParams):
         # pylint:disable=import-outside-toplevel, no-member, protected-access
         from flow360.component.simulation.primitives import ReferenceGeometry
@@ -100,17 +93,9 @@ class CoefficientsComputationUtils:
         )
         # Extract dimensionless area (in Flow360 units)
         area_flow360 = float(reference_geometry_filled_flow360.area.value)
-        print(
-            ">>> double check the unit of area_flow360",
-            reference_geometry_filled_flow360.area.units,
-        )
 
         # Extract dimensionless moment_length
         moment_length_flow360 = reference_geometry_filled_flow360.moment_length
-        print(
-            ">>> double check the unit of moment_length_flow360",
-            moment_length_flow360.units,
-        )
 
         # Convert to numpy array properly - handle both arrays and scalars
         try:
@@ -141,7 +126,7 @@ class CoefficientsComputationUtils:
         return area_flow360, moment_length_vec_flow360, moment_center_flow360
 
     @staticmethod
-    def _get_freestream_vectors(params: SimulationParams):
+    def _get_lift_drag_direction(params: SimulationParams):
         oc = params.operating_condition
         if oc is None:
             raise Flow360ValueError(
@@ -153,17 +138,15 @@ class CoefficientsComputationUtils:
         u_inf = np.array(
             [
                 np.cos(alpha_rad) * np.cos(beta_rad),
-                np.sin(beta_rad),
+                -np.sin(beta_rad),
                 np.sin(alpha_rad) * np.cos(beta_rad),
             ],
             dtype=float,
         )
-        u_inf = CoefficientsComputationUtils._normalize(u_inf)
 
         lift_dir = np.array([-np.sin(alpha_rad), 0.0, np.cos(alpha_rad)], dtype=float)
-        lift_dir = CoefficientsComputationUtils._normalize(lift_dir)
 
-        drag_dir = -u_inf
+        drag_dir = u_inf
         return lift_dir, drag_dir
 
     @staticmethod
@@ -178,8 +161,33 @@ class CoefficientsComputationUtils:
             v_ref = params.base_velocity
 
         Mach_ref = params.convert_unit(value=v_ref, target_system="flow360")
-        print(">>> double check the value of Mach_ref: ", Mach_ref)
-        return 0.5 * v_ref * v_ref
+        return 0.5 * Mach_ref * Mach_ref
+
+    @staticmethod
+    def _build_coeff_env(params) -> Dict[str, Any]:
+        # pylint:disable=protected-access
+        area, moment_length_vec, moment_center_global = (
+            CoefficientsComputationUtils._get_reference_geometry(params)
+        )
+        dynamic_pressure = CoefficientsComputationUtils._get_dynamic_pressure_in_flow360_unit(
+            params
+        )
+        lift_dir, drag_dir = CoefficientsComputationUtils._get_lift_drag_direction(params)
+        return {
+            "moment_center_global": moment_center_global,
+            "dynamic_pressure": dynamic_pressure,
+            "area": area,
+            "moment_length_vec": moment_length_vec,
+            "lift_dir": lift_dir,
+            "drag_dir": drag_dir,
+        }
+
+    @staticmethod
+    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
+        out: Dict[str, list] = {}
+        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
+        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
+        return out
 
 
 def collect_disk_axes_and_centers(
@@ -231,13 +239,6 @@ class DiskCoefficientsComputation:
     """
 
     @staticmethod
-    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
-        out: Dict[str, list] = {}
-        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
-        return out
-
-    @staticmethod
     def _iter_disks(params, disk_model_type: str, values: Dict[str, list]):
         disk_axes, disk_centers = collect_disk_axes_and_centers(params, disk_model_type)
         disk_names = np.unique([v.split("_")[0] for v in values.keys() if v.startswith("Disk")])
@@ -248,25 +249,6 @@ class DiskCoefficientsComputation:
             )
             center = disk_centers[idx]
             yield disk_name, axis, center
-
-    @staticmethod
-    def _build_coeff_env(params) -> Dict[str, Any]:
-        # pylint:disable=protected-access
-        area, moment_length_vec, moment_center_global = (
-            CoefficientsComputationUtils._get_reference_geometry(params)
-        )
-        dynamic_pressure = CoefficientsComputationUtils._get_dynamic_pressure_in_flow360_unit(
-            params
-        )
-        lift_dir, drag_dir = CoefficientsComputationUtils._get_freestream_vectors(params)
-        return {
-            "moment_center_global": moment_center_global,
-            "dynamic_pressure": dynamic_pressure,
-            "area": area,
-            "moment_length_vec": moment_length_vec,
-            "lift_dir": lift_dir,
-            "drag_dir": drag_dir,
-        }
 
     @staticmethod
     def _init_disk_output(out: Dict[str, list], disk_name: str) -> Dict[str, str]:
@@ -320,8 +302,9 @@ class DiskCoefficientsComputation:
                 "compute_coefficients() is not supported for legacy cases with Flow360Params."
             )
 
-        env = DiskCoefficientsComputation._build_coeff_env(params)
-        out = DiskCoefficientsComputation._copy_time_columns(values)
+        # pylint:disable=protected-access
+        env = CoefficientsComputationUtils._build_coeff_env(params)
+        out = CoefficientsComputationUtils._copy_time_columns(values)
 
         for disk_name, axis, center in DiskCoefficientsComputation._iter_disks(
             params, disk_model_type, values
@@ -414,8 +397,8 @@ class PorousMediumCoefficientsComputation:
             )
 
         # pylint:disable=protected-access
-        env = DiskCoefficientsComputation._build_coeff_env(params)
-        out = PorousMediumCoefficientsComputation._copy_time_columns(values)
+        env = CoefficientsComputationUtils._build_coeff_env(params)
+        out = CoefficientsComputationUtils._copy_time_columns(values)
 
         for zone_name in PorousMediumCoefficientsComputation._iter_zones(values):
             PorousMediumCoefficientsComputation._init_zone_output(out, zone_name)
