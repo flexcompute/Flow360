@@ -3,6 +3,7 @@ Support class and functions for project interface.
 """
 
 import datetime
+import os
 from typing import List, Literal, Optional, get_args
 
 import pydantic as pd
@@ -72,7 +73,9 @@ class ProjectInfo(pd.BaseModel):
     description: str = pd.Field()
     statistics: ProjectStatistics = pd.Field()
     solver_version: Optional[str] = pd.Field(
-        None, alias="solverVersion", description="If None then the project is from old database"
+        None,
+        alias="solverVersion",
+        description="If None then the project is from old database",
     )
     created_at: str = pd.Field(alias="createdAt")
     root_item_type: Literal["Geometry", "SurfaceMesh", "VolumeMesh"] = pd.Field(
@@ -184,7 +187,8 @@ def _replace_ghost_surfaces(params: SimulationParams):
             if isinstance(field, GhostSurface):
                 # pylint: disable=protected-access
                 field = _replace_the_ghost_surface(
-                    ghost_surface=field, ghost_entities_from_metadata=ghost_entities_from_metadata
+                    ghost_surface=field,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
                 )
 
             if isinstance(field, EntityList):
@@ -206,12 +210,14 @@ def _replace_ghost_surfaces(params: SimulationParams):
                         )
                     elif isinstance(item, Flow360BaseModel):
                         _find_ghost_surfaces(
-                            model=item, ghost_entities_from_metadata=ghost_entities_from_metadata
+                            model=item,
+                            ghost_entities_from_metadata=ghost_entities_from_metadata,
                         )
 
             elif isinstance(field, Flow360BaseModel):
                 _find_ghost_surfaces(
-                    model=field, ghost_entities_from_metadata=ghost_entities_from_metadata
+                    model=field,
+                    ghost_entities_from_metadata=ghost_entities_from_metadata,
                 )
 
     ghost_entities_from_metadata = (
@@ -230,7 +236,15 @@ def _set_up_params_non_persistent_entity_info(entity_info, params: SimulationPar
 
     entity_registry = params.used_entity_registry
     # Creating draft entities
-    for draft_type in [Box, Cylinder, Point, PointArray, PointArray2D, Slice, CustomVolume]:
+    for draft_type in [
+        Box,
+        Cylinder,
+        Point,
+        PointArray,
+        PointArray2D,
+        Slice,
+        CustomVolume,
+    ]:
         draft_entities = entity_registry.find_by_type(draft_type)
         for draft_entity in draft_entities:
             if draft_entity not in entity_info.draft_entities:
@@ -339,7 +353,11 @@ def _set_up_default_reference_geometry(params: SimulationParams, length_unit: Le
 
     for field in params.reference_geometry.__class__.model_fields:
         if getattr(params.reference_geometry, field) is None:
-            setattr(params.reference_geometry, field, getattr(default_reference_geometry, field))
+            setattr(
+                params.reference_geometry,
+                field,
+                getattr(default_reference_geometry, field),
+            )
 
     return params
 
@@ -444,12 +462,38 @@ def validate_params_with_context(params, root_item_type, up_to):
     return params, errors
 
 
-def upload_imported_surfaces_to_draft(params, draft):
-    """Upload imported surfaces to draft"""
-    if params.outputs:
-        imported_surface_file_paths = []
-        for output in params.outputs:
-            if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
-                for surface in output.entities.stored_entities:
-                    imported_surface_file_paths.append(surface.file_name)
-        draft.upload_imported_surfaces(imported_surface_file_paths)
+def _get_imported_surface_file_names(params, basename_only=False):
+    if params is None or params.outputs is None:
+        return []
+    imported_surface_files = []
+    for output in params.outputs:
+        if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+            for surface in output.entities.stored_entities:
+                if basename_only:
+                    imported_surface_files.append(os.path.basename(surface.file_name))
+                else:
+                    imported_surface_files.append(surface.file_name)
+    return imported_surface_files
+
+
+def upload_imported_surfaces_to_draft(params, draft, parent_case):
+    """
+    Upload imported surfaces to draft, excluding duplicates from parent case.
+
+    Note:
+        - If parent_case is None, all surfaces from params will be uploaded.
+        - Only surfaces not present in the parent case are uploaded.
+    """
+
+    parent_existing_imported_file_basenames = []
+    if parent_case is not None:
+        parent_existing_imported_file_basenames = _get_imported_surface_file_names(
+            parent_case.params, basename_only=True
+        )
+    current_draft_surface_file_paths_to_import = _get_imported_surface_file_names(params)
+    deduplicated_surface_file_paths_to_import = []
+    for file_path_to_import in current_draft_surface_file_paths_to_import:
+        file_basename = os.path.basename(file_path_to_import)
+        if file_basename not in parent_existing_imported_file_basenames:
+            deduplicated_surface_file_paths_to_import.append(file_path_to_import)
+    draft.upload_imported_surfaces(deduplicated_surface_file_paths_to_import)
