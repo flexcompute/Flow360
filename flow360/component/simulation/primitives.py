@@ -101,6 +101,42 @@ class ReferenceGeometry(Flow360BaseModel):
     )
     private_attribute_area_settings: Optional[dict] = pd.Field(None)
 
+    @classmethod
+    def fill_defaults(cls, ref, params):  # type: ignore[override]
+        """Return a new ReferenceGeometry with defaults filled using SimulationParams.
+
+        Defaults when missing or when ref is None:
+        - area: 1 * (base_length)**2
+        - moment_center: (0,0,0) * base_length
+        - moment_length: (1,1,1) * base_length
+        """
+        # Note:
+        #  This helper avoids scattering default logic; consumers can always call this
+        #  to obtain a fully-specified reference geometry in solver units.
+        #  `params.base_length` provides the length unit for the project.
+
+        # Determine base length unit from params
+        base_length_unit = params.base_length  # LengthType quantity
+
+        # Start from provided or empty
+        if ref is None:
+            ref = cls()
+
+        # Compose output using provided values when available
+        area = ref.area
+        if area is None:
+            area = 1.0 * (base_length_unit**2)
+
+        moment_center = ref.moment_center
+        if moment_center is None:
+            moment_center = (0, 0, 0) * base_length_unit
+
+        moment_length = ref.moment_length
+        if moment_length is None:
+            moment_length = (1.0, 1.0, 1.0) * base_length_unit
+
+        return cls(area=area, moment_center=moment_center, moment_length=moment_length)
+
 
 class GeometryBodyGroup(EntityBase):
     """
