@@ -266,6 +266,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
             "Expected entity instance."
         )
 
+    # pylint: disable=too-many-branches
     @pd.model_validator(mode="before")
     @classmethod
     def _format_input_to_list(cls, input_data: Union[dict, list]):

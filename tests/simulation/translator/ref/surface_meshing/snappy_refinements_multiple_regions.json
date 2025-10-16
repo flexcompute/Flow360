@@ -11,6 +11,10 @@
                 "regions": [
                     {
                         "patchName": "patch0",
+                        "spacing": {
+                            "min": 10,
+                            "max": 40
+                        },
                         "edges":{
                             "edgeSpacing": 4,
                             "minElem": 3,
@@ -20,6 +24,10 @@
                     },
                     {
                         "patchName": "patch1",
+                        "spacing": {
+                            "min": 10,
+                            "max": 40
+                        },
                         "edges":{
                             "edgeSpacing": 4,
                             "minElem": 3,
@@ -72,7 +80,11 @@
                 },
                 "regions": [
                     {
-                        "patchName": "patch0"
+                        "patchName": "patch0",
+                        "spacing": {
+                            "min": 5,
+                            "max": 40
+                        }
                     }
                 ]
             },
@@ -85,7 +97,11 @@
                 },
                 "regions": [
                     {
-                        "patchName": "patch0"
+                        "patchName": "patch0",
+                        "spacing": {
+                            "min": 5,
+                            "max": 40
+                        }
                     }
                 ]
             }

@@ -55,7 +55,7 @@ class SnappyBodyRefinement(SnappyEntityRefinement):
     # pylint: disable=no-member
     refinement_type: Literal["SnappyBodyRefinement"] = pd.Field("SnappyBodyRefinement", frozen=True)
     gap_resolution: Optional[LengthType.NonNegative] = pd.Field(None)
-    entities: List[SnappyBody] = pd.Field(alias="bodies")
+    entities: EntityList[SnappyBody] = pd.Field(alias="bodies")
 
 
 class SnappyRegionRefinement(SnappyEntityRefinement):
@@ -119,7 +119,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
     included_angle: AngleType.Positive = pd.Field(150 * u.deg)
-    bodies: Optional[List[SnappyBody]] = pd.Field(None)
+    bodies: Optional[EntityList[SnappyBody]] = pd.Field(None)
     regions: Optional[EntityList[Surface]] = pd.Field(None)
     retain_on_smoothing: Optional[bool] = pd.Field(True)
 
