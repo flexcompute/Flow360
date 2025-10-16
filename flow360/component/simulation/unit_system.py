@@ -705,6 +705,16 @@ class _DimensionedType(metaclass=ABCMeta):
 
     # pylint: disable=invalid-name
     @classproperty
+    def PositiveArray(self):
+        """
+        Array value which accepts positive with any length
+        """
+        return self._VectorType.get_class_object(
+            self, length=None, allow_negative_value=False, allow_zero_component=False
+        )
+
+    # pylint: disable=invalid-name
+    @classproperty
     def Point(self):
         """
         Vector value which accepts zero components

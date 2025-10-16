@@ -593,8 +593,8 @@ def snappy_basic_refinements():
                     regions=[test_geometry["body0::patch0"]],
                 ),
                 SnappySurfaceEdgeRefinement(
-                    spacing=[3 * u.mm, 5 * u.mm],
-                    distances=[1 * u.mm, 3 * u.mm],
+                    spacing=[3 * u.mm, 5e-3 * u.m],
+                    distances=[1 * u.mm, 3e-3 * u.m],
                     min_len=6 * u.mm,
                     regions=[test_geometry["*patch1"]],
                     bodies=[SnappyBody(body_name="body3")],

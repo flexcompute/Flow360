@@ -83,9 +83,9 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
 
     Parameters
     ----------
-    spacing: Optional[Union[LengthType.Positive, List[LengthType.Positive]]], default: None
-        Spacing close to the edges.
-        Set to None to disable this metric.
+    spacing: Optional[Union[LengthType.Positive, LengthType.PositiveArray]], default: None
+        Spacing on and close to the edges.
+        Defaults to default min_spacing.
 
     distances: Optional[List[LengthType.Positive]], default: None
         Distance from the edge where to apply the spacings.
@@ -114,8 +114,8 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Optional[Union[LengthType.Positive, List[LengthType.Positive]]] = pd.Field(None)
-    distances: Optional[List[LengthType.Positive]] = pd.Field(None)
+    spacing: Optional[Union[LengthType.Positive, LengthType.PositiveArray]] = pd.Field()
+    distances: Optional[LengthType.PositiveArray] = pd.Field(None)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
     included_angle: AngleType.Positive = pd.Field(150 * u.deg)
@@ -125,15 +125,42 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
 
     @pd.model_validator(mode="after")
     def _check_spacing_format(self) -> Self:
-        if (self.distances and not isinstance(self.spacing, List)) or (
-            isinstance(self.spacing, List)
-            and (not self.distances or len(self.distances) != len(self.spacing))
-        ):
+        distances_state = None
+        spacing_state = None
+        if self.distances is not None:
+            distances_state = (True, len(self.distances))
+        else:
+            distances_state = (False, 0)
+
+        try:
+            spacing_state = (True, len(self.spacing))
+        except TypeError:
+            # spacing is a scalar
+            spacing_state = (False, 1)
+
+        if (
+            distances_state[0] and spacing_state[0] and (spacing_state[1] != distances_state[1])
+        ) or (distances_state[0] and not spacing_state[0]):
             raise ValueError(
                 f"When using a distance spacing specification both spacing ({self.spacing}) and distances"
-                + f"({self.distances}) fields must be Lists and the same length."
+                + f"({self.distances}) fields must be arrays and the same length."
             )
         return self
+
+    @pd.field_validator("spacing", "distances", mode="after")
+    @classmethod
+    def _check_spacings_increasing(cls, value):
+        if value is not None:
+            if isinstance(value.tolist(), List) and (sorted(value.tolist()) != value.tolist()):
+                raise ValueError("Spacings and distances must be increasing arrays.")
+        return value
+
+    @pd.field_validator("spacing", "distances", mode="before")
+    @classmethod
+    def _convert_list_to_unyt_array(cls, value):
+        if isinstance(value, List):
+            return u.unyt.unyt_array(value)
+        return value
 
     @pd.model_validator(mode="after")
     def _check_entity_lists(self) -> Self:
