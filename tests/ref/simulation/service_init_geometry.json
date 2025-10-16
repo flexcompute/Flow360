@@ -16,7 +16,8 @@
                 "value": 12.0,
                 "units": "degree"
             },
-            "preserve_thin_geometry": false
+            "preserve_thin_geometry": false,
+            "healing_gap_size": 0.0
         },
         "refinements": [],
         "volume_zones": [
