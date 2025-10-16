@@ -1,7 +1,25 @@
 {
+<<<<<<< HEAD
     "version": "25.7.4b0",
     "unit_system": {
         "name": "SI"
+=======
+  "version": "25.6.9b0",
+  "unit_system": {
+    "name": "SI"
+  },
+  "meshing": {
+    "refinement_factor": 1.0,
+    "gap_treatment_strength": 0.0,
+    "defaults": {
+      "boundary_layer_growth_rate": 1.2,
+      "curvature_resolution_angle": {
+        "units": "degree",
+        "value": 12.0
+      },
+      "surface_edge_growth_rate": 1.2,
+      "planar_face_tolerance": 1e-6
+>>>>>>> ce94a1eb ([Hotfix 25.6]: fix(): Supporting illegal scalar SectionalRadiuses in V1 json when converting to simulation.json (#1503))
     },
     "meshing": {
         "refinement_factor": 1.0,

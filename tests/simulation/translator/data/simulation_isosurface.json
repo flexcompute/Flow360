@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
     "version": "25.6.5",
+=======
+    "version": "25.6.9b0",
+>>>>>>> ce94a1eb ([Hotfix 25.6]: fix(): Supporting illegal scalar SectionalRadiuses in V1 json when converting to simulation.json (#1503))
     "unit_system": {
         "name": "Imperial"
     },
