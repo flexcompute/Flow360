@@ -147,6 +147,10 @@ def _parse_flow360_bet_disk_dict(
     log.info("You can print and correct the value and unit of `Omega` afterwards if needed.")
 
     updated_bet_dict["chord_ref"] = updated_bet_dict["chord_ref"] * mesh_unit
+
+    # Handle sectional_radiuses: convert scalar to list if needed (for backward compatibility)
+    if not isinstance(updated_bet_dict["sectional_radiuses"], list):
+        updated_bet_dict["sectional_radiuses"] = [updated_bet_dict["sectional_radiuses"]]
     updated_bet_dict["sectional_radiuses"] = updated_bet_dict["sectional_radiuses"] * mesh_unit
 
     if "blade_line_chord" in updated_bet_dict:

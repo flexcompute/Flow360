@@ -101,9 +101,19 @@ unit_system_manager = UnitSystemManager()
 def _encode_ndarray(x):
     """
     encoder for ndarray
+
+    For scalar values (ndim==0), convert to float.
+    For arrays (ndim>0), preserve as tuple/list even if size==1,
+    since Array types should remain as collections.
     """
+<<<<<<< HEAD
     if x.size == 1:
+=======
+    if x.ndim == 0:
+        # This is a true scalar (e.g., LengthType, not LengthType.Array)
+>>>>>>> 5acef475 (fix(): Supporting illegal scalar SectionalRadiuses in V1 json when converting to simulation.json (#1501))
         return float(x)
+    # This is an array (e.g., LengthType.Array), preserve as collection
     return tuple(x.tolist())
 
 
