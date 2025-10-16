@@ -101,9 +101,15 @@ unit_system_manager = UnitSystemManager()
 def _encode_ndarray(x):
     """
     encoder for ndarray
+
+    For scalar values (ndim==0), convert to float.
+    For arrays (ndim>0), preserve as tuple/list even if size==1,
+    since Array types should remain as collections.
     """
-    if x.size == 1:
+    if x.ndim == 0:
+        # This is a true scalar (e.g., LengthType, not LengthType.Array)
         return float(x)
+    # This is an array (e.g., LengthType.Array), preserve as collection
     return tuple(x.tolist())
 
 
