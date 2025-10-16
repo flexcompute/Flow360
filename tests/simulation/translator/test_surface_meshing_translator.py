@@ -631,14 +631,15 @@ def snappy_basic_refinements():
                     bodies=test_geometry.snappy_bodies["body1"],
                 ),
                 SnappySurfaceEdgeRefinement(
-                    spacing=4 * u.mm,
+                    spacing=[4 * u.mm],
+                    distances=[5 * u.mm],
                     min_elem=3,
                     included_angle=120 * u.deg,
                     regions=[test_geometry.snappy_bodies["body0"]["patch0"]],
                 ),
                 SnappySurfaceEdgeRefinement(
-                    spacing=[3 * u.mm, 5 * u.mm],
-                    distances=[1 * u.mm, 3 * u.mm],
+                    spacing=[3 * u.mm, 5e-3 * u.m],
+                    distances=[1 * u.mm, 3e-3 * u.m],
                     min_len=6 * u.mm,
                     regions=[test_geometry.snappy_bodies["*"]["patch1"]],
                     bodies=[test_geometry.snappy_bodies["body3"]],
@@ -986,7 +987,8 @@ def deep_sort_lists(obj):
 
 
 def _translate_and_compare(param, mesh_unit, ref_json_file: str, atol=1e-15):
-    param, _ = validate_params_with_context(param, "Geometry", "SurfaceMesh")
+    param, err = validate_params_with_context(param, "Geometry", "SurfaceMesh")
+    print(err)
     translated = get_surface_meshing_json(param, mesh_unit=mesh_unit)
     with open(
         os.path.join(

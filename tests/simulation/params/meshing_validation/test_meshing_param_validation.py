@@ -3,6 +3,7 @@ import pytest
 
 from flow360 import u
 from flow360.component.simulation.meshing_param.meshing_specs import (
+    BetaVolumeMeshingDefaults,
     OctreeSpacing,
     SnappySurfaceMeshingDefaults,
 )
@@ -385,6 +386,7 @@ def test_reuse_of_same_cylinder():
                                 spacing_circumferential=0.3,
                             )
                         ],
+                        defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[
                         RotationVolume(
@@ -449,6 +451,7 @@ def test_reuse_of_same_cylinder():
                             spacing=0.1,
                         )
                     ],
+                    defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                 ),
                 zones=[
                     RotationVolume(
@@ -515,6 +518,7 @@ def test_reuse_of_same_cylinder():
                                 spacing_circumferential=0.1,
                             ),
                         ],
+                        defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[AutomatedFarfield()],
                 )
@@ -560,6 +564,7 @@ def test_reuse_of_same_cylinder():
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             UniformRefinement(entities=[cylinder], spacing=0.2),
                         ],
+                        defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=1),
                     ),
                     zones=[AutomatedFarfield()],
                 )

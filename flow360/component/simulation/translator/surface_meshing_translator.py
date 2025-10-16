@@ -3,6 +3,8 @@
 from copy import deepcopy
 from typing import List
 
+from unyt import unyt_array
+
 from flow360.component.simulation.entity_info import GeometryEntityInfo
 from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRefinement
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
@@ -153,9 +155,14 @@ def apply_SnappySurfaceEdgeRefinement(
         edges["retainOnSmoothing"] = refinement.retain_on_smoothing
     if refinement.spacing is None:
         edges["edgeSpacing"] = defaults.min_spacing.value.item()
-    elif isinstance(refinement.spacing, List):
+    elif isinstance(refinement.spacing, unyt_array) and isinstance(
+        refinement.distances, unyt_array
+    ):
         edges["edgeSpacing"] = [
-            [dist.value.item(), spac.value.item()]
+            [
+                dist.value.item(),
+                remove_numerical_noise_from_spacing(spac, spacing_system).value.item(),
+            ]
             for (dist, spac) in zip(refinement.distances, refinement.spacing)
         ]
     else:

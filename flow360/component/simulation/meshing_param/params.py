@@ -406,7 +406,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                     if refinement.proximity_spacing is not None:
                         check_spacing(refinement.proximity_spacing, type(refinement).__name__)
                 if isinstance(refinement, SnappySurfaceEdgeRefinement):
-                    if refinement.distances:
+                    if refinement.distances is not None:
                         for spacing in refinement.spacing:
                             check_spacing(spacing, type(refinement).__name__)
                     else:
@@ -434,7 +434,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
     """
 
     type_name: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
-    defaults: BetaVolumeMeshingDefaults = pd.Field(BetaVolumeMeshingDefaults())
+    defaults: BetaVolumeMeshingDefaults = pd.Field()
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
