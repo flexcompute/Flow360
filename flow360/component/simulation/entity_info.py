@@ -44,8 +44,6 @@ GhostSurfaceTypes = Annotated[
     pd.Field(discriminator="private_attribute_entity_type_name"),
 ]
 
-GROUPED_SNAPPY = "Grouped with snappy name formatting."
-
 
 class EntityInfoModel(Flow360BaseModel, metaclass=ABCMeta):
     """Base model for asset entity info JSON"""
@@ -212,8 +210,6 @@ class GeometryEntityInfo(EntityInfoModel):
         if specified_attribute_name in entity_attribute_names:
             # pylint: disable=no-member, unsubscriptable-object
             return entity_full_list[entity_attribute_names.index(specified_attribute_name)]
-        if specified_attribute_name == GROUPED_SNAPPY:
-            return self._get_snappy_bodies()
 
         raise ValueError(
             f"The given attribute_name `{attribute_name}` is not found"
@@ -225,11 +221,6 @@ class GeometryEntityInfo(EntityInfoModel):
         Get the full list of boundaries.
         If attribute_name is supplied then ignore stored face_group_tag and use supplied one.
         """
-        if self.face_group_tag == GROUPED_SNAPPY and attribute_name is None:
-            all_boundaries = []
-            for body in self._get_list_of_entities(attribute_name, "snappy_body"):
-                all_boundaries += body.surfaces
-            return all_boundaries
         return self._get_list_of_entities(attribute_name, "face")
 
     def update_persistent_entities(self, *, asset_entity_registry: EntityRegistry) -> None:
@@ -382,23 +373,7 @@ class GeometryEntityInfo(EntityInfoModel):
     def _group_faces_by_snappy_format(self):
         registry = SnappyBodyRegistry()
 
-        existing_face_tag = None
-        if self.face_group_tag is not None:
-            existing_face_tag = self.face_group_tag
-
-        if existing_face_tag:
-            if existing_face_tag != GROUPED_SNAPPY:
-                log.info(
-                    f"Regrouping face entities using snappy name formatting (previous `{GROUPED_SNAPPY}`)."
-                )
-            registry = self._reset_grouping(entity_type_name="face", registry=registry)
-
-        registry = self.group_in_registry(
-            "snappy_body", attribute_name=GROUPED_SNAPPY, registry=registry
-        )
-
-        with model_attribute_unlock(self, "face_group_tag"):
-            self.face_group_tag = GROUPED_SNAPPY
+        registry = self.group_in_registry("snappy_body", attribute_name="faceId", registry=registry)
 
         return registry
 

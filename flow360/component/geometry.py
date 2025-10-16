@@ -271,7 +271,7 @@ class Geometry(AssetBase):
     @property
     def snappy_bodies(self):
         """Getter for the snappy registry."""
-        if hasattr(self, "snappy_body_registry") is False or self.snappy_body_registry is None:
+        if self.snappy_body_registry is None:
             raise Flow360ValueError(
                 "The faces in geometry are not grouped for snappy."
                 "Please use `group_faces_for_snappy` function to group them first."
@@ -442,7 +442,7 @@ class Geometry(AssetBase):
         """Reset the face grouping"""
         # pylint: disable=protected-access,no-member
         self.internal_registry = self._entity_info._reset_grouping("face", self.internal_registry)
-        if hasattr(self, "snappy_body_registry") is True and self.snappy_body_registry:
+        if self.snappy_body_registry is not None:
             self.snappy_body_registry = self.snappy_body._reset_grouping(
                 "face", self.snappy_body_registry
             )

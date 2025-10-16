@@ -728,6 +728,11 @@ class SnappyBody(EntityBase):
         "SurfaceGroupedEntityType", frozen=True
     )
     private_attribute_entity_type_name: Literal["SnappyBody"] = pd.Field("SnappyBody", frozen=True)
+    private_attribute_id: str = pd.Field(
+        default_factory=generate_uuid,
+        frozen=True,
+        description="Unique identifier for the entity. Used by front end to track entities and enable auto update etc.",
+    )
 
     surfaces: List[Surface] = pd.Field()
 
