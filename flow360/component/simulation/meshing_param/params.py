@@ -406,7 +406,7 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
                     if refinement.proximity_spacing is not None:
                         check_spacing(refinement.proximity_spacing, type(refinement).__name__)
                 if isinstance(refinement, SnappySurfaceEdgeRefinement):
-                    if refinement.distances:
+                    if refinement.distances is not None:
                         for spacing in refinement.spacing:
                             check_spacing(spacing, type(refinement).__name__)
                     else:
