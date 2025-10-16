@@ -114,7 +114,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Optional[Union[LengthType.Positive, LengthType.PositiveArray]] = pd.Field()
+    spacing: Optional[Union[LengthType.Positive, LengthType.PositiveArray]] = pd.Field(None)
     distances: Optional[LengthType.PositiveArray] = pd.Field(None)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)
@@ -140,7 +140,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
 
         if (
             distances_state[0] and spacing_state[0] and (spacing_state[1] != distances_state[1])
-        ) or (distances_state[0] and not spacing_state[0]):
+        ) or (distances_state[0] is not spacing_state[0]):
             raise ValueError(
                 f"When using a distance spacing specification both spacing ({self.spacing}) and distances"
                 + f"({self.distances}) fields must be arrays and the same length."

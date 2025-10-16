@@ -10,6 +10,7 @@ from flow360.component.simulation.meshing_param.params import (
 )
 from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
     SnappyRegionRefinement,
+    SnappySurfaceEdgeRefinement
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.primitives import Box, Cylinder, Surface
@@ -90,3 +91,46 @@ def test_snappy_refinements_validators():
                 )
             ],
         )
+
+def test_snappy_edge_refinement_valdators():
+    with pytest.raises(ValueError):
+        SnappySurfaceEdgeRefinement(
+            spacing=2*u.mm,
+            distances=[5*u.mm],
+            regions=[Surface(name="test")]
+        )
+
+    with pytest.raises(ValueError):
+        SnappySurfaceEdgeRefinement(
+            spacing=[2*u.mm, 3*u.mm],
+            distances=[5*u.mm],
+            regions=[Surface(name="test")]
+        )
+    
+    with pytest.raises(ValueError):
+        SnappySurfaceEdgeRefinement(
+            spacing=2*u.mm,
+            distances=5*u.mm,
+            regions=[Surface(name="test")]
+        )
+
+    with pytest.raises(ValueError):
+        SnappySurfaceEdgeRefinement(
+            spacing=[2*u.mm],
+            regions=[Surface(name="test")]
+        )
+
+    SnappySurfaceEdgeRefinement(
+        spacing=[2*u.mm],
+        distances=[5*u.mm],
+        regions=[Surface(name="test")]
+    )
+
+    SnappySurfaceEdgeRefinement(
+        regions=[Surface(name="test")]
+    )
+
+    SnappySurfaceEdgeRefinement(
+        spacing=2*u.mm,
+        regions=[Surface(name="test")]
+    )
