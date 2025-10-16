@@ -647,7 +647,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
                 self.values["ForceUnits"] = disk.force.units
                 self.values["MomentUnits"] = disk.moment.units
 
-    def compute_coefficients(self, params: SimulationParams):
+    def compute_coefficients(self, params: SimulationParams) -> ActuatorDiskCoefficientsCSVModel:
         """
         Compute disk coefficients from actuator disk forces and moments.
 
@@ -815,7 +815,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
 
-    def compute_coefficients(self, params: SimulationParams):
+    def compute_coefficients(self, params: SimulationParams) -> BETDiskCoefficientsCSVModel:
         """
         Compute disk coefficients from BET disk forces and moments.
 
@@ -884,7 +884,7 @@ class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
     remote_file_name: str = pd.Field(CaseDownloadable.POROUS_MEDIA.value, frozen=True)
     _err_msg = "Case does not have any porous media zones."
 
-    def compute_coefficients(self, params: SimulationParams):
+    def compute_coefficients(self, params: SimulationParams) -> PorousMediumCoefficientsCSVModel:
         """
         Compute porous medium coefficients from forces and moments.
 
