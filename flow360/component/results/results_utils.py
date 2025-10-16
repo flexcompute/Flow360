@@ -145,7 +145,7 @@ def _get_dynamic_pressure_in_flow360_unit(params: SimulationParams):
     else:
         v_ref = params.base_velocity
 
-    Mach_ref = params.convert_unit(value=v_ref, target_system="flow360")
+    Mach_ref = params.convert_unit(value=v_ref, target_system="flow360").value
     return 0.5 * Mach_ref * Mach_ref
 
 
@@ -290,6 +290,7 @@ class DiskCoefficientsComputation:
 
         # pylint:disable=protected-access
         env = _build_coeff_env(params)
+        print(f"env: {env}")
         out = _copy_time_columns(values)
 
         for disk_name, axis, center in DiskCoefficientsComputation._iter_disks(
