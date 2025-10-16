@@ -290,7 +290,6 @@ class DiskCoefficientsComputation:
 
         # pylint:disable=protected-access
         env = _build_coeff_env(params)
-        print(f"env: {env}")
         out = _copy_time_columns(values)
 
         for disk_name, axis, center in DiskCoefficientsComputation._iter_disks(
