@@ -114,7 +114,7 @@ class SnappySurfaceEdgeRefinement(Flow360BaseModel):
     refinement_type: Literal["SnappySurfaceEdgeRefinement"] = pd.Field(
         "SnappySurfaceEdgeRefinement", frozen=True
     )
-    spacing: Optional[Union[LengthType.Positive, LengthType.PositiveArray]] = pd.Field(None)
+    spacing: Optional[Union[LengthType.PositiveArray, LengthType.Positive]] = pd.Field(None)
     distances: Optional[LengthType.PositiveArray] = pd.Field(None)
     min_elem: Optional[pd.NonNegativeInt] = pd.Field(None)
     min_len: Optional[LengthType.NonNegative] = pd.Field(None)

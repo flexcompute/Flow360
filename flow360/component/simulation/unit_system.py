@@ -98,11 +98,11 @@ class UnitSystemManager:
 unit_system_manager = UnitSystemManager()
 
 
-def _encode_ndarray(x):
+def _encode_ndarray(x, enforce_vector=False):
     """
     encoder for ndarray
     """
-    if x.size == 1:
+    if x.size == 1 and not enforce_vector:
         return float(x)
     return tuple(x.tolist())
 
@@ -113,6 +113,14 @@ def _dimensioned_type_serializer(x):
     """
     # adding .expr helps to avoid degF/C becoming serialized as °F/C
     return {"value": _encode_ndarray(x.value), "units": str(x.units.expr)}
+
+
+def _dimensioned_vector_type_serializer(x):
+    """
+    encoder for dimensioned type (unyt_quantity, unyt_array, DimensionedType)
+    """
+    # adding .expr helps to avoid degF/C becoming serialized as °F/C
+    return {"value": _encode_ndarray(x.value, True), "units": str(x.units.expr)}
 
 
 def _check_if_input_is_nested_collection(value, nest_level):
@@ -594,7 +602,7 @@ class _DimensionedType(metaclass=ABCMeta):
             )
             cls_obj.__get_pydantic_json_schema__ = __get_pydantic_json_schema__
 
-            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_type_serializer)]
+            return Annotated[cls_obj, pd.PlainSerializer(_dimensioned_vector_type_serializer)]
 
     # pylint: disable=too-few-public-methods
     class _MatrixType:

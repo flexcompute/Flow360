@@ -17,7 +17,7 @@
                         },
                         "gapSpacingReduction": 3,
                         "edges":{
-                            "edgeSpacing": 4,
+                            "edgeSpacing": [[5, 4]],
                             "minElem": 3,
                             "includedAngle": 120,
                             "retainOnSmoothing": true
