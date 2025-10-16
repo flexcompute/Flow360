@@ -5,8 +5,9 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from functools import lru_cache
 from itertools import chain
-from typing import Any, List, Literal, Set, get_origin
+from typing import Any, List, Literal, Set, get_args, get_origin
 
 import pydantic as pd
 import rich
@@ -116,7 +117,22 @@ class Flow360BaseModel(pd.BaseModel):
 
     def __init__(self, filename: str = None, **kwargs):
         model_dict = self._handle_file(filename=filename, **kwargs)
-        super().__init__(**model_dict)
+        try:
+            super().__init__(**model_dict)
+        except pd.ValidationError as e:  # noqa: B904
+            validation_errors = e.errors()
+            for i, error in enumerate(validation_errors):
+                ctx = error.get("ctx")
+                if not isinstance(ctx, dict) or ctx.get("relevant_for") is None:
+                    loc_tuple = tuple(error.get("loc", ()))
+                    rf = self.__class__._infer_relevant_for_cached(tuple(loc_tuple))
+                    if rf is not None:
+                        new_ctx = {} if not isinstance(ctx, dict) else dict(ctx)
+                        new_ctx["relevant_for"] = list(rf)
+                        validation_errors[i]["ctx"] = new_ctx
+            raise pd.ValidationError.from_exception_data(
+                title=self.__class__.__name__, line_errors=validation_errors
+            )
 
     @classmethod
     def _handle_dict(cls, **kwargs):
@@ -267,7 +283,6 @@ class Flow360BaseModel(pd.BaseModel):
         """
 
         validators = [
-            ("wrap", "populate_ctx_to_error_messages"),
             ("before", "validate_conditionally_required_field"),
         ]
         fields_to_validate = []
@@ -324,30 +339,96 @@ class Flow360BaseModel(pd.BaseModel):
 
         return value
 
-    @pd.field_validator("*", mode="wrap")
     @classmethod
-    def populate_ctx_to_error_messages(cls, values, handler, info) -> Any:
+    @lru_cache(maxsize=4096)
+    def _infer_relevant_for_cached(cls, loc: tuple) -> tuple | None:
+        """Infer relevant_for along the loc path starting at this model class.
+
+        Returns a tuple of strings or None if not found.
         """
-        this validator populates ctx messages of fields tagged with "relevant_for" context
-        it will populate to all child messages
-        """
-        try:
-            return handler(values)
-        except pd.ValidationError as e:
-            validation_errors = e.errors()
-            relevant_for = cls._get_field_context(info, "relevant_for")
-            if relevant_for is not None:
-                for i, error in enumerate(validation_errors):
-                    ctx = error.get("ctx", {})
-                    if ctx.get("relevant_for") is None:
-                        # Enforce the relevant_for to be a list for consistency
-                        ctx["relevant_for"] = (
-                            relevant_for if isinstance(relevant_for, list) else [relevant_for]
-                        )
-                    validation_errors[i]["ctx"] = ctx
-            raise pd.ValidationError.from_exception_data(
-                title=cls.__class__.__name__, line_errors=validation_errors
-            )
+        model: type = cls
+        last_relevant = None
+        for seg in loc:
+            if not (isinstance(model, type) and issubclass(model, Flow360BaseModel)):
+                break
+            fields = getattr(model, "model_fields", None)
+            if (
+                not isinstance(seg, str)
+                or not fields
+                or seg not in fields  # pylint: disable=unsupported-membership-test
+            ):
+                break
+            field_info = fields[seg]  # pylint: disable=unsubscriptable-object
+            extra = getattr(field_info, "json_schema_extra", None)
+            if isinstance(extra, dict):
+                rf = extra.get("relevant_for")
+                if rf is not None:
+                    last_relevant = rf
+
+            next_model = cls._first_model_type_from(field_info)
+            if next_model is None:
+                break
+            model = next_model
+
+        if last_relevant is None:
+            return None
+        if isinstance(last_relevant, list):
+            return tuple(last_relevant)
+        return (last_relevant,)
+
+    @staticmethod
+    def _first_model_type_from(field_info) -> type | None:
+        """Extract first Flow360BaseModel subclass from a field's annotation."""
+        annotation = getattr(field_info, "annotation", None)
+        return Flow360BaseModel._extract_model_type(annotation)
+
+    @staticmethod
+    def _extract_model_type(tp) -> type | None:
+        # pylint: disable=too-many-branches, too-many-return-statements
+        if tp is None:
+            return None
+        if isinstance(tp, type):
+            try:
+                if issubclass(tp, Flow360BaseModel):
+                    return tp
+            except TypeError:
+                return None
+            return None
+        origin = get_origin(tp)
+        if origin is None:
+            return None
+        # typing.Annotated
+        if str(origin) == "typing.Annotated":
+            args = get_args(tp)
+            if args:
+                return Flow360BaseModel._extract_model_type(args[0])
+            return None
+        # Optional/Union
+        if origin is Literal:
+            return None
+        if str(origin) == "typing.Union":
+            for arg in get_args(tp):
+                mt = Flow360BaseModel._extract_model_type(arg)
+                if mt is not None:
+                    return mt
+            return None
+        # Containers: List[T], Dict[K,V], Tuple[...] (take first value-like arg)
+        args = get_args(tp)
+        if not args:
+            return None
+        # For Dict[K,V], prefer V; else iterate args
+        dict_types = (dict,)
+        from typing import Dict as TypingDict  # pylint: disable=import-outside-toplevel
+
+        if origin in (*dict_types, TypingDict) and len(args) == 2:
+            start_index = 1
+        else:
+            start_index = 0
+        for arg in args[start_index:]:
+            mt = Flow360BaseModel._extract_model_type(arg)
+            if mt is not None:
+                return mt
+        return None
 
     # Note: to_solver architecture will be reworked in favor of splitting the models between
     # the user-side and solver-side models (see models.py and models_avl.py for reference

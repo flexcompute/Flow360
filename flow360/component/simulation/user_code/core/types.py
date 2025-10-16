@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import ast
-import copy
 import re
 import textwrap
 from enum import Enum
@@ -1529,8 +1528,34 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
                 # An undefined variable is found. Validation will handle this.
                 pass
 
-    def _collect_expressions_recursive(data, used_expressions: set):
-        """Recursively collect expressions from nested data structures."""
+    def _collect_expressions_recursive(
+        data,
+        used_expressions: set,
+        current_path: tuple[str, ...] = (),
+        exclude_paths: set[tuple[str, ...]] = (
+            ("private_attribute_asset_cache", "variable_context"),
+        ),
+        seen_ids: set[int] | None = None,
+    ):
+        # pylint: disable=too-many-branches
+        """
+        Recursively collect expressions from nested data structures.
+
+        current_path tracks the traversal keys from the root. If current_path matches
+        any tuple in exclude_paths, the sub-tree is skipped. seen_ids prevents revisiting
+        the same object multiple times when shared references exist.
+        """
+        if seen_ids is None:
+            seen_ids = set()
+
+        if current_path in exclude_paths:
+            return
+
+        obj_id = id(data)
+        if obj_id in seen_ids:
+            return
+        seen_ids.add(obj_id)
+
         if isinstance(data, dict):
             # Check if this dict is a UserVariable
             if _is_user_variable(data):
@@ -1554,13 +1579,25 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
                     used_expressions.add(data.get("expression"))
 
             # Recursively process all values in the dict
-            for value in data.values():
-                _collect_expressions_recursive(value, used_expressions)
+            for key, value in data.items():
+                _collect_expressions_recursive(
+                    value,
+                    used_expressions,
+                    current_path + (key,),
+                    exclude_paths,
+                    seen_ids,
+                )
 
         elif isinstance(data, list):
             # Recursively process all items in the list
-            for item in data:
-                _collect_expressions_recursive(item, used_expressions)
+            for idx, item in enumerate(data):
+                _collect_expressions_recursive(
+                    item,
+                    used_expressions,
+                    current_path + (str(idx),),
+                    exclude_paths,
+                    seen_ids,
+                )
 
     if (
         "private_attribute_asset_cache" not in param_as_dict
@@ -1569,12 +1606,12 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
         return [], []
 
     used_expressions: set[str] = set()
-    param_as_dict_without_project_variables = copy.deepcopy(param_as_dict)
-    param_as_dict_without_project_variables["private_attribute_asset_cache"][
-        "variable_context"
-    ] = []
-
-    _collect_expressions_recursive(param_as_dict_without_project_variables, used_expressions)
+    _collect_expressions_recursive(
+        param_as_dict,
+        used_expressions,
+        current_path=(),
+        exclude_paths={("private_attribute_asset_cache", "variable_context")},
+    )
 
     dependent_expressions = set()
 
