@@ -29,7 +29,6 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.utils import (
     _local_download_overwrite,
     formatting_validation_errors,
-    remove_properties_by_name,
     validate_type,
 )
 from flow360.exceptions import (
@@ -147,7 +146,7 @@ class AssetBase(metaclass=ABCMeta):
                 "[Internal] Could not find project_entity_info in the asset's simulation settings."
             )
         entity_info_dict = asset_cache["project_entity_info"]
-        entity_info_dict = remove_properties_by_name(entity_info_dict, "_id")
+        entity_info_dict = SimulationParams._sanitize_params_dict(entity_info_dict)
         # pylint: disable=protected-access
         try:
             asset_obj._entity_info = parse_entity_info_model(entity_info_dict)

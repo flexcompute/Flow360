@@ -23,7 +23,10 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
-from flow360.component.simulation.framework.updater_utils import Flow360Version
+from flow360.component.simulation.framework.updater_utils import (
+    Flow360Version,
+    recursive_remove_key,
+)
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -103,7 +106,6 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
 )
-from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -187,12 +189,15 @@ class _ParamModelBase(Flow360BaseModel):
             )
         return model_dict, forward_compatibility_mode
 
-    @classmethod
-    def _sanitize_params_dict(cls, model_dict):
+    @staticmethod
+    def _sanitize_params_dict(model_dict):
         """
+        !!!WARNING!!!: This function changes the input dict in place!!!
+
         Clean the redundant content in the params dict from WebUI
         """
-        model_dict = remove_properties_by_name(model_dict, "_id")
+        recursive_remove_key(model_dict, "_id")
+
         return model_dict
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):

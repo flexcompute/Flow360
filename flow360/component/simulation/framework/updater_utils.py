@@ -8,6 +8,23 @@ import numpy as np
 
 from flow360.version import __version__
 
+
+def recursive_remove_key(data, key: str):
+    """Recursively remove a key from nested dict/list structures in place.
+
+    This function performs an in-place traversal without unnecessary allocations
+    to preserve performance. It handles arbitrarily nested combinations of
+    dictionaries and lists.
+    """
+    if isinstance(data, dict):
+        data.pop(key, None)
+        for value in data.values():
+            recursive_remove_key(value, key)
+    elif isinstance(data, list):
+        for element in data:
+            recursive_remove_key(element, key)
+
+
 PYTHON_API_VERSION_REGEXP = r"^(\d+)\.(\d+)\.(\d+)(?:b(\d+))?$"
 
 

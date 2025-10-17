@@ -1085,6 +1085,13 @@ def test_isosurface_iso_value_in_unit_system():
         debug=True,
     )
 
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_isosurface.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
+
     params_as_dict["outputs"][2]["entities"]["items"][0]["field"]["name"] = "uuu"
     params_validated, errors, _ = validate_model(
         params_as_dict=params_as_dict,
