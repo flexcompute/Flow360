@@ -599,9 +599,9 @@ class Solid(PDEModelBase):
             if isinstance(entity, CustomVolume):
                 if not entity.enforceTetOnly:
                     raise ValueError(
-                            "CustomVolume object must be meshed with "
-                            "the flag enforceTetOnly set to 'True'"
-                          )
+                        "CustomVolume object must be meshed with "
+                        "the flag enforceTetOnly set to 'True'"
+                    )
         return v
 
 
