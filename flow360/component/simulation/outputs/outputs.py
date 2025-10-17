@@ -679,7 +679,7 @@ class ForceOutput(_OutputBase):
     >>> fl.ForceOutput(
     ...     name="force_output_wings",
     ...     entities=[volume_mesh["wing1"], volume_mesh["wing2"]],
-    ...     coefficient=["CL", "CD"]
+    ...     output_fields=["CL", "CD"]
     ... )
 
     ====
@@ -692,7 +692,7 @@ class ForceOutput(_OutputBase):
             description="List of boundaries where the force will be calculated.",
         )
     )
-    coefficients: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
+    output_fields: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
         description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
         "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
     )
@@ -1360,6 +1360,7 @@ OutputTypes = Annotated[
         StreamlineOutput,
         TimeAverageStreamlineOutput,
         ForceDistributionOutput,
+        ForceOutput,
     ],
     pd.Field(discriminator="output_type"),
 ]
