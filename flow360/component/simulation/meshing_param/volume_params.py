@@ -340,7 +340,32 @@ class RotationCylinder(RotationVolume):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class AutomatedFarfield(Flow360BaseModel):
+class _FarfieldBase(Flow360BaseModel):
+    """Base class for farfield parameters."""
+
+    enforced_half_model: Optional[Literal["+y", "-y"]] = (
+        pd.Field(  # In the future, we will support more half model types via Union.
+            None,
+            description="If set, trim to a half-model by slicing the geometry with the global Y=0 plane; "
+            "keep the '+y' or '-y' side for meshing and simulation.",
+        )
+    )
+
+    @pd.field_validator("enforced_half_model", mode="after")
+    @classmethod
+    def _validate_only_in_beta_mesher(cls, value):
+        """
+        Ensure that enforced_half_model objects are only processed with the beta mesher.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
+        if not value:
+            return value
+        raise ValueError("`enforced_half_model` is only supported with the beta mesher.")
+
+
+class AutomatedFarfield(_FarfieldBase):
     """
     Settings for automatic farfield volume zone generation.
 
@@ -412,7 +437,7 @@ class AutomatedFarfield(Flow360BaseModel):
         return values
 
 
-class UserDefinedFarfield(Flow360BaseModel):
+class UserDefinedFarfield(_FarfieldBase):
     """
     Setting for user defined farfield zone generation.
     This means the "farfield" boundaries are coming from the supplied geometry file
