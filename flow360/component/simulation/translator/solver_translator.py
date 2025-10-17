@@ -63,6 +63,7 @@ from flow360.component.simulation.outputs.output_fields import (
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
     ForceDistributionOutput,
+    ForceOutput,
     Isosurface,
     IsosurfaceOutput,
     MonitorOutputType,
@@ -1481,24 +1482,22 @@ def update_controls_modeling_constants(controls, translated):
             control["modelConstants"] = control.pop("modelingConstants")
 
 
-def check_moving_statistic_existence(params: SimulationParams):
-    """Check if moving statistic exists in the monitor outputs"""
-    if not params.outputs:
-        return False
-    for output in params.outputs:
-        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
-            continue
-        if output.moving_statistic is None:
-            continue
+def check_external_postprocessing_existence(params: SimulationParams):
+    """Check if external postprocessing needed."""
+    if params.models:
+        for model in params.models:
+            if isinstance(model, (BETDisk, ActuatorDisk, PorousMedium)):
+                return True
+    if params.outputs:
+        for output in params.outputs:
+            if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+                continue
+            if not isinstance(output, ForceOutput) and output.moving_statistic is None:
+                continue
+            return True
+    if params.run_control and bool(params.run_control.stopping_criteria):
         return True
     return False
-
-
-def check_stopping_criterion_existence(params: SimulationParams):
-    """Check if stopping criterion exists in the Fluid model"""
-    if not params.run_control:
-        return False
-    return bool(params.run_control.stopping_criteria)
 
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
@@ -1901,12 +1900,9 @@ def get_solver_json(
 
     ##:: Step 11: Get run control settings
     translated["runControl"] = {}
-    translated["runControl"]["shouldCheckStopCriterion"] = check_stopping_criterion_existence(
-        input_params
+    translated["runControl"]["externalProcessMonitorOutput"] = (
+        check_external_postprocessing_existence(input_params)
     )
-    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
-        input_params
-    ) or check_stopping_criterion_existence(input_params)
     if translated["runControl"]["externalProcessMonitorOutput"]:
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
