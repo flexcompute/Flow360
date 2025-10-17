@@ -2126,6 +2126,42 @@ def test_check_duplicate_isosurface_names():
         )
 
 
+def test_check_solid_cht_custom_volume_has_tets():
+    message = "CustomVolume object must be meshed with the flag enforceTetOnly set to 'True'"
+    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+        zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
+        solid_model = Solid(
+            volumes=[zone_2],
+            material=aluminum,
+            volumetric_heat_source="0",
+            initial_condition=HeatEquationInitialCondition(temperature="10"),
+        )
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    boundary_layer_first_layer_thickness=1e-4,
+                    planar_face_tolerance=1e-4,
+                ),
+                volume_zones=[
+                    zone_2,
+                    UserDefinedFarfield(),
+                ],
+            ),
+            models=[
+                solid_model,
+            ],
+            private_attribute_asset_cache=AssetCache(
+                use_inhouse_mesher=True,
+                project_entity_info=SurfaceMeshEntityInfo(
+                    boundaries=[
+                        Surface(name="face1"),
+                        Surface(name="face2"),
+                    ]
+                ),
+            ),
+        )
+
+
 def test_check_custom_volume_in_volume_zones():
     zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
     zone_2.axes = [(1, 0, 0), (0, 1, 0)]

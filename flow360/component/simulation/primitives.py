@@ -655,6 +655,9 @@ class CustomVolume(_VolumeEntityBase):
     boundaries: EntityList[Surface] = pd.Field(
         description="The surfaces that define the boundaries of the custom volume."
     )
+    enforceTetOnly: bool = pd.Field(
+        False, description="Must be True for Solid zones to run CHT solver"
+    )
     private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     axes: Optional[OrthogonalAxes] = pd.Field(None, description="")  # Porous media support
