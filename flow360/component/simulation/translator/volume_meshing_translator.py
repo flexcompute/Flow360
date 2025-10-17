@@ -208,6 +208,7 @@ def _get_custom_volumes(volume_zones: list):
                     "patches": sorted(
                         [surface.name for surface in zone.boundaries.stored_entities]
                     ),
+                    "enforceTetOnly": zone.enforceTetOnly,
                 }
             )
     if custom_volumes:
