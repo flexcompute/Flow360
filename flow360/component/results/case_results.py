@@ -875,7 +875,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 class BETDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for BET disk coefficients output."""
 
-    remote_file_name: str = pd.Field("bet_disk_coefficients.csv", frozen=True)
+    remote_file_name: str = pd.Field("bet_disk_coefficients_v2.csv", frozen=True)
 
 
 class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
