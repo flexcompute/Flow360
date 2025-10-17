@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import threading
 from enum import Enum
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -18,6 +18,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+from flow360.component.geometry_tree import FilterExpression, GeometryTree
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -235,6 +236,10 @@ class Geometry(AssetBase):
     _web_api_class = Flow360Resource
     _entity_info_class = GeometryEntityInfo
     _cloud_resource_type_name = "Geometry"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._geometry_tree: Optional[GeometryTree] = None
 
     @property
     def face_group_tag(self):
@@ -568,3 +573,106 @@ class Geometry(AssetBase):
 
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
+
+    # ========== Tree-based face grouping methods ==========
+
+    def load_geometry_tree(self, tree_json_path: str) -> None:
+        """
+        Load Geometry hierarchy tree from JSON file
+
+        Parameters
+        ----------
+        tree_json_path : str
+            Path to the tree JSON file generated from Geometry hierarchy extraction
+
+        Examples
+        --------
+        >>> geometry = Geometry.from_cloud("geom_id")
+        >>> geometry.load_geometry_tree("tree.json")
+        """
+        self._geometry_tree = GeometryTree(tree_json_path)
+        log.info(f"Loaded Geometry tree with {len(self._geometry_tree.all_faces)} faces")
+
+    def create_face_group(self, name: str, filter: FilterExpression) -> List[str]:
+        """
+        Create a face group based on Geometry tree filtering
+
+        This method filters nodes in the Geometry hierarchy tree and groups all faces
+        under matching nodes. If any faces already belong to another group, they
+        will be reassigned to the new group.
+
+        Parameters
+        ----------
+        name : str
+            Name of the face group
+        filter : FilterExpression
+            Filter expression to match nodes in the tree. Use Type, Name operators
+            to build filter expressions.
+
+        Returns
+        -------
+        List[str]
+            List of face UUIDs in the created group
+
+        Examples
+        --------
+        >>> from flow360.component.geometry_tree import Type, Name, NodeType
+        >>> geometry.create_face_group(
+        ...     name="wing",
+        ...     filter=(Type == NodeType.FRMFeature) & Name.contains("wing")
+        ... )
+        """
+        if self._geometry_tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
+            )
+
+        face_nodes = self._geometry_tree.create_face_group(name, filter)
+        face_uuids = [face.uuid for face in face_nodes if face.uuid]
+
+        log.info(f"Created face group '{name}' with {len(face_uuids)} faces")
+        return face_uuids
+
+    @property
+    def face_groups(self) -> Dict[str, int]:
+        """
+        Get dictionary of face groups and their face counts
+
+        Returns
+        -------
+        Dict[str, int]
+            Dictionary mapping group names to number of faces in each group
+
+        Examples
+        --------
+        >>> geometry.face_groups
+        {'wing': 45, 'fuselage': 32, 'tail': 18}
+        """
+        if self._geometry_tree is None:
+            return {}
+        return {
+            name: len(faces) for name, faces in self._geometry_tree.face_groups.items()
+        }
+
+    def print_face_grouping_stats(self) -> None:
+        """
+        Print statistics about face grouping
+
+        Examples
+        --------
+        >>> geometry.print_face_grouping_stats()
+        === Face Grouping Statistics ===
+        Total faces: 95
+        Faces in groups: 95
+
+        Face groups (3):
+          - wing: 45 faces
+          - fuselage: 32 faces
+          - tail: 18 faces
+        =================================
+        """
+        if self._geometry_tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
+            )
+        self._geometry_tree.print_grouping_stats()
