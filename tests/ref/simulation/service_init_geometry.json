@@ -23,7 +23,8 @@
             {
                 "type": "AutomatedFarfield",
                 "name": "Farfield",
-                "method": "auto"
+                "method": "auto",
+                "relative_size": 50.0
             }
         ]
     },

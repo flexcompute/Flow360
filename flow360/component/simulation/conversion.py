@@ -371,7 +371,9 @@ def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.U
     params : SimulationParams
         The parameters needed for unit conversion.
     to_flow360_unit : bool, optional
-        If True, return the flow360 unit system.
+        Whether we want user input to be converted to flow360 unit system.
+        The reverse path requires different conversion logic (from solver output to non-flow360 unit system)
+        since the solver output is already re-normalized by `reference velocity` due to "velocityScale".
 
     Returns
     -------
@@ -386,14 +388,7 @@ def get_flow360_unit_system_liquid(params, to_flow360_unit: bool = False) -> u.U
     if to_flow360_unit:
         base_velocity = params.base_velocity
     else:
-        # For dimensionalization of Flow360 output
-        # The solver output is already re-normalized by `reference velocity` due to "velocityScale"
-        # So we need to find the `reference velocity`.
-        # `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
-        if params.operating_condition.reference_velocity_magnitude is not None:
-            base_velocity = (params.operating_condition.reference_velocity_magnitude).to("m/s")
-        else:
-            base_velocity = params.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        base_velocity = params._liquid_reference_velocity  # pylint:disable=protected-access
 
     time_unit = params.base_length / base_velocity
     return u.UnitSystem(
