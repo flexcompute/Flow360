@@ -101,6 +101,42 @@ class ReferenceGeometry(Flow360BaseModel):
     )
     private_attribute_area_settings: Optional[dict] = pd.Field(None)
 
+    @classmethod
+    def fill_defaults(cls, ref, params):  # type: ignore[override]
+        """Return a new ReferenceGeometry with defaults filled using SimulationParams.
+
+        Defaults when missing or when ref is None:
+        - area: 1 * (base_length)**2
+        - moment_center: (0,0,0) * base_length
+        - moment_length: (1,1,1) * base_length
+        """
+        # Note:
+        #  This helper avoids scattering default logic; consumers can always call this
+        #  to obtain a fully-specified reference geometry in solver units.
+        #  `params.base_length` provides the length unit for the project.
+
+        # Determine base length unit from params
+        base_length_unit = params.base_length  # LengthType quantity
+
+        # Start from provided or empty
+        if ref is None:
+            ref = cls()
+
+        # Compose output using provided values when available
+        area = ref.area
+        if area is None:
+            area = 1.0 * (base_length_unit**2)
+
+        moment_center = ref.moment_center
+        if moment_center is None:
+            moment_center = (0, 0, 0) * base_length_unit
+
+        moment_length = ref.moment_length
+        if moment_length is None:
+            moment_length = (1.0, 1.0, 1.0) * base_length_unit
+
+        return cls(area=area, moment_center=moment_center, moment_length=moment_length)
+
 
 class GeometryBodyGroup(EntityBase):
     """
@@ -410,6 +446,62 @@ class Cylinder(_VolumeEntityBase):
                 f"Cylinder inner radius ({self.inner_radius}) must be less than outer radius ({self.outer_radius})."
             )
         return self
+
+
+@final
+class AxisymmetricBody(_VolumeEntityBase):
+    """
+    :class:`AxisymmetricBody` class represents a generic body of revolution in three-dimensional space,
+    represented as a list[(Axial Position, Radial Extent)] profile polyline with arbitrary center and axial direction.
+    Expect first and last profile samples to connect to axis, i.e., have radius = 0.
+
+    Example
+    -------
+    >>> fl.AxisymmetricBody(
+    ...     name="cone_frustum_body",
+    ...     center=(0, 0, 0) * fl.u.inch,
+    ...     axis=(0, 0, 1),
+    ...     profile_curve = [(-1, 0) * fl.u.inch, (-1, 1) * fl.u.inch, (1, 2) * fl.u.inch, (1, 0) * fl.u.inch]
+    ... )
+
+    ====
+    """
+
+    private_attribute_entity_type_name: Literal["AxisymmetricBody"] = pd.Field(
+        "AxisymmetricBody", frozen=True
+    )
+    axis: Axis = pd.Field(description="The axis of the body of revolution.")
+    # pylint: disable=no-member
+    center: LengthType.Point = pd.Field(description="The center point of the body of revolution.")
+    profile_curve: List[LengthType.Pair] = pd.Field(
+        description="The (Axial, Radial) profile of the body of revolution."
+    )
+
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
+
+    @pd.field_validator("profile_curve", mode="after")
+    @classmethod
+    def _check_radial_profile_is_positive(cls, curve):
+        first_point = curve[0]
+        if first_point[1] != 0:
+            raise ValueError(
+                f"Expect first profile sample to be (Axial, 0.0). Found invalid point: {str(first_point)}."
+            )
+
+        last_point = curve[-1]
+        if last_point[1] != 0:
+            raise ValueError(
+                f"Expect last profile sample to be (Axial, 0.0). Found invalid point: {str(last_point)}."
+            )
+
+        for profile_point in curve[1:-1]:
+            if profile_point[1] < 0:
+                raise ValueError(
+                    f"Expect profile samples to be (Axial, Radial) samples with positive Radial."
+                    f" Found invalid point: {str(profile_point)}."
+                )
+
+        return curve
 
 
 class SurfacePrivateAttributes(Flow360BaseModel):

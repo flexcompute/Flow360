@@ -11,7 +11,6 @@ from typing import Iterable, List, Literal, Optional, Union
 
 import pydantic as pd
 import typing_extensions
-from PrettyPrint import PrettyPrintTree
 from pydantic import PositiveInt
 
 from flow360.cloud.flow360_requests import LengthUnitType, RenameAssetRequestV2
@@ -49,7 +48,12 @@ from flow360.component.utils import (
     wrapstring,
 )
 from flow360.component.volume_mesh import VolumeMeshV2
-from flow360.exceptions import Flow360FileError, Flow360ValueError, Flow360WebError
+from flow360.exceptions import (
+    Flow360ConfigError,
+    Flow360FileError,
+    Flow360ValueError,
+    Flow360WebError,
+)
 from flow360.log import log
 from flow360.plugins.report.report import get_default_report_summary_template
 from flow360.version import __solver_version__
@@ -1290,6 +1294,9 @@ class Project(pd.BaseModel):
             Choose if the project tree is printed in horizontal (default) or vertical direction.
 
         """
+        # pylint: disable=import-outside-toplevel
+        # Defer importing since this package introduces 2 empty lines of output in the Jupyter Notebook when imported..
+        from PrettyPrint import PrettyPrintTree
 
         PrettyPrintTree(
             get_children=lambda x: x.children,
@@ -1440,7 +1447,7 @@ class Project(pd.BaseModel):
         params.pre_submit_summary()
 
         draft.update_simulation_params(params)
-        upload_imported_surfaces_to_draft(params, draft)
+        upload_imported_surfaces_to_draft(params, draft, fork_from)
 
         if draft_only:
             # pylint: disable=import-outside-toplevel
@@ -1685,6 +1692,12 @@ class Project(pd.BaseModel):
         Case | Draft
             The case asset or the draft if `draft_only` is True.
         """
+
+        if interpolate_to_mesh is not None and fork_from is None:
+            raise Flow360ConfigError(
+                "Interpolation to mesh is only supported when forking from a case."
+            )
+
         self._check_initialized()
         case_or_draft = self._run(
             params=params,

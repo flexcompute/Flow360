@@ -101,9 +101,15 @@ unit_system_manager = UnitSystemManager()
 def _encode_ndarray(x):
     """
     encoder for ndarray
+
+    For scalar values (ndim==0), convert to float.
+    For arrays (ndim>0), preserve as tuple/list even if size==1,
+    since Array types should remain as collections.
     """
-    if x.size == 1:
+    if x.ndim == 0:
+        # This is a true scalar (e.g., LengthType, not LengthType.Array)
         return float(x)
+    # This is an array (e.g., LengthType.Array), preserve as collection
     return tuple(x.tolist())
 
 
@@ -728,6 +734,13 @@ class _DimensionedType(metaclass=ABCMeta):
         return self._VectorType.get_class_object(
             self, allow_zero_component=False, allow_negative_value=False
         )
+
+    @classproperty
+    def Pair(self):
+        """
+        Array value which accepts length 2.
+        """
+        return self._VectorType.get_class_object(self, length=2)
 
     # pylint: disable=invalid-name
     @classproperty

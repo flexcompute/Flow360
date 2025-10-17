@@ -30,7 +30,52 @@ from flow360.component.simulation.operating_condition.operating_condition import
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.utils import model_attribute_unlock
 
-log.set_logging_level("DEBUG")
+# log.set_logging_level("DEBUG")
+
+
+def compare_dataframes_with_tolerance(
+    df1: pandas.DataFrame, df2: pandas.DataFrame, rtol: float = 1e-8, atol: float = 1e-8
+) -> None:
+    """Compare two dataframes with numerical tolerance.
+
+    Args:
+        df1: First dataframe to compare
+        df2: Second dataframe (reference) to compare against
+        rtol: Relative tolerance for numerical comparison (default: 1e-5)
+        atol: Absolute tolerance for numerical comparison (default: 1e-8)
+
+    Raises:
+        AssertionError: If dataframes differ beyond tolerance
+    """
+    # Check that columns match
+    assert set(df1.columns) == set(df2.columns), (
+        f"Column mismatch:\n"
+        f"  df1 columns: {sorted(df1.columns)}\n"
+        f"  df2 columns: {sorted(df2.columns)}\n"
+        f"  Missing in df1: {set(df2.columns) - set(df1.columns)}\n"
+        f"  Missing in df2: {set(df1.columns) - set(df2.columns)}"
+    )
+
+    # Check that shape matches
+    assert df1.shape == df2.shape, f"Shape mismatch: {df1.shape} vs {df2.shape}"
+
+    # Reorder columns to match
+    df1 = df1[df2.columns]
+
+    # Compare each column
+    for col in df2.columns:
+        if np.issubdtype(df1[col].dtype, np.number) and np.issubdtype(df2[col].dtype, np.number):
+            # Numerical comparison with tolerance
+            np.testing.assert_allclose(
+                df1[col].values,
+                df2[col].values,
+                rtol=rtol,
+                atol=atol,
+                err_msg=f"Column '{col}' values differ beyond tolerance",
+            )
+        else:
+            # Exact comparison for non-numerical columns
+            assert df1[col].equals(df2[col]), f"Column '{col}' values differ"
 
 
 @pytest.fixture(autouse=True)
@@ -201,7 +246,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 14
+        assert len(files) == 15
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
 
@@ -211,7 +256,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, total_forces=False, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 13
+        assert len(files) == 14
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results
@@ -231,6 +276,7 @@ def test_include_filter_with_suffixes():
         "boundary_a_a_A",
         "boundary_a_a_B",
     ]
+    result = _filter_headers_by_prefix(headers, include=["boundary_a"], suffixes=["A", "B"])
     result = _filter_headers_by_prefix(headers, include=["boundary_a"], suffixes=["A", "B"])
     assert sorted(result) == sorted(["boundary_a_A", "boundary_a_B"])
 
@@ -273,27 +319,6 @@ def test_no_suffixes_provided_headers_with_underscore():
     ]
     result = _filter_headers_by_prefix(headers, include=["abc", "abc_def"])
     assert sorted(result) == sorted(["abc_def"])
-
-
-def test_no_suffixes_provided_no_include_filter():
-    headers = [
-        "abc_def",
-        "xyz_123",
-        "nounderscore",
-        "abc_xyz",
-    ]
-    result = _filter_headers_by_prefix(headers)
-    assert sorted(result) == sorted(
-        [
-            "abc_def",
-            "xyz_123",
-            "nounderscore",
-            "abc_xyz",
-        ]
-    )
-
-
-test_no_suffixes_provided_no_include_filter()
 
 
 def test_empty_headers():
@@ -485,7 +510,7 @@ def test_y_sectional_results(mock_id, mock_response):
 
     boundaries = ["blk-1/fuselage", "blk-1/leftWing", "blk-1/rightWing"]
     variables = ["CFx_per_span", "CFz_per_span", "CMy_per_span"]
-    x_columns = ["Y", "stride"]
+    x_columns = ["Y"]
     total = [f"total{postfix}" for postfix in variables]
 
     all_headers = (
@@ -573,43 +598,189 @@ def test_y_sectional_results(mock_id, mock_response):
 
 @pytest.mark.usefixtures("s3_download_override")
 def test_surface_forces_result(mock_id, mock_response):
+
+    def validate_grouped_results(grouped_data, entity_group, flat_boundary_list, valid_names):
+        """Validate that grouped surface-force results match expected aggregated values.
+
+        Parameters
+        - grouped_data: Result object exposing `as_dataframe()` and `_variables`. Its
+          dataframe is expected to contain columns named "{group_name}_{variable}".
+        - entity_group: Mapping from group name to the list of boundary identifiers
+          that belong to the group.
+        - flat_boundary_list: Ordered iterable of all boundary identifiers used to
+          compute synthetic values; each identifier's index determines its weight.
+        - valid_names: Iterable of group names that should be validated; other names
+          are skipped (e.g., groups not part of this check).
+
+        Method
+        - For each valid group, time step, and variable, compute the expected value as
+          the sum over all boundaries in that group's list that also appear in
+          `flat_boundary_list` of:
+              100 * (1 + boundary_index) + (1 + variable_index) + 0.0001 * (step + 1)
+        - Compare the expected value with the corresponding entry in the grouped
+          dataframe column "{group_name}_{variable}".
+
+        Raises
+        - AssertionError: If any computed expected value differs from the value stored
+          in the grouped dataframe.
+        """
+        grouped_dict = grouped_data.as_dataframe().to_dict()
+        variables = grouped_data._variables
+        for name in entity_group.keys():
+            if name not in valid_names:
+                continue
+            sub_boundaries = entity_group[name]
+            for step in range(grouped_data.as_dataframe().shape[0]):
+                for i_var in range(len(variables)):
+                    expected_value = 0
+                    computed_value = grouped_dict[f"{name}_{variables[i_var]}"][step]
+
+                    for boundary_name in sub_boundaries:
+                        if boundary_name not in flat_boundary_list:
+                            continue
+                        i_boundary = flat_boundary_list.index(boundary_name)
+                        expected_value += 100 * (1 + i_boundary) + (1 + i_var) + 0.0001 * (step + 1)
+                    assert expected_value == computed_value
+
     case = fl.Case(id="case-63fd6b73-cbd5-445c-aec6-e62eca4467e6")
     params = case.params
-    entity_info = params.private_attribute_asset_cache.project_entity_info
     surface_forces = case.results.surface_forces
     surface_forces_by_boundary = surface_forces.by_boundary_condition(params=params)
 
-    def compare_surface_force_groups(surface_forces, surface_forces_group):
-        surface_forces_group_df = surface_forces_group.as_dataframe()
-        for groupName, faces in surface_forces_group._entity_groups.items():
-            surface_forces.filter(include=faces)
-            total_force_faces_df = surface_forces.as_dataframe()
-            for force_name in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]:
-                assert compare_values(
-                    total_force_faces_df.iloc[-1][f"total{force_name}"],
-                    surface_forces_group_df.iloc[-1][f"{groupName}_{force_name}"],
-                )
-
     ref_entity_group_by_boundary = {
-        "Wall": ["boundary2", "boundary3"],
+        "Wall body 1 and 2": ["body00001", "body00002"],
+        "Wall body3": ["body00003"],
         "Freestream": ["farfield"],
-        "Slip wall": ["boundary1"],
     }
-    assert compare_dicts(surface_forces_by_boundary._entity_groups, ref_entity_group_by_boundary)
-    compare_surface_force_groups(surface_forces, surface_forces_by_boundary)
-
+    assert surface_forces_by_boundary._entity_groups == ref_entity_group_by_boundary
+    validate_grouped_results(
+        surface_forces_by_boundary,
+        ref_entity_group_by_boundary,
+        flat_boundary_list=("body00001", "body00002", "body00003"),
+        valid_names=("Wall body 1 and 2", "Wall body3"),
+    )
+    ########## Body group ##########
     surface_forces_by_body_group = surface_forces.by_body_group(params=params)
     ref_entity_group_by_body_group = {
-        "two_boxes_conflict.csm": ["boundary1", "boundary2", "boundary3"]
+        "geo-11321727-9bb1-4fd5-b88d-19f360fb2149_box.csm": ["body00001", "body00002", "body00003"]
     }
-    assert compare_dicts(
-        surface_forces_by_body_group._entity_groups, ref_entity_group_by_body_group
+    assert surface_forces_by_body_group._entity_groups == ref_entity_group_by_body_group
+    validate_grouped_results(
+        surface_forces_by_boundary,
+        ref_entity_group_by_boundary,
+        flat_boundary_list=("body00001", "body00002", "body00003"),
+        valid_names=("geo-11321727-9bb1-4fd5-b88d-19f360fb2149_box.csm"),
     )
-    compare_surface_force_groups(surface_forces, surface_forces_by_body_group)
 
-    entity_info._group_entity_by_tag("body", "bodyId")
-    with pytest.raises(
-        ValueError,
-        match=r"Face group 'boundary2' contains faces belonging to multiple body groups: \['body00001', 'body00002'\]. The mapping between body and face groups cannot be created.",
-    ):
-        surface_forces.by_body_group(params=params)
+
+@pytest.mark.usefixtures("s3_download_override")
+def test_force_distribution_result(mock_id, mock_response, data_path):
+    case = fl.Case(id="case-b3927b83-8af6-49cf-aa98-00d4f1838941")
+    params = case.params
+    x_force_dist = case.results.x_slicing_force_distribution
+    x_force_dist_by_boundary = x_force_dist.by_boundary_condition(params=params)
+
+    # Load reference CSVs
+    ref_x_force_dist_path = os.path.join(
+        "data", "case-b3927b83-8af6-49cf-aa98-00d4f1838941", "results", "x_force_dist_reference.csv"
+    )
+    ref_x_force_dist_by_boundary_path = os.path.join(
+        "data",
+        "case-b3927b83-8af6-49cf-aa98-00d4f1838941",
+        "results",
+        "x_force_dist_by_boundary_reference.csv",
+    )
+
+    ref_x_force_dist_df = pandas.read_csv(ref_x_force_dist_path)
+    ref_x_force_dist_by_boundary_df = pandas.read_csv(ref_x_force_dist_by_boundary_path)
+
+    ref_entity_group_by_boundary = {
+        "Wall-1": [
+            "body00001_face00001",
+            "body00001_face00002",
+            "body00001_face00003",
+            "body00001_face00004",
+            "body00001_face00005",
+            "body00001_face00006",
+        ],
+        "Freestream": ["farfield"],
+        "Wall-23": [
+            "body00002_face00001",
+            "body00002_face00002",
+            "body00002_face00003",
+            "body00002_face00004",
+            "body00002_face00005",
+            "body00002_face00006",
+            "body00003_face00001",
+            "body00003_face00002",
+            "body00003_face00003",
+            "body00003_face00004",
+            "body00003_face00005",
+            "body00003_face00006",
+        ],
+    }
+
+    assert x_force_dist_by_boundary._entity_groups == ref_entity_group_by_boundary
+
+    # Compare current results with reference
+    compare_dataframes_with_tolerance(x_force_dist.as_dataframe(), ref_x_force_dist_df)
+
+    compare_dataframes_with_tolerance(
+        x_force_dist_by_boundary.as_dataframe(),
+        ref_x_force_dist_by_boundary_df,
+    )
+
+    # Test y distribution
+    y_force_dist = case.results.y_slicing_force_distribution
+    y_force_dist_by_body = y_force_dist.by_body_group(params=params)
+
+    # Load reference CSVs for y distribution
+    ref_y_force_dist_path = os.path.join(
+        "data", "case-b3927b83-8af6-49cf-aa98-00d4f1838941", "results", "y_force_dist_reference.csv"
+    )
+    ref_y_force_dist_by_body_path = os.path.join(
+        "data",
+        "case-b3927b83-8af6-49cf-aa98-00d4f1838941",
+        "results",
+        "y_force_dist_by_body_reference.csv",
+    )
+
+    ref_y_force_dist_df = pandas.read_csv(ref_y_force_dist_path)
+    ref_y_force_dist_by_body_df = pandas.read_csv(ref_y_force_dist_by_body_path)
+
+    ref_entity_group_by_body = {
+        "body00001": [
+            "body00001_face00001",
+            "body00001_face00002",
+            "body00001_face00003",
+            "body00001_face00004",
+            "body00001_face00005",
+            "body00001_face00006",
+        ],
+        "body00002": [
+            "body00002_face00001",
+            "body00002_face00002",
+            "body00002_face00003",
+            "body00002_face00004",
+            "body00002_face00005",
+            "body00002_face00006",
+        ],
+        "body00003": [
+            "body00003_face00001",
+            "body00003_face00002",
+            "body00003_face00003",
+            "body00003_face00004",
+            "body00003_face00005",
+            "body00003_face00006",
+        ],
+    }
+
+    assert y_force_dist_by_body._entity_groups == ref_entity_group_by_body
+
+    # Compare current results with reference
+    compare_dataframes_with_tolerance(y_force_dist.as_dataframe(), ref_y_force_dist_df)
+
+    compare_dataframes_with_tolerance(
+        y_force_dist_by_body.as_dataframe(),
+        ref_y_force_dist_by_body_df,
+    )

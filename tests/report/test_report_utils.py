@@ -35,12 +35,14 @@ def test_get_root_path():
     assert get_root_path(delta_di) == "total_forces/CL"
 
 
-def test_reporttemplate_requirements():
+def test_reporttemplate_requirements_basic():
     template = ReportTemplate(
         items=[
             Summary(),  # no requirements
             Inputs(),  # has params requirements
-            Table(data=["total_forces/CL", "volume_mesh/stats"], section_title="misc"),
+            Table(
+                data=["total_forces/CL", "volume_mesh/stats", "name", "id"], section_title="misc"
+            ),
             Chart2D(
                 x="params/version", y="y_slicing_force_distribution/Y"
             ),  # y_slicing_force_distribution, total_forces
@@ -48,6 +50,8 @@ def test_reporttemplate_requirements():
     )
     reqs = template.get_requirements()
     expected_keys = [
+        "name",
+        "id",
         "params",
         "y_slicing_force_distribution",
         "total_forces",
@@ -59,6 +63,8 @@ def test_reporttemplate_requirements():
     expected_reqs = {RequirementItem.from_data_key(data_key=k) for k in expected_keys}
     assert set(reqs) == expected_reqs
 
+
+def test_reporttemplate_requirements_advanced():
     template_advanced = ReportTemplate(
         items=[
             Inputs(),  # has params requirements

@@ -12,13 +12,21 @@ geometry.group_faces_by_tag("faceName")
 
 with fl.SI_unit_system:
     rotating_cylinder = fl.Cylinder(
-        name="Rotating zone", center=[0, 0, 0], axis=[1, 0, 0], outer_radius=2, height=0.8
+        name="Rotating zone",
+        center=[0, 0, 0],
+        axis=[1, 0, 0],
+        outer_radius=2,
+        height=0.8,
     )
     refinement_cylinder = fl.Cylinder(
-        name="Refinement zone", center=[1.9, 0, 0], axis=[1, 0, 0], outer_radius=2, height=4
+        name="Refinement zone",
+        center=[1.9, 0, 0],
+        axis=[1, 0, 0],
+        outer_radius=2,
+        height=4,
     )
     slice = fl.Slice(name="Slice", normal=[1, 0, 0], origin=[0.6, 0, 0])
-    volume_zone_rotating_cylinder = fl.RotationCylinder(
+    volume_zone_rotating_cylinder = fl.RotationVolume(
         name="Rotation cylinder",
         spacing_axial=0.05,
         spacing_radial=0.05,
@@ -30,11 +38,14 @@ with fl.SI_unit_system:
     params = fl.SimulationParams(
         meshing=fl.MeshingParams(
             defaults=fl.MeshingDefaults(
-                surface_max_edge_length=1, boundary_layer_first_layer_thickness=0.1 * fl.u.mm
+                surface_max_edge_length=1,
+                boundary_layer_first_layer_thickness=0.1 * fl.u.mm,
             ),
             refinements=[
                 fl.UniformRefinement(
-                    name="Uniform refinement", spacing=0.025, entities=[refinement_cylinder]
+                    name="Uniform refinement",
+                    spacing=0.025,
+                    entities=[refinement_cylinder],
                 )
             ],
             volume_zones=[farfield, volume_zone_rotating_cylinder],
@@ -63,7 +74,10 @@ with fl.SI_unit_system:
             step_size=0.0025,
             max_pseudo_steps=35,
             CFL=fl.AdaptiveCFL(
-                min=0.1, max=10000, max_relative_change=1, convergence_limiting_factor=0.5
+                min=0.1,
+                max=10000,
+                max_relative_change=1,
+                convergence_limiting_factor=0.5,
             ),
         ),
         outputs=[

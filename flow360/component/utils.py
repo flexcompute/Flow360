@@ -832,27 +832,41 @@ class GeometryFiles(InputFileModel):
             MeshFileFormat.STL.ext(),
         ]
 
-        def _detect_and_validate_mapbc_file(value):
-            value_without_mapbc = []
-            potential_mapbc_files = []
-            mapbc_files = []
-            for file in value:
-                if match_file_pattern([".mapbc"], file):
-                    mapbc_files.append(os.path.basename(file))
-                    continue
-                value_without_mapbc.append(file)
-                mesh_parser = MeshNameParser(input_mesh_file=file)
-                if mesh_parser.is_ugrid():
-                    potential_mapbc_files.append(get_mapbc_from_ugrid(file))
+        def _detect_and_validate_mapbc_file(file_paths: list):
+            """Split out .mapbc files, warn for orphans, and return non-.mapbc files.
 
-            for mapbc_file in mapbc_files:
-                if mapbc_file not in potential_mapbc_files:
+            The returned list excludes any `.mapbc` files so downstream validators only see
+            geometry/surface-mesh inputs. We also warn when a provided `.mapbc` file does not
+            correspond to any detected UGRID mesh file in the same input list.
+            """
+
+            # Separate mapbc and non-mapbc files first for clarity
+            mapbc_file_paths = [
+                file_path for file_path in file_paths if match_file_pattern([".mapbc"], file_path)
+            ]
+            non_mapbc_file_paths = [
+                file_path
+                for file_path in file_paths
+                if not match_file_pattern([".mapbc"], file_path)
+            ]
+
+            # Build the set of expected .mapbc paths based on detected UGRID mesh files
+            expected_mapbc_file_paths = set()
+            for file_path in non_mapbc_file_paths:
+                mesh_parser = MeshNameParser(input_mesh_file=file_path)
+                if mesh_parser.is_ugrid():
+                    expected_mapbc_file_paths.add(get_mapbc_from_ugrid(file_path))
+
+            # Warn for any provided .mapbc that does not match an expected path
+            for mapbc_file_path in mapbc_file_paths:
+                if mapbc_file_path not in expected_mapbc_file_paths:
                     log.warning(
-                        f"Cannot find the ugrid file associated with the given mapbc file: '{mapbc_file}' so "
-                        f"this mapbc file will be ignored."
+                        "Cannot find the ugrid file associated with the "
+                        f"given mapbc file: '{mapbc_file_path}' in the input list."
                     )
 
-            return value_without_mapbc
+            # Only return non-.mapbc files for further validation
+            return non_mapbc_file_paths
 
         def _validate_single_file(value=None):
             """Validate a single file and both geometry and surface mesh files are accepted"""

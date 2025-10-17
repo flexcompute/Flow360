@@ -19,6 +19,8 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     RotationCylinder,
+    RotationVolume,
+    StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
@@ -41,13 +43,20 @@ RefinementTypes = Annotated[
         BoundaryLayer,
         PassiveSpacing,
         UniformRefinement,
+        StructuredBoxRefinement,
         AxisymmetricRefinement,
     ],
     pd.Field(discriminator="refinement_type"),
 ]
 
 VolumeZonesTypes = Annotated[
-    Union[RotationCylinder, AutomatedFarfield, UserDefinedFarfield, CustomVolume],
+    Union[
+        RotationVolume,
+        RotationCylinder,
+        AutomatedFarfield,
+        UserDefinedFarfield,
+        CustomVolume,
+    ],
     pd.Field(discriminator="type"),
 ]
 
@@ -327,12 +336,20 @@ class MeshingParams(Flow360BaseModel):
         | UniformRefinement      |          YES           |           NO           |           NO           |
         +------------------------+------------------------+------------------------+------------------------+
 
+        +------------------------+------------------------+------------------------+
+        |                        |StructuredBoxRefinement | UniformRefinement      |
+        +------------------------+------------------------+------------------------+
+        |StructuredBoxRefinement |          NO            |           --           |
+        +------------------------+------------------------+------------------------+
+        | UniformRefinement      |          NO            |           NO           |
+        +------------------------+------------------------+------------------------+
+
         """
 
         usage = EntityUsageMap()
 
         for volume_zone in self.volume_zones if self.volume_zones is not None else []:
-            if isinstance(volume_zone, RotationCylinder):
+            if isinstance(volume_zone, (RotationVolume, RotationCylinder)):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, volume_zone.type)
@@ -340,7 +357,10 @@ class MeshingParams(Flow360BaseModel):
                 ]
 
         for refinement in self.refinements if self.refinements is not None else []:
-            if isinstance(refinement, (UniformRefinement, AxisymmetricRefinement)):
+            if isinstance(
+                refinement,
+                (UniformRefinement, AxisymmetricRefinement, StructuredBoxRefinement),
+            ):
                 # pylint: disable=protected-access
                 _ = [
                     usage.add_entity_usage(item, refinement.refinement_type)
@@ -350,9 +370,10 @@ class MeshingParams(Flow360BaseModel):
         error_msg = ""
         for entity_type, entity_model_map in usage.dict_entity.items():
             for entity_info in entity_model_map.values():
-                if len(entity_info["model_list"]) == 1 or sorted(
-                    entity_info["model_list"]
-                ) == sorted(["RotationCylinder", "UniformRefinement"]):
+                if len(entity_info["model_list"]) == 1 or sorted(entity_info["model_list"]) in [
+                    sorted(["RotationCylinder", "UniformRefinement"]),
+                    sorted(["RotationVolume", "UniformRefinement"]),
+                ]:
                     # RotationCylinder and UniformRefinement are allowed to be used together
                     continue
 
