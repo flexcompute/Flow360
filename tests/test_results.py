@@ -246,7 +246,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 14
+        assert len(files) == 15
         results.total_forces.load_from_local(os.path.join(temp_dir, "total_forces_v2.csv"))
         assert results.total_forces.values["CL"][0] == 0.400770406499246
 
@@ -256,7 +256,7 @@ def test_downloader(mock_id, mock_response):
     with tempfile.TemporaryDirectory() as temp_dir:
         results.download(all=True, total_forces=False, destination=temp_dir)
         files = os.listdir(temp_dir)
-        assert len(files) == 13
+        assert len(files) == 14
 
     case = deepcopy(fl.Case(id=mock_id))
     results = case.results

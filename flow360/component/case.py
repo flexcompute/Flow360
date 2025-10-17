@@ -53,6 +53,7 @@ from .results.case_results import (
     MinMaxStateResultCSVModel,
     MonitorsResultModel,
     NonlinearResidualsResultCSVModel,
+    PorousMediumResultCSVModel,
     ResultBaseModel,
     ResultsDownloaderSettings,
     ResultTarGZModel,
@@ -855,6 +856,9 @@ class CaseResultsModel(pd.BaseModel):
     )
     bet_forces: BETForcesResultCSVModel = pd.Field(
         default_factory=lambda: BETForcesResultCSVModel()
+    )
+    porous_media: PorousMediumResultCSVModel = pd.Field(
+        default_factory=lambda: PorousMediumResultCSVModel()
     )
     bet_forces_radial_distribution: BETForcesRadialDistributionResultCSVModel = pd.Field(
         default_factory=lambda: BETForcesRadialDistributionResultCSVModel()
