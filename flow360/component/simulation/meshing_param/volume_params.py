@@ -343,13 +343,25 @@ class RotationCylinder(RotationVolume):
 class _FarfieldBase(Flow360BaseModel):
     """Base class for farfield parameters."""
 
-    enforced_half_model: Optional[Literal["Y+", "Y-"]] = (
-        pd.Field(  # In the future, we will support more half models via Union.
+    enforced_half_model: Optional[Literal["+y", "-y"]] = (
+        pd.Field(  # In the future, we will support more half model types via Union.
             None,
             description="If set, trim to a half-model by slicing the geometry with the global Y=0 plane; "
-            "keep the 'Y+' or 'Y-' side for meshing and simulation.",
+            "keep the '+y' or '-y' side for meshing and simulation.",
         )
     )
+
+    @pd.field_validator("enforced_half_model", mode="after")
+    def _validate_only_in_beta_mesher(cls, value):
+        """
+        Ensure that enforced_half_model objects are only processed with the beta mesher.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
+        if not value:
+            return value
+        raise ValueError("`enforced_half_model` is only supported with the beta mesher.")
 
 
 class AutomatedFarfield(_FarfieldBase):

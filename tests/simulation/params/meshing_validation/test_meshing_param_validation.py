@@ -454,3 +454,13 @@ def test_quasi_3d_periodic_only_in_legacy_mesher():
     # does not raise with legacy mesher on
     with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
         my_farfield = AutomatedFarfield(method="quasi-3d-periodic")
+
+
+def test_enforced_half_model_only_in_beta_mesher():
+    # raises when beta mesher is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`enforced_half_model` is only supported with the beta mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
+            AutomatedFarfield(enforced_half_model="+y")

@@ -527,7 +527,7 @@ def test_gai_surface_mesher_refinements():
         )
         geometry["cube-holes.egads"].transformation = transformation
         geometry["cylinder.stl"].transformation = transformation
-        farfield = AutomatedFarfield()
+        farfield = AutomatedFarfield(enforced_half_model="+y")
         params = SimulationParams(
             meshing=MeshingParams(
                 defaults=MeshingDefaults(
