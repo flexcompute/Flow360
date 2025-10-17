@@ -126,8 +126,8 @@ from flow360.component.simulation.outputs.output_entities import (
 )
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
-    IsosurfaceOutput,
     ForceOutput,
+    IsosurfaceOutput,
     MovingStatistic,
     Observer,
     ProbeOutput,
