@@ -352,6 +352,7 @@ class _FarfieldBase(Flow360BaseModel):
     )
 
     @pd.field_validator("enforced_half_model", mode="after")
+    @classmethod
     def _validate_only_in_beta_mesher(cls, value):
         """
         Ensure that enforced_half_model objects are only processed with the beta mesher.
