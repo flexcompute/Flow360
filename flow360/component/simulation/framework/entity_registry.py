@@ -93,10 +93,7 @@ class EntityRegistry(Flow360BaseModel):
 
     def get_bucket(self, by_type: type[EntityBase]) -> EntityRegistryBucket:
         """Get the bucket of a certain type of entity."""
-        return EntityRegistryBucket(
-            self.internal_registry,
-            by_type.model_fields["private_attribute_registry_bucket_name"].default,
-        )
+        return EntityRegistryBucket(self.internal_registry, getattr(by_type, "entity_bucket"))
 
     def find_by_type(self, entity_class: type[EntityBase]) -> list[EntityBase]:
         """
@@ -157,7 +154,7 @@ class EntityRegistry(Flow360BaseModel):
         """
         # pylint: disable=no-member
         if entity_type is not None:
-            bucket_name = entity_type.model_fields["private_attribute_registry_bucket_name"].default
+            bucket_name = getattr(entity_type, "entity_bucket")
             if bucket_name in self.internal_registry.keys():
                 # pylint: disable=unsubscriptable-object
                 self.internal_registry[bucket_name].clear()

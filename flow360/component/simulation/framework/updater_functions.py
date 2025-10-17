@@ -35,10 +35,24 @@ def fix_ghost_sphere_schema(*, params_as_dict: dict):
 
 def is_entity_dict(data: dict):
     """Check if current dict is an Entity item"""
-    return data.get("name") and (
-        data.get("private_attribute_registry_bucket_name")
-        or data.get("private_attribute_entity_type_name")
-    )
+    return data.get("name") and (data.get("private_attribute_entity_type_name") is not None)
+
+
+def remove_entity_bucket_field(*, params_as_dict: dict):
+    """Recursively remove legacy private_attribute_registry_bucket_name from all entity dicts."""
+
+    def _recursive_remove(data):
+        if isinstance(data, dict):
+            if is_entity_dict(data=data):
+                data.pop("private_attribute_registry_bucket_name", None)
+            for value in data.values():
+                _recursive_remove(value)
+        elif isinstance(data, list):
+            for element in data:
+                _recursive_remove(element)
+
+    _recursive_remove(params_as_dict)
+    return params_as_dict
 
 
 def populate_entity_id_with_name(*, params_as_dict: dict):

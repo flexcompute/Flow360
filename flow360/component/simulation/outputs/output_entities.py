@@ -1,7 +1,7 @@
 """Output for simulation."""
 
 from abc import ABCMeta
-from typing import Literal, Optional, Union
+from typing import ClassVar, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -42,11 +42,11 @@ class _OutputItemBase(Flow360BaseModel):
 
 
 class _SliceEntityBase(EntityBase, metaclass=ABCMeta):
-    private_attribute_registry_bucket_name: Literal["SliceEntityType"] = "SliceEntityType"
+    entity_bucket: ClassVar[str] = "SliceEntityType"
 
 
 class _PointEntityBase(EntityBase, metaclass=ABCMeta):
-    private_attribute_registry_bucket_name: Literal["PointEntityType"] = "PointEntityType"
+    entity_bucket: ClassVar[str] = "PointEntityType"
 
 
 class Slice(_SliceEntityBase):

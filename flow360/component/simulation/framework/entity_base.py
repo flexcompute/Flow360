@@ -7,7 +7,7 @@ import hashlib
 import uuid
 from abc import ABCMeta
 from collections import defaultdict
-from typing import Annotated, List, Optional, Union, get_args, get_origin
+from typing import Annotated, ClassVar, List, Optional, Union, get_args, get_origin
 
 import pydantic as pd
 
@@ -36,7 +36,8 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
             The name of the entity instance, used for identification and retrieval.
     """
 
-    private_attribute_registry_bucket_name: str = "Invalid"
+    # Class-level bucket identifier; not serialized
+    entity_bucket: ClassVar[str] = "Invalid"
     private_attribute_entity_type_name: str = "Invalid"
     private_attribute_id: Optional[str] = pd.Field(
         None,
@@ -51,22 +52,52 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
     # Cached hash of the entity
     _hash_cache: str = pd.PrivateAttr(None)
 
-    def __init__(self, **data):
-        """
-        Initializes a new entity and registers it in the global registry.
+    def __init_subclass__(cls, **kwargs):  # type: ignore[override]
+        """Validate required class-level attributes at subclass creation time.
 
-        Parameters:
-            data: Keyword arguments containing initial values for fields declared in the entity.
+        This avoids per-instance checks and catches misconfigured subclasses early.
+
+        Rules:
+        - Every subclass must define a non-"Invalid" `entity_bucket` (class var).
+        - If a subclass explicitly defines `private_attribute_entity_type_name` in its own
+          class body, it must also be non-"Invalid". Intermediate abstract bases that do not
+          set an entity type are allowed.
         """
-        super().__init__(**data)
-        if self.entity_bucket == "Invalid":
+        super().__init_subclass__(**kwargs)
+        if cls is EntityBase:
+            return
+
+        def _resolve_class_attr(attr_name: str):
+            for base in cls.__mro__:
+                if attr_name in getattr(base, "__dict__", {}):
+                    return getattr(base, attr_name)
+            return None
+
+        bucket_value = _resolve_class_attr("entity_bucket")
+        if bucket_value is None or bucket_value == "Invalid":
             raise NotImplementedError(
-                f"private_attribute_registry_bucket_name is not defined in the entity class: {self.__class__.__name__}."
+                f"entity_bucket is not defined in the entity class: {cls.__name__}."
             )
-        if self.entity_type == "Invalid":
-            raise NotImplementedError(
-                f"private_attribute_entity_type_name is not defined in the entity class: {self.__class__.__name__}."
-            )
+
+        # Only enforce entity type when the subclass explicitly sets it.
+        if "private_attribute_entity_type_name" in cls.__dict__:
+            # entity_type remains a Pydantic field
+            def _resolve_field_default(field_name: str):
+                for base in cls.__mro__:
+                    if field_name in getattr(base, "__dict__", {}):
+                        raw_value = base.__dict__[field_name]
+                        return getattr(raw_value, "default", raw_value)
+                model_fields = getattr(cls, "model_fields", None)
+                if isinstance(model_fields, dict) and field_name in model_fields:
+                    field_info = model_fields[field_name]
+                    return getattr(field_info, "default", None)
+                return None
+
+            type_value = _resolve_field_default("private_attribute_entity_type_name")
+            if type_value is None or type_value == "Invalid":
+                raise NotImplementedError(
+                    f"private_attribute_entity_type_name is not defined in the entity class: {cls.__name__}."
+                )
 
     def copy(self, update: dict, **kwargs) -> EntityBase:  # pylint:disable=signature-differs
         """
@@ -96,8 +127,8 @@ class EntityBase(Flow360BaseModel, metaclass=ABCMeta):
 
     @property
     def entity_bucket(self) -> str:
-        """returns the bucket to which the entity belongs."""
-        return self.private_attribute_registry_bucket_name
+        """returns the bucket to which the entity belongs (class-level)."""
+        return type(self).entity_bucket
 
     @entity_bucket.setter
     def entity_bucket(self, value: str):

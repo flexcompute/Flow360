@@ -246,7 +246,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "name": "*",
                         "private_attribute_sub_components": []
@@ -268,7 +267,6 @@
             "type_name": "VolumeMeshEntityInfo",
             "zones": [
                 {
-                    "private_attribute_registry_bucket_name": "VolumetricEntityType",
                     "private_attribute_entity_type_name": "GenericVolume",
                     "private_attribute_id": "fluid",
                     "name": "fluid",
@@ -286,7 +284,6 @@
             ],
             "boundaries": [
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_id": "fluid/body00001",
                     "name": "fluid/body00001",
@@ -297,7 +294,6 @@
                     "private_attribute_color": null
                 },
                 {
-                    "private_attribute_registry_bucket_name": "SurfaceEntityType",
                     "private_attribute_entity_type_name": "Surface",
                     "private_attribute_id": "fluid/farfield",
                     "name": "fluid/farfield",

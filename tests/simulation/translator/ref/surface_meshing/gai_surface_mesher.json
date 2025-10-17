@@ -25,7 +25,6 @@
                 "entities": {
                     "stored_entities": [
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00001",
                             "name": "body00001_face00001",
@@ -35,7 +34,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00002",
                             "name": "body00001_face00002",
@@ -45,7 +43,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00003",
                             "name": "body00001_face00003",
@@ -55,7 +52,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00004",
                             "name": "body00001_face00004",
@@ -65,7 +61,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00005",
                             "name": "body00001_face00005",
@@ -75,7 +70,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00006",
                             "name": "body00001_face00006",
@@ -85,7 +79,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00002_face00001",
                             "name": "body00002_face00001",
@@ -95,7 +88,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00002_face00002",
                             "name": "body00002_face00002",
@@ -105,7 +97,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00002_face00003",
                             "name": "body00002_face00003",
@@ -115,7 +106,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00002_face00004",
                             "name": "body00002_face00004",
@@ -125,7 +115,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00002_face00005",
                             "name": "body00002_face00005",
@@ -135,7 +124,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00002_face00006",
                             "name": "body00002_face00006",
@@ -145,7 +133,6 @@
                             ]
                         },
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "cylinder.stl_body",
                             "name": "cylinder.stl_body",
@@ -167,7 +154,6 @@
                 "entities": {
                     "stored_entities": [
                         {
-                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
                             "private_attribute_entity_type_name": "Surface",
                             "private_attribute_id": "body00001_face00001",
                             "name": "body00001_face00001",
@@ -196,7 +182,6 @@
             "grouped_faces": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001",
                         "name": "body00001",
@@ -211,7 +196,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002",
                         "name": "body00002",
@@ -226,7 +210,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "cylinder.stl",
                         "name": "cylinder.stl",
@@ -238,7 +221,6 @@
                 ],
                 [
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00001",
                         "name": "body00001_face00001",
@@ -248,7 +230,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00002",
                         "name": "body00001_face00002",
@@ -258,7 +239,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00003",
                         "name": "body00001_face00003",
@@ -268,7 +248,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00004",
                         "name": "body00001_face00004",
@@ -278,7 +257,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00005",
                         "name": "body00001_face00005",
@@ -288,7 +266,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00001_face00006",
                         "name": "body00001_face00006",
@@ -298,7 +275,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002_face00001",
                         "name": "body00002_face00001",
@@ -308,7 +284,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002_face00002",
                         "name": "body00002_face00002",
@@ -318,7 +293,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002_face00003",
                         "name": "body00002_face00003",
@@ -328,7 +302,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002_face00004",
                         "name": "body00002_face00004",
@@ -338,7 +311,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002_face00005",
                         "name": "body00002_face00005",
@@ -348,7 +320,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "body00002_face00006",
                         "name": "body00002_face00006",
@@ -358,7 +329,6 @@
                         ]
                     },
                     {
-                        "private_attribute_registry_bucket_name": "SurfaceEntityType",
                         "private_attribute_entity_type_name": "Surface",
                         "private_attribute_id": "cylinder.stl_body",
                         "name": "cylinder.stl_body",
@@ -377,7 +347,6 @@
             "grouped_bodies": [
                 [
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "body00001",
                         "name": "body00001",
@@ -421,7 +390,6 @@
                         "mesh_exterior": true
                     },
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "body00002",
                         "name": "body00002",
@@ -465,7 +433,6 @@
                         "mesh_exterior": true
                     },
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "cylinder.stl",
                         "name": "cylinder.stl",
@@ -511,7 +478,6 @@
                 ],
                 [
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "cube-holes.egads",
                         "name": "cube-holes.egads",
@@ -570,7 +536,6 @@
                         "mesh_exterior": true
                     },
                     {
-                        "private_attribute_registry_bucket_name": "GeometryBodyGroupEntityType",
                         "private_attribute_entity_type_name": "GeometryBodyGroup",
                         "private_attribute_id": "cylinder.stl",
                         "name": "cylinder.stl",
