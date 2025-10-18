@@ -2,6 +2,7 @@
     "name": "BET disk",
     "type": "BETDisk",
     "entities": {
+        "selectors": null,
         "stored_entities": [
             {
                 "private_attribute_registry_bucket_name": "VolumetricEntityType",
