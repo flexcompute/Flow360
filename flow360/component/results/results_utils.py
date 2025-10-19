@@ -10,6 +10,7 @@ import numpy as np
 from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError
+from flow360.log import log
 
 # pylint:disable=invalid-name
 _CL = "CL"
@@ -116,6 +117,16 @@ def _get_lift_drag_direction(params: SimulationParams):
 
     if oc is None:
         raise Flow360ValueError("Operating condition is required for computing freestream vectors.")
+
+    # Check if it's GenericReferenceCondition which doesn't have alpha/beta
+    if oc.type_name == "GenericReferenceCondition":
+        log.info(
+            "Operating condition is `GenericReferenceCondition` without alpha/beta angles. "
+            "Assuming lift direction = (0, 0, 1), drag direction = (1, 0, 0)."
+        )
+        lift_dir = np.array([0.0, 0.0, 1.0], dtype=float)
+        drag_dir = np.array([1.0, 0.0, 0.0], dtype=float)
+        return lift_dir, drag_dir
 
     alpha_rad = float(oc.alpha.to("rad").value)
     beta_rad = float(oc.beta.to("rad").value)
@@ -290,7 +301,6 @@ class DiskCoefficientsComputation:
 
         # pylint:disable=protected-access
         env = _build_coeff_env(params)
-        print(f"env: {env}")
         out = _copy_time_columns(values)
 
         for disk_name, axis, center in DiskCoefficientsComputation._iter_disks(
