@@ -26,6 +26,9 @@ from flow360.component.simulation.validation.validation_context import (
 non_beta_mesher_context = ParamsValidationInfo({}, [])
 non_beta_mesher_context.is_beta_mesher = False
 
+non_gai_context = ParamsValidationInfo({}, [])
+non_gai_context.use_geometry_AI = False
+
 beta_mesher_context = ParamsValidationInfo({}, [])
 beta_mesher_context.is_beta_mesher = True
 
@@ -460,7 +463,15 @@ def test_enforced_half_model_only_in_beta_mesher():
     # raises when beta mesher is off
     with pytest.raises(
         pd.ValidationError,
-        match=r"`domain_type` is only supported with the beta mesher.",
+        match=r"`domain_type` is only supported when using both GAI surface mesher and beta volume mesher.",
     ):
         with ValidationContext(VOLUME_MESH, non_beta_mesher_context):
             AutomatedFarfield(domain_type="half_body_positive_y")
+
+    # raise when GAI is off
+    with pytest.raises(
+        pd.ValidationError,
+        match=r"`domain_type` is only supported when using both GAI surface mesher and beta volume mesher.",
+    ):
+        with ValidationContext(VOLUME_MESH, non_gai_context):
+            AutomatedFarfield(domain_type="full_body")

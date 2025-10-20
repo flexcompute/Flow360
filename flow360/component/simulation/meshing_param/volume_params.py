@@ -343,12 +343,13 @@ class RotationCylinder(RotationVolume):
 class _FarfieldBase(Flow360BaseModel):
     """Base class for farfield parameters."""
 
-    domain_type: Optional[Literal["half_body_positive_y", "half_body_negative_y"]] = (
+    domain_type: Optional[Literal["half_body_positive_y", "half_body_negative_y", "full_body"]] = (
         pd.Field(  # In the future, we will support more flexible half model types and full model via Union.
             None,
             description="""
             - half_body_positive_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '+y' side for meshing and simulation.
             - half_body_negative_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '-y' side for meshing and simulation.
+            - full_body: Keep the full body for meshing and simulation without attempting to add symmetry planes.
 
             Warning: When using AutomatedFarfield, setting `domain_type` overrides the 'auto' symmetry plane behavior.
             """,
@@ -359,14 +360,18 @@ class _FarfieldBase(Flow360BaseModel):
     @classmethod
     def _validate_only_in_beta_mesher(cls, value):
         """
-        Ensure that domain_type is only used with the beta mesher.
+        Ensure that domain_type is only used with the beta mesher and GAI.
         """
         validation_info = get_validation_info()
         if validation_info is None:
             return value
-        if not value:
+        if not value or (
+            validation_info.use_geometry_AI is True and validation_info.is_beta_mesher is True
+        ):
             return value
-        raise ValueError("`domain_type` is only supported with the beta mesher.")
+        raise ValueError(
+            "`domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
+        )
 
 
 class AutomatedFarfield(_FarfieldBase):
