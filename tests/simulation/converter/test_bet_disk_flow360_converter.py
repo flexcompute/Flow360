@@ -33,15 +33,14 @@ def test_single_flow360_bet_convert(atol=1e-15, rtol=1e-10, debug=False):
     del disk["private_attribute_input_cache"]["entities"]["stored_entities"][0][
         "private_attribute_id"
     ]
+    del disk["private_attribute_id"]
     with open("./ref/ref_single_bet_disk.json", mode="r") as fp:
         ref_dict = json.load(fp=fp)
     if debug:
         print(">>> disk = ", disk)
         print("=== disk ===\n", json.dumps(disk, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
-    assert compare_values(
-        ref_dict, disk, atol=atol, rtol=rtol, ignore_keys=["private_attribute_id"]
-    )
+    assert compare_values(ref_dict, disk, atol=atol, rtol=rtol)
 
     with pytest.raises(
         ValueError,

@@ -110,15 +110,14 @@ def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debu
     )
     translated = json.loads(translated)
     del translated["entities"]["stored_entities"][0]["private_attribute_id"]
+    del translated["private_attribute_id"]
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     if debug:
         print(">>> translated = ", translated)
         print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
-    assert compare_values(
-        ref_dict, translated, atol=atol, rtol=rtol, ignore_keys=["private_attribute_id"]
-    )
+    assert compare_values(ref_dict, translated, atol=atol, rtol=rtol)
 
 
 def test_translated_c81_params():

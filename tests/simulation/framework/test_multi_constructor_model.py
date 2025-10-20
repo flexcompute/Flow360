@@ -64,9 +64,7 @@ def get_aerospace_condition_using_from_mach_reynolds():
 def compare_objects_from_dict(dict1: dict, dict2: dict, object_class: type[Flow360BaseModel]):
     obj1 = object_class.model_validate(dict1)
     obj2 = object_class.model_validate(dict2)
-    assert obj1.model_dump_json(exclude={"private_attribute_id"}) == obj2.model_dump_json(
-        exclude={"private_attribute_id"}
-    )
+    assert obj1.model_dump_json() == obj2.model_dump_json()
 
 
 def test_full_model(
@@ -268,6 +266,7 @@ def test_BETDisk_multi_constructor_cache_only():
             "type_name": full_data["type_name"],
             "private_attribute_constructor": full_data["private_attribute_constructor"],
             "private_attribute_input_cache": full_data["private_attribute_input_cache"],
+            "private_attribute_id": full_data["private_attribute_id"],
         }
         # Make sure cache only can be deserialized and that we won't have
         # trouble even if we switch directory where the file path no longer is valid.
