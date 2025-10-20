@@ -184,6 +184,15 @@
                     "units": "flow360_length_unit"
                 }
             }
+        ],
+        "volume_zones": [
+            {
+                "domain_type": "half_body_positive_y",
+                "type": "AutomatedFarfield",
+                "name": "Automated Farfield",
+                "method": "auto",
+                "relative_size": 50.0
+            }
         ]
     },
     "private_attribute_asset_cache": {
