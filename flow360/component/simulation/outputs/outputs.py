@@ -16,7 +16,10 @@ from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.entity_utils import generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
-from flow360.component.simulation.models.surface_models import EntityListAllowingGhost
+from flow360.component.simulation.models.surface_models import (
+    EntityListAllowingGhost,
+    Wall,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -696,11 +699,8 @@ class ForceOutput(_OutputBase):
     """
 
     name: str = pd.Field("Force output", description="Name of the force output.")
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = (
-        pd.Field(
-            alias="surfaces",
-            description="List of boundaries where the force will be calculated.",
-        )
+    surface_models: List[Union[Wall, str]] = pd.Field(
+        description="List of surface models whose force contribution will be calculated.",
     )
     output_fields: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
         description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
@@ -710,6 +710,39 @@ class ForceOutput(_OutputBase):
         None, description="The moving statistics used to monitor the output."
     )
     output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
+
+    @pd.field_serializer("surface_models")
+    def serialize_models(self, v):
+        """Serialize only the model's id of the related object."""
+        model_ids = []
+        for model in v:
+            if isinstance(model, Wall):
+                model_ids.append(model.private_attribute_id)
+                continue
+            model_ids.append(model)
+        return model_ids
+
+    @pd.field_validator("surface_models", mode="before")
+    @classmethod
+    def _preprocess_models_with_id(cls, v):
+        def preprocess_single_model(model, validation_info):
+            if not isinstance(model, str):
+                return model
+            if (
+                validation_info is None
+                or validation_info.physics_model_dict is None
+                or validation_info.physics_model_dict.get(v) is None
+            ):
+                raise ValueError("The model does not exist in the models list.")
+            surface_model_dict = validation_info.physics_model_dict[v]
+            model = Wall.model_validate(surface_model_dict)
+            return model
+
+        processed_models = []
+        validation_info = get_validation_info()
+        for model in v:
+            processed_models.append(preprocess_single_model(model, validation_info))
+        return processed_models
 
 
 class ProbeOutput(_OutputBase):
