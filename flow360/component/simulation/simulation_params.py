@@ -403,7 +403,7 @@ class SimulationParams(_ParamModelBase):
             v = []
         assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
-            v.append(Fluid())
+            v.append(Fluid(private_attribute_id="__default_fluid"))
         return v
 
     @pd.field_validator("models", mode="after")
