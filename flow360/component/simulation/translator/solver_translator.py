@@ -509,7 +509,7 @@ def translate_surface_output(
         surface_output_class,
         translation_func=translate_output_fields,
         to_list=False,
-        entity_type_to_include=Union[Surface, GhostSurface, GhostSphere, GhostCircularPlane],
+        entity_type_to_include=(Surface, GhostSurface, GhostSphere, GhostCircularPlane),
     )
     surface_output["writeSingleFile"] = get_global_setting_from_first_instance(
         output_params,
