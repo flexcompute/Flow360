@@ -110,6 +110,7 @@ def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debu
     )
     translated = json.loads(translated)
     del translated["entities"]["stored_entities"][0]["private_attribute_id"]
+    del translated["private_attribute_id"]
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "ref", ref_json_file)) as fh:
         ref_dict = json.load(fh)
     if debug:
