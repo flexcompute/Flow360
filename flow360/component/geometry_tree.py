@@ -8,6 +8,7 @@ import json
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set, Union
 
+FLOW360_UUID_ATTRIBUTE_KEY = "Flow360UUID"
 
 class NodeType(Enum):
     """Geometry tree node types"""
@@ -24,6 +25,7 @@ class NodeType(Enum):
     TopoConnex = "TopoConnex"
     TopoShell = "TopoShell"
     TopoFace = "TopoFace"
+    TopoFacePointer = "TopoFacePointer"
 
 
 class TreeNode:
@@ -31,22 +33,21 @@ class TreeNode:
 
     def __init__(
         self,
-        node_type: str,
+        node_type: NodeType,
         name: str = "",
-        attributes: Dict[str, str] = None,
         color: str = "",
-        uuid: str = "",
-        children: List[TreeNode] = None,
+        attributes: Dict[str, str] = {},
+        children: List[TreeNode] = [],
     ):
         self.type = node_type
         self.name = name
-        self.attributes = attributes or {}
+        self.attributes = attributes 
         self.color = color
-        self.uuid = uuid
-        self.children = children or []
+        self.children = children
         self.parent: Optional[TreeNode] = None
-
-        # Set parent for children
+        self.uuid = None
+        if FLOW360_UUID_ATTRIBUTE_KEY in attributes:
+            self.uuid = attributes[FLOW360_UUID_ATTRIBUTE_KEY]
         for child in self.children:
             child.parent = self
 
@@ -55,11 +56,10 @@ class TreeNode:
         """Create TreeNode from dictionary"""
         children = [cls.from_dict(child) for child in data.get("children", [])]
         node = cls(
-            node_type=data.get("type", ""),
-            name=data.get("name", ""),
-            attributes=data.get("attributes", {}),
-            color=data.get("color", ""),
-            uuid=data.get("UUID", ""),
+            node_type=NodeType[data.get("type")],
+            name=data.get("name"),
+            color=data.get("color"),
+            attributes=data.get("attributes"),
             children=children,
         )
         return node
@@ -73,15 +73,6 @@ class TreeNode:
             current = current.parent
         return path
 
-    def get_all_faces(self) -> List[TreeNode]:
-        """Get all TopoFace nodes under this node"""
-        faces = []
-        if self.type == "TopoFace":
-            faces.append(self)
-        for child in self.children:
-            faces.extend(child.get_all_faces())
-        return faces
-
     def find_nodes(self, filter_func: Callable[[TreeNode], bool]) -> List[TreeNode]:
         """Find all nodes matching the filter function"""
         matches = []
@@ -91,8 +82,16 @@ class TreeNode:
             matches.extend(child.find_nodes(filter_func))
         return matches
 
+    def get_uuid_to_face(self) -> Dict[str, TreeNode]:
+        uuid_to_face = {}
+        if self.type == NodeType.TopoFace:
+            uuid_to_face[self.uuid] = self
+        for child in self.children:
+            uuid_to_face.update(child.get_uuid_to_face())
+        return uuid_to_face
+
     def __repr__(self):
-        return f"TreeNode(type={self.type}, name={self.name})"
+        return f"TreeNode(type={self.type.value}, name={self.name})"
 
 
 class FilterExpression:
@@ -241,8 +240,9 @@ class GeometryTree:
         with open(tree_json_path, "r", encoding="utf-8") as f:
             tree_data = json.load(f)
 
-        self.root = TreeNode.from_dict(tree_data)
-        self.all_faces = self.root.get_all_faces()
+        self.root: TreeNode = TreeNode.from_dict(tree_data)
+        self.uuid_to_face = self.root.get_uuid_to_face()
+
 
     def find_nodes(self, filter_expr: FilterExpression) -> List[TreeNode]:
         """
@@ -261,13 +261,5 @@ class GeometryTree:
         return self.root.find_nodes(lambda node: filter_expr(node))
 
     def get_all_faces(self) -> List[TreeNode]:
-        """
-        Get all face nodes in the tree
-
-        Returns
-        -------
-        List[TreeNode]
-            List of all TopoFace nodes
-        """
-        return self.all_faces
+        return list(self.uuid_to_face.values())
 
