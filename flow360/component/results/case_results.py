@@ -939,7 +939,7 @@ class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
 class PorousMediumCoefficientsCSVModel(ResultCSVModel):
     """CSV model for porous medium coefficients output."""
 
-    remote_file_name: str = pd.Field("porous_medium_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("porous_media_coefficients_v2.csv", frozen=True)
 
 
 class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):
