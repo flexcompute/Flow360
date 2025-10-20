@@ -27,6 +27,7 @@ from flow360.component.simulation.primitives import (
     GhostSurface,
     Surface,
     SurfacePair,
+    GhostSurfacePair
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -697,8 +698,8 @@ class Periodic(Flow360BaseModel):
         "Periodic", description="Name of the `Periodic` boundary condition."
     )
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
-    entity_pairs: UniqueItemList[SurfacePair] = pd.Field(
-        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface`. "
+    entity_pairs: UniqueItemList[Union[SurfacePair, GhostSurfacePair]] = pd.Field(
+        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface` or `~flow360.GhostSurface`. "
     )
     spec: Union[Translational, Rotational] = pd.Field(
         discriminator="type_name",
@@ -714,6 +715,23 @@ class Periodic(Flow360BaseModel):
             check_deleted_surface_pair(surface_pair)
         return value
 
+    @pd.field_validator("entity_pairs", mode="after")
+    @classmethod
+    def _ensure_quasi_3d_periodic_when_using_ghost_surface(cls, value):
+        """
+        When using ghost surface pairs, ensure the farfield type is quasi-3d-periodic.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
+
+        for surface_pair in value.items:
+            if isinstance(surface_pair, GhostSurfacePair):
+                if validation_info.farfield_method != "quasi-3d-periodic":
+                    raise ValueError(
+                        "Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
+                    )
+        return value
 
 class PorousJump(Flow360BaseModel):
     """
