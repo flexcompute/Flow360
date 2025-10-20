@@ -254,7 +254,7 @@ class Farfield(Flow360BaseModel):
     Farfield type for meshing
     """
 
-    type: Literal["auto", "quasi-3d", "user-defined"] = pd.Field()
+    type: Literal["auto", "quasi-3d", "quasi-3d-periodic", "user-defined"] = pd.Field()
 
 
 class Volume(Flow360BaseModel):
