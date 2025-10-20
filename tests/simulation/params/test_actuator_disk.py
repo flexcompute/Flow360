@@ -71,3 +71,38 @@ def test_actuator_disk_from_json():
     assert ad.force_per_area.radius[2].value == 2
     assert ad.force_per_area.radius[2].units == u.m
     assert ad.entities.stored_entities[0].center[0].value == 1.2
+
+
+def test_actuator_disk_duplicate_cylinder_names():
+    with SI_unit_system:
+        fpa = ForcePerArea(radius=[0, 1, 2, 4], thrust=[1, 1, 2, 2], circumferential=[1, 1, 3, 4])
+        my_cylinder_1 = Cylinder(
+            name="my_cylinder-1",
+            axis=(5, 0, 0),
+            center=(1.2, 2.3, 3.4),
+            height=3.0,
+            outer_radius=5.0,
+        )
+
+        my_cylinder_2 = Cylinder(
+            name="my_cylinder-2",
+            axis=(5, 0, 0),
+            center=(2.2, 2.3, 3.4),
+            height=3.0,
+            outer_radius=5.0,
+        )
+
+        ad = ActuatorDisk(volumes=[my_cylinder_1, my_cylinder_2], force_per_area=fpa)
+        sm = SimulationParams(models=[ad])
+
+        assert sm
+
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                f"The ActuatorDisk cylinder name `my_cylinder-1` has already been used."
+                " Please use unique Cylinder names among all ActuatorDisk instances."
+            ),
+        ):
+            ad_duplicate = ActuatorDisk(volumes=[my_cylinder_1, my_cylinder_1], force_per_area=fpa)
+            sm = SimulationParams(models=[ad_duplicate])

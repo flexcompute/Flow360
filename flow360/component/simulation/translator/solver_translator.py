@@ -1076,6 +1076,7 @@ def actuator_disk_entity_info_serializer(volume):
         "axisThrust": v["axis"],
         "center": v["center"],
         "thickness": v["height"],
+        "name": v["name"],
     }
 
 

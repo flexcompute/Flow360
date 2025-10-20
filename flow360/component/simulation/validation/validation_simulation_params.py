@@ -12,7 +12,12 @@ from flow360.component.simulation.models.surface_models import (
     SurfaceModelTypes,
     Wall,
 )
-from flow360.component.simulation.models.volume_models import Fluid, Rotation, Solid
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    Fluid,
+    Rotation,
+    Solid,
+)
 from flow360.component.simulation.outputs.outputs import (
     IsosurfaceOutput,
     ProbeOutput,
@@ -559,3 +564,26 @@ def _check_duplicate_surface_usage(outputs):
     _check_surface_usage(outputs, TimeAverageSurfaceOutput)
 
     return outputs
+
+
+def _check_duplicate_actuator_disk_cylinder_names(models):
+    if not models:
+        return models
+
+    def _check_actuator_disk_names(models):
+        actuator_disk_names = set()
+        for model in models:
+            if not isinstance(model, ActuatorDisk):
+                continue
+
+            for entity in model.entities.stored_entities:
+                if entity.name in actuator_disk_names:
+                    raise ValueError(
+                        f"The ActuatorDisk cylinder name `{entity.name}` has already been used."
+                        " Please use unique Cylinder names among all ActuatorDisk instances."
+                    )
+                actuator_disk_names.add(entity.name)
+
+    _check_actuator_disk_names(models)
+
+    return models
