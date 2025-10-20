@@ -697,7 +697,7 @@ class SurfacePairBase(Flow360BaseModel):
     Base class for surface pair objects.
     Subclasses must define a `pair` attribute with the appropriate surface type.
     """
-    
+
     pair: Tuple[_SurfaceEntityBase, _SurfaceEntityBase]
 
     @pd.field_validator("pair", mode="after")
