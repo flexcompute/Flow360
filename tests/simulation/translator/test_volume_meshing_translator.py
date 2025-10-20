@@ -183,7 +183,7 @@ def get_test_param():
                             Surface(name="interface2"),
                         ],
                     ),
-                    UserDefinedFarfield(),
+                    UserDefinedFarfield(domain_type="half_body_negative_y"),
                     RotationVolume(
                         name="we_do_not_use_this_anyway",
                         entities=inner_cylinder,
@@ -248,7 +248,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
 
     ref_dict = {
         "refinementFactor": 1.45,
-        "farfield": {"type": "user-defined"},
+        "farfield": {"type": "user-defined", "domainType": "half_body_negative_y"},
         "volume": {
             "firstLayerThickness": 1.35e-06,
             "growthRate": 1.04,
