@@ -592,15 +592,15 @@ class Solid(PDEModelBase):
     @classmethod
     def ensure_custom_volume_has_tets_only(cls, v):
         """
-        Check if the CustomVolume object was meshed with the flag enforceTetOnly
+        Check if the CustomVolume object was meshed with the flag enforceTetrahedralElements
         set to 'True'
         """
         for entity in v.stored_entities:
             if isinstance(entity, CustomVolume):
-                if not entity.enforceTetOnly:
+                if not entity.enforceTetrahedralElements:
                     raise ValueError(
                         "CustomVolume object must be meshed with "
-                        "the flag enforceTetOnly set to 'True'"
+                        "the flag enforceTetrahedralElements set to 'True'"
                     )
         return v
 

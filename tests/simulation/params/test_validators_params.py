@@ -2165,7 +2165,7 @@ def test_check_duplicate_isosurface_names():
 
 
 def test_check_solid_cht_custom_volume_has_tets():
-    message = "CustomVolume object must be meshed with the flag enforceTetOnly set to 'True'"
+    message = "CustomVolume object must be meshed with the flag enforceTetrahedralElements set to 'True'"
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
         zone_2 = CustomVolume(name="zone2", boundaries=[Surface(name="face2")])
         solid_model = Solid(

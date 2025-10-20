@@ -178,7 +178,7 @@ def get_test_param():
                 volume_zones=[
                     CustomVolume(
                         name="custom_volume-1",
-                        enforceTetOnly=True,
+                        enforceTetrahedralElements=True,
                         boundaries=[
                             Surface(name="interface1"),
                             Surface(name="interface2"),
@@ -405,7 +405,7 @@ def test_param_to_json(get_test_param, get_surface_mesh):
             {
                 "name": "custom_volume-1",
                 "patches": ["interface1", "interface2"],
-                "enforceTetOnly": True,
+                "enforceTetrahedralElements": True,
             }
         ],
     }
