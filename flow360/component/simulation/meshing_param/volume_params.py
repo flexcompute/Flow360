@@ -343,26 +343,30 @@ class RotationCylinder(RotationVolume):
 class _FarfieldBase(Flow360BaseModel):
     """Base class for farfield parameters."""
 
-    enforced_half_model: Optional[Literal["+y", "-y"]] = (
-        pd.Field(  # In the future, we will support more half model types via Union.
+    domain_type: Optional[Literal["half_body_positive_y", "half_body_negative_y"]] = (
+        pd.Field(  # In the future, we will support more flexible half model types and full model via Union.
             None,
-            description="If set, trim to a half-model by slicing the geometry with the global Y=0 plane; "
-            "keep the '+y' or '-y' side for meshing and simulation.",
+            description="""
+            - half_body_positive_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '+y' side for meshing and simulation.
+            - half_body_negative_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '-y' side for meshing and simulation.
+
+            Warning: When using AutomatedFarfield, setting `domain_type` overrides the 'auto' symmetry plane behavior.
+            """,
         )
     )
 
-    @pd.field_validator("enforced_half_model", mode="after")
+    @pd.field_validator("domain_type", mode="after")
     @classmethod
     def _validate_only_in_beta_mesher(cls, value):
         """
-        Ensure that enforced_half_model objects are only processed with the beta mesher.
+        Ensure that domain_type is only used with the beta mesher.
         """
         validation_info = get_validation_info()
         if validation_info is None:
             return value
         if not value:
             return value
-        raise ValueError("`enforced_half_model` is only supported with the beta mesher.")
+        raise ValueError("`domain_type` is only supported with the beta mesher.")
 
 
 class AutomatedFarfield(_FarfieldBase):

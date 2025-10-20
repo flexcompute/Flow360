@@ -261,8 +261,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     for zone in input_params.meshing.volume_zones:
         if isinstance(zone, UserDefinedFarfield):
             translated["farfield"] = {"type": "user-defined"}
-            if zone.enforced_half_model is not None:
-                translated["farfield"]["enforcedHalfModel"] = zone.enforced_half_model
+            if zone.domain_type is not None:
+                translated["farfield"]["domainType"] = zone.domain_type
             break
 
         if isinstance(zone, AutomatedFarfield):
@@ -275,8 +275,8 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
             else:
                 translated["farfield"]["type"] = zone.method
 
-            if zone.enforced_half_model is not None:
-                translated["farfield"]["enforcedHalfModel"] = zone.enforced_half_model
+            if zone.domain_type is not None:
+                translated["farfield"]["domainType"] = zone.domain_type
             break
 
     if "farfield" not in translated:
