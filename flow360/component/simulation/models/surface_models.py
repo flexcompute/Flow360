@@ -25,9 +25,9 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    GhostSurfacePair,
     Surface,
     SurfacePair,
-    GhostSurfacePair
 )
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -699,7 +699,8 @@ class Periodic(Flow360BaseModel):
     )
     type: Literal["Periodic"] = pd.Field("Periodic", frozen=True)
     entity_pairs: UniqueItemList[Union[SurfacePair, GhostSurfacePair]] = pd.Field(
-        alias="surface_pairs", description="List of matching pairs of :class:`~flow360.Surface` or `~flow360.GhostSurface`. "
+        alias="surface_pairs",
+        description="List of matching pairs of :class:`~flow360.Surface` or `~flow360.GhostSurface`. ",
     )
     spec: Union[Translational, Rotational] = pd.Field(
         discriminator="type_name",
@@ -732,6 +733,7 @@ class Periodic(Flow360BaseModel):
                         "Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
                     )
         return value
+
 
 class PorousJump(Flow360BaseModel):
     """
