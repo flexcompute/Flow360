@@ -595,7 +595,7 @@ class Geometry(AssetBase):
         self._geometry_tree = GeometryTree(tree_json_path)
         ## create default face gruoping  by body
 
-        log.info(f"Loaded Geometry tree with {len(self._geometry_tree.all_faces)} faces")
+        log.info(f"Loaded Geometry tree with {len(self._geometry_tree.uuid_to_face)} faces")
 
     def create_face_group(self, name: str, filter: FilterExpression) -> List[str]:
         """
