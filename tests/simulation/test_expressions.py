@@ -879,8 +879,6 @@ def test_project_variables_serialization():
     with open("ref/simulation_with_project_variables.json", "r") as fh:
         ref_data = fh.read()
 
-    # print(params.model_dump_json(indent=4, exclude_none=True))
-
     assert ref_data == params.model_dump_json(indent=4, exclude_none=True)
 
 
