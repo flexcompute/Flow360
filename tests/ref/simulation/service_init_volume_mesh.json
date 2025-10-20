@@ -165,6 +165,7 @@
                 "p": "p"
             },
             "type": "Fluid",
+            "private_attribute_id": "__default_fluid",
             "navier_stokes_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 0.0,

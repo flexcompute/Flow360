@@ -116,7 +116,9 @@ def translate_and_compare(type, ref_json_file: str, atol=1e-15, rtol=1e-10, debu
         print(">>> translated = ", translated)
         print("=== translated ===\n", json.dumps(translated, indent=4, sort_keys=True))
         print("=== ref_dict ===\n", json.dumps(ref_dict, indent=4, sort_keys=True))
-    assert compare_values(ref_dict, translated, atol=atol, rtol=rtol)
+    assert compare_values(
+        ref_dict, translated, atol=atol, rtol=rtol, ignore_keys=["private_attribute_id"]
+    )
 
 
 def test_translated_c81_params():
