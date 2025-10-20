@@ -594,34 +594,6 @@ class Geometry(AssetBase):
         log.info(f"Loaded Geometry tree with {len(self._geometry_tree.all_faces)} faces")
 
     def create_face_group(self, name: str, filter: FilterExpression) -> List[str]:
-        """
-        Create a face group based on Geometry tree filtering
-
-        This method filters nodes in the Geometry hierarchy tree and groups all faces
-        under matching nodes. If any faces already belong to another group, they
-        will be reassigned to the new group.
-
-        Parameters
-        ----------
-        name : str
-            Name of the face group
-        filter : FilterExpression
-            Filter expression to match nodes in the tree. Use Type, Name operators
-            to build filter expressions.
-
-        Returns
-        -------
-        List[str]
-            List of face UUIDs in the created group
-
-        Examples
-        --------
-        >>> from flow360.component.geometry_tree import Type, Name, NodeType
-        >>> geometry.create_face_group(
-        ...     name="wing",
-        ...     filter=(Type == NodeType.FRMFeature) & Name.contains("wing")
-        ... )
-        """
         if self._geometry_tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
