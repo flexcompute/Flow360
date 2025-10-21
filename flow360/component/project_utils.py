@@ -23,9 +23,9 @@ from flow360.component.simulation.outputs.output_entities import (
     Slice,
 )
 from flow360.component.simulation.outputs.outputs import (
-    ImportedSurfaceIntegralOutput,
-    ImportedSurfaceOutput,
     MonitorOutputType,
+    SurfaceIntegralOutput,
+    SurfaceOutput,
 )
 from flow360.component.simulation.primitives import (
     Box,
@@ -34,6 +34,7 @@ from flow360.component.simulation.primitives import (
     Edge,
     GeometryBodyGroup,
     GhostSurface,
+    ImportedSurface,
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
@@ -467,12 +468,13 @@ def _get_imported_surface_file_names(params, basename_only=False):
         return []
     imported_surface_files = []
     for output in params.outputs:
-        if isinstance(output, (ImportedSurfaceOutput, ImportedSurfaceIntegralOutput)):
+        if isinstance(output, (SurfaceOutput, SurfaceIntegralOutput)):
             for surface in output.entities.stored_entities:
-                if basename_only:
-                    imported_surface_files.append(os.path.basename(surface.file_name))
-                else:
-                    imported_surface_files.append(surface.file_name)
+                if isinstance(surface, ImportedSurface):
+                    if basename_only:
+                        imported_surface_files.append(os.path.basename(surface.file_name))
+                    else:
+                        imported_surface_files.append(surface.file_name)
     return imported_surface_files
 
 
