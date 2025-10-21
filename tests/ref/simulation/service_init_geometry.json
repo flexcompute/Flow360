@@ -1,5 +1,5 @@
 {
-    "version": "25.7.4b0",
+    "version": "25.7.5b0",
     "unit_system": {
         "name": "SI"
     },
@@ -203,6 +203,7 @@
                 "p": "p"
             },
             "type": "Fluid",
+            "private_attribute_id": "__default_fluid",
             "navier_stokes_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 0.0,

@@ -1644,10 +1644,6 @@ def get_solver_json(
                             }
                         )
             translated["runControl"]["shouldCheckStopCriterion"] = bool(model.stopping_criterion)
-            if model.stopping_criterion:
-                translated["runControl"]["stopCriterion"] = [
-                    dump_dict(criterion) for criterion in model.stopping_criterion
-                ]
 
             translated["initialCondition"] = get_navier_stokes_initial_condition(
                 model.initial_condition
