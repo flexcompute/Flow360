@@ -699,6 +699,11 @@ def test_validate_error_from_multi_constructor():
 
 
 def test_init():
+    def remove_model_and_output_id_in_default_dict(data):
+        data["outputs"][0].pop("private_attribute_id", None)
+        data["models"][0].pop("private_attribute_id", None)
+        data["models"][1].pop("private_attribute_id", None)
+
     ##1: test default values for geometry starting point
     data = services.get_default_params(
         unit_system_name="SI", length_unit="m", root_item_type="Geometry"
@@ -706,7 +711,7 @@ def test_init():
     assert data["operating_condition"]["alpha"]["value"] == 0
     assert data["operating_condition"]["alpha"]["units"] == "degree"
     assert "velocity_magnitude" not in data["operating_condition"].keys()
-    data["outputs"][0].pop("private_attribute_id", None)
+    remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_geometry.json")
@@ -716,7 +721,7 @@ def test_init():
         unit_system_name="SI", length_unit="m", root_item_type="VolumeMesh"
     )
     assert "meshing" not in data
-    data["outputs"][0].pop("private_attribute_id", None)
+    remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_volume_mesh.json")
@@ -731,7 +736,7 @@ def test_init():
     assert data["private_attribute_asset_cache"]["project_length_unit"]["units"] == "cm"
 
     assert data["models"][0]["roughness_height"]["units"] == "cm"
-    data["outputs"][0].pop("private_attribute_id", None)
+    remove_model_and_output_id_in_default_dict(data)
     # to convert tuples to lists:
     data = json.loads(json.dumps(data))
     compare_dict_to_ref(data, "../../ref/simulation/service_init_surface_mesh.json")
@@ -945,6 +950,7 @@ def test_front_end_JSON_with_multi_constructor():
                     ]
                 },
                 "use_wall_function": False,
+                "private_attribute_id": "wall1",
             }
         ],
         "operating_condition": {

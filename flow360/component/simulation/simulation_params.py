@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
@@ -332,7 +332,7 @@ class SimulationParams(_ParamModelBase):
     def convert_unit(
         self,
         value: DimensionedTypes,
-        target_system: str,
+        target_system: Literal["SI", "Imperial", "flow360"],
         length_unit: Optional[LengthType] = None,
     ):
         """
@@ -347,7 +347,7 @@ class SimulationParams(_ParamModelBase):
             The dimensioned quantity to convert. This should have units compatible with Flow360's
             unit system.
         target_system : str
-            The target unit system for conversion. Common values include "SI", "Imperial", flow360".
+            The target unit system for conversion. Common values include "SI", "Imperial", "flow360".
         length_unit : LengthType, optional
             The length unit to use for conversion. If not provided, the method defaults to
             the project length unit stored in the `private_attribute_asset_cache`.
@@ -403,7 +403,7 @@ class SimulationParams(_ParamModelBase):
             v = []
         assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
-            v.append(Fluid())
+            v.append(Fluid(private_attribute_id="__default_fluid"))
         return v
 
     @pd.field_validator("models", mode="after")
@@ -608,10 +608,28 @@ class SimulationParams(_ParamModelBase):
                     / LIQUID_IMAGINARY_FREESTREAM_MACH
                 ).to("m/s")
             return (
-                self.operating_condition.reference_velocity_magnitude
+                self.operating_condition.reference_velocity_magnitude  # pylint:disable=no-member
                 / LIQUID_IMAGINARY_FREESTREAM_MACH
             ).to("m/s")
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
+
+    @property
+    def _liquid_reference_velocity(self) -> VelocityType:
+        """
+        This function returns the reference velocity for liquid operating condition.
+        Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
+
+        For dimensionalization of Flow360 output (converting FROM flow360 unit)
+        The solver output is already re-normalized by `reference velocity` due to "velocityScale"
+        So we need to find the `reference velocity`.
+        `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
+        """
+        # pylint:disable=no-member
+        if self.operating_condition.reference_velocity_magnitude is not None:
+            reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
+        else:
+            reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        return reference_velocity
 
     @property
     def base_density(self) -> DensityType:

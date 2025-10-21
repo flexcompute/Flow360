@@ -9,7 +9,7 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
@@ -70,6 +70,7 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         alias="surfaces",
         description="List of boundaries with boundary condition imposed.",
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entities", mode="after")
     @classmethod
@@ -705,6 +706,7 @@ class Periodic(Flow360BaseModel):
         description="Define the type of periodic boundary condition (translational/rotational) "
         + "via :class:`Translational`/:class:`Rotational`.",
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entity_pairs", mode="after")
     @classmethod
@@ -755,6 +757,7 @@ class PorousJump(Flow360BaseModel):
     thickness: LengthType = pd.Field(
         description="Thickness of the thin porous media on the surface"
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entity_pairs", mode="after")
     @classmethod
