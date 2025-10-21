@@ -317,8 +317,9 @@ class AssetBase(metaclass=ABCMeta):
         with open(os.path.join(local_storage_path, "simulation.json"), encoding="utf-8") as f:
             params_dict = json.load(f)
 
-        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
-        asset_obj.get_dynamic_default_settings(params_dict)
+        asset_obj = cls(asset_id)
+#        asset_obj = cls._from_supplied_entity_info(params_dict, cls(asset_id))
+#        asset_obj.get_dynamic_default_settings(params_dict)
 
         # pylint: disable=protected-access
         if not hasattr(asset_obj, "_webapi"):

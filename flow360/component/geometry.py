@@ -7,7 +7,7 @@ from __future__ import annotations
 import os
 import threading
 from enum import Enum
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import pydantic as pd
 
@@ -18,6 +18,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
+from flow360.component.geometry_tree import FilterExpression, GeometryTree, TreeNode
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -235,6 +236,12 @@ class Geometry(AssetBase):
     _web_api_class = Flow360Resource
     _entity_info_class = GeometryEntityInfo
     _cloud_resource_type_name = "Geometry"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._geometry_tree: Optional[GeometryTree] = None
+        self._face_to_group: Dict[str, str] = {}  # face_uuid -> group_name
+        self._face_groups: Dict[str, List[TreeNode]] = {}  # group_name -> list of faces
 
     @property
     def face_group_tag(self):
@@ -568,3 +575,140 @@ class Geometry(AssetBase):
 
     def __setitem__(self, key: str, value: Any):
         raise NotImplementedError("Assigning/setting entities is not supported.")
+
+    # ========== Tree-based face grouping methods ==========
+
+    def load_geometry_tree(self, tree_json_path: str) -> None:
+        """
+        Load Geometry hierarchy tree from JSON file
+
+        Parameters
+        ----------
+        tree_json_path : str
+            Path to the tree JSON file generated from Geometry hierarchy extraction
+
+        Examples
+        --------
+        >>> geometry = Geometry.from_cloud("geom_id")
+        >>> geometry.load_geometry_tree("tree.json")
+        """
+        self._geometry_tree = GeometryTree(tree_json_path)
+        ## create default face gruoping  by body
+
+        log.info(f"Loaded Geometry tree with {len(self._geometry_tree.uuid_to_face)} faces")
+
+    def create_face_group(self, name: str, filter: FilterExpression) -> List[str]:
+        """
+        Create a face group based on Geometry tree filtering
+
+        This method filters nodes in the Geometry hierarchy tree and groups all faces
+        under matching nodes. If any faces already belong to another group, they
+        will be reassigned to the new group.
+
+        Parameters
+        ----------
+        name : str
+            Name of the face group
+        filter : FilterExpression
+            Filter expression to match nodes in the tree. Use Type, Name operators
+            to build filter expressions.
+
+        Returns
+        -------
+        List[str]
+            List of face UUIDs in the created group
+
+        Examples
+        --------
+        >>> from flow360.component.geometry_tree import Type, Name, NodeType
+        >>> geometry.create_face_group(
+        ...     name="wing",
+        ...     filter=(Type == NodeType.FRMFeature) & Name.contains("wing")
+        ... )
+        """
+        if self._geometry_tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
+            )
+
+        # Find matching nodes using the tree
+        matching_nodes = self._geometry_tree.find_nodes(filter)
+
+        # Collect faces from matching nodes
+        group_faces = []
+        new_face_uuids = set()
+        
+        for node in matching_nodes:
+            faces = node.get_all_faces()
+            for face in faces:
+                if face.uuid:
+                    group_faces.append(face)
+                    new_face_uuids.add(face.uuid)
+
+        # Remove these faces from their previous groups
+        for group_name, faces in list(self._face_groups.items()):
+            if group_name != name:
+                self._face_groups[group_name] = [
+                    f for f in faces if f.uuid not in new_face_uuids
+                ]
+
+        # Update face-to-group mapping
+        for uuid in new_face_uuids:
+            self._face_to_group[uuid] = name
+
+        # Store the group
+        self._face_groups[name] = group_faces
+
+        face_uuids = [face.uuid for face in group_faces if face.uuid]
+        log.info(f"Created face group '{name}' with {len(face_uuids)} faces")
+        return face_uuids
+
+    @property
+    def face_groups(self) -> Dict[str, int]:
+        """
+        Get dictionary of face groups and their face counts
+
+        Returns
+        -------
+        Dict[str, int]
+            Dictionary mapping group names to number of faces in each group
+
+        Examples
+        --------
+        >>> geometry.face_groups
+        {'wing': 45, 'fuselage': 32, 'tail': 18}
+        """
+        return {name: len(faces) for name, faces in self._face_groups.items()}
+
+    def print_face_grouping_stats(self) -> None:
+        """
+        Print statistics about face grouping
+
+        Examples
+        --------
+        >>> geometry.print_face_grouping_stats()
+        === Face Grouping Statistics ===
+        Total faces: 95
+        Faces in groups: 95
+
+        Face groups (3):
+          - wing: 45 faces
+          - fuselage: 32 faces
+          - tail: 18 faces
+        =================================
+        """
+        if self._geometry_tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
+            )
+        
+        total_faces = len(self._geometry_tree.all_faces)
+        faces_in_groups = sum(len(faces) for faces in self._face_groups.values())
+
+        print(f"\n=== Face Grouping Statistics ===")
+        print(f"Total faces: {total_faces}")
+        print(f"Faces in groups: {faces_in_groups}")
+        print(f"\nFace groups ({len(self._face_groups)}):")
+        for group_name, faces in self._face_groups.items():
+            print(f"  - {group_name}: {len(faces)} faces")
+        print("=" * 33)
