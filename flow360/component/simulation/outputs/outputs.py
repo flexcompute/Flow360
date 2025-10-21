@@ -725,16 +725,18 @@ class ForceOutput(_OutputBase):
     @pd.field_validator("surface_models", mode="before")
     @classmethod
     def _preprocess_models_with_id(cls, v):
+        """Deserialize string-format surface models as Wall objects."""
+
         def preprocess_single_model(model, validation_info):
             if not isinstance(model, str):
                 return model
             if (
                 validation_info is None
                 or validation_info.physics_model_dict is None
-                or validation_info.physics_model_dict.get(v) is None
+                or validation_info.physics_model_dict.get(model) is None
             ):
                 raise ValueError("The model does not exist in the models list.")
-            surface_model_dict = validation_info.physics_model_dict[v]
+            surface_model_dict = validation_info.physics_model_dict[model]
             model = Wall.model_validate(surface_model_dict)
             return model
 
