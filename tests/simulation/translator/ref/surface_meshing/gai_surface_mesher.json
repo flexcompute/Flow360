@@ -17,7 +17,7 @@
             "preserve_thin_geometry": false,
             "surface_max_aspect_ratio": 0.01,
             "surface_max_adaptation_iterations": 19,
-            "healing_gap_size": 0.0
+            "sealing_size": 0.0
         },
         "refinements": [
             {
@@ -180,7 +180,7 @@
                     ]
                 },
                 "preserve_thin_geometry": false,
-                "healing_gap_size": 0.0,
+                "sealing_size": 0.0,
                 "geometry_accuracy": {
                     "value": 0.05,
                     "units": "flow360_length_unit"

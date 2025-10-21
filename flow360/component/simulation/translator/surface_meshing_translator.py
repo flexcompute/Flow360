@@ -157,7 +157,7 @@ GAI_SETTING_WHITELIST = {
             "preserve_thin_geometry": None,
             "surface_max_aspect_ratio": None,
             "surface_max_adaptation_iterations": None,
-            "healing_gap_size": None
+            "sealing_size": None
         },
         "refinements": _get_surface_refinements,
     },
