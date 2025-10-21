@@ -705,7 +705,7 @@ class ActuatorDiskResultCSVModel(OptionallyDownloadableResultCSVModel):
 class ActuatorDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for actuator disk coefficients output."""
 
-    remote_file_name: str = pd.Field("actuator_disk_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("actuatorDisk_force_coefficients_v2.csv", frozen=True)
 
 
 class _BETDiskResults(_DimensionedCSVResultModel):
@@ -900,7 +900,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 class BETDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for BET disk coefficients output."""
 
-    remote_file_name: str = pd.Field("bet_disk_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("bet_force_coefficients_v2.csv", frozen=True)
 
     def format_headers(
         self, params: SimulationParams, pattern: str = "$BETName_$CylinderName"
@@ -984,7 +984,7 @@ class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
 class PorousMediumCoefficientsCSVModel(ResultCSVModel):
     """CSV model for porous medium coefficients output."""
 
-    remote_file_name: str = pd.Field("porous_media_coefficients_v2.csv", frozen=True)
+    remote_file_name: str = pd.Field("porous_media_force_coefficients_v2.csv", frozen=True)
 
 
 class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVModel):
