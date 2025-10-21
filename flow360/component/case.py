@@ -370,7 +370,9 @@ class CaseDraft(CaseBase, ResourceDraft):
         self._id = info.id
 
         self._submitted_case = Case(self.id)
-        log.info(f"Case successfully submitted: {self._submitted_case.short_description()}")
+        log.info(
+            f"Case successfully submitted: {self._submitted_case.short_description(self._submitted_case.project_id)}"
+        )
         return self._submitted_case
 
     def validate_case_inputs(self, pre_submit_checks=False):
