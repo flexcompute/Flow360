@@ -275,6 +275,7 @@ def translate_setting_and_apply_to_all_entities(
     lump_list_of_entities=False,
     use_instance_name_as_key=False,
     use_sub_item_as_key=False,
+    entity_type_to_include=None,
     **kwargs,
 ):
     """
@@ -389,50 +390,53 @@ def translate_setting_and_apply_to_all_entities(
                 entity_injection_kwargs["translated_setting"] = translated_setting
 
             for entity in list_of_entities:
-                if not to_list:
-                    # Generate a $name:{$value} dict
-                    if custom_output_dict_entries:
+                if entity_type_to_include is None or isinstance(entity, entity_type_to_include):
+                    if not to_list:
+                        # Generate a $name:{$value} dict
+                        if custom_output_dict_entries:
+                            setting = entity_injection_func(entity, **entity_injection_kwargs)
+                            if setting is None:
+                                continue
+                            output.update(setting)
+                        else:
+                            if use_instance_name_as_key is True and lump_list_of_entities is False:
+                                raise NotImplementedError(
+                                    "[Internal Error]: use_instance_name_as_key cannot be used"
+                                    " when lump_list_of_entities is True"
+                                )
+                            if use_sub_item_as_key is True:
+                                # pylint: disable=fixme
+                                # TODO: Make sure when use_sub_item_as_key is True
+                                # TODO: the entity has private_attribute_sub_components
+                                key_names = entity.private_attribute_sub_components
+                            else:
+                                key_names = [
+                                    (
+                                        _get_key_name(entity)
+                                        if use_instance_name_as_key is False
+                                        else obj.name
+                                    )
+                                ]
+                            for key_name in key_names:
+                                if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
+                                    # Skip missing boundary
+                                    continue
+                                if output.get(key_name) is None:
+                                    setting = entity_injection_func(
+                                        entity, **entity_injection_kwargs
+                                    )
+                                    if setting is None:
+                                        continue
+                                    output[key_name] = setting
+                                update_dict_recursively(output[key_name], translated_setting)
+                    else:
+                        # Generate a list with $name being an item
+                        # Note: Surface/Boundary logic should be handled in the entity_injection_func
                         setting = entity_injection_func(entity, **entity_injection_kwargs)
                         if setting is None:
                             continue
-                        output.update(setting)
-                    else:
-                        if use_instance_name_as_key is True and lump_list_of_entities is False:
-                            raise NotImplementedError(
-                                "[Internal Error]: use_instance_name_as_key cannot be used"
-                                " when lump_list_of_entities is True"
-                            )
-                        if use_sub_item_as_key is True:
-                            # pylint: disable=fixme
-                            # TODO: Make sure when use_sub_item_as_key is True
-                            # TODO: the entity has private_attribute_sub_components
-                            key_names = entity.private_attribute_sub_components
-                        else:
-                            key_names = [
-                                (
-                                    _get_key_name(entity)
-                                    if use_instance_name_as_key is False
-                                    else obj.name
-                                )
-                            ]
-                        for key_name in key_names:
-                            if key_name == BOUNDARY_FULL_NAME_WHEN_NOT_FOUND:
-                                # Skip missing boundary
-                                continue
-                            if output.get(key_name) is None:
-                                setting = entity_injection_func(entity, **entity_injection_kwargs)
-                                if setting is None:
-                                    continue
-                                output[key_name] = setting
-                            update_dict_recursively(output[key_name], translated_setting)
-                else:
-                    # Generate a list with $name being an item
-                    # Note: Surface/Boundary logic should be handled in the entity_injection_func
-                    setting = entity_injection_func(entity, **entity_injection_kwargs)
-                    if setting is None:
-                        continue
-                    setting.update(translated_setting)
-                    output.append(setting)
+                        setting.update(translated_setting)
+                        output.append(setting)
     return output
 
 
