@@ -17,7 +17,10 @@
                 "units": "degree"
             },
             "preserve_thin_geometry": false,
-            "sealing_size": 0.0
+            "sealing_size": {
+                "value": 0.0,
+                "units": "m"
+            }
         },
         "refinements": [],
         "volume_zones": [
