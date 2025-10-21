@@ -1461,6 +1461,9 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
+
+    print("hahaha1", combined_string)
+    print("hahaha2", hasher.hexdigest())
     return hasher.hexdigest()
 
 

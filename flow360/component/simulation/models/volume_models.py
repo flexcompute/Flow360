@@ -143,10 +143,10 @@ class StopCriterion(Flow360BaseModel):
     tolerance: ValueOrExpression[Union[UnytQuantity, float]] = pd.Field(
         description="The tolerance threshold of this criterion."
     )
-    criterion_change_window: Optional[int] = pd.Field(
+    tolerance_window_size: Optional[int] = pd.Field(
         None,
-        description="The number of data points used to check if the deviation of "
-        "monitored field is below tolerance. "
+        description="The number of data points from the monitor_output to be used "
+        "to check whether the deviation of the monitored field is below tolerance or not. "
         "If not set, the criterion will directly compare the latest value with tolerance.",
         ge=2,
     )
