@@ -106,7 +106,7 @@ class Flow360BaseModel(pd.BaseModel):
         model_dict = self._handle_file(filename=filename, **kwargs)
         try:
             super().__init__(**model_dict)
-        except pd.ValidationError as e:  # noqa: B904
+        except pd.ValidationError as e:
             validation_errors = e.errors()
             for i, error in enumerate(validation_errors):
                 ctx = error.get("ctx")
@@ -145,7 +145,7 @@ class Flow360BaseModel(pd.BaseModel):
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs) -> None:
         """Things that are done to each of the models."""
-        need_to_rebuild = cls._handle_wrap_validators()
+        need_to_rebuild = cls._handle_conditional_validators()
         if need_to_rebuild is True:
             cls.model_rebuild(force=True)
         super().__pydantic_init_subclass__(**kwargs)  # Correct use of super
@@ -253,15 +253,12 @@ class Flow360BaseModel(pd.BaseModel):
         return None
 
     @classmethod
-    def _handle_wrap_validators(cls):
+    def _handle_conditional_validators(cls):
         """
-        Applies `wrap` and `before` validators to selected fields while excluding discriminator fields.
+        Applies `before` validators to selected fields while excluding discriminator fields.
 
         **Purpose**:
-        - `wrap` validators cannot be applied to discriminator fields (e.g., `Literal` types like 'type'),
-        as they cause Pydantic conflicts during validation.
-        - This method manually assigns validators only to non-discriminator fields to avoid errors and
-        ensure correct validation flow.
+        - Dynamically determines if a field is optional depending on the current validation context.
 
         **How it works**:
         - Iterates over model fields, excluding discriminator fields.
