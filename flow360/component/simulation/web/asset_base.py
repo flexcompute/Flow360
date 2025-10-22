@@ -117,7 +117,7 @@ class AssetBase(metaclass=ABCMeta):
         str
             generates short description of resource (name, id, status)
         """
-        return self._webapi.short_description()
+        return self._webapi.short_description(project_id=self.project_id)
 
     @property
     def name(self):
