@@ -6,7 +6,6 @@ from __future__ import annotations
 import ast
 import re
 import textwrap
-from enum import Enum
 from numbers import Number
 from typing import (
     Annotated,
