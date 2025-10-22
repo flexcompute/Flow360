@@ -78,9 +78,9 @@ class GeometryRefinement(Flow360BaseModel):
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
     )
 
-    sealing_size: Optional[LengthType.NonNegative] = pd.Field(
+    sealing_size: LengthType.NonNegative = pd.Field(
         0.0 * u.m,
-        description="Threshold size below which all geometry gaps are automatically closed. Zero is deactivated.",
+        description="Threshold size below which all geometry gaps are automatically closed.",
     )
 
     # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
