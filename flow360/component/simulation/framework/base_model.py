@@ -662,7 +662,7 @@ class Flow360BaseModel(pd.BaseModel):
             if need_conversion(value) and property_name not in exclude:
                 solver_values[property_name] = value.in_base(flow360_unit_system)
             else:
-                solver_values[property_name] = copy.copy(value)
+                solver_values[property_name] = value
 
         return solver_values
 
