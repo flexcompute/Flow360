@@ -1415,10 +1415,12 @@ class Rotation(Flow360BaseModel):
 
     name: Optional[str] = pd.Field("Rotation", description="Name of the `Rotation` model.")
     type: Literal["Rotation"] = pd.Field("Rotation", frozen=True)
-    entities: EntityListWithCustomVolume[GenericVolume, Cylinder, CustomVolume] = pd.Field(
+    entities: EntityListWithCustomVolume[
+        GenericVolume, Cylinder, AxisymmetricBody, CustomVolume
+    ] = pd.Field(
         alias="volumes",
         description="The entity list for the `Rotation` model. "
-        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+        + "The entity should be :class:`Cylinder` or :class:`AxisymmetricBody` or :class:`GenericVolume` type.",
     )
 
     # TODO: Add test for each of the spec specification.
@@ -1426,10 +1428,12 @@ class Rotation(Flow360BaseModel):
         discriminator="type_name",
         description="The angular velocity or rotation angle as a function of time.",
     )
-    parent_volume: Optional[Union[GenericVolume, Cylinder, CustomVolume]] = pd.Field(
-        None,
-        description="The parent rotating entity in a nested rotation case."
-        + "The entity should be :class:`Cylinder` or :class:`GenericVolume` type.",
+    parent_volume: Optional[Union[GenericVolume, Cylinder, AxisymmetricBody, CustomVolume]] = (
+        pd.Field(
+            None,
+            description="The parent rotating entity in a nested rotation case."
+            + "The entity should be :class:`Cylinder` or :class:`AxisymmetricBody` or :class:`GenericVolume` type.",
+        )
     )
     rotating_reference_frame_model: Optional[bool] = pd.Field(
         None,
