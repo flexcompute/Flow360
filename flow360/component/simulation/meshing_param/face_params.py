@@ -4,6 +4,7 @@ from typing import Literal, Optional
 
 import pydantic as pd
 
+import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.primitives import Surface
@@ -75,6 +76,11 @@ class GeometryRefinement(Flow360BaseModel):
         False,
         description="Flag to specify whether thin geometry features with thickness roughly equal "
         + "to geometry_accuracy should be resolved accurately during the surface meshing process.",
+    )
+
+    sealing_size: Optional[LengthType.NonNegative] = pd.Field(
+        0.0 * u.m,
+        description="Threshold size below which all geometry gaps are automatically closed. Zero is deactivated.",
     )
 
     # Note: No checking on deleted surfaces since geometry accuracy on deleted surface does impact the volume mesh.
