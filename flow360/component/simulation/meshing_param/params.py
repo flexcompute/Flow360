@@ -396,10 +396,12 @@ class MeshingParams(Flow360BaseModel):
         return self
 
     @property
-    def automated_farfield_method(self):
-        """Returns the automated farfield method used."""
+    def farfield_method(self):
+        """Returns the  farfield method used."""
         if self.volume_zones:
             for zone in self.volume_zones:  # pylint: disable=not-an-iterable
                 if isinstance(zone, AutomatedFarfield):
                     return zone.method
+                if isinstance(zone, UserDefinedFarfield):
+                    return "user-defined"
         return None
