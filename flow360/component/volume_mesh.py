@@ -1070,12 +1070,12 @@ class VolumeMeshDraftV2(ResourceDraft):
 
         # Start processing pipeline
         volume_mesh._webapi._complete_upload()
+        log.info(f"VolumeMesh successfully submitted: {volume_mesh.short_description()}")
         self._id = info.id
         if run_async:
             return volume_mesh
         log.debug("Waiting for volume mesh to be processed.")
         volume_mesh._webapi.get_info()
-        log.info(f"VolumeMesh successfully submitted: {volume_mesh._webapi.short_description()}")
 
         return VolumeMeshV2.from_cloud(volume_mesh.id)
 
