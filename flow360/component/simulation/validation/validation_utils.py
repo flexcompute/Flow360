@@ -122,8 +122,38 @@ def check_deleted_surface_pair(value):
     return value
 
 
+def check_user_defined_farfield_symmetry_existence(stored_entities):
+    """
+    Ensure that when:
+    1. UserDefinedFarfield is used
+    2. GhostSurface(name="symmetric") is assigned
+
+    That:
+    1. GAI and beta mesher is used.
+    """
+    validation_info = get_validation_info()
+
+    if validation_info is None:
+        return stored_entities
+
+    if validation_info.farfield_method != "user-defined":
+        return stored_entities
+
+    for item in stored_entities:
+        if (
+            item.private_attribute_entity_type_name != "GhostCircularPlane"
+            or item.name != "symmetric"
+        ):
+            continue
+        if not validation_info.use_geometry_AI or not validation_info.is_beta_mesher:
+            raise ValueError(
+                "Symmetry plane of user defined farfield will only be generated when both GAI and beta mesher are used."
+            )
+    return stored_entities
+
+
 def check_symmetric_boundary_existence(stored_entities):
-    """Check according to the criteria if the symmetric plane exists."""
+    """For automated farfield, check according to the criteria if the symmetric plane exists."""
     validation_info = get_validation_info()
 
     if validation_info is None:

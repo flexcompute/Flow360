@@ -53,6 +53,7 @@ def _create_porous_media_param(slip_wall_list, inflow, outflow, porous_zone):
             models=[
                 Fluid(
                     navier_stokes_solver=NavierStokesSolver(
+                        type_name="CompressibleIsentropic",
                         absolute_tolerance=1e-10,
                         kappa_MUSCL=0.01,
                         linear_solver=LinearSolver(max_iterations=25),
