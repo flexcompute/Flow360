@@ -589,7 +589,9 @@ def test_operating_condition(get_2dcrm_tutorial_param):
     converted = get_2dcrm_tutorial_param._preprocess(mesh_unit=1 * u.m)
     assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
     assertions.assertAlmostEqual(
-        converted.operating_condition.thermal_state.dynamic_viscosity.value,
+        converted.operating_condition.thermal_state.dynamic_viscosity.in_base(
+            get_2dcrm_tutorial_param.flow360_unit_system
+        ).value,
         4.0121618e-08,
     )
     assertions.assertEqual(converted.operating_condition.thermal_state.temperature, 272.1 * u.K)
@@ -604,7 +606,9 @@ def test_operating_condition(get_2dcrm_tutorial_param):
     assertions.assertAlmostEqual(
         converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
             converted.operating_condition.thermal_state.temperature
-        ).value.item(),
+        )
+        .in_base(get_2dcrm_tutorial_param.flow360_unit_system)
+        .value,
         4e-8,
     )
 

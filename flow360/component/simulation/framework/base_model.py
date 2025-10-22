@@ -7,17 +7,17 @@ import hashlib
 import json
 from functools import lru_cache
 from itertools import chain
-from typing import Any, List, Literal, Set, get_args, get_origin
+from typing import Any, List, Literal, get_args, get_origin
 
 import pydantic as pd
 import rich
+import unyt as u
 import yaml
 from pydantic import ConfigDict
 from pydantic._internal._decorators import Decorator, FieldValidatorDecoratorInfo
 from pydantic_core import InitErrorDetails
-from unyt.unit_registry import UnitRegistry
 
-from flow360.component.simulation.conversion import need_conversion, unit_converter
+from flow360.component.simulation.conversion import need_conversion
 from flow360.component.simulation.validation import validation_context
 from flow360.error_messages import do_not_modify_file_manually_msg
 from flow360.exceptions import Flow360FileError
@@ -32,7 +32,7 @@ DISCRIMINATOR_NAMES = [
 ]
 
 
-def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup):
+def _preprocess_nested_list(value, required_by, params, exclude, flow360_unit_system):
     new_list = []
     for i, item in enumerate(value):
         # Extend the 'required_by' path with the current index.
@@ -40,7 +40,7 @@ def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup
         if isinstance(item, list):
             # Recursively process nested lists.
             new_list.append(
-                _preprocess_nested_list(item, new_required_by, params, exclude, registry_lookup)
+                _preprocess_nested_list(item, new_required_by, params, exclude, flow360_unit_system)
             )
         elif isinstance(item, Flow360BaseModel):
             # Process Flow360BaseModel instances.
@@ -49,7 +49,7 @@ def _preprocess_nested_list(value, required_by, params, exclude, registry_lookup
                     params=params,
                     required_by=new_required_by,
                     exclude=exclude,
-                    registry_lookup=registry_lookup,
+                    flow360_unit_system=flow360_unit_system,
                 )
             )
         else:
@@ -93,18 +93,6 @@ class Conflicts(pd.BaseModel):
 
     field1: str
     field2: str
-
-
-class RegistryLookup:  # pylint:disable=too-few-public-methods
-    """
-    Helper object to cache the conversion unit system registry
-    """
-
-    __slots__ = ["converted_fields", "registry"]
-
-    def __init__(self):
-        self.converted_fields: Set[str] = set()
-        self.registry: UnitRegistry = None
 
 
 class Flow360BaseModel(pd.BaseModel):
@@ -655,10 +643,9 @@ class Flow360BaseModel(pd.BaseModel):
     def _nondimensionalization(
         self,
         *,
-        params,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system: u.UnitSystem = None,
     ) -> dict:
         solver_values = {}
         self_dict = self.__dict__
@@ -672,26 +659,8 @@ class Flow360BaseModel(pd.BaseModel):
         additional_fields = {}
 
         for property_name, value in chain(self_dict.items(), additional_fields.items()):
-            loc_name = property_name
-            field = self.__class__.model_fields.get(property_name)
-            if field is not None and field.alias is not None:
-                loc_name = field.alias
             if need_conversion(value) and property_name not in exclude:
-                dimension = value.units.dimensions
-                if dimension not in registry_lookup.converted_fields:
-                    flow360_conv_system = unit_converter(
-                        value.units.dimensions,
-                        params=params,
-                        required_by=[*required_by, loc_name],
-                    )
-                    # Calling unit_converter is always additive on the global conversion system
-                    # so we can only keep track of the most recent registry and use it
-                    registry_lookup.registry = (
-                        flow360_conv_system.registry  # pylint:disable=no-member
-                    )
-                    registry_lookup.converted_fields.add(dimension)
-                value.units.registry = registry_lookup.registry
-                solver_values[property_name] = value.in_base(unit_system="flow360_v2")
+                solver_values[property_name] = value.in_base(flow360_unit_system)
             else:
                 solver_values[property_name] = copy.copy(value)
 
@@ -703,7 +672,7 @@ class Flow360BaseModel(pd.BaseModel):
         params=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system: u.UnitSystem = None,
     ) -> Flow360BaseModel:
         """
         Loops through all fields, for Flow360BaseModel runs .preprocess() recursively. For dimensioned value performs
@@ -724,18 +693,13 @@ class Flow360BaseModel(pd.BaseModel):
         required_by: List[str] (optional)
             Path to property which requires conversion.
 
-        registry_lookup: RegistryLookup (optional)
-            Lookup object that allows us to quickly perform conversions by
-            reducing redundant calls to the conversion system getter
+
 
         Returns
         -------
         caller class
             returns caller class with units all in flow360 base unit system
         """
-
-        if registry_lookup is None:
-            registry_lookup = RegistryLookup()
 
         if exclude is None:
             exclude = []
@@ -744,10 +708,9 @@ class Flow360BaseModel(pd.BaseModel):
             required_by = []
 
         solver_values = self._nondimensionalization(
-            params=params,
             exclude=exclude,
             required_by=required_by,
-            registry_lookup=registry_lookup,
+            flow360_unit_system=flow360_unit_system,
         )
         for property_name, value in self.__dict__.items():
             if property_name in exclude:
@@ -761,12 +724,12 @@ class Flow360BaseModel(pd.BaseModel):
                     params=params,
                     required_by=[*required_by, loc_name],
                     exclude=exclude,
-                    registry_lookup=registry_lookup,
+                    flow360_unit_system=flow360_unit_system,
                 )
             elif isinstance(value, list):
                 # Use the helper to handle nested lists.
                 solver_values[property_name] = _preprocess_nested_list(
-                    value, [loc_name], params, exclude, registry_lookup
+                    value, [loc_name], params, exclude, flow360_unit_system
                 )
 
         return self.__class__(**solver_values)

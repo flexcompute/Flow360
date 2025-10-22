@@ -1507,9 +1507,9 @@ def get_solver_json(
             else -1
         ),
         "muRef": (
-            op.thermal_state.dynamic_viscosity.v.item()
+            op.thermal_state.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
             if not isinstance(op, LiquidOperatingCondition)
-            else op.material.dynamic_viscosity.v.item()
+            else op.material.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
         ),
     }
     if (

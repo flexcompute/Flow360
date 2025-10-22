@@ -3,16 +3,16 @@
         "defaults": {
             "surface_max_edge_length": {
                 "value": 0.2,
-                "units": "flow360_length_unit"
+                "units": "1.0*m"
             },
             "curvature_resolution_angle": {
                 "value": 0.20943951023931956,
-                "units": "flow360_angle_unit"
+                "units": "rad"
             },
             "surface_edge_growth_rate": 1.2,
             "geometry_accuracy": {
                 "value": 0.05,
-                "units": "flow360_length_unit"
+                "units": "1.0*m"
             },
             "preserve_thin_geometry": false,
             "surface_max_aspect_ratio": 0.01,
@@ -145,7 +145,7 @@
                 },
                 "max_edge_length": {
                     "value": 0.1,
-                    "units": "flow360_length_unit"
+                    "units": "1.0*m"
                 }
             },
             {
@@ -167,7 +167,7 @@
                 "preserve_thin_geometry": false,
                 "geometry_accuracy": {
                     "value": 0.05,
-                    "units": "flow360_length_unit"
+                    "units": "1.0*m"
                 }
             }
         ],
@@ -371,7 +371,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "axis_of_rotation": [
                                 1.0,
@@ -380,7 +380,7 @@
                             ],
                             "angle_of_rotation": {
                                 "value": 0.0,
-                                "units": "flow360_angle_unit"
+                                "units": "rad"
                             },
                             "scale": [
                                 1.0,
@@ -393,7 +393,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             }
                         },
                         "mesh_exterior": true
@@ -414,7 +414,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "axis_of_rotation": [
                                 1.0,
@@ -423,7 +423,7 @@
                             ],
                             "angle_of_rotation": {
                                 "value": 0.0,
-                                "units": "flow360_angle_unit"
+                                "units": "rad"
                             },
                             "scale": [
                                 1.0,
@@ -436,7 +436,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             }
                         },
                         "mesh_exterior": true
@@ -457,7 +457,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "axis_of_rotation": [
                                 1.0,
@@ -466,7 +466,7 @@
                             ],
                             "angle_of_rotation": {
                                 "value": 0.0,
-                                "units": "flow360_angle_unit"
+                                "units": "rad"
                             },
                             "scale": [
                                 1.0,
@@ -479,7 +479,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             }
                         },
                         "mesh_exterior": true
@@ -503,7 +503,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "axis_of_rotation": [
                                 1.0,
@@ -512,7 +512,7 @@
                             ],
                             "angle_of_rotation": {
                                 "value": 0.0,
-                                "units": "flow360_angle_unit"
+                                "units": "rad"
                             },
                             "scale": [
                                 1.0,
@@ -525,7 +525,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "private_attribute_matrix": [
                                 1.0,
@@ -560,7 +560,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "axis_of_rotation": [
                                 1.0,
@@ -569,7 +569,7 @@
                             ],
                             "angle_of_rotation": {
                                 "value": 0.0,
-                                "units": "flow360_angle_unit"
+                                "units": "rad"
                             },
                             "scale": [
                                 1.0,
@@ -582,7 +582,7 @@
                                     0.0,
                                     0.0
                                 ],
-                                "units": "flow360_length_unit"
+                                "units": "1.0*m"
                             },
                             "private_attribute_matrix": [
                                 1.0,

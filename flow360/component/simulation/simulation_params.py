@@ -325,8 +325,12 @@ class SimulationParams(_ParamModelBase):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(params=self, exclude=exclude)
-        return super().preprocess(params=self, exclude=exclude)
+                return super().preprocess(
+                    params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+                )
+        return super().preprocess(
+            params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+        )
 
     def _private_set_length_unit(self, validated_mesh_unit):
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
@@ -657,6 +661,16 @@ class SimulationParams(_ParamModelBase):
     @property
     def flow360_unit_system(self) -> u.UnitSystem:
         """Get the unit system for non-dimensionalization"""
+        if self.operating_condition is None:
+            # Pure meshing mode
+            return u.UnitSystem(
+                name="flow360_nondim",
+                length_unit=self.base_length,
+                mass_unit=1 * u.kg,  # pylint: disable=no-member
+                time_unit=1 * u.s,  # pylint: disable=no-member
+                temperature_unit=1 * u.K,  # pylint: disable=no-member
+            )
+
         return u.UnitSystem(
             name="flow360_nondim",
             length_unit=self.base_length,
