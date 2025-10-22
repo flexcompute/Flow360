@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 import numpy as np
+import pandas
 import pydantic as pd
 
 from flow360.cloud.s3_utils import CloudFileNotFoundError
@@ -814,6 +815,42 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
 
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
+    def convert_csv_headers(self, base: str, params: Flow360Params) -> dict:
+        bet_disks = params.bet_disks or []
+        if bet_disks = []:
+            return
+
+        csv_data = self.values
+        new_csv = {}
+
+        disk_rename_map = {}
+
+        for i, disk in enumerate(bet_disks):
+            if 'name' in disk.model_fields_set:
+                disk_name = disk.name
+            else:
+                disk_name = BETDisk.model_fields['name'].default
+
+            if disk_name != BETDisk.model_fields['name'].default:
+                # Note the underscore to match headers like Disk0_force_x
+                disk_rename_map[f"Disk{i}_"] = f"{disk_name}_"
+
+        for header, values in csv_data.items():
+            matched = False
+            for default_prefix, new_prefix in disk_rename_map.items():
+                if header.startswith(default_prefix):
+                    # Replace only the prefix part
+                    new_header = new_prefix + header[len(default_prefix):]
+                    new_csv[new_header] = values
+                    matched = True
+                    break
+            if not matched:
+                new_csv[header] = values
+        df = pandas.DataFrame(new_csv)
+        df.to_csv('bet_forces_v3.csv')
+
+
+
 
     def compute_coefficients(self, params: SimulationParams) -> BETDiskCoefficientsCSVModel:
         """
