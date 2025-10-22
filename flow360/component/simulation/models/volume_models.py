@@ -66,6 +66,7 @@ from flow360.component.simulation.primitives import (
     Box,
     CustomVolume,
     Cylinder,
+    AxisymmetricBody,
     EntityListWithCustomVolume,
     GenericVolume,
 )
