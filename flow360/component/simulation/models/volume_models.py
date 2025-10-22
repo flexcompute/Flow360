@@ -321,8 +321,8 @@ class AngleExpression(SingleAttributeModel):
         # locate t_seconds and convert it to (t*flow360_time_to_seconds)
         params = kwargs.get("params")
         one_sec_to_flow360_time = params.convert_unit(
-            value=1 * u.s,
-            target_system="flow360",  # pylint:disable=no-member
+            value=1 * u.s,  # pylint:disable=no-member
+            target_system="flow360",
         )
         flow360_time_to_seconds_expression = f"({1.0 / one_sec_to_flow360_time.value} * t)"
         self.value = re.sub(r"\bt_seconds\b", flow360_time_to_seconds_expression, self.value)
