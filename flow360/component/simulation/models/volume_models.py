@@ -63,10 +63,10 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import (
+    AxisymmetricBody,
     Box,
     CustomVolume,
     Cylinder,
-    AxisymmetricBody,
     EntityListWithCustomVolume,
     GenericVolume,
 )
@@ -321,9 +321,10 @@ class AngleExpression(SingleAttributeModel):
         # locate t_seconds and convert it to (t*flow360_time_to_seconds)
         params = kwargs.get("params")
         one_sec_to_flow360_time = params.convert_unit(
-            value=1 * u.s, target_system="flow360"  # pylint:disable=no-member
+            value=1 * u.s,
+            target_system="flow360",  # pylint:disable=no-member
         )
-        flow360_time_to_seconds_expression = f"({1.0/one_sec_to_flow360_time.value} * t)"
+        flow360_time_to_seconds_expression = f"({1.0 / one_sec_to_flow360_time.value} * t)"
         self.value = re.sub(r"\bt_seconds\b", flow360_time_to_seconds_expression, self.value)
 
         return super().preprocess(**kwargs)
@@ -778,7 +779,10 @@ class BETSingleInputFileBaseModel(Flow360BaseModel, metaclass=ABCMeta):
 
         file_content = get_file_content(input_data["file_path"])
 
-        return {"file_path": os.path.basename(input_data["file_path"]), "content": file_content}
+        return {
+            "file_path": os.path.basename(input_data["file_path"]),
+            "content": file_content,
+        }
 
 
 class AuxiliaryPolarFile(BETSingleInputFileBaseModel):
