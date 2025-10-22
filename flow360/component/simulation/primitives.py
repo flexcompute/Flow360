@@ -667,7 +667,7 @@ class GhostCircularPlane(_SurfaceEntityBase):
         return y_min, y_max, tolerance, largest_dimension
 
     def exists(self, validation_info) -> bool:
-        """Mesher logic for symmetric plane existence."""
+        """For automated farfield, check mesher logic for symmetric plane existence."""
 
         if self.name != "symmetric":
             # Quasi-3D mode, no need to check existence.
