@@ -358,7 +358,7 @@ class Flow360Resource(RestApi):
 
                 time.sleep(update_every_seconds)
 
-    def short_description(self) -> str:
+    def short_description(self, project_id: Optional[str] = None) -> str:
         """short_description
 
         Returns
@@ -366,12 +366,15 @@ class Flow360Resource(RestApi):
         str
             generates short description of resource (type, name, id, status)
         """
-        return f"""
-        type   = {self._resource_type}
-        name   = {self.name}
-        id     = {self.id}
-        status = {self.status.value}
+        output = f"""
+        type        = {self._resource_type}
+        name        = {self.name}
+        id          = {self.id}
+        status      = {self.status.value}
         """
+        if project_id is not None:
+            output += f"project id  = {project_id}\n"
+        return output
 
     @property
     def solver_version(self):

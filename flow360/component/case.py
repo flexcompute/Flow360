@@ -370,7 +370,12 @@ class CaseDraft(CaseBase, ResourceDraft):
         self._id = info.id
 
         self._submitted_case = Case(self.id)
-        log.info(f"Case successfully submitted: {self._submitted_case.short_description()}")
+
+        kwargs = {}
+        if self._submitted_case.project_id is not None:
+            kwargs = {"project_id": self._submitted_case.project_id}
+
+        log.info(f"Case successfully submitted: {self._submitted_case.short_description(**kwargs)}")
         return self._submitted_case
 
     def validate_case_inputs(self, pre_submit_checks=False):
@@ -558,7 +563,11 @@ class Case(CaseBase, Flow360Resource):
     def project_id(self) -> Optional[str]:
         """Returns the project id of the case if case was run with V2 interface."""
         if isinstance(self.info, CaseMeta):
-            return self.info.projectId
+            try:
+                return self.info.projectId
+            except AttributeError:
+                # No project id at all in V1 resources
+                return None
         if isinstance(self.info, CaseMetaV2):
             return self.info.project_id
         raise ValueError("Case info is not of type CaseMeta or CaseMetaV2")
