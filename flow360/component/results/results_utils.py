@@ -6,11 +6,14 @@ import re
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+import pandas
 
 from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
+from flow360.component.simulation.models.volume_models import BETDisk
+
 
 # pylint:disable=invalid-name
 _CL = "CL"
@@ -410,3 +413,52 @@ class PorousMediumCoefficientsComputation:
                 out[f"{zone_name}_{_CL}"].append(CL_val)
 
         return coefficients_model_class().from_dict(out)
+
+
+class BETDiskHeaderRename:
+    # pylint:disable=too-few-public-methods
+    """
+    Static utilities for renaming BET disk csv output headers to include the name of the BET disk.
+
+    This class provides only static methods and should not be instantiated or subclassed.
+    All methods are self-contained and require explicit parameters.
+    """
+
+  @staticmethod
+  def rename_csv_headers(BETCSVModel: OptionallyDownloadableResultCSVModel, params: SimulationParams, output: str):
+        bet_disks = []
+        for model in params.models:
+            if isinstance(model,BETDisk):
+                bet_disks.append(model)
+        if bet_disks == []:
+            return
+
+        csv_data = BETCSVModel.values
+        new_csv = {}
+
+        disk_rename_map = {}
+
+        for i, disk in enumerate(bet_disks):
+            if 'name' in disk.model_fields_set:
+                disk_name = disk.name
+            else:
+                disk_name = BETDisk.model_fields['name'].default
+
+            if disk_name != BETDisk.model_fields['name'].default:
+                disk_rename_map[f"Disk{i}_"] = f"{disk_name}_"
+
+        for header, values in csv_data.items():
+            matched = False
+            for default_prefix, new_prefix in disk_rename_map.items():
+                if header.startswith(default_prefix):
+                    # Replace only the prefix part
+                    new_header = new_prefix + header[len(default_prefix):]
+                    new_csv[new_header] = values
+                    matched = True
+                    break
+            if not matched:
+                new_csv[header] = values
+        df = pandas.DataFrame(new_csv)
+        df.to_csv(output)
+
+
