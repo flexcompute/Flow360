@@ -45,6 +45,7 @@ from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
     check_symmetric_boundary_existence,
+    check_user_defined_farfield_symmetry_existence,
 )
 
 # pylint: disable=fixme
@@ -59,6 +60,7 @@ class EntityListAllowingGhost(EntityList):
     @classmethod
     def ghost_entity_validator(cls, value):
         """Run all validators"""
+        check_user_defined_farfield_symmetry_existence(value)
         return check_symmetric_boundary_existence(value)
 
 
