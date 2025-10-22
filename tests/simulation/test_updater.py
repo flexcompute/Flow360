@@ -776,7 +776,7 @@ def test_updater_to_25_7_2():
     )
 
 
-def test_updater_to_25_7_5_remove_entity_bucket_field():
+def test_updater_to_25_7_6_remove_entity_bucket_field():
     # Construct minimal params containing entity dicts with the legacy bucket field
     params_as_dict = {
         "outputs": [
@@ -825,7 +825,7 @@ def test_updater_to_25_7_5_remove_entity_bucket_field():
 
     params_new = updater(
         version_from="25.7.4",
-        version_to="25.7.5b0",
+        version_to="25.7.6b0",
         params_as_dict=params_as_dict,
     )
 
