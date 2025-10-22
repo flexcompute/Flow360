@@ -1489,27 +1489,16 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
     `Expression` and `UserVariable` are both identified by their schema.
     """
 
-    class ExpressionUsage(Enum):
-        """
-        Enum to identify the usage of an expression.
-        """
-
-        VALUE_OR_EXPRESSION = "ValueOrExpression"
-        EXPRESSION_AS_IS = "ExpressionAsIs"
-
     def _is_user_variable(field: dict) -> bool:
         return "type_name" in field and field["type_name"] == "UserVariable"
 
     def _is_expression(field: dict) -> bool:
-        # Two possible cases:
-        # ValueOrExpression:
         if "type_name" in field and field["type_name"] == "expression":
-            return ExpressionUsage.VALUE_OR_EXPRESSION
-        # Expression as is (no such usage as of now)
+            return True
         if sorted(field.keys()) == ["expression", "output_units"] or sorted(field.keys()) == [
             "expression"
         ]:
-            return ExpressionUsage.EXPRESSION_AS_IS
+            return True
         return False
 
     def _get_dependent_expressions(
@@ -1535,7 +1524,6 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
         exclude_paths: set[tuple[str, ...]] = (
             ("private_attribute_asset_cache", "variable_context"),
         ),
-        seen_ids: set[int] | None = None,
     ):
         # pylint: disable=too-many-branches
         """
@@ -1545,16 +1533,11 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
         any tuple in exclude_paths, the sub-tree is skipped. seen_ids prevents revisiting
         the same object multiple times when shared references exist.
         """
-        if seen_ids is None:
-            seen_ids = set()
+        if data is None or isinstance(data, (int, float, str, bool)):
+            return
 
         if current_path in exclude_paths:
             return
-
-        obj_id = id(data)
-        if obj_id in seen_ids:
-            return
-        seen_ids.add(obj_id)
 
         if isinstance(data, dict):
             # Check if this dict is a UserVariable
@@ -1572,11 +1555,7 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
 
             # Check if this dict is an Expression
             elif _is_expression(data):
-                usage = _is_expression(data)
-                if usage == ExpressionUsage.VALUE_OR_EXPRESSION:
-                    used_expressions.add(data.get("expression"))
-                elif usage == ExpressionUsage.EXPRESSION_AS_IS:
-                    used_expressions.add(data.get("expression"))
+                used_expressions.add(data.get("expression"))
 
             # Recursively process all values in the dict
             for key, value in data.items():
@@ -1585,7 +1564,6 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
                     used_expressions,
                     current_path + (key,),
                     exclude_paths,
-                    seen_ids,
                 )
 
         elif isinstance(data, list):
@@ -1596,7 +1574,6 @@ def get_referenced_expressions_and_user_variables(param_as_dict: dict):
                     used_expressions,
                     current_path + (str(idx),),
                     exclude_paths,
-                    seen_ids,
                 )
 
     if (
