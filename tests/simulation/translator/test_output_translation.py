@@ -1,8 +1,10 @@
+import copy
 import json
 
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.material import Water
 from flow360.component.simulation.operating_condition.operating_condition import (
@@ -41,6 +43,9 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import ImportedSurface, Surface
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.translator.non_dim_utils import (
+    convert_and_strip_units_inplace,
+)
 from flow360.component.simulation.translator.solver_translator import (
     get_solver_json,
     translate_output,
@@ -446,10 +451,13 @@ def test_slice_output(
 ):
     ##:: sliceOutput with NO global settings
     with SI_unit_system:
-        param = SimulationParams(outputs=slice_output_config[0])
-    param = param._preprocess(1.0 * u.m, exclude=["models"])
+        param = SimulationParams(
+            outputs=slice_output_config[0],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
+        )
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["sliceOutput"], param.flow360_unit_system)
 
     assert compare_values(slice_output_config[1], translated["sliceOutput"])
 
@@ -995,11 +1003,12 @@ def test_surface_probe_output(vel_in_km_per_hr):
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
             outputs=param_with_ref[0],
             user_defined_fields=[UserDefinedField(name="my_own_field", expression="1+1")],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
-    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
-
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["surfaceMonitorOutput"], param.flow360_unit_system)
+
     assert compare_values(param_with_ref[1], translated["surfaceMonitorOutput"])
 
 
@@ -1013,54 +1022,63 @@ def test_probe_output(
         param = SimulationParams(
             operating_condition=AerospaceCondition(),
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
-            outputs=probe_output_config[0],
+            outputs=copy.deepcopy(probe_output_config[0]),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
-    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["monitorOutput"], param.flow360_unit_system)
 
     assert compare_values(probe_output_config[1], translated["monitorOutput"])
 
     ##:: monitorOutput with line probes
     with SI_unit_system:
-        param = SimulationParams(outputs=probe_output_with_point_array[0])
-    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+        param = SimulationParams(
+            outputs=copy.deepcopy(probe_output_with_point_array[0]),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
+        )
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["monitorOutput"], param.flow360_unit_system)
+
     assert compare_values(probe_output_with_point_array[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral
     with SI_unit_system:
         param = SimulationParams(
-            outputs=surface_integral_output_config[0],
+            outputs=copy.deepcopy(surface_integral_output_config[0]),
             user_defined_fields=[
                 UserDefinedField(name="My_field_1", expression="1+1"),
                 UserDefinedField(name="My_field_2", expression="1+12"),
             ],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
-    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["monitorOutput"], param.flow360_unit_system)
+
     assert compare_values(surface_integral_output_config[1], translated["monitorOutput"])
 
     ##:: surfaceIntegral and probeMonitor with global probe settings
+
     with SI_unit_system:
         param = SimulationParams(
             operating_condition=AerospaceCondition(),
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=10),
-            outputs=surface_integral_output_config[0] + probe_output_config[0],
+            outputs=copy.deepcopy(surface_integral_output_config[0] + probe_output_config[0]),
             user_defined_fields=[
                 UserDefinedField(name="My_field_1", expression="1+1"),
                 UserDefinedField(name="My_field_2", expression="1+12"),
             ],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
-    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["monitorOutput"], param.flow360_unit_system)
 
     ref = {
         "outputFields": [],
@@ -1168,10 +1186,11 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
             operating_condition=AerospaceCondition(),
             outputs=aeroacoustic_output_config[0],
             time_stepping=Unsteady(steps=1, step_size=0.1),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
     translated = {"boundaries": {}}
-    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["aeroacousticOutput"], param.flow360_unit_system)
 
     assert compare_values(aeroacoustic_output_config[1], translated["aeroacousticOutput"])
 
@@ -1180,10 +1199,11 @@ def test_acoustic_output(aeroacoustic_output_config, aeroacoustic_output_permeab
             operating_condition=AerospaceCondition(),
             outputs=aeroacoustic_output_permeable_config[0],
             time_stepping=Unsteady(steps=1, step_size=0.1),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
     translated = {"boundaries": {}}
-    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["aeroacousticOutput"], param.flow360_unit_system)
 
     assert compare_values(aeroacoustic_output_permeable_config[1], translated["aeroacousticOutput"])
 
@@ -1274,11 +1294,15 @@ def test_surface_slice_output(vel_in_km_per_hr):
     )
 
     with SI_unit_system:
-        param = SimulationParams(outputs=param_with_ref[0])
-    param = param._preprocess(mesh_unit=1.0 * u.m, exclude=["models"])
+        param = SimulationParams(
+            outputs=param_with_ref[0],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
+        )
 
     translated = {"boundaries": {}}
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["surfaceSliceOutput"], param.flow360_unit_system)
+
     assert compare_values(param_with_ref[1], translated["surfaceSliceOutput"])
 
 
@@ -1426,10 +1450,10 @@ def test_dimensioned_output_fields_translation(vel_in_km_per_hr):
             },
         ]
     }
-    print(json.dumps(solver_json["userDefinedFields"], indent=2))
+
     translated_udfs = sorted(solver_json["userDefinedFields"], key=lambda x: x["name"])
     ref_udfs = sorted(ref["userDefinedFields"], key=lambda x: x["name"])
-    print(">>>", translated_udfs)
+
     assert compare_values(translated_udfs, ref_udfs)
 
 
@@ -1458,12 +1482,13 @@ def streamline_output_config():
             )
         ],
         {
+            "Points": [{"name": "point_streamline", "location": [0.0, 1.0, 0.04]}],
             "PointArrays": [
                 {
-                    "end": [0.0, 1.0, 0.2],
                     "name": "pointarray_streamline",
-                    "numberOfPoints": 20,
                     "start": [0.0, 0.0, 0.2],
+                    "end": [0.0, 1.0, 0.2],
+                    "numberOfPoints": 20,
                 }
             ],
             "PointArrays2D": [
@@ -1471,12 +1496,14 @@ def streamline_output_config():
                     "name": "pointarray2d_streamline",
                     "origin": [0.0, 0.0, -0.2],
                     "uAxisVector": [0.0, 1.4, 0.0],
-                    "uNumberOfPoints": 10,
                     "vAxisVector": [0.0, 0.0, 0.4],
+                    "uNumberOfPoints": 10,
                     "vNumberOfPoints": 10,
                 }
             ],
-            "Points": [{"location": [0.0, 1.0, 0.04], "name": "point_streamline"}],
+            "outputFields": [],
+            "animationFrequency": -1,
+            "animationFrequencyOffset": 0,
         },
     )
 
@@ -1487,10 +1514,13 @@ def test_streamline_output(streamline_output_config):
             operating_condition=AerospaceCondition(),
             outputs=streamline_output_config[0],
             time_stepping=Unsteady(step_size=0.1 * u.s, steps=100),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
     translated = {"boundaries": {}}
-    param = param._preprocess(mesh_unit=1 * u.m, exclude=["models"])
+
     translated = translate_output(param, translated)
+    convert_and_strip_units_inplace(translated["streamlineOutput"], param.flow360_unit_system)
+    assert compare_values(streamline_output_config[1], translated["streamlineOutput"])
 
 
 @pytest.fixture()

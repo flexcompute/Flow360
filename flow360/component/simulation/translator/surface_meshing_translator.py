@@ -7,6 +7,9 @@ from flow360.component.simulation.meshing_param.edge_params import SurfaceEdgeRe
 from flow360.component.simulation.meshing_param.face_params import SurfaceRefinement
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.translator.non_dim_utils import (
+    convert_and_strip_units_inplace,
+)
 from flow360.component.simulation.translator.utils import (
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
@@ -29,7 +32,7 @@ def SurfaceEdgeRefinement_to_edges(obj: SurfaceEdgeRefinement):
         }
 
     if obj.method.type == "height":
-        return {"type": "aniso", "method": "height", "value": obj.method.value.value.item()}
+        return {"type": "aniso", "method": "height", "value": obj.method.value}
 
     if obj.method.type == "aspectRatio":
         return {"type": "aniso", "method": "aspectRatio", "value": obj.method.value}
@@ -52,9 +55,7 @@ def SurfaceRefinement_to_faces(obj: SurfaceRefinement, global_max_edge_length):
     """
     return {
         "maxEdgeLength": (
-            obj.max_edge_length.value.item()
-            if obj.max_edge_length is not None
-            else global_max_edge_length.value.item()
+            obj.max_edge_length if obj.max_edge_length is not None else global_max_edge_length
         ),
     }
 
@@ -82,7 +83,7 @@ def legacy_mesher_json(input_params: SimulationParams):
             location=["meshing", "refinements", "defaults"],
         )
 
-    default_max_edge_length = input_params.meshing.defaults.surface_max_edge_length.value.item()
+    default_max_edge_length = input_params.meshing.defaults.surface_max_edge_length
 
     ##:: >> Step 2: Get curvatureResolutionAngle [REQUIRED]
     translated["curvatureResolutionAngle"] = (
@@ -131,6 +132,8 @@ def legacy_mesher_json(input_params: SimulationParams):
     for surface in grouped_faces:
         for face_id in surface.private_attribute_sub_components:
             translated["boundaries"][face_id] = {"boundaryName": surface.name}
+
+    convert_and_strip_units_inplace(translated, input_params.flow360_unit_system)
 
     return translated
 
@@ -224,6 +227,10 @@ def filter_simulation_json(input_params: SimulationParams):
     # Filter the JSON to only include the GAI surface meshing parameters
     filtered_json = _traverse_and_filter(json_data, GAI_SETTING_WHITELIST)
 
+    convert_and_strip_units_inplace(
+        filtered_json, input_params.flow360_unit_system, legacy_mode=True
+    )
+
     return filtered_json
 
 
@@ -237,6 +244,8 @@ def get_surface_meshing_json(input_params: SimulationParams, mesh_units):
         return legacy_mesher_json(input_params)
 
     # === GAI mode ===
-    input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
+    input_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices(
+        flow360_unit_system=input_params.flow360_unit_system
+    )
     # Just do a filtering of the input_params's JSON
     return filter_simulation_json(input_params)

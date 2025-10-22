@@ -50,17 +50,14 @@ class Transformation(Flow360BaseModel):
 
     private_attribute_matrix: Optional[list[float]] = pd.Field(None)
 
-    def get_transformation_matrix(self) -> np.ndarray:
+    def get_transformation_matrix(self, flow360_unit_system: u.UnitSystem) -> np.ndarray:
         """
         Find 3(row)x4(column) transformation matrix and store as row major.
         Applies to vector of [x, y, z, 1] in project length unit.
         """
         # pylint:disable=no-member
-        error_msg = "[Internal] `{}` is dimensioned. Use get_transformation_matrix() after non-dimensionalization!"
-        assert str(self.origin.units) == "flow360_length_unit", error_msg.format("origin")
-        assert str(self.translation.units) == "flow360_length_unit", error_msg.format("translation")
-        origin_array = np.asarray(self.origin.value)
-        translation_array = np.asarray(self.translation.value)
+        origin_array = np.asarray(self.origin.in_base(flow360_unit_system).value)
+        translation_array = np.asarray(self.translation.in_base(flow360_unit_system).value)
 
         axis = np.asarray(self.axis_of_rotation, dtype=np.float64)
         angle = self.angle_of_rotation.to("rad").v.item()

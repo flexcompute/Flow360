@@ -57,6 +57,9 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Unsteady
+from flow360.component.simulation.translator.non_dim_utils import (
+    convert_and_strip_units_inplace,
+)
 from flow360.component.simulation.unit_system import CGS_unit_system, SI_unit_system
 from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics import (
     UserDefinedDynamic,
@@ -163,6 +166,7 @@ def get_the_param():
                     update_law=["fake"],
                 )
             ],
+            private_attribute_asset_cache=AssetCache(project_length_unit=10 * u.m),
         )
         return param
 
@@ -206,6 +210,7 @@ def get_param_with_liquid_operating_condition():
                 ),
             ],
             time_stepping=Unsteady(step_size=2 * 0.2 * u.s, steps=123),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
         return param
 
@@ -217,69 +222,81 @@ def test_simulation_params_serialization(get_the_param):
 
 @pytest.mark.usefixtures("array_equality_override")
 def test_simulation_params_unit_conversion(get_the_param):
-    converted = get_the_param._preprocess(mesh_unit=10 * u.m)
+
+    def converted(value):
+        return convert_and_strip_units_inplace(value, get_the_param.flow360_unit_system)
 
     # pylint: disable=fixme
     # TODO: Please perform hand calculation and update the following assertions
     # LengthType
-    assertions.assertAlmostEqual(converted.reference_geometry.moment_length.value, 0.1)
+    assertions.assertAlmostEqual(converted(get_the_param.reference_geometry.moment_length), 0.1)
     # AngleType
-    assertions.assertAlmostEqual(converted.operating_condition.alpha.value, 0.5235987755982988)
+    assertions.assertAlmostEqual(
+        converted(get_the_param.operating_condition.alpha), 0.5235987755982988
+    )
     # TimeType
-    assertions.assertAlmostEqual(converted.time_stepping.step_size.value, 13.8888282)
+    assertions.assertAlmostEqual(converted(get_the_param.time_stepping.step_size), 13.8888282)
     # AbsoluteTemperatureType
     assertions.assertAlmostEqual(
-        converted.models[0].material.dynamic_viscosity.effective_temperature.value, 0.368
+        converted(get_the_param.models[0].material.dynamic_viscosity.effective_temperature),
+        0.368,
     )
     # VelocityType
-    assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.8)
+    assertions.assertAlmostEqual(
+        converted(get_the_param.operating_condition.velocity_magnitude), 0.8
+    )
     # AreaType
-    assertions.assertAlmostEqual(converted.reference_geometry.area.value, 1e-6)
+    assertions.assertAlmostEqual(converted(get_the_param.reference_geometry.area), 1e-6)
     # PressureType
-    assertions.assertAlmostEqual(converted.models[6].spec.value.value, 1.0454827495346328e-06)
+    assertions.assertAlmostEqual(
+        converted(get_the_param.models[6].spec.value), 1.0454827495346328e-06
+    )
     # ViscosityType
     assertions.assertAlmostEqual(
-        converted.models[0].material.dynamic_viscosity.reference_viscosity.value,
+        converted(get_the_param.models[0].material.dynamic_viscosity.reference_viscosity),
         1.0005830903790088e-11,
     )
     # AngularVelocityType
-    assertions.assertAlmostEqual(converted.models[3].spec.value.value, 0.01296006)
+    assertions.assertAlmostEqual(converted(get_the_param.models[3].spec.value), 0.01296006)
     # HeatFluxType
-    assertions.assertAlmostEqual(converted.models[1].heat_spec.value.value, 2.47809322e-11)
+    assertions.assertAlmostEqual(converted(get_the_param.models[1].heat_spec.value), 2.47809322e-11)
     # HeatSourceType
     assertions.assertAlmostEqual(
-        converted.models[4].volumetric_heat_source.value, 4.536005048050727e-08
+        converted(get_the_param.models[4].volumetric_heat_source), 4.536005048050727e-08
     )
     # HeatSourceType
     assertions.assertAlmostEqual(
-        converted.models[4].volumetric_heat_source.value, 4.536005048050727e-08
+        converted(get_the_param.models[4].volumetric_heat_source), 4.536005048050727e-08
     )
     # HeatCapacityType
     assertions.assertAlmostEqual(
-        converted.models[5].material.specific_heat_capacity.value, 0.00248834
+        converted(get_the_param.models[5].material.specific_heat_capacity), 0.00248834
     )
     # ThermalConductivityType
     assertions.assertAlmostEqual(
-        converted.models[5].material.thermal_conductivity.value, 7.434279666747016e-10
+        converted(get_the_param.models[5].material.thermal_conductivity),
+        7.434279666747016e-10,
     )
     # InverseAreaType
-    assertions.assertAlmostEqual(converted.models[4].darcy_coefficient.value[0], 1000.0)
+    assertions.assertAlmostEqual(converted(get_the_param.models[4].darcy_coefficient)[0], 1000.0)
     # InverseLengthType
     assertions.assertAlmostEqual(
-        converted.models[4].forchheimer_coefficient.value[0], 3.280839895013123
+        converted(get_the_param.models[4].forchheimer_coefficient)[0], 3.280839895013123
     )
     # MassFlowRateType
-    assertions.assertAlmostEqual(converted.models[7].spec.value.value, 1.6265848836734695e-06)
+    assertions.assertAlmostEqual(
+        converted(get_the_param.models[7].spec.value), 1.6265848836734695e-06
+    )
 
     # SpecificEnergyType
     assertions.assertAlmostEqual(
-        converted.models[6].turbulence_quantities.turbulent_kinetic_energy.value,
+        converted(get_the_param.models[6].turbulence_quantities.turbulent_kinetic_energy),
         1.0454827495346325e-07,
     )
 
     # FrequencyType
     assertions.assertAlmostEqual(
-        converted.models[6].turbulence_quantities.specific_dissipation_rate.value,
+        converted(get_the_param.models[6].turbulence_quantities.specific_dissipation_rate),
         28.80012584,
     )
 
@@ -406,50 +423,54 @@ def test_delta_temperature_scaling():
                 thermal_state=ThermalState.from_standard_atmosphere(
                     temperature_offset=123 * u.delta_degF
                 )
-            )
+            ),
+            private_attribute_asset_cache=AssetCache(project_length_unit=1.0 * u.m),
         )
     reference_temperature = param.operating_condition.thermal_state.temperature.to("K")
 
-    scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
-    processed_param = param._preprocess(mesh_unit=1 * u.m)
+    ref_scaled_temperature_offset = (123 * u.delta_degF / reference_temperature).value
 
-    assert (
-        processed_param.operating_condition.thermal_state.temperature_offset.value
-        == scaled_temperature_offset
+    result = convert_and_strip_units_inplace(
+        param.operating_condition.thermal_state.temperature_offset, param.flow360_unit_system
     )
+
+    assert result == ref_scaled_temperature_offset
 
 
 def test_simulation_params_unit_conversion_with_liquid_condition(
     get_param_with_liquid_operating_condition,
 ):
     params: SimulationParams = get_param_with_liquid_operating_condition
-    converted = params._preprocess(mesh_unit=1 * u.m)
+
+    def converted(value):
+        return convert_and_strip_units_inplace(value, params.flow360_unit_system)
 
     fake_water_speed_of_sound = (
         params.operating_condition.velocity_magnitude / LIQUID_IMAGINARY_FREESTREAM_MACH
     )
     # TimeType
+    non_dim_step_size = params.time_stepping.step_size / (1.0 / fake_water_speed_of_sound)
     assertions.assertAlmostEqual(
-        converted.time_stepping.step_size.value,
-        params.time_stepping.step_size / (1.0 / fake_water_speed_of_sound),
+        converted(params.time_stepping.step_size),
+        non_dim_step_size,
     )
 
     # VelocityType
     assertions.assertAlmostEqual(
-        converted.models[1].velocity.value[0],
+        converted(params.models[1].velocity)[0],
         1.0 / fake_water_speed_of_sound,
     )
 
     # AngularVelocityType
     assertions.assertAlmostEqual(
-        converted.models[2].spec.value.value,
+        converted(params.models[2].spec.value),
         0.45 / fake_water_speed_of_sound.value,
         # Note: We did not use original value from params like the others b.c
         # for some unknown reason THIS value in params will also converted to flow360 unit system...
     )
     # ViscosityType
     assertions.assertAlmostEqual(
-        converted.models[3].turbulence_quantities.modified_turbulent_viscosity.value,
+        converted(params.models[3].turbulence_quantities.modified_turbulent_viscosity),
         10 / (1 * fake_water_speed_of_sound.value),
         # Note: We did not use original value from params like the others b.c
         # for some unknown reason THIS value in params will also converted to flow360 unit system...
@@ -566,15 +587,12 @@ def test_transformation_matrix():
         params = SimulationParams(
             operating_condition=AerospaceCondition(),
             private_attribute_asset_cache=AssetCache(
-                project_entity_info=geometry_entity_info,
+                project_entity_info=geometry_entity_info, project_length_unit=2.0 * u.m
             ),
         )
-    nondim_params = params._preprocess(mesh_unit=2 * u.m)
-    transformation_matrix = (
-        nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
-            0
-        ].transformation.get_transformation_matrix()
-    )
+    transformation_matrix = params.private_attribute_asset_cache.project_entity_info.grouped_bodies[
+        0
+    ][0].transformation.get_transformation_matrix(params.flow360_unit_system)
 
     assert np.isclose(transformation_matrix @ np.array([6, 5, 4, 2]), np.array([16, 105, 9])).all()
     assert np.isclose(transformation_matrix @ np.array([7, 6, 5, 2]), np.array([17, 107, 12])).all()
@@ -585,12 +603,14 @@ def test_transformation_matrix():
 
     # Test compute_transformation_matrices
     with model_attribute_unlock(
-        nondim_params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
+        params.private_attribute_asset_cache.project_entity_info, "body_group_tag"
     ):
-        nondim_params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
+        params.private_attribute_asset_cache.project_entity_info.body_group_tag = "FCsource"
 
-    nondim_params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices()
-    assert nondim_params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
+    params.private_attribute_asset_cache.project_entity_info.compute_transformation_matrices(
+        params.flow360_unit_system
+    )
+    assert params.private_attribute_asset_cache.project_entity_info.grouped_bodies[0][
         0
     ].transformation.private_attribute_matrix == [
         0.07142857142857151,

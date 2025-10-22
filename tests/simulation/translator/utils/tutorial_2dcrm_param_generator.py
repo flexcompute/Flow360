@@ -1,6 +1,7 @@
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.models.surface_models import (
     Freestream,
     SlipWall,
@@ -37,6 +38,7 @@ def get_2dcrm_tutorial_param():
                 SlipWall(entities=[my_symmetry_plane]),
                 Freestream(entities=[my_freestream]),
             ],
+            private_attribute_asset_cache=AssetCache(project_length_unit=1 * u.m),
         )
 
     return param

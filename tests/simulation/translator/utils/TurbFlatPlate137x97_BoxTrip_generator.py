@@ -15,7 +15,7 @@ import flow360.component.simulation.units as units
 @pytest.fixture()
 def create_turb_flat_plate_box_trip_param():
 
-    with units.flow360_unit_system:
+    with units.SI_unit_system:
 
         thermal_state = op_condition.ThermalState(
             temperature=300 * units.K,
@@ -94,6 +94,7 @@ def create_turb_flat_plate_box_trip_param():
                     output_fields=["Cf"],
                 ),
             ],
+            private_attribute_asset_cache=params.AssetCache(project_length_unit=1 * units.m),
         )
 
     return param

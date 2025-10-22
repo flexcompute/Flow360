@@ -60,13 +60,11 @@ from flow360.component.simulation.outputs.output_entities import (
 from flow360.component.simulation.outputs.outputs import (
     Isosurface,
     IsosurfaceOutput,
-    MovingStatistic,
     ProbeOutput,
     SliceOutput,
     StreamlineOutput,
     SurfaceIntegralOutput,
     SurfaceOutput,
-    TimeAverageStreamlineOutput,
     UserDefinedField,
     VolumeOutput,
 )
@@ -83,6 +81,9 @@ from flow360.component.simulation.services import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import RampCFL, Steady
+from flow360.component.simulation.translator.non_dim_utils import (
+    convert_and_strip_units_inplace,
+)
 from flow360.component.simulation.translator.solver_translator import get_solver_json
 from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
@@ -541,7 +542,7 @@ def test_symmetryBC(create_symmetryBC_param):
     translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_symmetryBC.json")
 
 
-def test_XV15HoverMRF(create_XV15HoverMRF_param, rotation_cylinder):
+def test_XV15HoverMRF(create_XV15HoverMRF_param):
     param = create_XV15HoverMRF_param
     translate_and_compare(param, mesh_unit=1.0 * u.m, ref_json_file="Flow360_XV15HoverMRF.json")
 
@@ -583,30 +584,6 @@ def test_2dcrm_tutorial_temperature_c(get_2dcrm_tutorial_param_deg_c):
 def test_2dcrm_tutorial_temperature_f(get_2dcrm_tutorial_param_deg_f):
     param = get_2dcrm_tutorial_param_deg_f
     translate_and_compare(param, mesh_unit=1 * u.m, ref_json_file="Flow360_tutorial_2dcrm.json")
-
-
-def test_operating_condition(get_2dcrm_tutorial_param):
-    converted = get_2dcrm_tutorial_param._preprocess(mesh_unit=1 * u.m)
-    assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
-    assertions.assertAlmostEqual(
-        converted.operating_condition.thermal_state.dynamic_viscosity.value,
-        4.0121618e-08,
-    )
-    assertions.assertEqual(converted.operating_condition.thermal_state.temperature, 272.1 * u.K)
-    assertions.assertAlmostEqual(
-        converted.operating_condition.thermal_state.material.dynamic_viscosity.reference_viscosity.value,
-        4.0121618e-08,
-    )
-    assertions.assertEqual(
-        converted.operating_condition.thermal_state.material.dynamic_viscosity.effective_temperature,
-        110.4 * u.K,
-    )
-    assertions.assertAlmostEqual(
-        converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
-            converted.operating_condition.thermal_state.temperature
-        ).value.item(),
-        4e-8,
-    )
 
 
 def test_initial_condition_and_restart():

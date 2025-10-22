@@ -657,12 +657,19 @@ class SimulationParams(_ParamModelBase):
     @property
     def flow360_unit_system(self) -> u.UnitSystem:
         """Get the unit system for non-dimensionalization"""
+        if self.operating_condition:
+            return u.UnitSystem(
+                name="flow360_nondim",
+                length_unit=self.base_length,
+                mass_unit=self.base_mass,
+                time_unit=self.base_time,
+                temperature_unit=self.base_temperature,
+            )
         return u.UnitSystem(
             name="flow360_nondim",
             length_unit=self.base_length,
-            mass_unit=self.base_mass,
-            time_unit=self.base_time,
-            temperature_unit=self.base_temperature,
+            mass_unit=1 * u.kg,  # Not used anyway. pylint: disable=no-member
+            time_unit=1 * u.s,  # Not used anyway. pylint: disable=no-member
         )
 
     @property

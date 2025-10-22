@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
+import unyt as u
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
@@ -402,7 +403,7 @@ class GeometryEntityInfo(EntityInfoModel):
                 )
         return internal_registry
 
-    def compute_transformation_matrices(self):
+    def compute_transformation_matrices(self, flow360_unit_system: u.UnitSystem):
         """
         Computes the transformation matrices for the **selected** body group and store
         matrices under `private_attribute_matrix`.
@@ -421,7 +422,9 @@ class GeometryEntityInfo(EntityInfoModel):
             i_body_group
         ]:
             body_group.transformation.private_attribute_matrix = (
-                body_group.transformation.get_transformation_matrix().flatten().tolist()
+                body_group.transformation.get_transformation_matrix(flow360_unit_system)
+                .flatten()
+                .tolist()
             )
 
     def get_body_group_to_face_group_name_map(self) -> dict[str, list[str]]:

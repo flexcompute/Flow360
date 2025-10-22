@@ -24,6 +24,9 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.translator.non_dim_utils import (
+    convert_and_strip_units_inplace,
+)
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
     preprocess_input,
@@ -40,7 +43,7 @@ def uniform_refinement_translator(obj: UniformRefinement):
     Translate UniformRefinement.
 
     """
-    return {"spacing": obj.spacing.value.item()}
+    return {"spacing": obj.spacing}
 
 
 def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
@@ -48,9 +51,9 @@ def cylindrical_refinement_translator(obj: AxisymmetricRefinementBase):
     Translate CylindricalRefinementBase. [SlidingInterface + RotorDisks]
     """
     return {
-        "spacingAxial": obj.spacing_axial.value.item(),
-        "spacingRadial": obj.spacing_radial.value.item(),
-        "spacingCircumferential": obj.spacing_circumferential.value.item(),
+        "spacingAxial": obj.spacing_axial,
+        "spacingRadial": obj.spacing_radial,
+        "spacingCircumferential": obj.spacing_circumferential,
     }
 
 
@@ -59,9 +62,9 @@ def box_refinement_translator(obj: StructuredBoxRefinement):
     Translate StructuredBoxRefinement spacings
     """
     return {
-        "spacingAxis1": obj.spacing_axis1.value.item(),
-        "spacingAxis2": obj.spacing_axis2.value.item(),
-        "spacingNormal": obj.spacing_normal.value.item(),
+        "spacingAxis1": obj.spacing_axis1,
+        "spacingAxis2": obj.spacing_axis2,
+        "spacingNormal": obj.spacing_normal,
     }
 
 
@@ -72,7 +75,7 @@ def boundary_layer_translator(obj: BoundaryLayer):
     """
     face = {"type": "aniso"}
     if obj.first_layer_thickness is not None:
-        face["firstLayerThickness"] = obj.first_layer_thickness.value.item()
+        face["firstLayerThickness"] = obj.first_layer_thickness
     if obj.growth_rate is not None:
         face["growthRate"] = obj.growth_rate
     return face
@@ -106,11 +109,11 @@ def rotation_volume_translator(obj: RotationVolume, rotor_disk_names: list):
             if is_exact_instance(entity, Cylinder):
                 if entity.name in rotor_disk_names:
                     # Current sliding interface encloses a rotor disk
-                    # Then we append the interace name which is hardcoded "rotorDisk-<name>""
+                    # Then we append the interface name which is hardcoded "rotorDisk-<name>""
                     setting["enclosedObjects"].append("rotorDisk-" + entity.name)
                 else:
                     # Current sliding interface encloses another sliding interface
-                    # Then we append the interace name which is hardcoded "slidingInterface-<name>""
+                    # Then we append the interface name which is hardcoded "slidingInterface-<name>""
                     setting["enclosedObjects"].append("slidingInterface-" + entity.name)
             elif is_exact_instance(entity, AxisymmetricBody):
                 setting["enclosedObjects"].append("slidingInterface-" + entity.name)
@@ -126,17 +129,17 @@ def refinement_entity_injector(entity_obj):
     if isinstance(entity_obj, Cylinder):
         return {
             "type": "cylinder",
-            "radius": entity_obj.outer_radius.value.item(),
-            "length": entity_obj.height.value.item(),
-            "axis": list(entity_obj.axis),
-            "center": list(entity_obj.center.value),
+            "radius": entity_obj.outer_radius,
+            "length": entity_obj.height,
+            "axis": entity_obj.axis,
+            "center": entity_obj.center,
         }
     if isinstance(entity_obj, Box):
         return {
             "type": "box",
-            "size": list(entity_obj.size.value),
-            "center": list(entity_obj.center.value),
-            "axisOfRotation": list(entity_obj.axis_of_rotation),
+            "size": entity_obj.size,
+            "center": entity_obj.center,
+            "axisOfRotation": entity_obj.axis_of_rotation,
             "angleOfRotation": entity_obj.angle_of_rotation.to("degree").value.item(),
         }
     return {}
@@ -155,9 +158,9 @@ def refinement_entity_box_with_axes_injector(entity_obj: Box):
         "lengthAxis1": lengths[0],
         "lengthAxis2": lengths[1],
         "lengthNormal": lengths[2],
-        "axis1": list(axis1),
-        "axis2": list(axis2),
-        "center": list(entity_obj.center.value),
+        "axis1": axis1,
+        "axis2": axis2,
+        "center": entity_obj.center,
     }
 
 
@@ -166,11 +169,11 @@ def rotor_disks_entity_injector(entity: Cylinder):
 
     return {
         "name": entity.name,
-        "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
-        "outerRadius": entity.outer_radius.value.item(),
-        "thickness": entity.height.value.item(),
-        "axisThrust": list(entity.axis),
-        "center": list(entity.center.value),
+        "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius,
+        "outerRadius": entity.outer_radius,
+        "thickness": entity.height,
+        "axisThrust": entity.axis,
+        "center": entity.center,
     }
 
 
@@ -180,19 +183,19 @@ def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
         return {
             "name": entity.name,
             "type": "Cylinder",
-            "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
-            "outerRadius": entity.outer_radius.value.item(),
-            "thickness": entity.height.value.item(),
-            "axisOfRotation": list(entity.axis),
-            "center": list(entity.center.value),
+            "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius,
+            "outerRadius": entity.outer_radius,
+            "thickness": entity.height,
+            "axisOfRotation": entity.axis,
+            "center": entity.center,
         }
     if isinstance(entity, AxisymmetricBody):
         return {
             "name": entity.name,
             "type": "Axisymmetric",
-            "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
-            "axisOfRotation": list(entity.axis),
-            "center": list(entity.center.value),
+            "profileCurve": entity.profile_curve,
+            "axisOfRotation": entity.axis,
+            "center": entity.center,
         }
     return {}
 
@@ -300,7 +303,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     else:
         default_first_layer_thickness = meshing_params.defaults.boundary_layer_first_layer_thickness
 
-    translated["volume"]["firstLayerThickness"] = default_first_layer_thickness.value.item()
+    translated["volume"]["firstLayerThickness"] = default_first_layer_thickness
 
     # growthRate can only be global
     translated["volume"]["growthRate"] = meshing_params.defaults.boundary_layer_growth_rate
@@ -396,4 +399,5 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     if custom_volumes:
         translated["zones"] = custom_volumes
 
+    convert_and_strip_units_inplace(translated, input_params.flow360_unit_system)
     return translated

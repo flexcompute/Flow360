@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
+import contextvars
 import functools
 import json
 from collections import OrderedDict
 from typing import Union
 
-import numpy as np
 import unyt as u
 
-from flow360.component.simulation.framework.base_model import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
@@ -22,6 +21,8 @@ from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import Expression
 from flow360.component.simulation.utils import is_exact_instance
+
+_unit_system_ctx = contextvars.ContextVar("unit_system", default=None)
 
 
 def preprocess_input(func):
@@ -120,83 +121,13 @@ def convert_tuples_to_lists(input_dict):
     return input_dict
 
 
-def remove_units_in_dict(input_dict, skip_keys: list[str] = None):
-    """Remove units from a dimensioned value."""
-    if skip_keys is None:
-        skip_keys = []
-
-    def _is_unyt_or_unyt_like_obj(value):
-        return "value" in value.keys() and "units" in value.keys()
-
-    if isinstance(input_dict, dict):
-        new_dict = {}
-        if _is_unyt_or_unyt_like_obj(input_dict):
-            new_dict = input_dict["value"]
-            if input_dict["units"].startswith("flow360_") is False:
-                raise ValueError(
-                    f"[Internal Error] Unit {new_dict['units']} is not non-dimensionalized."
-                )
-            return new_dict
-        for key, value in input_dict.items():
-            if key in skip_keys or key in [snake_to_camel(item) for item in skip_keys]:
-                new_dict[key] = value
-                continue
-            if isinstance(value, dict) and _is_unyt_or_unyt_like_obj(value):
-                if value["units"].startswith("flow360_") is False:
-                    raise ValueError(
-                        f"[Internal Error] Unit {value['units']} is not non-dimensionalized."
-                    )
-                new_dict[key] = value["value"]
-            else:
-                new_dict[key] = remove_units_in_dict(value, skip_keys=skip_keys)
-        return new_dict
-    if isinstance(input_dict, list):
-        return [remove_units_in_dict(item, skip_keys=skip_keys) for item in input_dict]
-    return input_dict
-
-
-def translate_value_or_expression_object(
-    obj: Union[Expression, u.unyt_quantity, u.unyt_array], input_params: SimulationParams
-):
+def evaluate_value_or_expression_object(obj: Union[Expression, u.unyt_quantity, u.unyt_array]):
     """Translate for an ValueOrExpression object"""
     if isinstance(obj, Expression):
         # Only allowing client-time evaluable expressions
-        evaluated = obj.evaluate(raise_on_non_evaluable=True)
-        converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v.item()
-        return converted
+        return obj.evaluate(raise_on_non_evaluable=True)
     # Non dimensionalized unyt objects
-    return obj.value.item()
-
-
-def inline_expressions_in_dict(input_dict, input_params):
-    """Inline all client-time evaluable expressions in the provided dict to their evaluated values"""
-    if isinstance(input_dict, dict):
-        new_dict = {}
-        if "type_name" in input_dict.keys() and input_dict["type_name"] == "Expression":
-            expression = Expression(expression=input_dict["expression"])
-            evaluated = expression.evaluate(raise_on_non_evaluable=False)
-            converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
-            new_dict = converted
-            return new_dict
-        for key, value in input_dict.items():
-            # For number-type fields the schema should match dimensioned unit fields
-            # so remove_units_in_dict should handle them correctly...
-            if isinstance(value, dict) and "expression" in value.keys():
-                expression = Expression(expression=value["expression"])
-                evaluated = expression.evaluate(raise_on_non_evaluable=False)
-                converted = evaluated.in_base(unit_system=input_params.flow360_unit_system).v
-                if isinstance(converted, np.ndarray):
-                    if converted.ndim == 0:
-                        converted = float(converted)
-                    else:
-                        converted = converted.tolist()
-                new_dict[key] = converted
-            else:
-                new_dict[key] = inline_expressions_in_dict(value, input_params)
-        return new_dict
-    if isinstance(input_dict, list):
-        return [inline_expressions_in_dict(item, input_params) for item in input_dict]
-    return input_dict
+    return obj
 
 
 def has_instance_in_list(obj_list: list, class_type):
@@ -440,3 +371,52 @@ def merge_unique_item_lists(list1: list[str], list2: list[str]) -> list:
     """Merge two lists and remove duplicates."""
     combined = list1 + list2
     return list(OrderedDict.fromkeys(combined))
+
+
+class UnitSystemContext:
+    """
+    Context manager for setting the current unit system.
+
+    This context manager allows setting a unit system within a specific scope,
+    making it accessible to functions that need it without explicitly passing
+    it as a parameter.
+
+    Parameters
+    ----------
+    unit_system : u.UnitSystem
+        The unit system to be set in the current context.
+
+    Examples
+    --------
+    >>> with UnitSystemContext(my_unit_system):
+    ...     # Within this block, get_unit_system() will return my_unit_system
+    ...     current_system = get_unit_system()
+    """
+
+    def __init__(self, unit_system: u.UnitSystem):
+        self.unit_system = unit_system
+        self.token = None
+
+    def __enter__(self):
+        self.token = _unit_system_ctx.set(self.unit_system)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        _unit_system_ctx.reset(self.token)
+
+
+def get_unit_system() -> u.UnitSystem:
+    """
+    Retrieves the current unit system from the context.
+
+    Returns
+    -------
+    u.UnitSystem
+        The current unit system, or None if no unit system context is active.
+
+    Examples
+    --------
+    >>> with UnitSystemContext(my_unit_system):
+    ...     system = get_unit_system()  # Returns my_unit_system
+    """
+    return _unit_system_ctx.get()

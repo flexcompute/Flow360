@@ -46,7 +46,7 @@ from tests.simulation.conftest import AssetBase
 
 
 class TempGeometry(AssetBase):
-    """Mimicing the final VolumeMesh class"""
+    """Mimicking the final VolumeMesh class"""
 
     fname: str
     mesh_unit: LengthType.Positive
