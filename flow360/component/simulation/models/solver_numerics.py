@@ -130,9 +130,10 @@ class NavierStokesSolver(GenericSolverSettings):
     type_name: Literal["Compressible", "CompressibleIsentropic"] = pd.Field(
         "Compressible",
         description="The type of Navier-Stokes equations to solve. "
-        + "The default is the compressible conservation laws except when LiquidOperatingCondition is used. "
+        + "The default is the compressible conservation laws. "
         + "CompressibleIsentropic is recommended for low mach number applications to speed up the solver. "
-        + "It will apply mass and momentum conservation along with the isentropic assumption for low-speed flow.",
+        + "It will apply mass and momentum conservation along with the isentropic assumption for low-speed flow."
+        + "CompressibleIsentropic is used for LiquidOperatingCondition.",
     )
 
     low_mach_preconditioner: bool = pd.Field(
