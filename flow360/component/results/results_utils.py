@@ -189,8 +189,10 @@ def _build_coeff_env(params) -> Dict[str, Any]:
 
 def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
     out: Dict[str, list] = {}
-    out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-    out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
+    for key in src.keys():
+        if key in [_PSEUDO_STEP, _PHYSICAL_STEP]:
+            out[key] = src[key]
+            continue
     return out
 
 
@@ -338,13 +340,6 @@ class DiskCoefficientsComputation:
 class PorousMediumCoefficientsComputation:
     # pylint:disable=too-few-public-methods
     """Static utilities for porous medium coefficient computations."""
-
-    @staticmethod
-    def _copy_time_columns(src: Dict[str, list]) -> Dict[str, list]:
-        out: Dict[str, list] = {}
-        out[_PSEUDO_STEP] = src[_PSEUDO_STEP]
-        out[_PHYSICAL_STEP] = src[_PHYSICAL_STEP]
-        return out
 
     @staticmethod
     def _iter_zones(values: Dict[str, list]):
