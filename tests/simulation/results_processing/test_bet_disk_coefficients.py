@@ -413,7 +413,7 @@ def test_bet_disk_real_case_coefficients():
                 new_disk_key = old_key.replace(old_name,new_name)
                 break
         if disk_name is None:
-            continue
+            new_disk_key = old_key
         
         assert new_disk_key in new_data
 
