@@ -439,9 +439,10 @@ class BETDiskCSVHeaderRename:
 
           diskCount = 0
           for i, disk in enumerate(bet_disks):
-              for j, cylinder in enumerate(disk.entities):
+              for j, cylinder in enumerate(disk.entities.stored_entities):
                   disk_name = f"{disk.name}_{cylinder.name}"
-                  disk_rename_map[f"Disk{count}"] = f"{disk_name}"
+                  disk_rename_map[f"Disk{diskCount}"] = f"{disk_name}"
+                  diskCount = diskCount + 1
 
           for header, values in csv_data.items():
               matched = False
