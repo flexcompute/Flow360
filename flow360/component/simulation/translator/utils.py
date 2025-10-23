@@ -10,7 +10,7 @@ from typing import Union
 import numpy as np
 import unyt as u
 
-from flow360.component.simulation.framework.base_model import snake_to_camel
+from flow360.component.simulation.framework.base_model_config import snake_to_camel
 from flow360.component.simulation.framework.entity_base import EntityBase, EntityList
 from flow360.component.simulation.framework.unique_list import UniqueItemList
 from flow360.component.simulation.primitives import (
