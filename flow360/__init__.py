@@ -25,7 +25,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    BetaVolumeMeshingDefaults,
+    VolumeMeshingDefaults,
     MeshingDefaults,
     OctreeSpacing,
     SnappyCastellatedMeshControls,
@@ -344,7 +344,7 @@ __all__ = [
     "SeedpointZone",
     "SnappySurfaceMeshingParams",
     "VolumeMeshingParams",
-    "BetaVolumeMeshingDefaults",
+    "VolumeMeshingDefaults",
     "get_user_variable",
     "show_user_variables",
     "remove_user_variable",

@@ -177,7 +177,7 @@ class MeshingDefaults(Flow360BaseModel):
         return value
 
 
-class BetaVolumeMeshingDefaults(Flow360BaseModel):
+class VolumeMeshingDefaults(Flow360BaseModel):
     """
     Default/global settings for volume meshing parameters. To be used with class:`ModularMeshingWorkflow`.
     """

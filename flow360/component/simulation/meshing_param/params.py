@@ -16,7 +16,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     SurfaceRefinement,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    BetaVolumeMeshingDefaults,
+    VolumeMeshingDefaults,
     MeshingDefaults,
     OctreeSpacing,
     SnappyCastellatedMeshControls,
@@ -434,7 +434,7 @@ class VolumeMeshingParams(Flow360BaseModel):
     """
 
     type_name: Literal["VolumeMeshingParams"] = pd.Field("VolumeMeshingParams", frozen=True)
-    defaults: BetaVolumeMeshingDefaults = pd.Field()
+    defaults: VolumeMeshingDefaults = pd.Field()
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
         description="All spacings in refinement regions"
@@ -470,7 +470,6 @@ class VolumeMeshingParams(Flow360BaseModel):
 SurfaceMeshingParams = Annotated[
     Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
 ]
-VolumeMeshingParams = Annotated[Union[VolumeMeshingParams], pd.Field(discriminator="type_name")]
 
 
 class ModularMeshingWorkflow(Flow360BaseModel):
