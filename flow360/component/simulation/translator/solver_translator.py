@@ -5,6 +5,7 @@ import hashlib
 import json
 from typing import Type, Union, get_args
 
+import numpy as np
 import unyt as u
 
 from flow360.component.simulation.conversion import (
@@ -46,6 +47,7 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
+    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     LiquidOperatingCondition,
@@ -1519,6 +1521,81 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
     return hasher.hexdigest()
 
 
+def get_stop_criterion_settings(criterion: StopCriterion, params: SimulationParams):
+    """Get the stop criterion settings"""
+
+    def get_criterion_monitored_file_info(monitor_output, monitor_field):
+        monitor_output_name = monitor_output.name.replace("/", "_")
+        monitored_column = None
+        monitored_csv_filename = None
+        if isinstance(monitor_output, (ProbeOutput, SurfaceProbeOutput)):
+            point = monitor_output.entities.stored_entities[0]
+            monitored_column = f"{monitor_output.name}_{point.name}_{str(monitor_field)}"
+            monitored_csv_filename = f"monitor_{monitor_output_name}"
+        if isinstance(monitor_output, SurfaceIntegralOutput):
+            monitored_column = f"{str(monitor_field)}_integral"
+            monitor_output_processed = [monitor_output.copy()]
+            process_user_variables_for_integral(monitor_output_processed)
+            monitor_field = monitor_output_processed[0].output_fields.items[0]
+            monitored_csv_filename = f"monitor_{monitor_output_name}"
+        if isinstance(monitor_output, ForceOutput):
+            monitored_column = f"total{monitor_field}"
+            monitored_csv_filename = f"force_output_{monitor_output_name}"
+
+        if monitor_output.moving_statistic is not None:
+            monitored_column += f"_{monitor_output.moving_statistic.method}"
+            monitored_csv_filename += "_moving_statistic"
+        monitored_csv_filename += "_v2.csv"
+        return monitored_csv_filename, monitored_column
+
+    def get_criterion_tolerance_info(criterion_tolerance, monitor_field, params):
+        flow360_unit_system = params.flow360_unit_system
+        if isinstance(monitor_field, UserVariable):
+            source_units = monitor_field.value.get_output_units(input_params=params)
+            if source_units.dimensions == u.dimensions.angle:
+                flow360_unit_system["angle"] = source_units.units
+            criterion_tolerance_nondim = (
+                criterion_tolerance.in_base(flow360_unit_system).v.item()
+                if not isinstance(criterion_tolerance, float)
+                else criterion_tolerance
+            )
+        else:
+            source_units = u.dimensionless  # pylint:disable=no-member
+            criterion_tolerance_nondim = criterion_tolerance
+
+        flow360_units = source_units.get_base_equivalent(flow360_unit_system)
+        coeff_source_to_flow360, offset_source_to_flow360 = source_units.get_conversion_factor(
+            flow360_units, dtype=np.float64
+        )
+        offset_source_to_flow360 = (
+            0.0
+            if offset_source_to_flow360 is None
+            else -offset_source_to_flow360 / coeff_source_to_flow360
+        )
+
+        return criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360
+
+    criterion_csv_filename, criterion_column = get_criterion_monitored_file_info(
+        monitor_output=criterion.monitor_output, monitor_field=criterion.monitor_field
+    )
+    criterion_tolerance_nondim, coeff_source_to_flow360, offset_source_to_flow360 = (
+        get_criterion_tolerance_info(
+            criterion_tolerance=criterion.tolerance,
+            monitor_field=criterion.monitor_field,
+            params=params,
+        )
+    )
+
+    return {
+        "monitoredColumn": criterion_column,
+        "monitoredFileName": criterion_csv_filename,
+        "tolerance": criterion_tolerance_nondim,
+        "toleranceWindowSize": criterion.tolerance_window_size,
+        "sourceToFlow360Coefficient": coeff_source_to_flow360,
+        "sourceToFlow360Offset": offset_source_to_flow360,
+    }
+
+
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
@@ -1907,6 +1984,12 @@ def get_solver_json(
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
         )
+    translated["runControl"]["stoppingCriteria"] = []
+    if input_params.run_control and bool(input_params.run_control.stopping_criteria):
+        for criterion in input_params.run_control.stopping_criteria:
+            translated["runControl"]["stoppingCriteria"].append(
+                get_stop_criterion_settings(criterion, input_params)
+            )
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
