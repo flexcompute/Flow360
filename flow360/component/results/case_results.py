@@ -71,6 +71,7 @@ from flow360.component.v1.flow360_params import Flow360Params
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
+
 class CaseDownloadable(Enum):
     """
     Case results filenames
@@ -904,6 +905,7 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderRename.rename_csv_headers(self, params, BETDiskCoefficientsCSVModel)
+
 
 class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
     """Model for handling porous medium CSV results."""

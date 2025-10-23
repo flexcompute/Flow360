@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 
 from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
+from flow360.component.results.case_results import OptionallyDownloadableResultCSVModel
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.results.case_results import OptionallyDownloadableResultCSVModel
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
 
@@ -439,7 +439,6 @@ class BETDiskCSVHeaderRename:
                 bet_disks.append(model)
         if not bet_disks:
             return output_model_class().from_dict(BETCSVModel.values)
-
 
         csv_data = BETCSVModel.values
         new_csv = {}
