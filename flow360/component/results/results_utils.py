@@ -8,11 +8,11 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 
 from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
+from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.results.case_results import OptionallyDownloadableResultCSVModel
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
-from flow360.component.simulation.models.volume_models import BETDisk
-
 
 # pylint:disable=invalid-name
 _CL = "CL"
@@ -424,37 +424,41 @@ class BETDiskCSVHeaderRename:
     """
 
     @staticmethod
-    def rename_csv_headers(BETCSVModel: OptionallyDownloadableResultCSVModel, params: SimulationParams, output_model_class ):
-          bet_disks = []
-          for model in params.models:
-              if isinstance(model,BETDisk):
-                  bet_disks.append(model)
-          if bet_disks == []:
-              return
+    def rename_csv_headers(
+        BETCSVModel: OptionallyDownloadableResultCSVModel,
+        params: SimulationParams,
+        output_model_class,
+    ):
+        """
+        renames the header in a BET csv file to have BET names
+        """
+        # pylint:disable=too-many-locals
+        bet_disks = []
+        for model in params.models:
+            if isinstance(model, BETDisk):
+                bet_disks.append(model)
+        if not bet_disks:
+            return output_model_class().from_dict(BETCSVModel.values)
 
-          csv_data = BETCSVModel.values
-          new_csv = {}
 
-          disk_rename_map = {}
+        csv_data = BETCSVModel.values
+        new_csv = {}
 
-          diskCount = 0
-          for i, disk in enumerate(bet_disks):
-              for j, cylinder in enumerate(disk.entities.stored_entities):
-                  disk_name = f"{disk.name}_{cylinder.name}"
-                  disk_rename_map[f"Disk{diskCount}"] = f"{disk_name}"
-                  diskCount = diskCount + 1
+        disk_rename_map = {}
 
-          for header, values in csv_data.items():
-              matched = False
-              for default_prefix, new_prefix in disk_rename_map.items():
-                  if header.startswith(default_prefix):
-                      # Replace only the prefix part
-                      new_header = new_prefix + header[len(default_prefix):]
-                      new_csv[new_header] = values
-                      matched = True
-                      break
-              if not matched:
-                  new_csv[header] = values
-          return output_model_class().from_dict(new_csv)
-          # df = pandas.DataFrame(new_csv)
-          # df.to_csv(output,index = false, float_format = "%.15g")
+        diskCount = 0
+        for disk in bet_disks:
+            for cylinder in disk.entities.stored_entities:
+                disk_rename_map[f"Disk{diskCount}"] = f"{disk.name}_{cylinder.name}"
+                diskCount = diskCount + 1
+
+        for header, values in csv_data.items():
+            matched = False
+            for default_prefix, new_prefix in disk_rename_map.items():
+                if header.startswith(default_prefix):
+                    new_csv[new_prefix + header[len(default_prefix) :]] = values
+                    matched = True
+                    break
+            if not matched:
+                new_csv[header] = values
+        return output_model_class().from_dict(new_csv)

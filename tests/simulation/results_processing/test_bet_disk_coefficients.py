@@ -6,8 +6,8 @@ import numpy as np
 import flow360 as fl
 from flow360.component.results.case_results import BETForcesResultCSVModel
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.models.volume_models import BETDisk
+from flow360.component.simulation.services import ValidationCalledBy, validate_model
 
 from .test_helpers import compute_freestream_direction, compute_lift_direction
 
@@ -236,6 +236,7 @@ def test_bet_disk_real_case_coefficients():
             computed_CL, expected_coeffs["CL"], rtol=1e-10, atol=1e-15
         ), f"{disk_name} CL mismatch"
 
+
 def test_bet_disk_simple_header_rename():
     # Prepare a simple BET disk CSV with one timestep
     csv_path = os.path.join(
@@ -316,11 +317,10 @@ def test_bet_disk_simple_header_rename():
     assert "BET disk_bet_disk_Moment_z" in new_data
 
     for header_name, value in new_data.items():
-        old_key = header_name.replace("BET disk_bet_disk","Disk0")
+        old_key = header_name.replace("BET disk_bet_disk", "Disk0")
         new_value = value[0]
         old_value = old_data[old_key][0]
-        assert np.isclose(new_value,old_value,rtol=1e-6,atol=1e-12)
-
+        assert np.isclose(new_value, old_value, rtol=1e-6, atol=1e-12)
 
 
 def test_bet_disk_real_case_header_rename():
@@ -393,18 +393,17 @@ def test_bet_disk_real_case_header_rename():
 
     bet_disks = []
     for model in params.models:
-      if isinstance(model,BETDisk):
-          bet_disks.append(model)
+        if isinstance(model, BETDisk):
+            bet_disks.append(model)
     assert bet_disks != []
-   
+
     diskCount = 0
     disk_rename_map = {}
     for i, disk in enumerate(bet_disks):
-      for j, cylinder in enumerate(disk.entities.stored_entities):
-          disk_name = f"{disk.name}_{cylinder.name}"
-          disk_rename_map[f"Disk{diskCount}"] = f"{disk_name}"
-          diskCount = diskCount + 1
-
+        for j, cylinder in enumerate(disk.entities.stored_entities):
+            disk_name = f"{disk.name}_{cylinder.name}"
+            disk_rename_map[f"Disk{diskCount}"] = f"{disk_name}"
+            diskCount = diskCount + 1
 
     assert "physical_step" in new_data
     assert "pseudo_step" in new_data
@@ -415,11 +414,11 @@ def test_bet_disk_real_case_header_rename():
         for old_name, new_name in disk_rename_map.items():
             if old_name in old_key:
                 found = True
-                new_disk_key = old_key.replace(old_name,new_name)
+                new_disk_key = old_key.replace(old_name, new_name)
                 break
         if not found:
             new_disk_key = old_key
-        
+
         assert new_disk_key in new_data
 
         new_value = new_data[new_disk_key]
@@ -427,4 +426,4 @@ def test_bet_disk_real_case_header_rename():
         assert len(old_value) == len(new_value)
 
         for i in range(len(old_value)):
-            np.isclose(old_value[i],new_value[i],rtol=1e-6,atol=1e-12)
+            np.isclose(old_value[i], new_value[i], rtol=1e-6, atol=1e-12)
