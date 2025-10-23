@@ -31,7 +31,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
+    VolumeMeshingParams,
     MeshingDefaults,
     MeshingParams,
     ModularMeshingWorkflow,
@@ -697,7 +697,7 @@ def snappy_coupled_refinements():
             refinements=[],
             smooth_controls=SnappySmoothControls(),
         )
-        vol_meshing_params = BetaVolumeMeshingParams(
+        vol_meshing_params = VolumeMeshingParams(
             defaults=BetaVolumeMeshingDefaults(
                 boundary_layer_first_layer_thickness=1 * u.mm, boundary_layer_growth_rate=1.2
             ),

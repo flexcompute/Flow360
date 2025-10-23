@@ -7,7 +7,7 @@ from flow360.component.simulation.meshing_param.face_params import (
     PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
+    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
     SnappySurfaceMeshingParams,
@@ -264,7 +264,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     ensure_meshing_is_specified(input_params)
 
     if isinstance(input_params.meshing, ModularMeshingWorkflow) and isinstance(
-        input_params.meshing.volume_meshing, BetaVolumeMeshingParams
+        input_params.meshing.volume_meshing, VolumeMeshingParams
     ):
         volume_zones = input_params.meshing.zones
         refinements = input_params.meshing.volume_meshing.refinements

@@ -428,12 +428,12 @@ class SnappySurfaceMeshingParams(Flow360BaseModel):
         return OctreeSpacing(base_spacing=base_spacing)
 
 
-class BetaVolumeMeshingParams(Flow360BaseModel):
+class VolumeMeshingParams(Flow360BaseModel):
     """
     Volume meshing parameters.
     """
 
-    type_name: Literal["BetaVolumeMeshingParams"] = pd.Field("BetaVolumeMeshingParams", frozen=True)
+    type_name: Literal["VolumeMeshingParams"] = pd.Field("VolumeMeshingParams", frozen=True)
     defaults: BetaVolumeMeshingDefaults = pd.Field()
     refinement_factor: Optional[pd.PositiveFloat] = pd.Field(
         default=1,
@@ -470,7 +470,7 @@ class BetaVolumeMeshingParams(Flow360BaseModel):
 SurfaceMeshingParams = Annotated[
     Union[SnappySurfaceMeshingParams], pd.Field(discriminator="type_name")
 ]
-VolumeMeshingParams = Annotated[Union[BetaVolumeMeshingParams], pd.Field(discriminator="type_name")]
+VolumeMeshingParams = Annotated[Union[VolumeMeshingParams], pd.Field(discriminator="type_name")]
 
 
 class ModularMeshingWorkflow(Flow360BaseModel):

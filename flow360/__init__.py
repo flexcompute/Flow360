@@ -35,7 +35,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
+    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
     SnappySurfaceMeshingParams,
@@ -343,7 +343,7 @@ __all__ = [
     "SnappyBody",
     "SeedpointZone",
     "SnappySurfaceMeshingParams",
-    "BetaVolumeMeshingParams",
+    "VolumeMeshingParams",
     "BetaVolumeMeshingDefaults",
     "get_user_variable",
     "show_user_variables",

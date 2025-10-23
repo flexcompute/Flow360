@@ -8,7 +8,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
+    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
     SnappySurfaceMeshingParams,
@@ -377,7 +377,7 @@ def test_reuse_of_same_cylinder():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_meshing=VolumeMeshingParams(
                         refinements=[
                             AxisymmetricRefinement(
                                 entities=[cylinder],
@@ -444,7 +444,7 @@ def test_reuse_of_same_cylinder():
         )
         SimulationParams(
             meshing=ModularMeshingWorkflow(
-                volume_meshing=BetaVolumeMeshingParams(
+                volume_meshing=VolumeMeshingParams(
                     refinements=[
                         UniformRefinement(
                             entities=[cylinder],
@@ -508,7 +508,7 @@ def test_reuse_of_same_cylinder():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_meshing=VolumeMeshingParams(
                         refinements=[
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             AxisymmetricRefinement(
@@ -559,7 +559,7 @@ def test_reuse_of_same_cylinder():
             )
             SimulationParams(
                 meshing=ModularMeshingWorkflow(
-                    volume_meshing=BetaVolumeMeshingParams(
+                    volume_meshing=VolumeMeshingParams(
                         refinements=[
                             UniformRefinement(entities=[cylinder], spacing=0.1),
                             UniformRefinement(entities=[cylinder], spacing=0.2),

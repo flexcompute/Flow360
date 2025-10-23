@@ -12,7 +12,7 @@ from flow360.component.simulation.meshing_param.meshing_specs import (
     SnappySurfaceMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
+    VolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
     SnappySurfaceMeshingParams,
@@ -341,7 +341,7 @@ def get_test_param_modular():
         )
         param = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                volume_meshing=BetaVolumeMeshingParams(
+                volume_meshing=VolumeMeshingParams(
                     defaults=BetaVolumeMeshingDefaults(
                         boundary_layer_first_layer_thickness=1.35e-06 * u.m,
                         boundary_layer_growth_rate=1 + 0.04,
@@ -455,7 +455,7 @@ def get_test_param_w_seedpoints():
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),
-                volume_meshing=BetaVolumeMeshingParams(
+                volume_meshing=VolumeMeshingParams(
                     defaults=BetaVolumeMeshingDefaults(
                         boundary_layer_first_layer_thickness=1.35e-06 * u.m,
                         boundary_layer_growth_rate=1 + 0.04,
@@ -683,7 +683,7 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),
-                volume_meshing=BetaVolumeMeshingParams(
+                volume_meshing=VolumeMeshingParams(
                     defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=100),
                 ),
                 zones=[SeedpointZone(point_in_mesh=[0, 0, 0], name="farfield")],
