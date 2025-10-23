@@ -1,5 +1,5 @@
 {
-    "version": "25.7.4b0",
+    "version": "25.7.6b0",
     "unit_system": {
         "name": "SI"
     },
@@ -123,6 +123,7 @@
                 "w": "w",
                 "p": "p"
             },
+            "private_attribute_id": "__default_fluid",
             "type": "Fluid",
             "navier_stokes_solver": {
                 "absolute_tolerance": 1e-10,
@@ -223,7 +224,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "PointEntityType",
                         "private_attribute_entity_type_name": "Point",
                         "private_attribute_id": "111",
                         "name": "pt1",

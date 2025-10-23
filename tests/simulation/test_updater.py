@@ -774,3 +774,74 @@ def test_updater_to_25_7_2():
         params_new["private_attribute_asset_cache"]["variable_context"][3]["post_processing"]
         == False
     )
+
+
+def test_updater_to_25_7_6_remove_entity_bucket_field():
+    # Construct minimal params containing entity dicts with the legacy bucket field
+    params_as_dict = {
+        "outputs": [
+            {
+                "output_type": "SurfaceOutput",
+                "output_fields": {"items": ["Cp"]},
+                "entities": {
+                    "stored_entities": [
+                        {
+                            "name": "wing",
+                            "private_attribute_entity_type_name": "Surface",
+                            "private_attribute_id": "wing",
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        },
+                        {
+                            "name": "tail",
+                            "private_attribute_entity_type_name": "Surface",
+                            "private_attribute_id": "tail",
+                            "private_attribute_registry_bucket_name": "SurfaceEntityType",
+                        },
+                    ]
+                },
+            }
+        ],
+        "private_attribute_asset_cache": {
+            "project_entity_info": {
+                "ghost_entities": [
+                    {
+                        "name": "symmetric-1",
+                        "private_attribute_entity_type_name": "GhostCircularPlane",
+                        "private_attribute_registry_bucket_name": "GhostEntityType",
+                    }
+                ],
+                "draft_entities": [
+                    {
+                        "name": "point-array-1",
+                        "private_attribute_entity_type_name": "PointArray",
+                        "private_attribute_registry_bucket_name": "PointArrayEntityType",
+                    }
+                ],
+            }
+        },
+        # Non-entity dict should keep the field
+        "misc": {"private_attribute_registry_bucket_name": "keep_me"},
+    }
+
+    params_new = updater(
+        version_from="25.7.4",
+        version_to="25.7.6b0",
+        params_as_dict=params_as_dict,
+    )
+
+    # Verify removal from all entity dicts
+    stored_entities = params_new["outputs"][0]["entities"]["stored_entities"]
+    assert all("private_attribute_registry_bucket_name" not in entity for entity in stored_entities)
+
+    ghost_entities = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "ghost_entities"
+    ]
+    assert all("private_attribute_registry_bucket_name" not in entity for entity in ghost_entities)
+
+    draft_entities = params_new["private_attribute_asset_cache"]["project_entity_info"][
+        "draft_entities"
+    ]
+    assert all("private_attribute_registry_bucket_name" not in entity for entity in draft_entities)
+
+    # Non-entity dict remains unchanged
+    assert params_new["misc"]["private_attribute_registry_bucket_name"] == "keep_me"

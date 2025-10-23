@@ -323,12 +323,12 @@ def _check_complete_boundary_condition_and_unknown_surface(
     if not validation_info:
         return params
 
-    asset_boundary_entities = params.private_attribute_asset_cache.boundaries
+    asset_boundary_entities = params.private_attribute_asset_cache.boundaries  # Persistent ones
 
     # Filter out the ones that will be deleted by mesher
-    automated_farfield_method = params.meshing.automated_farfield_method if params.meshing else None
+    farfield_method = params.meshing.farfield_method if params.meshing else None
 
-    if automated_farfield_method:
+    if farfield_method:
         if validation_info.at_least_one_body_transformed:
             # If transformed then `_will_be_deleted_by_mesher()` will no longer be accurate
             # since we do not know the final bounding box for each surface and global model.
@@ -342,7 +342,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
             for item in asset_boundary_entities
             if item._will_be_deleted_by_mesher(
                 at_least_one_body_transformed=validation_info.at_least_one_body_transformed,
-                farfield_method=automated_farfield_method,
+                farfield_method=farfield_method,
                 global_bounding_box=validation_info.global_bounding_box,
                 planar_face_tolerance=validation_info.planar_face_tolerance,
                 half_model_symmetry_plane_center_y=validation_info.half_model_symmetry_plane_center_y,
@@ -350,18 +350,25 @@ def _check_complete_boundary_condition_and_unknown_surface(
             )
             is False
         ]
-        if automated_farfield_method == "auto":
+        if farfield_method == "auto":
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
             ]
-        elif automated_farfield_method == "quasi-3d":
+        elif farfield_method == "quasi-3d":
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name != "symmetric"
             ]
+        elif farfield_method == "user-defined":
+            if validation_info.use_geometry_AI and validation_info.is_beta_mesher:
+                asset_boundary_entities += [
+                    item
+                    for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
+                    if item.name == "symmetric"
+                ]
 
     potential_zone_zone_interfaces = set()
     if validation_info.farfield_method == "user-defined":

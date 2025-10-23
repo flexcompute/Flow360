@@ -340,7 +340,41 @@ class RotationCylinder(RotationVolume):
     entities: EntityList[Cylinder] = pd.Field()
 
 
-class AutomatedFarfield(Flow360BaseModel):
+class _FarfieldBase(Flow360BaseModel):
+    """Base class for farfield parameters."""
+
+    domain_type: Optional[Literal["half_body_positive_y", "half_body_negative_y", "full_body"]] = (
+        pd.Field(  # In the future, we will support more flexible half model types and full model via Union.
+            None,
+            description="""
+            - half_body_positive_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '+y' side for meshing and simulation.
+            - half_body_negative_y: Trim to a half-model by slicing with the global Y=0 plane; keep the '-y' side for meshing and simulation.
+            - full_body: Keep the full body for meshing and simulation without attempting to add symmetry planes.
+
+            Warning: When using AutomatedFarfield, setting `domain_type` overrides the 'auto' symmetry plane behavior.
+            """,
+        )
+    )
+
+    @pd.field_validator("domain_type", mode="after")
+    @classmethod
+    def _validate_only_in_beta_mesher(cls, value):
+        """
+        Ensure that domain_type is only used with the beta mesher and GAI.
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return value
+        if not value or (
+            validation_info.use_geometry_AI is True and validation_info.is_beta_mesher is True
+        ):
+            return value
+        raise ValueError(
+            "`domain_type` is only supported when using both GAI surface mesher and beta volume mesher."
+        )
+
+
+class AutomatedFarfield(_FarfieldBase):
     """
     Settings for automatic farfield volume zone generation.
 
@@ -354,7 +388,7 @@ class AutomatedFarfield(Flow360BaseModel):
 
     type: Literal["AutomatedFarfield"] = pd.Field("AutomatedFarfield", frozen=True)
     name: Optional[str] = pd.Field("Automated Farfield")  # Kept optional for backward compatibility
-    method: Literal["auto", "quasi-3d"] = pd.Field(
+    method: Literal["auto", "quasi-3d", "quasi-3d-periodic"] = pd.Field(
         default="auto",
         frozen=True,
         description="""
@@ -364,6 +398,7 @@ class AutomatedFarfield(Flow360BaseModel):
             - -Y semi sphere if min{Y} < 0 and max{Y} = 0.
         - quasi-3d: Thin disk will be generated for quasi 3D cases.
                     Both sides of the farfield disk will be treated as "symmetric plane"
+        - quasi-3d-periodic: The two sides of the quasi-3d disk will be conformal
         Note: For quasi-3d, please do not group patches from both sides of the farfield disk into a single surface.
         """,
     )
@@ -371,6 +406,11 @@ class AutomatedFarfield(Flow360BaseModel):
         GenericVolume(name="__farfield_zone_name_not_properly_set_yet"),
         frozen=True,
         exclude=True,
+    )
+    relative_size: pd.PositiveFloat = pd.Field(
+        default=50.0,
+        description="Radius of the far-field (semi)sphere/cylinder relative to "
+        "the max dimension of the geometry bounding box.",
     )
 
     @property
@@ -392,8 +432,21 @@ class AutomatedFarfield(Flow360BaseModel):
             ]
         raise ValueError(f"Unsupported method: {self.method}")
 
+    @pd.field_validator("method", mode="after")
+    @classmethod
+    def _validate_quasi_3d_periodic_only_in_legacy_mesher(cls, values):
+        """
+        Check mesher and AutomatedFarfield method compatibility
+        """
+        validation_info = get_validation_info()
+        if validation_info is None:
+            return values
+        if validation_info.is_beta_mesher and values == "quasi-3d-periodic":
+            raise ValueError("Only legacy mesher can support quasi-3d-periodic")
+        return values
 
-class UserDefinedFarfield(Flow360BaseModel):
+
+class UserDefinedFarfield(_FarfieldBase):
     """
     Setting for user defined farfield zone generation.
     This means the "farfield" boundaries are coming from the supplied geometry file
@@ -409,3 +462,12 @@ class UserDefinedFarfield(Flow360BaseModel):
 
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
     name: Optional[str] = pd.Field(None)
+
+    @property
+    def symmetry_plane(self) -> GhostSurface:
+        """
+        Returns the symmetry plane boundary surface.
+
+        Warning: This should only be used when using GAI and beta mesher.
+        """
+        return GhostSurface(name="symmetric")

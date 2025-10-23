@@ -4,7 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import Annotated, List, Literal, Optional, Tuple, Union, final
+from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
@@ -102,15 +102,49 @@ class ReferenceGeometry(Flow360BaseModel):
     )
     private_attribute_area_settings: Optional[dict] = pd.Field(None)
 
+    @classmethod
+    def fill_defaults(cls, ref, params):  # type: ignore[override]
+        """Return a new ReferenceGeometry with defaults filled using SimulationParams.
+
+        Defaults when missing or when ref is None:
+        - area: 1 * (base_length)**2
+        - moment_center: (0,0,0) * base_length
+        - moment_length: (1,1,1) * base_length
+        """
+        # Note:
+        #  This helper avoids scattering default logic; consumers can always call this
+        #  to obtain a fully-specified reference geometry in solver units.
+        #  `params.base_length` provides the length unit for the project.
+
+        # Determine base length unit from params
+        base_length_unit = params.base_length  # LengthType quantity
+
+        # Start from provided or empty
+        if ref is None:
+            ref = cls()
+
+        # Compose output using provided values when available
+        area = ref.area
+        if area is None:
+            area = 1.0 * (base_length_unit**2)
+
+        moment_center = ref.moment_center
+        if moment_center is None:
+            moment_center = (0, 0, 0) * base_length_unit
+
+        moment_length = ref.moment_length
+        if moment_length is None:
+            moment_length = (1.0, 1.0, 1.0) * base_length_unit
+
+        return cls(area=area, moment_center=moment_center, moment_length=moment_length)
+
 
 class GeometryBodyGroup(EntityBase, SelectorFactory):
     """
     :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
     """
 
-    private_attribute_registry_bucket_name: Literal["GeometryBodyGroupEntityType"] = (
-        "GeometryBodyGroupEntityType"
-    )
+    entity_bucket: ClassVar[str] = "GeometryBodyGroupEntityType"
     private_attribute_tag_key: str = pd.Field(
         description="The tag/attribute string used to group bodies.",
     )
@@ -137,7 +171,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     """All volumetric entities should inherit from this class."""
 
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["VolumetricEntityType"] = "VolumetricEntityType"
+    entity_bucket: ClassVar[str] = "VolumetricEntityType"
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
@@ -180,7 +214,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    entity_bucket: ClassVar[str] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
@@ -202,7 +236,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = "EdgeEntityType"
+    entity_bucket: ClassVar[str] = "EdgeEntityType"
 
 
 @final
@@ -212,9 +246,7 @@ class Edge(_EdgeEntityBase, SelectorFactory):
     """
 
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = pd.Field(
-        "EdgeEntityType", frozen=True
-    )
+    entity_bucket: ClassVar[str] = "EdgeEntityType"
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
@@ -636,7 +668,7 @@ class GhostCircularPlane(_SurfaceEntityBase):
         return y_min, y_max, tolerance, largest_dimension
 
     def exists(self, validation_info) -> bool:
-        """Mesher logic for symmetric plane existence."""
+        """For automated farfield, check mesher logic for symmetric plane existence."""
 
         if self.name != "symmetric":
             # Quasi-3D mode, no need to check existence.

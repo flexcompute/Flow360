@@ -5,7 +5,6 @@
         "selectors": null,
         "stored_entities": [
             {
-                "private_attribute_registry_bucket_name": "VolumetricEntityType",
                 "private_attribute_entity_type_name": "Cylinder",
                 "name": "BET_cylinder",
                 "private_attribute_zone_boundary_names": {

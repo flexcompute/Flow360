@@ -4,7 +4,7 @@ Flow360 simulation parameters
 
 from __future__ import annotations
 
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, List, Literal, Optional, Union
 
 import pydantic as pd
 import unyt as u
@@ -23,7 +23,10 @@ from flow360.component.simulation.framework.param_utils import (
     register_entity_list,
 )
 from flow360.component.simulation.framework.updater import updater
-from flow360.component.simulation.framework.updater_utils import Flow360Version
+from flow360.component.simulation.framework.updater_utils import (
+    Flow360Version,
+    recursive_remove_key,
+)
 from flow360.component.simulation.meshing_param.params import MeshingParams
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -103,7 +106,6 @@ from flow360.component.simulation.validation.validation_simulation_params import
     _check_unsteadiness_to_use_hybrid_model,
     _check_valid_models_for_liquid,
 )
-from flow360.component.utils import remove_properties_by_name
 from flow360.error_messages import (
     unit_system_inconsistent_msg,
     use_unit_system_for_simulation_msg,
@@ -187,12 +189,15 @@ class _ParamModelBase(Flow360BaseModel):
             )
         return model_dict, forward_compatibility_mode
 
-    @classmethod
-    def _sanitize_params_dict(cls, model_dict):
+    @staticmethod
+    def _sanitize_params_dict(model_dict):
         """
+        !!!WARNING!!!: This function changes the input dict in place!!!
+
         Clean the redundant content in the params dict from WebUI
         """
-        model_dict = remove_properties_by_name(model_dict, "_id")
+        recursive_remove_key(model_dict, "_id")
+
         return model_dict
 
     def _init_no_unit_context(self, filename, file_content, **kwargs):
@@ -320,8 +325,12 @@ class SimulationParams(_ParamModelBase):
         if unit_system_manager.current is None:
             # pylint: disable=not-context-manager
             with self.unit_system:
-                return super().preprocess(params=self, exclude=exclude)
-        return super().preprocess(params=self, exclude=exclude)
+                return super().preprocess(
+                    params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+                )
+        return super().preprocess(
+            params=self, exclude=exclude, flow360_unit_system=self.flow360_unit_system
+        )
 
     def _private_set_length_unit(self, validated_mesh_unit):
         with model_attribute_unlock(self.private_attribute_asset_cache, "project_length_unit"):
@@ -332,7 +341,7 @@ class SimulationParams(_ParamModelBase):
     def convert_unit(
         self,
         value: DimensionedTypes,
-        target_system: str,
+        target_system: Literal["SI", "Imperial", "flow360"],
         length_unit: Optional[LengthType] = None,
     ):
         """
@@ -347,7 +356,7 @@ class SimulationParams(_ParamModelBase):
             The dimensioned quantity to convert. This should have units compatible with Flow360's
             unit system.
         target_system : str
-            The target unit system for conversion. Common values include "SI", "Imperial", flow360".
+            The target unit system for conversion. Common values include "SI", "Imperial", "flow360".
         length_unit : LengthType, optional
             The length unit to use for conversion. If not provided, the method defaults to
             the project length unit stored in the `private_attribute_asset_cache`.
@@ -403,7 +412,7 @@ class SimulationParams(_ParamModelBase):
             v = []
         assert isinstance(v, list)
         if not any(isinstance(item, Fluid) for item in v):
-            v.append(Fluid())
+            v.append(Fluid(private_attribute_id="__default_fluid"))
         return v
 
     @pd.field_validator("models", mode="after")
@@ -608,10 +617,28 @@ class SimulationParams(_ParamModelBase):
                     / LIQUID_IMAGINARY_FREESTREAM_MACH
                 ).to("m/s")
             return (
-                self.operating_condition.reference_velocity_magnitude
+                self.operating_condition.reference_velocity_magnitude  # pylint:disable=no-member
                 / LIQUID_IMAGINARY_FREESTREAM_MACH
             ).to("m/s")
         return self.operating_condition.thermal_state.speed_of_sound.to("m/s")
+
+    @property
+    def _liquid_reference_velocity(self) -> VelocityType:
+        """
+        This function returns the reference velocity for liquid operating condition.
+        Note that the reference velocity is **NOT** the non-dimensionalization velocity scale
+
+        For dimensionalization of Flow360 output (converting FROM flow360 unit)
+        The solver output is already re-normalized by `reference velocity` due to "velocityScale"
+        So we need to find the `reference velocity`.
+        `reference_velocity_magnitude` takes precedence, consistent with how "velocityScale" is computed.
+        """
+        # pylint:disable=no-member
+        if self.operating_condition.reference_velocity_magnitude is not None:
+            reference_velocity = (self.operating_condition.reference_velocity_magnitude).to("m/s")
+        else:
+            reference_velocity = self.base_velocity.to("m/s") * LIQUID_IMAGINARY_FREESTREAM_MACH
+        return reference_velocity
 
     @property
     def base_density(self) -> DensityType:
@@ -634,6 +661,16 @@ class SimulationParams(_ParamModelBase):
     @property
     def flow360_unit_system(self) -> u.UnitSystem:
         """Get the unit system for non-dimensionalization"""
+        if self.operating_condition is None:
+            # Pure meshing mode
+            return u.UnitSystem(
+                name="flow360_nondim",
+                length_unit=self.base_length,
+                mass_unit=1 * u.kg,  # pylint: disable=no-member
+                time_unit=1 * u.s,  # pylint: disable=no-member
+                temperature_unit=1 * u.K,  # pylint: disable=no-member
+            )
+
         return u.UnitSystem(
             name="flow360_nondim",
             length_unit=self.base_length,
