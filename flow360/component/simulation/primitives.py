@@ -4,7 +4,7 @@ Primitive type definitions for simulation entities.
 
 import re
 from abc import ABCMeta
-from typing import Annotated, List, Literal, Optional, Tuple, Union, final
+from typing import Annotated, ClassVar, List, Literal, Optional, Tuple, Union, final
 
 import numpy as np
 import pydantic as pd
@@ -143,9 +143,7 @@ class GeometryBodyGroup(EntityBase):
     :class:`GeometryBodyGroup` represents a collection of bodies that are grouped for transformation.
     """
 
-    private_attribute_registry_bucket_name: Literal["GeometryBodyGroupEntityType"] = (
-        "GeometryBodyGroupEntityType"
-    )
+    entity_bucket: ClassVar[str] = "GeometryBodyGroupEntityType"
     private_attribute_tag_key: str = pd.Field(
         description="The tag/attribute string used to group bodies.",
     )
@@ -172,7 +170,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
     """All volumetric entities should inherit from this class."""
 
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["VolumetricEntityType"] = "VolumetricEntityType"
+    entity_bucket: ClassVar[str] = "VolumetricEntityType"
     private_attribute_zone_boundary_names: UniqueStringList = pd.Field(
         UniqueStringList(),
         frozen=True,
@@ -215,7 +213,7 @@ class _VolumeEntityBase(EntityBase, metaclass=ABCMeta):
 
 class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["SurfaceEntityType"] = "SurfaceEntityType"
+    entity_bucket: ClassVar[str] = "SurfaceEntityType"
     private_attribute_full_name: Optional[str] = pd.Field(None, frozen=True)
 
     def _update_entity_info_with_metadata(self, volume_mesh_meta_data: dict) -> None:
@@ -237,7 +235,7 @@ class _SurfaceEntityBase(EntityBase, metaclass=ABCMeta):
 
 class _EdgeEntityBase(EntityBase, metaclass=ABCMeta):
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = "EdgeEntityType"
+    entity_bucket: ClassVar[str] = "EdgeEntityType"
 
 
 @final
@@ -247,9 +245,7 @@ class Edge(_EdgeEntityBase):
     """
 
     ### Warning: Please do not change this as it affects registry bucketing.
-    private_attribute_registry_bucket_name: Literal["EdgeEntityType"] = pd.Field(
-        "EdgeEntityType", frozen=True
-    )
+    entity_bucket: ClassVar[str] = "EdgeEntityType"
     private_attribute_entity_type_name: Literal["Edge"] = pd.Field("Edge", frozen=True)
     private_attribute_tag_key: Optional[str] = pd.Field(
         None,
@@ -671,7 +667,7 @@ class GhostCircularPlane(_SurfaceEntityBase):
         return y_min, y_max, tolerance, largest_dimension
 
     def exists(self, validation_info) -> bool:
-        """Mesher logic for symmetric plane existence."""
+        """For automated farfield, check mesher logic for symmetric plane existence."""
 
         if self.name != "symmetric":
             # Quasi-3D mode, no need to check existence.

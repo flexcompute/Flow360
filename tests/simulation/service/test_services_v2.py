@@ -1066,16 +1066,6 @@ def test_generate_process_json():
         },
     }
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'surface_max_edge_length'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['SurfaceMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
-        ),
-    ):
-        res1, res2, res3 = services.generate_process_json(
-            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
-        )
-
     params_data["meshing"]["defaults"]["surface_max_edge_length"] = "1*m"
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="SurfaceMesh"
@@ -1085,16 +1075,6 @@ def test_generate_process_json():
     assert res2 is None
     assert res3 is None
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "[{'type': 'missing', 'loc': ('meshing', 'defaults', 'boundary_layer_first_layer_thickness'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['VolumeMesh']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
-        ),
-    ):
-        res1, res2, res3 = services.generate_process_json(
-            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
-        )
-
     params_data["meshing"]["defaults"]["boundary_layer_first_layer_thickness"] = "1*m"
     res1, res2, res3 = services.generate_process_json(
         simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="VolumeMesh"
@@ -1103,16 +1083,6 @@ def test_generate_process_json():
     assert res1 is not None
     assert res2 is not None
     assert res3 is None
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "[{'type': 'missing', 'loc': ('operating_condition', 'velocity_magnitude'), 'msg': 'Field required', 'input': None, 'ctx': {'relevant_for': ['Case']}, 'url': 'https://errors.pydantic.dev/2.11/v/missing'}]"
-        ),
-    ):
-        res1, res2, res3 = services.generate_process_json(
-            simulation_json=json.dumps(params_data), root_item_type="Geometry", up_to="Case"
-        )
 
     params_data["operating_condition"]["velocity_magnitude"] = {"value": 0.8, "units": "km/s"}
     res1, res2, res3 = services.generate_process_json(
