@@ -1,3 +1,5 @@
+"""Stop criterion module for the run control of simulation."""
+
 from typing import List, Literal, Optional, Union, get_args
 
 import pydantic as pd
