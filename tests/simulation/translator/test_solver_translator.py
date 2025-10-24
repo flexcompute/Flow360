@@ -72,6 +72,7 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     CustomVolume,
     GenericVolume,
+    ImportedSurface,
     ReferenceGeometry,
     Surface,
 )
@@ -986,6 +987,11 @@ def test_param_with_user_variables():
                     name="MassFluxIntegral",
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
+                ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegralImported",
+                    output_fields=[surface_integral_variable],
+                    entities=ImportedSurface(name="imported", file_name="imported.stl"),
                 ),
                 SurfaceOutput(
                     name="surface_output",

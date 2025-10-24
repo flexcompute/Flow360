@@ -636,6 +636,19 @@ class SurfaceIntegralOutput(_OutputBase):
         """Ensure all boundaries will be present after mesher"""
         return check_deleted_surface_in_entity_list(value)
 
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def allow_only_simulation_surfaces_or_imported_surfaces(cls, value):
+        """Support only simulation surfaces or imported surfaces in each SurfaceIntegralOutput"""
+        has_imported = isinstance(value.stored_entities[0], ImportedSurface)
+        for entity in value.stored_entities[1:]:
+            if has_imported != isinstance(entity, ImportedSurface):
+                raise ValueError(
+                    "Imported and simulation surfaces cannot be used together in the same SurfaceIntegralOutput."
+                    " Please assign them to separate outputs."
+                )
+        return value
+
 
 class ProbeOutput(_OutputBase):
     """
