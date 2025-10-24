@@ -73,6 +73,7 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     CustomVolume,
     GenericVolume,
+    ImportedSurface,
     ReferenceGeometry,
     Surface,
 )
@@ -589,7 +590,9 @@ def test_operating_condition(get_2dcrm_tutorial_param):
     converted = get_2dcrm_tutorial_param._preprocess(mesh_unit=1 * u.m)
     assertions.assertAlmostEqual(converted.operating_condition.velocity_magnitude.value, 0.2)
     assertions.assertAlmostEqual(
-        converted.operating_condition.thermal_state.dynamic_viscosity.value,
+        converted.operating_condition.thermal_state.dynamic_viscosity.in_base(
+            get_2dcrm_tutorial_param.flow360_unit_system
+        ).value,
         4.0121618e-08,
     )
     assertions.assertEqual(converted.operating_condition.thermal_state.temperature, 272.1 * u.K)
@@ -604,7 +607,9 @@ def test_operating_condition(get_2dcrm_tutorial_param):
     assertions.assertAlmostEqual(
         converted.operating_condition.thermal_state.material.get_dynamic_viscosity(
             converted.operating_condition.thermal_state.temperature
-        ).value.item(),
+        )
+        .in_base(get_2dcrm_tutorial_param.flow360_unit_system)
+        .value,
         4e-8,
     )
 
@@ -980,6 +985,11 @@ def test_param_with_user_variables():
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
                 ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegralImported",
+                    output_fields=[surface_integral_variable],
+                    entities=ImportedSurface(name="imported", file_name="imported.stl"),
+                ),
                 SurfaceOutput(
                     name="surface_output",
                     entities=Surface(name="fluid/body"),
@@ -1084,6 +1094,13 @@ def test_isosurface_iso_value_in_unit_system():
         ref_json_file="Flow360_user_variable_isosurface.json",
         debug=True,
     )
+
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "data", "simulation_isosurface.json"
+        )
+    ) as fp:
+        params_as_dict = json.load(fp=fp)
 
     params_as_dict["outputs"][2]["entities"]["items"][0]["field"]["name"] = "uuu"
     params_validated, errors, _ = validate_model(

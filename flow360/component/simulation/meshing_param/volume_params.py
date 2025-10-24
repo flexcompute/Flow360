@@ -462,3 +462,12 @@ class UserDefinedFarfield(_FarfieldBase):
 
     type: Literal["UserDefinedFarfield"] = pd.Field("UserDefinedFarfield", frozen=True)
     name: Optional[str] = pd.Field(None)
+
+    @property
+    def symmetry_plane(self) -> GhostSurface:
+        """
+        Returns the symmetry plane boundary surface.
+
+        Warning: This should only be used when using GAI and beta mesher.
+        """
+        return GhostSurface(name="symmetric")

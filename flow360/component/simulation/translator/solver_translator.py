@@ -600,7 +600,11 @@ def translate_monitor_output(
         entity_injection_func=injection_function,
         lump_list_of_entities=True,
         use_instance_name_as_key=True,
-        entity_type_to_exclude=ImportedSurface,
+        entity_type_to_include=(
+            (Surface, GhostSurface, GhostSphere, GhostCircularPlane)
+            if monitor_type is SurfaceIntegralOutput
+            else None
+        ),
     )
     return translated_output
 
@@ -1514,9 +1518,9 @@ def get_solver_json(
             else -1
         ),
         "muRef": (
-            op.thermal_state.dynamic_viscosity.v.item()
+            op.thermal_state.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
             if not isinstance(op, LiquidOperatingCondition)
-            else op.material.dynamic_viscosity.v.item()
+            else op.material.dynamic_viscosity.in_base(input_params.flow360_unit_system).v.item()
         ),
     }
     if (
