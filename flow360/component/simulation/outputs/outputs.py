@@ -135,7 +135,7 @@ class MovingStatistic(Flow360BaseModel):
 
     moving_window_size: pd.PositiveInt = pd.Field(
         10,
-        description="The number of pseudo/time steps to compute moving statistics. "
+        description="The number of pseudo/physical steps to compute moving statistics. "
         "For steady simulation, the moving_window_size should be a multiple of 10.",
     )
     method: Literal["mean", "min", "max", "std", "deviation"] = pd.Field(
@@ -143,7 +143,7 @@ class MovingStatistic(Flow360BaseModel):
     )
     start_step: pd.NonNegativeInt = pd.Field(
         0,
-        description="The number of steps to skip before computing the moving statistics. "
+        description="The number of pseudo/physical steps to skip before computing the moving statistics. "
         "For steady simulation, the moving_window_size should be a multiple of 10.",
     )
     type_name: Literal["MovingStatistic"] = pd.Field("MovingStatistic", frozen=True)
