@@ -1,5 +1,5 @@
 {
-    "version": "25.7.5b0",
+    "version": "25.7.6b0",
     "unit_system": {
         "name": "SI"
     },
@@ -224,7 +224,6 @@
             "entities": {
                 "stored_entities": [
                     {
-                        "private_attribute_registry_bucket_name": "PointEntityType",
                         "private_attribute_entity_type_name": "Point",
                         "private_attribute_id": "111",
                         "name": "pt1",
