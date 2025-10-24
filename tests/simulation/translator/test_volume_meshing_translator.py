@@ -182,6 +182,7 @@ def get_test_param():
                 volume_zones=[
                     CustomVolume(
                         name="custom_volume-1",
+                        enforceTetrahedralElements=True,
                         boundaries=[
                             Surface(name="interface1"),
                             Surface(name="interface2"),

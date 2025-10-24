@@ -564,9 +564,9 @@ class Solid(PDEModelBase):
 
     name: Optional[str] = pd.Field(None, description="Name of the `Solid` model.")
     type: Literal["Solid"] = pd.Field("Solid", frozen=True)
-    entities: EntityList[GenericVolume] = pd.Field(
+    entities: EntityListWithCustomVolume[GenericVolume, CustomVolume] = pd.Field(
         alias="volumes",
-        description="The list of :class:`GenericVolume` "
+        description="The list of :class:`GenericVolume` or :class:`CustomVolume`"
         + "entities on which the heat transfer equation is solved.",
     )
 
@@ -585,6 +585,22 @@ class Solid(PDEModelBase):
     initial_condition: Optional[HeatEquationInitialCondition] = pd.Field(
         None, description="The initial condition of the heat equation solver."
     )
+
+    @pd.field_validator("entities", mode="after")
+    @classmethod
+    def ensure_custom_volume_has_tets_only(cls, v):
+        """
+        Check if the CustomVolume object was meshed with the flag enforceTetrahedralElements
+        set to 'True'
+        """
+        for entity in v.stored_entities:
+            if isinstance(entity, CustomVolume):
+                if not entity.enforceTetrahedralElements:
+                    raise ValueError(
+                        "CustomVolume object must be meshed with "
+                        "the flag enforceTetrahedralElements set to 'True'"
+                    )
+        return v
 
 
 # pylint: disable=duplicate-code
