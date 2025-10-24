@@ -744,7 +744,6 @@ class SnappyBody(EntityBase):
 
         matched_surfaces = [entity for entity in self.surfaces if regex.match(entity.name)]
         if not matched_surfaces:
-            print(key)
             raise KeyError(
                 f"No entity found in registry for parent entity: {self.name} with given name/naming pattern: '{key}'."
             )
