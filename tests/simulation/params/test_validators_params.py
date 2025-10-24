@@ -2218,6 +2218,7 @@ def test_check_custom_volume_in_volume_zones():
     )
     assert errors[0]["loc"] == ("models", 0, "entities", "stored_entities")
 
+
 def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
     # Create two dummy ghost surfaces
     periodic_1 = GhostSurface(name="periodic_1")
@@ -2225,9 +2226,8 @@ def test_ghost_surface_pair_requires_quasi_3d_periodic_farfield():
 
     # Case 1: Farfield method NOT "quasi-3d-periodic" → should raise ValueError
     with SI_unit_system, ValidationContext(CASE, quasi_3d_farfield_context), pytest.raises(
-            ValueError,
-            match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
-        ):
+        ValueError, match="Farfield type must be 'quasi-3d-periodic' when using GhostSurfacePair."
+    ):
         Periodic(surface_pairs=(periodic_1, periodic_2), spec=Translational())
 
     # Case 2: Farfield method IS "quasi-3d-periodic" → should pass
