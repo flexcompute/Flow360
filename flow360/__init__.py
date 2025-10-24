@@ -99,7 +99,6 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
-    StopCriterion,
     XFOILFile,
     XROTORFile,
 )
@@ -146,6 +145,7 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     ReferenceGeometry,
 )
+from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import (
     AdaptiveCFL,

@@ -1215,10 +1215,7 @@ def test_imperial_unit_system_conversion():
     assert abs(temperature_tester["value"] - 302) / 302 < 1e-10
 
     # Assert stop criterion tolerance unit is correct
-    assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
-        == "SI_unit_system"
-    )
+    assert dict_to_convert["run_control"][1]["tolerance"]["units"] == "SI_unit_system"
 
     # General comparison\
     with open("./ref/unit_system_converted_imperial.json", "r") as fp:
@@ -1255,10 +1252,7 @@ def test_CGS_unit_system_conversion():
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
 
     # Assert stop criterion tolerance unit is correct
-    assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
-        == "SI_unit_system"
-    )
+    assert dict_to_convert["run_control"][1]["tolerance"]["units"] == "SI_unit_system"
 
     # General comparison
     with open("./ref/unit_system_converted_CGS.json", "r") as fp:
@@ -1294,10 +1288,7 @@ def test_SI_unit_system_conversion():
     assert abs(temperature_tester["value"] - 423.15) / 423.15 < 1e-10
 
     # Assert stop criterion tolerance unit is correct
-    assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
-        == "SI_unit_system"
-    )
+    assert dict_to_convert["run_control"][1]["tolerance"]["units"] == "SI_unit_system"
 
     # General comparison
     with open("./ref/unit_system_converted_SI.json", "r") as fp:

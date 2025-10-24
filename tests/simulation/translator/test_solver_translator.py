@@ -44,7 +44,6 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
-    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -76,6 +75,7 @@ from flow360.component.simulation.primitives import (
     ReferenceGeometry,
     Surface,
 )
+from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.services import (
     ValidationCalledBy,
     clear_context,
@@ -403,7 +403,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         monitor_output=probe_output,
         monitor_field=monitored_variable,
     )
-    params.models[0].stopping_criterion = [criterion]
+    params.run_control = [criterion]
     params.outputs.append(probe_output)
     translate_and_compare(
         get_om6Wing_tutorial_param,
@@ -432,7 +432,7 @@ def test_stopping_criterion_tolerance_in_unit_system():
         validation_level="Case",
     )
     assert not errors, print(">>>", errors)
-    assert params_validated.models[0].stopping_criterion[0].tolerance == 18.66 * u.m / u.s**2
+    assert params_validated.run_control[0].tolerance == 18.66 * u.m / u.s**2
 
     translate_and_compare(
         params_validated,

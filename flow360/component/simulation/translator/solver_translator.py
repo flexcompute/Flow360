@@ -92,6 +92,7 @@ from flow360.component.simulation.primitives import (
     Surface,
     SurfacePair,
 )
+from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.user_expression_utils import (
@@ -1438,11 +1439,11 @@ def check_moving_statistic_existence(params: SimulationParams):
 
 def check_stopping_criterion_existence(params: SimulationParams):
     """Check if stopping criterion exists in the Fluid model"""
-    if not params.models:
+    if not params.run_control:
         return False
-    for model in params.models:
-        if isinstance(model, Fluid):
-            return bool(model.stopping_criterion)
+    for control in params.run_control:
+        if isinstance(control, StopCriterion):
+            return True
     return False
 
 
@@ -1456,12 +1457,11 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
             if output.moving_statistic is None:
                 continue
             json_string_list.append(output.private_attribute_id)
-    if params.models:
-        for model in params.models:
-            if isinstance(model, Fluid) and model.stopping_criterion is not None:
-                json_string_list.extend(
-                    [criterion.model_dump_json() for criterion in model.stopping_criterion]
-                )
+    if params.run_control:
+        for control in params.run_control:
+            if not isinstance(control, StopCriterion):
+                continue
+            json_string_list.append(control.model_dump_json())
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
@@ -1555,7 +1555,6 @@ def get_solver_json(
     dump_dict(input_params.time_stepping)
 
     ##:: Step 6: Get solver settings and initial condition
-    translated["runControl"] = {}
     for model in input_params.models:
         if isinstance(model, Fluid):
             if isinstance(op, LiquidOperatingCondition):
@@ -1643,7 +1642,6 @@ def get_solver_json(
                                 "axes": [list(axes[0]), list(axes[1])],
                             }
                         )
-            translated["runControl"]["shouldCheckStopCriterion"] = bool(model.stopping_criterion)
 
             translated["initialCondition"] = get_navier_stokes_initial_condition(
                 model.initial_condition
@@ -1787,13 +1785,6 @@ def get_solver_json(
     ##:: Step 4: Get outputs (has to be run after the boundaries are translated)
 
     translated = translate_output(input_params, translated)
-    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
-        input_params
-    ) or check_stopping_criterion_existence(input_params)
-    if translated["runControl"]["externalProcessMonitorOutput"]:
-        translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
-            input_params
-        )
 
     ##:: Step 5: Get user defined fields and auto-generated fields for dimensioned output
     translated["userDefinedFields"] = []
@@ -1849,6 +1840,19 @@ def get_solver_json(
             translated["userDefinedDynamics"].append(udd_dict_translated)
 
         translated["userDefinedDynamics"].sort(key=lambda udd: udd["dynamicsName"])
+
+    ##:: Step 11: Get run control settings
+    translated["runControl"] = {}
+    translated["runControl"]["shouldCheckStopCriterion"] = check_stopping_criterion_existence(
+        input_params
+    )
+    translated["runControl"]["externalProcessMonitorOutput"] = check_moving_statistic_existence(
+        input_params
+    ) or check_stopping_criterion_existence(input_params)
+    if translated["runControl"]["externalProcessMonitorOutput"]:
+        translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
+            input_params
+        )
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition

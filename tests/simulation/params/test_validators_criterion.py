@@ -6,7 +6,7 @@ import pydantic as pd
 import pytest
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.models.volume_models import Fluid, StopCriterion
+from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import Point, PointArray
 from flow360.component.simulation.outputs.outputs import (
     MovingStatistic,
@@ -15,6 +15,7 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import Surface
+from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -264,10 +265,8 @@ def test_criterion_dimension_matching_validation(
         )
 
 
-def test_criterion_change_window_validation(
-    scalar_user_variable_density, single_point_probe_output
-):
-    """Test criterion_change_window validation."""
+def test_tolerance_window_size_validation(scalar_user_variable_density, single_point_probe_output):
+    """Test tolerance_window_size validation."""
 
     # Valid case: ge=2 constraint satisfied
     with SI_unit_system:
@@ -275,9 +274,9 @@ def test_criterion_change_window_validation(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
-            criterion_change_window=5,
+            tolerance_window_size=5,
         )
-    assert criterion.criterion_change_window == 5
+    assert criterion.tolerance_window_size == 5
 
     # Invalid case: less than 2
     with SI_unit_system, pytest.raises(pd.ValidationError):
@@ -285,7 +284,7 @@ def test_criterion_change_window_validation(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
-            criterion_change_window=1,
+            tolerance_window_size=1,
         )
 
 
@@ -293,7 +292,7 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
     """Test StopCriterion with MovingStatistic in output."""
 
     single_point_probe_output.moving_statistic = MovingStatistic(
-        method="deviation", moving_window=10
+        method="deviation", moving_window_size=10
     )
     with SI_unit_system:
         criterion = StopCriterion(
@@ -305,7 +304,7 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
 
     assert criterion.name == "Criterion_1"
     assert criterion.monitor_output.moving_statistic.method == "deviation"
-    assert criterion.monitor_output.moving_statistic.moving_window == 10
+    assert criterion.monitor_output.moving_statistic.moving_window_size == 10
 
 
 def test_criterion_default_values(scalar_user_variable_density, single_point_probe_output):
@@ -319,7 +318,7 @@ def test_criterion_default_values(scalar_user_variable_density, single_point_pro
         )
 
     assert criterion.name == "StopCriterion"
-    assert criterion.criterion_change_window is None
+    assert criterion.tolerance_window_size is None
     assert criterion.type_name == "StopCriterion"
 
 
@@ -335,25 +334,25 @@ def test_criterion_with_monitor_output_id():
     expected_errors = [
         {
             "type": "value_error",
-            "loc": ("models", 0, "stopping_criterion", 0, "monitor_output"),
+            "loc": ("run_control", 0, "monitor_output"),
             "msg": "Value error, For stopping criterion setup, only one single `Point` entity is allowed in `ProbeOutput`/`SurfaceProbeOutput`.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("models", 0, "stopping_criterion", 1, "monitor_output"),
+            "loc": ("run_control", 1, "monitor_output"),
             "msg": "Value error, The monitor field does not exist in the monitor output.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("models", 0, "stopping_criterion", 2, "tolerance"),
+            "loc": ("run_control", 2, "tolerance"),
             "msg": "Value error, The dimensions of monitor field and tolerance do not match.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("models", 0, "stopping_criterion", 3, "monitor_output"),
+            "loc": ("run_control", 3, "monitor_output"),
             "msg": "Value error, The monitor output does not exist in the outputs list.",
             "input": "1234",
             "ctx": {"relevant_for": ["Case"]},

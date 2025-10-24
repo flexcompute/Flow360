@@ -15,7 +15,6 @@ from flow360.component.simulation.entity_info import EntityInfoModel
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
 from flow360.component.simulation.framework.param_utils import AssetCache
-from flow360.component.simulation.models.volume_models import Fluid
 from flow360.component.simulation.outputs.output_entities import (
     Point,
     PointArray,
@@ -37,6 +36,7 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
+from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -367,13 +367,13 @@ def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
     """
     Setting up the monitor output in the stopping criterion if not provided in params.outputs.
     """
-    if not params.models:
+    if not params.run_control:
         return params
-    stopping_criterion = None
-    for model in params.models:
-        if not isinstance(model, Fluid):
-            continue
-        stopping_criterion = model.stopping_criterion
+    stopping_criterion = []
+    for control in params.run_control:
+        if isinstance(control, StopCriterion):
+            stopping_criterion.append(control)
+
     if not stopping_criterion:
         return params
     monitor_output_ids = []

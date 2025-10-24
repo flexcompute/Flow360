@@ -191,23 +191,7 @@
             },
             "transition_model_solver": {
                 "type_name": "None"
-            },
-            "stopping_criterion": [
-                {
-                    "name": "Criterion_Helicity",
-                    "monitor_field": {
-                        "name": "Helicity",
-                        "type_name": "UserVariable"
-                    },
-                    "monitor_output": "11111",
-                    "tolerance": {
-                        "type_name": "number",
-                        "value": 18.66,
-                        "units": "SI_unit_system"
-                    },
-                    "type_name": "StopCriterion"
-                }
-            ]
+            }
         },
         {
             "type": "Wall",
@@ -415,5 +399,21 @@
                 }
             }
         ]
-    }
+    },
+    "run_control": [
+        {
+            "name": "Criterion_Helicity",
+            "monitor_field": {
+                "name": "Helicity",
+                "type_name": "UserVariable"
+            },
+            "monitor_output": "11111",
+            "tolerance": {
+                "type_name": "number",
+                "value": 18.66,
+                "units": "SI_unit_system"
+            },
+            "type_name": "StopCriterion"
+        }
+    ]
 }
