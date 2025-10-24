@@ -1,4 +1,4 @@
-"""Stop criterion module for the run control of simulation."""
+"""Module for setting up the stopping criterion of simulation."""
 
 from typing import List, Literal, Optional, Union, get_args
 
@@ -31,10 +31,10 @@ from flow360.component.simulation.validation.validation_context import (
 )
 
 
-class StopCriterion(Flow360BaseModel):
+class StoppingCriterion(Flow360BaseModel):
     """
 
-    :class:`StopCriterion` class for :py:attr:`Fluid.stopping_criterion` settings.
+    :class:`StoppingCriterion` class for :py:attr:`RunControl.stopping_criteria` settings.
 
     Example
     -------
@@ -47,7 +47,7 @@ class StopCriterion(Flow360BaseModel):
     ...     name="Helicity_user",
     ...     value=fl.math.dot(fl.solution.velocity, fl.solution.vorticity),
     ... )
-    >>> criterion = fl.StopCriterion(
+    >>> criterion = fl.StoppingCriterion(
     ...     name="Criterion_1",
     ...     monitor_output=fl.ProbeOutput(
     ...         name="Helicity_probe",
@@ -64,7 +64,7 @@ class StopCriterion(Flow360BaseModel):
     ====
     """
 
-    name: Optional[str] = pd.Field("StopCriterion", description="Name of this criterion.")
+    name: Optional[str] = pd.Field("StoppingCriterion", description="Name of this criterion.")
     monitor_field: Union[UserVariable, str] = pd.Field(
         description="The field to be monitored. This field must be "
         "present in the `output_fields` of `monitor_output`."
@@ -82,7 +82,7 @@ class StopCriterion(Flow360BaseModel):
         "If not set, the criterion will directly compare the latest value with tolerance.",
         ge=2,
     )
-    type_name: Literal["StopCriterion"] = pd.Field("StopCriterion", frozen=True)
+    type_name: Literal["StoppingCriterion"] = pd.Field("StoppingCriterion", frozen=True)
 
     def preprocess(
         self,

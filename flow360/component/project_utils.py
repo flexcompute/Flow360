@@ -36,7 +36,6 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
 )
-from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import LengthType
 from flow360.component.simulation.user_code.core.types import save_user_variables
@@ -369,11 +368,7 @@ def _set_up_monitor_output_from_stopping_criterion(params: SimulationParams):
     """
     if not params.run_control:
         return params
-    stopping_criterion = []
-    for control in params.run_control:
-        if isinstance(control, StopCriterion):
-            stopping_criterion.append(control)
-
+    stopping_criterion = params.run_control.stopping_criteria
     if not stopping_criterion:
         return params
     monitor_output_ids = []

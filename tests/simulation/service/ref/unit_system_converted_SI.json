@@ -577,29 +577,32 @@
     "unit_system": {
         "name": "SI"
     },
-    "run_control": [
-        {
-            "name": "Criterion 1",
-            "type_name": "StopCriterion",
-            "tolerance_window_size": 10,
-            "tolerance": 0.01,
-            "monitor_field": "Cp",
-            "monitor_output": "da62dea4-0d26-499a-abdc-ef6d84c4a035"
-        },
-        {
-            "name": "Criterion 2",
-            "type_name": "StopCriterion",
-            "tolerance_window_size": 10,
-            "tolerance": {
-                "value": 0.01,
-                "units": "SI_unit_system"
+    "run_control": {
+        "stopping_criteria": [
+            {
+                "name": "Criterion 1",
+                "type_name": "StoppingCriterion",
+                "tolerance_window_size": 10,
+                "tolerance": 0.01,
+                "monitor_field": "Cp",
+                "monitor_output": "da62dea4-0d26-499a-abdc-ef6d84c4a035"
             },
-            "monitor_field": {
-                "name": "pressure_with_units",
-                "type_name": "UserVariable"
-            },
-            "monitor_output": "da62dea4-0d26-499a-abdc-ef6d84c4a035"
-        }
-    ],
+            {
+                "name": "Criterion 2",
+                "type_name": "StoppingCriterion",
+                "tolerance_window_size": 10,
+                "tolerance": {
+                    "value": 0.01,
+                    "units": "SI_unit_system"
+                },
+                "monitor_field": {
+                    "name": "pressure_with_units",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "da62dea4-0d26-499a-abdc-ef6d84c4a035"
+            }
+        ],
+        "type_name": "RunControl"
+    },
     "version": "24.2.0"
 }

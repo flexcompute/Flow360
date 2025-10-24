@@ -1116,52 +1116,55 @@
         ]
     },
     "user_defined_dynamics": null,
-    "run_control": [
-        {
-            "name": "StopCriterion 1",
-            "type_name": "StopCriterion",
-            "tolerance_window_size": 10,
-            "tolerance": 0.2,
-            "monitor_field": "Mach",
-            "monitor_output": "8b6c81a9-a409-44a1-9a85-4866f596a36d"
-        },
-        {
-            "name": "StopCriterion 2",
-            "type_name": "StopCriterion",
-            "tolerance_window_size": 10,
-            "tolerance": 0.2,
-            "monitor_field": "Cp",
-            "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
-        },
-        {
-            "name": "StopCriterion 3",
-            "type_name": "StopCriterion",
-            "tolerance_window_size": 10,
-            "tolerance": {
-                "type_name": "number",
-                "value": 18.66,
-                "units": "m"
+    "run_control": {
+        "stopping_criteria": [
+            {
+                "name": "StoppingCriterion 1",
+                "type_name": "StoppingCriterion",
+                "tolerance_window_size": 10,
+                "tolerance": 0.2,
+                "monitor_field": "Mach",
+                "monitor_output": "8b6c81a9-a409-44a1-9a85-4866f596a36d"
             },
-            "monitor_field": {
-                "name": "velocity_magnitude_with_units",
-                "type_name": "UserVariable"
+            {
+                "name": "StoppingCriterion 2",
+                "type_name": "StoppingCriterion",
+                "tolerance_window_size": 10,
+                "tolerance": 0.2,
+                "monitor_field": "Cp",
+                "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
             },
-            "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
-        },
-        {
-            "name": "StopCriterion 4",
-            "type_name": "StopCriterion",
-            "tolerance_window_size": 10,
-            "tolerance": {
-                "type_name": "number",
-                "value": 18.66,
-                "units": "m/s"
+            {
+                "name": "StoppingCriterion 3",
+                "type_name": "StoppingCriterion",
+                "tolerance_window_size": 10,
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 18.66,
+                    "units": "m"
+                },
+                "monitor_field": {
+                    "name": "velocity_magnitude_with_units",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
             },
-            "monitor_field": {
-                "name": "velocity_magnitude_with_units",
-                "type_name": "UserVariable"
-            },
-            "monitor_output": "1234"
-        }
-    ]
+            {
+                "name": "StoppingCriterion 4",
+                "type_name": "StoppingCriterion",
+                "tolerance_window_size": 10,
+                "tolerance": {
+                    "type_name": "number",
+                    "value": 18.66,
+                    "units": "m/s"
+                },
+                "monitor_field": {
+                    "name": "velocity_magnitude_with_units",
+                    "type_name": "UserVariable"
+                },
+                "monitor_output": "1234"
+            }
+        ],
+        "type_name": "RunControl"
+    }
 }

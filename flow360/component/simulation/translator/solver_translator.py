@@ -92,7 +92,6 @@ from flow360.component.simulation.primitives import (
     Surface,
     SurfacePair,
 )
-from flow360.component.simulation.run_control.stop_criterion import StopCriterion
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.translator.user_expression_utils import (
@@ -1441,10 +1440,7 @@ def check_stopping_criterion_existence(params: SimulationParams):
     """Check if stopping criterion exists in the Fluid model"""
     if not params.run_control:
         return False
-    for control in params.run_control:
-        if isinstance(control, StopCriterion):
-            return True
-    return False
+    return bool(params.run_control.stopping_criteria)
 
 
 def calculate_monitor_semaphore_hash(params: SimulationParams):
@@ -1457,11 +1453,10 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
             if output.moving_statistic is None:
                 continue
             json_string_list.append(output.private_attribute_id)
-    if params.run_control:
-        for control in params.run_control:
-            if not isinstance(control, StopCriterion):
-                continue
-            json_string_list.append(control.model_dump_json())
+    if params.run_control and params.run_control.stopping_criteria:
+        for criterion in params.run_control.stopping_criteria:
+            json_string_list.append(criterion.model_dump_json())
+
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))

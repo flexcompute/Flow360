@@ -15,7 +15,9 @@ from flow360.component.simulation.outputs.outputs import (
     SurfaceProbeOutput,
 )
 from flow360.component.simulation.primitives import Surface
-from flow360.component.simulation.run_control.stop_criterion import StopCriterion
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
+)
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.unit_system import SI_unit_system
@@ -93,7 +95,7 @@ def surface_integral_output(scalar_user_variable_density):
 def test_criterion_scalar_field_validation(scalar_user_variable_density, single_point_probe_output):
     """Test that scalar fields are accepted."""
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -107,14 +109,14 @@ def test_criterion_vector_field_validation_fails(
     """Test that vector fields are rejected."""
     message = "The stopping criterion can only be defined on a scalar field."
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        StopCriterion(
+        StoppingCriterion(
             monitor_field=vector_user_variable_velocity,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.m / u.s,
         )
 
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        StopCriterion(
+        StoppingCriterion(
             monitor_field="VelocityRelative",
             monitor_output=single_point_probe_output,
             tolerance=0.01,
@@ -126,7 +128,7 @@ def test_criterion_single_point_probe_validation(
 ):
     """Test that single point ProbeOutput is accepted."""
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -134,7 +136,7 @@ def test_criterion_single_point_probe_validation(
     assert criterion.monitor_output == single_point_probe_output
 
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_surface_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -158,7 +160,7 @@ def test_criterion_multi_entities_probe_validation_fails(
         Point(name="pt2", location=(1, 1, 1) * u.m)
     )
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        StopCriterion(
+        StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=multi_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -174,7 +176,7 @@ def test_criterion_multi_entities_probe_validation_fails(
         ),
     ]
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        StopCriterion(
+        StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=point_array_surface_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -187,7 +189,7 @@ def test_criterion_field_exists_in_output_validation(single_point_probe_output):
     message = "The monitor field does not exist in the monitor output."
 
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_field,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.Pa,
@@ -199,7 +201,7 @@ def test_criterion_field_exists_in_output_validation_success(single_point_probe_
     scalar_field = UserVariable(name="test_field", value=solution.pressure)
     single_point_probe_output.output_fields.append(scalar_field)
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_field,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.Pa,
@@ -210,7 +212,7 @@ def test_criterion_field_exists_in_output_validation_success(single_point_probe_
 def test_criterion_string_field_tolerance_validation(single_point_probe_output):
     """Test that string monitor fields require dimensionless tolerance."""
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field="mut",
             monitor_output=single_point_probe_output,
             tolerance=0.01,
@@ -219,7 +221,7 @@ def test_criterion_string_field_tolerance_validation(single_point_probe_output):
 
     message = "The monitor field (mut) specified by string can only be used with a nondimensional tolerance."
     with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field="mut",
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m / u.s,
@@ -231,7 +233,7 @@ def test_criterion_dimension_matching_validation(
 ):
     """Test that monitor field and tolerance dimensions must match."""
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -240,7 +242,7 @@ def test_criterion_dimension_matching_validation(
 
     # Valid case: surface integral tolerance's dimenision should match with field_dimensions * (length)**2
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=surface_integral_output,
             tolerance=0.01 * u.kg / u.m,
@@ -251,14 +253,14 @@ def test_criterion_dimension_matching_validation(
     message = "The dimensions of monitor field and tolerance do not match."
 
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        StopCriterion(
+        StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01,  # Dimensionless tolerance for dimensional field
         )
 
     with SI_unit_system, pytest.raises(ValueError, match=message):
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=surface_integral_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -270,7 +272,7 @@ def test_tolerance_window_size_validation(scalar_user_variable_density, single_p
 
     # Valid case: ge=2 constraint satisfied
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -280,7 +282,7 @@ def test_tolerance_window_size_validation(scalar_user_variable_density, single_p
 
     # Invalid case: less than 2
     with SI_unit_system, pytest.raises(pd.ValidationError):
-        StopCriterion(
+        StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
@@ -289,13 +291,13 @@ def test_tolerance_window_size_validation(scalar_user_variable_density, single_p
 
 
 def test_criterion_with_moving_statistic(scalar_user_variable_density, single_point_probe_output):
-    """Test StopCriterion with MovingStatistic in output."""
+    """Test StoppingCriterion with MovingStatistic in output."""
 
     single_point_probe_output.moving_statistic = MovingStatistic(
         method="deviation", moving_window_size=10
     )
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             name="Criterion_1",
             monitor_output=single_point_probe_output,
             monitor_field=scalar_user_variable_density,
@@ -308,22 +310,22 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
 
 
 def test_criterion_default_values(scalar_user_variable_density, single_point_probe_output):
-    """Test default values for StopCriterion."""
+    """Test default values for StoppingCriterion."""
 
     with SI_unit_system:
-        criterion = StopCriterion(
+        criterion = StoppingCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
         )
 
-    assert criterion.name == "StopCriterion"
+    assert criterion.name == "StoppingCriterion"
     assert criterion.tolerance_window_size is None
-    assert criterion.type_name == "StopCriterion"
+    assert criterion.type_name == "StoppingCriterion"
 
 
 def test_criterion_with_monitor_output_id():
-    # [Frontend] Simulating loading a StopCriterion object with the id of monitor_output,
+    # [Frontend] Simulating loading a StoppingCriterion object with the id of monitor_output,
     # ensure the validation for monitor_output works
     with open("data/simulation_stopping_criterion_webui.json", "r") as fh:
         data = json.load(fh)
@@ -334,25 +336,25 @@ def test_criterion_with_monitor_output_id():
     expected_errors = [
         {
             "type": "value_error",
-            "loc": ("run_control", 0, "monitor_output"),
+            "loc": ("run_control", "stopping_criteria", 0, "monitor_output"),
             "msg": "Value error, For stopping criterion setup, only one single `Point` entity is allowed in `ProbeOutput`/`SurfaceProbeOutput`.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("run_control", 1, "monitor_output"),
+            "loc": ("run_control", "stopping_criteria", 1, "monitor_output"),
             "msg": "Value error, The monitor field does not exist in the monitor output.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("run_control", 2, "tolerance"),
+            "loc": ("run_control", "stopping_criteria", 2, "tolerance"),
             "msg": "Value error, The dimensions of monitor field and tolerance do not match.",
             "ctx": {"relevant_for": ["Case"]},
         },
         {
             "type": "value_error",
-            "loc": ("run_control", 3, "monitor_output"),
+            "loc": ("run_control", "stopping_criteria", 3, "monitor_output"),
             "msg": "Value error, The monitor output does not exist in the outputs list.",
             "input": "1234",
             "ctx": {"relevant_for": ["Case"]},

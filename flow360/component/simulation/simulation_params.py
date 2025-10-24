@@ -59,7 +59,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
-from flow360.component.simulation.run_control.stop_criterion import StopCriterion
+from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -310,10 +310,9 @@ class SimulationParams(_ParamModelBase):
         description="Output settings. See :ref:`Outputs <outputs>` for more details.",
     )
 
-    run_control: Optional[List[StopCriterion]] = CaseField(
+    run_control: Optional[RunControl] = CaseField(
         None,
-        description="The run control setting of the simulation. When specifying a list of stopping criterion, "
-        "All criteria must be met at the same time to stop the simulation.",
+        description="Run control settings of the simulation.",
     )
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.
