@@ -7,7 +7,12 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
+from flow360.component.results.base_results import (
+    _PHYSICAL_STEP,
+    _PSEUDO_STEP,
+    ResultCSVModel,
+)
+from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError
 from flow360.log import log
@@ -410,3 +415,52 @@ class PorousMediumCoefficientsComputation:
                 out[f"{zone_name}_{_CL}"].append(CL_val)
 
         return coefficients_model_class().from_dict(out)
+
+
+class BETDiskCSVHeaderRename:
+    # pylint:disable=too-few-public-methods
+    """
+    Static utilities for renaming BET disk csv output headers to include the name of the BET disk.
+
+    This class provides only static methods and should not be instantiated or subclassed.
+    All methods are self-contained and require explicit parameters.
+    """
+
+    @staticmethod
+    def rename_csv_headers(
+        BETCSVModel: ResultCSVModel,
+        params: SimulationParams,
+        output_model_class,
+    ):
+        """
+        renames the header in a BET csv file to have BET names
+        """
+        # pylint:disable=too-many-locals
+        bet_disks = []
+        for model in params.models:
+            if isinstance(model, BETDisk):
+                bet_disks.append(model)
+        if not bet_disks:
+            return output_model_class().from_dict(BETCSVModel.values)
+
+        csv_data = BETCSVModel.values
+        new_csv = {}
+
+        disk_rename_map = {}
+
+        diskCount = 0
+        for disk in bet_disks:
+            for cylinder in disk.entities.stored_entities:
+                disk_rename_map[f"Disk{diskCount}"] = f"{disk.name}_{cylinder.name}"
+                diskCount = diskCount + 1
+
+        for header, values in csv_data.items():
+            matched = False
+            for default_prefix, new_prefix in disk_rename_map.items():
+                if header.startswith(default_prefix):
+                    new_csv[new_prefix + header[len(default_prefix) :]] = values
+                    matched = True
+                    break
+            if not matched:
+                new_csv[header] = values
+        return output_model_class().from_dict(new_csv)

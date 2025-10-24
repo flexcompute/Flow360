@@ -32,6 +32,7 @@ from flow360.component.results.results_utils import (
     _HEAT_FLUX,
     _X,
     _Y,
+    BETDiskCSVHeaderRename,
     DiskCoefficientsComputation,
     PorousMediumCoefficientsComputation,
     _CFx,
@@ -815,6 +816,20 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
 
+    def rename_header(self, params: SimulationParams) -> BETForcesResultCSVModel:
+        """
+        Renames the header entries from Disk{i}_ to {BETDisk.name}_{Cylinder.name}_
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+        Returns
+        -------
+        BETForcesResultCSVModel
+            Model containing csv with updated header
+        """
+        return BETDiskCSVHeaderRename.rename_csv_headers(self, params, BETForcesResultCSVModel)
+
     def compute_coefficients(self, params: SimulationParams) -> BETDiskCoefficientsCSVModel:
         """
         Compute disk coefficients from BET disk forces and moments.
@@ -876,6 +891,20 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
     """CSV model for BET disk coefficients output."""
 
     remote_file_name: str = pd.Field("bet_disk_coefficients_v2.csv", frozen=True)
+
+    def rename_header(self, params: SimulationParams) -> BETDiskCoefficientsCSVModel:
+        """
+        Renames the header entries from Disk{i}_ to {BETDisk.name}_{Cylinder.name}_
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+        Returns
+        -------
+        BETDiskCoefficientsCSVModel
+            Model containing csv with updated header
+        """
+        return BETDiskCSVHeaderRename.rename_csv_headers(self, params, BETDiskCoefficientsCSVModel)
 
 
 class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
@@ -953,3 +982,19 @@ class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVM
         CaseDownloadable.BET_FORCES_RADIAL_DISTRIBUTION.value, frozen=True
     )
     _err_msg = "Case does not have any BET disks."
+
+    def rename_header(self, params: SimulationParams) -> BETForcesRadialDistributionResultCSVModel:
+        """
+        Renames the header entries from Disk{i}_ to {BETDisk.name}_{Cylinder.name}_
+        Parameters
+        ----------
+        params : SimulationParams
+            Simulation parameters
+        Returns
+        -------
+        BETForcesRadialDistributionResultCSVModel
+            Model containing csv with updated header
+        """
+        return BETDiskCSVHeaderRename.rename_csv_headers(
+            self, params, BETForcesRadialDistributionResultCSVModel
+        )
