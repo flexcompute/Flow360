@@ -169,7 +169,7 @@
                 {
                     "name": "StopCriterion 1",
                     "type_name": "StopCriterion",
-                    "criterion_change_window": 10,
+                    "tolerance_window_size": 10,
                     "tolerance": 0.2,
                     "monitor_field": "Mach",
                     "monitor_output": "8b6c81a9-a409-44a1-9a85-4866f596a36d"
@@ -177,7 +177,7 @@
                 {
                     "name": "StopCriterion 2",
                     "type_name": "StopCriterion",
-                    "criterion_change_window": 10,
+                    "tolerance_window_size": 10,
                     "tolerance": 0.2,
                     "monitor_field": "Cp",
                     "monitor_output": "ad089c5d-f357-45e7-bbb9-c11297eea170"
@@ -185,7 +185,7 @@
                 {
                     "name": "StopCriterion 3",
                     "type_name": "StopCriterion",
-                    "criterion_change_window": 10,
+                    "tolerance_window_size": 10,
                     "tolerance": {
                         "type_name": "number",
                         "value": 18.66,
@@ -200,7 +200,7 @@
                 {
                     "name": "StopCriterion 4",
                     "type_name": "StopCriterion",
-                    "criterion_change_window": 10,
+                    "tolerance_window_size": 10,
                     "tolerance": {
                         "type_name": "number",
                         "value": 18.66,
@@ -340,8 +340,8 @@
             },
             "moving_statistic": {
                 "method": "max",
-                "moving_window": 10,
-                "initial_skipping_steps": 20,
+                "moving_window_size": 10,
+                "start_step": 20,
                 "type_name": "MovingStatistic"
             },
             "entities": {
@@ -402,8 +402,8 @@
             "frequency_offset": 0,
             "moving_statistic": {
                 "method": "mean",
-                "moving_window": 10,
-                "initial_skipping_steps": 0,
+                "moving_window_size": 10,
+                "start_step": 0,
                 "type_name": "MovingStatistic"
             },
             "entities": {
@@ -461,8 +461,8 @@
             },
             "moving_statistic": {
                 "method": "min",
-                "moving_window": 10,
-                "initial_skipping_steps": 0,
+                "moving_window_size": 10,
+                "start_step": 0,
                 "type_name": "MovingStatistic"
             },
             "entities": {
@@ -506,8 +506,8 @@
             "frequency_offset": 0,
             "moving_statistic": {
                 "method": "std",
-                "moving_window": 10,
-                "initial_skipping_steps": 0,
+                "moving_window_size": 10,
+                "start_step": 0,
                 "type_name": "MovingStatistic"
             },
             "entities": {
@@ -572,8 +572,8 @@
             },
             "moving_statistic": {
                 "method": "deviation",
-                "moving_window": 10,
-                "initial_skipping_steps": 0,
+                "moving_window_size": 10,
+                "start_step": 0,
                 "type_name": "MovingStatistic"
             },
             "entities": {

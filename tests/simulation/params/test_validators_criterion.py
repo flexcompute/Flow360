@@ -264,10 +264,8 @@ def test_criterion_dimension_matching_validation(
         )
 
 
-def test_criterion_change_window_validation(
-    scalar_user_variable_density, single_point_probe_output
-):
-    """Test criterion_change_window validation."""
+def test_tolerance_window_size_validation(scalar_user_variable_density, single_point_probe_output):
+    """Test tolerance_window_size validation."""
 
     # Valid case: ge=2 constraint satisfied
     with SI_unit_system:
@@ -275,9 +273,9 @@ def test_criterion_change_window_validation(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
-            criterion_change_window=5,
+            tolerance_window_size=5,
         )
-    assert criterion.criterion_change_window == 5
+    assert criterion.tolerance_window_size == 5
 
     # Invalid case: less than 2
     with SI_unit_system, pytest.raises(pd.ValidationError):
@@ -285,7 +283,7 @@ def test_criterion_change_window_validation(
             monitor_field=scalar_user_variable_density,
             monitor_output=single_point_probe_output,
             tolerance=0.01 * u.kg / u.m**3,
-            criterion_change_window=1,
+            tolerance_window_size=1,
         )
 
 
@@ -293,7 +291,7 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
     """Test StopCriterion with MovingStatistic in output."""
 
     single_point_probe_output.moving_statistic = MovingStatistic(
-        method="deviation", moving_window=10
+        method="deviation", moving_window_size=10
     )
     with SI_unit_system:
         criterion = StopCriterion(
@@ -305,7 +303,7 @@ def test_criterion_with_moving_statistic(scalar_user_variable_density, single_po
 
     assert criterion.name == "Criterion_1"
     assert criterion.monitor_output.moving_statistic.method == "deviation"
-    assert criterion.monitor_output.moving_statistic.moving_window == 10
+    assert criterion.monitor_output.moving_statistic.moving_window_size == 10
 
 
 def test_criterion_default_values(scalar_user_variable_density, single_point_probe_output):
@@ -319,7 +317,7 @@ def test_criterion_default_values(scalar_user_variable_density, single_point_pro
         )
 
     assert criterion.name == "StopCriterion"
-    assert criterion.criterion_change_window is None
+    assert criterion.tolerance_window_size is None
     assert criterion.type_name == "StopCriterion"
 
 

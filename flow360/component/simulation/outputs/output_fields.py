@@ -209,6 +209,33 @@ InvalidOutputFieldsForLiquid = Literal[
     "heatTransferCoefficientStaticTemperature",
     "heatTransferCoefficientTotalTemperature",
 ]
+
+ForceOutputCoefficientNames = Literal[
+    "CD",
+    "CL",
+    "CFx",
+    "CFy",
+    "CFz",
+    "CMx",
+    "CMy",
+    "CMz",
+    "CDPressure",
+    "CLPressure",
+    "CFxPressure",
+    "CFyPressure",
+    "CFzPressure",
+    "CMxPressure",
+    "CMyPressure",
+    "CMzPressure",
+    "CDSkinFriction",
+    "CLSkinFriction",
+    "CFxSkinFriction",
+    "CFySkinFriction",
+    "CFzSkinFriction",
+    "CMxSkinFriction",
+    "CMySkinFriction",
+    "CMzSkinFriction",
+]
 # pylint: disable=no-member
 _FIELD_UNIT_MAPPING = {
     # Standard non-dimensioned fields - (unit, unit_system)
