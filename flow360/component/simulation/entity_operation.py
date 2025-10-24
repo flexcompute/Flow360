@@ -56,9 +56,6 @@ class Transformation(Flow360BaseModel):
         Applies to vector of [x, y, z, 1] in project length unit.
         """
         # pylint:disable=no-member
-        error_msg = "[Internal] `{}` is dimensioned. Use get_transformation_matrix() after non-dimensionalization!"
-        assert str(self.origin.units) == "flow360_length_unit", error_msg.format("origin")
-        assert str(self.translation.units) == "flow360_length_unit", error_msg.format("translation")
         origin_array = np.asarray(self.origin.value)
         translation_array = np.asarray(self.translation.value)
 

@@ -147,6 +147,17 @@ def _get_surface_refinements(refinement_list: list[dict]):
     ]
 
 
+def _get_volume_zones(volume_zones_list: list[dict]):
+    """
+    Get the volume zones from the input_params.
+    """
+    return [
+        item
+        for item in volume_zones_list
+        if item["type"] in ("AutomatedFarfield", "UserDefinedFarfield")
+    ]
+
+
 GAI_SETTING_WHITELIST = {
     "meshing": {
         "defaults": {
@@ -157,8 +168,10 @@ GAI_SETTING_WHITELIST = {
             "preserve_thin_geometry": None,
             "surface_max_aspect_ratio": None,
             "surface_max_adaptation_iterations": None,
+            "sealing_size": None,
         },
         "refinements": _get_surface_refinements,
+        "volume_zones": _get_volume_zones,
     },
     "private_attribute_asset_cache": {
         "project_entity_info": {

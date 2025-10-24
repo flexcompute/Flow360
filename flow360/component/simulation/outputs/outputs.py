@@ -10,10 +10,7 @@ from typing import Annotated, List, Literal, Optional, Union, get_args
 
 import pydantic as pd
 
-from flow360.component.simulation.framework.base_model import (
-    Flow360BaseModel,
-    RegistryLookup,
-)
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.unique_list import UniqueItemList
@@ -291,11 +288,11 @@ class SurfaceOutput(_AnimationAndFileFormatSettings):
     # TODO: entities is None --> use all surfaces. This is not implemented yet.
 
     name: Optional[str] = pd.Field("Surface output", description="Name of the `SurfaceOutput`.")
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = (
-        pd.Field(
-            alias="surfaces",
-            description="List of boundaries where output is generated.",
-        )
+    entities: EntityListAllowingGhost[
+        Surface, GhostSurface, GhostCircularPlane, GhostSphere, ImportedSurface
+    ] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries where output is generated.",
     )
     write_single_file: bool = pd.Field(
         default=False,
@@ -537,14 +534,14 @@ class IsosurfaceOutput(_AnimationAndFileFormatSettings):
         params=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system=None,
     ) -> Flow360BaseModel:
         exclude_isosurface_output = exclude + ["iso_value"]
         return super().preprocess(
             params=params,
             exclude=exclude_isosurface_output,
             required_by=required_by,
-            registry_lookup=registry_lookup,
+            flow360_unit_system=flow360_unit_system,
         )
 
 
@@ -619,11 +616,11 @@ class SurfaceIntegralOutput(_OutputBase):
     """
 
     name: str = pd.Field("Surface integral output", description="Name of integral.")
-    entities: EntityListAllowingGhost[Surface, GhostSurface, GhostCircularPlane, GhostSphere] = (
-        pd.Field(
-            alias="surfaces",
-            description="List of boundaries where the surface integral will be calculated.",
-        )
+    entities: EntityListAllowingGhost[
+        Surface, GhostSurface, GhostCircularPlane, GhostSphere, ImportedSurface
+    ] = pd.Field(
+        alias="surfaces",
+        description="List of boundaries where the surface integral will be calculated.",
     )
     output_fields: UniqueItemList[Union[str, UserVariable]] = pd.Field(
         description="List of output variables, only the :class:`UserDefinedField` is allowed."
@@ -1234,114 +1231,6 @@ class TimeAverageStreamlineOutput(StreamlineOutput):
     )
 
 
-class ImportedSurfaceOutput(_AnimationAndFileFormatSettings):
-    """
-    :class:`ImportedSurfaceOutput` class for generating interpolated output on imported surfaces.
-
-    Example
-    -------
-    >>> fl.ImportedSurfaceOutput(
-    ...     name="Jet_cross_sections_output",
-    ...     entities=[
-    ...         geometry.imported_surfaces["*"],
-    ...     ],
-    ...     output_fields=[
-    ...         fl.solution.Cp,
-    ...     ]
-    ... )
-
-    ====
-    """
-
-    name: Optional[str] = pd.Field(
-        "Imported surface output", description="Name of the `ImportedSurfaceOutput`."
-    )
-    entities: EntityList[ImportedSurface] = pd.Field(
-        alias="surfaces",
-        description="List of imported surfaces where output is generated.",
-    )
-    output_fields: UniqueItemList[UserVariable] = pd.Field(description="List of output variables.")
-    output_type: Literal["ImportedSurfaceOutput"] = pd.Field("ImportedSurfaceOutput", frozen=True)
-
-
-class TimeAverageImportedSurfaceOutput(ImportedSurfaceOutput):
-    """
-    :class:`TimeAverageImportedSurfaceOutput` class for generating **time-averaged**
-    output on imported surfaces.
-
-    Similar to :class:`ImportedSurfaceOutput`, this output type records user-specified
-    variables on imported geometry surfaces, but instead of instantaneous values,
-    it computes averages over a specified range of physical time steps.
-
-    Example
-    -------
-    >>> fl.TimeAverageImportedSurfaceOutput(
-    ...     name="Jet_cross_sections_output",
-    ...     entities=[
-    ...         geometry.imported_surfaces["*"],
-    ...     ],
-    ...     output_fields=[
-    ...         fl.solution.Cp,
-    ...     ],
-    ...     start_step=2000
-    ... )
-
-    ====
-    """
-
-    name: Optional[str] = pd.Field(
-        "Time average imported surface output",
-        description="Name of the `TimeAverageImportedSurfaceOutput`.",
-    )
-    start_step: Union[pd.NonNegativeInt, Literal[-1]] = pd.Field(
-        default=-1, description="Physical time step to start calculating averaging"
-    )
-    output_type: Literal["TimeAverageImportedSurfaceOutput"] = pd.Field(
-        "TimeAverageImportedSurfaceOutput", frozen=True
-    )
-
-
-class ImportedSurfaceIntegralOutput(_OutputBase):
-    """
-    :class:`ImportedSurfaceIntegralOutput` class for computing integrals of
-    user-specified variables over imported surfaces.
-    Integrals are computed for each of the individual surfaces.
-
-    Example
-    -------
-    Define a :class:`ImportedSurfaceIntegralOutput` to compute the integrated
-    mass flow rate across an imported cross-section plane
-    placed downstream of a nozzle. These planes are provided only for
-    post-processing and are not part of the simulated mesh boundaries.
-
-    >>> fl.ImportedSurfaceIntegralOutput(
-    ...     name="Nozzle_exit_planes_integrals",
-    ...     entities=[
-    ...         geometry.imported_surfaces["*"],
-    ...     ],
-    ...     output_fields=[
-    ...         fl.UserVariable(
-    ...             name="MassFlowRate",
-    ...             value=fl.solution.density
-    ...             * fl.math.dot(fl.solution.velocity, fl.solution.node_unit_normal)
-    ...         ),
-    ...     ]
-    ... )
-
-    ====
-    """
-
-    name: str = pd.Field("Imported surface integral output", description="Name of integral.")
-    entities: EntityList[ImportedSurface] = pd.Field(
-        alias="surfaces",
-        description="List of boundaries where the surface integral will be calculated.",
-    )
-    output_fields: UniqueItemList[UserVariable] = pd.Field(description="List of output variables.")
-    output_type: Literal["ImportedSurfaceIntegralOutput"] = pd.Field(
-        "ImportedSurfaceIntegralOutput", frozen=True
-    )
-
-
 OutputTypes = Annotated[
     Union[
         SurfaceOutput,
@@ -1360,9 +1249,6 @@ OutputTypes = Annotated[
         TimeAverageSurfaceProbeOutput,
         AeroAcousticOutput,
         StreamlineOutput,
-        ImportedSurfaceOutput,
-        TimeAverageImportedSurfaceOutput,
-        ImportedSurfaceIntegralOutput,
         TimeAverageStreamlineOutput,
     ],
     pd.Field(discriminator="output_type"),
@@ -1375,7 +1261,6 @@ TimeAverageOutputTypes = (
     TimeAverageIsosurfaceOutput,
     TimeAverageProbeOutput,
     TimeAverageSurfaceProbeOutput,
-    TimeAverageImportedSurfaceOutput,
     TimeAverageStreamlineOutput,
 )
 

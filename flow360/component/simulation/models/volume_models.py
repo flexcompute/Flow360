@@ -9,11 +9,8 @@ from typing import Annotated, Dict, List, Literal, Optional, Union, get_args
 import pydantic as pd
 
 import flow360.component.simulation.units as u
-from flow360.component.simulation.framework.base_model import (
-    Flow360BaseModel,
-    RegistryLookup,
-)
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.base_model import Flow360BaseModel
+from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import (
     StringExpression,
     validate_angle_expression_of_t_seconds,
@@ -161,14 +158,14 @@ class StopCriterion(Flow360BaseModel):
         params=None,
         exclude: List[str] = None,
         required_by: List[str] = None,
-        registry_lookup: RegistryLookup = None,
+        flow360_unit_system=None,
     ) -> Flow360BaseModel:
         exclude_criterion = exclude + ["tolerance"]
         return super().preprocess(
             params=params,
             exclude=exclude_criterion,
             required_by=required_by,
-            registry_lookup=registry_lookup,
+            flow360_unit_system=flow360_unit_system,
         )
 
     @pd.field_serializer("monitor_output")
@@ -468,6 +465,7 @@ class PDEModelBase(Flow360BaseModel):
 
     material: MaterialBase = pd.Field()
     initial_condition: Optional[dict] = pd.Field(None)
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
 
 class Fluid(PDEModelBase):
@@ -693,6 +691,7 @@ class ActuatorDisk(Flow360BaseModel):
         + "See :class:`ForcePerArea` documentation."
     )
     name: Optional[str] = pd.Field("Actuator disk", description="Name of the `ActuatorDisk` model.")
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
     type: Literal["ActuatorDisk"] = pd.Field("ActuatorDisk", frozen=True)
 
 
@@ -991,6 +990,7 @@ class BETDisk(MultiConstructorBaseModel):
     )
 
     private_attribute_input_cache: BETDiskCache = BETDiskCache()
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.model_validator(mode="after")
     @_validator_append_instance_name
@@ -1450,6 +1450,7 @@ class Rotation(Flow360BaseModel):
         + "to be used for the rotation model. Steady state simulation requires this flag "
         + "to be True for all rotation models.",
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entities", mode="after")
     @classmethod
@@ -1549,6 +1550,7 @@ class PorousMedium(Flow360BaseModel):
     volumetric_heat_source: Optional[Union[StringExpression, HeatSourceType]] = pd.Field(
         None, description="The volumetric heat source."
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entities", mode="after")
     @classmethod

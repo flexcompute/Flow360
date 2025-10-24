@@ -9,7 +9,7 @@ import pydantic as pd
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
-from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.entity_base import EntityList, generate_uuid
 from flow360.component.simulation.framework.expressions import StringExpression
 from flow360.component.simulation.framework.single_attribute_base import (
     SingleAttributeModel,
@@ -45,6 +45,7 @@ from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
     check_deleted_surface_pair,
     check_symmetric_boundary_existence,
+    check_user_defined_farfield_symmetry_existence,
 )
 
 # pylint: disable=fixme
@@ -59,6 +60,7 @@ class EntityListAllowingGhost(EntityList):
     @classmethod
     def ghost_entity_validator(cls, value):
         """Run all validators"""
+        check_user_defined_farfield_symmetry_existence(value)
         return check_symmetric_boundary_existence(value)
 
 
@@ -70,6 +72,7 @@ class BoundaryBase(Flow360BaseModel, metaclass=ABCMeta):
         alias="surfaces",
         description="List of boundaries with boundary condition imposed.",
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entities", mode="after")
     @classmethod
@@ -705,6 +708,7 @@ class Periodic(Flow360BaseModel):
         description="Define the type of periodic boundary condition (translational/rotational) "
         + "via :class:`Translational`/:class:`Rotational`.",
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entity_pairs", mode="after")
     @classmethod
@@ -755,6 +759,7 @@ class PorousJump(Flow360BaseModel):
     thickness: LengthType = pd.Field(
         description="Thickness of the thin porous media on the surface"
     )
+    private_attribute_id: str = pd.Field(default_factory=generate_uuid, frozen=True)
 
     @pd.field_validator("entity_pairs", mode="after")
     @classmethod
