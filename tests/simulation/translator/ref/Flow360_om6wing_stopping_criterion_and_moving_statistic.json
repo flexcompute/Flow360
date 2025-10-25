@@ -85,7 +85,7 @@
     "runControl": {
         "shouldCheckStopCriterion": true,
         "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "8ef791f02ebfdac5738ea98d3328b6530b3188e3600f0fd80197247115576a9b"
+        "monitorProcessorHash": "687d1014ebb05ae2c7ff6c426a5e31f23c5d58557c2aaa89f8d12772d8d5071c"
     },
     "sliceOutput": {
         "animationFrequency": -1,
