@@ -97,7 +97,6 @@
                 "controls": null,
                 "low_reynolds_correction": false
             },
-            "stopping_criterion": null,
             "transition_model_solver": {
                 "type_name": "None"
             }
@@ -115,6 +114,7 @@
         }
     },
     "user_defined_dynamics": null,
+    "run_control": null,
     "user_defined_fields": [],
     "outputs": [
         {

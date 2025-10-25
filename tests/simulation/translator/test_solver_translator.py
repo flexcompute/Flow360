@@ -44,7 +44,6 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
-    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -76,6 +75,10 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     ReferenceGeometry,
     Surface,
+)
+from flow360.component.simulation.run_control.run_control import RunControl
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
 )
 from flow360.component.simulation.services import (
     ValidationCalledBy,
@@ -398,13 +401,13 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
         private_attribute_id="11111",
     )
-    criterion = StopCriterion(
+    criterion = StoppingCriterion(
         name="Criterion_Helicity",
         tolerance=18.66 * u.m / u.s**2,
         monitor_output=probe_output,
         monitor_field=monitored_variable,
     )
-    params.models[0].stopping_criterion = [criterion]
+    params.run_control = RunControl(stopping_criteria=[criterion])
     params.outputs.append(probe_output)
     translate_and_compare(
         get_om6Wing_tutorial_param,
@@ -416,7 +419,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
 
 def test_stopping_criterion_tolerance_in_unit_system():
     """
-    [Frontend] Test that an StopCriterion with the unit system as
+    [Frontend] Test that an StoppingCriterion with the unit system as
     tolerance's units can be validated and translated.
     """
 
@@ -433,7 +436,7 @@ def test_stopping_criterion_tolerance_in_unit_system():
         validation_level="Case",
     )
     assert not errors, print(">>>", errors)
-    assert params_validated.models[0].stopping_criterion[0].tolerance == 18.66 * u.m / u.s**2
+    assert params_validated.run_control.stopping_criteria[0].tolerance == 18.66 * u.m / u.s**2
 
     translate_and_compare(
         params_validated,
