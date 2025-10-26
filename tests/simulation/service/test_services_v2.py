@@ -1216,7 +1216,7 @@ def test_imperial_unit_system_conversion():
 
     # Assert stop criterion tolerance unit is correct
     assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
         == "SI_unit_system"
     )
 
@@ -1256,7 +1256,7 @@ def test_CGS_unit_system_conversion():
 
     # Assert stop criterion tolerance unit is correct
     assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
         == "SI_unit_system"
     )
 
@@ -1295,7 +1295,7 @@ def test_SI_unit_system_conversion():
 
     # Assert stop criterion tolerance unit is correct
     assert (
-        dict_to_convert["models"][0]["stopping_criterion"][1]["tolerance"]["units"]
+        dict_to_convert["run_control"]["stopping_criteria"][1]["tolerance"]["units"]
         == "SI_unit_system"
     )
 
