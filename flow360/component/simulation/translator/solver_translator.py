@@ -1456,7 +1456,7 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                 continue
             if output.moving_statistic is None:
                 continue
-            json_string_list.append(output.private_attribute_id)
+            json_string_list.append(output.moving_statistic.model_dump_json())
     if params.run_control and params.run_control.stopping_criteria:
         for criterion in params.run_control.stopping_criteria:
             json_string_list.append(criterion.model_dump_json())
