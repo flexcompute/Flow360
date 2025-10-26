@@ -47,7 +47,6 @@ from flow360.component.simulation.models.volume_models import (
     PorousMedium,
     Rotation,
     Solid,
-    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     LiquidOperatingCondition,
@@ -98,6 +97,9 @@ from flow360.component.simulation.primitives import (
     ImportedSurface,
     Surface,
     SurfacePair,
+)
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
@@ -1521,7 +1523,7 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
     return hasher.hexdigest()
 
 
-def get_stop_criterion_settings(criterion: StopCriterion, params: SimulationParams):
+def get_stop_criterion_settings(criterion: StoppingCriterion, params: SimulationParams):
     """Get the stop criterion settings"""
 
     def get_criterion_monitored_file_info(monitor_output, monitor_field):
