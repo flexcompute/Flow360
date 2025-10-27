@@ -371,7 +371,7 @@
                     {
                         "private_attribute_registry_bucket_name": "PointEntityType",
                         "private_attribute_entity_type_name": "Point",
-                        "private_attribute_id": "a4f88112-f7a0-45aa-b53d-c660d130a1c4",
+                        "private_attribute_id": "Point1",
                         "name": "Point1",
                         "location": {
                             "value": [
@@ -383,6 +383,12 @@
                         }
                     }
                 ]
+            },
+            "moving_statistic": {
+                "moving_window_size": 200,
+                "method": "mean",
+                "start_step": 0,
+                "type_name": "MovingStatistic"
             },
             "output_type": "ProbeOutput"
         }

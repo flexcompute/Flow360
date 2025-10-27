@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-lines
 import hashlib
+import json
 from typing import Type, Union, get_args
 
 import unyt as u
@@ -88,6 +89,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    GhostSurfacePair,
     ImportedSurface,
     Surface,
     SurfacePair,
@@ -1140,7 +1142,7 @@ def heat_transfer_volume_zone_translator(model: Solid):
 def boundary_entity_info_serializer(entity, translated_setting, solid_zone_boundaries):
     """Boundary entity info serializer"""
     output = {}
-    if isinstance(entity, SurfacePair):
+    if isinstance(entity, (SurfacePair, GhostSurfacePair)):
         key1 = _get_key_name(entity.pair[0])
         key2 = _get_key_name(entity.pair[1])
         if BOUNDARY_FULL_NAME_WHEN_NOT_FOUND in (key1, key2):
@@ -1456,11 +1458,10 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                 continue
             if output.moving_statistic is None:
                 continue
-            json_string_list.append(output.private_attribute_id)
+            json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
     if params.run_control and params.run_control.stopping_criteria:
         for criterion in params.run_control.stopping_criteria:
-            json_string_list.append(criterion.model_dump_json())
-
+            json_string_list.append(json.dumps(dump_dict(criterion)))
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
