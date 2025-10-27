@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-lines
 import hashlib
+import json
 from typing import Type, Union, get_args
 
 import unyt as u
@@ -1456,11 +1457,10 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
                 continue
             if output.moving_statistic is None:
                 continue
-            json_string_list.append(output.private_attribute_id)
+            json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
     if params.run_control and params.run_control.stopping_criteria:
         for criterion in params.run_control.stopping_criteria:
-            json_string_list.append(criterion.model_dump_json())
-
+            json_string_list.append(json.dumps(dump_dict(criterion)))
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
