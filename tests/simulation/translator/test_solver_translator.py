@@ -6,10 +6,8 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
-
 from flow360.component.geometry import Geometry, GeometryMeta
 from flow360.component.resource_base import local_metadata_builder
-
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
@@ -17,8 +15,8 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
     UserDefinedFarfield,
-    AutomatedFarfield
 )
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
@@ -35,15 +33,15 @@ from flow360.component.simulation.models.surface_models import (
     Mach,
     MassFlowRate,
     Outflow,
+    Periodic,
     Pressure,
     SlaterPorousBleed,
     SlipWall,
     Supersonic,
     TotalPressure,
+    Translational,
     Wall,
     WallRotation,
-    Periodic,
-    Translational
 )
 from flow360.component.simulation.models.turbulence_quantities import (
     TurbulenceQuantities,
@@ -101,7 +99,9 @@ from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
-from flow360.component.simulation.utils import model_attribute_unlock、
+from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.project_utils import set_up_params_for_uploading
+
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
@@ -1396,19 +1396,21 @@ def test_custom_volume_translation():
         debug=True,
     )
 
+
 def test_ghost_periodic():
     geometry = Geometry.from_local_storage(
-        geometry_id="geometry_id_placeholder",
-        local_storage_path=os.path.join("data", "ghost_periodic_geometry_entity_info"),
+        geometry_id="geo-2f3c2143-436b-4a42-beab-aa191f49309c", # placeholder UUID
+        local_storage_path=os.path.join(os.path.dirname(__file__), "data", "ghost_periodic_geometry_entity_info"),
         meta_data=GeometryMeta(
             **local_metadata_builder(
-                id="geometry_id_placeholder",
+                id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",
                 name="geometry_name_placeholder",
                 cloud_path_prefix="s3_path_placeholder",
                 status="processed",
             )
         ),
     )
+    geometry.group_faces_by_tag('groupByBodyId') # manual grouping needed for from_local_storage
     far_field_zone = AutomatedFarfield(method="quasi-3d-periodic")
     with SI_unit_system:
         params = SimulationParams(
@@ -1418,28 +1420,22 @@ def test_ghost_periodic():
                     boundary_layer_growth_rate=1.2,
                     boundary_layer_first_layer_thickness=1e-6,
                 ),
-                volume_zones=[far_field_zone]
+                volume_zones=[far_field_zone],
             ),
             reference_geometry=ReferenceGeometry(),
-            operating_condition=AerospaceCondition(
-                velocity_magnitude=10, 
-                alpha=0 * u.deg
-            ),
+            operating_condition=AerospaceCondition(velocity_magnitude=10, alpha=0 * u.deg),
             time_stepping=Steady(max_steps=1000),
             models=[
                 Wall(surfaces=[geometry["*"]]),
                 Freestream(surfaces=[far_field_zone.farfield]),
-                Periodic(surface_pairs=[far_field_zone.symmetry_planes],
-                        spec=Translational())
+                Periodic(surface_pairs=[far_field_zone.symmetry_planes], spec=Translational()),
             ],
             # Define output parameters for the simulation
             outputs=[
-                SurfaceOutput(
-                    surfaces=geometry["*"],
-                    output_fields=["Cp", "Cf", "yPlus", "CfVec"]
-                )
+                SurfaceOutput(surfaces=geometry["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])
             ],
         )
+    processed_params = set_up_params_for_uploading(geometry, 1*u.m, params, False, False)
     translate_and_compare(
-        params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
+        processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
     )

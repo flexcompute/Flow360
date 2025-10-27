@@ -88,10 +88,10 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    GhostSurfacePair,
     ImportedSurface,
     Surface,
     SurfacePair,
-    GhostSurfacePair,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
