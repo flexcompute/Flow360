@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from typing import Any, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Iterator, List, Optional, Union
 
 import pydantic as pd
 import pydantic.v1 as pd_v1
@@ -75,6 +75,9 @@ from .utils import (
 )
 from .v1.flow360_params import Flow360Params, UnvalidatedFlow360Params
 from .validator import Validator
+
+if TYPE_CHECKING:
+    from flow360.component.volume_mesh import VolumeMeshV2
 
 
 class CaseBase:
