@@ -89,6 +89,7 @@ from flow360.component.simulation.primitives import (
     GhostCircularPlane,
     GhostSphere,
     GhostSurface,
+    GhostSurfacePair,
     ImportedSurface,
     Surface,
     SurfacePair,
@@ -1141,7 +1142,7 @@ def heat_transfer_volume_zone_translator(model: Solid):
 def boundary_entity_info_serializer(entity, translated_setting, solid_zone_boundaries):
     """Boundary entity info serializer"""
     output = {}
-    if isinstance(entity, SurfacePair):
+    if isinstance(entity, (SurfacePair, GhostSurfacePair)):
         key1 = _get_key_name(entity.pair[0])
         key2 = _get_key_name(entity.pair[1])
         if BOUNDARY_FULL_NAME_WHEN_NOT_FOUND in (key1, key2):

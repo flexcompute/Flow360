@@ -6,13 +6,19 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import set_up_params_for_uploading
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import UserDefinedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UserDefinedFarfield,
+)
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -28,11 +34,13 @@ from flow360.component.simulation.models.surface_models import (
     Mach,
     MassFlowRate,
     Outflow,
+    Periodic,
     Pressure,
     SlaterPorousBleed,
     SlipWall,
     Supersonic,
     TotalPressure,
+    Translational,
     Wall,
     WallRotation,
 )
@@ -1388,4 +1396,50 @@ def test_custom_volume_translation():
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_custom_volume_translation.json",
         debug=True,
+    )
+
+
+def test_ghost_periodic():
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",  # placeholder UUID
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "ghost_periodic_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",
+                name="geometry_name_placeholder",
+                cloud_path_prefix="s3_path_placeholder",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("groupByBodyId")  # manual grouping needed for from_local_storage
+    far_field_zone = AutomatedFarfield(method="quasi-3d-periodic")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=0.1,
+                    boundary_layer_growth_rate=1.2,
+                    boundary_layer_first_layer_thickness=1e-6,
+                ),
+                volume_zones=[far_field_zone],
+            ),
+            reference_geometry=ReferenceGeometry(),
+            operating_condition=AerospaceCondition(velocity_magnitude=10, alpha=0 * u.deg),
+            time_stepping=Steady(max_steps=1000),
+            models=[
+                Wall(surfaces=[geometry["*"]]),
+                Freestream(surfaces=[far_field_zone.farfield]),
+                Periodic(surface_pairs=[far_field_zone.symmetry_planes], spec=Translational()),
+            ],
+            # Define output parameters for the simulation
+            outputs=[
+                SurfaceOutput(surfaces=geometry["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])
+            ],
+        )
+    processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
+    translate_and_compare(
+        processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
     )
