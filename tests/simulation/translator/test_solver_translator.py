@@ -7,6 +7,7 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
@@ -100,8 +101,6 @@ from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
 from flow360.component.simulation.utils import model_attribute_unlock
-from flow360.component.project_utils import set_up_params_for_uploading
-
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
@@ -1399,8 +1398,10 @@ def test_custom_volume_translation():
 
 def test_ghost_periodic():
     geometry = Geometry.from_local_storage(
-        geometry_id="geo-2f3c2143-436b-4a42-beab-aa191f49309c", # placeholder UUID
-        local_storage_path=os.path.join(os.path.dirname(__file__), "data", "ghost_periodic_geometry_entity_info"),
+        geometry_id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",  # placeholder UUID
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "ghost_periodic_geometry_entity_info"
+        ),
         meta_data=GeometryMeta(
             **local_metadata_builder(
                 id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",
@@ -1410,7 +1411,7 @@ def test_ghost_periodic():
             )
         ),
     )
-    geometry.group_faces_by_tag('groupByBodyId') # manual grouping needed for from_local_storage
+    geometry.group_faces_by_tag("groupByBodyId")  # manual grouping needed for from_local_storage
     far_field_zone = AutomatedFarfield(method="quasi-3d-periodic")
     with SI_unit_system:
         params = SimulationParams(
@@ -1435,7 +1436,7 @@ def test_ghost_periodic():
                 SurfaceOutput(surfaces=geometry["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])
             ],
         )
-    processed_params = set_up_params_for_uploading(geometry, 1*u.m, params, False, False)
+    processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
     translate_and_compare(
         processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
     )
