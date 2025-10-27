@@ -11,8 +11,7 @@ from flow360.component.simulation.services import ValidationCalledBy, validate_m
 
 from .test_helpers import compute_freestream_direction, compute_lift_direction
 
-
-def test_bet_disk_simple_coefficients():
+def test_bet_disk_simple_header_rename():
     # Prepare a simple BET disk CSV with one timestep
     csv_path = os.path.join(
         os.path.dirname(__file__),
@@ -79,51 +78,26 @@ def test_bet_disk_simple_coefficients():
 
     model = BETForcesResultCSVModel()
     model.load_from_local(csv_path)
-    coeffs = model.compute_coefficients(params=params)
+    old_data = model.as_dict()
 
-    data = coeffs.as_dict()
+    new_csv = model.rename_header(params=params, pattern="$BETName_$CylinderName")
+    new_data = new_csv.as_dict()
 
-    assert "Disk0_CFx" in data
-    assert "Disk0_CFy" in data
-    assert "Disk0_CFz" in data
-    assert "Disk0_CMx" in data
-    assert "Disk0_CMy" in data
-    assert "Disk0_CMz" in data
-    assert "Disk0_CL" in data
-    assert "Disk0_CD" in data
+    assert "BET disk_bet_disk_Force_x" in new_data
+    assert "BET disk_bet_disk_Force_y" in new_data
+    assert "BET disk_bet_disk_Force_z" in new_data
+    assert "BET disk_bet_disk_Moment_x" in new_data
+    assert "BET disk_bet_disk_Moment_y" in new_data
+    assert "BET disk_bet_disk_Moment_z" in new_data
 
-    CF = np.array([data["Disk0_CFx"][0], data["Disk0_CFy"][0], data["Disk0_CFz"][0]], dtype=float)
-    CM = np.array([data["Disk0_CMx"][0], data["Disk0_CMy"][0], data["Disk0_CMz"][0]], dtype=float)
-    CL = float(data["Disk0_CL"][0])
-    CD = float(data["Disk0_CD"][0])
-
-    # CF direction should match input force direction proportions: (100, 50, 25)
-    assert np.isclose(CF[0] / CF[1], 2.0, rtol=1e-6, atol=1e-12)
-    assert np.isclose(CF[0] / CF[2], 4.0, rtol=1e-6, atol=1e-12)
-
-    # Non-zero cross-plane components and CL
-    assert not np.isclose(CF[1], 0.0)
-    assert not np.isclose(CF[2], 0.0)
-
-    # Drag and lift from projections
-    drag_dir = compute_freestream_direction(alpha, beta)
-    lift_dir = compute_lift_direction(alpha)
-    assert np.isclose(CD, float(np.dot(CF, drag_dir)), rtol=1e-6, atol=1e-12)
-    assert np.isclose(CL, float(np.dot(CF, lift_dir)), rtol=1e-6, atol=1e-12)
-
-    # Check that CM values are non-zero and have reasonable magnitudes
-    # (The exact values depend on unit conversion which may need refinement)
-    assert not np.allclose(CM, 0.0, atol=1e-10)
-    assert np.all(np.isfinite(CM))
-
-    # Check that the moment decomposition includes cross-product term
-    # CM should have non-zero components due to r x force term
-    assert not np.isclose(CM[0], 0.0, atol=1e-10)  # Should be non-zero due to cross product
-    assert not np.isclose(CM[1], 0.0, atol=1e-10)  # Should be non-zero due to cross product
-    assert not np.isclose(CM[2], 0.0, atol=1e-10)  # Should be non-zero due to cross product
+    for header_name, value in new_data.items():
+        old_key = header_name.replace("BET disk_bet_disk", "Disk0")
+        new_value = value[0]
+        old_value = old_data[old_key][0]
+        assert np.isclose(new_value, old_value, rtol=1e-6, atol=1e-12)
 
 
-def test_bet_disk_real_case_coefficients():
+def test_bet_disk_real_case_header_rename():
     """
     Test BETDisk coefficient computation with real case data.
 
@@ -172,6 +146,7 @@ def test_bet_disk_real_case_coefficients():
         params_json = f.read()
 
     params_as_dict = json.loads(params_json)
+
     params, errors, warnings = validate_model(
         params_as_dict=params_as_dict,
         validated_by=ValidationCalledBy.LOCAL,
@@ -184,55 +159,45 @@ def test_bet_disk_real_case_coefficients():
     # Load CSV and compute coefficients
     model = BETForcesResultCSVModel()
     model.load_from_local(csv_path)
-    coeffs = model.compute_coefficients(params=params)
+    old_data = model.as_dict()
 
-    data = coeffs.as_dict()
+    new_csv = model.rename_header(params=params)
 
-    # Test all entities
-    for disk_name, expected_coeffs in bet_disk_refs.items():
-        # Verify all coefficient keys exist
-        assert f"{disk_name}_CFx" in data
-        assert f"{disk_name}_CFy" in data
-        assert f"{disk_name}_CFz" in data
-        assert f"{disk_name}_CMx" in data
-        assert f"{disk_name}_CMy" in data
-        assert f"{disk_name}_CMz" in data
-        assert f"{disk_name}_CL" in data
-        assert f"{disk_name}_CD" in data
+    new_data = new_csv.as_dict()
 
-        # Get computed coefficients (last timestep)
-        computed_CFx = float(data[f"{disk_name}_CFx"][-1])
-        computed_CFy = float(data[f"{disk_name}_CFy"][-1])
-        computed_CFz = float(data[f"{disk_name}_CFz"][-1])
-        computed_CMx = float(data[f"{disk_name}_CMx"][-1])
-        computed_CMy = float(data[f"{disk_name}_CMy"][-1])
-        computed_CMz = float(data[f"{disk_name}_CMz"][-1])
-        computed_CD = float(data[f"{disk_name}_CD"][-1])
-        computed_CL = float(data[f"{disk_name}_CL"][-1])
+    bet_disks = []
+    for model in params.models:
+        if isinstance(model, BETDisk):
+            bet_disks.append(model)
+    assert bet_disks != []
 
-        # Compare with reference values
-        assert np.isclose(
-            computed_CFx, expected_coeffs["CFx"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CFx mismatch"
-        assert np.isclose(
-            computed_CFy, expected_coeffs["CFy"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CFy mismatch"
-        assert np.isclose(
-            computed_CFz, expected_coeffs["CFz"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CFz mismatch"
-        assert np.isclose(
-            computed_CMx, expected_coeffs["CMx"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CMx mismatch"
-        assert np.isclose(
-            computed_CMy, expected_coeffs["CMy"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CMy mismatch"
-        assert np.isclose(
-            computed_CMz, expected_coeffs["CMz"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CMz mismatch"
-        assert np.isclose(
-            computed_CD, expected_coeffs["CD"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CD mismatch"
-        assert np.isclose(
-            computed_CL, expected_coeffs["CL"], rtol=1e-10, atol=1e-15
-        ), f"{disk_name} CL mismatch"
+    diskCount = 0
+    disk_rename_map = {}
+    for i, disk in enumerate(bet_disks):
+        for j, cylinder in enumerate(disk.entities.stored_entities):
+            disk_name = f"{disk.name}_{cylinder.name}"
+            disk_rename_map[f"Disk{diskCount}"] = f"{disk_name}"
+            diskCount = diskCount + 1
 
+    assert "physical_step" in new_data
+    assert "pseudo_step" in new_data
+
+    for old_key, old_value in old_data.items():
+        found = False
+        new_disk_key = None
+        for old_name, new_name in disk_rename_map.items():
+            if old_name in old_key:
+                found = True
+                new_disk_key = old_key.replace(old_name, new_name)
+                break
+        if not found:
+            new_disk_key = old_key
+
+        assert new_disk_key in new_data
+
+        new_value = new_data[new_disk_key]
+
+        assert len(old_value) == len(new_value)
+
+        for i in range(len(old_value)):
+            np.isclose(old_value[i], new_value[i], rtol=1e-6, atol=1e-12)
