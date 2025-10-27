@@ -84,9 +84,18 @@
         "velocityScale": 1.0
     },
     "runControl": {
-        "shouldCheckStopCriterion": true,
         "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "4581ab2e4847a22e8e1af690f2f4d57da76110b57c3ba528eabe7b2ad93e4927"
+        "monitorProcessorHash": "4581ab2e4847a22e8e1af690f2f4d57da76110b57c3ba528eabe7b2ad93e4927",
+        "stoppingCriteria": [
+            {
+                "monitoredColumn": "point_legacy1_Point1_Helicity_mean",
+                "monitoredFileName": "monitor_point_legacy1_moving_statistic_v2.csv",
+                "sourceToFlow360Coefficient": 6.9594121562924376e-06,
+                "sourceToFlow360Offset": 0.0,
+                "tolerance": 0.0001298626308364169,
+                "toleranceWindowSize": null
+            }
+        ]
     },
     "sliceOutput": {
         "animationFrequency": -1,

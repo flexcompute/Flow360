@@ -1986,12 +1986,11 @@ def get_solver_json(
         translated["runControl"]["monitorProcessorHash"] = calculate_monitor_semaphore_hash(
             input_params
         )
-    translated["runControl"]["stoppingCriteria"] = []
+    stopping_criteria = []
     if input_params.run_control and bool(input_params.run_control.stopping_criteria):
         for criterion in input_params.run_control.stopping_criteria:
-            translated["runControl"]["stoppingCriteria"].append(
-                get_stop_criterion_settings(criterion, input_params)
-            )
+            stopping_criteria.append(get_stop_criterion_settings(criterion, input_params))
+        translated["runControl"]["stoppingCriteria"] = stopping_criteria
 
     translated["usingLiquidAsMaterial"] = isinstance(
         input_params.operating_condition, LiquidOperatingCondition
