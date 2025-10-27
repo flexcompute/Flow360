@@ -6,6 +6,10 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.resource_base import local_metadata_builder
+
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
@@ -92,7 +96,7 @@ from flow360.component.simulation.unit_system import SI_unit_system
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
-from flow360.component.simulation.utils import model_attribute_unlock
+from flow360.component.simulation.utils import model_attribute_unlock、
 from tests.simulation.translator.utils.actuator_disk_param_generator import (
     actuator_disk_create_param,
 )
@@ -1386,3 +1390,18 @@ def test_custom_volume_translation():
         ref_json_file="Flow360_custom_volume_translation.json",
         debug=True,
     )
+
+
+# def test_ghost_periodic():
+#     geometry = Geometry.from_local_storage(
+#         geometry_id="geometry_id_placeholder",
+#         local_storage_path=os.path.join("data", "ghost_periodic_geometry_entity_info"),
+#         meta_data=GeometryMeta(
+#             **local_metadata_builder(
+#                 id="geometry_id_placeholder",
+#                 name="geometry_name_placeholder",
+#                 cloud_path_prefix="s3_path_placeholder",
+#                 status="processed",
+#             )
+#         ),
+#     )
