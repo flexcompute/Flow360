@@ -7,7 +7,11 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
+from flow360.component.results.base_results import (
+    _PHYSICAL_STEP,
+    _PSEUDO_STEP,
+    ResultCSVModel,
+)
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError
