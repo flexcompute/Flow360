@@ -46,7 +46,7 @@
             "absoluteTolerance": 1e-15,
             "maxIterations": 100
         },
-        "modelType":"HeatEquation",
+        "modelType": "HeatEquation",
         "maxForceJacUpdatePhysicalSteps": 0,
         "orderOfAccuracy": 2,
         "relativeTolerance": 0.0,
@@ -187,7 +187,6 @@
         "velocityScale": 1.0
     },
     "runControl": {
-        "shouldCheckStopCriterion": false,
         "externalProcessMonitorOutput": false
     }
 }
