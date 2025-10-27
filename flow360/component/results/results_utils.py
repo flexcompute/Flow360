@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 
 from flow360.component.results.base_results import _PHYSICAL_STEP, _PSEUDO_STEP
-from flow360.component.results.case_results import OptionallyDownloadableResultCSVModel
 from flow360.component.simulation.models.volume_models import BETDisk
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.exceptions import Flow360ValueError
@@ -414,7 +413,7 @@ class PorousMediumCoefficientsComputation:
         return coefficients_model_class().from_dict(out)
 
 
-class BETDiskCSVHeaderRename:
+class BETDiskCSVHeaderOperation:
     # pylint:disable=too-few-public-methods
     """
     Static utilities for renaming BET disk csv output headers to include the name of the BET disk.
@@ -425,12 +424,13 @@ class BETDiskCSVHeaderRename:
 
     @staticmethod
     def rename_csv_headers(
-        BETCSVModel: OptionallyDownloadableResultCSVModel,
+        BETCSVModel: ResultCSVModel,
         params: SimulationParams,
-        output_model_class,
+        pattern = "$BETName_$CylinderName" : str
     ):
         """
         renames the header in a BET csv file to have BET names
+        pattern can take [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         """
         # pylint:disable=too-many-locals
         bet_disks = []
@@ -438,7 +438,8 @@ class BETDiskCSVHeaderRename:
             if isinstance(model, BETDisk):
                 bet_disks.append(model)
         if not bet_disks:
-            return output_model_class().from_dict(BETCSVModel.values)
+            raise MisuseError("No BET Disks in params to rename header.")
+
 
         csv_data = BETCSVModel.values
         new_csv = {}
@@ -447,8 +448,11 @@ class BETDiskCSVHeaderRename:
 
         diskCount = 0
         for disk in bet_disks:
-            for cylinder in disk.entities.stored_entities:
-                disk_rename_map[f"Disk{diskCount}"] = f"{disk.name}_{cylinder.name}"
+            for disk_local_index, cylinder in enumerate(disk.entities.stored_entities):
+                new_name = pattern.replace("$BETName",disk.name)
+                new_name = new_name.replace("$CylinderName",cylinder.name)
+                new_name = new_name.replace("$DiskLocalIndex",str(disk_local_index))
+                new_name = new_name.replace("$DiskGlobalIndex",str(diskCount))
                 diskCount = diskCount + 1
 
         for header, values in csv_data.items():
@@ -460,4 +464,4 @@ class BETDiskCSVHeaderRename:
                     break
             if not matched:
                 new_csv[header] = values
-        return output_model_class().from_dict(new_csv)
+        return ResultCSVModel().from_dict(new_csv)
