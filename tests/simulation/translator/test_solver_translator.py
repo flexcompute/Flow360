@@ -406,7 +406,10 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         output_fields=[
             monitored_variable,
         ],
-        probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+        probe_points=Point(
+            name="Point1", location=(-0.026642, 0.56614, 0) * u.m, private_attribute_id="Point1"
+        ),
+        moving_statistic=MovingStatistic(method="mean", moving_window_size=200),
         private_attribute_id="11111",
     )
     criterion = StoppingCriterion(
