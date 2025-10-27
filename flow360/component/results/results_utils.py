@@ -10,6 +10,7 @@ import numpy as np
 from flow360.component.results.base_results import (
     _PHYSICAL_STEP,
     _PSEUDO_STEP,
+    LocalResultCSVModel,
     ResultCSVModel,
 )
 from flow360.component.simulation.models.volume_models import BETDisk
@@ -427,14 +428,29 @@ class BETDiskCSVHeaderOperation:
     """
 
     @staticmethod
-    def rename_csv_headers(
+    def format_headers(
         BETCSVModel: ResultCSVModel,
         params: SimulationParams,
-        pattern = "$BETName_$CylinderName" : str
-    ):
+        pattern: str = "$BETName_$CylinderName",
+    ) -> LocalResultCSVModel:
         """
-        renames the header in a BET csv file to have BET names
+        renames the header entries in a BET csv file from Disk{x}_ based on input patter
+        $Default option is $BETName_$CylinderName
+
         pattern can take [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
+        Parameters
+        ----------
+        BETCSVModel : ResultCSVModle
+            Model containing csv entries
+        params : SimulationParams
+            Simulation parameters
+        pattern : str
+            Pattern string to rename header entries. Available patterns
+            [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
+        Returns
+        -------
+        ResultCSVModel
+            Model containing csv with updated header
         """
         # pylint:disable=too-many-locals
         bet_disks = []
@@ -442,8 +458,7 @@ class BETDiskCSVHeaderOperation:
             if isinstance(model, BETDisk):
                 bet_disks.append(model)
         if not bet_disks:
-            raise MisuseError("No BET Disks in params to rename header.")
-
+            raise ValueError("No BET Disks in params to rename header.")
 
         csv_data = BETCSVModel.values
         new_csv = {}
@@ -453,10 +468,11 @@ class BETDiskCSVHeaderOperation:
         diskCount = 0
         for disk in bet_disks:
             for disk_local_index, cylinder in enumerate(disk.entities.stored_entities):
-                new_name = pattern.replace("$BETName",disk.name)
-                new_name = new_name.replace("$CylinderName",cylinder.name)
-                new_name = new_name.replace("$DiskLocalIndex",str(disk_local_index))
-                new_name = new_name.replace("$DiskGlobalIndex",str(diskCount))
+                new_name = pattern.replace("$BETName", disk.name)
+                new_name = new_name.replace("$CylinderName", cylinder.name)
+                new_name = new_name.replace("$DiskLocalIndex", str(disk_local_index))
+                new_name = new_name.replace("$DiskGlobalIndex", str(diskCount))
+                disk_rename_map[f"Disk{diskCount}"] = new_name
                 diskCount = diskCount + 1
 
         for header, values in csv_data.items():
@@ -468,4 +484,5 @@ class BETDiskCSVHeaderOperation:
                     break
             if not matched:
                 new_csv[header] = values
-        return ResultCSVModel().from_dict(new_csv)
+        newModel = LocalResultCSVModel().from_dict(new_csv)
+        return newModel
