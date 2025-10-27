@@ -369,7 +369,6 @@
         }
     },
     "runControl": {
-        "shouldCheckStopCriterion": false,
         "externalProcessMonitorOutput": false
     }
 }
