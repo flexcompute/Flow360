@@ -11,6 +11,7 @@ from flow360.component.simulation.services import ValidationCalledBy, validate_m
 
 from .test_helpers import compute_freestream_direction, compute_lift_direction
 
+
 def test_bet_disk_simple_header_rename():
     # Prepare a simple BET disk CSV with one timestep
     csv_path = os.path.join(

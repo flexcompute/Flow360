@@ -235,4 +235,3 @@ def test_bet_disk_real_case_coefficients():
         assert np.isclose(
             computed_CL, expected_coeffs["CL"], rtol=1e-10, atol=1e-15
         ), f"{disk_name} CL mismatch"
-
