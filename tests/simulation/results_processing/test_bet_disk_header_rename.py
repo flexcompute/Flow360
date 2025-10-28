@@ -81,7 +81,7 @@ def test_bet_disk_simple_header_rename():
     model.load_from_local(csv_path)
     old_data = model.as_dict()
 
-    new_csv = model.rename_header(params=params, pattern="$BETName_$CylinderName")
+    new_csv = model.format_headers(params=params, pattern="$BETName_$CylinderName")
     new_data = new_csv.as_dict()
 
     assert "BET disk_bet_disk_Force_x" in new_data
@@ -162,7 +162,7 @@ def test_bet_disk_real_case_header_rename():
     model.load_from_local(csv_path)
     old_data = model.as_dict()
 
-    new_csv = model.rename_header(params=params)
+    new_csv = model.format_headers(params=params)
 
     new_data = new_csv.as_dict()
 
