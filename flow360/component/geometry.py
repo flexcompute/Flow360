@@ -578,6 +578,27 @@ class Geometry(AssetBase):
 
     # ========== Tree-based face grouping methods ==========
 
+    @property
+    def tree_root(self):
+        """
+        Get the root node of the geometry tree
+        
+        Returns
+        -------
+        TreeNode
+            Root node of the geometry hierarchy tree
+            
+        Raises
+        ------
+        Flow360ValueError
+            If geometry tree has not been loaded yet
+        """
+        if self._geometry_tree is None:
+            raise Flow360ValueError(
+                "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
+            )
+        return self._geometry_tree.root
+
     def load_geometry_tree(self, tree_json_path: str) -> None:
         """
         Load Geometry hierarchy tree from JSON file
@@ -597,21 +618,21 @@ class Geometry(AssetBase):
 
         log.info(f"Loaded Geometry tree with {len(self._geometry_tree.all_faces)} faces")
 
-    def create_face_group(self, name: str, filter: FilterExpression) -> List[str]:
+    def create_face_group(self, name: str, selection: List[TreeNode]) -> List[str]:
         """
-        Create a face group based on Geometry tree filtering
+        Create a face group based on explicit selection of tree nodes
 
-        This method filters nodes in the Geometry hierarchy tree and groups all faces
-        under matching nodes. If any faces already belong to another group, they
-        will be reassigned to the new group.
+        This method groups all faces under the selected nodes in the Geometry hierarchy tree.
+        If any faces already belong to another group, they will be reassigned to the new group.
 
         Parameters
         ----------
         name : str
             Name of the face group
-        filter : FilterExpression
-            Filter expression to match nodes in the tree. Use Type, Name operators
-            to build filter expressions.
+        selection : List[TreeNode]
+            List of tree nodes to include in the group. All faces under these nodes
+            (recursively) will be added to the group. Typically obtained from
+            tree_root.search() method.
 
         Returns
         -------
@@ -620,25 +641,21 @@ class Geometry(AssetBase):
 
         Examples
         --------
-        >>> from flow360.component.geometry_tree import Type, Name, NodeType
-        >>> geometry.create_face_group(
-        ...     name="wing",
-        ...     filter=(Type == NodeType.FRMFeature) & Name.contains("wing")
-        ... )
+        >>> from flow360.component.geometry_tree import NodeType
+        >>> # Search for nodes and create face group from selection
+        >>> wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*")
+        >>> geometry.create_face_group(name="wing", selection=wing_nodes)
         """
         if self._geometry_tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
             )
 
-        # Find matching nodes using the tree
-        matching_nodes = self._geometry_tree.find_nodes(filter)
-
-        # Collect faces from matching nodes
+        # Collect faces from selected nodes
         group_faces = []
         new_face_uuids = set()
         
-        for node in matching_nodes:
+        for node in selection:
             faces = node.get_all_faces()
             for face in faces:
                 if face.uuid:
