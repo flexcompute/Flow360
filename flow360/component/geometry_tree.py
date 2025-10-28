@@ -25,7 +25,7 @@ class NodeType(Enum):
     TopoConnex = "TopoConnex"
     TopoShell = "TopoShell"
     TopoFace = "TopoFace"
-    TopoFacePointer = "TopoFacePointer"
+    TopoFacePointer = "TopoFacePointer"  # References to TopoFace nodes
 
 
 class TreeNode:
@@ -89,6 +89,103 @@ class TreeNode:
         for child in self.children:
             uuid_to_face.update(child.get_uuid_to_face())
         return uuid_to_face
+
+    def get_all_faces(self) -> List[TreeNode]:
+        """
+        Recursively collect all TopoFace and TopoFacePointer nodes in the subtree
+        
+        TopoFacePointer nodes are references to actual TopoFace nodes and are collected
+        alongside TopoFace nodes. Both have Flow360UUID attributes that can be used
+        for face grouping.
+        
+        Returns
+        -------
+        List[TreeNode]
+            List of all TopoFace and TopoFacePointer nodes under this node
+        """
+        faces = []
+        if self.type == NodeType.TopoFace or self.type == NodeType.TopoFacePointer:
+            faces.append(self)
+        for child in self.children:
+            faces.extend(child.get_all_faces())
+        return faces
+
+    def search(
+        self,
+        type: Optional[Union[NodeType, str]] = None,
+        name: Optional[str] = None,
+        color: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None
+    ) -> List[TreeNode]:
+        """
+        Search for nodes in the subtree matching the given criteria.
+        
+        Supports wildcard matching for name using '*' character.
+        All criteria are ANDed together.
+        
+        Parameters
+        ----------
+        type : Optional[Union[NodeType, str]]
+            Node type to match (e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Name pattern to match. Supports wildcards:
+            - "*wing*" matches any name containing "wing"
+            - "wing*" matches any name starting with "wing"
+            - "*wing" matches any name ending with "wing"
+            - "wing" matches exact name "wing"
+        color : Optional[str]
+            Color string to match
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match
+            
+        Returns
+        -------
+        List[TreeNode]
+            List of matching nodes in the subtree
+            
+        Examples
+        --------
+        >>> # Search for all FRMFeature nodes with "wing" in the name
+        >>> nodes = root.search(type=NodeType.FRMFeature, name="*wing*")
+        >>> 
+        >>> # Search for nodes with specific attribute
+        >>> nodes = root.search(attributes={"Flow360UUID": "abc123"})
+        """
+        import fnmatch
+        
+        matches = []
+        
+        # Check if this node matches all criteria
+        match = True
+        
+        if type is not None:
+            target_type = type.value if isinstance(type, NodeType) else type
+            if self.type.value != target_type:
+                match = False
+        
+        if match and name is not None:
+            # Use fnmatch for wildcard matching (case-insensitive)
+            if not fnmatch.fnmatch(self.name.lower(), name.lower()):
+                match = False
+        
+        if match and color is not None:
+            if self.color != color:
+                match = False
+        
+        if match and attributes is not None:
+            for key, value in attributes.items():
+                if self.attributes.get(key) != value:
+                    match = False
+                    break
+        
+        if match:
+            matches.append(self)
+        
+        # Recursively search children
+        for child in self.children:
+            matches.extend(child.search(type=type, name=name, color=color, attributes=attributes))
+        
+        return matches
 
     def __repr__(self):
         return f"TreeNode(type={self.type.value}, name={self.name})"
@@ -262,4 +359,16 @@ class GeometryTree:
 
     def get_all_faces(self) -> List[TreeNode]:
         return list(self.uuid_to_face.values())
+    
+    @property
+    def all_faces(self) -> List[TreeNode]:
+        """
+        Get all face nodes in the tree
+        
+        Returns
+        -------
+        List[TreeNode]
+            List of all TopoFace nodes in the tree
+        """
+        return self.get_all_faces()
 
