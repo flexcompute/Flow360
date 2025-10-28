@@ -6,13 +6,19 @@ import numpy as np
 import pytest
 
 import flow360.component.simulation.units as u
+from flow360.component.geometry import Geometry, GeometryMeta
+from flow360.component.project_utils import set_up_params_for_uploading
+from flow360.component.resource_base import local_metadata_builder
 from flow360.component.simulation.entity_info import SurfaceMeshEntityInfo
 from flow360.component.simulation.framework.param_utils import AssetCache
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
 )
-from flow360.component.simulation.meshing_param.volume_params import UserDefinedFarfield
+from flow360.component.simulation.meshing_param.volume_params import (
+    AutomatedFarfield,
+    UserDefinedFarfield,
+)
 from flow360.component.simulation.models.material import Water, aluminum
 from flow360.component.simulation.models.solver_numerics import (
     KOmegaSST,
@@ -28,11 +34,13 @@ from flow360.component.simulation.models.surface_models import (
     Mach,
     MassFlowRate,
     Outflow,
+    Periodic,
     Pressure,
     SlaterPorousBleed,
     SlipWall,
     Supersonic,
     TotalPressure,
+    Translational,
     Wall,
     WallRotation,
 )
@@ -44,7 +52,6 @@ from flow360.component.simulation.models.volume_models import (
     NavierStokesInitialCondition,
     NavierStokesModifiedRestartSolution,
     PorousMedium,
-    StopCriterion,
 )
 from flow360.component.simulation.operating_condition.operating_condition import (
     AerospaceCondition,
@@ -73,8 +80,13 @@ from flow360.component.simulation.outputs.outputs import (
 from flow360.component.simulation.primitives import (
     CustomVolume,
     GenericVolume,
+    ImportedSurface,
     ReferenceGeometry,
     Surface,
+)
+from flow360.component.simulation.run_control.run_control import RunControl
+from flow360.component.simulation.run_control.stopping_criterion import (
+    StoppingCriterion,
 )
 from flow360.component.simulation.services import (
     ValidationCalledBy,
@@ -394,16 +406,19 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
         output_fields=[
             monitored_variable,
         ],
-        probe_points=Point(name="Point1", location=(-0.026642, 0.56614, 0) * u.m),
+        probe_points=Point(
+            name="Point1", location=(-0.026642, 0.56614, 0) * u.m, private_attribute_id="Point1"
+        ),
+        moving_statistic=MovingStatistic(method="mean", moving_window_size=200),
         private_attribute_id="11111",
     )
-    criterion = StopCriterion(
+    criterion = StoppingCriterion(
         name="Criterion_Helicity",
         tolerance=18.66 * u.m / u.s**2,
         monitor_output=probe_output,
         monitor_field=monitored_variable,
     )
-    params.models[0].stopping_criterion = [criterion]
+    params.run_control = RunControl(stopping_criteria=[criterion])
     params.outputs.append(probe_output)
     translate_and_compare(
         get_om6Wing_tutorial_param,
@@ -415,7 +430,7 @@ def test_om6wing_with_stopping_criterion_and_moving_statistic(get_om6Wing_tutori
 
 def test_stopping_criterion_tolerance_in_unit_system():
     """
-    [Frontend] Test that an StopCriterion with the unit system as
+    [Frontend] Test that an StoppingCriterion with the unit system as
     tolerance's units can be validated and translated.
     """
 
@@ -432,7 +447,7 @@ def test_stopping_criterion_tolerance_in_unit_system():
         validation_level="Case",
     )
     assert not errors, print(">>>", errors)
-    assert params_validated.models[0].stopping_criterion[0].tolerance == 18.66 * u.m / u.s**2
+    assert params_validated.run_control.stopping_criteria[0].tolerance == 18.66 * u.m / u.s**2
 
     translate_and_compare(
         params_validated,
@@ -984,6 +999,11 @@ def test_param_with_user_variables():
                     output_fields=[surface_integral_variable],
                     entities=Surface(name="VOLUME/LEFT"),
                 ),
+                SurfaceIntegralOutput(
+                    name="MassFluxIntegralImported",
+                    output_fields=[surface_integral_variable],
+                    entities=ImportedSurface(name="imported", file_name="imported.stl"),
+                ),
                 SurfaceOutput(
                     name="surface_output",
                     entities=Surface(name="fluid/body"),
@@ -1376,4 +1396,50 @@ def test_custom_volume_translation():
         mesh_unit=1 * u.m,
         ref_json_file="Flow360_custom_volume_translation.json",
         debug=True,
+    )
+
+
+def test_ghost_periodic():
+    geometry = Geometry.from_local_storage(
+        geometry_id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",  # placeholder UUID
+        local_storage_path=os.path.join(
+            os.path.dirname(__file__), "data", "ghost_periodic_geometry_entity_info"
+        ),
+        meta_data=GeometryMeta(
+            **local_metadata_builder(
+                id="geo-2f3c2143-436b-4a42-beab-aa191f49309c",
+                name="geometry_name_placeholder",
+                cloud_path_prefix="s3_path_placeholder",
+                status="processed",
+            )
+        ),
+    )
+    geometry.group_faces_by_tag("groupByBodyId")  # manual grouping needed for from_local_storage
+    far_field_zone = AutomatedFarfield(method="quasi-3d-periodic")
+    with SI_unit_system:
+        params = SimulationParams(
+            meshing=MeshingParams(
+                defaults=MeshingDefaults(
+                    surface_max_edge_length=0.1,
+                    boundary_layer_growth_rate=1.2,
+                    boundary_layer_first_layer_thickness=1e-6,
+                ),
+                volume_zones=[far_field_zone],
+            ),
+            reference_geometry=ReferenceGeometry(),
+            operating_condition=AerospaceCondition(velocity_magnitude=10, alpha=0 * u.deg),
+            time_stepping=Steady(max_steps=1000),
+            models=[
+                Wall(surfaces=[geometry["*"]]),
+                Freestream(surfaces=[far_field_zone.farfield]),
+                Periodic(surface_pairs=[far_field_zone.symmetry_planes], spec=Translational()),
+            ],
+            # Define output parameters for the simulation
+            outputs=[
+                SurfaceOutput(surfaces=geometry["*"], output_fields=["Cp", "Cf", "yPlus", "CfVec"])
+            ],
+        )
+    processed_params = set_up_params_for_uploading(geometry, 1 * u.m, params, False, False)
+    translate_and_compare(
+        processed_params, mesh_unit=1 * u.m, ref_json_file="Flow360_ghost_periodic.json", debug=True
     )

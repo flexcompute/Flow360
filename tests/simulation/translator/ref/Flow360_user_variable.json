@@ -338,6 +338,18 @@
         "outputFormat": "paraview",
         "startAverageIntegrationStep": -1
     },
+    "importedSurfaceIntegralOutput": {
+        "animationFrequency": -1,
+        "animationFrequencyOffset": 0,
+        "surfaces": {
+            "imported": {
+                "meshFile": "imported.stl",
+                "outputFields": [
+                    "MassFluxProjected_integral"
+                ]
+            }
+        }
+    },
     "runControl": {
         "shouldCheckStopCriterion": false,
         "externalProcessMonitorOutput": false
