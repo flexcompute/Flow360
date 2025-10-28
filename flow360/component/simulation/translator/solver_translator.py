@@ -1500,8 +1500,6 @@ def check_external_postprocessing_existence(params: SimulationParams):
             if not isinstance(output, ForceOutput) and output.moving_statistic is None:
                 continue
             return True
-    if params.run_control and bool(params.run_control.stopping_criteria):
-        return True
     return False
 
 
@@ -2024,6 +2022,8 @@ def get_columnar_data_processor_json(
     monitor_outputs = []
     for output in input_params.outputs:
         if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+            continue
+        if not isinstance(output, ForceOutput) and output.moving_statistic is None:
             continue
         output_dict = output.model_dump(
             exclude_none=True,
