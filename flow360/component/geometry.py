@@ -592,40 +592,12 @@ class Geometry(AssetBase):
         >>> geometry = Geometry.from_cloud("geom_id")
         >>> geometry.load_geometry_tree("tree.json")
         """
-        self._geometry_tree = GeometryTree(tree_json_path)
+        self._geometry_tree = GeometryTree.from_json(tree_json_path)
         ## create default face gruoping  by body
 
         log.info(f"Loaded Geometry tree with {len(self._geometry_tree.uuid_to_face)} faces")
 
     def create_face_group(self, name: str, filter: FilterExpression) -> List[str]:
-        """
-        Create a face group based on Geometry tree filtering
-
-        This method filters nodes in the Geometry hierarchy tree and groups all faces
-        under matching nodes. If any faces already belong to another group, they
-        will be reassigned to the new group.
-
-        Parameters
-        ----------
-        name : str
-            Name of the face group
-        filter : FilterExpression
-            Filter expression to match nodes in the tree. Use Type, Name operators
-            to build filter expressions.
-
-        Returns
-        -------
-        List[str]
-            List of face UUIDs in the created group
-
-        Examples
-        --------
-        >>> from flow360.component.geometry_tree import Type, Name, NodeType
-        >>> geometry.create_face_group(
-        ...     name="wing",
-        ...     filter=(Type == NodeType.FRMFeature) & Name.contains("wing")
-        ... )
-        """
         if self._geometry_tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
@@ -639,7 +611,7 @@ class Geometry(AssetBase):
         new_face_uuids = set()
         
         for node in matching_nodes:
-            faces = node.get_all_faces()
+            faces = node.collect_faces_in_subtree()
             for face in faces:
                 if face.uuid:
                     group_faces.append(face)
@@ -662,6 +634,7 @@ class Geometry(AssetBase):
         face_uuids = [face.uuid for face in group_faces if face.uuid]
         log.info(f"Created face group '{name}' with {len(face_uuids)} faces")
         return face_uuids
+
 
     @property
     def face_groups(self) -> Dict[str, int]:

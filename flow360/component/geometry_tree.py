@@ -29,43 +29,83 @@ class NodeType(Enum):
 
 
 class TreeNode:
-    """Represents a node in the Geometry hierarchy tree"""
+    """
+    Represents a node in the geometry hierarchy tree.
+    Manages fundamental tree structure and traversal operations.
+    """
 
     def __init__(
         self,
         node_type: NodeType,
         name: str = "",
         color: str = "",
-        attributes: Dict[str, str] = {},
-        children: List[TreeNode] = [],
+        attributes: Dict[str, str] = None,
+        children: List[TreeNode] = None,
     ):
+        """
+        Initialize a tree node
+        
+        Parameters
+        ----------
+        node_type : NodeType
+            Type of this node
+        name : str
+            Name of this node
+        color : str
+            Color attribute of this node
+        attributes : Dict[str, str]
+            Additional attributes for this node
+        children : List[TreeNode]
+            Child nodes
+        """
         self.type = node_type
         self.name = name
-        self.attributes = attributes 
         self.color = color
-        self.children = children
+        self.attributes = attributes if attributes is not None else {}
+        self.children = children if children is not None else []
         self.parent: Optional[TreeNode] = None
         self.uuid = None
-        if FLOW360_UUID_ATTRIBUTE_KEY in attributes:
-            self.uuid = attributes[FLOW360_UUID_ATTRIBUTE_KEY]
+        
+        if FLOW360_UUID_ATTRIBUTE_KEY in self.attributes:
+            self.uuid = self.attributes[FLOW360_UUID_ATTRIBUTE_KEY]
+        
         for child in self.children:
             child.parent = self
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> TreeNode:
-        """Create TreeNode from dictionary"""
+        """
+        Create TreeNode from dictionary
+        
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            Dictionary representation of the tree
+            
+        Returns
+        -------
+        TreeNode
+            Root node of the created tree
+        """
         children = [cls.from_dict(child) for child in data.get("children", [])]
         node = cls(
             node_type=NodeType[data.get("type")],
-            name=data.get("name"),
-            color=data.get("color"),
-            attributes=data.get("attributes"),
+            name=data.get("name", ""),
+            color=data.get("color", ""),
+            attributes=data.get("attributes", {}),
             children=children,
         )
         return node
 
     def get_path(self) -> List[TreeNode]:
-        """Get the path from root to this node"""
+        """
+        Get the path from root to this node
+        
+        Returns
+        -------
+        List[TreeNode]
+            List of nodes from root to this node
+        """
         path = []
         current = self
         while current is not None:
@@ -74,7 +114,19 @@ class TreeNode:
         return path
 
     def find_nodes(self, filter_func: Callable[[TreeNode], bool]) -> List[TreeNode]:
-        """Find all nodes matching the filter function"""
+        """
+        Find all nodes in the subtree matching the filter function
+        
+        Parameters
+        ----------
+        filter_func : Callable
+            Filter function to match nodes
+            
+        Returns
+        -------
+        List[TreeNode]
+            List of matching nodes
+        """
         matches = []
         if filter_func(self):
             matches.append(self)
@@ -82,16 +134,163 @@ class TreeNode:
             matches.extend(child.find_nodes(filter_func))
         return matches
 
-    def get_uuid_to_face(self) -> Dict[str, TreeNode]:
+    def collect_faces_in_subtree(self) -> List[TreeNode]:
+        """
+        Collect all face nodes (TopoFace and TopoFacePointer) in the subtree rooted at this node
+        
+        Returns
+        -------
+        List[TreeNode]
+            List of all TopoFace and TopoFacePointer nodes in this subtree
+        """
+        faces = []
+        if self.type == NodeType.TopoFace or self.type == NodeType.TopoFacePointer:
+            faces.append(self)
+        for child in self.children:
+            faces.extend(child.collect_faces_in_subtree())
+        return faces
+
+    def _build_uuid_to_face(self) -> Dict[str, TreeNode]:
+        """
+        Build UUID to face mapping for all TopoFace nodes in the subtree
+        
+        Returns
+        -------
+        Dict[str, TreeNode]
+            Mapping from UUID to TopoFace nodes
+        """
         uuid_to_face = {}
-        if self.type == NodeType.TopoFace:
+        if self.type == NodeType.TopoFace and self.uuid:
             uuid_to_face[self.uuid] = self
         for child in self.children:
-            uuid_to_face.update(child.get_uuid_to_face())
+            uuid_to_face.update(child._build_uuid_to_face())
         return uuid_to_face
 
     def __repr__(self):
         return f"TreeNode(type={self.type.value}, name={self.name})"
+
+
+class GeometryTree:
+    """
+    Wrapper class that manages the root node and UUID to face mapping.
+    This class provides the main interface for working with the geometry tree.
+    """
+
+    def __init__(self, root: TreeNode):
+        """
+        Initialize geometry tree with a root node
+        
+        Parameters
+        ----------
+        root : TreeNode
+            Root node of the tree
+        """
+        self.root = root
+        self.uuid_to_face: Dict[str, TreeNode] = self.root._build_uuid_to_face()
+
+    @classmethod
+    def from_json(cls, tree_json_path: str) -> GeometryTree:
+        """
+        Load geometry tree from JSON file
+        
+        Parameters
+        ----------
+        tree_json_path : str
+            Path to the tree JSON file
+            
+        Returns
+        -------
+        GeometryTree
+            GeometryTree instance with loaded root and UUID mapping
+        """
+        with open(tree_json_path, "r", encoding="utf-8") as f:
+            tree_data = json.load(f)
+        
+        root = TreeNode.from_dict(tree_data)
+        return cls(root)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> GeometryTree:
+        """
+        Create GeometryTree from dictionary
+        
+        Parameters
+        ----------
+        data : Dict[str, Any]
+            Dictionary representation of the tree
+            
+        Returns
+        -------
+        GeometryTree
+            GeometryTree instance
+        """
+        root = TreeNode.from_dict(data)
+        return cls(root)
+
+    def resolve_node(self, node: TreeNode) -> TreeNode:
+        """
+        Resolve a node to its actual representation.
+        If the node is a TopoFacePointer, resolve it to the actual TopoFace it points to.
+        Otherwise, return the node itself.
+        
+        Parameters
+        ----------
+        node : TreeNode
+            The node to resolve
+            
+        Returns
+        -------
+        TreeNode
+            The resolved node (actual TopoFace if input was TopoFacePointer, otherwise the original node)
+        """
+        if node.type == NodeType.TopoFacePointer and node.uuid:
+            # Resolve TopoFacePointer to actual TopoFace using UUID
+            actual_face = self.uuid_to_face.get(node.uuid)
+            if actual_face:
+                return actual_face
+            # If no matching TopoFace found, return the pointer itself
+            return node
+        return node
+
+    def find_nodes(self, filter_expr: FilterExpression) -> List[TreeNode]:
+        """
+        Find all nodes matching the filter expression.
+        
+        TopoFacePointer nodes are resolved to their actual TopoFace counterparts
+        before filter evaluation, so filters operate on the actual face properties.
+        
+        Parameters
+        ----------
+        filter_expr : FilterExpression
+            Filter expression to match nodes
+            
+        Returns
+        -------
+        List[TreeNode]
+            List of matching nodes
+        """
+        import pdb
+        pdb.set_trace()
+        def filter_with_resolution(node: TreeNode) -> bool:
+            # Resolve the node (TopoFacePointer -> TopoFace) before applying filter
+            resolved_node = self.resolve_node(node)
+            return filter_expr(resolved_node)
+        
+        return self.root.find_nodes(filter_with_resolution)
+
+    def get_all_faces(self) -> List[TreeNode]:
+        """
+        Get all TopoFace nodes in the tree (not including TopoFacePointer)
+        
+        Returns
+        -------
+        List[TreeNode]
+            List of all TopoFace nodes in the tree
+        """
+        return list(self.uuid_to_face.values())
+
+    def __repr__(self):
+        return f"GeometryTree(root={self.root})"
 
 
 class FilterExpression:
@@ -147,13 +346,13 @@ class TypeQuery:
 
     def __eq__(self, node_type: Union[NodeType, str]) -> FilterExpression:
         if isinstance(node_type, NodeType):
-            type_str = node_type.value
+            target_type = node_type
         else:
-            type_str = node_type
+            target_type = NodeType[node_type]
 
         class TypeFilter(FilterExpression):
             def __call__(self, node: TreeNode) -> bool:
-                return node.type == type_str
+                return node.type == target_type
 
         return TypeFilter()
 
@@ -223,43 +422,4 @@ class AttributeQuery:
 # Singleton query objects
 Type = TypeQuery()
 Name = NameQuery()
-
-
-class GeometryTree:
-    """Pure tree structure representing Geometry hierarchy"""
-
-    def __init__(self, tree_json_path: str):
-        """
-        Initialize geometry tree from JSON file
-
-        Parameters
-        ----------
-        tree_json_path : str
-            Path to the tree JSON file
-        """
-        with open(tree_json_path, "r", encoding="utf-8") as f:
-            tree_data = json.load(f)
-
-        self.root: TreeNode = TreeNode.from_dict(tree_data)
-        self.uuid_to_face = self.root.get_uuid_to_face()
-
-
-    def find_nodes(self, filter_expr: FilterExpression) -> List[TreeNode]:
-        """
-        Find all nodes matching the filter expression
-
-        Parameters
-        ----------
-        filter_expr : FilterExpression
-            Filter expression to match nodes
-
-        Returns
-        -------
-        List[TreeNode]
-            List of matching nodes
-        """
-        return self.root.find_nodes(lambda node: filter_expr(node))
-
-    def get_all_faces(self) -> List[TreeNode]:
-        return list(self.uuid_to_face.values())
 
