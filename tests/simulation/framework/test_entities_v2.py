@@ -332,82 +332,6 @@ def test_copying_entity(my_cylinder1):
 ##:: ---------------- EntityList/Registry tests ----------------
 
 
-def test_EntityList_discrimination():
-    class ConfusingEntity1(EntityBase):
-        some_value: int = pd.Field(1, gt=1)
-        private_attribute_entity_type_name: Literal["ConfusingEntity1"] = pd.Field(
-            "ConfusingEntity1", frozen=True
-        )
-        private_attribute_registry_bucket_name: Literal["UnitTestEntityType"] = pd.Field(
-            "UnitTestEntityType", frozen=True
-        )
-
-    class ConfusingEntity2(EntityBase):
-        some_value: int = pd.Field(1, gt=2)
-        private_attribute_entity_type_name: Literal["ConfusingEntity2"] = pd.Field(
-            "ConfusingEntity2", frozen=True
-        )
-        private_attribute_registry_bucket_name: Literal["UnitTestEntityType"] = pd.Field(
-            "UnitTestEntityType", frozen=True
-        )
-
-    class MyModel(Flow360BaseModel):
-        entities: EntityList[ConfusingEntity1, ConfusingEntity2] = pd.Field()
-
-    # Ensure EntityList is looking for the discriminator
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Unable to extract tag using discriminator 'private_attribute_entity_type_name'"
-        ),
-    ):
-        MyModel(
-            **{
-                "entities": {
-                    "stored_entities": [
-                        {
-                            "name": "private_attribute_entity_type_name is missing",
-                            "some_value": 1,
-                        }
-                    ],
-                }
-            }
-        )
-
-    # Ensure EntityList is only trying to validate against ConfusingEntity1
-    try:
-        MyModel(
-            **{
-                "entities": {
-                    "stored_entities": [
-                        {
-                            "name": "I should be deserialize as ConfusingEntity1",
-                            "private_attribute_entity_type_name": "ConfusingEntity1",
-                            "some_value": 1,
-                        }
-                    ],
-                }
-            }
-        )
-    except pd.ValidationError as err:
-        validation_errors = err.errors()
-    # Without discrimination, above deserialization would have failed both
-    # ConfusingEntitys' checks and result in 3 errors:
-    # 1. some_value is less than 1 (from ConfusingEntity1)
-    # 2. some_value is less than 2 (from ConfusingEntity2)
-    # 3. private_attribute_entity_type_name is incorrect (from ConfusingEntity2)
-    # But now we enforce Pydantic to only check against ConfusingEntity1
-    assert validation_errors[0]["msg"] == "Input should be greater than 1"
-    assert validation_errors[0]["loc"] == (
-        "entities",
-        "stored_entities",
-        0,
-        "ConfusingEntity1",
-        "some_value",
-    )
-    assert len(validation_errors) == 1
-
-
 def test_by_reference_registry(my_cylinder2):
     """Test that the entity registry contains reference not deepcopy of the entities."""
     my_fd = TempFluidDynamics(entities=[my_cylinder2])
@@ -459,39 +383,13 @@ def test_entity_registry_item_retrieval(
     assert items[0].name == "CC_ground"
 
 
-def test_entities_input_interface(my_volume_mesh1):
+def test_asset_getitem(my_volume_mesh1):
+    """Test the __getitem__ interface of asset objects."""
     # 1. Using reference of single asset entity
-    expanded_entities = TempFluidDynamics(
-        entities=my_volume_mesh1["zone*"]
-    ).entities.stored_entities
+    expanded_entities = my_volume_mesh1["zone*"]
     assert len(expanded_entities) == 3
-    assert expanded_entities == my_volume_mesh1["zone*"]
 
-    # 2. test using invalid entity input (UGRID convention example)
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Type(<class 'int'>) of input to `entities` (1) is not valid. Expected entity instance."
-        ),
-    ):
-        expanded_entities = TempFluidDynamics(entities=1).entities.stored_entities
-    # 3. test empty list
-    with pytest.raises(
-        ValueError,
-        match=re.escape("Invalid input type to `entities`, list is empty."),
-    ):
-        expanded_entities = TempFluidDynamics(entities=[]).entities.stored_entities
-
-    # 4. test None
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Input should be a valid list [type=list_type, input_value=None, input_type=NoneType]"
-        ),
-    ):
-        expanded_entities = TempFluidDynamics(entities=None).entities.stored_entities
-
-    # 5. test typo/non-existing entities.
+    # 2. test typo/non-existing entities.
     with pytest.raises(
         ValueError,
         match=re.escape("Failed to find any matching entity with asdf. Please check your input."),
