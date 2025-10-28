@@ -59,6 +59,7 @@ from flow360.component.simulation.primitives import (
     _SurfaceEntityBase,
     _VolumeEntityBase,
 )
+from flow360.component.simulation.run_control.run_control import RunControl
 from flow360.component.simulation.time_stepping.time_stepping import Steady, Unsteady
 from flow360.component.simulation.unit_system import (
     AbsoluteTemperatureType,
@@ -310,6 +311,11 @@ class SimulationParams(_ParamModelBase):
     outputs: Optional[List[OutputTypes]] = CaseField(
         None,
         description="Output settings. See :ref:`Outputs <outputs>` for more details.",
+    )
+
+    run_control: Optional[RunControl] = CaseField(
+        None,
+        description="Run control settings of the simulation.",
     )
 
     ##:: [INTERNAL USE ONLY] Private attributes that should not be modified manually.

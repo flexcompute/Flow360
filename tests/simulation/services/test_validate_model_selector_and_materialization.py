@@ -42,6 +42,7 @@ def test_validate_model_resolves_selectors_and_materializes_end_to_end():
     entities["selectors"] = [
         {
             "target_class": "Surface",
+            "name": "some_selector_name",
             "children": [{"attribute": "name", "operator": "matches", "value": "*"}],
         }
     ]

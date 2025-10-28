@@ -360,7 +360,7 @@ def _check_complete_boundary_condition_and_unknown_surface(
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities
                 if item.name not in ("symmetric-1", "symmetric-2") and item.exists(validation_info)
             ]
-        elif farfield_method == "quasi-3d":
+        elif farfield_method in ("quasi-3d", "quasi-3d-periodic"):
             asset_boundary_entities += [
                 item
                 for item in params.private_attribute_asset_cache.project_entity_info.ghost_entities

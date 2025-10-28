@@ -174,26 +174,33 @@ def rotor_disks_entity_injector(entity: Cylinder):
     }
 
 
-def rotation_volume_entity_injector(entity: Union[Cylinder, AxisymmetricBody]):
+def rotation_volume_entity_injector(
+    entity: Union[Cylinder, AxisymmetricBody], use_inhouse_mesher: bool
+):
     """Injector for Cylinder entity in RotationCylinder."""
     if isinstance(entity, Cylinder):
-        return {
+        data = {
             "name": entity.name,
-            "type": "Cylinder",
             "innerRadius": 0 if entity.inner_radius is None else entity.inner_radius.value.item(),
             "outerRadius": entity.outer_radius.value.item(),
             "thickness": entity.height.value.item(),
             "axisOfRotation": list(entity.axis),
             "center": list(entity.center.value),
         }
+        if use_inhouse_mesher:
+            data["type"] = "Cylinder"
+        return data
+
     if isinstance(entity, AxisymmetricBody):
-        return {
+        data = {
             "name": entity.name,
-            "type": "Axisymmetric",
             "profileCurve": [list(profile_point.value) for profile_point in entity.profile_curve],
             "axisOfRotation": list(entity.axis),
             "center": list(entity.center.value),
         }
+        if use_inhouse_mesher:
+            data["type"] = "Axisymmetric"
+        return data
     return {}
 
 
@@ -378,6 +385,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
+        entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
     )
     sliding_interfaces_cylinders = translate_setting_and_apply_to_all_entities(
         meshing_params.volume_zones,
@@ -386,6 +394,7 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         to_list=True,
         entity_injection_func=rotation_volume_entity_injector,
         translation_func_rotor_disk_names=rotor_disk_names,
+        entity_injection_use_inhouse_mesher=input_params.private_attribute_asset_cache.use_inhouse_mesher,
     )
 
     if sliding_interfaces or sliding_interfaces_cylinders:

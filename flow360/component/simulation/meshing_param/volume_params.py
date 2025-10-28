@@ -429,7 +429,7 @@ class AutomatedFarfield(_FarfieldBase):
         # Make sure the naming is the same here and what the geometry/surface mesh pipeline generates.
         if self.method == "auto":
             return GhostSurface(name="symmetric")
-        if self.method == "quasi-3d":
+        if self.method in ("quasi-3d", "quasi-3d-periodic"):
             return [
                 GhostSurface(name="symmetric-1"),
                 GhostSurface(name="symmetric-2"),

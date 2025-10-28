@@ -594,7 +594,7 @@ def _get_selector_cache_key(selector_dict: dict) -> tuple:
     structural key so different unnamed selectors won't collide.
     """
     tclass = selector_dict.get("target_class")
-    name = selector_dict.get("name") or selector_dict.get("tag")
+    name = selector_dict.get("name")
     if name:
         return ("name", tclass, name)
 
@@ -701,6 +701,7 @@ def _expand_node_selectors(
 
     node["stored_entities"] = base_entities
     # node["selectors"] = selectors_value
+    print(">>> selectors: ", node["selectors"])
 
 
 def expand_entity_selectors_in_place(
