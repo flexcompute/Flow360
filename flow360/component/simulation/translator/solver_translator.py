@@ -13,6 +13,7 @@ from flow360.component.simulation.conversion import (
     compute_udf_dimensionalization_factor,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -2005,4 +2006,31 @@ def get_solver_json(
     if input_params.private_attribute_dict is not None:
         translated.update(input_params.private_attribute_dict)
 
+    return translated
+
+
+@preprocess_input
+def get_columnar_data_processor_json(
+    input_params: SimulationParams,
+    # pylint: disable=no-member,unused-argument
+    mesh_unit: LengthType.Positive,
+):
+    """
+    Get the columnar data processor json from the simulation parameters.
+    """
+    translated = {}
+    if not input_params.outputs:
+        return translated
+    monitor_outputs = []
+    for output in input_params.outputs:
+        if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
+            continue
+        output_dict = output.model_dump(
+            exclude_none=True,
+            exclude="private_attribute_id",
+            context={"columnar_data_processor": True},
+        )
+        recursive_remove_key(output_dict, "private_attribute_id")
+        monitor_outputs.append(output_dict)
+    translated["outputs"] = monitor_outputs
     return translated
