@@ -224,7 +224,11 @@ class RotationVolume(AxisymmetricRefinementBase):
         `enclosed_entities` is planned to be auto_populated in the future.
         """
         # pylint: disable=protected-access
-        if len(values._get_expanded_entities(create_hard_copy=False)) > 1:
+
+        if not get_validation_info():
+            return values
+
+        if len(values.stored_entities) > 1:
             raise ValueError(
                 "Only single instance is allowed in entities for each `RotationVolume`."
             )

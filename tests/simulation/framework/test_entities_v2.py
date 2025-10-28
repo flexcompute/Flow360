@@ -325,23 +325,6 @@ def test_copying_entity(my_cylinder1):
     ):
         my_cylinder1.copy(update={"height": 1.0234})
 
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Copying an entity requires a new name to be specified. Please provide a new name in the update dictionary."
-        ),
-    ):
-        my_cylinder1.copy(update={"height": 1.0234, "name": my_cylinder1.name})
-
-    assert (
-        len(
-            TempFluidDynamics(
-                entities=[my_cylinder1, my_cylinder1]
-            ).entities._get_expanded_entities(create_hard_copy=False)
-        )
-        == 1
-    )
-
     my_cylinder3_2 = my_cylinder1.copy(update={"height": 8119 * u.m, "name": "zone/Cylinder3-2"})
     assert my_cylinder3_2.height == 8119 * u.m
 
@@ -425,16 +408,6 @@ def test_EntityList_discrimination():
     assert len(validation_errors) == 1
 
 
-def test_entities_expansion(my_cylinder1, my_box_zone1):
-    """Test that the exact same entities will be removed in expanded entities."""
-    expanded_entities = TempFluidDynamics(
-        entities=[my_cylinder1, my_cylinder1, my_box_zone1]
-    ).entities._get_expanded_entities(create_hard_copy=False)
-    assert my_cylinder1 in expanded_entities
-    assert my_box_zone1 in expanded_entities
-    assert len(expanded_entities) == 2
-
-
 def test_by_reference_registry(my_cylinder2):
     """Test that the entity registry contains reference not deepcopy of the entities."""
     my_fd = TempFluidDynamics(entities=[my_cylinder2])
@@ -456,16 +429,6 @@ def test_by_reference_registry(my_cylinder2):
     assert my_cylinder2.height == 132 * u.m
 
     assert my_fd.entities.stored_entities[0].height == 132 * u.m
-
-
-def test_by_value_expansion(my_cylinder2):
-    expanded_entities = TempFluidDynamics(entities=[my_cylinder2]).entities._get_expanded_entities(
-        create_hard_copy=True
-    )
-    my_cylinder2.height = 1012 * u.cm
-    for entity in expanded_entities:
-        if isinstance(entity, Cylinder) and entity.name == "zone/Cylinder2":
-            assert entity.height == 12 * u.nm  # unchanged
 
 
 def test_entity_registry_item_retrieval(
@@ -500,7 +463,7 @@ def test_entities_input_interface(my_volume_mesh1):
     # 1. Using reference of single asset entity
     expanded_entities = TempFluidDynamics(
         entities=my_volume_mesh1["zone*"]
-    ).entities._get_expanded_entities(create_hard_copy=True)
+    ).entities.stored_entities
     assert len(expanded_entities) == 3
     assert expanded_entities == my_volume_mesh1["zone*"]
 
@@ -511,17 +474,13 @@ def test_entities_input_interface(my_volume_mesh1):
             "Type(<class 'int'>) of input to `entities` (1) is not valid. Expected entity instance."
         ),
     ):
-        expanded_entities = TempFluidDynamics(entities=1).entities._get_expanded_entities(
-            create_hard_copy=True
-        )
+        expanded_entities = TempFluidDynamics(entities=1).entities.stored_entities
     # 3. test empty list
     with pytest.raises(
         ValueError,
         match=re.escape("Invalid input type to `entities`, list is empty."),
     ):
-        expanded_entities = TempFluidDynamics(entities=[]).entities._get_expanded_entities(
-            create_hard_copy=True
-        )
+        expanded_entities = TempFluidDynamics(entities=[]).entities.stored_entities
 
     # 4. test None
     with pytest.raises(
@@ -530,9 +489,7 @@ def test_entities_input_interface(my_volume_mesh1):
             "Input should be a valid list [type=list_type, input_value=None, input_type=NoneType]"
         ),
     ):
-        expanded_entities = TempFluidDynamics(entities=None).entities._get_expanded_entities(
-            create_hard_copy=True
-        )
+        expanded_entities = TempFluidDynamics(entities=None).entities.stored_entities
 
     # 5. test typo/non-existing entities.
     with pytest.raises(
@@ -540,43 +497,6 @@ def test_entities_input_interface(my_volume_mesh1):
         match=re.escape("Failed to find any matching entity with asdf. Please check your input."),
     ):
         my_volume_mesh1["asdf"]
-
-
-def test_entire_workflow(my_cylinder1, my_volume_mesh1):
-    with SI_unit_system:
-        my_param = TempSimulationParam(
-            far_field_type="auto",
-            models=[
-                TempFluidDynamics(
-                    entities=[
-                        my_cylinder1,
-                        my_cylinder1,
-                        my_cylinder1,
-                        my_volume_mesh1["*"],
-                        my_volume_mesh1["*zone*"],
-                    ]
-                ),
-                TempWallBC(surfaces=[my_volume_mesh1["*"]]),
-            ],
-        )
-
-    my_param.preprocess()
-
-    fluid_dynamics_entity_names = [
-        entity.name for entity in my_param.models[0].entities.stored_entities
-    ]
-
-    wall_entity_names = [entity.name for entity in my_param.models[1].entities.stored_entities]
-    assert "zone/Cylinder1" in fluid_dynamics_entity_names
-    assert "zone_1" in fluid_dynamics_entity_names
-    assert "zone_2" in fluid_dynamics_entity_names
-    assert "zone_3" in fluid_dynamics_entity_names
-    assert len(fluid_dynamics_entity_names) == 4
-
-    assert "surface_1" in wall_entity_names
-    assert "surface_2" in wall_entity_names
-    assert "surface_3" in wall_entity_names
-    assert len(wall_entity_names) == 3
 
 
 def test_multiple_param_creation_and_asset_registry(

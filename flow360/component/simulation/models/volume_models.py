@@ -205,6 +205,9 @@ class StopCriterion(Flow360BaseModel):
     def _check_single_point_in_probe_output(cls, v):
         if not isinstance(v, (ProbeOutput, SurfaceProbeOutput)):
             return v
+        if not get_validation_info():
+            # stored_entities is not expanded yet.
+            return v
         if len(v.entities.stored_entities) == 1 and isinstance(
             v.entities.stored_entities[0], Point
         ):
@@ -1441,6 +1444,10 @@ class Rotation(Flow360BaseModel):
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
 
+        if not get_validation_info():
+            # stored_entities is not expanded yet.
+            return value
+
         for entity in value.stored_entities:
             if entity.axis is None:
                 raise ValueError(
@@ -1540,6 +1547,10 @@ class PorousMedium(Flow360BaseModel):
     @classmethod
     def _ensure_entities_have_sufficient_attributes(cls, value: EntityList):
         """Ensure entities have sufficient attributes."""
+
+        if not get_validation_info():
+            # stored_entities is not expanded yet.
+            return value
 
         for entity in value.stored_entities:
             if entity.axes is None:

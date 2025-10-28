@@ -145,6 +145,7 @@ def test_criterion_multi_entities_probe_validation_fails(
     scalar_user_variable_density,
     single_point_probe_output,
     single_point_surface_probe_output,
+    mock_validation_context,
 ):
     """Test that multi-entity ProbeOutput is rejected."""
     message = (
@@ -156,7 +157,7 @@ def test_criterion_multi_entities_probe_validation_fails(
     multi_point_probe_output.entities.stored_entities.append(
         Point(name="pt2", location=(1, 1, 1) * u.m)
     )
-    with SI_unit_system, pytest.raises(ValueError, match=message):
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         StopCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=multi_point_probe_output,
@@ -172,7 +173,7 @@ def test_criterion_multi_entities_probe_validation_fails(
             number_of_points=2,
         ),
     ]
-    with SI_unit_system, pytest.raises(ValueError, match=message):
+    with SI_unit_system, mock_validation_context, pytest.raises(ValueError, match=message):
         StopCriterion(
             monitor_field=scalar_user_variable_density,
             monitor_output=point_array_surface_probe_output,

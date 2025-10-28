@@ -661,6 +661,7 @@ def _merge_entities(
         base_entities.extend(existing)
         for target_class in ordered_target_classes:
             base_entities.extend(additions_by_class.get(target_class, []))
+
     else:  # replace: drop explicit items of targeted classes
         classes_to_update = set(ordered_target_classes)
         for item in existing:

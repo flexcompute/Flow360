@@ -106,6 +106,7 @@ from flow360.component.simulation.user_defined_dynamics.user_defined_dynamics im
 from flow360.component.simulation.validation.validation_context import (
     CASE,
     VOLUME_MESH,
+    ParamsValidationInfo,
     ValidationContext,
 )
 
@@ -1018,8 +1019,11 @@ def test_duplicate_entities_in_models():
         f"Volume entity `{entity_generic_volume.name}` appears multiple times in `{volume_model1.type}` model.\n"
     )
 
+    mock_context = ValidationContext(
+        levels=None, info=ParamsValidationInfo(param_as_dict={}, referenced_expressions=[])
+    )
     # Invalid simulation params
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, mock_context, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[volume_model1, volume_model2, surface_model1, surface_model2, surface_model3],
         )
@@ -1027,7 +1031,7 @@ def test_duplicate_entities_in_models():
     message = f"Volume entity `{entity_cylinder.name}` appears multiple times in `{rotation_model1.type}` model.\n"
 
     # Invalid simulation params (Draft Entity)
-    with SI_unit_system, pytest.raises(ValueError, match=re.escape(message)):
+    with SI_unit_system, mock_context, pytest.raises(ValueError, match=re.escape(message)):
         _ = SimulationParams(
             models=[rotation_model1, rotation_model2],
         )
@@ -1783,7 +1787,7 @@ def test_validate_liquid_operating_condition():
     assert errors[0]["loc"] == ("models",)
 
 
-def test_beta_mesher_only_features():
+def test_beta_mesher_only_features(mock_validation_context):
     with SI_unit_system:
         params = SimulationParams(
             meshing=MeshingParams(
@@ -1936,7 +1940,7 @@ def test_beta_mesher_only_features():
             )
 
     # Unique interface names
-    with pytest.raises(
+    with mock_validation_context, pytest.raises(
         ValueError, match="The boundaries of a CustomVolume must have different names."
     ):
         with SI_unit_system:
