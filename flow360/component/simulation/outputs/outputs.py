@@ -20,6 +20,11 @@ from flow360.component.simulation.models.surface_models import (
     EntityListAllowingGhost,
     Wall,
 )
+from flow360.component.simulation.models.volume_models import (
+    ActuatorDisk,
+    BETDisk,
+    PorousMedium,
+)
 from flow360.component.simulation.outputs.output_entities import (
     Isosurface,
     Point,
@@ -63,6 +68,11 @@ from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
 from flow360.component.types import Axis
+
+ForceOutputModelType = Annotated[
+    Union[Wall, BETDisk, ActuatorDisk, PorousMedium],
+    pd.Field(discriminator="type"),
+]
 
 
 class UserDefinedField(Flow360BaseModel):
@@ -689,9 +699,10 @@ class ForceOutput(_OutputBase):
 
     Define :class:`ForceOutput` to output total CL and CD on multiple wing surfaces.
 
+    >>> wall = fl.Wall(name = 'wing', surfaces=[volume_mesh['1'], volume_mesh["wing2"]])
     >>> fl.ForceOutput(
     ...     name="force_output_wings",
-    ...     entities=[volume_mesh["wing1"], volume_mesh["wing2"]],
+    ...     models=[wall],
     ...     output_fields=["CL", "CD"]
     ... )
 
@@ -699,33 +710,35 @@ class ForceOutput(_OutputBase):
     """
 
     name: str = pd.Field("Force output", description="Name of the force output.")
-    surface_models: List[Union[Wall, str]] = pd.Field(
-        description="List of surface models whose force contribution will be calculated.",
-    )
     output_fields: UniqueItemList[ForceOutputCoefficientNames] = pd.Field(
         description="List of force coefficients. Including CL, CD, CFx, CFy, CFz, CMx, CMy, CMz. "
         "For surface forces, their SkinFriction/Pressure is also supported, such as CLSkinFriction and CLPressure."
+    )
+    models: List[Union[ForceOutputModelType, str]] = pd.Field(
+        description="List of surface/volume models whose force contribution will be calculated.",
     )
     moving_statistic: Optional[MovingStatistic] = pd.Field(
         None, description="The moving statistics used to monitor the output."
     )
     output_type: Literal["ForceOutput"] = pd.Field("ForceOutput", frozen=True)
 
-    @pd.field_serializer("surface_models")
-    def serialize_models(self, v):
+    @pd.field_serializer("models")
+    def serialize_models(self, value, info: pd.FieldSerializationInfo):
         """Serialize only the model's id of the related object."""
+        if isinstance(info.context, dict) and info.context.get("columnar_data_processor"):
+            return value
         model_ids = []
-        for model in v:
-            if isinstance(model, Wall):
+        for model in value:
+            if isinstance(model, get_args(get_args(ForceOutputModelType)[0])):
                 model_ids.append(model.private_attribute_id)
                 continue
             model_ids.append(model)
         return model_ids
 
-    @pd.field_validator("surface_models", mode="before")
+    @pd.field_validator("models", mode="before")
     @classmethod
-    def _preprocess_models_with_id(cls, v):
-        """Deserialize string-format surface models as Wall objects."""
+    def _preprocess_models_with_id(cls, value):
+        """Deserialize string-format models as model objects."""
 
         def preprocess_single_model(model, validation_info):
             if not isinstance(model, str):
@@ -736,15 +749,32 @@ class ForceOutput(_OutputBase):
                 or validation_info.physics_model_dict.get(model) is None
             ):
                 raise ValueError("The model does not exist in the models list.")
-            surface_model_dict = validation_info.physics_model_dict[model]
-            model = Wall.model_validate(surface_model_dict)
+            physics_model_dict = validation_info.physics_model_dict[model]
+            model = pd.TypeAdapter(ForceOutputModelType).validate_python(physics_model_dict)
             return model
 
         processed_models = []
         validation_info = get_validation_info()
-        for model in v:
+        for model in value:
             processed_models.append(preprocess_single_model(model, validation_info))
         return processed_models
+
+    @pd.field_validator("models", mode="after")
+    @classmethod
+    def _check_output_fields_with_volume_models_specified(cls, value, info: pd.ValidationInfo):
+        """Ensure the output field exists when volume models are specified."""
+        if all(isinstance(model, Wall) for model in value):
+            return value
+        output_fields = info.data.get("output_fields", None)
+        if all(
+            field in ["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"]
+            for field in output_fields.items
+        ):
+            return value
+        raise ValueError(
+            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+        )
 
 
 class ProbeOutput(_OutputBase):
