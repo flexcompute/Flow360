@@ -834,7 +834,7 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
-        ResultCSVModel
+        LocalResultCSVModel
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)
@@ -916,7 +916,7 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
-        ResultCSVModel
+        LocalResultCSVModel
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)
@@ -1013,7 +1013,7 @@ class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVM
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
-        ResultCSVModel
+        LocalResultCSVModel
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)

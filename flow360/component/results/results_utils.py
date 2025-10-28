@@ -449,7 +449,7 @@ class BETDiskCSVHeaderOperation:
             [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
-        ResultCSVModel
+        LocalResultCSVModel
             Model containing csv with updated header
         """
         # pylint:disable=too-many-locals
