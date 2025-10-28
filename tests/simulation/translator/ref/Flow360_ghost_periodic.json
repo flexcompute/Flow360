@@ -133,7 +133,6 @@
 	},
 	"userDefinedFields": [],
 	"runControl": {
-		"shouldCheckStopCriterion": false,
 		"externalProcessMonitorOutput": false
 	},
 	"usingLiquidAsMaterial": false,
