@@ -819,20 +819,22 @@ class BETForcesResultCSVModel(OptionallyDownloadableResultCSVModel):
                 self.values["ForceUnits"] = bet.force_x.units
                 self.values["MomentUnits"] = bet.moment_x.units
 
-    def rename_header(
+    def format_headers(
         self, params: SimulationParams, pattern: str = "$BETName_$CylinderName"
     ) -> LocalResultCSVModel:
         """
-        Renames the header entries from Disk{i}_ to {BETDisk.name}_{Cylinder.name}_
+        Renames the header entries from Disk{i}_ to based on an input user pattern
+        such as $BETName_$CylinderName
         Parameters
         ----------
         params : SimulationParams
             Simulation parameters
         pattern : str
-            Pattern for new header name
+            Pattern string to rename header entries. Available patterns
+            [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
-        LocalResultCSVModel
+        ResultCSVModel
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)
@@ -899,23 +901,26 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
 
     remote_file_name: str = pd.Field("bet_disk_coefficients_v2.csv", frozen=True)
 
-    def rename_header(
+    def format_headers(
         self, params: SimulationParams, pattern: str = "$BETName_$CylinderName"
     ) -> LocalResultCSVModel:
         """
-        Renames the header entries from Disk{i}_ to {BETDisk.name}_{Cylinder.name}_
+        Renames the header entries from Disk{i}_ to based on an input user pattern
+        such as $BETName_$CylinderName
         Parameters
         ----------
         params : SimulationParams
             Simulation parameters
         pattern : str
-            Pattern for new header name
+            Pattern string to rename header entries. Available patterns
+            [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
         ResultCSVModel
             Model containing csv with updated header
         """
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)
+
 
 
 class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
@@ -994,17 +999,19 @@ class BETForcesRadialDistributionResultCSVModel(OptionallyDownloadableResultCSVM
     )
     _err_msg = "Case does not have any BET disks."
 
-    def rename_header(
+    def format_headers(
         self, params: SimulationParams, pattern: str = "$BETName_$CylinderName"
     ) -> LocalResultCSVModel:
         """
-        Renames the header entries from Disk{i}_ to {BETDisk.name}_{Cylinder.name}_
+        Renames the header entries from Disk{i}_ to based on an input user pattern
+        such as $BETName_$CylinderName
         Parameters
         ----------
         params : SimulationParams
             Simulation parameters
         pattern : str
-            Pattern for new header name
+            Pattern string to rename header entries. Available patterns
+            [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
         Returns
         -------
         ResultCSVModel

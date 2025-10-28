@@ -434,7 +434,7 @@ class BETDiskCSVHeaderOperation:
         pattern: str = "$BETName_$CylinderName",
     ) -> LocalResultCSVModel:
         """
-        renames the header entries in a BET csv file from Disk{x}_ based on input patter
+        renames the header entries in a BET csv file from Disk{x}_ based on input pattern
         $Default option is $BETName_$CylinderName
 
         pattern can take [$BETName, $CylinderName, $DiskLocalIndex, $DiskGlobalIndex]
