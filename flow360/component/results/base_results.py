@@ -674,7 +674,6 @@ class PerEntityResultCSVModel(ResultCSVModel):
             return rf"^(?:{re.escape(word)}|[^/]+/{re.escape(word)})$"
 
         self.reload_data()  # Remove all the imposed filters
-        print(">> _x_columns =", self._x_columns)
         raw_values = {}
         for x_column in self._x_columns:
             raw_values[x_column] = np.array(self.raw_values[x_column])

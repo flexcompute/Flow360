@@ -376,7 +376,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
                 raise KeyError(
                     f"Invalid input type to `entities`, dict {input_data} is missing the key 'stored_entities'."
                 )
-            return cls._build_result(input_data["stored_entities"], [])
+            return cls._build_result(input_data["stored_entities"], input_data.get("selectors", []))
         else:  # Single entity or selector
             if input_data is None:
                 return cls._build_result(None, [])

@@ -700,7 +700,7 @@ def _expand_node_selectors(
     )
 
     node["stored_entities"] = base_entities
-    node["selectors"] = []
+    # node["selectors"] = selectors_value
 
 
 def expand_entity_selectors_in_place(

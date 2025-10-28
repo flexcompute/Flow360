@@ -1,3 +1,4 @@
+import copy
 import os
 
 import pytest
@@ -5,6 +6,11 @@ import pytest
 import flow360 as fl
 from flow360.component.project_utils import set_up_params_for_uploading
 from flow360.component.resource_base import local_metadata_builder
+from flow360.component.simulation.framework.entity_selector import (
+    EntitySelector,
+    Predicate,
+)
+from flow360.component.simulation.framework.updater_utils import compare_values
 from flow360.component.simulation.models.surface_models import Wall
 from flow360.component.simulation.primitives import Surface
 from flow360.component.simulation.services import ValidationCalledBy, validate_model
@@ -56,18 +62,16 @@ def test_direct_assignment_selector_and_entity_registry_index():
 
         nothing_surface = Surface.match("nothing", name="nothing")
 
-        # wall_fuselage = Wall(
-        #     entities=[fuselage, nothing_surface], use_wall_function=True  # List of EntitySelectors
+        wall_fuselage = Wall(
+            entities=[fuselage, nothing_surface], use_wall_function=True  # List of EntitySelectors
+        )
 
-        # )
-
-        params = fl.SimulationParams(models=[wall, freestream])
+        params = fl.SimulationParams(models=[wall, freestream, wall_fuselage])
 
     # Fill in project_entity_info to provide selector database
     params = set_up_params_for_uploading(
         vm, 1 * fl.u.m, params, use_beta_mesher=False, use_geometry_AI=False
     )
-
     # Full validate path (includes resolve_selectors + materialize)
     validated, errors, _ = validate_model(
         params_as_dict=params.model_dump(mode="json", exclude_none=True),
@@ -83,7 +87,6 @@ def test_direct_assignment_selector_and_entity_registry_index():
     assert len(entities) == 2  # Selector resolved to leftWing and rightWing
     assert entities[0].name == "fluid/leftWing"
     assert entities[1].name == "fluid/rightWing"
-    print(">>> entities: ", [entity.name for entity in entities])
 
     # Legacy
     entities = validated.models[1].entities.stored_entities
@@ -91,6 +94,31 @@ def test_direct_assignment_selector_and_entity_registry_index():
     assert entities[0].name == "fluid/farfield"
 
     # Pure selectors
-    # entities = validated.models[2].entities.stored_entities
-    # assert len(entities) == 1
-    # assert entities[0].name == "fluid/fuselage"
+    entities = validated.models[2].entities.stored_entities
+    assert len(entities) == 1
+    assert entities[0].name == "fluid/fuselage"
+
+    # Ensure idempotency
+    validated_dict = validated.model_dump(mode="json", exclude_none=True)
+
+    validated, errors, _ = validate_model(
+        params_as_dict=copy.deepcopy(validated_dict),
+        validated_by=ValidationCalledBy.LOCAL,
+        root_item_type="VolumeMesh",
+        validation_level=None,
+    )
+
+    validated_dict_2 = validated.model_dump(mode="json", exclude_none=True)
+    assert compare_values(validated_dict, validated_dict_2)
+
+    # Ensure the selectors are not cleared
+    assert validated.models[0].entities.selectors == [
+        EntitySelector(
+            target_class="Surface",
+            name="all_wings",
+            logic="AND",
+            children=[
+                Predicate(attribute="name", operator="matches", value="*Wing", non_glob_syntax=None)
+            ],
+        )
+    ]

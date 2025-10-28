@@ -214,7 +214,6 @@ def test_attribute_tag_scalar_support():
 
     expand_entity_selectors_in_place(db, params)
     stored = params["node"]["stored_entities"]
-    print(">>> ", params)
     # Expect union of two selectors:
     # 1) AND tag in ["A"] -> [wing, fuselage]
     # 2) OR tag in {B} or matches 'A' -> pool-order union -> [wing, tail, fuselage]

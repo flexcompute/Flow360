@@ -522,8 +522,8 @@ def validate_model(  # pylint: disable=too-many-locals
             # Multi-constructor model support
             updated_param_as_dict = SimulationParams._sanitize_params_dict(updated_param_as_dict)
             updated_param_as_dict, _ = SimulationParams._update_param_dict(updated_param_as_dict)
-            unit_system = updated_param_as_dict.get("unit_system")
 
+            unit_system = updated_param_as_dict.get("unit_system")
             with UnitSystem.from_dict(**unit_system):  # pylint: disable=not-context-manager
                 validated_param = SimulationParams(**updated_param_as_dict)
 
