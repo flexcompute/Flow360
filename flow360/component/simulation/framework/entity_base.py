@@ -319,6 +319,7 @@ class EntityList(Flow360BaseModel, metaclass=_EntityListMeta):
         }
 
     @classmethod
+    # pylint: disable=too-many-arguments
     def _process_single_item(
         cls,
         item: Union[EntityBase, EntitySelector],
