@@ -922,7 +922,6 @@ class BETDiskCoefficientsCSVModel(ResultCSVModel):
         return BETDiskCSVHeaderOperation.format_headers(self, params, pattern)
 
 
-
 class PorousMediumResultCSVModel(OptionallyDownloadableResultCSVModel):
     """Model for handling porous medium CSV results."""
 
