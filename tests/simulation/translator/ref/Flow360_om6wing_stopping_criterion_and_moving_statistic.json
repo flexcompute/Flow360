@@ -85,7 +85,7 @@
     },
     "runControl": {
         "externalProcessMonitorOutput": true,
-        "monitorProcessorHash": "4581ab2e4847a22e8e1af690f2f4d57da76110b57c3ba528eabe7b2ad93e4927",
+        "monitorProcessorHash": "358a3ff400394b995bfcf89b31f949f232c4bea45f9cea3e11bc9a4a713c9a78",
         "stoppingCriteria": [
             {
                 "monitoredColumn": "point_legacy1_Point1_Helicity_mean",
