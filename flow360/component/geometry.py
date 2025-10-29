@@ -18,7 +18,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.geometry_tree import GeometryTree, TreeNode
+from flow360.component.geometry_tree import GeometryTree, NodeCollection, TreeNode, TreeSearch
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -618,10 +618,13 @@ class Geometry(AssetBase):
 
         log.info(f"Loaded Geometry tree with {len(self._tree.all_faces)} faces")
 
-    #    def group_faces_by_body(self) -> None:
+        #body_nodes = self.tree_root.search(type = NodeType.RiBrepModel)
 
 
-    def create_face_group(self, name: str, selection: List[TreeNode]) -> List[str]:
+
+    def create_face_group(
+        self, name: str, selection: Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+    ) -> List[str]:
         """
         Create a face group based on explicit selection of tree nodes
 
@@ -632,10 +635,14 @@ class Geometry(AssetBase):
         ----------
         name : str
             Name of the face group
-        selection : List[TreeNode]
-            List of tree nodes to include in the group. All faces under these nodes
-            (recursively) will be added to the group. Typically obtained from
-            tree_root.search() method.
+        selection : Union[TreeNode, List[TreeNode], NodeCollection, TreeSearch]
+            Can be one of:
+            - TreeSearch instance (returned from tree_root.search()) - will be executed internally
+            - NodeCollection (returned from tree_root.children()) - nodes will be extracted
+            - Single TreeNode - all faces under this node will be included
+            - List of TreeNode instances - all faces under these nodes will be included
+            
+            All faces under the selected nodes (recursively) will be added to the group.
 
         Returns
         -------
@@ -645,20 +652,53 @@ class Geometry(AssetBase):
         Examples
         --------
         >>> from flow360.component.geometry_tree import NodeType
-        >>> # Search for nodes and create face group from selection
-        >>> wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*")
-        >>> geometry.create_face_group(name="wing", selection=wing_nodes)
+        >>> 
+        >>> # Using TreeSearch (recommended - captures intent declaratively)
+        >>> geometry.create_face_group(
+        ...     name="wing",
+        ...     selection=geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*")
+        ... )
+        >>> 
+        >>> # Using children() chaining (fluent navigation with exact matching)
+        >>> geometry.create_face_group(
+        ...     name="body",
+        ...     selection=geometry.tree_root.children().children().children(
+        ...         type=NodeType.FRMFeatureBasedEntity
+        ...     ).children().children(type=NodeType.FRMFeature, name="body_main")
+        ... )
+        >>> 
+        >>> # Using a single TreeNode directly
+        >>> wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="wing").execute()
+        >>> geometry.create_face_group(name="single_wing", selection=wing_nodes[0])
+        >>> 
+        >>> # Using a list of TreeNodes
+        >>> all_wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*").execute()
+        >>> geometry.create_face_group(name="all_wings", selection=all_wing_nodes)
         """
         if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
             )
 
+        # Handle different selection types
+        if isinstance(selection, TreeSearch):
+            # Execute TreeSearch to get nodes
+            selected_nodes = selection.execute()
+        elif isinstance(selection, NodeCollection):
+            # Extract nodes from NodeCollection
+            selected_nodes = selection.nodes
+        elif isinstance(selection, TreeNode):
+            # Wrap single node in a list
+            selected_nodes = [selection]
+        else:
+            # Already a list of nodes
+            selected_nodes = selection
+
         # Collect faces from selected nodes
         group_faces = []
         new_face_uuids = set()
         
-        for node in selection:
+        for node in selected_nodes:
             faces = node.get_all_faces()
             for face in faces:
                 if face.uuid:

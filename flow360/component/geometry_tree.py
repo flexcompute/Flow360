@@ -46,12 +46,12 @@ class TreeNode:
         self.attributes = attributes
         self.colorRGB = colorRGB
         self.material = material
-        self.children = children
+        self._children = children  # Renamed to avoid conflict with children() method
         self.parent: Optional[TreeNode] = None
         self.uuid = None
         if FLOW360_UUID_ATTRIBUTE_KEY in attributes:
             self.uuid = attributes[FLOW360_UUID_ATTRIBUTE_KEY]
-        for child in self.children:
+        for child in self._children:
             child.parent = self
 
     @classmethod
@@ -86,7 +86,7 @@ class TreeNode:
         uuid_to_face = {}
         if self.type == NodeType.TopoFace:
             uuid_to_face[self.uuid] = self
-        for child in self.children:
+        for child in self._children:
             uuid_to_face.update(child.get_uuid_to_face())
         return uuid_to_face
 
@@ -106,7 +106,7 @@ class TreeNode:
         faces = []
         if self.type == NodeType.TopoFace or self.type == NodeType.TopoFacePointer:
             faces.append(self)
-        for child in self.children:
+        for child in self._children:
             faces.extend(child.get_all_faces())
         return faces
 
@@ -117,9 +117,13 @@ class TreeNode:
         colorRGB: Optional[str] = None,
         material: Optional[str] = None,
         attributes: Optional[Dict[str, str]] = None,
-    ) -> List[TreeNode]:
+    ) -> "TreeSearch":
         """
-        Search for nodes in the subtree matching the given criteria.
+        Create a deferred search operation for nodes in the subtree matching the given criteria.
+
+        This method returns a TreeSearch instance that captures the search criteria
+        but does not execute the search immediately. The search is executed when
+        the TreeSearch instance is used (e.g., in create_face_group()).
 
         Supports wildcard matching for name using '*' character.
         All criteria are ANDed together.
@@ -143,71 +147,317 @@ class TreeNode:
 
         Returns
         -------
-        List[TreeNode]
-            List of matching nodes in the subtree
+        TreeSearch
+            A TreeSearch instance that can be executed later
 
         Examples
         --------
-        >>> # Search for all FRMFeature nodes with "wing" in the name
-        >>> nodes = root.search(type=NodeType.FRMFeature, name="*wing*")
+        >>> # Create a search for FRMFeature nodes with "wing" in the name
+        >>> wing_search = root.search(type=NodeType.FRMFeature, name="*wing*")
         >>>
-        >>> # Search for nodes with specific attribute
-        >>> nodes = root.search(attributes={"Flow360UUID": "abc123"})
+        >>> # Pass to create_face_group (will execute internally)
+        >>> geometry.create_face_group(name="wing", selection=wing_search)
         >>>
-        >>> # Search for nodes with specific material
-        >>> nodes = root.search(material="aluminum")
+        >>> # Or execute manually to get nodes
+        >>> wing_nodes = wing_search.execute()
+        """
+        return TreeSearch(
+            node=self,
+            type=type,
+            name=name,
+            colorRGB=colorRGB,
+            material=material,
+            attributes=attributes,
+        )
+
+    def children(
+        self,
+        type: Optional[Union[NodeType, str]] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ) -> "NodeCollection":
+        """
+        Get children of this node, optionally filtered by exact criteria.
+        
+        This method filters only the direct children (not the entire subtree) using
+        exact matching - no wildcards or patterns. It's designed for certain navigation
+        like clicking through folders in a file system.
+        
+        For pattern matching and recursive search, use .search() instead.
+        
+        Returns a NodeCollection that supports further chaining via .children() calls.
+        
+        Parameters
+        ----------
+        type : Optional[Union[NodeType, str]]
+            Node type to filter by (exact match, e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Exact name to match (no wildcards)
+        colorRGB : Optional[str]
+            Exact RGB color string to match
+        material : Optional[str]
+            Exact material name to match (no wildcards)
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match (exact matches)
+            
+        Returns
+        -------
+        NodeCollection
+            Collection of direct child nodes matching the criteria
+            
+        Examples
+        --------
+        >>> # Get all direct children
+        >>> all_children = node.children()
+        >>> 
+        >>> # Get children of specific type (exact match)
+        >>> features = node.children(type=NodeType.FRMFeature)
+        >>> 
+        >>> # Chain to navigate tree structure with certainty
+        >>> result = root.children().children().children(
+        ...     type=NodeType.FRMFeature, 
+        ...     name="body_main"  # Exact name, no wildcards
+        ... )
+        """
+        filtered_children = []
+        
+        for child in self._children:
+            match = True
+            
+            # Exact type matching
+            if type is not None:
+                target_type = type.value if isinstance(type, NodeType) else type
+                if child.type.value != target_type:
+                    match = False
+            
+            # Exact name matching (no wildcards)
+            if match and name is not None:
+                if child.name != name:
+                    match = False
+            
+            # Exact colorRGB matching
+            if match and colorRGB is not None:
+                if child.colorRGB != colorRGB:
+                    match = False
+            
+            # Exact material matching (no wildcards)
+            if match and material is not None:
+                if child.material != material:
+                    match = False
+            
+            # Exact attribute matching
+            if match and attributes is not None:
+                for key, value in attributes.items():
+                    if child.attributes.get(key) != value:
+                        match = False
+                        break
+            
+            if match:
+                filtered_children.append(child)
+        
+        return NodeCollection(filtered_children)
+
+    def __repr__(self):
+        return f"TreeNode(type={self.type.value}, name={self.name})"
+
+
+class NodeCollection:
+    """
+    A collection of TreeNode objects that supports method chaining.
+    
+    This class wraps one or more TreeNode objects and provides a .children()
+    method to enable fluent tree navigation patterns like:
+    root.children().children().children(type=NodeType.FRMFeature)
+    """
+    
+    def __init__(self, nodes: List[TreeNode]):
+        """
+        Initialize a NodeCollection with a list of nodes.
+        
+        Parameters
+        ----------
+        nodes : List[TreeNode]
+            List of TreeNode objects to wrap
+        """
+        self._nodes = nodes if isinstance(nodes, list) else [nodes]
+    
+    @property
+    def nodes(self) -> List[TreeNode]:
+        """Get the list of nodes in this collection"""
+        return self._nodes
+    
+    def children(
+        self,
+        type: Optional[Union[NodeType, str]] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ) -> "NodeCollection":
+        """
+        Get all children from all nodes in this collection, optionally filtered by exact criteria.
+        
+        Uses exact matching only (no wildcards or patterns) for certain navigation.
+        This enables chaining like: collection.children().children(type=...)
+        
+        For pattern matching, use .search() on individual nodes instead.
+        
+        Parameters
+        ----------
+        type : Optional[Union[NodeType, str]]
+            Node type to filter by (exact match)
+        name : Optional[str]
+            Exact name to match (no wildcards)
+        colorRGB : Optional[str]
+            Exact RGB color string to match
+        material : Optional[str]
+            Exact material name to match (no wildcards)
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match (exact matches)
+            
+        Returns
+        -------
+        NodeCollection
+            New collection containing children from all nodes
+        """
+        all_children = []
+        for node in self._nodes:
+            # Use the TreeNode.children() method which handles exact matching
+            child_collection = node.children(
+                type=type, name=name, colorRGB=colorRGB, material=material, attributes=attributes
+            )
+            all_children.extend(child_collection.nodes)
+        
+        return NodeCollection(all_children)
+    
+    def __len__(self) -> int:
+        """Return the number of nodes in this collection"""
+        return len(self._nodes)
+    
+    def __iter__(self):
+        """Make the collection iterable"""
+        return iter(self._nodes)
+    
+    def __getitem__(self, index: int) -> TreeNode:
+        """Allow indexing into the collection"""
+        return self._nodes[index]
+    
+    def __repr__(self):
+        return f"NodeCollection({len(self._nodes)} nodes)"
+
+
+class TreeSearch:
+    """
+    Represents a deferred tree search operation.
+    
+    This class captures search criteria and the node from which to search,
+    but does not execute the search until explicitly requested via execute().
+    This allows for lazy evaluation and cleaner API usage.
+    """
+
+    def __init__(
+        self,
+        node: TreeNode,
+        type: Optional[Union[NodeType, str]] = None,
+        name: Optional[str] = None,
+        colorRGB: Optional[str] = None,
+        material: Optional[str] = None,
+        attributes: Optional[Dict[str, str]] = None,
+    ):
+        """
+        Initialize a TreeSearch with search criteria.
+
+        Parameters
+        ----------
+        node : TreeNode
+            The node from which to start the search (searches its subtree)
+        type : Optional[Union[NodeType, str]]
+            Node type to match (e.g., NodeType.FRMFeature)
+        name : Optional[str]
+            Name pattern to match. Supports wildcards (e.g., "*wing*")
+        colorRGB : Optional[str]
+            RGB color string to match (e.g., "255,0,0")
+        material : Optional[str]
+            Material name to match. Supports wildcards.
+        attributes : Optional[Dict[str, str]]
+            Dictionary of attribute key-value pairs to match
+        """
+        self.node = node
+        self.type = type
+        self.name = name
+        self.colorRGB = colorRGB
+        self.material = material
+        self.attributes = attributes
+
+    def execute(self) -> List[TreeNode]:
+        """
+        Execute the search and return matching nodes.
+
+        Returns
+        -------
+        List[TreeNode]
+            List of nodes matching the search criteria
         """
         import fnmatch
 
         matches = []
 
-        # Check if this node matches all criteria
-        match = True
+        def search_recursive(current_node: TreeNode):
+            # Check if this node matches all criteria
+            match = True
 
-        if type is not None:
-            target_type = type.value if isinstance(type, NodeType) else type
-            if self.type.value != target_type:
-                match = False
-
-        if match and name is not None:
-            # Use fnmatch for wildcard matching (case-insensitive)
-            if not fnmatch.fnmatch(self.name.lower(), name.lower()):
-                match = False
-
-        if match and colorRGB is not None:
-            if self.colorRGB != colorRGB:
-                match = False
-
-        if match and material is not None:
-            # Support wildcard matching for material
-            if not fnmatch.fnmatch(self.material.lower(), material.lower()):
-                match = False
-
-        if match and attributes is not None:
-            for key, value in attributes.items():
-                if self.attributes.get(key) != value:
+            if self.type is not None:
+                target_type = self.type.value if isinstance(self.type, NodeType) else self.type
+                if current_node.type.value != target_type:
                     match = False
-                    break
 
-        if match:
-            matches.append(self)
+            if match and self.name is not None:
+                # Use fnmatch for wildcard matching (case-insensitive)
+                if not fnmatch.fnmatch(current_node.name.lower(), self.name.lower()):
+                    match = False
 
-        # Recursively search children
-        for child in self.children:
-            matches.extend(
-                child.search(
-                    type=type,
-                    name=name,
-                    colorRGB=colorRGB,
-                    material=material,
-                    attributes=attributes,
-                )
-            )
+            if match and self.colorRGB is not None:
+                if current_node.colorRGB != self.colorRGB:
+                    match = False
 
+            if match and self.material is not None:
+                # Support wildcard matching for material
+                if not fnmatch.fnmatch(current_node.material.lower(), self.material.lower()):
+                    match = False
+
+            if match and self.attributes is not None:
+                for key, value in self.attributes.items():
+                    if current_node.attributes.get(key) != value:
+                        match = False
+                        break
+
+            if match:
+                matches.append(current_node)
+
+            # Recursively search children
+            for child in current_node._children:
+                search_recursive(child)
+
+        search_recursive(self.node)
         return matches
 
     def __repr__(self):
-        return f"TreeNode(type={self.type.value}, name={self.name})"
+        criteria = []
+        if self.type is not None:
+            type_str = self.type.value if isinstance(self.type, NodeType) else self.type
+            criteria.append(f"type={type_str}")
+        if self.name is not None:
+            criteria.append(f"name='{self.name}'")
+        if self.colorRGB is not None:
+            criteria.append(f"colorRGB='{self.colorRGB}'")
+        if self.material is not None:
+            criteria.append(f"material='{self.material}'")
+        if self.attributes is not None:
+            criteria.append(f"attributes={self.attributes}")
+        criteria_str = ", ".join(criteria)
+        return f"TreeSearch({criteria_str})"
 
 
 class GeometryTree:
