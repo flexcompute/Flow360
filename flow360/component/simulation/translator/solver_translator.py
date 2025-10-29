@@ -1509,12 +1509,18 @@ def calculate_monitor_semaphore_hash(params: SimulationParams):
         for output in params.outputs:
             if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
                 continue
-            if output.moving_statistic is None:
-                continue
-            json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
-    if params.run_control and params.run_control.stopping_criteria:
-        for criterion in params.run_control.stopping_criteria:
-            json_string_list.append(json.dumps(dump_dict(criterion)))
+            if isinstance(output, ForceOutput):
+                json_string_list.extend(
+                    [
+                        json.dumps(dump_dict(model))
+                        for model in sorted(
+                            output.models, key=lambda x: (x.type, x.name, x.private_attribute_id)
+                        )
+                    ]
+                )
+                json_string_list.extend(output.output_fields.items)
+            if output.moving_statistic is not None:
+                json_string_list.append(json.dumps(dump_dict(output.moving_statistic)))
     combined_string = "".join(sorted(json_string_list))
     hasher = hashlib.sha256()
     hasher.update(combined_string.encode("utf-8"))
@@ -2015,10 +2021,9 @@ def get_columnar_data_processor_json(
     """
     Get the columnar data processor json from the simulation parameters.
     """
-    translated = {}
+    translated = {"outputs": []}
     if not input_params.outputs:
         return translated
-    monitor_outputs = []
     for output in input_params.outputs:
         if not isinstance(output, get_args(get_args(MonitorOutputType)[0])):
             continue
@@ -2028,6 +2033,5 @@ def get_columnar_data_processor_json(
             exclude_none=True,
             context={"columnar_data_processor": True},
         )
-        monitor_outputs.append(output_dict)
-    translated["outputs"] = monitor_outputs
+        translated["outputs"].append(output_dict)
     return translated
