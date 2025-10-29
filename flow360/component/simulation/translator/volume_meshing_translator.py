@@ -1,6 +1,6 @@
 """Volume meshing parameter translator."""
 
-from typing import Type, Union
+from typing import Union
 
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -222,19 +222,13 @@ def _get_custom_volumes(volume_zones: list):
     return custom_volumes
 
 
-def init_mesh_output_base(obj_list, class_type: Type):
-    """Initialize the common output attribute."""
-    base = {}
-    return base
-
-
 def translate_mesh_slice_output(
     output_params: list,
     output_class: Union[MeshSliceOutput],
     injection_function,
 ):
     """Translate slice or isosurface output settings."""
-    translated_output = init_mesh_output_base(output_params, output_class)
+    translated_output = {}
     translated_output["slices"] = translate_setting_and_apply_to_all_entities(
         output_params,
         output_class,

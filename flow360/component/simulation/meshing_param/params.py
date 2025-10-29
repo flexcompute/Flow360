@@ -299,10 +299,9 @@ class MeshingParams(Flow360BaseModel):
     )
 
     # Meshing outputs (for now, volume mesh slices)
-    # TODO: update the :ref: part?
     outputs: Optional[List[MeshOutputTypes]] = pd.Field(
         [],
-        description="Mesh output settings. See :ref:`Outputs <outputs>` for more details.",
+        description="Mesh output settings.",
     )
 
     @pd.field_validator("volume_zones", mode="after")

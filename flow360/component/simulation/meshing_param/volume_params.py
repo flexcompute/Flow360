@@ -476,7 +476,7 @@ class UserDefinedFarfield(_FarfieldBase):
 
 class MeshSliceOutput(Flow360BaseModel):
     """
-    :class:`MeshSliceOutput` class for slice output settings.
+    :class:`MeshSliceOutput` class for mesh slice output settings.
 
     Example
     -------
@@ -489,8 +489,6 @@ class MeshSliceOutput(Flow360BaseModel):
     ...             origin=(0, 0.56, 0)*fl.u.m
     ...         ),
     ...     ],
-    ...     output_format="paraview",
-    ...     output_fields=["vorticity", "T"],
     ... )
 
     ====
@@ -503,4 +501,4 @@ class MeshSliceOutput(Flow360BaseModel):
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
     )
-    output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
+    mesh_output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
