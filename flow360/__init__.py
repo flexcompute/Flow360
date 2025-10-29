@@ -36,6 +36,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    MeshSliceOutput,
 )
 from flow360.component.simulation.models.material import (
     Air,
@@ -187,6 +188,7 @@ __all__ = [
     "Accounts",
     "Project",
     "u",
+    "MeshSliceOutput",
     "SimulationParams",
     "SI_unit_system",
     "imperial_unit_system",

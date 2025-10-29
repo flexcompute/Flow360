@@ -23,6 +23,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    MeshSliceOutput,
 )
 from flow360.component.simulation.primitives import CustomVolume
 from flow360.component.simulation.unit_system import AngleType, LengthType
@@ -58,6 +59,11 @@ VolumeZonesTypes = Annotated[
         CustomVolume,
     ],
     pd.Field(discriminator="type"),
+]
+
+MeshOutputTypes = Annotated[
+    Union[MeshSliceOutput,],
+    pd.Field(discriminator="mesh_output_type"),
 ]
 
 
@@ -290,6 +296,13 @@ class MeshingParams(Flow360BaseModel):
     # Will add more to the Union
     volume_zones: Optional[List[VolumeZonesTypes]] = pd.Field(
         default=None, description="Creation of new volume zones."
+    )
+
+    # Meshing outputs (for now, volume mesh slices)
+    # TODO: update the :ref: part?
+    outputs: Optional[List[MeshOutputTypes]] = pd.Field(
+        [],
+        description="Mesh output settings. See :ref:`Outputs <outputs>` for more details.",
     )
 
     @pd.field_validator("volume_zones", mode="after")

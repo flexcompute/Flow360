@@ -26,6 +26,8 @@ from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
 
+from flow360.component.simulation.outputs.output_entities import Slice
+
 
 class UniformRefinement(Flow360BaseModel):
     """
@@ -471,3 +473,35 @@ class UserDefinedFarfield(_FarfieldBase):
         Warning: This should only be used when using GAI and beta mesher.
         """
         return GhostSurface(name="symmetric")
+
+
+class MeshSliceOutput(Flow360BaseModel):
+    """
+    :class:`MeshSliceOutput` class for slice output settings.
+
+    Example
+    -------
+
+    >>> fl.MeshSliceOutput(
+    ...     slices=[
+    ...         fl.Slice(
+    ...             name="Slice_1",
+    ...             normal=(0, 1, 0),
+    ...             origin=(0, 0.56, 0)*fl.u.m
+    ...         ),
+    ...     ],
+    ...     output_format="paraview",
+    ...     output_fields=["vorticity", "T"],
+    ... )
+
+    ====
+    """
+
+    name: Optional[str] = pd.Field(
+        "Mesh slice output", description="Name of the `MeshSliceOutput`."
+    )
+    entities: EntityList[Slice] = pd.Field(
+        alias="slices",
+        description="List of output :class:`~flow360.Slice` entities.",
+    )
+    output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)

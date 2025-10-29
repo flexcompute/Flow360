@@ -1,6 +1,6 @@
 """Volume meshing parameter translator."""
 
-from typing import Union
+from typing import Union, Type
 
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -15,6 +15,7 @@ from flow360.component.simulation.meshing_param.volume_params import (
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
+    MeshSliceOutput,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -28,6 +29,12 @@ from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
+    has_instance_in_list,
+)
+
+from flow360.component.simulation.translator.solver_translator import (
+    inject_slice_info,
+    add_unused_output_settings_for_comparison,
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError
@@ -216,6 +223,29 @@ def _get_custom_volumes(volume_zones: list):
     return custom_volumes
 
 
+def init_mesh_output_base(obj_list, class_type: Type):
+    """Initialize the common output attribute."""
+    base = {}
+    return base
+
+
+def translate_mesh_slice_output(
+    output_params: list,
+    output_class: Union[MeshSliceOutput],
+    injection_function,
+):
+    """Translate slice or isosurface output settings."""
+    translated_output = init_mesh_output_base(output_params, output_class)
+    translated_output["slices"] = translate_setting_and_apply_to_all_entities(
+        output_params,
+        output_class,
+        translation_func=lambda x: {},
+        to_list=False,
+        entity_injection_func=injection_function,
+    )
+    return translated_output
+
+
 @preprocess_input
 # pylint: disable=unused-argument,too-many-branches,too-many-statements
 def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
@@ -395,5 +425,19 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
     custom_volumes = _get_custom_volumes(meshing_params.volume_zones)
     if custom_volumes:
         translated["zones"] = custom_volumes
+
+    ##::  Step 7: Get meshing output fields
+    outputs = input_params.meshing.outputs
+
+    mesh_slice_output_configs = [
+        (MeshSliceOutput, "meshSliceOutput"),
+    ]
+    for output_class, output_key in mesh_slice_output_configs:
+        print(output_class)
+        print(output_key)
+        if has_instance_in_list(outputs, output_class):
+            slice_output = translate_mesh_slice_output(outputs, output_class, inject_slice_info)
+            if slice_output:
+                translated[output_key] = add_unused_output_settings_for_comparison(slice_output)
 
     return translated
