@@ -13,7 +13,6 @@ from flow360.component.simulation.conversion import (
     compute_udf_dimensionalization_factor,
 )
 from flow360.component.simulation.framework.entity_base import EntityList
-from flow360.component.simulation.framework.updater_utils import recursive_remove_key
 from flow360.component.simulation.models.material import Sutherland
 from flow360.component.simulation.models.solver_numerics import NoneSolver
 from flow360.component.simulation.models.surface_models import (
@@ -2027,10 +2026,8 @@ def get_columnar_data_processor_json(
             continue
         output_dict = output.model_dump(
             exclude_none=True,
-            exclude="private_attribute_id",
             context={"columnar_data_processor": True},
         )
-        recursive_remove_key(output_dict, "private_attribute_id")
         monitor_outputs.append(output_dict)
     translated["outputs"] = monitor_outputs
     return translated
