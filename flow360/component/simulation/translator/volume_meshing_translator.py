@@ -1,6 +1,6 @@
 """Volume meshing parameter translator."""
 
-from typing import Union, Type
+from typing import Type, Union
 
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
@@ -10,12 +10,12 @@ from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
     AxisymmetricRefinementBase,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
-    MeshSliceOutput,
 )
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
@@ -25,16 +25,15 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
+from flow360.component.simulation.translator.solver_translator import (
+    add_unused_output_settings_for_comparison,
+    inject_slice_info,
+)
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
+    has_instance_in_list,
     preprocess_input,
     translate_setting_and_apply_to_all_entities,
-    has_instance_in_list,
-)
-
-from flow360.component.simulation.translator.solver_translator import (
-    inject_slice_info,
-    add_unused_output_settings_for_comparison,
 )
 from flow360.component.simulation.utils import is_exact_instance
 from flow360.exceptions import Flow360TranslationError

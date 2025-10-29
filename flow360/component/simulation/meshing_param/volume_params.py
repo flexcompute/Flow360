@@ -10,6 +10,7 @@ from typing_extensions import deprecated
 
 from flow360.component.simulation.framework.base_model import Flow360BaseModel
 from flow360.component.simulation.framework.entity_base import EntityList
+from flow360.component.simulation.outputs.output_entities import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
@@ -25,8 +26,6 @@ from flow360.component.simulation.validation.validation_context import (
 from flow360.component.simulation.validation.validation_utils import (
     check_deleted_surface_in_entity_list,
 )
-
-from flow360.component.simulation.outputs.output_entities import Slice
 
 
 class UniformRefinement(Flow360BaseModel):

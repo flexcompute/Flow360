@@ -31,12 +31,12 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
-    MeshSliceOutput,
 )
 from flow360.component.simulation.models.material import (
     Air,
