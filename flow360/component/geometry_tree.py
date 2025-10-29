@@ -112,7 +112,7 @@ class TreeNode:
 
     def search(
         self,
-        type: Optional[Union[NodeType, str]] = None,
+        type: Optional[NodeType] = None,
         name: Optional[str] = None,
         colorRGB: Optional[str] = None,
         material: Optional[str] = None,
@@ -130,7 +130,7 @@ class TreeNode:
 
         Parameters
         ----------
-        type : Optional[Union[NodeType, str]]
+        type : Optional[NodeType]
             Node type to match (e.g., NodeType.FRMFeature)
         name : Optional[str]
             Name pattern to match. Supports wildcards:
@@ -172,7 +172,7 @@ class TreeNode:
 
     def children(
         self,
-        type: Optional[Union[NodeType, str]] = None,
+        type: Optional[NodeType] = None,
         name: Optional[str] = None,
         colorRGB: Optional[str] = None,
         material: Optional[str] = None,
@@ -191,7 +191,7 @@ class TreeNode:
         
         Parameters
         ----------
-        type : Optional[Union[NodeType, str]]
+        type : Optional[NodeType]
             Node type to filter by (exact match, e.g., NodeType.FRMFeature)
         name : Optional[str]
             Exact name to match (no wildcards)
@@ -228,8 +228,7 @@ class TreeNode:
             
             # Exact type matching
             if type is not None:
-                target_type = type.value if isinstance(type, NodeType) else type
-                if child.type.value != target_type:
+                if child.type != type:
                     match = False
             
             # Exact name matching (no wildcards)
@@ -290,7 +289,7 @@ class NodeCollection:
     
     def children(
         self,
-        type: Optional[Union[NodeType, str]] = None,
+        type: Optional[NodeType] = None,
         name: Optional[str] = None,
         colorRGB: Optional[str] = None,
         material: Optional[str] = None,
@@ -306,7 +305,7 @@ class NodeCollection:
         
         Parameters
         ----------
-        type : Optional[Union[NodeType, str]]
+        type : Optional[NodeType]
             Node type to filter by (exact match)
         name : Optional[str]
             Exact name to match (no wildcards)
@@ -360,7 +359,7 @@ class TreeSearch:
     def __init__(
         self,
         node: TreeNode,
-        type: Optional[Union[NodeType, str]] = None,
+        type: Optional[NodeType] = None,
         name: Optional[str] = None,
         colorRGB: Optional[str] = None,
         material: Optional[str] = None,
@@ -373,7 +372,7 @@ class TreeSearch:
         ----------
         node : TreeNode
             The node from which to start the search (searches its subtree)
-        type : Optional[Union[NodeType, str]]
+        type : Optional[NodeType]
             Node type to match (e.g., NodeType.FRMFeature)
         name : Optional[str]
             Name pattern to match. Supports wildcards (e.g., "*wing*")
@@ -409,8 +408,7 @@ class TreeSearch:
             match = True
 
             if self.type is not None:
-                target_type = self.type.value if isinstance(self.type, NodeType) else self.type
-                if current_node.type.value != target_type:
+                if current_node.type != self.type:
                     match = False
 
             if match and self.name is not None:
@@ -446,8 +444,7 @@ class TreeSearch:
     def __repr__(self):
         criteria = []
         if self.type is not None:
-            type_str = self.type.value if isinstance(self.type, NodeType) else self.type
-            criteria.append(f"type={type_str}")
+            criteria.append(f"type={self.type.value}")
         if self.name is not None:
             criteria.append(f"name='{self.name}'")
         if self.colorRGB is not None:
