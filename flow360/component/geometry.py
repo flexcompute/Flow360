@@ -18,7 +18,7 @@ from flow360.cloud.flow360_requests import (
 )
 from flow360.cloud.heartbeat import post_upload_heartbeat
 from flow360.cloud.rest_api import RestApi
-from flow360.component.geometry_tree import FilterExpression, GeometryTree, TreeNode
+from flow360.component.geometry_tree import GeometryTree, TreeNode
 from flow360.component.interfaces import GeometryInterface
 from flow360.component.resource_base import (
     AssetMetaBaseModelV2,
@@ -239,7 +239,7 @@ class Geometry(AssetBase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._geometry_tree: Optional[GeometryTree] = None
+        self._tree: Optional[GeometryTree] = None
         self._face_to_group: Dict[str, str] = {}  # face_uuid -> group_name
         self._face_groups: Dict[str, List[TreeNode]] = {}  # group_name -> list of faces
 
@@ -593,11 +593,11 @@ class Geometry(AssetBase):
         Flow360ValueError
             If geometry tree has not been loaded yet
         """
-        if self._geometry_tree is None:
+        if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
             )
-        return self._geometry_tree.root
+        return self._tree.root
 
     def load_geometry_tree(self, tree_json_path: str) -> None:
         """
@@ -613,10 +613,13 @@ class Geometry(AssetBase):
         >>> geometry = Geometry.from_cloud("geom_id")
         >>> geometry.load_geometry_tree("tree.json")
         """
-        self._geometry_tree = GeometryTree(tree_json_path)
+        self._tree = GeometryTree(tree_json_path)
         ## create default face gruoping  by body
 
-        log.info(f"Loaded Geometry tree with {len(self._geometry_tree.all_faces)} faces")
+        log.info(f"Loaded Geometry tree with {len(self._tree.all_faces)} faces")
+
+    #    def group_faces_by_body(self) -> None:
+
 
     def create_face_group(self, name: str, selection: List[TreeNode]) -> List[str]:
         """
@@ -646,7 +649,7 @@ class Geometry(AssetBase):
         >>> wing_nodes = geometry.tree_root.search(type=NodeType.FRMFeature, name="*wing*")
         >>> geometry.create_face_group(name="wing", selection=wing_nodes)
         """
-        if self._geometry_tree is None:
+        if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
             )
@@ -714,12 +717,12 @@ class Geometry(AssetBase):
           - tail: 18 faces
         =================================
         """
-        if self._geometry_tree is None:
+        if self._tree is None:
             raise Flow360ValueError(
                 "Geometry tree not loaded. Call load_geometry_tree() first with path to tree.json"
             )
         
-        total_faces = len(self._geometry_tree.all_faces)
+        total_faces = len(self._tree.all_faces)
         faces_in_groups = sum(len(faces) for faces in self._face_groups.values())
 
         print(f"\n=== Face Grouping Statistics ===")
