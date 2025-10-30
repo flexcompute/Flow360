@@ -34,6 +34,7 @@ from flow360.component.simulation.meshing_param.params import (
     MeshingParams,
     ModularMeshingWorkflow
 )
+from flow360.component.simulation.meshing_param import snappy
 
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
