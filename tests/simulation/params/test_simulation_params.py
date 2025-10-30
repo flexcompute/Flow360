@@ -13,15 +13,11 @@ from flow360.component.simulation.entity_info import (
 )
 from flow360.component.simulation.framework.entity_registry import EntityRegistry
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.params import (
     MeshingDefaults,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingDefaults,
-    SnappySurfaceMeshingParams,
-)
-from flow360.component.simulation.meshing_param.surface_mesh_refinements import (
-    SnappySurfaceEdgeRefinement,
 )
 from flow360.component.simulation.meshing_param.volume_params import UniformRefinement
 from flow360.component.simulation.migration.extra_operating_condition import (
@@ -222,12 +218,12 @@ def get_param_with_list_of_lengths():
     with SI_unit_system:
         params = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=10 * u.mm, max_spacing=2 * u.m, gap_resolution=0.01 * u.m
                     ),
                     refinements=[
-                        SnappySurfaceEdgeRefinement(
+                        snappy.SurfaceEdgeRefinement(
                             spacing=[1e-3, 8] * u.m,
                             distances=[0.4 * u.mm, 2 * u.m],
                             regions=[Surface(name="test")],

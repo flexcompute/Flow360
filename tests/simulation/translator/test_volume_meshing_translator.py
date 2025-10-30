@@ -2,20 +2,19 @@ import pytest
 
 import flow360.component.simulation.units as u
 from flow360.component.simulation.framework.param_utils import AssetCache
+from flow360.component.simulation.meshing_param import snappy
 from flow360.component.simulation.meshing_param.face_params import (
     BoundaryLayer,
     PassiveSpacing,
 )
 from flow360.component.simulation.meshing_param.meshing_specs import (
-    BetaVolumeMeshingDefaults,
     MeshingDefaults,
-    SnappySurfaceMeshingDefaults,
+    VolumeMeshingDefaults,
 )
 from flow360.component.simulation.meshing_param.params import (
-    BetaVolumeMeshingParams,
     MeshingParams,
     ModularMeshingWorkflow,
-    SnappySurfaceMeshingParams,
+    VolumeMeshingParams,
 )
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
@@ -341,8 +340,8 @@ def get_test_param_modular():
         )
         param = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                volume_meshing=BetaVolumeMeshingParams(
-                    defaults=BetaVolumeMeshingDefaults(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
                         boundary_layer_first_layer_thickness=1.35e-06 * u.m,
                         boundary_layer_growth_rate=1 + 0.04,
                     ),
@@ -450,13 +449,13 @@ def get_test_param_w_seedpoints():
     with SI_unit_system:
         param = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),
-                volume_meshing=BetaVolumeMeshingParams(
-                    defaults=BetaVolumeMeshingDefaults(
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(
                         boundary_layer_first_layer_thickness=1.35e-06 * u.m,
                         boundary_layer_growth_rate=1 + 0.04,
                     ),
@@ -678,13 +677,13 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         )
         params_modular = SimulationParams(
             meshing=ModularMeshingWorkflow(
-                surface_meshing=SnappySurfaceMeshingParams(
-                    defaults=SnappySurfaceMeshingDefaults(
+                surface_meshing=snappy.SurfaceMeshingParams(
+                    defaults=snappy.SurfaceMeshingDefaults(
                         min_spacing=1, max_spacing=2, gap_resolution=1
                     )
                 ),
-                volume_meshing=BetaVolumeMeshingParams(
-                    defaults=BetaVolumeMeshingDefaults(boundary_layer_first_layer_thickness=100),
+                volume_meshing=VolumeMeshingParams(
+                    defaults=VolumeMeshingDefaults(boundary_layer_first_layer_thickness=100),
                 ),
                 zones=[SeedpointZone(point_in_mesh=[0, 0, 0], name="farfield")],
             )
