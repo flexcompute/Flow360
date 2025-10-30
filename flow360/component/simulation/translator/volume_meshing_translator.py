@@ -25,9 +25,7 @@ from flow360.component.simulation.primitives import (
     Surface,
 )
 from flow360.component.simulation.simulation_params import SimulationParams
-from flow360.component.simulation.translator.solver_translator import (
-    inject_slice_info,
-)
+from flow360.component.simulation.translator.solver_translator import inject_slice_info
 from flow360.component.simulation.translator.utils import (
     get_global_setting_from_first_instance,
     has_instance_in_list,
