@@ -26,7 +26,6 @@ from flow360.component.simulation.primitives import (
 )
 from flow360.component.simulation.simulation_params import SimulationParams
 from flow360.component.simulation.translator.solver_translator import (
-    add_unused_output_settings_for_comparison,
     inject_slice_info,
 )
 from flow360.component.simulation.translator.utils import (
@@ -426,11 +425,9 @@ def get_volume_meshing_json(input_params: SimulationParams, mesh_units):
         (MeshSliceOutput, "meshSliceOutput"),
     ]
     for output_class, output_key in mesh_slice_output_configs:
-        print(output_class)
-        print(output_key)
         if has_instance_in_list(outputs, output_class):
             slice_output = translate_mesh_slice_output(outputs, output_class, inject_slice_info)
             if slice_output:
-                translated[output_key] = add_unused_output_settings_for_comparison(slice_output)
+                translated[output_key] = slice_output
 
     return translated

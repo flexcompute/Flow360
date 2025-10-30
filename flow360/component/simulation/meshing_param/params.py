@@ -63,7 +63,7 @@ VolumeZonesTypes = Annotated[
 
 MeshOutputTypes = Annotated[
     Union[MeshSliceOutput,],
-    pd.Field(discriminator="mesh_output_type"),
+    pd.Field(discriminator="output_type"),
 ]
 
 
@@ -299,8 +299,8 @@ class MeshingParams(Flow360BaseModel):
     )
 
     # Meshing outputs (for now, volume mesh slices)
-    outputs: Optional[List[MeshOutputTypes]] = pd.Field(
-        [],
+    outputs: List[MeshOutputTypes] = pd.Field(
+        default=[],
         description="Mesh output settings.",
     )
 

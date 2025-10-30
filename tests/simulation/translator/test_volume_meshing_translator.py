@@ -13,12 +13,14 @@ from flow360.component.simulation.meshing_param.params import (
 from flow360.component.simulation.meshing_param.volume_params import (
     AutomatedFarfield,
     AxisymmetricRefinement,
+    MeshSliceOutput,
     RotationCylinder,
     RotationVolume,
     StructuredBoxRefinement,
     UniformRefinement,
     UserDefinedFarfield,
 )
+from flow360.component.simulation.outputs.outputs import Slice
 from flow360.component.simulation.primitives import (
     AxisymmetricBody,
     Box,
@@ -237,6 +239,23 @@ def get_test_param():
                         spacing_circumferential=20 * u.cm,
                     ),
                 ],
+                outputs=[
+                    MeshSliceOutput(
+                        name="slice_output",
+                        entities=[
+                            Slice(
+                                name=f"test_slice_y_normal",
+                                origin=(0.1, 0.2, 0.3),
+                                normal=(0, 1, 0),
+                            ),
+                            Slice(
+                                name=f"test_slice_z_normal",
+                                origin=(0.6, 0.1, 0.4),
+                                normal=(0, 0, 1),
+                            ),
+                        ],
+                    ),
+                ],
             ),
             private_attribute_asset_cache=AssetCache(use_inhouse_mesher=True),
         )
@@ -406,6 +425,18 @@ def test_param_to_json(get_test_param, get_surface_mesh):
                 "patches": ["interface1", "interface2"],
             }
         ],
+        "meshSliceOutput": {
+            "slices": {
+                "test_slice_y_normal": {
+                    "sliceOrigin": [0.1, 0.2, 0.3],
+                    "sliceNormal": [0.0, 1.0, 0.0],
+                },
+                "test_slice_z_normal": {
+                    "sliceOrigin": [0.6, 0.1, 0.4],
+                    "sliceNormal": [0.0, 0.0, 1.0],
+                },
+            }
+        },
     }
 
     assert sorted(translated.items()) == sorted(ref_dict.items())

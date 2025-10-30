@@ -484,38 +484,6 @@ class TimeAverageSliceOutput(SliceOutput):
     output_type: Literal["TimeAverageSliceOutput"] = pd.Field("TimeAverageSliceOutput", frozen=True)
 
 
-class MeshSliceOutput(Flow360BaseModel):
-    """
-    :class:`MeshSliceOutput` class for slice output settings.
-
-    Example
-    -------
-
-    >>> fl.MeshSliceOutput(
-    ...     slices=[
-    ...         fl.Slice(
-    ...             name="Slice_1",
-    ...             normal=(0, 1, 0),
-    ...             origin=(0, 0.56, 0)*fl.u.m
-    ...         ),
-    ...     ],
-    ...     output_format="paraview",
-    ...     output_fields=["vorticity", "T"],
-    ... )
-
-    ====
-    """
-
-    name: Optional[str] = pd.Field(
-        "Mesh slice output", description="Name of the `MeshSliceOutput`."
-    )
-    entities: EntityList[Slice] = pd.Field(
-        alias="slices",
-        description="List of output :class:`~flow360.Slice` entities.",
-    )
-    output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
-
-
 class IsosurfaceOutput(_AnimationAndFileFormatSettings):
     """
 

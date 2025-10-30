@@ -27,7 +27,6 @@ DISCRIMINATOR_NAMES = [
     "type_name",
     "refinement_type",
     "output_type",
-    "mesh_output_type",
     "private_attribute_entity_type_name",
 ]
 

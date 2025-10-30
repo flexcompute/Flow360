@@ -501,4 +501,4 @@ class MeshSliceOutput(Flow360BaseModel):
         alias="slices",
         description="List of output :class:`~flow360.Slice` entities.",
     )
-    mesh_output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
+    output_type: Literal["MeshSliceOutput"] = pd.Field("MeshSliceOutput", frozen=True)
