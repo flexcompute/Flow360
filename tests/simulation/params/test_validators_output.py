@@ -14,7 +14,7 @@ from flow360.component.simulation.models.solver_numerics import (
     SpalartAllmaras,
 )
 from flow360.component.simulation.models.surface_models import Wall
-from flow360.component.simulation.models.volume_models import Fluid
+from flow360.component.simulation.models.volume_models import Fluid, PorousMedium
 from flow360.component.simulation.outputs.output_entities import Point
 from flow360.component.simulation.outputs.outputs import (
     AeroAcousticOutput,
@@ -45,7 +45,17 @@ from flow360.component.simulation.unit_system import (
 from flow360.component.simulation.user_code.core.types import UserVariable
 from flow360.component.simulation.user_code.functions import math
 from flow360.component.simulation.user_code.variables import solution
+from flow360.component.simulation.validation.validation_context import (
+    CASE,
+    ParamsValidationInfo,
+    ValidationContext,
+)
 from flow360.component.volume_mesh import VolumeMeshV2
+
+
+@pytest.fixture(autouse=True)
+def change_test_dir(request, monkeypatch):
+    monkeypatch.chdir(request.fspath.dirname)
 
 
 @pytest.fixture()
@@ -665,6 +675,193 @@ def test_output_frequency_settings_in_steady_simulation():
             "ctx": {"relevant_for": ["Case"]},
         },
     ]
+
+
+def test_force_output_with_wall_models():
+    """Test ForceOutput with Wall models works correctly."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing1"))
+    wall_2 = Wall(entities=Surface(name="fluid/wing2"))
+
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1, wall_2],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1, wall_2],
+                    output_fields=["CL", "CD", "CMx"],
+                )
+            ],
+        )
+
+    # Test with extended force coefficients (SkinFriction/Pressure)
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CLSkinFriction", "CLPressure", "CDSkinFriction"],
+                )
+            ],
+        )
+
+
+def test_force_output_with_surface_and_volume_models():
+    """Test ForceOutput with volume models (BETDisk, ActuatorDisk, PorousMedium)."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+    with imperial_unit_system:
+        porous_zone = fl.Box.from_principal_axes(
+            name="box",
+            axes=[[0, 1, 0], [0, 0, 1]],
+            center=[0, 0, 0] * fl.u.m,
+            size=[0.2, 0.3, 2] * fl.u.m,
+        )
+        porous_medium = PorousMedium(
+            entities=[porous_zone],
+            darcy_coefficient=[1e6, 0, 0],
+            forchheimer_coefficient=[1, 0, 0],
+            volumetric_heat_source=0,
+        )
+
+    # Valid case: only basic force coefficients
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1, porous_medium],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1, porous_medium],
+                    output_fields=["CL", "CD", "CFx", "CFy", "CFz", "CMx", "CMy", "CMz"],
+                )
+            ],
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields."
+        ),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1, porous_medium],
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1, porous_medium],
+                        output_fields=["CL", "CLSkinFriction"],
+                    )
+                ],
+            )
+
+
+def test_force_output_duplicate_models():
+    """Test that ForceOutput rejects duplicate models."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape("Duplicate models are not allowed in the same `ForceOutput`."),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_1, wall_1],
+                        output_fields=["CL", "CD"],
+                    )
+                ],
+            )
+
+
+def test_force_output_nonexistent_model():
+    """Test that ForceOutput rejects models not in SimulationParams' models list."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing1"))
+    wall_2 = Wall(entities=Surface(name="fluid/wing2"))
+
+    non_wall2_context = ParamsValidationInfo({}, [])
+    non_wall2_context.physics_model_dict = {wall_1.private_attribute_id: wall_1.model_dump()}
+
+    with ValidationContext(CASE, non_wall2_context), pytest.raises(
+        ValueError,
+        match=re.escape("The model does not exist in simulation params' models list."),
+    ):
+        with imperial_unit_system:
+            SimulationParams(
+                models=[Fluid(), wall_1],
+                outputs=[
+                    fl.ForceOutput(
+                        name="force_output",
+                        models=[wall_2.private_attribute_id],
+                        output_fields=["CL", "CD"],
+                    )
+                ],
+            )
+
+
+def test_force_output_with_moving_statistic():
+    """Test ForceOutput with moving statistics."""
+    wall_1 = Wall(entities=Surface(name="fluid/wing"))
+
+    with imperial_unit_system:
+        SimulationParams(
+            models=[Fluid(), wall_1],
+            outputs=[
+                fl.ForceOutput(
+                    name="force_output",
+                    models=[wall_1],
+                    output_fields=["CL", "CD"],
+                    moving_statistic=fl.MovingStatistic(
+                        method="mean", moving_window_size=20, start_step=100
+                    ),
+                )
+            ],
+        )
+
+
+def test_force_output_with_model_id():
+    # [Frontend] Simulating loading a ForceOutput object with the id of models,
+    # ensure the validation for models works
+    with open("data/simulation_force_output_webui.json", "r") as fh:
+        data = json.load(fh)
+
+    _, errors, _ = validate_model(
+        params_as_dict=data, validated_by=ValidationCalledBy.LOCAL, root_item_type="VolumeMesh"
+    )
+    print(errors)
+    expected_errors = [
+        {
+            "type": "value_error",
+            "loc": ("outputs", 6, "models"),
+            "msg": "Value error, Duplicate models are not allowed in the same `ForceOutput`.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("outputs", 7, "models"),
+            "msg": "Value error, When ActuatorDisk/BETDisk/PorousMedium is specified, "
+            "only CL, CD, CFx, CFy, CFz, CMx, CMy, CMz can be set as output_fields.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("outputs", 8, "models"),
+            "msg": "Value error, The model does not exist in simulation params' models list.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+        {
+            "type": "value_error",
+            "loc": ("run_control", "stopping_criteria", 2, "monitor_output", "models"),
+            "msg": "Value error, Duplicate models are not allowed in the same `ForceOutput`.",
+            "ctx": {"relevant_for": ["Case"]},
+        },
+    ]
+
     assert len(errors) == len(expected_errors)
     for err, exp_err in zip(errors, expected_errors):
         assert err["loc"] == exp_err["loc"]
