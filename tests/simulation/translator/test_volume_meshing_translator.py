@@ -1,3 +1,6 @@
+import json
+import os
+
 import pytest
 
 import flow360.component.simulation.units as u
@@ -33,6 +36,7 @@ from flow360.component.simulation.translator.volume_meshing_translator import (
     get_volume_meshing_json,
 )
 from flow360.component.simulation.unit_system import LengthType, SI_unit_system
+from flow360.component.simulation.utils import model_attribute_unlock
 from tests.simulation.conftest import AssetBase
 
 
@@ -264,181 +268,14 @@ def get_test_param():
 
 def test_param_to_json(get_test_param, get_surface_mesh):
     translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
-
-    ref_dict = {
-        "refinementFactor": 1.45,
-        "farfield": {"type": "user-defined", "domainType": "half_body_negative_y"},
-        "volume": {
-            "firstLayerThickness": 1.35e-06,
-            "growthRate": 1.04,
-            "gapTreatmentStrength": 0.0,
-            "planarFaceTolerance": 1e-6,
-            "numBoundaryLayers": -1,
-        },
-        "faces": {
-            "boundary1": {
-                "firstLayerThickness": 0.5,
-                "type": "aniso",
-                "growthRate": 1.3,
-            },
-            "passive1": {"type": "projectAnisoSpacing"},
-            "passive2": {"type": "none"},
-        },
-        "refinement": [
-            {
-                "type": "cylinder",
-                "radius": 1.1,
-                "length": 2.0,
-                "axis": [0.0, 1.0, 0.0],
-                "center": [0.7, -1.0, 0.0],
-                "spacing": 0.075,
-            },
-            {
-                "type": "box",
-                "size": [4.0, 5.0, 6.0],
-                "center": [0.0, 1.0, 2.0],
-                "axisOfRotation": [0.0, 0.0, 1.0],
-                "angleOfRotation": 45.0,
-                "spacing": 0.075,
-            },
-        ],
-        "rotorDisks": [
-            {
-                "name": "enclosed",
-                "innerRadius": 0,
-                "outerRadius": 1.1,
-                "thickness": 0.15,
-                "axisThrust": [0.0, 1.0, 0.0],
-                "center": [0.7, -1.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-            }
-        ],
-        "slidingInterfaces": [  # comes from documentation page
-            {
-                "name": "inner",
-                "type": "Cylinder",
-                "innerRadius": 0,
-                "outerRadius": 0.75,
-                "thickness": 0.5,
-                "axisOfRotation": [0.0, 0.0, 1.0],
-                "center": [0.0, 0.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": [
-                    "hub",
-                    "blade1",
-                    "blade2",
-                    "blade3",
-                    "slidingInterface-cone",
-                ],
-            },
-            {
-                "name": "mid",
-                "type": "Cylinder",
-                "innerRadius": 0,
-                "outerRadius": 2.0,
-                "thickness": 2.0,
-                "axisOfRotation": [0.0, 1.0, 0.0],
-                "center": [0.0, 0.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": ["slidingInterface-inner"],
-            },
-            {
-                "name": "2",
-                "type": "Cylinder",
-                "innerRadius": 0,
-                "outerRadius": 2.0,
-                "thickness": 2.0,
-                "axisOfRotation": [0.0, 1.0, 0.0],
-                "center": [0.0, 5.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": ["rotorDisk-enclosed", "structuredBox-porousRegion"],
-            },
-            {
-                "name": "3",
-                "type": "Cylinder",
-                "innerRadius": 1.5,
-                "outerRadius": 2.0,
-                "thickness": 2.0,
-                "axisOfRotation": [0.0, 1.0, 0.0],
-                "center": [0.0, -5.0, 0.0],
-                "spacingAxial": 0.2,
-                "spacingRadial": 0.2,
-                "spacingCircumferential": 0.2,
-                "enclosedObjects": [],
-            },
-            {
-                "name": "outer",
-                "type": "Cylinder",
-                "innerRadius": 0.0,
-                "outerRadius": 8.0,
-                "thickness": 6.0,
-                "axisOfRotation": [1.0, 0.0, 0.0],
-                "center": [0.0, 0.0, 0.0],
-                "spacingAxial": 0.4,
-                "spacingRadial": 0.4,
-                "spacingCircumferential": 0.4,
-                "enclosedObjects": [
-                    "slidingInterface-mid",
-                    "rotorDisk-enclosed",
-                    "slidingInterface-2",
-                    "slidingInterface-3",
-                ],
-            },
-            {
-                "type": "Axisymmetric",
-                "name": "cone",
-                "axisOfRotation": [0.7071067811865476, 0.0, 0.7071067811865476],
-                "center": [0.0, 0.0, 0.0],
-                "profileCurve": [[-1.0, 0.0], [-1.0, 1.0], [1.0, 2.0], [1.0, 0.0]],
-                "spacingAxial": 0.4,
-                "spacingCircumferential": 0.2,
-                "spacingRadial": 0.4,
-                "enclosedObjects": [],
-            },
-        ],
-        "structuredRegions": [
-            {
-                "name": "porousRegion",
-                "type": "box",
-                "lengthAxis1": 1.0,
-                "lengthAxis2": 2.0,
-                "lengthNormal": 1.0,
-                "axis1": [0.7071067811865476, 0.7071067811865476, 0.0],
-                "axis2": [-0.7071067811865476, 0.7071067811865476, 0.0],
-                "center": [0.0, 1.0, 1.0],
-                "spacingAxis1": 0.075,
-                "spacingAxis2": 0.1,
-                "spacingNormal": 0.15,
-            }
-        ],
-        "zones": [
-            {
-                "name": "custom_volume-1",
-                "patches": ["interface1", "interface2"],
-            }
-        ],
-        "meshSliceOutput": {
-            "slices": {
-                "test_slice_y_normal": {
-                    "sliceOrigin": [0.1, 0.2, 0.3],
-                    "sliceNormal": [0.0, 1.0, 0.0],
-                },
-                "test_slice_z_normal": {
-                    "sliceOrigin": [0.6, 0.1, 0.4],
-                    "sliceNormal": [0.0, 0.0, 1.0],
-                },
-            }
-        },
-    }
-
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_inhouse.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
     assert sorted(translated.items()) == sorted(ref_dict.items())
 
 
@@ -462,3 +299,19 @@ def test_user_defined_farfield(get_test_param, get_surface_mesh):
         "faces": {},
     }
     assert sorted(translated.items()) == sorted(reference.items())
+
+
+def test_param_to_json_legacy_mesher(get_test_param, get_surface_mesh):
+    # Flip to legacy mesher
+    with model_attribute_unlock(get_test_param.private_attribute_asset_cache, "use_inhouse_mesher"):
+        get_test_param.private_attribute_asset_cache.use_inhouse_mesher = False
+    translated = get_volume_meshing_json(get_test_param, get_surface_mesh.mesh_unit)
+    ref_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "ref",
+        "volume_meshing",
+        "ref_param_to_json_legacy.json",
+    )
+    with open(ref_path, "r") as fh:
+        ref_dict = json.load(fh)
+    assert sorted(translated.items()) == sorted(ref_dict.items())
